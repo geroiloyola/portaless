@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/trust-layer",
+  "version": "0.0.2",
+  "description": "Capa de confianza de Portaless: identificacion criptografica de agentes (Web Bot Auth), politicas de acceso para IA (Content Signals) y ledger publico de trazabilidad estilo OpenRouter.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "dependencies": {}
+}
