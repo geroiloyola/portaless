@@ -1,0 +1,7 @@
+{
+  "name": "@portaless/mcp-server",
+  "version": "0.0.0",
+  "description": "STUB -- Servidor MCP nativo para agentes de IA. No implementado todavia. Ver docs/architecture/mcp-agents.md.",
+  "private": true,
+  "license": "MIT"
+}

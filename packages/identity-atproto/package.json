@@ -1,0 +1,7 @@
+{
+  "name": "@portaless/identity-atproto",
+  "version": "0.0.0",
+  "description": "STUB -- Identidad y comunidad portable via AT Protocol. No implementado todavia. Ver docs/architecture/identity-atproto.md.",
+  "private": true,
+  "license": "MIT"
+}
