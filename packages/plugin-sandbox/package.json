@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/plugin-sandbox",
+  "version": "0.0.5",
+  "description": "Sandboxing real de plugins de Portaless, con adaptadores intercambiables (Cloudflare Workers for Platforms, Deno Deploy, Fastly Compute, isolated-vm para self-hosted) -- ningun plugin ejecuta con mas permisos que los declarados en su manifiesto.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "dependencies": {}
+}

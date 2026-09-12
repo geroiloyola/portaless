@@ -1,7 +1,7 @@
 {
   "name": "portaless",
-  "version": "0.0.4",
-  "description": "Portaless: CMS ligero open source basado en Astro, sin hosting pagado, con modulo de comercio opcional compatible con Medusa/Mercur, una capa de confianza opcional para agentes de IA (Trust Layer), un dashboard modular con sistema de skins atomico, y Atomic Elements: editor visual de paginas por arrastrar-y-soltar.",
+  "version": "0.0.5",
+  "description": "Portaless: CMS ligero open source basado en Astro, sin hosting pagado, con modulo de comercio opcional, Trust Layer para agentes de IA, dashboard modular con skins, Atomic Elements (editor visual de paginas), sandboxing real de plugins multi-proveedor y un Centro de Permisos atomico estilo iOS/Android.",
   "type": "module",
   "license": "MIT",
   "workspaces": [

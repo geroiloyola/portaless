@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/permissions",
+  "version": "0.0.5",
+  "description": "Centro de Permisos de Portaless: control atomico, cosa por cosa, de que puede hacer cada plugin o agente de IA en el sitio -- inspirado en la pantalla de Privacidad de iOS/Android, no en una lista plana de checkboxes.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "dependencies": {}
+}

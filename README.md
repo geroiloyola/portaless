@@ -1,20 +1,29 @@
 
 
-## Atomic Elements: editor visual de páginas (nuevo en v0.0.4)
+## Sandboxing real de plugins + Centro de Permisos (nuevo en v0.0.5)
 
-Editor de arrastrar-y-soltar (`packages/atomic-elements/`) para construir
-páginas, portadas y catálogos sin escribir código — pensado explícitamente
-para ser más liviano que Elementor (sin la profundidad de DOM ni el peso de
-CSS/JS de los builders tradicionales de WordPress).
+**Sandboxing multi-proveedor** (`packages/plugin-sandbox/`): el aislamiento
+de plugins ya no depende únicamente de Cloudflare. Hay adaptadores de
+referencia para Cloudflare Workers for Platforms, Deno Deploy, Fastly
+Compute@Edge, y un adaptador **self-hosted** (`isolated-vm`) para quienes
+no quieren depender de ningún proveedor edge. Un plugin nunca ejecuta con
+más capacidades que las explícitamente concedidas — sin importar cuántas
+solicite en su manifiesto.
 
-**Pruébalo ahora mismo**: abre `public/editor/index.html` directamente en
-tu navegador, sin instalar nada. Arrastra elementos, edítalos, y exporta el
-JSON resultante.
+**Centro de Permisos** (`packages/permissions/`): control atómico, permiso
+por permiso, de qué puede hacer cada plugin, tema o agente de IA — igual
+que la pantalla de Privacidad de iOS/Android, nunca "todo o nada" por
+plugin. Pruébalo abriendo `public/permissions/index.html` directamente en
+el navegador.
 
-Lo que construyes en el editor se guarda como `PageLayout` (JSON) en
-`src/content/pages/*.json`, y `src/pages/paginas/[slug].astro` lo convierte
-en una página estática real usando exactamente el mismo motor de render que
-usa el editor — no hay paso de traducción intermedio.
+⚠️ **Advertencia de seguridad real documentada**: el adaptador self-hosted
+usa `isolated-vm`, que sufrió una vulnerabilidad crítica de RCE
+(GHSA-864f-rcv7-6rh4) en versiones ≤7.0.0. El adaptador rechaza
+instanciarse si detecta una versión vulnerable. Ver
+`packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md`.
 
-Ver `packages/atomic-elements/docs/ATOMIC_ELEMENTS.md` para el detalle
-técnico completo, incluyendo las limitaciones honestas de este MVP.
+**Importante**: los cuatro adaptadores de sandboxing en esta versión son
+esqueletos con el contrato completo, pero **la ejecución real contra la
+API de cada proveedor queda marcada como `TODO` explícito** — no
+implementan sandboxing activo todavía, solo la arquitectura correcta y
+segura por diseño.

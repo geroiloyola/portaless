@@ -1,6 +1,11 @@
 // Catalogo de organismos disponibles para cualquier skin. Un skin NUNCA
 // define un componente nuevo: solo referencia organismos de este registro
 // por nombre y decide donde ubicarlos. Ver Portaless_Skin_System.md, seccion 2.
+//
+// ACTUALIZADO en v0.0.5: se agrega "PermissionsCenterPanel", que resume el
+// estado del Centro de Permisos (packages/permissions) directamente en el
+// dashboard -- cuantos permisos de alto riesgo estan concedidos, y a que
+// plugins/agentes.
 
 import type { OrganismDefinition } from "../types";
 
@@ -16,6 +21,7 @@ export interface LedgerEntry { keyId: string; status: "paid" | "pending" | "bloc
 export interface ContentItem { title: string; publishedAgo: string; }
 export interface CommerceOrder { id: string; total: number; }
 export interface PolicyRow { signal: "search" | "ai_input" | "ai_train"; access: string; }
+export interface PermissionSummaryRow { subjectName: string; capabilityLabel: string; risk: "bajo" | "medio" | "alto"; }
 
 const TrafficChartPanel: OrganismDefinition<TrafficPoint[]> = {
   name: "TrafficChartPanel",
@@ -134,6 +140,32 @@ const PolicyPanel: OrganismDefinition<PolicyRow[]> = {
   },
 };
 
+// NUEVO en v0.0.5: resumen del Centro de Permisos directamente en el dashboard.
+const PermissionsCenterPanel: OrganismDefinition<PermissionSummaryRow[]> = {
+  name: "PermissionsCenterPanel",
+  displayName: "Permisos concedidos (alto riesgo)",
+  mockData: [
+    { subjectName: "🧩 plugin-comercio", capabilityLabel: "Iniciar procesos de cobro", risk: "alto" },
+    { subjectName: "🤖 ed25519:9f2a…c31b", capabilityLabel: "Conectarse a servicios externos", risk: "alto" },
+    { subjectName: "🧩 plugin-newsletter", capabilityLabel: "Enviar correos en nombre del sitio", risk: "medio" },
+  ],
+  render(data) {
+    const rows = data
+      .map((r) => {
+        const color = r.risk === "alto" ? "#ff6e6e" : r.risk === "medio" ? "#ffb86b" : "#6ee7b7";
+        return `<div class="row"><span>${r.subjectName} — ${r.capabilityLabel}</span>
+          <span class="tag" style="background:${color}22;color:${color};">${r.risk}</span></div>`;
+      })
+      .join("");
+    return el(
+      "div",
+      "organism",
+      `<h4>Permisos concedidos (alto riesgo)</h4>${rows}
+       <div class="stat-delta">Ver Centro de Permisos completo en /admin/permisos</div>`
+    );
+  },
+};
+
 export const organismRegistry: Record<string, OrganismDefinition<any>> = {
   TrafficChartPanel,
   AgentLedgerPanel,
@@ -141,4 +173,5 @@ export const organismRegistry: Record<string, OrganismDefinition<any>> = {
   CommerceOrdersPanel,
   CommerceRevenuePanel,
   PolicyPanel,
+  PermissionsCenterPanel,
 };

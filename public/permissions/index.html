@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Portaless — Centro de Permisos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #f0f1f6; color: #1b1d26; min-height: 100vh; }
+  .topbar { background: #fff; border-bottom: 1px solid #eceef5; padding: 18px 28px; display:flex; align-items:center; gap:10px; }
+  .topbar .mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#34c759,#30d5c8); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; }
+  .topbar h1 { font-size: 16px; font-weight: 800; }
+  .topbar .sub { font-size: 12.5px; color: #8b8ea0; margin-left: 8px; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+  .intro { font-size: 13px; color: #6c7386; margin-bottom: 22px; }
+
+  .pc-category { margin-bottom: 26px; }
+  .pc-category h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #8b8ea0; margin-bottom: 10px; padding-left: 4px; }
+
+  .pc-capability {
+    background: #fff; border: 1px solid #eceef5; border-radius: 16px;
+    padding: 16px 18px; margin-bottom: 10px;
+  }
+  .pc-capability-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .pc-cap-label { font-size: 14px; font-weight: 700; }
+  .pc-cap-desc { font-size: 12px; color: #8b8ea0; margin-top: 2px; }
+  .pc-risk { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+  .pc-subject-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-top: 1px solid #f1f2f7; font-size: 13px;
+  }
+  .pc-empty { font-size: 12px; color: #b6bacb; font-style: italic; padding-top: 6px; }
+
+  .pc-switch { width: 42px; height: 24px; border-radius: 999px; background: #e5e7ee; position: relative; cursor: pointer; transition: background .2s; }
+  .pc-switch.pc-on { background: #34c759; }
+  .pc-knob { width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .pc-switch.pc-on .pc-knob { left: 21px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="mark">P</div>
+  <h1>Centro de Permisos</h1>
+  <span class="sub">Control atómico, igual que en iOS/Android</span>
+</div>
+
+<div class="wrap">
+  <p class="intro">
+    Cada permiso se concede por separado, a cada plugin o agente de IA, sin excepción.
+    Apagar un permiso nunca desactiva el plugin completo — solo le retira esa capacidad específica.
+  </p>
+  <div id="permission-center"></div>
+</div>
+
+<script>
+// Version standalone en JS plano, equivalente funcional de
+// packages/permissions/src/permission-center-ui.ts + capability-registry.ts,
+// para poder probar la experiencia sin build.
+
+const capabilityRegistry = {
+  "content:read":      { category: "Contenido", label: "Leer contenido del sitio", description: "Permite leer páginas, posts y metadatos.", risk: "bajo" },
+  "content:write":     { category: "Contenido", label: "Editar o crear contenido", description: "Permite crear o modificar páginas y posts.", risk: "medio" },
+  "network:fetch":     { category: "Red", label: "Conectarse a servicios externos", description: "Peticiones de red, solo a hosts autorizados.", risk: "alto" },
+  "email:send":        { category: "Red", label: "Enviar correos en nombre del sitio", description: "Permite disparar envíos de email transaccional.", risk: "medio" },
+  "commerce:read":     { category: "Comercio", label: "Leer catálogo/pedidos", description: "Consultar productos, precios y pedidos.", risk: "medio" },
+  "commerce:checkout": { category: "Comercio", label: "Iniciar procesos de cobro", description: "Iniciar checkout (nunca procesa el pago directo).", risk: "alto" },
+  "storage:write":     { category: "Almacenamiento", label: "Escribir en almacenamiento del plugin", description: "Acceso de escritura al espacio propio del plugin.", risk: "medio" },
+  "agent:identify":    { category: "Agentes IA", label: "Leer identidad de agentes verificados", description: "Consultar el ledger del Trust Layer.", risk: "bajo" },
+  "site:admin":        { category: "Administración", label: "Modificar configuración del sitio", description: "Capacidad de más alto riesgo del sistema.", risk: "alto" },
+};
+
+let grants = [
+  { subject: { type: "plugin", id: "plugin-comercio", displayName: "🧩 Plugin de comercio" }, capabilityId: "commerce:checkout", granted: true },
+  { subject: { type: "plugin", id: "plugin-comercio", displayName: "🧩 Plugin de comercio" }, capabilityId: "commerce:read", granted: true },
+  { subject: { type: "plugin", id: "plugin-newsletter", displayName: "🧩 Plugin de newsletter" }, capabilityId: "email:send", granted: false },
+  { subject: { type: "plugin", id: "plugin-newsletter", displayName: "🧩 Plugin de newsletter" }, capabilityId: "content:read", granted: true },
+  { subject: { type: "agent", id: "ed25519:9f2a", displayName: "🤖 Agente ed25519:9f2a…c31b" }, capabilityId: "network:fetch", granted: false },
+  { subject: { type: "agent", id: "ed25519:9f2a", displayName: "🤖 Agente ed25519:9f2a…c31b" }, capabilityId: "agent:identify", granted: true },
+  { subject: { type: "theme", id: "skin-tienda", displayName: "🎨 Skin: Tienda" }, capabilityId: "storage:write", granted: false },
+];
+
+function riskColor(risk) { return risk === "alto" ? "#ff5a5f" : risk === "medio" ? "#ffb347" : "#34c759"; }
+
+function groupByCategory() {
+  const grouped = {};
+  for (const [id, def] of Object.entries(capabilityRegistry)) {
+    grouped[def.category] = grouped[def.category] || [];
+    grouped[def.category].push({ id, ...def });
+  }
+  return grouped;
+}
+
+function render() {
+  const container = document.getElementById("permission-center");
+  container.innerHTML = "";
+  const grouped = groupByCategory();
+
+  for (const [category, caps] of Object.entries(grouped)) {
+    const section = document.createElement("div");
+    section.className = "pc-category";
+    const h3 = document.createElement("h3");
+    h3.textContent = category;
+    section.appendChild(h3);
+
+    caps.forEach((cap) => {
+      const block = document.createElement("div");
+      block.className = "pc-capability";
+      const color = riskColor(cap.risk);
+      block.innerHTML = `<div class="pc-capability-header">
+        <div><div class="pc-cap-label">${cap.label}</div><div class="pc-cap-desc">${cap.description}</div></div>
+        <span class="pc-risk" style="background:${color}22;color:${color};">riesgo ${cap.risk}</span>
+      </div>`;
+
+      const subjectsForCap = grants.filter((g) => g.capabilityId === cap.id);
+      if (subjectsForCap.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "pc-empty";
+        empty.textContent = "Ningún plugin o agente ha solicitado este permiso todavía.";
+        block.appendChild(empty);
+      } else {
+        subjectsForCap.forEach((grant) => {
+          const row = document.createElement("div");
+          row.className = "pc-subject-row";
+          const label = document.createElement("span");
+          label.textContent = grant.subject.displayName;
+          const sw = document.createElement("div");
+          sw.className = "pc-switch" + (grant.granted ? " pc-on" : "");
+          sw.innerHTML = '<div class="pc-knob"></div>';
+          sw.onclick = () => { grant.granted = !grant.granted; render(); };
+          row.appendChild(label);
+          row.appendChild(sw);
+          block.appendChild(row);
+        });
+      }
+      section.appendChild(block);
+    });
+    container.appendChild(section);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
