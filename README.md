@@ -1,20 +1,15 @@
 
 
-## Trust Layer (nuevo en v0.0.2, opcional)
+## Dashboard modular con Skin System (nuevo en v0.0.3)
 
-Portaless incluye ahora un módulo opcional que identifica criptográficamente
-a agentes de IA que visitan tu sitio (vía el estándar en desarrollo del IETF
-**Web Bot Auth**), aplica políticas de acceso por tipo de uso (compatibles
-con **Content Signals** de Cloudflare: `search`, `ai_input`, `ai_train`), y
-publica un ledger público de trazabilidad por agente — pensado como
-evidencia verificable ante un eventual reclamo legal por scraping no
-autorizado.
+El panel de administración de Portaless (`packages/dashboard/`) se basa en
+**Atomic Design**: un catálogo fijo de organismos (`TrafficChartPanel`,
+`AgentLedgerPanel`, `ContentListPanel`, `CommerceOrdersPanel`,
+`CommerceRevenuePanel`, `PolicyPanel`) que cualquier "skin" puede reordenar,
+redimensionar u ocultar mediante un simple archivo `skin.json` — sin escribir
+código nuevo. Incluye tres skins de referencia: `blog`, `tienda` y
+`trust-crm`.
 
-Ver `packages/trust-layer/docs/TRUST_LAYER_SETUP.md` para activarlo y, muy
-importante, las advertencias sobre qué partes de la verificación
-criptográfica y de la liquidación de pagos **todavía no están implementadas**
-en este MVP (quedan marcadas como `TODO` explícito en el código).
-
-Este módulo, igual que el de comercio, es 100% opcional: si no defines
-`ENABLE_TRUST_LAYER=true`, tu sitio funciona exactamente igual que en v0.0.1,
-sin ninguna latencia ni lógica adicional.
+Ver `packages/dashboard/docs/CREAR_UN_SKIN.md` para crear tu propio skin, y
+`Portaless_Skin_System.md` (raíz del proyecto) para el diseño completo del
+sistema y por qué es más simple que un theme de WordPress.

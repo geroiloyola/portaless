@@ -1,0 +1,46 @@
+{
+  "skin": "tienda",
+  "extends": "base",
+  "tokens": {
+    "accent": "#a06bff",
+    "accent2": "#6c4dff"
+  },
+  "layout": [
+    {
+      "organism": "CommerceOrdersPanel",
+      "w": 2,
+      "h": 2,
+      "order": 1,
+      "priority": "high"
+    },
+    {
+      "organism": "CommerceRevenuePanel",
+      "w": 2,
+      "h": 1,
+      "order": 2,
+      "priority": "high"
+    },
+    {
+      "organism": "TrafficChartPanel",
+      "w": 2,
+      "h": 1,
+      "order": 3
+    },
+    {
+      "organism": "ContentListPanel",
+      "w": 2,
+      "h": 1,
+      "order": 4
+    },
+    {
+      "organism": "AgentLedgerPanel",
+      "w": 4,
+      "h": 1,
+      "order": 5
+    },
+    {
+      "organism": "PolicyPanel",
+      "hidden": true
+    }
+  ]
+}

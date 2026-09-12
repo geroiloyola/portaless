@@ -1,0 +1,47 @@
+{
+  "skin": "base",
+  "tokens": {
+    "accent": "#34c759",
+    "accent2": "#30d5c8",
+    "radius": "22px",
+    "density": "comfortable"
+  },
+  "layout": [
+    {
+      "organism": "TrafficChartPanel",
+      "w": 2,
+      "h": 1,
+      "order": 1
+    },
+    {
+      "organism": "ContentListPanel",
+      "w": 2,
+      "h": 1,
+      "order": 2
+    },
+    {
+      "organism": "CommerceOrdersPanel",
+      "w": 1,
+      "h": 1,
+      "order": 3
+    },
+    {
+      "organism": "CommerceRevenuePanel",
+      "w": 1,
+      "h": 1,
+      "order": 4
+    },
+    {
+      "organism": "AgentLedgerPanel",
+      "w": 2,
+      "h": 1,
+      "order": 5
+    },
+    {
+      "organism": "PolicyPanel",
+      "w": 2,
+      "h": 1,
+      "order": 6
+    }
+  ]
+}
