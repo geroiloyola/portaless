@@ -1,0 +1,23 @@
+name: Deploy gradual (referencia — requiere adaptador activo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      traffic_percentage:
+        description: "Porcentaje de tráfico a la nueva versión (0-100)"
+        required: true
+        default: "10"
+
+jobs:
+  gradual-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nota de estado
+        run: |
+          echo "Este workflow es un ESQUELETO DE REFERENCIA."
+          echo "El despliegue gradual real depende de las Versions & Deployments"
+          echo "de Cloudflare Workers, documentado en el whitepaper de Portaless"
+          echo "pero NO conectado todavia a este workflow."
+          echo "TODO: integrar wrangler versions upload + wrangler versions deploy"
+          echo "con --percentage=${{ inputs.traffic_percentage }}"
