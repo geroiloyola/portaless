@@ -1,7 +1,15 @@
-# Configuración opcional para desplegar en Cloudflare Pages vía Wrangler CLI.
+# Configuracion opcional para desplegar en Cloudflare Pages via Wrangler CLI.
 # No es necesaria si conectas el repositorio directamente desde el dashboard
-# de Cloudflare Pages (método recomendado, ver docs/DEPLOY_CLOUDFLARE_PAGES.md).
+# de Cloudflare Pages.
 
 name = "portaless"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-01-01"
+
+# Descomenta y completa esto para activar persistencia real de
+# autenticacion (packages/auth/) via Cloudflare D1.
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "portaless-auth"
+# database_id = "TU_DATABASE_ID_AQUI"

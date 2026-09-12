@@ -1,25 +1,15 @@
 // Cloudflare Pages Function -- middleware exclusivo de las rutas
 // /admin/*. Protege el dashboard verificando la cookie de sesion antes de
 // servir cualquier ruta bajo este prefijo. La ruta /admin/login queda
-// explicitamente excluida (si no, nadie podria loguearse nunca).
+// explicitamente excluida.
 //
-// IMPORTANTE: este middleware es independiente del de la raiz
-// (functions/_middleware.js, del Trust Layer) -- Cloudflare Pages aplica
-// el _middleware.js mas especifico a la ruta que coincide, en cascada
-// desde la raiz hacia la carpeta actual. No se duplica logica del Trust
-// Layer aqui.
+// ACTUALIZADO: ya no usa stores en memoria hardcodeados. Resuelve el
+// backend de persistencia real (D1 en Cloudflare, o SQLite self-hosted)
+// via store-factory.ts, coherente con el endpoint de login
+// (functions/admin/login.js).
 
-import { AuthService, InMemoryUsersStore, InMemorySessionStore } from "../../packages/auth/src/index.ts";
-
-// NOTA DE ESTADO: estos stores en memoria se reinician con cada
-// despliegue/reinicio del proceso -- ver docs/architecture/authentication.md
-// para el plan de migracion a persistencia real (SQLite). Mientras tanto,
-// cualquier usuario creado debe re-crearse tras cada reinicio, o mejor:
-// ejecutar la creacion del admin inicial en un paso de build/deploy, no
-// en tiempo de request.
-const usersStore = new InMemoryUsersStore();
-const sessionStore = new InMemorySessionStore();
-const authService = new AuthService(usersStore, sessionStore);
+import { AuthService } from "../../packages/auth/src/auth-service.ts";
+import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
 
 function getCookie(request, name) {
   const cookieHeader = request.headers.get("Cookie") || "";
@@ -28,12 +18,16 @@ function getCookie(request, name) {
 }
 
 export async function onRequest(context) {
-  const { request, next } = context;
+  const { request, next, env } = context;
   const url = new URL(request.url);
 
   if (url.pathname === "/admin/login") {
     return next();
   }
+
+  const usersStore = await createUsersStore(env);
+  const sessionStore = await createSessionStore(env);
+  const authService = new AuthService(usersStore, sessionStore);
 
   const token = getCookie(request, "portaless_session");
   const session = await authService.validateSession(token);
@@ -42,8 +36,6 @@ export async function onRequest(context) {
     return Response.redirect(new URL("/admin/login?error=1", url.origin), 302);
   }
 
-  // Adjunta la sesion al contexto para que las paginas admin puedan leer
-  // el rol del usuario (ej. para ocultar controles de escritura a "viewer").
   context.data = { ...(context.data || {}), session };
 
   return next();
