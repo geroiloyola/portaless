@@ -1,15 +1,20 @@
 
 
-## Dashboard modular con Skin System (nuevo en v0.0.3)
+## Atomic Elements: editor visual de páginas (nuevo en v0.0.4)
 
-El panel de administración de Portaless (`packages/dashboard/`) se basa en
-**Atomic Design**: un catálogo fijo de organismos (`TrafficChartPanel`,
-`AgentLedgerPanel`, `ContentListPanel`, `CommerceOrdersPanel`,
-`CommerceRevenuePanel`, `PolicyPanel`) que cualquier "skin" puede reordenar,
-redimensionar u ocultar mediante un simple archivo `skin.json` — sin escribir
-código nuevo. Incluye tres skins de referencia: `blog`, `tienda` y
-`trust-crm`.
+Editor de arrastrar-y-soltar (`packages/atomic-elements/`) para construir
+páginas, portadas y catálogos sin escribir código — pensado explícitamente
+para ser más liviano que Elementor (sin la profundidad de DOM ni el peso de
+CSS/JS de los builders tradicionales de WordPress).
 
-Ver `packages/dashboard/docs/CREAR_UN_SKIN.md` para crear tu propio skin, y
-`Portaless_Skin_System.md` (raíz del proyecto) para el diseño completo del
-sistema y por qué es más simple que un theme de WordPress.
+**Pruébalo ahora mismo**: abre `public/editor/index.html` directamente en
+tu navegador, sin instalar nada. Arrastra elementos, edítalos, y exporta el
+JSON resultante.
+
+Lo que construyes en el editor se guarda como `PageLayout` (JSON) en
+`src/content/pages/*.json`, y `src/pages/paginas/[slug].astro` lo convierte
+en una página estática real usando exactamente el mismo motor de render que
+usa el editor — no hay paso de traducción intermedio.
+
+Ver `packages/atomic-elements/docs/ATOMIC_ELEMENTS.md` para el detalle
+técnico completo, incluyendo las limitaciones honestas de este MVP.

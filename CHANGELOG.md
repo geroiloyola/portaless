@@ -1,25 +1,35 @@
 
-## v0.0.3
+## v0.0.4
 
 ### Agregado
-- **Dashboard modular** (`packages/dashboard/`): catálogo de organismos
-  atómicos (`TrafficChartPanel`, `AgentLedgerPanel`, `ContentListPanel`,
-  `CommerceOrdersPanel`, `CommerceRevenuePanel`, `PolicyPanel`) reutilizables
-  entre cualquier skin.
-- **Skin Engine** (`packages/dashboard/src/skin-engine/`): `loader.ts`
-  resuelve herencia de skins (`extends`) fusionando tokens y layout;
-  `renderer.ts` monta los organismos en una grilla configurable;
-  `tokens.ts` aplica variables de diseño (color, radio, densidad) a todos
-  los átomos automáticamente.
-- Tres skins de referencia en `packages/dashboard/src/skins/`: `base.json`,
-  `blog.json`, `tienda.json`, `trust-crm.json`.
-- `packages/dashboard/docs/CREAR_UN_SKIN.md`: guía para crear un skin nuevo
-  editando solo JSON, sin tocar código.
+- **Atomic Elements** (`packages/atomic-elements/`): editor visual de
+  páginas por arrastrar-y-soltar. Catálogo de 8 elementos (`Hero`,
+  `Heading`, `Paragraph`, `Image`, `Button`, `Columns`, `ProductGrid`,
+  `Spacer`) en `elements/registry.ts`, cada uno con `renderHTML()` puro
+  (sin dependencia de DOM), permitiendo usar el mismo motor tanto en el
+  editor (navegador) como en el build estático de Astro (Node).
+- `src/render.ts`: motor de renderizado compartido — lo que ves en el
+  editor es exactamente lo que se publica, sin paso de traducción.
+- `src/persistence/`: esquema de validación de páginas
+  (`page-schema.ts`) y almacenamiento pluggable (`page-store.ts`,
+  implementación de referencia sobre `localStorage`).
+- `src/editor/`: `drag-drop.ts` (HTML5 DnD sin librerías externas),
+  `property-panel.ts` (panel de propiedades generado automáticamente desde
+  `editableProps` de cada elemento), `editor-app.ts` (bootstrap completo
+  del editor).
+- `astro-integration/PageRenderer.astro`: conecta el `PageLayout` producido
+  por el editor con el build estático real de Astro.
+- `src/pages/paginas/[slug].astro` + `src/content/pages/*.json`: ruta
+  dinámica que publica cualquier página creada con Atomic Elements.
+- `public/editor/index.html`: **demo standalone en JavaScript plano**,
+  funcionalmente equivalente al paquete TypeScript — se puede abrir
+  directamente en el navegador sin instalar nada ni correr un build.
 
-### Notas de esta version
-- Un skin solo puede reordenar, redimensionar u ocultar organismos ya
-  existentes en el registro — no puede introducir componentes nuevos ni
-  CSS libre, por diseño (evita que un skin mal hecho rompa la usabilidad
-  del panel).
-- El renderer usa DOM directo (framework-agnostic) para poder integrarse
-  tanto en una isla de Astro como en un panel SPA independiente.
+### Notas de esta versión
+- El `ProductGrid` es un placeholder visual; la conexión real con el
+  catálogo de Medusa/Mercur queda pendiente para una próxima versión.
+- No hay anidamiento de elementos dentro de `Columns` desde la interfaz
+  visual todavía (sí es posible editando el JSON a mano).
+- No hay undo/redo.
+- `LocalStoragePageStore` es solo para desarrollo — un sitio en producción
+  debe persistir las páginas como archivos en el propio repositorio Git.

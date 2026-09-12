@@ -1,0 +1,49 @@
+{
+  "version": "0.1",
+  "slug": "ejemplo-atomic-elements",
+  "title": "Página creada con Atomic Elements",
+  "description": "Página de ejemplo generada por el editor visual de Portaless",
+  "root": [
+    {
+      "id": "hero1",
+      "type": "Hero",
+      "props": {
+        "title": "Bienvenido a Portaless",
+        "subtitle": "Esta página se construyó arrastrando elementos, sin escribir código",
+        "bgColor": "#111827"
+      }
+    },
+    {
+      "id": "heading1",
+      "type": "Heading",
+      "props": { "text": "Por qué Atomic Elements es distinto", "level": "h2", "align": "left" }
+    },
+    {
+      "id": "columns1",
+      "type": "Columns",
+      "props": { "count": 2, "gap": 20 },
+      "children": [
+        {
+          "id": "p1",
+          "type": "Paragraph",
+          "props": { "text": "Cada elemento se traduce a un único nodo HTML, sin la profundidad de DOM que ralentiza a otros editores visuales." }
+        },
+        {
+          "id": "p2",
+          "type": "Paragraph",
+          "props": { "text": "El mismo JSON que ves aquí es exactamente lo que produce el editor visual — no hay paso de traducción intermedio." }
+        }
+      ]
+    },
+    {
+      "id": "btn1",
+      "type": "Button",
+      "props": { "label": "Ver el editor", "href": "/editor/", "style": "primary" }
+    },
+    {
+      "id": "spacer1",
+      "type": "Spacer",
+      "props": { "height": 24 }
+    }
+  ]
+}

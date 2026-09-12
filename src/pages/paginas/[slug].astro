@@ -1,0 +1,24 @@
+---
+// Ruta dinamica que publica cualquier pagina creada con Atomic Elements.
+// Cada archivo en src/content/pages/*.json es una PageLayout completa.
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageRenderer from "../../../packages/atomic-elements/astro-integration/PageRenderer.astro";
+import type { PageLayout } from "../../../packages/atomic-elements/src/types";
+
+export async function getStaticPaths() {
+  const pages = await import.meta.glob<{ default: PageLayout }>(
+    "../../content/pages/*.json",
+    { eager: true }
+  );
+  return Object.values(pages).map((mod) => ({
+    params: { slug: mod.default.slug },
+    props: { layout: mod.default },
+  }));
+}
+
+const { layout } = Astro.props as { layout: PageLayout };
+---
+<BaseLayout title={layout.title} description={layout.description}>
+  <PageRenderer layout={layout} />
+</BaseLayout>

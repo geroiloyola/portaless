@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Atomic Elements — Editor Visual de Portaless</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0d0e12; color: #e7e9ee; height: 100vh; overflow: hidden; }
+  .topbar {
+    height: 52px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px; background: #12141a; border-bottom: 1px solid #1e2129;
+  }
+  .brand { font-weight: 800; font-size: 14px; display:flex; align-items:center; gap:8px; }
+  .brand .mark { width: 26px; height: 26px; border-radius: 8px; background: #6ee7b7; color:#0a0b0f; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+  .top-actions { display: flex; gap: 8px; }
+  .btn { background: #1c1f28; border: 1px solid #262b38; color: #cfd3dd; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
+  .btn.primary { background: #6ee7b7; color: #0a0b0f; border: none; font-weight: 700; }
+
+  .ae-shell { display: grid; grid-template-columns: 200px 1fr 280px; height: calc(100vh - 52px); }
+
+  .ae-palette { background: #12141a; border-right: 1px solid #1e2129; padding: 16px; overflow-y: auto; }
+  .ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6c7386; margin-bottom: 10px; }
+  .ae-palette-item {
+    background: #1a1d26; border: 1px solid #262b38; border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; cursor: grab;
+    transition: border-color .15s;
+  }
+  .ae-palette-item:hover { border-color: #6ee7b7; }
+
+  .ae-canvas-wrap { background: #0d0e12; padding: 24px; overflow-y: auto; }
+  .ae-canvas {
+    max-width: 720px; margin: 0 auto; min-height: 400px;
+    background: #101218; border: 1px dashed #262b38; border-radius: 16px;
+    padding: 20px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .ae-canvas.ae-drop-active { border-color: #6ee7b7; }
+  .ae-canvas:empty::before {
+    content: "Arrastra elementos de la izquierda aquí";
+    color: #565c6c; font-size: 13px; display:block; text-align:center; padding: 60px 0;
+  }
+  .ae-block {
+    position: relative; border: 1px solid transparent; border-radius: 12px; padding: 6px;
+  }
+  .ae-block:hover { border-color: #262b38; }
+  .ae-block.ae-selected { border-color: #6ee7b7; }
+  .ae-block-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10.5px; color: #6c7386; padding: 2px 4px 6px;
+  }
+  .ae-block-toolbar button { background: none; border: none; color: #ff6e6e; cursor: pointer; font-size: 12px; }
+
+  .ae-property-panel { background: #12141a; border-left: 1px solid #1e2129; padding: 18px; overflow-y: auto; }
+  .ae-property-panel h3 { font-size: 13px; margin-bottom: 14px; }
+  .ae-empty { font-size: 12.5px; color: #6c7386; }
+  .ae-field { display: block; margin-bottom: 14px; }
+  .ae-field span { display: block; font-size: 11px; color: #9aa1b2; margin-bottom: 5px; }
+  .ae-field input, .ae-field textarea, .ae-field select {
+    width: 100%; background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
+    color: #e7e9ee; padding: 7px 10px; font-size: 12.5px; font-family: inherit;
+  }
+  .ae-field textarea { min-height: 60px; resize: vertical; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="mark">P</div>Atomic Elements — Editor Visual</div>
+    <div class="top-actions">
+      <button class="btn" id="btn-export">Exportar JSON</button>
+      <button class="btn primary" id="btn-save">Guardar página</button>
+    </div>
+  </div>
+  <div id="app"></div>
+
+<script>
+/*
+  Version standalone en JavaScript plano del motor de Atomic Elements,
+  equivalente funcional del paquete TypeScript real en
+  packages/atomic-elements/. Se mantiene deliberadamente sin paso de build
+  para que este archivo se pueda abrir directamente en el navegador y
+  probar el editor sin instalar nada.
+*/
+
+const elementRegistry = {
+  Hero: {
+    displayName: "Hero / Portada", icon: "🏔️",
+    defaultProps: { title: "Título principal", subtitle: "Subtítulo de apoyo", bgColor: "#1f2937" },
+    editableProps: [
+      { key: "title", label: "Título", kind: "text" },
+      { key: "subtitle", label: "Subtítulo", kind: "textarea" },
+      { key: "bgColor", label: "Color de fondo", kind: "color" },
+    ],
+    renderHTML: (p) => `<section style="background:${p.bgColor};padding:48px 28px;border-radius:16px;color:#fff;text-align:center;">
+      <h1 style="font-size:1.8rem;margin:0 0 8px;">${p.title}</h1>
+      <p style="opacity:.85;margin:0;">${p.subtitle}</p></section>`,
+  },
+  Heading: {
+    displayName: "Encabezado", icon: "🔠",
+    defaultProps: { text: "Encabezado de sección", level: "h2", align: "left" },
+    editableProps: [
+      { key: "text", label: "Texto", kind: "text" },
+      { key: "level", label: "Nivel", kind: "select", options: ["h1","h2","h3"] },
+      { key: "align", label: "Alineación", kind: "select", options: ["left","center","right"] },
+    ],
+    renderHTML: (p) => `<${p.level} style="text-align:${p.align};margin:0;color:#e7e9ee;">${p.text}</${p.level}>`,
+  },
+  Paragraph: {
+    displayName: "Párrafo", icon: "📝",
+    defaultProps: { text: "Escribe aquí el contenido de este párrafo." },
+    editableProps: [{ key: "text", label: "Texto", kind: "textarea" }],
+    renderHTML: (p) => `<p style="line-height:1.6;margin:0;color:#cfd3dd;">${p.text}</p>`,
+  },
+  Image: {
+    displayName: "Imagen", icon: "🖼️",
+    defaultProps: { src: "https://placehold.co/700x300", alt: "Descripción", radius: 12 },
+    editableProps: [
+      { key: "src", label: "URL de la imagen", kind: "url" },
+      { key: "alt", label: "Texto alternativo", kind: "text" },
+      { key: "radius", label: "Radio de borde", kind: "number" },
+    ],
+    renderHTML: (p) => `<img src="${p.src}" alt="${p.alt}" style="width:100%;border-radius:${p.radius}px;display:block;" />`,
+  },
+  Button: {
+    displayName: "Botón", icon: "🔘",
+    defaultProps: { label: "Llamado a la acción", href: "#", style: "primary" },
+    editableProps: [
+      { key: "label", label: "Texto", kind: "text" },
+      { key: "href", label: "Enlace", kind: "url" },
+      { key: "style", label: "Estilo", kind: "select", options: ["primary","secondary"] },
+    ],
+    renderHTML: (p) => {
+      const bg = p.style === "primary" ? "#6ee7b7" : "transparent";
+      const color = p.style === "primary" ? "#0a0b0f" : "#6ee7b7";
+      const border = p.style === "primary" ? "none" : "1px solid #6ee7b7";
+      return `<a href="${p.href}" style="display:inline-block;padding:9px 20px;border-radius:999px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${p.label}</a>`;
+    },
+  },
+  Spacer: {
+    displayName: "Espaciador", icon: "↕️",
+    defaultProps: { height: 24 },
+    editableProps: [{ key: "height", label: "Altura (px)", kind: "number" }],
+    renderHTML: (p) => `<div style="height:${p.height}px;"></div>`,
+  },
+};
+
+const palette = Object.keys(elementRegistry);
+let page = { version: "0.1", slug: "nueva-pagina", title: "Nueva página", root: [] };
+let selectedId = null;
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function renderNode(node) {
+  const def = elementRegistry[node.type];
+  const props = { ...def.defaultProps, ...node.props };
+  return def.renderHTML(props);
+}
+
+function insertAt(type, index) {
+  const def = elementRegistry[type];
+  const node = { id: uid(), type, props: { ...def.defaultProps } };
+  page.root.splice(index, 0, node);
+  selectedId = node.id;
+  renderApp();
+}
+
+function removeNode(id) {
+  page.root = page.root.filter((n) => n.id !== id);
+  if (selectedId === id) selectedId = null;
+  renderApp();
+}
+
+function updateSelectedProps(newProps) {
+  const node = page.root.find((n) => n.id === selectedId);
+  if (node) node.props = newProps;
+  renderApp();
+}
+
+function renderPropertyPanel(container) {
+  container.innerHTML = "";
+  const node = page.root.find((n) => n.id === selectedId);
+  if (!node) {
+    container.innerHTML = '<p class="ae-empty">Selecciona un elemento del lienzo para editar sus propiedades.</p>';
+    return;
+  }
+  const def = elementRegistry[node.type];
+  const props = { ...def.defaultProps, ...node.props };
+
+  const title = document.createElement("h3");
+  title.textContent = `${def.icon} ${def.displayName}`;
+  container.appendChild(title);
+
+  def.editableProps.forEach((field) => {
+    const wrapper = document.createElement("label");
+    wrapper.className = "ae-field";
+    const label = document.createElement("span");
+    label.textContent = field.label;
+    wrapper.appendChild(label);
+
+    let input;
+    if (field.kind === "textarea") {
+      input = document.createElement("textarea");
+      input.value = props[field.key] ?? "";
+    } else if (field.kind === "select") {
+      input = document.createElement("select");
+      (field.options || []).forEach((opt) => {
+        const o = document.createElement("option");
+        o.value = opt; o.textContent = opt;
+        if (String(props[field.key]) === opt) o.selected = true;
+        input.appendChild(o);
+      });
+    } else {
+      input = document.createElement("input");
+      input.type = field.kind === "url" ? "url" : field.kind === "color" ? "color" : field.kind === "number" ? "number" : "text";
+      input.value = props[field.key] ?? "";
+    }
+    input.addEventListener("input", () => {
+      updateSelectedProps({ ...props, [field.key]: field.kind === "number" ? Number(input.value) : input.value });
+    });
+    wrapper.appendChild(input);
+    container.appendChild(wrapper);
+  });
+}
+
+function renderApp() {
+  const app = document.getElementById("app");
+  app.className = "ae-shell";
+  app.innerHTML = "";
+
+  const paletteEl = document.createElement("div");
+  paletteEl.className = "ae-palette";
+  paletteEl.innerHTML = "<h3>Elementos</h3>";
+  palette.forEach((type) => {
+    const def = elementRegistry[type];
+    const item = document.createElement("div");
+    item.className = "ae-palette-item";
+    item.textContent = `${def.icon} ${def.displayName}`;
+    item.draggable = true;
+    item.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", type);
+    });
+    paletteEl.appendChild(item);
+  });
+
+  const canvasWrap = document.createElement("div");
+  canvasWrap.className = "ae-canvas-wrap";
+  const canvas = document.createElement("div");
+  canvas.className = "ae-canvas";
+
+  canvas.addEventListener("dragover", (e) => { e.preventDefault(); canvas.classList.add("ae-drop-active"); });
+  canvas.addEventListener("dragleave", () => canvas.classList.remove("ae-drop-active"));
+  canvas.addEventListener("drop", (e) => {
+    e.preventDefault();
+    canvas.classList.remove("ae-drop-active");
+    const type = e.dataTransfer.getData("text/plain");
+    if (!elementRegistry[type]) return;
+
+    const children = [...canvas.children];
+    let dropIndex = children.length;
+    for (let i = 0; i < children.length; i++) {
+      const rect = children[i].getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { dropIndex = i; break; }
+    }
+    insertAt(type, dropIndex);
+  });
+
+  page.root.forEach((node) => {
+    const block = document.createElement("div");
+    block.className = "ae-block" + (selectedId === node.id ? " ae-selected" : "");
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "ae-block-toolbar";
+    toolbar.innerHTML = `<span>${elementRegistry[node.type].icon} ${elementRegistry[node.type].displayName}</span>`;
+    const del = document.createElement("button");
+    del.textContent = "✕";
+    del.onclick = (e) => { e.stopPropagation(); removeNode(node.id); };
+    toolbar.appendChild(del);
+
+    const content = document.createElement("div");
+    content.innerHTML = renderNode(node);
+
+    block.appendChild(toolbar);
+    block.appendChild(content);
+    block.addEventListener("click", () => { selectedId = node.id; renderApp(); });
+    canvas.appendChild(block);
+  });
+
+  canvasWrap.appendChild(canvas);
+
+  const propPanel = document.createElement("div");
+  propPanel.className = "ae-property-panel";
+  renderPropertyPanel(propPanel);
+
+  app.appendChild(paletteEl);
+  app.appendChild(canvasWrap);
+  app.appendChild(propPanel);
+}
+
+document.getElementById("btn-export").addEventListener("click", () => {
+  const json = JSON.stringify(page, null, 2);
+  navigator.clipboard?.writeText(json);
+  alert("JSON de la página copiado al portapapeles (y visible en la consola).");
+  console.log(json);
+});
+
+document.getElementById("btn-save").addEventListener("click", () => {
+  localStorage.setItem("portaless.atomic-elements.page." + page.slug, JSON.stringify(page));
+  alert("Página guardada en localStorage como referencia de este MVP.");
+});
+
+renderApp();
+</script>
+</body>
+</html>

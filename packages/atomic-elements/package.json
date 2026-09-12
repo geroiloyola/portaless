@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/atomic-elements",
+  "version": "0.0.4",
+  "description": "Editor visual de paginas de Portaless (\"Atomic Elements\"): arrastrar y soltar sobre el mismo catalogo atomico usado por el dashboard, sin el peso ni la profundidad de DOM de Elementor.",
+  "type": "module",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "dependencies": {}
+}
