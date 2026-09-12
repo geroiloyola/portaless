@@ -1,0 +1,14 @@
+---
+export interface Props {
+  title: string;
+  thumbnail?: string | null;
+  price?: string;
+  handle: string;
+}
+const { title, thumbnail, price, handle } = Astro.props;
+---
+<a class="card product-card" href={`./${handle}`}>
+  {thumbnail && <img src={thumbnail} alt={title} loading="lazy" />}
+  <h3>{title}</h3>
+  {price && <p class="price">{price}</p>}
+</a>

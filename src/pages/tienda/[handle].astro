@@ -1,0 +1,30 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { isCommerceEnabled, fetchProducts, fetchProductByHandle, formatPrice } from "../../commerce/medusa-client";
+
+export async function getStaticPaths() {
+  const enabled = (await import("../../commerce/medusa-client")).isCommerceEnabled;
+  if (!(await enabled())) return [];
+  const products = await fetchProducts();
+  return products.map((p) => ({ params: { handle: p.handle } }));
+}
+
+const { handle } = Astro.params;
+const enabled = await isCommerceEnabled();
+const product = enabled ? await fetchProductByHandle(handle as string) : null;
+---
+<BaseLayout title={product ? `${product.title} — Tienda` : "Producto no encontrado"}>
+  {!product && <p class="empty-state">Producto no encontrado o comercio no habilitado.</p>}
+  {product && (
+    <article>
+      {product.thumbnail && <img src={product.thumbnail} alt={product.title} style="max-width: 320px; border-radius: 12px;" />}
+      <h1>{product.title}</h1>
+      <p class="price">{formatPrice(product)}</p>
+      {product.description && <p>{product.description}</p>}
+      <p class="badge">
+        Para comprar, este botón debe enlazar al checkout de tu tienda Medusa/Mercur
+        (no incluido en Portaless por diseño — ver docs/COMMERCE_SETUP.md).
+      </p>
+    </article>
+  )}
+</BaseLayout>

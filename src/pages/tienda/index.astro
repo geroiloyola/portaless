@@ -1,0 +1,52 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import { isCommerceEnabled, fetchProducts, formatPrice } from "../../commerce/medusa-client";
+
+// Si el comercio no está habilitado, esta página redirige informativamente
+// en vez de fallar el build. Así el módulo es 100% opcional.
+const enabled = await isCommerceEnabled();
+let products: Awaited<ReturnType<typeof fetchProducts>> = [];
+let errorMsg: string | null = null;
+
+if (enabled) {
+  try {
+    products = await fetchProducts();
+  } catch (err) {
+    errorMsg = err instanceof Error ? err.message : "Error desconocido conectando a la tienda.";
+  }
+}
+---
+<BaseLayout title="Tienda — Portaless">
+  <h1>Tienda</h1>
+
+  {!enabled && (
+    <p class="empty-state">
+      El módulo de comercio no está activado. Configura
+      <code>ENABLE_COMMERCE=true</code> y <code>src/commerce/config.ts</code>
+      apuntando a tu instancia de Medusa/Mercur para habilitar esta página.
+      Ver <code>docs/COMMERCE_SETUP.md</code>.
+    </p>
+  )}
+
+  {enabled && errorMsg && <p class="empty-state">{errorMsg}</p>}
+
+  {enabled && !errorMsg && products.length === 0 && (
+    <p class="empty-state">Tu tienda no tiene productos publicados todavía.</p>
+  )}
+
+  {enabled && !errorMsg && products.length > 0 && (
+    <div class="product-grid">
+      {products.map((product) => (
+        <ProductCard
+          title={product.title}
+          thumbnail={product.thumbnail}
+          price={formatPrice(product)}
+          handle={product.handle}
+        />
+      ))}
+    </div>
+  )}
+
+  <p class="badge">Catálogo servido en vivo desde tu instancia de Medusa/Mercur. Carrito y checkout se manejan en tu tienda, no en Portaless.</p>
+</BaseLayout>

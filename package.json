@@ -1,0 +1,16 @@
+{
+  "name": "portaless",
+  "version": "0.1.0",
+  "description": "Portaless: CMS ligero open source basado en Astro, sin hosting pagado, con módulo de comercio opcional compatible con Medusa/Mercur.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.15.0"
+  }
+}

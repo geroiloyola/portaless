@@ -1,0 +1,7 @@
+# Configuración opcional para desplegar en Cloudflare Pages vía Wrangler CLI.
+# No es necesaria si conectas el repositorio directamente desde el dashboard
+# de Cloudflare Pages (método recomendado, ver docs/DEPLOY_CLOUDFLARE_PAGES.md).
+
+name = "portaless"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-01-01"

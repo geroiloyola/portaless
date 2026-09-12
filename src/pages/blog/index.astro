@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const posts = (await getCollection("posts"))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+---
+<BaseLayout title="Blog — Portaless">
+  <h1>Blog</h1>
+  {posts.length === 0 && <p class="empty-state">Todavía no hay publicaciones.</p>}
+  {posts.map((post) => (
+    <div class="card">
+      <h3><a href={`./${post.slug}/`}>{post.data.title}</a></h3>
+      <p class="badge">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
+      {post.data.description && <p>{post.data.description}</p>}
+    </div>
+  ))}
+</BaseLayout>

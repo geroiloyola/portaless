@@ -1,0 +1,10 @@
+---
+const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
+---
+<header class="site-header">
+  <nav>
+    <a class="brand" href={import.meta.env.BASE_URL}>Portaless</a>
+    <a href={`${import.meta.env.BASE_URL}blog/`}>Blog</a>
+    {commerceEnabled && <a href={`${import.meta.env.BASE_URL}tienda/`}>Tienda</a>}
+  </nav>
+</header>
