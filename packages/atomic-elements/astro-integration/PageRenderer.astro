@@ -1,36 +1,18 @@
 ---
-// Componente Astro que renderiza un PageLayout (el mismo JSON que produce
-// el editor visual de Atomic Elements) a HTML estatico real, en build time.
-// No hay paso de "traduccion" ni de re-implementacion: usa exactamente
-// renderPage() del mismo motor que usa el editor en el navegador.
-
+// ACTUALIZADO v0.0.6: renderPage() ahora es async.
 import { renderPage } from "../src/render";
 import { validatePageLayout } from "../src/persistence/page-schema";
 import type { PageLayout } from "../src/types";
 
-export interface Props {
-  layout: PageLayout;
-}
-
+export interface Props { layout: PageLayout; }
 const { layout } = Astro.props;
 const validation = validatePageLayout(layout);
-
 if (!validation.valid) {
-  throw new Error(
-    `Página "${layout.slug}" inválida, build detenido: ${validation.errors.join("; ")}`
-  );
+  throw new Error(`Pagina "${layout.slug}" invalida, build detenido: ${validation.errors.join("; ")}`);
 }
-
-const html = renderPage(layout);
+const html = await renderPage(layout);
 ---
 <article class="ae-page" set:html={html} />
-
 <style>
-  .ae-page {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
+.ae-page { display: flex; flex-direction: column; gap: 20px; max-width: 900px; margin: 0 auto; }
 </style>

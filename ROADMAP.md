@@ -1,60 +1,53 @@
 # Roadmap de Portaless
 
-Este documento es la fuente de verdad de qué está resuelto y qué falta,
-priorizado para que el proyecto sea **funcional en un ciclo de 5 días**
-(no "completo" — funcional: usable de forma segura para el caso de uso
-principal, sin huecos obvios). Se actualiza cada vez que se cierra un PR
-relevante. Ver `CHANGELOG.md` para el detalle histórico versión por versión.
-
 ## Leyenda
-
-- [x] Resuelto
+- [x] Resuelto y mergeado
+- [~] Implementado, pendiente de merge
 - [ ] Pendiente
 
----
+## Alta prioridad
+- [x] Proteger main + PR #1 y #2
+- [x] Autenticacion basica (PR #4, mergeado)
+- [~] Persistencia real Permisos + Trust Layer (D1/SQLite) - v0.0.6
+- [~] ProductGrid conectado a Medusa/Mercur - v0.0.6
+- [~] Adaptador isolated-vm ejecutando codigo real - v0.0.6
 
-## 🔴 Alta prioridad (bloquea que el proyecto sea "funcional")
+## Prioridad media
+- [ ] SEO/GEO nativo (schema JSON-LD + sitemap.xml)
+- [ ] Verificacion criptografica real Web Bot Auth (RFC 9421)
+- [ ] Undo/redo + anidamiento visual en columnas
+- [ ] Migrar src/commerce/ a plugin sandboxeado real
+- [ ] Aplicar canWrite(role) en todo el dashboard
+- [ ] Puentes de capacidades restantes en isolated-vm (9 de 12)
+- [ ] Integracion real Cloudflare/Deno Deploy/Fastly
 
-- [x] Proteger rama `main` + mergear PR #1
-- [ ] Sistema básico de roles y autenticación (login de admin, usuario/contraseña, sin OAuth todavía)
-- [ ] Persistencia real del Centro de Permisos y del ledger del Trust Layer (SQLite o archivo JSON versionado)
-- [ ] `ProductGrid` de Atomic Elements conectado de verdad a Medusa/Mercur
-- [ ] Un adaptador de sandboxing ejecutando código real (recomendado: `isolated-vm` self-hosted, sin dependencia de credenciales de terceros)
+## Baja prioridad
+- [ ] Cobro real Pay per Crawl
+- [ ] MCP nativo
+- [ ] Identidad AT Protocol
+- [ ] Protocol APW resolver real
+- [ ] Agente raiz de lenguaje natural
+- [ ] Recuperacion contrasena, 2FA, OAuth/SSO
+- [ ] Automatizar admin inicial en D1
+- [ ] Comando unico schema.sql
 
-## 🟡 Prioridad media (mejora sustancial, parcialmente alcanzable)
+## Vision largo plazo
+- [ ] Lenguaje de programacion de intencion humana
 
-- [ ] SEO/GEO nativo básico (schema JSON-LD automático + `sitemap.xml`)
-- [ ] Verificación criptográfica real de Web Bot Auth (RFC 9421) — hoy solo resuelve el directorio de claves, no valida la firma
-- [ ] Undo/redo + anidamiento visual en columnas dentro de Atomic Elements
-- [ ] Migrar `src/commerce/` a un plugin sandboxeado real (hoy corre directo en el build de Astro)
+## Pull Requests
+| PR | Rama | Estado | Contenido |
+|---|---|---|---|
+| #1 | chore/github-workflows | Mergeado | gitignore, workflows |
+| #2 | docs/roadmap | Mergeado | ROADMAP inicial |
+| #3 | agentic | Mergeado | AGENT.md |
+| #4 | agentic | Mergeado | auth + persistencia |
+| #5 | agentic | Abierto | v0.0.6 |
 
-## ⚪ Baja prioridad / fuera de alcance de corto plazo
-
-- [ ] Cobro real vía Pay per Crawl (integración con la API de AI Crawl Control de Cloudflare)
-- [ ] MCP nativo (`packages/mcp-server/` sigue siendo un stub vacío)
-- [ ] Identidad/comunidad AT Protocol (`packages/identity-atproto/` sigue siendo un stub vacío)
-- [ ] Protocol APW resolver real (`packages/apw-resolver/` sigue siendo un stub vacío; el protocolo solo existe documentado en `docs/protocol-apw/apw-spec.md`)
-- [ ] Agente raíz de lenguaje natural → sitio (depende de que Atomic Elements madure más como esquema de salida confiable)
-
-## Visión de largo plazo (sin versión asignada, no bloquea nada del roadmap cercano)
-
-- [ ] Lenguaje de programación de intención humana
-
----
-
-## Plan de 5 días (alta prioridad)
-
-| Día | Objetivo |
-|---|---|
-| 1 | Mergear PR #1, activar protección de `main`, diseñar el esquema mínimo de autenticación |
-| 2 | Implementar login básico + persistencia real (SQLite) para permisos y ledger |
-| 3 | Conectar `ProductGrid` a una instancia real de Medusa/Mercur |
-| 4 | Activar ejecución real del adaptador `isolated-vm` con al menos un plugin de prueba |
-| 5 | Colchón para bugs; si alcanza el tiempo, `sitemap.xml` + schema JSON-LD básico |
-
-## Cómo contribuir a este roadmap
-
-Antes de abrir un PR de una nueva feature, verifica que no esté ya en
-"Baja prioridad" por una razón documentada (usualmente dependencia de
-otro componente que todavía no existe). Si tu PR resuelve un ítem de este
-roadmap, marca el checkbox correspondiente en el mismo PR.
+## Plan 5 dias
+| Dia | Objetivo | Estado |
+|---|---|---|
+| 1 | Proteger main, disenar auth | Hecho |
+| 2 | Login + persistencia auth | Hecho |
+| 3 | ProductGrid a Medusa | Hecho (PR #5) |
+| 4 | isolated-vm real | Hecho (PR #5) |
+| 5 | Bugs, sitemap, schema | Pendiente |

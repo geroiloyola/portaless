@@ -1,25 +1,21 @@
-// Bootstrap del editor visual completo: paleta de elementos + lienzo con
-// drag & drop + panel de propiedades + guardado. Este archivo monta la
-// aplicacion dentro de un contenedor dado -- no asume ningun framework de
-// UI, para poder incrustarse tanto en una ruta admin de Astro como en un
-// panel SPA independiente.
-
+// Bootstrap del editor visual. ACTUALIZADO v0.0.6: preview siempre sincrono (renderHTML),
+// nunca renderHTMLAsync -- el editor no debe hacer fetch de red al catalogo de Medusa.
 import type { ElementNode, PageLayout } from "../types";
 import { elementRegistry, elementPalette } from "../elements/registry";
-import { renderNode } from "../render";
 import { makeDraggable, makeDropZone } from "./drag-drop";
 import { renderPropertyPanel } from "./property-panel";
 import type { PageStore } from "../persistence/page-store";
 
-function uid(): string {
-  return Math.random().toString(36).slice(2, 9);
+function uid(): string { return Math.random().toString(36).slice(2, 9); }
+
+function renderNodePreview(node: ElementNode): string {
+  const definition = elementRegistry[node.type];
+  if (!definition) return `<!-- Elemento desconocido: ${node.type} -->`;
+  const props = { ...definition.defaultProps, ...node.props };
+  return definition.renderHTML(props);
 }
 
-export interface EditorAppOptions {
-  container: HTMLElement;
-  store: PageStore;
-  initialPage: PageLayout;
-}
+export interface EditorAppOptions { container: HTMLElement; store: PageStore; initialPage: PageLayout; }
 
 export class AtomicElementsEditor {
   private page: PageLayout;
@@ -37,22 +33,14 @@ export class AtomicElementsEditor {
   private findNode(id: string, nodes: ElementNode[] = this.page.root): ElementNode | null {
     for (const node of nodes) {
       if (node.id === id) return node;
-      if (node.children) {
-        const found = this.findNode(id, node.children);
-        if (found) return found;
-      }
+      if (node.children) { const found = this.findNode(id, node.children); if (found) return found; }
     }
     return null;
   }
 
   private insertAt(type: keyof typeof elementRegistry, index: number): void {
     const definition = elementRegistry[type];
-    const newNode: ElementNode = {
-      id: uid(),
-      type: type as ElementNode["type"],
-      props: { ...definition.defaultProps },
-      children: type === "Columns" ? [] : undefined,
-    };
+    const newNode: ElementNode = { id: uid(), type: type as ElementNode["type"], props: { ...definition.defaultProps }, children: type === "Columns" ? [] : undefined };
     this.page.root.splice(index, 0, newNode);
     this.selectedId = newNode.id;
     this.render();
@@ -71,19 +59,13 @@ export class AtomicElementsEditor {
     this.render();
   }
 
-  async save(): Promise<void> {
-    await this.store.save(this.page);
-  }
-
-  exportJSON(): string {
-    return JSON.stringify(this.page, null, 2);
-  }
+  async save(): Promise<void> { await this.store.save(this.page); }
+  exportJSON(): string { return JSON.stringify(this.page, null, 2); }
 
   private render(): void {
     this.root.innerHTML = "";
     this.root.className = "ae-shell";
 
-    // --- Paleta ---
     const palette = document.createElement("div");
     palette.className = "ae-palette";
     palette.innerHTML = `<h3>Elementos</h3>`;
@@ -96,7 +78,6 @@ export class AtomicElementsEditor {
       palette.appendChild(item);
     });
 
-    // --- Lienzo ---
     const canvasWrap = document.createElement("div");
     canvasWrap.className = "ae-canvas-wrap";
     const canvas = document.createElement("div");
@@ -111,13 +92,13 @@ export class AtomicElementsEditor {
     this.page.root.forEach((node) => {
       const block = document.createElement("div");
       block.className = "ae-block" + (this.selectedId === node.id ? " ae-selected" : "");
-      block.innerHTML = renderNode(node);
+      block.innerHTML = renderNodePreview(node);
 
       const toolbar = document.createElement("div");
       toolbar.className = "ae-block-toolbar";
       toolbar.innerHTML = `<span>${elementRegistry[node.type].icon} ${elementRegistry[node.type].displayName}</span>`;
       const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "✕";
+      deleteBtn.textContent = "\u2715";
       deleteBtn.onclick = (e) => { e.stopPropagation(); this.removeNode(node.id); };
       toolbar.appendChild(deleteBtn);
 
@@ -128,7 +109,6 @@ export class AtomicElementsEditor {
 
     canvasWrap.appendChild(canvas);
 
-    // --- Panel de propiedades ---
     const selectedNode = this.selectedId ? this.findNode(this.selectedId) : null;
     const propertyPanel = renderPropertyPanel(selectedNode, (props) => this.updateSelectedProps(props));
 
