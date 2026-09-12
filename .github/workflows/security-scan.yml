@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: npm audit
+        run: npm audit --audit-level=high || true
+      - name: Verificar version de isolated-vm (GHSA-864f-rcv7-6rh4)
+        run: |
+          echo "Verificando que isolated-vm, si esta instalado, no sea <=7.0.0..."
+          node -e "
+            try {
+              const pkg = require('./node_modules/isolated-vm/package.json');
+              const [major, minor] = pkg.version.split('.').map(Number);
+              const vulnerable = (major === 6 && minor < 2) || (major === 7 && minor < 1) || major < 6;
+              if (vulnerable) {
+                console.error('isolated-vm@' + pkg.version + ' es VULNERABLE a GHSA-864f-rcv7-6rh4. Actualiza a 6.2.0 o 7.0.1+.');
+                process.exit(1);
+              }
+              console.log('isolated-vm@' + pkg.version + ' OK.');
+            } catch (e) {
+              console.log('isolated-vm no instalado, omitiendo verificacion.');
+            }
+          "
