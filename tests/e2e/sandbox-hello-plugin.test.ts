@@ -6,7 +6,7 @@
 // Se ejecuta en CI via .github/workflows/sandbox-e2e.yml (Vitest).
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
@@ -14,10 +14,23 @@ import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapter
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_DIR = join(__dirname, "..", "..", "packages", "plugin-sandbox", "examples", "hello-plugin");
 
+// isolated-vm puede terminar instalado en node_modules/ local al workspace
+// (packages/plugin-sandbox/node_modules) o hoisteado a la raiz del monorepo
+// (node_modules/), segun como resuelva npm el arbol de dependencias con los
+// workspaces declarados en el package.json raiz. Probamos ambas rutas antes
+// de asumir que no esta instalado.
 function loadIsolatedVmVersion(): string {
-  const pkgPath = join(__dirname, "..", "..", "packages", "plugin-sandbox", "node_modules", "isolated-vm", "package.json");
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-  return pkg.version as string;
+  const candidatePaths = [
+    join(__dirname, "..", "..", "packages", "plugin-sandbox", "node_modules", "isolated-vm", "package.json"),
+    join(__dirname, "..", "..", "node_modules", "isolated-vm", "package.json"),
+  ];
+  for (const pkgPath of candidatePaths) {
+    if (existsSync(pkgPath)) {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      return pkg.version as string;
+    }
+  }
+  throw new Error("isolated-vm package.json not found in any known location");
 }
 
 describe("NodeIsolatedVmAdapter (hello-plugin E2E)", () => {
