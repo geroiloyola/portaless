@@ -1,24 +1,14 @@
 {
   "name": "commerce-plugin",
   "version": "0.1.0",
-  "entry": "src/index.ts",
+  "entry": "src/plugin-entry.js",
   "runtime": "javascript",
-  "note": "Manifiesto de REFERENCIA. La logica real hoy vive en src/commerce/ (raiz del proyecto Astro), no aqui. Este manifiesto sigue el formato de @portaless/plugin-sandbox como primer paso hacia migrar la logica real a un plugin sandboxeado en una version futura. Ver docs/architecture/commerce-plugin.md.",
+  "description": "Cliente de Medusa/Mercur ejecutado dentro del sandbox de Portaless, en vez de directamente en el proceso de build de Astro.",
   "requestedCapabilities": [
     {
-      "id": "content:read",
-      "reason": "Leer configuracion de paginas de tienda del sitio"
-    },
-    {
       "id": "network:fetch",
-      "allowedHosts": [
-        "tu-tienda-medusa.ejemplo.com"
-      ],
-      "reason": "Consultar catalogo via Storefront API de Medusa/Mercur"
-    },
-    {
-      "id": "commerce:read",
-      "reason": "Leer productos, precios y pedidos"
+      "allowedHosts": ["__CONFIGURED_MEDUSA_HOST__"],
+      "reason": "Consultar el catalogo de productos y precios de la tienda Medusa/Mercur configurada."
     }
   ]
 }
