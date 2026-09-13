@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install isolated-vm explicitly (native bindings for the sandbox)
+        run: npm install --no-save isolated-vm@^7.0.1 --prefix packages/plugin-sandbox
+
       - name: Run sandbox E2E tests
         run: npx vitest run tests/e2e/sandbox-hello-plugin.test.ts --reporter=verbose
 
