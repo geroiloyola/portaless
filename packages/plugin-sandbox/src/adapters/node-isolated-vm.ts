@@ -53,13 +53,23 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
 
       if (grantedSet.has("network:fetch")) {
         const allowedHosts = new Set(input.manifest.requestedCapabilities.find((c) => c.id === "network:fetch")?.allowedHosts ?? []);
-        await jail.set("__portalessFetch", async (urlStr: string, opts?: string) => {
-          const parsed = new URL(urlStr);
-          if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
-          const parsedOpts = opts ? JSON.parse(opts) : undefined;
-          const res = await fetch(urlStr, parsedOpts);
-          return await res.text();
-        });
+        // { result: { promise: true } } es obligatorio: esta funcion es async,
+        // y sin este flag isolated-vm intenta clonar el objeto Promise que
+        // retorna de inmediato (antes de resolver) en vez de esperar su
+        // resolucion y clonar el valor final. Sin esto falla con
+        // "TypeError: #<Promise> could not be cloned." (ver GHSA-864f-rcv7-6rh4
+        // y issues #234/#240/#430 del repo laverdet/isolated-vm).
+        await jail.set(
+          "__portalessFetch",
+          async (urlStr: string, opts?: string) => {
+            const parsed = new URL(urlStr);
+            if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
+            const parsedOpts = opts ? JSON.parse(opts) : undefined;
+            const res = await fetch(urlStr, parsedOpts);
+            return await res.text();
+          },
+          { result: { promise: true } }
+        );
       } else {
         await jail.set("__portalessFetch", () => { deniedAttempts.push("network:fetch"); throw new Error("Capacidad 'network:fetch' no concedida."); });
       }
