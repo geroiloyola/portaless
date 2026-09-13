@@ -163,15 +163,17 @@ resultado es una promesa, isolated-vm intenta clonar el valor de retorno con
 el algoritmo de "structured clone" de V8 -- que sabe clonar objetos planos,
 arrays, strings, etc., pero NO sabe clonar un objeto `Promise` nativo (no es
 serializable). El fix estandar de la comunidad es pasar la opcion
-`{ result: { promise: true } }` al registrar la funcion (o usar
-`applySyncPromise` en el sentido inverso), lo que le dice a isolated-vm que
-espere a que la promesa interna resuelva y clone el VALOR resuelto, no la
-promesa en si.
+`{ result: { promise: true } }` al registrar la funcion, lo que le dice a
+isolated-vm que espere a que la promesa interna resuelva y clone el VALOR
+resuelto, no la promesa en si.
 
-**Estado:** Diagnosticado, pendiente de aplicar el fix exacto en
-`packages/plugin-sandbox/src/adapters/node-isolated-vm.ts` (se necesita ver
-el archivo completo para no romper la logica de allowlist que ya funciona
-correctamente en los otros 2 tests).
+**Estado:** RESUELTO. Se agrego `{ result: { promise: true } }` como tercer
+argumento de
+`jail.set("__portalessFetch", async (...) => {...}, { result: { promise: true } })`
+en `packages/plugin-sandbox/src/adapters/node-isolated-vm.ts`. Ninguna otra
+linea del adaptador cambio (la logica de allowlist, denegacion de
+capacidades, verificacion de version segura y timeout quedaron intactas,
+confirmadas por los otros 2 tests que ya pasaban antes del fix).
 
 **Leccion:** Cualquier funcion expuesta a un isolate de `isolated-vm` que
 haga trabajo asincrono (fetch, disk I/O, timers) necesita declarar
