@@ -1,12 +1,8 @@
-// Adaptador self-hosted: ejecuta plugins en un V8 isolate via "isolated-vm".
-// ADVERTENCIA: GHSA-864f-rcv7-6rh4 (RCE) afecta <=7.0.0. Corregida en 6.2.0 y 7.0.1.
-// ACTUALIZADO v0.0.6: execute() ejecuta codigo real, inyectando solo puentes concedidos.
-
 import type { SandboxAdapter, SandboxExecutionInput, SandboxExecutionResult, CapabilityId } from "../types";
 
 const MIN_SAFE_VERSIONS = { "6.x": "6.2.0", "7.x": "7.0.1" };
 const DEFAULT_MEMORY_LIMIT_MB = 128;
-const DEFAULT_TIMEOUT_MS = 2000;
+const DEFAULT_TIMEOUT_MS = 5000;
 
 export interface NodeIsolatedVmAdapterConfig {
   memoryLimitMb?: number; timeoutMs?: number; installedVersion: string; networkAllowlistOverride?: string[];
@@ -57,10 +53,11 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
 
       if (grantedSet.has("network:fetch")) {
         const allowedHosts = new Set(input.manifest.requestedCapabilities.find((c) => c.id === "network:fetch")?.allowedHosts ?? []);
-        await jail.set("__portalessFetch", async (urlStr: string) => {
+        await jail.set("__portalessFetch", async (urlStr: string, opts?: string) => {
           const parsed = new URL(urlStr);
           if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
-          const res = await fetch(urlStr);
+          const parsedOpts = opts ? JSON.parse(opts) : undefined;
+          const res = await fetch(urlStr, parsedOpts);
           return await res.text();
         });
       } else {
@@ -79,15 +76,15 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
       const wrappedCode = `
         const payload = JSON.parse(__portalessPayload);
         const console = { log: __portalessLog };
-        const fetchAllowed = __portalessFetch;
-        (function(payload, console, fetchAllowed) {
+        const fetchAllowed = (url, opts) => __portalessFetch(url, opts ? JSON.stringify(opts) : undefined).then((t) => t);
+        (async function(payload, console, fetchAllowed) {
           ${input.code}
         })(payload, console, fetchAllowed);
       `;
 
       const script = await isolate.compileScript(wrappedCode);
       const timeout = this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-      const rawResult = await script.run(context, { timeout, copy: true });
+      const rawResult = await script.run(context, { timeout, copy: true, promise: true } as any);
 
       return { success: true, output: rawResult, deniedCapabilityAttempts: deniedAttempts, durationMs: Date.now() - start, provider: this.providerName };
     } catch (err) {

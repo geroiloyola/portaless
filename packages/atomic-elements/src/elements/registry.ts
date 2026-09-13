@@ -1,6 +1,3 @@
-// Catalogo fijo de elementos de pagina. ACTUALIZADO v0.0.6: ProductGrid
-// tiene renderHTMLAsync real conectado a Medusa/Mercur.
-
 import type { ElementDefinition, ElementType } from "../types";
 
 function esc(value: unknown): string {
@@ -78,7 +75,7 @@ const Columns: ElementDefinition<ColumnsProps> = {
     { key: "count", label: "Numero de columnas", kind: "select", options: ["2", "3"] },
     { key: "gap", label: "Espaciado", kind: "number" },
   ],
-  renderHTML: (p, children = "") => `<div style="display:grid;grid-template-columns:repeat(${p.count},1fr);gap:${p.gap}px;">${children}</div>`,
+  renderHTML: (p, children = "") => `<div class="ae-columns" style="display:grid;grid-template-columns:repeat(${p.count},1fr);gap:${p.gap}px;align-items:start;">${children}</div>`,
 };
 
 interface ProductGridProps { source: "medusa" | "manual"; columns: number; limit: number; }

@@ -1,0 +1,41 @@
+.ae-history-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
+.ae-history-toolbar button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #1b1e27;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 13px;
+}
+.ae-history-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ae-columns-editable {
+  min-height: 60px;
+}
+.ae-column-slot-editable {
+  border: 1px dashed #333;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ae-column-slot-editable.ae-dropzone-active {
+  border-color: #6ee7b7;
+  background: rgba(110, 231, 183, 0.06);
+}
+.ae-empty-slot {
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+}
