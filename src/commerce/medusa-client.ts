@@ -1,74 +1,34 @@
-// Cliente mínimo, sin dependencias externas, para leer el catálogo de
-// productos desde la Storefront API de Medusa/Mercur en tiempo de build.
-//
-// Filosofía: Portaless nunca guarda datos de comercio propios. Este
-// archivo solo hace fetch() contra la API pública de tu tienda y
-// renderiza lo que devuelve, igual que un plugin de WooCommerce delega
-// toda la lógica de negocio al core de WooCommerce/WordPress.
+import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, type CommerceConfig } from "../../packages/commerce-plugin/src/host-bridge";
+import type { Product } from "./types";
 
-import type { MedusaProductListResponse, MedusaProduct } from "./types";
+let cachedConfig: CommerceConfig | null | undefined;
 
-let cachedConfig: typeof import("./config").commerceConfig | null = null;
-
-async function loadConfig() {
-  if (cachedConfig) return cachedConfig;
+async function loadConfig(): Promise<CommerceConfig | null> {
+  if (cachedConfig !== undefined) return cachedConfig;
   try {
     const mod = await import("./config");
-    cachedConfig = mod.commerceConfig;
-    return cachedConfig;
+    cachedConfig = (mod.commerceConfig ?? mod.default ?? null) as CommerceConfig | null;
   } catch {
-    throw new Error(
-      "Falta src/commerce/config.ts. Copia config.example.ts a config.ts " +
-      "y completa tus credenciales de Medusa/Mercur para activar la tienda."
-    );
+    cachedConfig = null;
   }
+  return cachedConfig;
 }
 
 export async function isCommerceEnabled(): Promise<boolean> {
-  if (import.meta.env.ENABLE_COMMERCE !== "true") return false;
-  try {
-    await loadConfig();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function fetchProducts(): Promise<MedusaProduct[]> {
   const config = await loadConfig();
-
-  const url = new URL("/store/products", config.storeUrl);
-  url.searchParams.set("limit", String(config.pageSize));
-  if (config.regionId) url.searchParams.set("region_id", config.regionId);
-
-  const res = await fetch(url.toString(), {
-    headers: {
-      "x-publishable-api-key": config.publishableKey,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(
-      `No se pudo conectar con la tienda Medusa/Mercur (${res.status}). ` +
-      "Revisa storeUrl y publishableKey en src/commerce/config.ts."
-    );
-  }
-
-  const data = (await res.json()) as MedusaProductListResponse;
-  return data.products ?? [];
+  return sandboxedIsCommerceEnabled(config);
 }
 
-export async function fetchProductByHandle(handle: string): Promise<MedusaProduct | null> {
-  const products = await fetchProducts();
-  return products.find((p) => p.handle === handle) ?? null;
+export async function fetchProducts(): Promise<Product[]> {
+  const config = await loadConfig();
+  if (!config) return [];
+  return sandboxedFetchProducts(config) as Promise<Product[]>;
 }
 
-export function formatPrice(product: MedusaProduct): string {
-  const price = product.variants?.[0]?.calculated_price;
-  if (!price) return "Consultar precio";
-  const amount = price.calculated_amount / 100;
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: price.currency_code.toUpperCase(),
-  }).format(amount);
+export function formatPrice(product: Product, currency = "usd"): string {
+  const variant = (product as any).variants?.[0];
+  const priceEntry = variant?.prices?.find((p: any) => p.currency_code === currency.toLowerCase());
+  if (!priceEntry) return "Precio no disponible";
+  const amount = priceEntry.amount / 100;
+  return new Intl.NumberFormat("es", { style: "currency", currency: currency.toUpperCase() }).format(amount);
 }

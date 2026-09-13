@@ -1,74 +1,49 @@
 # Roadmap de Portaless
 
-Este documento es la fuente de verdad de qué está resuelto y qué falta,
-priorizado para que el proyecto sea **funcional en un ciclo de 5 días**
-(no "completo" — funcional: usable de forma segura para el caso de uso
-principal, sin huecos obvios). Se actualiza cada vez que se cierra un PR
-relevante. Ver `CHANGELOG.md` para el detalle histórico versión por versión.
-
 ## Leyenda
-
-- [x] Resuelto y mergeado en `main`
-- [~] Implementado, pendiente de mergear (ver PR referenciado)
+- [x] Resuelto y mergeado
+- [~] Implementado, pendiente de merge o de integracion manual final
 - [ ] Pendiente
 
----
+## Alta prioridad
+- [x] Proteger main + PR #1 y #2
+- [x] Autenticacion basica (PR #4, mergeado)
+- [~] Persistencia real Permisos + Trust Layer (D1/SQLite) - v0.0.6 (PR #5)
+- [~] ProductGrid conectado a Medusa/Mercur - v0.0.6 (PR #5)
+- [~] Adaptador isolated-vm ejecutando codigo real - v0.0.6 (PR #5)
 
-## 🔴 Alta prioridad (bloquea que el proyecto sea "funcional")
+## Prioridad media
+- [~] SEO/GEO nativo (JSON-LD automatico + sitemap.xml + robots.txt) -- falta integrar 2 imports en [slug].astro, ver docs/architecture/seo-geo.md
+- [~] Verificacion criptografica real de Web Bot Auth (RFC 9421, Ed25519)
+- [~] Undo/redo + anidamiento visual en columnas dentro de Atomic Elements
+- [~] Migrar src/commerce/ a un plugin sandboxeado real (NodeIsolatedVmAdapter)
+- [~] canWrite(role) aplicado a todo el dashboard (guard DOM-level, ver packages/dashboard/docs/ROLE_GUARD.md para integracion de 1 linea + 1 atributo pendiente)
+- [ ] Puentes de capacidades restantes en isolated-vm (9 de 12)
+- [ ] Integracion real Cloudflare Workers for Platforms / Deno Deploy / Fastly Compute
+- [ ] Cache del directorio de claves Web Bot Auth + verificacion de unicidad de nonce
+- [ ] Pool de isolates reutilizables para el commerce-plugin
+- [ ] Reordenamiento por arrastre dentro de un mismo slot de columnas
+- [ ] Validacion server-side explicita de canWrite(role) en cada endpoint de escritura
 
-- [x] Proteger rama `main` + mergear PR #1 y PR #2
-- [~] Sistema básico de roles y autenticación (login usuario/contraseña, roles admin/viewer, sin OAuth) — implementado en `packages/auth/` + `functions/admin/`, pendiente de mergear en **PR #4**
-- [ ] Persistencia real del Centro de Permisos y del ledger del Trust Layer (SQLite o archivo JSON versionado) — **nota:** la autenticación ya tiene persistencia real (D1/SQLite vía `store-factory.ts`), pero permisos y ledger del Trust Layer siguen en memoria
-- [ ] `ProductGrid` de Atomic Elements conectado de verdad a Medusa/Mercur
-- [ ] Un adaptador de sandboxing ejecutando código real (recomendado: `isolated-vm` self-hosted, sin dependencia de credenciales de terceros)
+## Baja prioridad
+- [ ] Cobro real Pay per Crawl
+- [ ] MCP nativo
+- [ ] Identidad AT Protocol
+- [ ] Protocol APW resolver real
+- [ ] Agente raiz de lenguaje natural
+- [ ] Recuperacion contrasena, 2FA, OAuth/SSO
+- [ ] Automatizar admin inicial en D1
+- [ ] Comando unico schema.sql
 
-## 🟡 Prioridad media (mejora sustancial, parcialmente alcanzable)
+## Vision largo plazo
+- [ ] Lenguaje de programacion de intencion humana
 
-- [ ] SEO/GEO nativo básico (schema JSON-LD automático + `sitemap.xml`)
-- [ ] Verificación criptográfica real de Web Bot Auth (RFC 9421) — hoy solo resuelve el directorio de claves, no valida la firma
-- [ ] Undo/redo + anidamiento visual en columnas dentro de Atomic Elements
-- [ ] Migrar `src/commerce/` a un plugin sandboxeado real (hoy corre directo en el build de Astro)
-- [ ] Aplicar `canWrite(role)` en todos los componentes de `packages/dashboard/` (hoy la utilidad existe pero no todos los componentes la consultan — un `viewer` puede llegar a ver controles que debería tener deshabilitados)
-
-## ⚪ Baja prioridad / fuera de alcance de corto plazo
-
-- [ ] Cobro real vía Pay per Crawl (integración con la API de AI Crawl Control de Cloudflare)
-- [ ] MCP nativo (`packages/mcp-server/` sigue siendo un stub vacío)
-- [ ] Identidad/comunidad AT Protocol (`packages/identity-atproto/` sigue siendo un stub vacío)
-- [ ] Protocol APW resolver real (`packages/apw-resolver/` sigue siendo un stub vacío; el protocolo solo existe documentado en `docs/protocol-apw/apw-spec.md`)
-- [ ] Agente raíz de lenguaje natural → sitio (depende de que Atomic Elements madure más como esquema de salida confiable)
-- [ ] Recuperación de contraseña, 2FA, OAuth/SSO para el sistema de autenticación (explícitamente fuera de alcance del MVP actual)
-- [ ] Automatizar la creación del admin inicial en Cloudflare D1 (hoy `create-admin.ts` genera el SQL, pero requiere ejecución manual con Wrangler)
-
-## Visión de largo plazo (sin versión asignada, no bloquea nada del roadmap cercano)
-
-- [ ] Lenguaje de programación de intención humana
-
----
-
-## Pull Requests relevantes
-
+## Pull Requests
 | PR | Rama | Estado | Contenido |
 |---|---|---|---|
-| #1 | `chore/github-workflows` | ✅ Mergeado | `.gitignore`, workflows de CI/security, templates de issues |
-| #2 | `docs/roadmap` | ✅ Mergeado | Este mismo `ROADMAP.md` (versión inicial) |
-| #3 | `agentic` | ✅ Mergeado | `AGENT.md` |
-| #4 | `agentic` | 🔶 Abierto, pendiente de revisión | Módulo `@portaless/auth` completo + persistencia real (D1/SQLite) + endpoint POST de login + script de admin inicial |
-
-## Plan de 5 días (alta prioridad)
-
-| Día | Objetivo | Estado |
-|---|---|---|
-| 1 | Mergear PR #1, activar protección de `main`, diseñar el esquema mínimo de autenticación | ✅ Hecho |
-| 2 | Implementar login básico + persistencia real (SQLite/D1) para autenticación | ✅ Hecho (PR #4, pendiente merge) |
-| 3 | Conectar `ProductGrid` a una instancia real de Medusa/Mercur | ⏳ Pendiente |
-| 4 | Activar ejecución real del adaptador `isolated-vm` con al menos un plugin de prueba | ⏳ Pendiente |
-| 5 | Colchón para bugs; si alcanza el tiempo, `sitemap.xml` + schema JSON-LD básico | ⏳ Pendiente |
-
-## Cómo contribuir a este roadmap
-
-Antes de abrir un PR de una nueva feature, verifica que no esté ya en
-"Baja prioridad" por una razón documentada (usualmente dependencia de
-otro componente que todavía no existe). Si tu PR resuelve un ítem de este
-roadmap, marca el checkbox correspondiente (`[x]` si ya está mergeado en
-`main`, `[~]` si está implementado pero pendiente de merge) en el mismo PR.
+| #1 | chore/github-workflows | Mergeado | gitignore, workflows |
+| #2 | docs/roadmap | Mergeado | ROADMAP inicial |
+| #3 | agentic | Mergeado | AGENT.md |
+| #4 | agentic | Mergeado | auth + persistencia |
+| #5 | agentic | Abierto (conflictos) | v0.0.6 |
+| #6 | agentic | Abierto | v0.0.7: SEO/GEO, RFC 9421 real, undo/redo+nesting, commerce sandboxeado, role-guard |

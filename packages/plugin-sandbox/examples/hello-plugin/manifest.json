@@ -1,0 +1,9 @@
+{
+  "name": "hello-plugin",
+  "version": "0.1.0",
+  "entry": "index.js",
+  "runtime": "javascript",
+  "requestedCapabilities": [
+    { "id": "network:fetch", "allowedHosts": ["api.github.com"], "reason": "Consultar el repo de Portaless como demo" }
+  ]
+}

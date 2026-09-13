@@ -1,79 +1,89 @@
-// Verificacion de HTTP Message Signatures (Web Bot Auth) sobre una Request
-// entrante. Implementacion minima de referencia: valida presencia y forma de
-// los headers, resuelve la clave del operador, y expone un resultado
-// estructurado. Para produccion real, sustituir la verificacion criptografica
-// interna por una libreria auditada de HTTP Message Signatures (RFC 9421).
+import {
+  parseSignatureInput,
+  parseSignatureHeader,
+  buildSignatureBase,
+  verifyEd25519Signature,
+  base64UrlToBytes,
+} from "./rfc9421";
 
-import { resolveAgentKeyDirectory, type AgentKeyRecord } from "./key-directory";
+export interface KeyRecord {
+  keyId: string;
+  operator: string;
+  publicKeyJwk?: { kty: string; crv?: string; x?: string; alg?: string };
+}
 
-export interface VerificationResult {
+export interface VerifyResult {
   verified: boolean;
-  reason: string;
-  keyRecord?: AgentKeyRecord;
-  operatorDomain?: string;
+  reason?: string;
+  keyRecord?: KeyRecord;
 }
 
-function parseSignatureAgentHeader(value: string | null): string | null {
-  if (!value) return null;
-  // El header "Signature-Agent" declara el dominio del operador, ej:
-  // Signature-Agent: "example-ai-operator.com"
-  return value.replace(/^"|"$/g, "").trim() || null;
+const DIRECTORY_PATH = "/.well-known/http-message-signatures-directory";
+const MAX_SIGNATURE_AGE_SECONDS = 300;
+
+interface DirectoryResponse {
+  keys: Array<{ kid: string; kty: string; crv?: string; x?: string; alg?: string }>;
 }
 
-/**
- * Verifica una peticion HTTP entrante segun Web Bot Auth.
- *
- * NOTA IMPORTANTE: la verificacion criptografica real de la firma (RFC 9421)
- * requiere reconstruir la base de firma exacta (metodo, path, headers
- * cubiertos) y validarla contra la clave publica con la libreria adecuada
- * para el algoritmo declarado. Este archivo deja ese paso marcado
- * explicitamente como TODO para no dar una falsa sensacion de seguridad
- * verificada con una implementacion de placeholder.
- */
-export async function verifyWebBotAuthRequest(
-  request: Request
-): Promise<VerificationResult> {
-  const signatureInput = request.headers.get("Signature-Input");
-  const signature = request.headers.get("Signature");
-  const signatureAgent = parseSignatureAgentHeader(
-    request.headers.get("Signature-Agent")
-  );
-
-  if (!signatureInput || !signature || !signatureAgent) {
-    return {
-      verified: false,
-      reason: "missing_signature_headers",
-    };
-  }
-
-  let keys: AgentKeyRecord[];
+async function fetchOperatorKeyDirectory(operatorOrigin: string): Promise<DirectoryResponse | null> {
   try {
-    keys = await resolveAgentKeyDirectory(signatureAgent);
-  } catch (err) {
-    return {
-      verified: false,
-      reason: `key_directory_unreachable: ${(err as Error).message}`,
-      operatorDomain: signatureAgent,
-    };
+    const res = await fetch(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
+      headers: { accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as DirectoryResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyResult> {
+  const signatureAgent = request.headers.get("Signature-Agent");
+  if (!signatureAgent) return { verified: false, reason: "missing_signature_agent_header" };
+
+  const signatureInputHeader = request.headers.get("Signature-Input");
+  const signatureHeader = request.headers.get("Signature");
+  if (!signatureInputHeader || !signatureHeader) {
+    return { verified: false, reason: "missing_signature_headers" };
   }
 
-  // TODO(seguridad): reconstruir la base de firma segun RFC 9421 y verificar
-  // criptograficamente contra la clave correspondiente en `keys`, usando el
-  // algoritmo declarado en cada AgentKeyRecord. Ver docs/TRUST_LAYER_SETUP.md.
-  const matchedKey = keys[0];
+  const parsed = parseSignatureInput(signatureInputHeader);
+  if (!parsed) return { verified: false, reason: "malformed_signature_input" };
+  if (parsed.algorithm !== "ed25519") return { verified: false, reason: `unsupported_algorithm:${parsed.algorithm}` };
 
-  if (!matchedKey) {
-    return {
-      verified: false,
-      reason: "no_matching_key",
-      operatorDomain: signatureAgent,
-    };
+  if (parsed.expires) {
+    const now = Math.floor(Date.now() / 1000);
+    if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
+  }
+  if (parsed.created) {
+    const now = Math.floor(Date.now() / 1000);
+    if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
   }
 
-  return {
-    verified: true,
-    reason: "signature_present_key_resolved_crypto_check_pending",
-    keyRecord: matchedKey,
-    operatorDomain: signatureAgent,
-  };
+  let operatorOrigin: string;
+  try {
+    operatorOrigin = new URL(signatureAgent).origin;
+  } catch {
+    return { verified: false, reason: "invalid_signature_agent_url" };
+  }
+
+  const directory = await fetchOperatorKeyDirectory(operatorOrigin);
+  if (!directory) return { verified: false, reason: "key_directory_unreachable" };
+
+  const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);
+  if (!keyEntry) return { verified: false, reason: "keyid_not_in_directory" };
+  if (keyEntry.kty !== "OKP" || keyEntry.crv !== "Ed25519" || !keyEntry.x) {
+    return { verified: false, reason: "unsupported_key_type_in_directory" };
+  }
+
+  const signatureBytes = parseSignatureHeader(signatureHeader, parsed.label);
+  if (!signatureBytes) return { verified: false, reason: "malformed_signature_header" };
+
+  const signatureBase = buildSignatureBase(request, parsed);
+  const publicKeyRaw = base64UrlToBytes(keyEntry.x);
+
+  const cryptoOk = await verifyEd25519Signature(signatureBase, signatureBytes, publicKeyRaw);
+  if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
+
+  return { verified: true, keyRecord: { keyId: parsed.keyId, operator: operatorOrigin, publicKeyJwk: keyEntry } };
 }
