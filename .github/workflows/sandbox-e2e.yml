@@ -1,56 +1,51 @@
-name: CI adicional (sandbox E2E + endpoints admin)
+name: Sandbox E2E Tests
 
 on:
   push:
     branches: [main, agentic]
-    paths:
-      - "packages/plugin-sandbox/**"
-      - "packages/commerce-plugin/**"
-      - "functions/admin/**"
-      - "tests/**"
-      - ".github/workflows/sandbox-e2e.yml"
   pull_request:
-    paths:
-      - "packages/plugin-sandbox/**"
-      - "packages/commerce-plugin/**"
-      - "functions/admin/**"
-      - "tests/**"
-      - ".github/workflows/sandbox-e2e.yml"
-  workflow_dispatch: {}
+    branches: [main]
 
 jobs:
   sandbox-e2e:
-    name: Sandbox E2E (isolated-vm)
+    name: Sandbox hello-plugin E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
+          # No 'cache: npm' here on purpose: this repo has no committed
+          # package-lock.json / yarn.lock yet, and setup-node@v4 fails
+          # hard ("Dependencies lock file is not found") when cache is
+          # requested but no lockfile exists. Once a lockfile is
+          # committed to the repo root, re-enable caching by adding:
+          #   cache: 'npm'
+          #   cache-dependency-path: package-lock.json
 
-      - name: Instalar isolated-vm en el workspace del sandbox
-        working-directory: packages/plugin-sandbox
-        run: npm install isolated-vm --no-save
+      - name: Install dependencies
+        run: npm install
 
-      - name: Ejecutar test E2E del sandbox
-        run: node --experimental-strip-types --test tests/e2e/sandbox-hello-plugin.test.ts
+      - name: Run sandbox E2E tests
+        run: npx vitest run tests/e2e/sandbox-hello-plugin.test.ts --reporter=verbose
 
   admin-role-check:
-    name: Validacion server-side de rol (endpoints admin)
+    name: Admin role-check unit test
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
-      - name: Ejecutar tests unitarios de endpoints admin
-        run: node --experimental-strip-types --test tests/unit/admin-pages-role-check.test.ts
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run admin role-check unit test
+        run: npx vitest run tests/unit/admin-pages-role-check.test.ts --reporter=verbose
