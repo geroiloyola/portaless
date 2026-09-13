@@ -1,4 +1,3 @@
-// Motor de renderizado compartido. ACTUALIZADO v0.0.6: async para soportar renderHTMLAsync.
 import type { ElementNode, PageLayout } from "./types";
 import { elementRegistry } from "./elements/registry";
 
@@ -6,10 +5,21 @@ export async function renderNode(node: ElementNode): Promise<string> {
   const definition = elementRegistry[node.type];
   if (!definition) return `<!-- Elemento desconocido: ${node.type} -->`;
   const props = { ...definition.defaultProps, ...node.props };
-  if (node.type === "Columns" && node.children?.length) {
-    const childrenHTML = (await Promise.all(node.children.map(renderNode))).join("\n");
-    return definition.renderHTMLAsync ? await definition.renderHTMLAsync(props, childrenHTML) : definition.renderHTML(props, childrenHTML);
+
+  if (node.type === "Columns") {
+    const slots = node.columnSlots ?? (node.children?.length ? [node.children] : []);
+    const slotsHTML = await Promise.all(
+      slots.map(async (slotNodes) => {
+        const rendered = await Promise.all(slotNodes.map(renderNode));
+        return `<div class="ae-column-slot">${rendered.join("\n")}</div>`;
+      })
+    );
+    const childrenHTML = slotsHTML.join("\n");
+    return definition.renderHTMLAsync
+      ? await definition.renderHTMLAsync(props, childrenHTML)
+      : definition.renderHTML(props, childrenHTML);
   }
+
   return definition.renderHTMLAsync ? await definition.renderHTMLAsync(props) : definition.renderHTML(props);
 }
 
