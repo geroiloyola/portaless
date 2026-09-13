@@ -1,0 +1,56 @@
+name: CI adicional (sandbox E2E + endpoints admin)
+
+on:
+  push:
+    branches: [main, agentic]
+    paths:
+      - "packages/plugin-sandbox/**"
+      - "packages/commerce-plugin/**"
+      - "functions/admin/**"
+      - "tests/**"
+      - ".github/workflows/sandbox-e2e.yml"
+  pull_request:
+    paths:
+      - "packages/plugin-sandbox/**"
+      - "packages/commerce-plugin/**"
+      - "functions/admin/**"
+      - "tests/**"
+      - ".github/workflows/sandbox-e2e.yml"
+  workflow_dispatch: {}
+
+jobs:
+  sandbox-e2e:
+    name: Sandbox E2E (isolated-vm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar isolated-vm en el workspace del sandbox
+        working-directory: packages/plugin-sandbox
+        run: npm install isolated-vm --no-save
+
+      - name: Ejecutar test E2E del sandbox
+        run: node --experimental-strip-types --test tests/e2e/sandbox-hello-plugin.test.ts
+
+  admin-role-check:
+    name: Validacion server-side de rol (endpoints admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Ejecutar tests unitarios de endpoints admin
+        run: node --experimental-strip-types --test tests/unit/admin-pages-role-check.test.ts
