@@ -1,0 +1,27 @@
+---
+import { truncateDescription } from "../lib/seo";
+
+export interface Props {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  imageUrl?: string;
+  noIndex?: boolean;
+}
+
+const { title, description, canonicalUrl, imageUrl, noIndex = false } = Astro.props;
+const shortDescription = truncateDescription(description);
+---
+<title>{title}</title>
+<meta name="description" content={shortDescription} />
+<link rel="canonical" href={canonicalUrl} />
+<meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow"} />
+<meta property="og:type" content="website" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={shortDescription} />
+<meta property="og:url" content={canonicalUrl} />
+{imageUrl && <meta property="og:image" content={imageUrl} />}
+<meta name="twitter:card" content={imageUrl ? "summary_large_image" : "summary"} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={shortDescription} />
+{imageUrl && <meta name="twitter:image" content={imageUrl} />}

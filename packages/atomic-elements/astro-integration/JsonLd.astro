@@ -1,0 +1,13 @@
+---
+import { buildJsonLd, type SiteInfo } from "../src/seo/json-ld";
+import type { PageLayout } from "../src/types";
+
+export interface Props {
+  layout: PageLayout;
+  site: SiteInfo;
+}
+
+const { layout, site } = Astro.props;
+const jsonLd = buildJsonLd(layout, site);
+---
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
