@@ -43,21 +43,6 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
 
     const isolate = new ivm.Isolate({ memoryLimit: this.config.memoryLimitMb ?? DEFAULT_MEMORY_LIMIT_MB });
 
-    // Trackea las promesas devueltas por funciones expuestas al isolate
-    // (p.ej. __portalessFetch) que el codigo del plugin pudo no haber
-    // esperado (fire-and-forget, como "promise.then(...)" sin await).
-    // Si el isolate se destruye (isolate.dispose()) mientras alguna de
-    // estas promesas todavia esta pendiente, isolated-vm no puede
-    // completar el structured-clone de su resultado y lanza
-    // "TypeError: #<Promise> could not be cloned." Por eso esperamos a
-    // que todas resuelvan (con Promise.allSettled, para no fallar por un
-    // rechazo esperado como un host no autorizado) antes del dispose().
-    const pendingBridgeCalls: Promise<unknown>[] = [];
-    function trackPending<T>(p: Promise<T>): Promise<T> {
-      pendingBridgeCalls.push(p.catch(() => undefined));
-      return p;
-    }
-
     try {
       const context = await isolate.createContext();
       const jail = context.global;
@@ -68,25 +53,26 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
 
       if (grantedSet.has("network:fetch")) {
         const allowedHosts = new Set(input.manifest.requestedCapabilities.find((c) => c.id === "network:fetch")?.allowedHosts ?? []);
-        // { result: { promise: true } } es obligatorio: esta funcion es async,
-        // y sin este flag isolated-vm intenta clonar el objeto Promise que
-        // retorna de inmediato (antes de resolver) en vez de esperar su
-        // resolucion y clonar el valor final. Ver GHSA-864f-rcv7-6rh4 y los
-        // issues #234/#240/#284/#430 del repo laverdet/isolated-vm.
-        await jail.set(
-          "__portalessFetch",
-          (urlStr: string, opts?: string) => {
-            const call = (async () => {
-              const parsed = new URL(urlStr);
-              if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
-              const parsedOpts = opts ? JSON.parse(opts) : undefined;
-              const res = await fetch(urlStr, parsedOpts);
-              return await res.text();
-            })();
-            return trackPending(call);
+        // La funcion se envuelve explicitamente en un ivm.Callback con
+        // { async: true }. Esto (NO pasar { result: { promise: true } }
+        // como tercer argumento de jail.set, que no es una opcion valida
+        // ahi) es lo que le indica a isolated-vm que debe esperar la
+        // promesa que retorna esta funcion antes de intentar transferir
+        // su resultado de vuelta al isolate. Ver README oficial de
+        // isolated-vm, seccion "Class: Callback" + issues #234/#240/#284
+        // del repo laverdet/isolated-vm sobre "#<Promise> could not be
+        // cloned" cuando se omite este flag.
+        const fetchCallback = new ivm.Callback(
+          async (urlStr: string, opts?: string) => {
+            const parsed = new URL(urlStr);
+            if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
+            const parsedOpts = opts ? JSON.parse(opts) : undefined;
+            const res = await fetch(urlStr, parsedOpts);
+            return await res.text();
           },
-          { result: { promise: true } }
+          { async: true }
         );
+        await jail.set("__portalessFetch", fetchCallback);
       } else {
         await jail.set("__portalessFetch", () => { deniedAttempts.push("network:fetch"); throw new Error("Capacidad 'network:fetch' no concedida."); });
       }
@@ -113,15 +99,8 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
       const timeout = this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
       const rawResult = await script.run(context, { timeout, copy: true, promise: true } as any);
 
-      // Esperar cualquier llamada "fire-and-forget" a __portalessFetch que
-      // el codigo del plugin haya disparado sin await, para no destruir el
-      // isolate mientras isolated-vm todavia necesita resolverla y
-      // clonar su resultado.
-      await Promise.allSettled(pendingBridgeCalls);
-
       return { success: true, output: rawResult, deniedCapabilityAttempts: deniedAttempts, durationMs: Date.now() - start, provider: this.providerName };
     } catch (err) {
-      await Promise.allSettled(pendingBridgeCalls);
       return { success: false, error: (err as Error).message, deniedCapabilityAttempts: deniedAttempts, durationMs: Date.now() - start, provider: this.providerName };
     } finally {
       isolate.dispose();
