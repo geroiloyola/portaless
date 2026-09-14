@@ -43,6 +43,17 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
 
     const isolate = new ivm.Isolate({ memoryLimit: this.config.memoryLimitMb ?? DEFAULT_MEMORY_LIMIT_MB });
 
+    // El codigo dentro del isolate puede invocar __portalessFetch sin
+    // hacerle await (fire-and-forget). Como esa funcion es un
+    // ivm.Callback({ async: true }), su rechazo (p.ej. host no
+    // autorizado) queda "vivo" del lado de Node aunque el codigo del
+    // plugin ya haya manejado ese rechazo dentro del isolate. Sin un
+    // .catch() de este lado, Vitest/Node lo reportan como Unhandled
+    // Rejection al final del proceso, incluso cuando el test en si
+    // paso correctamente. Se registra cada invocacion para poder
+    // silenciar ese ruido sin ocultar errores reales de la ejecucion.
+    const pendingFetchCalls: Promise<unknown>[] = [];
+
     try {
       const context = await isolate.createContext();
       const jail = context.global;
@@ -54,21 +65,21 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
       if (grantedSet.has("network:fetch")) {
         const allowedHosts = new Set(input.manifest.requestedCapabilities.find((c) => c.id === "network:fetch")?.allowedHosts ?? []);
         // La funcion se envuelve explicitamente en un ivm.Callback con
-        // { async: true }. Esto (NO pasar { result: { promise: true } }
-        // como tercer argumento de jail.set, que no es una opcion valida
-        // ahi) es lo que le indica a isolated-vm que debe esperar la
-        // promesa que retorna esta funcion antes de intentar transferir
-        // su resultado de vuelta al isolate. Ver README oficial de
-        // isolated-vm, seccion "Class: Callback" + issues #234/#240/#284
-        // del repo laverdet/isolated-vm sobre "#<Promise> could not be
-        // cloned" cuando se omite este flag.
+        // { async: true }. Esto es lo que le indica a isolated-vm que
+        // debe esperar la promesa que retorna esta funcion antes de
+        // intentar transferir su resultado de vuelta al isolate. Ver
+        // README oficial de isolated-vm, seccion "Class: Callback".
         const fetchCallback = new ivm.Callback(
-          async (urlStr: string, opts?: string) => {
-            const parsed = new URL(urlStr);
-            if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
-            const parsedOpts = opts ? JSON.parse(opts) : undefined;
-            const res = await fetch(urlStr, parsedOpts);
-            return await res.text();
+          (urlStr: string, opts?: string) => {
+            const call = (async () => {
+              const parsed = new URL(urlStr);
+              if (!allowedHosts.has(parsed.host)) { deniedAttempts.push("network:fetch"); throw new Error(`Host no autorizado: ${parsed.host}`); }
+              const parsedOpts = opts ? JSON.parse(opts) : undefined;
+              const res = await fetch(urlStr, parsedOpts);
+              return await res.text();
+            })();
+            pendingFetchCalls.push(call.catch(() => undefined));
+            return call;
           },
           { async: true }
         );
@@ -99,8 +110,14 @@ export class NodeIsolatedVmAdapter implements SandboxAdapter {
       const timeout = this.config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
       const rawResult = await script.run(context, { timeout, copy: true, promise: true } as any);
 
+      // Drena cualquier llamada a __portalessFetch que el plugin haya
+      // disparado sin await, para que su eventual rechazo no aparezca
+      // como Unhandled Rejection despues de que execute() ya retorno.
+      await Promise.allSettled(pendingFetchCalls);
+
       return { success: true, output: rawResult, deniedCapabilityAttempts: deniedAttempts, durationMs: Date.now() - start, provider: this.providerName };
     } catch (err) {
+      await Promise.allSettled(pendingFetchCalls);
       return { success: false, error: (err as Error).message, deniedCapabilityAttempts: deniedAttempts, durationMs: Date.now() - start, provider: this.providerName };
     } finally {
       isolate.dispose();
