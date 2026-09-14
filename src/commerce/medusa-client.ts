@@ -1,4 +1,4 @@
-import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, type CommerceConfig } from "../../packages/commerce-plugin/src/host-bridge";
+import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "../../packages/commerce-plugin/src/host-bridge";
 import type { Product } from "./types";
 
 let cachedConfig: CommerceConfig | null | undefined;
@@ -23,6 +23,13 @@ export async function fetchProducts(): Promise<Product[]> {
   const config = await loadConfig();
   if (!config) return [];
   return sandboxedFetchProducts(config) as Promise<Product[]>;
+}
+
+export async function fetchProductByHandle(handle: string): Promise<Product | null> {
+  const config = await loadConfig();
+  if (!config) return null;
+  const product = await sandboxedFetchProductByHandle(config, handle);
+  return (product ?? null) as Product | null;
 }
 
 export function formatPrice(product: Product, currency = "usd"): string {
