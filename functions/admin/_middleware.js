@@ -36,7 +36,12 @@ export async function onRequest(context) {
     return Response.redirect(new URL("/admin/login?error=1", url.origin), 302);
   }
 
-  context.data = { ...(context.data || {}), session };
+  // Expuesto como `user` (no solo `session`) porque los endpoints de
+  // escritura bajo /admin/* (ver functions/admin/pages/[slug].js) leen
+  // context.data.user.role para el guard de permisos server-side. Se
+  // mantiene tambien `session` como alias por compatibilidad con codigo
+  // existente que ya lo consuma.
+  context.data = { ...(context.data || {}), user: session, session };
 
   return next();
 }
