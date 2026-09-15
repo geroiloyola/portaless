@@ -1,0 +1,206 @@
+/* Estilos del Centro de Permisos -- pantalla estilo "Privacidad y
+ * Seguridad" de iOS/Android: agrupado por categoria, un switch
+ * individual por cada plugin/agente/theme que solicita esa capacidad.
+ * Reutiliza las variables de tema definidas en src/styles/global.css
+ * (--portaless-bg, --portaless-fg, --portaless-accent, etc.) para que
+ * el Centro de Permisos se vea coherente con el resto del dashboard. */
+
+.pc-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 720px;
+}
+
+.pc-category {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-category-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--portaless-muted);
+}
+
+.pc-capability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pc-capability {
+  border: 1px solid var(--portaless-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: #14161b;
+}
+
+.pc-capability-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pc-cap-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pc-cap-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--portaless-fg);
+}
+
+.pc-cap-desc {
+  font-size: 0.82rem;
+  color: var(--portaless-muted);
+  line-height: 1.45;
+}
+
+.pc-risk {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pc-subject-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--portaless-border);
+}
+
+.pc-subject-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--portaless-border);
+}
+
+.pc-subject-row:last-child {
+  border-bottom: none;
+}
+
+.pc-subject-label {
+  font-size: 0.88rem;
+  color: var(--portaless-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-subject-status {
+  flex: 1;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--portaless-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-subject-status.pc-status-error {
+  color: #ff8f8f;
+}
+
+.pc-empty {
+  font-size: 0.82rem;
+  color: var(--portaless-muted);
+  padding-top: 8px;
+  font-style: italic;
+}
+
+/* Switch estilo iOS: capsula con knob que se desliza. */
+.pc-switch {
+  flex-shrink: 0;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background: #3a3f47;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s ease;
+}
+
+.pc-switch:focus-visible {
+  outline: 2px solid var(--portaless-accent);
+  outline-offset: 2px;
+}
+
+.pc-switch.pc-on {
+  background: var(--portaless-accent);
+}
+
+.pc-switch:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.pc-switch .pc-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f2f2f2;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.pc-switch.pc-on .pc-knob {
+  transform: translateX(18px);
+}
+
+.pc-switch.pc-saving .pc-knob {
+  box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.35);
+}
+
+/* Cabecera y estados de carga/error de la pagina completa -- usados por
+ * src/pages/admin/permissions.astro. */
+.pc-page-header {
+  margin-bottom: 24px;
+}
+
+.pc-page-title {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+}
+
+.pc-page-subtitle {
+  margin: 0;
+  color: var(--portaless-muted);
+  font-size: 0.9rem;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.pc-loading,
+.pc-load-error {
+  padding: 24px 0;
+  color: var(--portaless-muted);
+  font-size: 0.9rem;
+}
+
+.pc-load-error {
+  color: #ff8f8f;
+}
