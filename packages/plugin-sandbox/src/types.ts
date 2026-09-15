@@ -76,6 +76,18 @@ export interface SandboxExecutionInput {
   code: string;             // Codigo fuente (o modulo compilado) del plugin.
   payload: unknown;         // Datos de entrada para esta invocacion puntual.
   hostBridge?: CapabilityHostBridge; // Handlers reales opcionales, ver arriba.
+  /**
+   * v0.0.9.1: URL de un endpoint HTTP interno de Portaless que expone las
+   * capacidades no-red (CapabilityHostBridge) para adaptadores que
+   * ejecutan el codigo del plugin FUERA de este proceso Node (Cloudflare
+   * Workers for Platforms, Deno Deploy) -- esos adaptadores no pueden
+   * invocar hostBridge in-process como hace NodeIsolatedVmAdapter, asi
+   * que necesitan un bridge sobre HTTP. Ignorado por adaptadores
+   * self-hosted (node-isolated-vm.ts) que ya reciben hostBridge
+   * directamente. Si se omite, esos adaptadores caen a
+   * process.env.PORTALESS_CAPABILITY_BRIDGE_URL.
+   */
+  bridgeUrl?: string;
 }
 
 export interface SandboxExecutionResult {
