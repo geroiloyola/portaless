@@ -1,13 +1,23 @@
-# Sandboxing Real de Plugins (v0.0.6, actualizado en v0.0.9)
+# Sandboxing Real de Plugins (v0.0.6, actualizado en v0.0.9 y v0.0.9.1)
 
 ## Multi-proveedor
 
 | Adaptador | Proveedor | Estado |
 |---|---|---|
-| CloudflareWorkersForPlatformsAdapter | Cloudflare | Esqueleto, TODOs detallados en el codigo (endpoints exactos, mapeo de capacidades) -- sin integracion real |
-| DenoDeployAdapter | Deno Deploy | Esqueleto, TODOs detallados en el codigo -- sin integracion real |
-| FastlyComputeAdapter | Fastly | Esqueleto, TODOs detallados en el codigo -- sin integracion real |
+| CloudflareWorkersForPlatformsAdapter | Cloudflare | v0.0.9.1: integracion real (sube/actualiza script via API REST, invoca via un Worker dispatcher externo) -- **NO verificada contra una cuenta real** (sin credenciales de prueba), cubierta solo por tests con `fetch` mockeado. Requiere ademas un Worker dispatcher desplegado aparte (infraestructura externa a este repo, ver comentario al inicio del archivo del adaptador). |
+| DenoDeployAdapter | Deno Deploy | v0.0.9.1: integracion real (crea deployment via API REST, invoca la URL resultante) -- **NO verificada contra una cuenta real** (sin credenciales de prueba), cubierta solo por tests con `fetch` mockeado. |
+| FastlyComputeAdapter | Fastly | Esqueleto, TODOs detallados en el codigo -- sin integracion real (requiere un plugin ya compilado a Wasm para poder probarse, no disponible; decision explicita de alcance). |
 | NodeIsolatedVmAdapter | Self-hosted | Ejecucion real implementada, con pool de isolates reutilizables (v0.0.9) y 10/12 capacidades con puente real (falta `content:read`/`content:write`, ver Pendiente abajo) |
+
+Para Cloudflare y Deno Deploy, las 9 capacidades no-red (storage, email,
+commerce, media, agent:identify, site:admin) se resuelven via un bridge
+HTTP: el codigo bootstrap subido al proveedor invoca
+`SandboxExecutionInput.bridgeUrl` (nuevo campo v0.0.9.1) con un token de
+corta duracion generado por invocacion. **Ese endpoint interno todavia no
+existe en el repo** -- sin `bridgeUrl` configurado (ni la variable de
+entorno `PORTALESS_CAPABILITY_BRIDGE_URL`), cualquier capacidad no-red
+concedida falla con un error explicito de "no hay bridge HTTP
+configurado", nunca con un exito silencioso ni un 403 enganoso.
 
 ## Como funciona
 
@@ -86,5 +96,5 @@ GHSA-864f-rcv7-6rh4 (RCE) afecta <=7.0.0. El adaptador rechaza versiones vulnera
 
 ## Pendiente
 
-- Cloudflare, Deno Deploy, Fastly sin integracion real -- TODOs detallados en cada adaptador (v0.0.9) con los endpoints de API exactos y el mapeo de capacidades necesario, pero sin la llamada real implementada.
+- ~~Cloudflare, Deno Deploy, Fastly sin integracion real~~ -- resuelto PARCIALMENTE en v0.0.9.1 para 2 de 3: Cloudflare Workers for Platforms y Deno Deploy ahora hacen la llamada real a sus APIs REST publicas (subida/creacion + invocacion), pero **sin verificacion contra una cuenta real** (sin credenciales de prueba disponibles), solo con tests de `fetch` mockeado. Fastly sigue sin cambios -- TODOs detallados, decision explicita de alcance (requiere un plugin ya compilado a Wasm, no disponible). Gaps conocidos que quedan para un proximo PR: (a) el endpoint HTTP interno que expone `CapabilityHostBridge` sobre HTTP (`bridgeUrl`) todavia no existe en el repo; (b) `CloudflareWorkersForPlatformsAdapter` depende de un Worker "dispatcher" desplegado aparte, que este codigo no crea; (c) `DenoDeployAdapter` crea una deployment nueva en cada `execute()` sin limpiar las anteriores; (d) ningun mapeo de `limits` (CPU/memoria) esta implementado para ninguno de los 2 proveedores por falta de soporte de API para eso.
 - ~~Solo 3 de 12 capacidades tienen puente~~ -- resuelto PARCIALMENTE en v0.0.9: `network:fetch` (ya existia) mas las 9 capacidades nuevas (`media:read`, `media:write`, `email:send`, `commerce:read`, `commerce:checkout`, `storage:read`, `storage:write`, `agent:identify`, `site:admin`) ya tienen puente real via `hostBridge` cuando estan concedidas. `content:read` y `content:write` siguen SIN puente real -- hoy solo existe el guard de denegacion (`__portalessReadContent`/`__portalessWriteContent` lanzan error si la capacidad no esta concedida), pero no hay ninguna funcion registrada para el caso en que SI esta concedida, asi que un plugin no puede invocar `content:read`/`content:write` en absoluto todavia, esten o no concedidas. Pendiente para un proximo PR: agregar esas 2 al mismo patron `CAPABILITY_BRIDGES` + `hostBridge` que ya cubre las otras 10.

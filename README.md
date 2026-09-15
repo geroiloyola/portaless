@@ -72,7 +72,7 @@ Este proyecto documenta explícitamente qué está implementado y qué es un esq
 | Motor de contenido, comercio (lectura), Atomic Elements, Dashboard | ✅ Funcional |
 | Autenticación (login + persistencia D1/SQLite) | ✅ Funcional (sin 2FA/OAuth) |
 | Centro de Permisos, Trust Layer (políticas) | 🟡 UI funcional, persistencia de permisos/ledger aún en memoria |
-| Sandboxing de plugins (4 adaptadores) | 🟡 `isolated-vm` (self-hosted) ejecuta código real con pool de isolates y 10/12 capacidades con puente real (faltan `content:read`/`content:write`); Cloudflare/Deno/Fastly siguen siendo solo contrato + TODOs detallados, sin llamada real a sus APIs |
+| Sandboxing de plugins (4 adaptadores) | 🟡 `isolated-vm` (self-hosted) ejecuta código real con pool de isolates y 10/12 capacidades con puente real (faltan `content:read`/`content:write`); Cloudflare Workers for Platforms y Deno Deploy ahora hacen la llamada real a sus APIs (sin verificar contra cuenta real, solo tests con `fetch` mockeado); Fastly sigue siendo solo contrato + TODOs detallados, sin llamada real a su API |
 | Verificación criptográfica Web Bot Auth | ✅ Valida firma Ed25519 (RFC 9421) con cache del directorio de claves y verificación de unicidad de nonce |
 | MCP nativo, Identidad AT Protocol, Protocol APW | ❌ Solo stubs / diseño documentado |
 
