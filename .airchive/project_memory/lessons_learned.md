@@ -203,3 +203,60 @@ el primer intento de `config.ts`).
 texto legible para un archivo que no se escribio en esta sesion, no generar
 un reemplazo basado en suposiciones. Pedir el contenido exacto al usuario
 antes de escribir cualquier fix que dependa de ese archivo.
+
+---
+
+## 7. Vias alternativas cuando `get_file_contents` no devuelve texto (sesion 2026-09-15)
+
+**Sintoma:** Igual que en la sesion anterior, `get_file_contents` sobre un
+archivo individual siguio devolviendo solo
+`"successfully downloaded text file (SHA: ...)"` sin el cuerpo, en TODAS las
+variantes probadas (con `ref` explicito, sin el, en `main`, en una rama
+nueva). Se aislo ademas que el bug **no es especifico de este repo**: la
+misma llamada contra `torvalds/linux` (repo publico, ajeno, sin relacion con
+la cuenta del usuario) devolvio exactamente el mismo resultado truncado. Esto
+descarta que sea un problema de permisos del token, de que el repo sea
+privado, o de cache del conector.
+
+**Via alternativa que SI funciono parcialmente:** `get_commit(sha)` sobre el
+hash de un commit especifico no devuelve el `patch`/diff textual (confirmado
+otra vez), pero SI devuelve la lista completa de archivos tocados con
+`status` (added/modified/removed) y conteo de lineas (`additions`,
+`deletions`, `changes`). Cuando el usuario aporto los links de commits desde
+la vista de GitHub (`docs/architecture/*.md` con su commit asociado), esto
+permitio:
+- Ubicar archivos que los listados de directorio por si solos no revelaban
+  facilmente (ej.: `JsonLd.astro` vive en
+  `packages/atomic-elements/astro-integration/JsonLd.astro`, no en
+  `src/components/` ni `src/lib/` donde se buscaria primero).
+- Confirmar tamanos exactos de archivos nuevos sin tener que leerlos.
+- Confirmar que un patron arquitectonico ya fue usado dos veces en el repo
+  (permissions y trust-layer/ledger, ambos con
+  `store-factory.ts` + `d1-*-store.ts` + `sqlite-*-store.ts` + `schema.sql`)
+  antes de asumir que hay que inventar una estructura nueva para PageStore.
+
+**Riesgo real que SI se materializo en esta sesion:** al asumir (sin haber
+leido el archivo) que `packages/atomic-elements/src/persistence/page-store.ts`
+no existia o era un stub vacio, se escribio una primera version de PageStore
+con una interfaz inventada (`getPage`/`savePage`/`listPages`/`deletePage`)
+que NO coincidia con la interfaz real ya existente en el repo desde v0.0.4
+(`load`/`save`/`list`, usada por `LocalStoragePageStore` en el editor
+cliente). Si esa version se hubiera commiteado tal cual, habria roto la
+compatibilidad con el editor y con `page-schema.ts`. Se detecto a tiempo
+porque se listo el directorio `persistence/` ANTES de escribir y se vio que
+`page-store.ts` ya pesaba 1486 bytes (no 0), lo que disparo pedir el
+contenido real antes de continuar.
+
+**Leccion (reforzada):** Nunca asumir que una carpeta de destino esta vacia
+o contiene solo un stub porque el pedido original la describe asi. Siempre
+listar el directorio de destino con `get_file_contents` (que si funciona
+para listados) ANTES de escribir un archivo nuevo ahi, para detectar si ya
+existe algo con una interfaz distinta a la asumida. Si existe y no se puede
+leer su contenido, pedirlo al usuario en vez de sobreescribir a ciegas.
+
+**Leccion sobre `get_commit` como atajo:** Si el usuario puede aportar hashes
+de commit o links de `github.com/.../commit/<sha>`, usar `get_commit` como
+paso de reconocimiento ANTES de pedir el contenido completo de un archivo.
+Reduce cuantos archivos hay que pedir manualmente, pero NO reemplaza pedir
+el contenido de archivos que el propio fix va a modificar o extender
+directamente -- para esos, siempre hace falta el texto real.

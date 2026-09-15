@@ -12,19 +12,38 @@
 // Requiere que la sesion ya haya sido validada por functions/admin/_middleware.js
 // (que corre antes, para toda la ruta /admin/*) y que ese middleware deje
 // disponible el usuario autenticado en context.data (patron estandar de
-// Cloudflare Pages Functions). Si tu _middleware.js actual no hace esto
-// todavia, hay que agregarle `context.data.user = user;` antes de
-// `return next();` -- lo dejo señalado en el PR para revision manual,
-// porque no pude leer el contenido exacto de ese archivo en esta sesion.
+// Cloudflare Pages Functions).
+//
+// v0.0.8: NOTA IMPORTANTE PARA REVISION MANUAL -- el contenido real de
+// functions/admin/_middleware.js no pudo leerse en ninguna de las sesiones
+// de trabajo (bug del conector get_file_contents, documentado en
+// .airchive/project_memory/lessons_learned.md, seccion 7). Este PR ASUME
+// que ese middleware ya expone `context.data.user` (igual que
+// functions/_middleware.js, el middleware global del Trust Layer, que usa
+// el mismo patron de context.data en Cloudflare Pages Functions). Verificar
+// manualmente antes de mergear: si _middleware.js de /admin/* NO asigna
+// `context.data.user = user;` antes de `return next();`, hay que agregarlo
+// ahi o este endpoint (y cualquiera que repita este patron) recibira
+// siempre 401 aunque la sesion sea valida.
+//
+// v0.0.8: se conecta el PageStore real via createPageStore(context.env),
+// que elige D1PageStore (Cloudflare Pages, env.PORTALESS_DB) o
+// SqlitePageStore (self-hosted) -- mismo patron que packages/permissions y
+// packages/trust-layer/src/ledger. Ambas implementaciones cumplen la
+// interfaz PageStore ya existente en
+// packages/atomic-elements/src/persistence/page-store.ts (load/save/list),
+// la misma que usa LocalStoragePageStore en el editor cliente. Antes, GET
+// devolvia siempre 501 "not_implemented" y PUT solo validaba sin persistir.
 
 import { validatePageLayout } from "../../../packages/atomic-elements/src/persistence/page-schema";
+import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
 
 function canWrite(role) {
   return role === "admin";
 }
 
 export async function onRequestPut(context) {
-  const { request, params, data } = context;
+  const { request, params, data, env } = context;
 
   const user = data?.user;
   if (!user) {
@@ -69,6 +88,9 @@ export async function onRequestPut(context) {
     );
   }
 
+  const pageStore = await createPageStore(env);
+  await pageStore.save(layout);
+
   return new Response(JSON.stringify({ ok: true, slug: layout.slug }), {
     status: 200,
     headers: { "content-type": "application/json" },
@@ -76,15 +98,26 @@ export async function onRequestPut(context) {
 }
 
 export async function onRequestGet(context) {
-  const { data } = context;
+  const { data, params, env } = context;
   if (!data?.user) {
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "content-type": "application/json" },
     });
   }
-  return new Response(JSON.stringify({ error: "not_implemented", message: "Conectar al PageStore real para lectura." }), {
-    status: 501,
+
+  const pageStore = await createPageStore(env);
+  const layout = await pageStore.load(params.slug);
+
+  if (!layout) {
+    return new Response(JSON.stringify({ error: "not_found", slug: params.slug }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify(layout), {
+    status: 200,
     headers: { "content-type": "application/json" },
   });
 }
