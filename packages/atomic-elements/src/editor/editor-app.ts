@@ -4,6 +4,7 @@ import { makeDraggable, makeDropZone } from "./drag-drop";
 import { renderPropertyPanel } from "./property-panel";
 import type { PageStore } from "../persistence/page-store";
 import { EditorHistory } from "./history";
+import { resolveContainer as resolveContainerInTree, moveNodeInTree } from "./tree-ops";
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 9);
@@ -68,20 +69,7 @@ export class AtomicElementsEditor {
   }
 
   private resolveContainer(draft: PageLayout, path: Path): ElementNode[] {
-    if (path.length === 0) return draft.root;
-    let nodes: ElementNode[] = draft.root;
-    let container: ElementNode[] = draft.root;
-    for (let i = 0; i < path.length - 1; i += 2) {
-      const nodeIndex = path[i];
-      const slotIndex = path[i + 1];
-      const node = nodes[nodeIndex];
-      if (!node) return draft.root;
-      if (!node.columnSlots) node.columnSlots = node.children?.length ? [node.children] : [[], []];
-      if (!node.columnSlots[slotIndex]) node.columnSlots[slotIndex] = [];
-      container = node.columnSlots[slotIndex];
-      nodes = container;
-    }
-    return container;
+    return resolveContainerInTree(draft, path);
   }
 
   private insertAt(type: ElementType, path: Path, index: number): void {
@@ -114,6 +102,18 @@ export class AtomicElementsEditor {
       };
       removeFrom(draft.root);
       if (this.selectedId === id) this.selectedId = null;
+    });
+  }
+
+  // Reordenamiento por drag & drop de un nodo YA EXISTENTE (no de la
+  // paleta). Delega la logica pura de arbol a tree-ops.ts (testeada por
+  // separado con Vitest, sin necesitar DOM) y solo se encarga de la parte
+  // especifica del editor: envolver la mutacion en un commit (una sola
+  // entrada de historial para undo/redo) y actualizar la seleccion.
+  private moveNode(nodeId: string, targetPath: Path, targetIndex: number): void {
+    this.commit((draft) => {
+      const result = moveNodeInTree(draft, nodeId, targetPath, targetIndex);
+      if (result.moved) this.selectedId = nodeId;
     });
   }
 
@@ -184,6 +184,13 @@ export class AtomicElementsEditor {
       this.render();
     });
 
+    // Hace que este bloque YA RENDERIZADO en el canvas sea arrastrable
+    // para reordenarlo, ademas de los items de la paleta que crean
+    // elementos nuevos. El payload usa "move-element" + nodeId (en vez
+    // de "new-element" + elementType) para que los onDrop de mas abajo
+    // sepan que deben mover el nodo existente en lugar de instanciar uno.
+    makeDraggable(block, { kind: "move-element", nodeId: node.id });
+
     if (node.type === "Columns") {
       const slots = node.columnSlots ?? (node.children?.length ? [node.children] : [[], []]);
       const grid = document.createElement("div");
@@ -211,6 +218,8 @@ export class AtomicElementsEditor {
         makeDropZone(slotEl, (payload, dropIndex) => {
           if (payload.kind === "new-element" && payload.elementType) {
             this.insertAt(payload.elementType as ElementType, slotPath, dropIndex);
+          } else if (payload.kind === "move-element" && payload.nodeId) {
+            this.moveNode(payload.nodeId, slotPath, dropIndex);
           }
         });
 
@@ -249,6 +258,8 @@ export class AtomicElementsEditor {
     makeDropZone(canvas, (payload, dropIndex) => {
       if (payload.kind === "new-element" && payload.elementType) {
         this.insertAt(payload.elementType as ElementType, [], dropIndex);
+      } else if (payload.kind === "move-element" && payload.nodeId) {
+        this.moveNode(payload.nodeId, [], dropIndex);
       }
     });
 
