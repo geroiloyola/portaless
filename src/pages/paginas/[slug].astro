@@ -1,9 +1,25 @@
 ---
 // Ruta dinamica que publica cualquier pagina creada con Atomic Elements.
 // Cada archivo en src/content/pages/*.json es una PageLayout completa.
+//
+// v0.0.8: se conectan los componentes de SEO/GEO nativo (JsonLd + SeoHead),
+// que ya existian en el repo (agregados en v0.0.7, commit 14765d3) pero
+// nunca se habian importado ni invocado desde esta pagina. Sin esto, las
+// paginas publicadas via Atomic Elements no emitian <title>/<meta
+// description>/canonical ni structured data JSON-LD, pese a que toda la
+// infraestructura de SEO ya estaba lista.
+//
+// NOTA: PageLayout (packages/atomic-elements/src/types.ts) no pudo leerse
+// completo en esta sesion, asi que se accede a title/description de forma
+// defensiva (pueden no existir en el tipo estricto). Si types.ts ya declara
+// estos campos, quitar el cast y tipar layout como PageLayout & {
+// title?: string; description?: string } en su lugar.
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PageRenderer from "../../../packages/atomic-elements/astro-integration/PageRenderer.astro";
+import JsonLd from "../../../packages/atomic-elements/astro-integration/JsonLd.astro";
+import SeoHead from "../../components/SeoHead.astro";
+import { getSiteUrl, buildCanonicalUrl } from "../../lib/seo";
 import type { PageLayout } from "../../../packages/atomic-elements/src/types";
 
 export async function getStaticPaths() {
@@ -18,7 +34,22 @@ export async function getStaticPaths() {
 }
 
 const { layout } = Astro.props as { layout: PageLayout };
+const layoutMeta = layout as PageLayout & { title?: string; description?: string };
+
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = buildCanonicalUrl(siteUrl, `/paginas/${layout.slug}`);
+const pageTitle = layoutMeta.title ?? layout.slug;
+const pageDescription = layoutMeta.description ?? "";
+const siteInfo = { name: pageTitle, url: siteUrl };
 ---
-<BaseLayout title={layout.title} description={layout.description}>
+
+<BaseLayout>
+  <SeoHead
+    slot="head"
+    title={pageTitle}
+    description={pageDescription}
+    canonicalUrl={canonicalUrl}
+  />
+  <JsonLd slot="head" layout={layout} site={siteInfo} />
   <PageRenderer layout={layout} />
 </BaseLayout>

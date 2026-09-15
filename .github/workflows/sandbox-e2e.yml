@@ -1,0 +1,54 @@
+name: Sandbox E2E Tests
+
+on:
+  push:
+    branches: [main, agentic]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sandbox-e2e:
+    name: Sandbox hello-plugin E2E
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # No 'cache: npm' here on purpose: this repo has no committed
+          # package-lock.json / yarn.lock yet, and setup-node@v4 fails
+          # hard ("Dependencies lock file is not found") when cache is
+          # requested but no lockfile exists. Once a lockfile is
+          # committed to the repo root, re-enable caching by adding:
+          #   cache: 'npm'
+          #   cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install isolated-vm explicitly (native bindings for the sandbox)
+        run: npm install --no-save isolated-vm@^7.0.1 --prefix packages/plugin-sandbox
+
+      - name: Run sandbox E2E tests
+        run: npx vitest run tests/e2e/sandbox-hello-plugin.test.ts --reporter=verbose
+
+  admin-role-check:
+    name: Admin role-check unit test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run admin role-check unit test
+        run: npx vitest run tests/unit/admin-pages-role-check.test.ts --reporter=verbose

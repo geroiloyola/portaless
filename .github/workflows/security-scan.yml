@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: npm audit
         run: npm audit --audit-level=high || true
       - name: Verificar version de isolated-vm (GHSA-864f-rcv7-6rh4)

@@ -80,3 +80,19 @@ export async function sandboxedFetchProducts(config: CommerceConfig): Promise<an
   });
   return Array.isArray(result) ? result : [];
 }
+
+// NOTA: esta funcion asume que plugin-entry.js (el codigo que corre DENTRO
+// del isolate) ya reconoce action: "fetchProductByHandle". Si plugin-entry.js
+// todavia no implementa esa rama, esta funcion no falla: el plugin
+// simplemente no reconoceria la accion y el resultado dependera de su
+// manejo por defecto (revisar plugin-entry.js si fetchProductByHandle
+// retorna siempre null en runtime).
+export async function sandboxedFetchProductByHandle(config: CommerceConfig, handle: string): Promise<any | null> {
+  const result = await runPluginAction(config, {
+    action: "fetchProductByHandle",
+    medusaUrl: config.medusaUrl,
+    publishableApiKey: config.publishableApiKey,
+    handle,
+  });
+  return result ?? null;
+}
