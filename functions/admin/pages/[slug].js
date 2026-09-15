@@ -14,17 +14,12 @@
 // disponible el usuario autenticado en context.data (patron estandar de
 // Cloudflare Pages Functions).
 //
-// v0.0.8: NOTA IMPORTANTE PARA REVISION MANUAL -- el contenido real de
-// functions/admin/_middleware.js no pudo leerse en ninguna de las sesiones
-// de trabajo (bug del conector get_file_contents, documentado en
-// .airchive/project_memory/lessons_learned.md, seccion 7). Este PR ASUME
-// que ese middleware ya expone `context.data.user` (igual que
-// functions/_middleware.js, el middleware global del Trust Layer, que usa
-// el mismo patron de context.data en Cloudflare Pages Functions). Verificar
-// manualmente antes de mergear: si _middleware.js de /admin/* NO asigna
-// `context.data.user = user;` antes de `return next();`, hay que agregarlo
-// ahi o este endpoint (y cualquiera que repita este patron) recibira
-// siempre 401 aunque la sesion sea valida.
+// v0.0.8: VERIFICADO -- functions/admin/_middleware.js valida la sesion
+// via AuthService.validateSession() (retorna { username, role }) y ahora
+// expone ese objeto como context.data.user (ademas de context.data.session,
+// que se mantiene por compatibilidad). El fix se aplico directamente en el
+// middleware porque antes solo asignaba `session`, no `user`, lo que habria
+// causado 401 en este endpoint pese a sesiones validas.
 //
 // v0.0.8: se conecta el PageStore real via createPageStore(context.env),
 // que elige D1PageStore (Cloudflare Pages, env.PORTALESS_DB) o

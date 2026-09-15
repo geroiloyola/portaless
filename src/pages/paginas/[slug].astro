@@ -9,11 +9,9 @@
 // description>/canonical ni structured data JSON-LD, pese a que toda la
 // infraestructura de SEO ya estaba lista.
 //
-// NOTA: PageLayout (packages/atomic-elements/src/types.ts) no pudo leerse
-// completo en esta sesion, asi que se accede a title/description de forma
-// defensiva (pueden no existir en el tipo estricto). Si types.ts ya declara
-// estos campos, quitar el cast y tipar layout como PageLayout & {
-// title?: string; description?: string } en su lugar.
+// NOTA (v0.0.8, verificado): types.ts SI declara title (obligatorio) y
+// description (opcional) en PageLayout, por lo que ya no hace falta el
+// cast defensivo -- se accede directamente a layout.title/description.
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PageRenderer from "../../../packages/atomic-elements/astro-integration/PageRenderer.astro";
@@ -34,12 +32,11 @@ export async function getStaticPaths() {
 }
 
 const { layout } = Astro.props as { layout: PageLayout };
-const layoutMeta = layout as PageLayout & { title?: string; description?: string };
 
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = buildCanonicalUrl(siteUrl, `/paginas/${layout.slug}`);
-const pageTitle = layoutMeta.title ?? layout.slug;
-const pageDescription = layoutMeta.description ?? "";
+const pageTitle = layout.title ?? layout.slug;
+const pageDescription = layout.description ?? "";
 const siteInfo = { name: pageTitle, url: siteUrl };
 ---
 

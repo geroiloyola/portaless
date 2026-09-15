@@ -1,9 +1,18 @@
 ---
+// v0.0.8: FIX -- title/description ya no son obligatorios ni tienen
+// default fijo. Antes este layout siempre renderizaba su propio
+// <title>/<meta description> y NO declaraba <slot name="head" />, asi que
+// cualquier <SeoHead slot="head" .../> o <JsonLd slot="head" .../> pasado
+// por paginas como src/pages/paginas/[slug].astro se descartaba en
+// silencio -- el build pasaba pero el <title> quedaba vacio y el
+// JSON-LD nunca llegaba al HTML final. Ahora el layout expone el slot
+// "head" y solo cae al title/description por defecto si la pagina no
+// provee los suyos via props o via el slot.
 export interface Props {
-  title: string;
+  title?: string;
   description?: string;
 }
-const { title, description = "Sitio construido con Portaless" } = Astro.props;
+const { title = "Portaless", description = "Sitio construido con Portaless" } = Astro.props;
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -13,8 +22,10 @@ import Footer from "../components/Footer.astro";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content={description} />
-    <title>{title}</title>
+    <slot name="head">
+      <meta name="description" content={description} />
+      <title>{title}</title>
+    </slot>
   </head>
   <body>
     <Header />
