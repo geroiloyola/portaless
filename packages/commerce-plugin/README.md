@@ -29,4 +29,4 @@ Y src/commerce/config.ts (ver config.example.ts).
 ## Limitaciones
 
 - formatPrice se mantiene fuera del sandbox (aritmetica pura, sin I/O).
-- Cada fetchProducts() crea un nuevo isolate (sin pool reutilizable).
+- ~~Cada fetchProducts() crea un nuevo isolate (sin pool reutilizable).~~ Resuelto en v0.0.9: host-bridge.ts configura `poolMaxIsolates: 4` (constante `COMMERCE_POOL_MAX_ISOLATES`) al construir el `NodeIsolatedVmAdapter`, asi que hasta 4 isolates V8 se reutilizan entre llamadas a fetchProducts() en vez de crear uno nuevo por invocacion -- cada ejecucion sigue recibiendo un Context nuevo (aislamiento real preservado), solo el isolate subyacente se comparte. Ver packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md y tests/e2e/sandbox-isolate-pool.test.ts para el detalle del pool.

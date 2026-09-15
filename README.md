@@ -72,8 +72,8 @@ Este proyecto documenta explícitamente qué está implementado y qué es un esq
 | Motor de contenido, comercio (lectura), Atomic Elements, Dashboard | ✅ Funcional |
 | Autenticación (login + persistencia D1/SQLite) | ✅ Funcional (sin 2FA/OAuth) |
 | Centro de Permisos, Trust Layer (políticas) | 🟡 UI funcional, persistencia de permisos/ledger aún en memoria |
-| Sandboxing de plugins (4 adaptadores) | 🟡 Contrato completo, ejecución real pendiente |
-| Verificación criptográfica Web Bot Auth | 🟡 Resuelve claves, no valida firma todavía |
+| Sandboxing de plugins (4 adaptadores) | 🟡 `isolated-vm` (self-hosted) ejecuta código real con pool de isolates y 10/12 capacidades con puente real (faltan `content:read`/`content:write`); Cloudflare/Deno/Fastly siguen siendo solo contrato + TODOs detallados, sin llamada real a sus APIs |
+| Verificación criptográfica Web Bot Auth | ✅ Valida firma Ed25519 (RFC 9421) con cache del directorio de claves y verificación de unicidad de nonce |
 | MCP nativo, Identidad AT Protocol, Protocol APW | ❌ Solo stubs / diseño documentado |
 
 ---
