@@ -1,6 +1,39 @@
 import { describe, it, expect } from "vitest";
 import { onRequestPut, onRequestGet } from "../../functions/admin/pages/[slug].js";
 
+// Mock minimo de D1Database en memoria -- implementa solo lo que
+// D1PageStore usa (prepare().bind().first()/run()/all()). Evita que
+// createPageStore() caiga al fallback SqlitePageStore, que requiere
+// node:sqlite y escribiria un archivo real en disco (./data/pages.sqlite)
+// como efecto secundario del test si env.PORTALESS_DB fuera undefined.
+function makeFakeD1() {
+  const rows = new Map<string, { slug: string; layout_json: string; updated_at: string; updated_by: string | null }>();
+  return {
+    prepare(sql: string) {
+      let boundArgs: unknown[] = [];
+      const api = {
+        bind(...args: unknown[]) {
+          boundArgs = args;
+          return api;
+        },
+        async first() {
+          const [slug] = boundArgs as [string];
+          return rows.get(slug) ?? null;
+        },
+        async run() {
+          const [slug, layoutJson, updatedAt, updatedBy] = boundArgs as [string, string, string, string | null];
+          rows.set(slug, { slug, layout_json: layoutJson, updated_at: updatedAt, updated_by: updatedBy });
+          return { success: true };
+        },
+        async all() {
+          return { results: Array.from(rows.values()).map((r) => ({ slug: r.slug })) };
+        },
+      };
+      return api;
+    },
+  };
+}
+
 function makeContext({ user, slugParam, body }: { user: { role: string } | null; slugParam: string; body?: unknown }) {
   return {
     request: {
@@ -8,6 +41,7 @@ function makeContext({ user, slugParam, body }: { user: { role: string } | null;
     },
     params: { slug: slugParam },
     data: { user },
+    env: { PORTALESS_DB: makeFakeD1() },
   } as any;
 }
 
