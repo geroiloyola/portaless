@@ -42,11 +42,40 @@ function loadPluginArtifacts(config: CommerceConfig): { manifest: PluginManifest
   return { manifest: cachedManifest, code: cachedCode as string, granted };
 }
 
+// v0.0.9: pool de isolates reutilizables -- ver ROADMAP.md "Pool de
+// isolates reutilizables para el commerce-plugin". Antes, cada llamada a
+// runPluginAction() (es decir, cada fetchProducts/fetchProductByHandle
+// invocado en cada render de pagina) creaba y destruia un ivm.Isolate
+// completo, que es la parte mas costosa de todo el ciclo -- ver la nota
+// que quedaba explicita en README.md: "Cada fetchProducts() crea un
+// nuevo isolate (sin pool reutilizable)". COMMERCE_POOL_MAX_ISOLATES
+// limita cuantos isolates V8 puede haber vivos simultaneamente para este
+// plugin -- suficiente para paralelismo real (varias requests HTTP
+// concurrentes al sitio) sin dejar crecer el consumo de memoria sin tope.
+const COMMERCE_POOL_MAX_ISOLATES = 4;
+
 function getAdapter(): NodeIsolatedVmAdapter {
   if (!cachedAdapter) {
-    cachedAdapter = new NodeIsolatedVmAdapter({ installedVersion: getIsolatedVmVersion(), timeoutMs: 8000 });
+    cachedAdapter = new NodeIsolatedVmAdapter({
+      installedVersion: getIsolatedVmVersion(),
+      timeoutMs: 8000,
+      poolMaxIsolates: COMMERCE_POOL_MAX_ISOLATES,
+    });
   }
   return cachedAdapter;
+}
+
+/** Solo para tests/diagnostico: expone cuantos isolates estan vivos/libres en el pool del commerce-plugin. */
+export function getCommercePoolStats(): { idle: number; live: number; max: number } | null {
+  return cachedAdapter?.poolStats ?? null;
+}
+
+/** Solo para tests: fuerza la recreacion del adaptador (y por tanto del pool) en la proxima llamada. */
+export function __resetCommerceAdapterForTests(): void {
+  cachedAdapter?.disposePool();
+  cachedAdapter = null;
+  cachedManifest = null;
+  cachedCode = null;
 }
 
 async function runPluginAction(config: CommerceConfig, payload: Record<string, unknown>): Promise<unknown> {
