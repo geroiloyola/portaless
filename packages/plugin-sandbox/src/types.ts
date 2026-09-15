@@ -41,11 +41,41 @@ export interface PluginManifest {
 /** El subconjunto de capacidades que un administrador realmente concedio. */
 export type GrantedCapabilities = Set<CapabilityId>;
 
+/**
+ * Handlers reales para las capacidades que no son "solo red" -- media,
+ * email, comercio, storage propio del plugin, lectura del ledger de
+ * agentes, y administracion del sitio. v0.0.9: el adaptador de
+ * isolated-vm ya inyecta el puente (la funcion global dentro del isolate
+ * que respeta granted/denied) para las 12 capacidades del catalogo, pero
+ * 9 de esas 12 no tienen todavia un backend real en el repo (no existe
+ * aun una libreria de medios, un proveedor de email transaccional, ni un
+ * backend generico de storage por-plugin). Por eso cada metodo es
+ * opcional: si la capacidad esta concedida pero el llamador de
+ * SandboxRuntime/adapter.execute() no provee el handler correspondiente,
+ * el puente devuelve un error explicito de "handler no configurado" en
+ * vez de fingir exito silenciosamente o de tratarlo como denegado (que
+ * seria enganoso -- la capacidad SI esta concedida, solo falta conectar
+ * el backend real). Cuando un backend real exista, basta con proveer el
+ * handler correspondiente aqui -- el contrato del adaptador no cambia.
+ */
+export interface CapabilityHostBridge {
+  mediaRead?(payload: { path: string }): Promise<unknown>;
+  mediaWrite?(payload: { path: string; data: unknown }): Promise<unknown>;
+  emailSend?(payload: { to: string; subject: string; body: string }): Promise<unknown>;
+  commerceRead?(payload: Record<string, unknown>): Promise<unknown>;
+  commerceCheckout?(payload: Record<string, unknown>): Promise<unknown>;
+  storageRead?(pluginName: string, payload: { key: string }): Promise<unknown>;
+  storageWrite?(pluginName: string, payload: { key: string; value: unknown }): Promise<unknown>;
+  agentIdentify?(payload: Record<string, unknown>): Promise<unknown>;
+  siteAdmin?(payload: Record<string, unknown>): Promise<unknown>;
+}
+
 export interface SandboxExecutionInput {
   manifest: PluginManifest;
   granted: GrantedCapabilities;
   code: string;             // Codigo fuente (o modulo compilado) del plugin.
   payload: unknown;         // Datos de entrada para esta invocacion puntual.
+  hostBridge?: CapabilityHostBridge; // Handlers reales opcionales, ver arriba.
 }
 
 export interface SandboxExecutionResult {
