@@ -68,6 +68,8 @@ export interface CapabilityHostBridge {
   storageWrite?(pluginName: string, payload: { key: string; value: unknown }): Promise<unknown>;
   agentIdentify?(payload: Record<string, unknown>): Promise<unknown>;
   siteAdmin?(payload: Record<string, unknown>): Promise<unknown>;
+  contentRead?(payload: Record<string, unknown>): Promise<unknown>;
+  contentWrite?(payload: Record<string, unknown>): Promise<unknown>;
 }
 
 export interface SandboxExecutionInput {
