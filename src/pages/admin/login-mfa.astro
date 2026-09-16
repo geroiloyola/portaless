@@ -1,0 +1,55 @@
+---
+// Segundo paso del login cuando el usuario tiene 2FA activo. Llega aqui
+// via query param ?challenge=... que /admin/login.js (existente) deberia
+// pasar en el redirect cuando AuthService.login() responde
+// mfaRequired:true -- ver nota de integracion en
+// docs/architecture/authentication.md, seccion 2FA.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const challengeToken = Astro.url.searchParams.get("challenge") ?? "";
+const error = Astro.url.searchParams.get("error");
+---
+<BaseLayout title="Verificación en 2 pasos — Portaless Admin">
+  <div style="max-width: 360px; margin: 80px auto;">
+    <h1 style="margin-bottom: 8px;">Verificación en 2 pasos</h1>
+    <p style="color: var(--portaless-muted); margin-bottom: 24px;">
+      Ingresa el código de 6 dígitos de tu aplicación de autenticación.
+    </p>
+
+    {error && (
+      <p style="background:#331313;color:#ff8f8f;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;">
+        Código incorrecto o expirado.
+      </p>
+    )}
+
+    <form id="mfa-form">
+      <input type="hidden" name="challengeToken" value={challengeToken} />
+      <label style="display:block;margin-bottom:18px;">
+        <span style="display:block;font-size:12px;color:var(--portaless-muted);margin-bottom:4px;">Código</span>
+        <input name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required
+          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--portaless-border);background:#12141a;color:#fff;letter-spacing:4px;text-align:center;font-size:20px;" />
+      </label>
+      <button type="submit"
+        style="width:100%;padding:10px;border-radius:999px;background:#6ee7b7;color:#0a0b0f;font-weight:700;border:none;cursor:pointer;">
+        Verificar
+      </button>
+    </form>
+  </div>
+
+  <script define:vars={{ challengeToken }}>
+    document.getElementById("mfa-form").addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      const code = evt.target.code.value;
+      const res = await fetch("/admin/login/mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeToken, code }),
+      });
+      if (res.ok) {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/admin/login-mfa?challenge=" + encodeURIComponent(challengeToken) + "&error=1";
+      }
+    });
+  </script>
+</BaseLayout>

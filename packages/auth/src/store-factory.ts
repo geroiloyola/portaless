@@ -1,11 +1,19 @@
 // Punto unico de decision: que backend de persistencia usar segun el
 // entorno de ejecucion. Sigue el mismo principio multi-proveedor que
 // packages/plugin-sandbox/src/adapters/adapter-registry.ts.
+//
+// v0.0.9.4: se agrega createPasswordResetStore(). D1/SQLite reales para
+// reset de contrasena quedan fuera de alcance de esta version (ver
+// ROADMAP.md) -- el reset store usa siempre memoria por ahora porque sus
+// tokens son de vida muy corta (30 min) y perderlos en un restart es un
+// impacto menor comparado con usuarios/sesiones.
 
 import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
+import type { PasswordResetStore } from "./password-reset-store";
 import { InMemoryUsersStore } from "./users-store";
 import { InMemorySessionStore } from "./session-store";
+import { InMemoryPasswordResetStore } from "./password-reset-store";
 
 export interface StoreFactoryEnv {
   DB?: unknown;
@@ -54,4 +62,11 @@ export async function createSessionStore(env: StoreFactoryEnv): Promise<SessionS
   }
 
   return new InMemorySessionStore();
+}
+
+/**
+ * v0.0.9.4: siempre en memoria por ahora -- ver nota de alcance arriba.
+ */
+export async function createPasswordResetStore(_env: StoreFactoryEnv): Promise<PasswordResetStore> {
+  return new InMemoryPasswordResetStore();
 }
