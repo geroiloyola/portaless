@@ -1,26 +1,11 @@
-import type { SandboxAdapter, SandboxExecutionInput, SandboxExecutionResult, CapabilityId, CapabilityHostBridge as BaseCapabilityHostBridge } from "../types";
+import type { SandboxAdapter, SandboxExecutionInput, SandboxExecutionResult, CapabilityId, CapabilityHostBridge } from "../types";
 
-// v0.0.9.4: content:read/content:write pasan de tener SOLO el guard de
-// denegacion a tener puente real -- ver CAPABILITY_BRIDGES mas abajo. Sin
-// embargo, la interfaz CapabilityHostBridge (definida en ../types, NO
-// modificada en este PR porque su contenido completo no se pudo leer por
-// el bug del conector de GitHub documentado en lessons_learned.md) todavia
-// no declara los campos `contentRead`/`contentWrite` que este archivo
-// necesita invocar.
-//
-// TAREA MANUAL PENDIENTE (ver ROADMAP.md): agregar a CapabilityHostBridge
-// en packages/plugin-sandbox/src/types.ts los 2 campos opcionales:
-//   contentRead?: (args: unknown) => Promise<unknown>;
-//   contentWrite?: (args: unknown) => Promise<unknown>;
-// (mismo shape que mediaRead/mediaWrite ya declarados ahi). Mientras esa
-// tarea no se haga, este archivo compila igual gracias al tipo extendido
-// local de abajo (CapabilityHostBridge), pero cualquier implementacion
-// REAL de hostBridge que use la interfaz importada desde ../types no
-// tendra esos 2 campos tipados hasta que se agreguen alla.
-type CapabilityHostBridge = BaseCapabilityHostBridge & {
-  contentRead?: (args: unknown) => Promise<unknown>;
-  contentWrite?: (args: unknown) => Promise<unknown>;
-};
+// v0.0.9.6 (PR #18): CapabilityHostBridge en ../types ya declara
+// formalmente contentRead/contentWrite (mismo shape que mediaRead/
+// mediaWrite) -- se elimina el tipo local extendido que este archivo
+// usaba como workaround temporal desde v0.0.9.4, mientras esa interfaz
+// no podia leerse completa por un bug del conector de GitHub. Ya no
+// hace falta: se importa CapabilityHostBridge directo desde ../types.
 
 interface CapabilityBridgeSpec {
   capability: CapabilityId;
