@@ -1,0 +1,95 @@
+---
+// Centro de Permisos del dashboard de administracion. Requiere sesion
+// valida -- protegido por functions/admin/_middleware.js, que corre para
+// toda ruta bajo /admin/* excepto /admin/login.
+//
+// v0.0.9.2: primera version real de esta pagina (antes no existia
+// ninguna ruta que montara renderPermissionCenter). Los datos vienen de
+// GET /admin/permissions (persistencia real D1/SQLite via
+// createPermissionStore, ver functions/admin/permissions/index.js) y
+// cada toggle hace PUT /admin/permissions -- ya no hay ningun store en
+// memoria involucrado del lado del cliente.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import "../../../packages/permissions/src/permission-center-ui.css";
+---
+<BaseLayout title="Centro de Permisos — Portaless Admin">
+  <div class="pc-page-header">
+    <h1 class="pc-page-title">Centro de Permisos</h1>
+    <p class="pc-page-subtitle">
+      Igual que la pantalla de Privacidad y Seguridad de tu teléfono: cada
+      capacidad se concede o revoca de forma individual, por plugin o
+      agente. Nunca es "todo o nada" — activar un permiso para un plugin
+      no afecta a los demás.
+    </p>
+  </div>
+
+  <div id="pc-loading" class="pc-loading">Cargando permisos…</div>
+  <div id="pc-load-error" class="pc-load-error" style="display:none;"></div>
+  <div id="pc-root" style="display:none;"></div>
+</BaseLayout>
+
+<script>
+  import { renderPermissionCenter } from "../../../packages/permissions/src/permission-center-ui";
+  import type { PermissionGrant } from "../../../packages/permissions/src/types";
+
+  const loadingEl = document.getElementById("pc-loading")!;
+  const errorEl = document.getElementById("pc-load-error")!;
+  const rootEl = document.getElementById("pc-root")!;
+
+  async function toggleGrant(grant: PermissionGrant): Promise<void> {
+    const res = await fetch("/admin/permissions", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        subject: grant.subject,
+        capabilityId: grant.capabilityId,
+        granted: grant.granted,
+      }),
+    });
+
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.message) message = body.message;
+        else if (body?.error) message = body.error;
+      } catch {
+        // Respuesta sin body JSON -- se usa el mensaje generico de arriba.
+      }
+      throw new Error(message);
+    }
+  }
+
+  async function init(): Promise<void> {
+    try {
+      const res = await fetch("/admin/permissions");
+
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar el Centro de Permisos (HTTP ${res.status}).`);
+      }
+
+      const data = await res.json();
+      const allGrants: PermissionGrant[] = data.grants ?? [];
+
+      loadingEl.style.display = "none";
+      rootEl.style.display = "";
+
+      renderPermissionCenter({
+        container: rootEl,
+        allGrants,
+        onToggle: toggleGrant,
+      });
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar el Centro de Permisos: ${(err as Error).message}`;
+    }
+  }
+
+  init();
+</script>
