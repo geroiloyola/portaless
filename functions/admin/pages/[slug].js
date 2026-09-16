@@ -22,13 +22,18 @@
 // causado 401 en este endpoint pese a sesiones validas.
 //
 // v0.0.8: se conecta el PageStore real via createPageStore(context.env),
-// que elige D1PageStore (Cloudflare Pages, env.PORTALESS_DB) o
-// SqlitePageStore (self-hosted) -- mismo patron que packages/permissions y
-// packages/trust-layer/src/ledger. Ambas implementaciones cumplen la
-// interfaz PageStore ya existente en
+// que elige D1PageStore (Cloudflare Pages, env.DB) o SqlitePageStore
+// (self-hosted, env.PORTALESS_SQLITE_PATH) -- mismo patron que
+// packages/permissions y packages/trust-layer/src/ledger. Ambas
+// implementaciones cumplen la interfaz PageStore ya existente en
 // packages/atomic-elements/src/persistence/page-store.ts (load/save/list),
 // la misma que usa LocalStoragePageStore en el editor cliente. Antes, GET
 // devolvia siempre 501 "not_implemented" y PUT solo validaba sin persistir.
+//
+// v0.0.9.3: se corrigio un bug real de nombre de binding -- store-factory.ts
+// esperaba env.PORTALESS_DB (nunca coincidia con el binding `DB` real que
+// documenta wrangler.toml), ahora usa env.DB como las demas factories. Ver
+// el comentario extenso en persistence/store-factory.ts.
 
 import { validatePageLayout } from "../../../packages/atomic-elements/src/persistence/page-schema";
 import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
