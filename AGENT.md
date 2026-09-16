@@ -13,9 +13,11 @@ opcionales de comercio, identificación de agentes de IA, sandboxing de
 plugins y un dashboard modular — diseñado explícitamente para no repetir
 los problemas estructurales de WordPress (plugins con acceso irrestricto,
 theming complejo, sin control de scraping por IA). El core se licencia bajo
-AGPL-3.0; el Plugin SDK (`packages/plugin-sdk`) se licencia aparte bajo MIT
-para no restringir a los plugins de terceros — ver
-`docs/architecture/licensing-boundaries.md` para la frontera exacta.
+AGPL-3.0; el Plugin SDK se licencia aparte bajo MIT para no restringir a
+los plugins de terceros (**nota:** `packages/plugin-sdk` todavia NO existe
+como carpeta real en el monorepo -- hoy es diseno documentado en
+`LICENSE-SDK` y `docs/architecture/licensing-boundaries.md`, sin codigo
+construido) — ver ese documento para la frontera exacta prevista.
 
 ## Regla de oro antes de tocar cualquier código
 
@@ -41,6 +43,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 | MCP server | `packages/mcp-server/` | ❌ Stub sin lógica de servidor MCP real — ver `docs/architecture/mcp-agents.md` para la especificación completa del diseño previsto |
 | Identidad AT Protocol | `packages/identity-atproto/` | ❌ Stub vacío, sin lógica |
 | Protocol APW resolver | `packages/apw-resolver/` | ❌ Stub vacío, solo documentado en `docs/protocol-apw/apw-spec.md` |
+| Plugin SDK | `packages/plugin-sdk/` (no existe todavia) | ❌ Solo diseño/licencia (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) -- ningun codigo construido todavia |
 
 ## Dónde está cada documento importante
 
@@ -48,7 +51,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 - `CHANGELOG.md` — historial real, versión por versión, de qué se implementó.
 - `SECURITY.md` — vulnerabilidades conocidas y activas (incluye la CVE real de `isolated-vm`, GHSA-864f-rcv7-6rh4).
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — por qué la estructura real del repo difiere de la propuesta original, y dónde está cada cosa de verdad.
-- `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT, y los proyectos/plugins de terceros.
+- `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT (diseño, aun no implementado), y los proyectos/plugins de terceros.
 - `docs/architecture/mcp-agents.md` — especificación completa (no implementación) del servidor MCP previsto para agentes de IA.
 - `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
 - `docs/protocol-apw/apw-spec.md` — diseño del Protocol APW (no implementado).
@@ -61,7 +64,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 3. **Todo manifiesto de plugin declara capacidades atómicas con una razón legible.** Ver el catálogo completo en `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
 4. **Nunca declarar algo como "implementado" si tiene un TODO de integración real pendiente.** Este proyecto prioriza documentar honestamente las limitaciones sobre aparentar funcionalidad — mantén ese estándar en cualquier código o documentación que agregues.
 5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto.
-6. **La única superficie que un plugin de terceros puede importar es `packages/plugin-sdk`.** Ningún plugin debe importar directamente módulos internos del core — toda comunicación pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
+6. **La única superficie que un plugin de terceros podra importar es el futuro `packages/plugin-sdk`** (aun no existe como codigo -- ver nota en la seccion anterior). Mientras tanto, ningun plugin debe importar directamente modulos internos del core — toda comunicacion pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
 
 ## Flujo de trabajo esperado de un agente en este repo
 
