@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Cliente de Medusa/Mercur migrado a un plugin real ejecutado dentro del sandbox de Portaless (isolated-vm self-hosted).",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "main": "src/host-bridge.ts",
   "dependencies": { "@portaless/plugin-sandbox": "*" }
 }

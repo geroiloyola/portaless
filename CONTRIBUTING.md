@@ -16,19 +16,28 @@ realmente implementado y qué es todavía diseño.
    `tests/unit/` o `tests/e2e/`.
 4. Los plugins deben declarar sus capacidades en un manifiesto — nunca
    agregues acceso implícito a red, almacenamiento o datos de usuarios.
-5. Todo el código se licencia bajo MIT, igual que el resto del proyecto.
+5. El núcleo de Portaless se licencia bajo AGPL-3.0. El Plugin SDK
+   (`packages/plugin-sdk`) se licencia aparte bajo MIT, para no
+   restringir a los plugins de terceros que lo consuman. Ver
+   `docs/architecture/licensing-boundaries.md` para la frontera exacta
+   antes de contribuir código nuevo a cualquiera de los dos.
 
 ## Áreas donde más se necesita ayuda hoy
 
-- Completar la integración real de los adaptadores de sandboxing
-  (`packages/plugin-sandbox/src/adapters/*.ts`), hoy con `TODO` explícito.
-- Persistencia real del Centro de Permisos y del ledger del Trust Layer
-  (hoy en memoria).
-- El editor visual Atomic Elements: undo/redo y anidamiento visual en
-  columnas.
+- Completar la integración real de los adaptadores de sandboxing edge
+  (`packages/plugin-sandbox/src/adapters/deno-deploy.ts` y
+  `cloudflare-workers-for-platforms.ts`) contra cuentas reales de
+  prueba -- hoy solo verificados con `fetch` mockeado. El adaptador
+  `isolated-vm` self-hosted ya ejecuta código real desde v0.0.6.
+- Implementar `D1PluginRegistryStore` y `SqlitePluginRegistryStore`
+  para el registro de plugins con `trustScore` comunitario (v0.0.9.9
+  solo agregó la interfaz y la versión en memoria).
 - MCP server, identidad AT Protocol y Protocol APW resolver: estos
   paquetes son stubs — ver `docs/architecture/` para el estado real de
   cada uno antes de empezar a implementar.
+- Probar `npm run setup` localmente contra un archivo SQLite real antes
+  de confiar en el flujo de instalación documentado en
+  `scripts/SETUP.md`.
 
 ## Código de conducta
 

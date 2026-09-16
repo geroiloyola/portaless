@@ -3,7 +3,7 @@
   "version": "0.0.6",
   "description": "Sandboxing real de plugins de Portaless, adaptadores intercambiables (Cloudflare, Deno Deploy, Fastly, isolated-vm self-hosted).",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "main": "src/index.ts",
   "dependencies": { "isolated-vm": "^7.0.1" }
 }
