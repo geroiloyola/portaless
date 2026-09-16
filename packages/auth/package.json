@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Autenticacion minima de Portaless: usuario/contrasena con roles (admin/viewer), sin OAuth. Ver docs/architecture/authentication.md.",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "main": "src/index.ts",
   "dependencies": {}
 }

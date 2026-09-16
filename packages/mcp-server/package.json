@@ -3,24 +3,8 @@
   "version": "0.0.1",
   "description": "Servidor MCP nativo para agentes de IA. Expone tools para operar sobre Portaless (contenido, permisos, plugins, comercio) siempre a traves de PermissionStore -- ver docs/architecture/mcp-agents.md.",
   "private": true,
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
-  "bin": {
-    "portaless-mcp-server": "./dist/index.js"
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.4",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
-  }
+  "bin": {}
 }

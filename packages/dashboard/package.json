@@ -3,7 +3,7 @@
   "version": "0.0.3",
   "description": "Panel de administracion modular de Portaless: catalogo de organismos atomicos + motor de skins (skin-engine) con herencia y tokens de diseno.",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "main": "src/index.ts",
   "dependencies": {}
 }

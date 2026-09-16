@@ -3,5 +3,5 @@
   "version": "0.0.0",
   "description": "STUB -- Cliente/resolver del Protocol APW (DNSLink, did:web/did:apw). No implementado todavia. Ver docs/protocol-apw/apw-spec.md.",
   "private": true,
-  "license": "MIT"
+  "license": "AGPL-3.0-or-later"
 }
