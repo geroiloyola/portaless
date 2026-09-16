@@ -1,6 +1,12 @@
 // Cloudflare Pages Function que maneja el endpoint real de login.
 // GET /admin/login -> deja pasar a la pagina estatica (login.astro).
 // POST /admin/login -> valida credenciales y setea la cookie de sesion.
+//
+// v0.0.9.5: si AuthService.login() devuelve mfaRequired:true (usuario con
+// 2FA activo), este endpoint ya NO lo trata como error generico -- redirige
+// a /admin/login-mfa?challenge=<mfaChallengeToken> para que el usuario
+// complete el segundo paso. Ver docs/architecture/authentication.md,
+// seccion 2FA, y functions/admin/login-mfa.js (segundo paso).
 
 import { AuthService } from "../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
@@ -25,6 +31,12 @@ export async function onRequestPost(context) {
   }
 
   const result = await authService.login(username, password);
+
+  if (result.mfaRequired && result.mfaChallengeToken) {
+    const redirectUrl = new URL("/admin/login-mfa", request.url);
+    redirectUrl.searchParams.set("challenge", result.mfaChallengeToken);
+    return Response.redirect(redirectUrl.toString(), 302);
+  }
 
   if (!result.success || !result.session) {
     return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
