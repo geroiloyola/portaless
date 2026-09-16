@@ -1,10 +1,26 @@
-# @portaless/mcp-server (STUB — no implementado)
+# @portaless/mcp-server
 
-Este paquete es un marcador de posición que refleja la estructura de
-carpetas prevista para el servidor MCP nativo de Portaless
-(`src/tools/`, `src/permissions/`, `src/audit/`), **sin ninguna lógica
-implementada todavía**.
+Servidor MCP (Model Context Protocol) nativo de Portaless. Expone tools
+para que agentes de IA (Claude, GPT, Cursor, u otro cliente compatible
+con MCP) puedan operar sobre un sitio Portaless -- contenido, permisos,
+plugins, comercio -- siempre a traves de las mismas capas de permisos
+que ya gobiernan a los plugins humanos.
 
-Ver `docs/architecture/mcp-agents.md` en la raíz del repo para el diseño
-completo y el motivo por el cual esto quedó pendiente de versiones
-posteriores a v0.0.5.
+Ver la especificacion completa, el principio rector de permisos, y el
+orden de desarrollo por commits en
+[`docs/architecture/mcp-agents.md`](../../docs/architecture/mcp-agents.md).
+
+## Estado
+
+En desarrollo activo. Commit 1/6: andamiaje base del servidor (sin tools
+todavia). Los siguientes commits agregan: capa de permisos, capa de
+auditoria, tool de solo lectura del Trust Layer, tools de contenido
+(Atomic Elements), y tools de administracion (Centro de Permisos).
+
+## Desarrollo
+
+```bash
+npm install
+npm run dev   # corre src/index.ts directamente con tsx
+npm run build # compila a dist/
+```
