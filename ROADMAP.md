@@ -5,17 +5,26 @@
 - [~] Implementado, pendiente de merge o de integracion manual final
 - [ ] Pendiente
 
-## Alta prioridad
+## Estructura de este roadmap
+
+Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de cada pieza:
+
+- **Funcionalidades en Produccion**: lo que ya esta hecho, mergeado a `main`, y funcional hoy.
+- **Funcionalidades Internas en Desarrollo**: lo que falta, pero es responsabilidad exclusiva de Portaless -- no depende de ningun tercero.
+- **Funciones Externas**: lo que depende de terceros (empresas de pago, proveedores de nube, otros proyectos open source) para completarse.
+
+---
+
+## Funcionalidades en Produccion
+
 - [x] Proteger main + PR #1 y #2
 - [x] Autenticacion basica (PR #4, mergeado)
-- [x] Persistencia real Permisos + Trust Layer (D1/SQLite) - v0.0.6 (PR #5, mergeado) creo D1PermissionStore/SqlitePermissionStore y sus equivalentes de ledger. Nota historica: esta linea se marco `[x]` en v0.0.6 pero resultó imprecisa -- el Centro de Permisos no tenia ningun endpoint que invocara su store (corregido en v0.0.9.2), y el ledger del Trust Layer si tenia su lado de escritura conectado (`functions/_middleware.js`) pero no el de lectura publica (corregido en v0.0.9.3). Con ambos rounds, esta linea ahora si esta completa end-to-end -- ver las 2 lineas de Prioridad media.
+- [x] Persistencia real Permisos + Trust Layer (D1/SQLite) - v0.0.6 (PR #5, mergeado) creo D1PermissionStore/SqlitePermissionStore y sus equivalentes de ledger. Nota historica: esta linea se marco `[x]` en v0.0.6 pero resultó imprecisa -- el Centro de Permisos no tenia ningun endpoint que invocara su store (corregido en v0.0.9.2), y el ledger del Trust Layer si tenia su lado de escritura conectado (`functions/_middleware.js`) pero no el de lectura publica (corregido en v0.0.9.3). Con ambos rounds, esta linea ahora si esta completa end-to-end -- ver las 2 lineas correspondientes mas abajo.
 - [x] ProductGrid conectado a Medusa/Mercur - v0.0.6 (PR #5, mergeado)
 - [x] Adaptador isolated-vm ejecutando codigo real - v0.0.6 (PR #5, mergeado)
 - [x] Licenciamiento del proyecto: separar Portaless (core) bajo AGPL-3.0 con SDK de plugins bajo MIT -- v0.0.9.4 (PR #13, mergeado). LICENSE reemplazado por AGPL-3.0 + linking exception para el Plugin SDK; LICENSE-SDK (MIT) agregado; docs/architecture/licensing-boundaries.md documenta la frontera exacta entre el core AGPL-3.0, el SDK de plugins en MIT, y los proyectos AppPlace/AppLibre/terceros.
 - [x] Recuperacion de contrasena, 2FA, OAuth/SSO -- v0.0.9.4 (PR #15, mergeado a agentic, luego a main via PR #17). AuthService gano completeMfaLogin, beginTotpEnrollment, confirmTotpEnrollment, disableTotp, requestPasswordReset, completePasswordReset, loginWithOAuth. 6 endpoints/paginas nuevos, 15 tests.
 - [x] functions/admin/login.js maneja el flujo de 2FA end-to-end -- v0.0.9.5 (PR #16, mergeado). Si result.mfaRequired && result.mfaChallengeToken, redirige a /admin/login-mfa?challenge=<token>. Sin cambios de comportamiento para usuarios sin 2FA activo.
-
-## Prioridad media
 - [x] SEO/GEO nativo -- v0.0.8: imports de JsonLd + SeoHead conectados en src/pages/paginas/[slug].astro, usando los helpers de src/lib/seo.ts (getSiteUrl, buildCanonicalUrl). Ver docs/architecture/seo-geo.md.
 - [x] Verificacion criptografica real de Web Bot Auth (RFC 9421, Ed25519) - mergeado
 - [x] Undo/redo + anidamiento visual en columnas dentro de Atomic Elements - mergeado
@@ -24,55 +33,48 @@
 - [x] Test end-to-end del sandbox de plugins corriendo en CI
 - [x] Conectar la persistencia real (PageStore) dentro de functions/admin/pages/[slug].js -- v0.0.8: se agregaron implementaciones server-side D1PageStore y SqlitePageStore en packages/atomic-elements/src/persistence/stores/, mas store-factory.ts, todas cumpliendo la interfaz PageStore ya existente (load/save/list) para mantener compatibilidad con LocalStoragePageStore del editor cliente. Mismo patron que packages/permissions y packages/trust-layer/src/ledger. GET y PUT ya usan createPageStore(env) en vez de placeholders.
 - [x] Puentes de capacidades restantes en isolated-vm -- v0.0.9: 9 capacidades nuevas (storage:read/write, email:send, commerce:read/checkout, media:read/write, agent:identify, site:admin) ya cruzan al isolate via `ivm.Reference.apply({result:{promise:true}})`, sumadas a network:fetch (ya existia) = 10/12 con puente real. COMPLETADO en v0.0.9.4 (PR #15): content:read/content:write se integraron al mismo patron -- 12/12 capacidades del catalogo con puente real. CapabilityHostBridge en types.ts actualizado con ambos campos en un PR de seguimiento (v0.0.9.6, PR #18, mergeado). Ver packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md.
-- [~] Integracion real Cloudflare Workers for Platforms / Deno Deploy -- v0.0.9.1: implementada la llamada real a las APIs REST publicas de ambos proveedores (subida/creacion + invocacion), siguiendo el plan de 5 puntos documentado en el PR anterior. **NO verificado end-to-end contra una cuenta real** (sin credenciales de prueba disponibles al momento de este PR) -- la logica de construccion de requests, mapeo de capacidades y parsing de respuestas esta cubierta por tests con `fetch` mockeado (tests/e2e/sandbox-deno-deploy-adapter.test.ts, tests/e2e/sandbox-cloudflare-adapter.test.ts), pero el primer uso real contra cada API debe tratarse como una integracion nueva sin confirmar. Sigue en espera hasta contar con cuentas de prueba reales de ambos proveedores -- sin fecha estimada, no es un bloqueante del resto del roadmap. Detalles:
-  - **Deno Deploy**: mapeo directo (`network:fetch` -> allowlist de host aplicado en el bootstrap subido; capacidades no-red -> bridge HTTP hacia `SandboxExecutionInput.bridgeUrl`, nuevo campo del contrato). Crea una deployment nueva por `execute()` -- limpieza/reuso de deployments viejas queda pendiente (ver nota en el propio archivo).
-  - **Cloudflare Workers for Platforms**: sube/actualiza el script via PUT (scriptName deterministico por `name@version`, reusa en vez de acumular). **Requiere infraestructura externa a este adaptador**: un Worker "dispatcher" fijo desplegado por namespace (no lo despliega este codigo) que resuelve `env.DISPATCH_NAMESPACE.get(scriptName)` -- sin `dispatcherUrl` configurado, el adaptador puede subir scripts pero falla explicitamente al intentar invocarlos. El filtrado autoritativo de red via "outbound worker" tampoco lo configura este adaptador (ver comentario extenso al inicio de cloudflare-workers-for-platforms.ts).
-  - **Fastly Compute**: SIN cambios en este PR, sigue solo con TODOs documentados (decision explicita: requiere un plugin ya compilado a Wasm para poder probarse, no disponible).
 - [x] Cache del directorio de claves Web Bot Auth + verificacion de unicidad de nonce -- v0.0.9, ver tests/unit/webbotauth-verify.test.ts (cache evita refetch en la segunda request al mismo operador; un nonce reusado en un replay exacto es rechazado).
 - [x] Pool de isolates reutilizables para el commerce-plugin -- v0.0.9, `poolMaxIsolates` en NodeIsolatedVmAdapter, con aislamiento real de Context por ejecucion aunque el isolate subyacente se reutilice. Ver tests/e2e/sandbox-isolate-pool.test.ts.
 - [x] Reordenamiento por arrastre dentro de un mismo slot de columnas -- v0.0.9: `makeDraggable` ahora tambien se aplica a los bloques ya renderizados en el canvas (no solo a los items de la paleta), con payload `{kind: "move-element", nodeId}`; la logica de mover/reordenar se extrajo a packages/atomic-elements/src/editor/tree-ops.ts (funciones puras, testeadas sin DOM en tests/e2e/atomic-elements-drag-drop-reorder.test.ts) para cubrir reordenamiento dentro del mismo contenedor, movimiento entre columnSlots distintos, y proteccion contra soltar un nodo dentro de su propio subarbol.
-- [x] Centro de Permisos conectado a persistencia real end-to-end -- v0.0.9.2: nuevo endpoint `functions/admin/permissions/index.js` (GET snapshot con seed de subjects conocidos + defaults no concedidos, PUT otorga/revoca con guard server-side `canWrite(role)==="admin"`, mismo patron que `functions/admin/pages/[slug].js`), UI (`permission-center-ui.ts`) reescrita para que el unico camino de escritura sea `onToggle` (antes llamaba a `store.setGrant()` directo Y a `onToggle`, lo cual no tenia sentido porque D1/SQLite son server-side-only), nueva pagina `src/pages/admin/permissions.astro` con estados de carga/guardado/error. 9 tests nuevos en `tests/unit/admin-permissions-role-check.test.ts` (401/403/400/happy-path GET+PUT). Limitacion conocida: el catalogo de subjects (`hello-plugin`, `commerce-plugin`) esta hardcodeado en el endpoint, no viene de un registro dinamico de plugins instalados (no existe todavia).
+- [x] Centro de Permisos conectado a persistencia real end-to-end -- v0.0.9.2: nuevo endpoint `functions/admin/permissions/index.js` (GET snapshot con seed de subjects conocidos + defaults no concedidos, PUT otorga/revoca con guard server-side `canWrite(role)==="admin"`, mismo patron que `functions/admin/pages/[slug].js`), UI (`permission-center-ui.ts`) reescrita para que el unico camino de escritura sea `onToggle` (antes llamaba a `store.setGrant()` directo Y a `onToggle`, lo cual no tenia sentido porque D1/SQLite son server-side-only), nueva pagina `src/pages/admin/permissions.astro` con estados de carga/guardado/error. 9 tests nuevos en `tests/unit/admin-permissions-role-check.test.ts` (401/403/400/happy-path GET+PUT). Limitacion conocida: el catalogo de subjects (`hello-plugin`, `commerce-plugin`) esta hardcodeado en el endpoint, no viene de un registro dinamico de plugins instalados (ver "Funcionalidades Internas en Desarrollo").
 - [x] Trust Layer / ledger conectado a persistencia real end-to-end -- v0.0.9.3. `functions/_middleware.js` llama a `recordAgentAccess(ledgerStore, ...)` con `createUsageLedgerStore(env)` (D1/SQLite reales) en cada request de un agente detectado. `GET /.well-known/portaless-usage-log.json` expone ese ledger de vuelta como JSON publico, con `?period=YYYY-MM` opcional. 5 tests en `tests/unit/usage-log-endpoint.test.ts`.
 - [x] Bug de nombre de binding D1 inconsistente entre factories -- corregido en v0.0.9.3. `createPageStore` alineado a `env.DB` como las otras 3 factories. Nombres de path SQLite unificados (`PORTALESS_SQLITE_PATH`).
-- [x] Automatizar la creacion del admin inicial en D1 + comando unico de `schema.sql` -- v0.0.9.4 (PR #15, mergeado). `schema.sql` (raiz) generado a partir de los 4 schema.sql de cada paquete + tabla de password reset; `scripts/setup.mjs` aplica el schema y crea el admin inicial en un solo comando (`npm run setup`); `scripts/generate-schema.mjs` regenera el maestro si cambia algun paquete. Cloudflare D1 sigue usando `wrangler d1 execute` por separado (documentado, no automatizado). **Pendiente de verificacion manual, sin cambios**: `npm run setup` no se probo todavia contra un archivo SQLite real en ninguna sesion de trabajo -- requiere ejecutar Node localmente con `better-sqlite3` instalado, algo que ninguna herramienta disponible en las sesiones de trabajo hasta ahora puede hacer (no hay acceso a un shell de Node conectado al repo real). Sigue siendo una verificacion manual pendiente del propietario del proyecto.
-- [x] Persistencia real D1/SQLite para PasswordResetStore -- v0.0.9.7 (PR de seguimiento). Antes de este cambio, `createPasswordResetStore()` en `store-factory.ts` siempre devolvia `InMemoryPasswordResetStore` sin importar el backend configurado (a diferencia de `createUsersStore`/`createSessionStore`, que si resolvian D1/SQLite reales desde el PR #4) -- los tokens de recuperacion de contrasena (vida corta, 30 min) se perdian en cada restart del proceso/Worker. Se agregan `D1PasswordResetStore` y `SqlitePasswordResetStore`, mismo patron que los stores de usuarios/sesiones, usando la tabla `password_reset_requests` que ya existia en `schema.sql` desde v0.0.9.4.
+- [x] Automatizar la creacion del admin inicial en D1 + comando unico de `schema.sql` -- v0.0.9.4 (PR #15, mergeado). `schema.sql` (raiz) generado a partir de los 4 schema.sql de cada paquete + tabla de password reset; `scripts/setup.mjs` aplica el schema y crea el admin inicial en un solo comando (`npm run setup`); `scripts/generate-schema.mjs` regenera el maestro si cambia algun paquete. Cloudflare D1 sigue usando `wrangler d1 execute` por separado (documentado, no automatizado). La prueba de este comando contra SQLite real sigue pendiente -- ver "Funcionalidades Internas en Desarrollo".
+- [x] Persistencia real D1/SQLite para PasswordResetStore -- v0.0.9.7 (PR #19, mergeado). Antes de este cambio, `createPasswordResetStore()` en `store-factory.ts` siempre devolvia `InMemoryPasswordResetStore` sin importar el backend configurado (a diferencia de `createUsersStore`/`createSessionStore`, que si resolvian D1/SQLite reales desde el PR #4) -- los tokens de recuperacion de contrasena (vida corta, 30 min) se perdian en cada restart del proceso/Worker. Se agregan `D1PasswordResetStore` y `SqlitePasswordResetStore`, mismo patron que los stores de usuarios/sesiones, usando la tabla `password_reset_requests` que ya existia en `schema.sql` desde v0.0.9.4.
 
-## Baja prioridad
-- [ ] Cobro real Pay per Crawl -- ver nota de alcance abajo, seccion "Trust Layer y Pay per Crawl: protocolo abierto, no asegurador".
+---
+
+## Funcionalidades Internas en Desarrollo
+
+Lo que falta, pero es responsabilidad exclusiva de Portaless resolver -- no depende de ningun proveedor externo, tercero, ni proyecto aparte.
+
+- [ ] Probar `npm run setup` localmente contra un archivo SQLite real antes de confiar en el flujo de instalacion documentado en scripts/SETUP.md. Requiere ejecucion manual con Node y `better-sqlite3` instalado; ninguna herramienta disponible en las sesiones de trabajo hasta ahora tiene un shell de Node conectado al repo real para hacerlo. Verificacion manual del propietario del proyecto.
 - [ ] MCP nativo
 - [ ] Identidad AT Protocol
 - [ ] Protocol APW resolver real
+- [ ] Confirmar los nombres exactos de los campos title/description en packages/atomic-elements/src/types.ts (PageLayout) -- src/pages/paginas/[slug].astro los usa de forma defensiva con un cast porque ese archivo no pudo leerse completo en una sesion de trabajo anterior.
+- [ ] Agregar `contentRead`/`contentWrite` al tipo que usa `node-isolated-vm.ts` sin el extendido local -- `CapabilityHostBridge` en `packages/plugin-sandbox/src/types.ts` ya declara ambos campos formalmente desde v0.0.9.6 (PR #18), pero `node-isolated-vm.ts` sigue usando un tipo local extendido (`BaseCapabilityHostBridge & {...}`) por compatibilidad. Limpiar esa referencia es un cambio cosmetico de bajo riesgo, sin impacto funcional.
+- [ ] Construir un catalogo dinamico de plugins instalados para el Centro de Permisos -- hoy el catalogo de subjects (`hello-plugin`, `commerce-plugin`) esta hardcodeado en `functions/admin/permissions/index.js`, no viene de un registro real de plugins instalados (no existe todavia ese registro).
+- [ ] Implementar el endpoint HTTP interno real que exponga `CapabilityHostBridge` sobre HTTP (`bridgeUrl`, ya definido en `SandboxExecutionInput` desde v0.0.9.1) -- necesario para que los adaptadores edge (Cloudflare, Deno) puedan invocar capacidades no-red sin estar en el mismo proceso Node que `NodeIsolatedVmAdapter`. El codigo del endpoint en si es responsabilidad de Portaless; su prueba final si depende de una cuenta real de un proveedor edge (ver "Funciones Externas").
+
+---
+
+## Funciones Externas
+
+Lo que depende de un tercero -- otra empresa, otro proveedor de nube, u otro proyecto open source -- para completarse. Portaless expone el protocolo, el SDK, o el contrato tecnico necesario, pero la pieza en si se construye y se mantiene fuera de este repositorio.
+
+- [ ] Cobro real Pay per Crawl -- ver nota de alcance abajo, seccion "Trust Layer y Pay per Crawl: protocolo abierto, no asegurador".
 - [ ] Agente raiz de lenguaje natural -- ver nota de alcance abajo, seccion "Agente generador de sitios: via SDK externo, no interno".
-- [ ] Desplegar el Worker "dispatcher" fijo de Cloudflare Workers for Platforms (ver tarea manual 7 antigua, ahora tarea manual 6)
-- [ ] Implementar el endpoint HTTP interno real de CapabilityHostBridge para adaptadores edge (ver tarea manual 7 antigua)
-- [ ] Verificar DenoDeployAdapter y CloudflareWorkersForPlatformsAdapter contra cuentas reales -- en espera de credenciales de prueba, sin fecha estimada (ver tarea manual 5)
-
-## Vision largo plazo
 - [ ] Lenguaje de programacion de intencion humana -- ver nota de alcance abajo, seccion "Agente generador de sitios: via SDK externo, no interno".
+- [ ] AppPlace y AppLibre (marketplace de plugins) -- ver nota de alcance abajo, seccion "AppPlace y AppLibre: proyectos aparte, asociados oficiales".
+- [~] Integracion real Cloudflare Workers for Platforms / Deno Deploy -- v0.0.9.1: implementada la llamada real a las APIs REST publicas de ambos proveedores (subida/creacion + invocacion), siguiendo el plan de 5 puntos documentado en el PR anterior. **NO verificado end-to-end contra una cuenta real** (sin credenciales de prueba disponibles al momento de este PR) -- la logica de construccion de requests, mapeo de capacidades y parsing de respuestas esta cubierta por tests con `fetch` mockeado (tests/e2e/sandbox-deno-deploy-adapter.test.ts, tests/e2e/sandbox-cloudflare-adapter.test.ts), pero el primer uso real contra cada API debe tratarse como una integracion nueva sin confirmar. Sigue en espera hasta contar con cuentas de prueba reales de ambos proveedores -- sin fecha estimada. Detalles:
+  - **Deno Deploy**: mapeo directo (`network:fetch` -> allowlist de host aplicado en el bootstrap subido; capacidades no-red -> bridge HTTP hacia `SandboxExecutionInput.bridgeUrl`, nuevo campo del contrato). Crea una deployment nueva por `execute()` -- limpieza/reuso de deployments viejas queda pendiente (ver nota en el propio archivo).
+  - **Cloudflare Workers for Platforms**: sube/actualiza el script via PUT (scriptName deterministico por `name@version`, reusa en vez de acumular). **Requiere infraestructura externa a este adaptador**: un Worker "dispatcher" fijo desplegado por namespace (no lo despliega este codigo) que resuelve `env.DISPATCH_NAMESPACE.get(scriptName)` -- sin `dispatcherUrl` configurado, el adaptador puede subir scripts pero falla explicitamente al intentar invocarlos. El filtrado autoritativo de red via "outbound worker" tampoco lo configura este adaptador (ver comentario extenso al inicio de cloudflare-workers-for-platforms.ts).
+  - **Fastly Compute**: SIN cambios en este PR, sigue solo con TODOs documentados (decision explicita: requiere un plugin ya compilado a Wasm para poder probarse, no disponible).
+- [ ] Desplegar el Worker "dispatcher" fijo de Cloudflare Workers for Platforms -- requiere infraestructura desplegada en una cuenta real de Cloudflare, fuera de este repositorio.
+- [ ] Verificar DenoDeployAdapter y CloudflareWorkersForPlatformsAdapter contra cuentas reales -- en espera de credenciales de prueba, sin fecha estimada.
 
-## Version v0.0.9.4 -- alcance explicito (ultima version antes del MVP)
-
-1. Licenciamiento: AGPL-3.0 en el core + MIT en el SDK de plugins + `docs/architecture/licensing-boundaries.md`. -- CERRADO (PR #13, mergeado a agentic, luego a main).
-2. Recuperacion de contrasena, 2FA, OAuth/SSO. -- CERRADO (PR #15, mergeado; el punto critico de login.js se cerro en v0.0.9.5, PR #16).
-3. Puente real de `content:read`/`content:write` en el sandbox. -- CERRADO en codigo y en tipos (PR #15 + PR #18 de v0.0.9.6), catalogo de capacidades 12/12 con `CapabilityHostBridge` completo.
-4. Automatizar admin inicial en D1 + comando unico de `schema.sql`. -- CERRADO en codigo (PR #15). Pendiente de verificacion manual: correr `npm run setup` contra SQLite real (sin cambios, ver Prioridad media).
-
-## Version v0.0.9.5 -- cierre del checklist del PR #15
-
-1. `functions/admin/login.js` maneja `mfaRequired:true`. -- CERRADO (PR #16).
-2. `ROADMAP.md` actualizado con el estado real post-merge del PR #15.
-
-## Version v0.0.9.6 -- tipos de CapabilityHostBridge
-
-1. `contentRead`/`contentWrite` agregados formalmente a la interfaz `CapabilityHostBridge` en `packages/plugin-sandbox/src/types.ts` (PR #18, mergeado). `node-isolated-vm.ts` sigue usando un tipo local extendido por compatibilidad -- limpiar esa referencia es un cambio cosmetico de bajo riesgo, sin impacto funcional, que puede hacerse en un commit de seguimiento separado.
-
-## Version v0.0.9.7 -- persistencia de PasswordResetStore + verificacion de middleware
-
-1. `CapabilityHostBridge` -- ya cerrado en v0.0.9.6 (ver arriba).
-2. `functions/admin/_middleware.js` expone `context.data.user` -- CONFIRMADO, ya estaba resuelto (ver linea de canWrite(role) en Prioridad media). El roadmap anterior lo marcaba como pendiente de verificar por un bug historico del conector de GitHub que impedia leer el archivo; verificado ahora que ese bug se supero.
-3. `PasswordResetStore` con persistencia real D1/SQLite -- CERRADO (ver linea nueva en Prioridad media).
-4. `npm run setup` probado contra SQLite real -- SIGUE PENDIENTE, sin cambios. Ninguna herramienta disponible en las sesiones de trabajo tiene un shell de Node con acceso al repo real para ejecutarlo -- requiere verificacion manual del propietario del proyecto.
-5. Cloudflare Workers for Platforms / Deno Deploy contra cuentas reales -- SIGUE PENDIENTE, sin cambios, en espera de credenciales de prueba reales.
+---
 
 ## Trust Layer y Pay per Crawl: protocolo abierto, no asegurador
 
@@ -80,11 +82,11 @@ Decision de arquitectura explicita: Portaless (el Trust Layer) define y expone e
 
 La razon es simple y honesta: garantizar un cobro real requiere licencias financieras, cumplimiento regulatorio (PCI-DSS para tarjetas, KYC/AML segun jurisdiccion para cripto) que corresponden a una empresa financiera regulada, no a un proyecto de software abierto. Portaless actuando como "asegurador" de pagos sin ser esa entidad regulada seria un riesgo legal y de confianza innecesario para el proyecto y para quien lo use.
 
-El diseño correcto, y el que se mantiene: terceros (Stripe, Mercado Pago, plataformas de cripto, o cualquier otro procesador) construyen su propia capa de cobro **sobre** el protocolo que expone el Trust Layer -- leyendo el ledger, verificando identidad de agentes, aplicando sus propias politicas de riesgo y cumplimiento. Esas integraciones de terceros son candidatas naturales para listarse en AppPlace (ver seccion siguiente), pero como proyectos independientes, nunca como parte del core de Portaless.
+El diseño correcto, y el que se mantiene: terceros (Stripe, Mercado Pago, plataformas de cripto, o cualquier otro procesador) construyen su propia capa de cobro **sobre** el protocolo que expone el Trust Layer -- leyendo el ledger, verificando identidad de agentes, aplicando sus propias politicas de riesgo y cumplimiento. Esas integraciones de terceros son candidatas naturales para listarse en AppPlace, pero como proyectos independientes, nunca como parte del core de Portaless.
 
 ## Agente generador de sitios: via SDK externo, no interno
 
-La tarea "Agente raiz de lenguaje natural" (Baja prioridad) y la "Vision largo plazo" de un lenguaje de programacion de intencion humana **no se desarrollaran dentro de este repositorio**. Se conectaran mediante un SDK con un proyecto aparte, tambien open source, actualmente en desarrollo: un lenguaje de programacion pensado para generar agentes/programas a partir de lenguaje natural.
+La tarea "Agente raiz de lenguaje natural" y la "Vision largo plazo" de un lenguaje de programacion de intencion humana **no se desarrollaran dentro de este repositorio**. Se conectaran mediante un SDK con un proyecto aparte, tambien open source, actualmente en desarrollo: un lenguaje de programacion pensado para generar agentes/programas a partir de lenguaje natural (Nuvid).
 
 Ambos proyectos (Portaless y ese lenguaje) tendran su propio SDK de conexion -- el mismo patron ya usado para el Plugin SDK (MIT) descrito en `docs/architecture/licensing-boundaries.md`. Esto mantiene a Portaless (AGPL-3.0) sin depender en su nucleo de un proyecto todavia mas experimental, y evita mezclar licencias o ciclos de release. Cuando ese proyecto externo tenga una version estable, la integracion se documentara aqui como una conexion entre proyectos, no como una feature interna del roadmap de Portaless.
 
@@ -115,16 +117,19 @@ AppPlace (marketplace cerrado, con capacidad de cobro y curaduria comercial) y A
 | #16 | fix/v0.0.9.5-mfa-login-redirect-roadmap-cleanup -> agentic | Mergeado | Fix login.js mfaRequired, ROADMAP.md actualizado |
 | #17 | agentic -> main | Mergeado | v0.0.9.4 + v0.0.9.5 completos promovidos a main |
 | #18 | fix/v0.0.9.6-capability-host-bridge-content-types -> main | Mergeado | contentRead/contentWrite agregados a CapabilityHostBridge |
-| #19 | fix/v0.0.9.7-password-reset-persistence-roadmap -> main | Abierto | Persistencia real D1/SQLite para PasswordResetStore, ROADMAP.md con aclaraciones de negocio (Pay per Crawl, agente via SDK externo, AppPlace/AppLibre aparte) |
+| #19 | fix/v0.0.9.7-password-reset-persistence-roadmap -> main | Mergeado | Persistencia real D1/SQLite para PasswordResetStore, ROADMAP.md con aclaraciones de negocio |
+| #20 | docs/v0.0.9.8-roadmap-restructure -> main | Abierto | ROADMAP.md reorganizado en 3 categorias: Funcionalidades en Produccion / Funcionalidades Internas en Desarrollo / Funciones Externas |
 
 ## Tareas manuales pendientes
 
-1. Confirmar los nombres exactos de los campos title/description en packages/atomic-elements/src/types.ts (PageLayout) -- src/pages/paginas/[slug].astro los usa de forma defensiva con un cast.
-2. Si se agregan nuevos endpoints de escritura al dashboard (permisos, configuracion, etc.), replicar el patron de canWrite(role) de functions/admin/pages/[slug].js.
-3. Commitear un package-lock.json real a la raiz para poder reactivar cache: npm en los workflows de CI. -- HECHO en PR #8.
-4. Revisar y, si aplica, re-licenciar bajo AGPL-3.0 cualquier codigo de terceros vendorizado o dependencia embebida directamente en el arbol del repo -- REVISADO en v0.0.9.5: sin vendor/third_party en el arbol raiz; infra/ es config propia de despliegue; plugins-registry/ solo tiene un README. Sin hallazgos, no sustituye una auditoria legal formal de las dependencias de npm.
-5. Probar `DenoDeployAdapter` y `CloudflareWorkersForPlatformsAdapter` (v0.0.9.1) contra cuentas reales de prueba -- solo estan verificados con `fetch` mockeado. En espera de credenciales, sin fecha estimada.
-6. Desplegar el Worker "dispatcher" fijo que requiere `CloudflareWorkersForPlatformsAdapter`. Fuera de alcance hasta contar con cuenta real.
-7. Implementar el endpoint HTTP interno real que exponga `CapabilityHostBridge` sobre HTTP para los adaptadores edge. Fuera de alcance hasta contar con cuenta real.
-8. Publicar `docs/architecture/licensing-boundaries.md` de forma visible desde el README. -- HECHO en v0.0.9.4 (PR #15).
-9. Probar `npm run setup` localmente contra un archivo SQLite real antes de confiar en el flujo de instalacion documentado en scripts/SETUP.md. SIGUE PENDIENTE -- requiere ejecucion manual con Node y `better-sqlite3` instalado; ninguna herramienta disponible en las sesiones de trabajo hasta ahora tiene un shell de Node conectado al repo real para hacerlo. Verificacion manual del propietario del proyecto.
+1. Probar `npm run setup` localmente contra un archivo SQLite real antes de confiar en el flujo de instalacion documentado en scripts/SETUP.md. Requiere ejecucion manual con Node y `better-sqlite3` instalado; ninguna herramienta disponible en las sesiones de trabajo hasta ahora tiene un shell de Node conectado al repo real para hacerlo. Verificacion manual del propietario del proyecto.
+2. Confirmar los nombres exactos de los campos title/description en packages/atomic-elements/src/types.ts (PageLayout) -- src/pages/paginas/[slug].astro los usa de forma defensiva con un cast.
+3. Si se agregan nuevos endpoints de escritura al dashboard (permisos, configuracion, etc.), replicar el patron de canWrite(role) de functions/admin/pages/[slug].js.
+4. Commitear un package-lock.json real a la raiz para poder reactivar cache: npm en los workflows de CI. -- HECHO en PR #8.
+5. Limpiar el tipo local extendido en node-isolated-vm.ts (BaseCapabilityHostBridge & {...}) en favor de CapabilityHostBridge importado directo desde types.ts, ya completo desde v0.0.9.6. Cambio cosmetico, sin impacto funcional.
+6. Construir el catalogo dinamico de plugins instalados para el Centro de Permisos (hoy hardcodeado en functions/admin/permissions/index.js).
+7. Revisar y, si aplica, re-licenciar bajo AGPL-3.0 cualquier codigo de terceros vendorizado o dependencia embebida directamente en el arbol del repo -- REVISADO en v0.0.9.5: sin vendor/third_party en el arbol raiz; infra/ es config propia de despliegue; plugins-registry/ solo tiene un README. Sin hallazgos, no sustituye una auditoria legal formal de las dependencias de npm.
+8. Probar `DenoDeployAdapter` y `CloudflareWorkersForPlatformsAdapter` (v0.0.9.1) contra cuentas reales de prueba -- solo estan verificados con `fetch` mockeado. En espera de credenciales, sin fecha estimada.
+9. Desplegar el Worker "dispatcher" fijo que requiere `CloudflareWorkersForPlatformsAdapter`. Fuera de alcance hasta contar con cuenta real.
+10. Implementar el endpoint HTTP interno real que exponga `CapabilityHostBridge` sobre HTTP para los adaptadores edge. Codigo propio de Portaless, prueba final depende de cuenta real de un proveedor edge.
+11. Publicar `docs/architecture/licensing-boundaries.md` de forma visible desde el README. -- HECHO en v0.0.9.4 (PR #15).
