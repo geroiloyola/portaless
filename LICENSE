@@ -1,21 +1,65 @@
-MIT License
+                    GNU AFFERO GENERAL PUBLIC LICENSE
+                       Version 3, 19 November 2007
 
-Copyright (c) 2026 Linstark Corporation
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ This is the GNU Affero General Public License (AGPL-3.0), the full
+ canonical text of which is published by the Free Software Foundation
+ at https://www.gnu.org/licenses/agpl-3.0.txt
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ Portaless Copyright (C) 2026 Linstark Corp
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as
+ published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program. If not, see
+ <https://www.gnu.org/licenses/>.
+
+===============================================================================
+LINKING EXCEPTION -- Plugin SDK boundary
+===============================================================================
+
+As a special exception to the terms of the AGPL-3.0 above, the following
+does NOT constitute a "modified version" or "derivative work" of Portaless
+under this license, and creating or distributing it under any license of
+your choosing (including proprietary/closed-source licenses) is explicitly
+permitted:
+
+  1. Any plugin, extension, or module that runs isolated inside the
+     Portaless plugin sandbox (packages/plugin-sandbox) and communicates
+     with the Portaless core exclusively through the public Plugin SDK
+     surface (the types, interfaces, and capability-bridge contracts
+     published under packages/plugin-sdk, licensed separately under MIT --
+     see LICENSE-SDK).
+
+  2. Any software that merely uses the public HTTP APIs exposed by a
+     running Portaless instance (e.g. the .well-known endpoints, the
+     admin REST endpoints) without incorporating Portaless source code.
+
+This exception does NOT cover:
+
+  - Any code that directly imports, copies, patches, or statically/
+    dynamically links against Portaless core source code outside of the
+    published Plugin SDK surface.
+  - Any modified version of the Portaless core itself (functions/,
+    packages/ excluding plugin-sdk, src/) offered as a network service to
+    third parties -- such modifications must be released under AGPL-3.0
+    per Section 13 of the license above.
+
+See docs/architecture/licensing-boundaries.md for the full explanation of
+where this line is drawn, and for the separate licensing terms that apply
+to the AppPlace and AppLibre plugin registries, which are independent
+projects not covered by this LICENSE file.
+
+The full legal text of the GNU Affero General Public License version 3 is
+available at: https://www.gnu.org/licenses/agpl-3.0.txt

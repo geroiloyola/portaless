@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 Linstark Corp
+
+This license applies exclusively to the public Plugin SDK surface of
+Portaless -- the contents of packages/plugin-sdk (types, interfaces,
+capability-bridge contracts, and any helper published from that package
+for third-party plugin authors to import).
+
+It does NOT apply to the rest of the Portaless repository (the core:
+functions/, src/, and all other packages/ directories), which is licensed
+under AGPL-3.0 -- see LICENSE.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+Rationale: this permissive license on the SDK surface exists specifically
+so that a third-party plugin author who imports these types/interfaces
+into a closed-source plugin never incorporates AGPL-3.0-licensed code into
+their own project merely by consuming the SDK. See ../docs/architecture/licensing-boundaries.md.
