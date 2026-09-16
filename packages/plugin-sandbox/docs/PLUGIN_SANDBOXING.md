@@ -1,4 +1,4 @@
-# Sandboxing Real de Plugins (v0.0.6, actualizado en v0.0.9 y v0.0.9.1)
+# Sandboxing Real de Plugins (v0.0.6, actualizado en v0.0.9, v0.0.9.1 y v0.0.9.4)
 
 ## Multi-proveedor
 
@@ -7,7 +7,7 @@
 | CloudflareWorkersForPlatformsAdapter | Cloudflare | v0.0.9.1: integracion real (sube/actualiza script via API REST, invoca via un Worker dispatcher externo) -- **NO verificada contra una cuenta real** (sin credenciales de prueba), cubierta solo por tests con `fetch` mockeado. Requiere ademas un Worker dispatcher desplegado aparte (infraestructura externa a este repo, ver comentario al inicio del archivo del adaptador). |
 | DenoDeployAdapter | Deno Deploy | v0.0.9.1: integracion real (crea deployment via API REST, invoca la URL resultante) -- **NO verificada contra una cuenta real** (sin credenciales de prueba), cubierta solo por tests con `fetch` mockeado. |
 | FastlyComputeAdapter | Fastly | Esqueleto, TODOs detallados en el codigo -- sin integracion real (requiere un plugin ya compilado a Wasm para poder probarse, no disponible; decision explicita de alcance). |
-| NodeIsolatedVmAdapter | Self-hosted | Ejecucion real implementada, con pool de isolates reutilizables (v0.0.9) y 10/12 capacidades con puente real (falta `content:read`/`content:write`, ver Pendiente abajo) |
+| NodeIsolatedVmAdapter | Self-hosted | Ejecucion real implementada, con pool de isolates reutilizables (v0.0.9) y **12/12 capacidades con puente real** desde v0.0.9.4 (ver seccion nueva abajo). |
 
 Para Cloudflare y Deno Deploy, las 9 capacidades no-red (storage, email,
 commerce, media, agent:identify, site:admin) se resuelven via un bridge
@@ -83,6 +83,47 @@ en el futuro aparecen falsos negativos (el output vuelve a salir
 por un parser real (p.ej. usar el AST de `acorn` ya que Astro/Vite lo traen
 transitivamente) en vez de agregar mas casos especiales al regex.
 
+## Puente real de content:read/content:write (v0.0.9.4)
+
+Antes de v0.0.9.4, `content:read` y `content:write` eran las unicas 2
+capacidades del catalogo de 12 que solo tenian el guard de denegacion en
+`node-isolated-vm.ts` -- nunca se registraba la funcion positiva que invoca
+el `hostBridge` cuando la capacidad SI esta concedida, a diferencia de las
+otras 10 (`network:fetch` desde antes de v0.0.9, las 9 restantes agregadas en
+v0.0.9). El resultado practico era que ningun plugin de terceros (AppPlace,
+AppLibre, o privado) podia leer ni escribir contenido del sitio, incluso si
+un administrador le otorgaba la capacidad explicitamente desde el Centro de
+Permisos.
+
+v0.0.9.4 cierra esa brecha integrando ambas capacidades al mismo array
+generico `CAPABILITY_BRIDGES` que ya usan las otras 10 -- mismo patron
+`ivm.Reference` + `.apply({ result: { promise: true, copy: true } })`
+descrito en la seccion anterior, mismo guard de denegacion inmediata cuando
+la capacidad no esta concedida, y mismo error `NOT_CONFIGURED` cuando esta
+concedida pero el `hostBridge` de la integracion (D1PageStore,
+SqlitePageStore, o cualquier futuro backend) todavia no expone
+`contentRead`/`contentWrite`. El bloque especial que existia antes en
+`execute()` (que solo tenia el guard de denegacion para estas 2 capacidades,
+por fuera del array generico) se eliminó.
+
+**Tarea manual pendiente:** `CapabilityHostBridge` en
+`packages/plugin-sandbox/src/types.ts` debe declarar formalmente
+`contentRead?: (args: unknown) => Promise<unknown>` y
+`contentWrite?: (args: unknown) => Promise<unknown>` (mismo shape que
+`mediaRead`/`mediaWrite` ya declarados ahi). `node-isolated-vm.ts` ya
+funciona con estos campos hoy via un tipo local extendido (interseccion de
+tipos) para no bloquear esta entrega en la lectura de `types.ts` (bloqueada
+por un bug del conector de GitHub, ver `lessons_learned.md`), pero cualquier
+implementacion real de `hostBridge` que importe `CapabilityHostBridge`
+directamente desde `../types` no vera esos 2 campos tipados/autocompletados
+hasta que se haga ese ajuste.
+
+**Estado del catalogo de capacidades tras v0.0.9.4: 12/12 con puente real.**
+Cobertura de tests: `tests/e2e/sandbox-content-capability-bridge.test.ts` (7
+tests: denegacion sin capacidad concedida, `NOT_CONFIGURED` sin `hostBridge`
+configurado, ida y vuelta real con datos anidados, y ambas capacidades
+concedidas simultaneamente sin interferencia entre si).
+
 ## Probarlo
 
 ```
@@ -97,4 +138,4 @@ GHSA-864f-rcv7-6rh4 (RCE) afecta <=7.0.0. El adaptador rechaza versiones vulnera
 ## Pendiente
 
 - ~~Cloudflare, Deno Deploy, Fastly sin integracion real~~ -- resuelto PARCIALMENTE en v0.0.9.1 para 2 de 3: Cloudflare Workers for Platforms y Deno Deploy ahora hacen la llamada real a sus APIs REST publicas (subida/creacion + invocacion), pero **sin verificacion contra una cuenta real** (sin credenciales de prueba disponibles), solo con tests de `fetch` mockeado. Fastly sigue sin cambios -- TODOs detallados, decision explicita de alcance (requiere un plugin ya compilado a Wasm, no disponible). Gaps conocidos que quedan para un proximo PR: (a) el endpoint HTTP interno que expone `CapabilityHostBridge` sobre HTTP (`bridgeUrl`) todavia no existe en el repo; (b) `CloudflareWorkersForPlatformsAdapter` depende de un Worker "dispatcher" desplegado aparte, que este codigo no crea; (c) `DenoDeployAdapter` crea una deployment nueva en cada `execute()` sin limpiar las anteriores; (d) ningun mapeo de `limits` (CPU/memoria) esta implementado para ninguno de los 2 proveedores por falta de soporte de API para eso.
-- ~~Solo 3 de 12 capacidades tienen puente~~ -- resuelto PARCIALMENTE en v0.0.9: `network:fetch` (ya existia) mas las 9 capacidades nuevas (`media:read`, `media:write`, `email:send`, `commerce:read`, `commerce:checkout`, `storage:read`, `storage:write`, `agent:identify`, `site:admin`) ya tienen puente real via `hostBridge` cuando estan concedidas. `content:read` y `content:write` siguen SIN puente real -- hoy solo existe el guard de denegacion (`__portalessReadContent`/`__portalessWriteContent` lanzan error si la capacidad no esta concedida), pero no hay ninguna funcion registrada para el caso en que SI esta concedida, asi que un plugin no puede invocar `content:read`/`content:write` en absoluto todavia, esten o no concedidas. Pendiente para un proximo PR: agregar esas 2 al mismo patron `CAPABILITY_BRIDGES` + `hostBridge` que ya cubre las otras 10.
+- ~~Solo 3 de 12 capacidades tienen puente~~ -- resuelto en v0.0.9 (10/12: `network:fetch` mas las 9 capacidades nuevas) y COMPLETADO en v0.0.9.4 (12/12: se agrega el puente real de `content:read`/`content:write`, ver seccion nueva arriba "Puente real de content:read/content:write (v0.0.9.4)"). Con esto, todas las capacidades del catalogo tienen puente real en `NodeIsolatedVmAdapter` -- lo que sigue pendiente es exclusivamente el bridge HTTP para los adaptadores edge (Cloudflare/Deno), ver punto anterior.
