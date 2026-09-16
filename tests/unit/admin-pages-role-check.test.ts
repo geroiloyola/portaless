@@ -5,7 +5,9 @@ import { onRequestPut, onRequestGet } from "../../functions/admin/pages/[slug].j
 // D1PageStore usa (prepare().bind().first()/run()/all()). Evita que
 // createPageStore() caiga al fallback SqlitePageStore, que requiere
 // node:sqlite y escribiria un archivo real en disco (./data/pages.sqlite)
-// como efecto secundario del test si env.PORTALESS_DB fuera undefined.
+// como efecto secundario del test si env.DB fuera undefined. (v0.0.9.3:
+// el binding se llama `DB`, no `PORTALESS_DB` -- ver el fix de nombre en
+// packages/atomic-elements/src/persistence/store-factory.ts.)
 function makeFakeD1() {
   const rows = new Map<string, { slug: string; layout_json: string; updated_at: string; updated_by: string | null }>();
   return {
@@ -41,7 +43,7 @@ function makeContext({ user, slugParam, body }: { user: { role: string } | null;
     },
     params: { slug: slugParam },
     data: { user },
-    env: { PORTALESS_DB: makeFakeD1() },
+    env: { DB: makeFakeD1() },
   } as any;
 }
 

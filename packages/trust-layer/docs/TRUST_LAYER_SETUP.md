@@ -53,7 +53,27 @@ Web Bot Auth en produccion los soporta todavia a la fecha de este MVP.
 
 ## Ledger publico
 
-Por defecto, este MVP usa `InMemoryUsageLedgerStore`, que se reinicia con
-cada despliegue. Para un ledger persistente real, implementa la interfaz
-`UsageLedgerStore` sobre Cloudflare KV, D1 o Durable Objects antes de
-publicar el ledger como fuente confiable de trazabilidad.
+**Actualizado v0.0.9.3**: el ledger ya persiste en D1 (Cloudflare) o SQLite
+(self-hosted) por defecto -- `createUsageLedgerStore(env)` en
+`packages/trust-layer/src/ledger/store-factory.ts` resuelve `env.DB` (D1) o
+`env.PORTALESS_SQLITE_PATH` (self-hosted), y solo cae a
+`InMemoryUsageLedgerStore` (se reinicia con cada despliegue) si ninguno de
+los dos esta configurado -- util para probar localmente, pero no
+recomendado en produccion.
+
+La escritura ocurre automaticamente: `functions/_middleware.js` llama a
+`recordAgentAccess()` en cada request de un agente detectado (desde
+v0.0.6). La lectura publica se expone en:
+
+```
+GET /.well-known/portaless-usage-log.json
+GET /.well-known/portaless-usage-log.json?period=2026-03
+```
+
+Sin autenticacion -- es informacion agregada y no sensible (contadores por
+operador, nunca contenido de las requests), publicada a proposito para que
+cualquiera pueda auditar el comportamiento del sitio con agentes de IA,
+igual que un panel de uso por modelo de OpenRouter. Sin `?period`, devuelve
+el mes UTC actual; un mes sin trafico responde `200` con `agents: []` (no
+`404`). Implementacion en
+`functions/.well-known/portaless-usage-log.json.js`.

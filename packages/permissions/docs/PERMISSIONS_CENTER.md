@@ -65,18 +65,16 @@ constante hasta que exista ese registro.
 - No hay todavía un registro de auditoría de cambios de permisos más allá
   del campo `grantedBy`/`grantedAt` por concesión individual (se sobrescribe
   en cada `setGrant`, no se guarda historial).
-- **Bug preexistente encontrado en este PR, no corregido (fuera de alcance):**
-  `packages/atomic-elements/src/persistence/store-factory.ts` (usado por
-  `createPageStore`, ya en producción) espera el binding como `env.PORTALESS_DB`,
-  mientras que `wrangler.toml`, `packages/auth/src/store-factory.ts` y este
-  mismo `packages/permissions/src/store-factory.ts` usan `env.DB`. En una
-  instancia real de Cloudflare Pages con solo el binding `DB` configurado
-  (como documenta `wrangler.toml`), `PageStore` nunca vería D1 y caería
-  siempre a SQLite. No se toca aquí porque está fuera del alcance acordado
-  para esta ronda (solo Centro de Permisos) -- queda anotado en
-  `ROADMAP.md` como tarea manual pendiente.
-- El Trust Layer / ledger de agentes (la otra mitad de esta línea del
-  README) sigue exactamente igual que antes: `createUsageLedgerStore()`
-  existe con las mismas 2 implementaciones reales (D1/SQLite), pero ningún
-  endpoint del repo lo invoca todavía. Queda fuera de esta ronda, ver
-  ROADMAP.md.
+- **Actualización v0.0.9.3**: el bug de binding D1 inconsistente que se
+  había encontrado y documentado aquí (`env.PORTALESS_DB` en
+  `atomic-elements/persistence/store-factory.ts` vs `env.DB` en esta
+  factory) ya se corrigió -- las 4 factories del repo (auth, permissions,
+  trust-layer, atomic-elements) usan ahora `env.DB` de forma consistente.
+  Ver `ROADMAP.md` para el detalle del fix.
+- **Actualización v0.0.9.3**: el Trust Layer / ledger de agentes (la otra
+  mitad de la línea de estado del README) también quedó conectado --
+  resultó que su lado de ESCRITURA ya estaba conectado desde v0.0.6
+  (`functions/_middleware.js` llamaba a `recordAgentAccess` con D1/SQLite
+  reales), solo faltaba un endpoint de LECTURA. Se agregó
+  `functions/.well-known/portaless-usage-log.json.js`. Ver
+  `packages/trust-layer/docs/TRUST_LAYER_SETUP.md` y `ROADMAP.md`.

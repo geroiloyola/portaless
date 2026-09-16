@@ -72,7 +72,7 @@ Este proyecto documenta explícitamente qué está implementado y qué es un esq
 | Motor de contenido, comercio (lectura), Atomic Elements, Dashboard | ✅ Funcional |
 | Autenticación (login + persistencia D1/SQLite) | ✅ Funcional (sin 2FA/OAuth) |
 | Centro de Permisos | ✅ UI conectada a persistencia real (D1/SQLite) vía `functions/admin/permissions/index.js`, con guard server-side `canWrite(role)` — catálogo de plugins aún sembrado a mano, ver [`PERMISSIONS_CENTER.md`](./packages/permissions/docs/PERMISSIONS_CENTER.md) |
-| Trust Layer (políticas + ledger) | 🟡 UI funcional, ledger con implementación D1/SQLite lista pero sin ningún endpoint que la invoque todavía (ver `ROADMAP.md`) |
+| Trust Layer (políticas + ledger) | ✅ Escritura conectada desde v0.0.6 (`functions/_middleware.js` ya llamaba a `recordAgentAccess` con D1/SQLite reales en cada request de un agente), lectura conectada en v0.0.9.3 via `GET /.well-known/portaless-usage-log.json` -- ver [`TRUST_LAYER_SETUP.md`](./packages/trust-layer/docs/TRUST_LAYER_SETUP.md) |
 | Sandboxing de plugins (4 adaptadores) | 🟡 `isolated-vm` (self-hosted) ejecuta código real con pool de isolates y 10/12 capacidades con puente real (faltan `content:read`/`content:write`); Cloudflare Workers for Platforms y Deno Deploy ahora hacen la llamada real a sus APIs (sin verificar contra cuenta real, solo tests con `fetch` mockeado); Fastly sigue siendo solo contrato + TODOs detallados, sin llamada real a su API |
 | Verificación criptográfica Web Bot Auth | ✅ Valida firma Ed25519 (RFC 9421) con cache del directorio de claves y verificación de unicidad de nonce |
 | MCP nativo, Identidad AT Protocol, Protocol APW | ❌ Solo stubs / diseño documentado |

@@ -7,14 +7,13 @@ import { onRequestGet, onRequestPut } from "../../functions/admin/permissions/in
 // requiere node:sqlite y escribiria un archivo real en disco como efecto
 // secundario del test si env.DB fuera undefined.
 //
-// NOTA: el binding se llama `DB` aqui (coincide con packages/permissions/
-// src/store-factory.ts, packages/auth/src/store-factory.ts y el binding
-// documentado en wrangler.toml), NO `PORTALESS_DB` como en
-// functions/admin/pages/[slug].js (que usa createPageStore, con su propio
-// nombre de campo distinto en packages/atomic-elements/src/persistence/
-// store-factory.ts). Son 2 factories distintas con convenciones de
-// nombre de env distintas -- confirmar el nombre exacto en cada
-// store-factory.ts antes de copiar este patron a un endpoint nuevo.
+// El binding se llama `DB` aqui, y desde v0.0.9.3 tambien en
+// functions/admin/pages/[slug].js (antes usaba env.PORTALESS_DB por un
+// bug de nombre inconsistente, ya corregido -- ver
+// packages/atomic-elements/src/persistence/store-factory.ts). Las 4
+// factories (auth, permissions, trust-layer, atomic-elements) comparten
+// ahora la misma convencion: env.DB para D1, env.PORTALESS_SQLITE_PATH
+// para SQLite self-hosted.
 function makeFakeD1() {
   const rows = new Map<
     string,
