@@ -1,11 +1,11 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.4)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.9)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita el schema.sql del paquete correspondiente y
 -- corre: node scripts/generate-schema.mjs
 --
--- Concatena, en un solo archivo idempotente, los 4 esquemas que hasta ahora
+-- Concatena, en un solo archivo idempotente, los esquemas que hasta ahora
 -- vivian dispersos en cada paquete y requerian aplicarse a mano por
 -- separado:
 --   packages/auth/src/stores/schema.sql
@@ -13,7 +13,7 @@
 --   packages/trust-layer/src/ledger/schema.sql
 --   packages/atomic-elements/src/persistence/stores/schema.sql
 --
--- Los 4 archivos originales de cada paquete NO se eliminan ni se modifican
+-- Los archivos originales de cada paquete NO se eliminan ni se modifican
 -- -- siguen siendo la fuente de verdad individual de cada modulo.
 --
 -- Aplicar este archivo:
@@ -96,10 +96,6 @@ CREATE TABLE IF NOT EXISTS pages (
 -- -----------------------------------------------------------------------------
 -- v0.0.9.4 -- Recuperacion de contrasena (packages/auth/src/password-reset-store.ts)
 -- -----------------------------------------------------------------------------
--- NOTA: hoy password-reset-store.ts SOLO tiene implementacion en memoria
--- (InMemoryPasswordResetStore) -- D1/SQLite reales quedan fuera de alcance
--- de v0.0.9.4 (ver ROADMAP.md). Esta tabla se agrega ya preparada para no
--- requerir otra migracion cuando se implemente esa persistencia real.
 
 CREATE TABLE IF NOT EXISTS password_reset_requests (
   token TEXT PRIMARY KEY,
@@ -110,3 +106,40 @@ CREATE TABLE IF NOT EXISTS password_reset_requests (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_username ON password_reset_requests(username);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.9 -- Registro dinamico de plugins (packages/plugin-sandbox/src/registry/plugin-registry.ts)
+-- -----------------------------------------------------------------------------
+-- Reemplaza el catalogo hardcodeado (hello-plugin, commerce-plugin) que
+-- functions/admin/permissions/index.js usaba desde v0.0.9.2. Modelo abierto
+-- por defecto (Shopify App Store / WooCommerce.org / Android Play Store):
+-- cualquiera puede registrar un plugin, y la comunidad regula la confianza
+-- via trust_score (promedio de votos), no Portaless. NOTA: solo
+-- InMemoryPluginRegistryStore existe por ahora -- estas tablas quedan
+-- preparadas para cuando se implementen D1PluginRegistryStore /
+-- SqlitePluginRegistryStore (fuera de alcance de v0.0.9.9, ver ROADMAP.md).
+
+CREATE TABLE IF NOT EXISTS plugin_registry (
+  plugin_id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  author TEXT NOT NULL,
+  source_type TEXT NOT NULL CHECK (source_type IN ('open', 'closed')),
+  manifest_json TEXT NOT NULL,
+  registered_at TEXT NOT NULL,
+  installed_at TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  trust_score REAL NOT NULL DEFAULT 0,
+  trust_score_votes INTEGER NOT NULL DEFAULT 0,
+  audited_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_registry_active ON plugin_registry(active);
+
+CREATE TABLE IF NOT EXISTS plugin_trust_votes (
+  plugin_id TEXT NOT NULL,
+  voter_id TEXT NOT NULL,
+  score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 5),
+  comment TEXT,
+  voted_at TEXT NOT NULL,
+  PRIMARY KEY (plugin_id, voter_id)
+);
