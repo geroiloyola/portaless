@@ -15,48 +15,41 @@
 // Centro de Permisos corria efectivamente en memoria, sin persistencia,
 // porque no habia ningun endpoint HTTP que lo conectara. Este archivo
 // cierra ese hueco, igual que se hizo para PageStore en el PR #6.
+//
+// v0.0.9.10: el catalogo de subjects ya no esta hardcodeado. Antes,
+// KNOWN_SUBJECTS/KNOWN_REQUESTED_CAPABILITIES listaban a mano los 2
+// plugins reales del repo (hello-plugin, commerce-plugin) -- agregar un
+// plugin nuevo requeria editar este archivo. Ahora se derivan de
+// packages/plugin-sandbox/src/registry/plugin-registry.ts (registro
+// dinamico agregado en el PR #21, sin conectar hasta ahora), via
+// createPluginRegistryStore(env). El seed de esos mismos 2 plugins vive
+// hoy en plugin-sandbox/src/registry/store-factory.ts -- ver ese archivo
+// para la limitacion conocida (InMemoryPluginRegistryStore no persiste
+// entre despliegues todavia).
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
-
-// Catalogo de subjects conocidos -- los plugins reales que existen en el
-// repo hoy. En una version futura esto deberia derivarse dinamicamente de
-// un registro de plugins instalados (ver packages/plugin-sandbox/src/
-// manifest/manifest-loader.ts), pero ese registro todavia no persiste
-// una lista de "plugins instalados en este sitio" en ningun store real --
-// solo valida manifiestos que ya se le pasan en memoria. Hardcodear estos
-// 2 subjects conocidos es preferible a mostrar el Centro de Permisos
-// siempre vacio, y no bloquea agregar mas plugins a esta lista despues.
-const KNOWN_SUBJECTS = [
-  { type: "plugin", id: "hello-plugin", displayName: "Hello Plugin (demo)" },
-  { type: "plugin", id: "commerce-plugin", displayName: "Commerce Plugin (Medusa/Mercur)" },
-];
-
-// Capacidades que cada subject conocido declara en su manifest.json real
-// (ver packages/plugin-sandbox/examples/hello-plugin/manifest.json y
-// packages/commerce-plugin/manifest.json) -- usadas solo para poblar el
-// snapshot inicial con un grant "no concedido" por cada capacidad
-// solicitada, si el store todavia no tiene ningun registro para ese
-// subject. Una vez que el administrador toca un switch, el grant real
-// pasa a vivir en el store persistente y esta lista deja de importar
-// para ese subject+capability especifico.
-const KNOWN_REQUESTED_CAPABILITIES = {
-  "hello-plugin": ["network:fetch"],
-  "commerce-plugin": ["network:fetch"],
-};
+import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
 
 function canWrite(role) {
   return role === "admin";
 }
 
-async function buildSnapshot(store) {
-  const existingGrants = await store.getAllGrants();
+async function buildSnapshot(permissionStore, pluginRegistryStore) {
+  const existingGrants = await permissionStore.getAllGrants();
   const existingKeys = new Set(
     existingGrants.map((g) => `${g.subject.type}:${g.subject.id}:${g.capabilityId}`)
   );
 
+  const registeredPlugins = await pluginRegistryStore.list(false);
+
   const defaults = [];
-  for (const subject of KNOWN_SUBJECTS) {
-    const requested = KNOWN_REQUESTED_CAPABILITIES[subject.id] ?? [];
+  for (const plugin of registeredPlugins) {
+    const subject = {
+      type: "plugin",
+      id: plugin.pluginId,
+      displayName: plugin.displayName,
+    };
+    const requested = plugin.requestedCapabilities ?? [];
     for (const capabilityId of requested) {
       const key = `${subject.type}:${subject.id}:${capabilityId}`;
       if (!existingKeys.has(key)) {
@@ -78,8 +71,9 @@ export async function onRequestGet(context) {
     });
   }
 
-  const store = await createPermissionStore(env);
-  const grants = await buildSnapshot(store);
+  const permissionStore = await createPermissionStore(env);
+  const pluginRegistryStore = await createPluginRegistryStore(env);
+  const grants = await buildSnapshot(permissionStore, pluginRegistryStore);
 
   return new Response(JSON.stringify({ grants }), {
     status: 200,
