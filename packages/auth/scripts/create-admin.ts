@@ -1,16 +1,11 @@
-// Script de creacion del usuario administrador inicial. Lee credenciales
-// desde variables de entorno.
-//
-// Uso (self-hosted con SQLite):
-//   PORTALESS_ADMIN_USERNAME=admin \\
-//   PORTALESS_ADMIN_PASSWORD=cambia-esto \\
-//   PORTALESS_SQLITE_PATH=./portaless-auth.sqlite \\
-//   node --experimental-strip-types packages/auth/scripts/create-admin.ts
-//
-// Uso (Cloudflare D1): genera el SQL de inserción para ejecutar con:
-//   wrangler d1 execute <NOMBRE_DB> --file=admin-insert.sql
+// Script de creación del usuario administrador inicial.
+// Lee credenciales desde variables de entorno y nunca imprime la contraseña.
 
 import { hashPassword } from "../src/password";
+
+function sqlString(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
 
 async function main() {
   const username = process.env.PORTALESS_ADMIN_USERNAME;
@@ -18,9 +13,12 @@ async function main() {
   const sqlitePath = process.env.PORTALESS_SQLITE_PATH;
 
   if (!username || !password) {
-    console.error(
-      "Faltan PORTALESS_ADMIN_USERNAME y/o PORTALESS_ADMIN_PASSWORD como variables de entorno."
-    );
+    console.error("Faltan PORTALESS_ADMIN_USERNAME y/o PORTALESS_ADMIN_PASSWORD como variables de entorno.");
+    process.exit(1);
+  }
+
+  if (!/^[A-Za-z0-9._@+-]{1,128}$/.test(username)) {
+    console.error("El usuario contiene caracteres no permitidos o es demasiado largo.");
     process.exit(1);
   }
 
@@ -37,10 +35,7 @@ async function main() {
     const store = new SqliteUsersStore(sqlitePath);
     const existing = await store.listUsers();
     if (existing.length > 0) {
-      console.error(
-        `Ya existen ${existing.length} usuario(s) en ${sqlitePath}. ` +
-        "Este script solo crea el primer admin."
-      );
+      console.error(`Ya existen ${existing.length} usuario(s) en ${sqlitePath}. Este script solo crea el primer admin.`);
       process.exit(1);
     }
     await store.createUser(username, password, "admin");
@@ -49,8 +44,8 @@ async function main() {
   }
 
   const sql =
-    `INSERT INTO users (username, password_hash, role, created_at) VALUES ` +
-    `('${username}', '${passwordHash}', 'admin', '${createdAt}');`;
+    "INSERT INTO users (username, password_hash, role, created_at) VALUES (" +
+    `${sqlString(username)}, ${sqlString(passwordHash)}, 'admin', ${sqlString(createdAt)});`;
 
   console.log("No se definió PORTALESS_SQLITE_PATH -- asumiendo despliegue en Cloudflare D1.");
   console.log("Ejecuta el siguiente SQL contra tu base D1 con Wrangler:\n");
