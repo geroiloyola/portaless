@@ -7,6 +7,12 @@
 // self-hosted sin proveedor de email configurado, el token se devuelve
 // en la respuesta SOLO si env.PORTALESS_DEV_MODE==="1", para poder
 // probar el flujo completo sin infraestructura de correo.
+//
+// Guardia de produccion: si PORTALESS_DEV_MODE="1" y NODE_ENV==="production",
+// el arranque de este endpoint se rechaza explicitamente (500) en vez de
+// devolver el token de reset en la respuesta HTTP. Esto evita que un despliegue
+// mal configurado exponga tokens de recuperacion a cualquiera que llame al
+// endpoint. Ver SECURITY.md.
 
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import {
@@ -17,6 +23,24 @@ import {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  if (env.PORTALESS_DEV_MODE === "1" && env.NODE_ENV === "production") {
+    console.error(
+      "PORTALESS_DEV_MODE=1 detectado con NODE_ENV=production. " +
+      "Esta combinacion expondria tokens de recuperacion de contraseña en la respuesta HTTP. " +
+      "Arranque rechazado -- corrige la configuracion de entorno antes de desplegar."
+    );
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Configuración de entorno inválida para producción.",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   let body;
   try {
