@@ -9,7 +9,7 @@ cerrar el codigo de su plugin debe resolverse leyendo este documento primero.
 
 | Componente | Licencia | Repositorio |
 |---|---|---|
-| Portaless core (CMS, dashboard, auth, Trust Layer, Centro de Permisos, motor del sandbox) | AGPL-3.0 | Este repo (`linstarkcorp/portaless`) |
+| Portaless core (CMS, dashboard, auth, Trust Layer, Centro de Permisos, motor del sandbox) | AGPL-3.0 | Este repo (`geroiloyola/portaless`) |
 | Plugin SDK (tipos, interfaces, contratos del capability bridge) | MIT | `packages/plugin-sdk` en este repo |
 | AppPlace (tienda oficial curada) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | AppLibre (registro comunitario) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |

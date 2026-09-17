@@ -110,7 +110,7 @@ Este proyecto documenta explícitamente qué está implementado y qué es un esq
 brew install node@22
 
 # Clonar el repositorio
-git clone https://github.com/linstarkcorp/portaless.git
+git clone https://github.com/geroiloyola/portaless.git
 cd portaless
 
 # Instalar dependencias (usa npm workspaces para los packages/*)
@@ -128,7 +128,7 @@ sudo apt-get install -y nodejs git
 sudo dnf install nodejs git
 
 # Clonar y instalar
-git clone https://github.com/linstarkcorp/portaless.git
+git clone https://github.com/geroiloyola/portaless.git
 cd portaless
 npm install
 ```
@@ -150,7 +150,7 @@ Luego, dentro de la terminal de WSL (Ubuntu), sigue los pasos de la sección **L
 # o via winget:
 winget install OpenJS.NodeJS.LTS
 
-git clone https://github.com/linstarkcorp/portaless.git
+git clone https://github.com/geroiloyola/portaless.git
 cd portaless
 npm install
 ```
