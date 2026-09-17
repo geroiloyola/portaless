@@ -4,29 +4,32 @@
 // vez del catalogo hardcodeado (hello-plugin, commerce-plugin) que sigue
 // usando hoy".
 //
-// Mismo patron multi-proveedor que packages/permissions/src/store-factory.ts
-// y auth/store-factory.ts: una funcion createPluginRegistryStore(env) que
-// hoy solo tiene un backend real (en memoria), y a la que se le pueden
-// sumar D1PluginRegistryStore/SqlitePluginRegistryStore despues sin tocar
-// a ningun consumidor (functions/admin/permissions/index.js,
-// packages/mcp-server/src/tools/list-installed-plugins.ts).
-//
-// LIMITACION CONOCIDA, documentada en ROADMAP.md: InMemoryPluginRegistryStore
-// no persiste entre reinicios/despliegues. El seed de abajo (hello-plugin,
-// commerce-plugin) existe para que el Centro de Permisos no aparezca vacio
-// mientras no exista un backend persistente real -- es el mismo catalogo
-// que antes vivia hardcodeado en KNOWN_SUBJECTS dentro de
-// functions/admin/permissions/index.js, movido aca para que sea el
-// registro, y no el endpoint HTTP, quien sea la fuente de verdad.
+// v0.0.9.10: conecta functions/admin/permissions/index.js al registro
+// (InMemoryPluginRegistryStore, seedeado). v0.0.9.11: agrega persistencia
+// real (D1PluginRegistryStore / SqlitePluginRegistryStore), mismo patron
+// exacto que packages/permissions/src/store-factory.ts -- env.DB primero
+// (Cloudflare D1), despues env.PORTALESS_SQLITE_PATH (self-hosted,
+// node:sqlite), cayendo a InMemoryPluginRegistryStore solo si ninguno de
+// los dos esta disponible. El seed de hello-plugin/commerce-plugin sigue
+// aplicandose siempre que el store este vacio, sin importar el backend,
+// para no perder el catalogo minimo funcional en un despliegue nuevo.
 
 import {
   InMemoryPluginRegistryStore,
   type PluginRegistryStore,
 } from "./plugin-registry";
 
+export interface PluginRegistryStoreFactoryEnv {
+  DB?: unknown;
+  PORTALESS_SQLITE_PATH?: string;
+}
+
 let cachedStore: PluginRegistryStore | null = null;
 
-async function seedKnownPlugins(store: PluginRegistryStore): Promise<void> {
+async function seedKnownPluginsIfEmpty(store: PluginRegistryStore): Promise<void> {
+  const existing = await store.list(false);
+  if (existing.length > 0) return;
+
   const nowIso = new Date().toISOString();
 
   await store.register({
@@ -52,21 +55,34 @@ async function seedKnownPlugins(store: PluginRegistryStore): Promise<void> {
   });
 }
 
-// env se acepta por simetria con los demas store-factory.ts del repo
-// (permissions, auth) aunque todavia no se use -- cuando se agregue
-// D1PluginRegistryStore/SqlitePluginRegistryStore, la seleccion de backend
-// segun env.PORTALESS_DB_DRIVER (u equivalente) vive aca, sin que ningun
-// consumidor tenga que cambiar su import.
 export async function createPluginRegistryStore(
-  env: Record<string, unknown> = {},
+  env: PluginRegistryStoreFactoryEnv = {},
 ): Promise<PluginRegistryStore> {
-  void env;
-
-  if (!cachedStore) {
-    const store = new InMemoryPluginRegistryStore();
-    await seedKnownPlugins(store);
-    cachedStore = store;
+  if (env.DB) {
+    const { D1PluginRegistryStore } = await import("./stores/d1-plugin-registry-store");
+    const store = new D1PluginRegistryStore(env.DB as any);
+    await seedKnownPluginsIfEmpty(store);
+    return store;
   }
 
+  if (env.PORTALESS_SQLITE_PATH) {
+    try {
+      const { SqlitePluginRegistryStore } = await import("./stores/sqlite-plugin-registry-store");
+      const store = new SqlitePluginRegistryStore(env.PORTALESS_SQLITE_PATH);
+      await seedKnownPluginsIfEmpty(store);
+      return store;
+    } catch (err) {
+      console.warn(
+        `[Portaless PluginRegistry] SQLite no disponible (${(err as Error).message}). Usando memoria.`,
+      );
+    }
+  } else {
+    console.warn("[Portaless PluginRegistry] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
+  }
+
+  if (!cachedStore) {
+    cachedStore = new InMemoryPluginRegistryStore();
+    await seedKnownPluginsIfEmpty(cachedStore);
+  }
   return cachedStore;
 }
