@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
       - name: npm audit
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high
       - name: Verificar version de isolated-vm (GHSA-864f-rcv7-6rh4)
         run: |
           echo "Verificando que isolated-vm, si esta instalado, no sea <=7.0.0..."

@@ -2,7 +2,7 @@
 ## Whitepaper Técnico: Arquitectura para un CMS Descentralizado, Nativo en IA y Modular
 
 **Versión 0.1 — Documento de diseño conceptual**
-**Autor:** Linstark Corporation
+**Autor:** Gerardo Loyola
 
 > Nota: este documento se copió al repositorio en la adenda de estructura
 > posterior a v0.0.5. El contenido corresponde al whitepaper original del
