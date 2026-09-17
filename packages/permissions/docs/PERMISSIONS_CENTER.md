@@ -49,13 +49,19 @@ aplica `canWrite(role) === "admin"` del lado del servidor, mismo patrón que
 monta `renderPermissionCenter()` contra ese endpoint via `fetch`, con estado
 de carga, guardado y error visibles.
 
-**Catálogo de subjects sembrado, no dinámico**: hoy la lista de plugins que
-aparecen en el Centro (`hello-plugin`, `commerce-plugin`) está hardcodeada
-en `functions/admin/permissions/index.js` (`KNOWN_SUBJECTS`), tomada de los
-manifiestos reales que existen en el repo. Todavía no hay un registro de
-"plugins instalados en este sitio" persistente del que derivar esta lista
-dinámicamente -- agregar un plugin nuevo requiere sumarlo a mano a esa
-constante hasta que exista ese registro.
+**Catálogo de subjects ya es dinámico (v0.0.9.10), pero aún no persistente**:
+`functions/admin/permissions/index.js` ya no hardcodea `hello-plugin` ni
+`commerce-plugin` en una constante -- deriva el catálogo llamando a
+`createPluginRegistryStore(env).list(false)`
+(`packages/plugin-sandbox/src/registry/store-factory.ts`), que a su vez usa
+el registro real agregado en el PR #21
+(`packages/plugin-sandbox/src/registry/plugin-registry.ts`). Agregar un
+plugin nuevo ya no requiere editar el endpoint: basta con `register()` en
+el store. **Limitación que sigue pendiente**: el único backend hoy es
+`InMemoryPluginRegistryStore`, seedeado con `hello-plugin`/`commerce-plugin`
+en `store-factory.ts` -- el registro se resetea a ese seed en cada
+despliegue o reinicio, hasta que se implemente `D1PluginRegistryStore` o
+`SqlitePluginRegistryStore` (ver `ROADMAP.md`).
 
 ## Limitaciones honestas que quedan pendientes
 
