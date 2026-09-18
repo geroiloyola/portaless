@@ -14,8 +14,20 @@
 // Esto tambien agrega manejo de estado por fila: "guardando..." mientras
 // la promesa esta en vuelo, revertir visualmente si onToggle rechaza, y
 // deshabilitar el switch para evitar doble-click durante el guardado.
+//
+// v0.0.9.12: agrega el badge de trustScore estilo Trakt junto al nombre
+// de cada subject de tipo "plugin" (grant.subject.trustScore, ver
+// types.ts). Diseño: 5 estrellas, escala 0-10 (el trustScore real vive en
+// 0-5 -- promedio de PluginTrustVote.score -- y se multiplica x2 solo para
+// esta visualizacion), cada estrella representa 2 puntos y se rellena de
+// forma PARCIAL via clip-path cuando el puntaje cae a mitad de una
+// estrella (ej. 8.6 -> 4 estrellas llenas + la 5ta al 30%). Color dinamico
+// por rango: rojo (<4), naranja (4-6), amarillo (6-7.5), verde claro
+// (7.5-9), verde oscuro (9-10). agent/theme no tienen trustScore -- no se
+// renderiza nada para ellos (mismo bloque de codigo, solo se omite si
+// subject.trustScore es undefined).
 
-import type { PermissionGrant } from "./types";
+import type { PermissionGrant, PermissionSubject } from "./types";
 import { capabilityRegistry, listCapabilitiesByCategory } from "../../plugin-sandbox/src/capabilities/capability-registry";
 
 export interface PermissionCenterOptions {
@@ -30,6 +42,82 @@ function riskColor(risk: "bajo" | "medio" | "alto"): string {
 
 function subjectIcon(type: PermissionGrant["subject"]["type"]): string {
   return type === "plugin" ? "🧩" : type === "agent" ? "🤖" : "🎨";
+}
+
+// Escala de color estilo Trakt sobre la escala 0-10 ya reescalada.
+function trustColor(score10: number): string {
+  if (score10 < 4) return "#e5484d";   // rojo
+  if (score10 < 6) return "#f2994a";   // naranja
+  if (score10 < 7.5) return "#f2c94c"; // amarillo
+  if (score10 < 9) return "#8bd17c";   // verde claro
+  return "#2e9e44";                    // verde oscuro, potente
+}
+
+// Porcentaje de relleno (0-100) de la estrella `starIndex` (0..4), dado un
+// puntaje en escala 0-10 donde cada estrella vale 2 puntos.
+function starFillPercent(score10: number, starIndex: number): number {
+  const starCeiling = (starIndex + 1) * 2;
+  const starFloor = starIndex * 2;
+  if (score10 >= starCeiling) return 100;
+  if (score10 <= starFloor) return 0;
+  return Math.round(((score10 - starFloor) / 2) * 100);
+}
+
+function buildTrustBadge(subject: PermissionSubject): HTMLElement | null {
+  if (subject.trustScore === undefined) return null;
+
+  // trustScore vive en 0-5 (promedio de votos 1-5) -- se reescala a 0-10
+  // solo para esta visualizacion, igual que Trakt muestra "8.6" en vez
+  // de "4.3 de 5".
+  const score10 = Math.round(subject.trustScore * 2 * 10) / 10;
+  const color = trustColor(score10);
+  const votes = subject.trustScoreVotes ?? 0;
+
+  const badge = document.createElement("span");
+  badge.className = "pc-trust-badge";
+  badge.style.color = color;
+  badge.setAttribute(
+    "aria-label",
+    `Puntuación de confianza de la comunidad: ${score10.toFixed(1)} de 10, ${votes} ${votes === 1 ? "voto" : "votos"}`
+  );
+
+  const starsWrap = document.createElement("span");
+  starsWrap.className = "pc-trust-stars";
+
+  for (let i = 0; i < 5; i++) {
+    const fill = starFillPercent(score10, i);
+
+    const starSlot = document.createElement("span");
+    starSlot.className = "pc-trust-star-slot";
+
+    const starBg = document.createElement("span");
+    starBg.className = "pc-trust-star pc-trust-star-bg";
+    starBg.textContent = "★";
+    starSlot.appendChild(starBg);
+
+    const starFg = document.createElement("span");
+    starFg.className = "pc-trust-star pc-trust-star-fg";
+    starFg.textContent = "★";
+    starFg.style.color = color;
+    starFg.style.clipPath = `inset(0 ${100 - fill}% 0 0)`;
+    starSlot.appendChild(starFg);
+
+    starsWrap.appendChild(starSlot);
+  }
+
+  const scoreText = document.createElement("span");
+  scoreText.className = "pc-trust-score-text";
+  scoreText.textContent = ` ${score10.toFixed(1)}`;
+
+  const votesText = document.createElement("span");
+  votesText.className = "pc-trust-votes-text";
+  votesText.textContent = ` (${votes} ${votes === 1 ? "comentario" : "comentarios"})`;
+
+  badge.appendChild(starsWrap);
+  badge.appendChild(scoreText);
+  badge.appendChild(votesText);
+
+  return badge;
 }
 
 export function renderPermissionCenter(options: PermissionCenterOptions): void {
@@ -106,9 +194,18 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
           const row = document.createElement("div");
           row.className = "pc-subject-row";
 
+          const labelWrap = document.createElement("div");
+          labelWrap.className = "pc-subject-label-wrap";
+
           const label = document.createElement("span");
           label.className = "pc-subject-label";
           label.textContent = `${subjectIcon(grant.subject.type)} ${grant.subject.displayName}`;
+          labelWrap.appendChild(label);
+
+          const trustBadge = buildTrustBadge(grant.subject);
+          if (trustBadge) {
+            labelWrap.appendChild(trustBadge);
+          }
 
           const status = document.createElement("span");
           status.className = "pc-subject-status";
@@ -155,7 +252,7 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
             }
           });
 
-          row.appendChild(label);
+          row.appendChild(labelWrap);
           row.appendChild(status);
           row.appendChild(switchEl);
           subjectList.appendChild(row);

@@ -15,48 +15,58 @@
 // Centro de Permisos corria efectivamente en memoria, sin persistencia,
 // porque no habia ningun endpoint HTTP que lo conectara. Este archivo
 // cierra ese hueco, igual que se hizo para PageStore en el PR #6.
+//
+// v0.0.9.10: el catalogo de subjects ya no esta hardcodeado -- se deriva
+// de packages/plugin-sandbox/src/registry/plugin-registry.ts via
+// createPluginRegistryStore(env).
+//
+// v0.0.9.12: cada subject de tipo "plugin" en el snapshot ahora incluye
+// trustScore/trustScoreVotes (tomados directo de PluginRegistryEntry), para
+// que permission-center-ui.ts pueda mostrar el rating estilo Trakt antes
+// de que un admin conceda una capacidad. agent/theme no tienen trustScore
+// -- esos campos quedan undefined para ellos, ver types.ts.
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
-
-// Catalogo de subjects conocidos -- los plugins reales que existen en el
-// repo hoy. En una version futura esto deberia derivarse dinamicamente de
-// un registro de plugins instalados (ver packages/plugin-sandbox/src/
-// manifest/manifest-loader.ts), pero ese registro todavia no persiste
-// una lista de "plugins instalados en este sitio" en ningun store real --
-// solo valida manifiestos que ya se le pasan en memoria. Hardcodear estos
-// 2 subjects conocidos es preferible a mostrar el Centro de Permisos
-// siempre vacio, y no bloquea agregar mas plugins a esta lista despues.
-const KNOWN_SUBJECTS = [
-  { type: "plugin", id: "hello-plugin", displayName: "Hello Plugin (demo)" },
-  { type: "plugin", id: "commerce-plugin", displayName: "Commerce Plugin (Medusa/Mercur)" },
-];
-
-// Capacidades que cada subject conocido declara en su manifest.json real
-// (ver packages/plugin-sandbox/examples/hello-plugin/manifest.json y
-// packages/commerce-plugin/manifest.json) -- usadas solo para poblar el
-// snapshot inicial con un grant "no concedido" por cada capacidad
-// solicitada, si el store todavia no tiene ningun registro para ese
-// subject. Una vez que el administrador toca un switch, el grant real
-// pasa a vivir en el store persistente y esta lista deja de importar
-// para ese subject+capability especifico.
-const KNOWN_REQUESTED_CAPABILITIES = {
-  "hello-plugin": ["network:fetch"],
-  "commerce-plugin": ["network:fetch"],
-};
+import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
 
 function canWrite(role) {
   return role === "admin";
 }
 
-async function buildSnapshot(store) {
-  const existingGrants = await store.getAllGrants();
+async function buildSnapshot(permissionStore, pluginRegistryStore) {
+  const existingGrants = await permissionStore.getAllGrants();
   const existingKeys = new Set(
     existingGrants.map((g) => `${g.subject.type}:${g.subject.id}:${g.capabilityId}`)
   );
 
+  const registeredPlugins = await pluginRegistryStore.list(false);
+  const trustById = new Map(
+    registeredPlugins.map((p) => [p.pluginId, { trustScore: p.trustScore, trustScoreVotes: p.trustScoreVotes }])
+  );
+
+  // Los grants ya existentes en el PermissionStore no traen trustScore
+  // (ese store no sabe nada de plugins) -- se le anexa aca, cruzando por
+  // subject.id, para que la UI tenga el dato sin importar si el grant es
+  // nuevo (default) o ya estaba persistido.
+  for (const grant of existingGrants) {
+    if (grant.subject.type !== "plugin") continue;
+    const trust = trustById.get(grant.subject.id);
+    if (trust) {
+      grant.subject.trustScore = trust.trustScore;
+      grant.subject.trustScoreVotes = trust.trustScoreVotes;
+    }
+  }
+
   const defaults = [];
-  for (const subject of KNOWN_SUBJECTS) {
-    const requested = KNOWN_REQUESTED_CAPABILITIES[subject.id] ?? [];
+  for (const plugin of registeredPlugins) {
+    const subject = {
+      type: "plugin",
+      id: plugin.pluginId,
+      displayName: plugin.displayName,
+      trustScore: plugin.trustScore,
+      trustScoreVotes: plugin.trustScoreVotes,
+    };
+    const requested = plugin.requestedCapabilities ?? [];
     for (const capabilityId of requested) {
       const key = `${subject.type}:${subject.id}:${capabilityId}`;
       if (!existingKeys.has(key)) {
@@ -78,8 +88,9 @@ export async function onRequestGet(context) {
     });
   }
 
-  const store = await createPermissionStore(env);
-  const grants = await buildSnapshot(store);
+  const permissionStore = await createPermissionStore(env);
+  const pluginRegistryStore = await createPluginRegistryStore(env);
+  const grants = await buildSnapshot(permissionStore, pluginRegistryStore);
 
   return new Response(JSON.stringify({ grants }), {
     status: 200,

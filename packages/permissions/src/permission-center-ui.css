@@ -204,3 +204,71 @@
 .pc-load-error {
   color: #ff8f8f;
 }
+
+/* v0.0.9.12: badge de trustScore estilo Trakt (5 estrellas, escala 0-10,
+ * relleno parcial por estrella, color dinamico por rango). Vive junto al
+ * nombre del subject -- .pc-subject-label-wrap envuelve label + badge
+ * para que el layout flex del row no cambie, y para que el ellipsis de
+ * .pc-subject-label no se herede al badge (que no debe truncarse). */
+
+.pc-subject-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pc-subject-label-wrap .pc-subject-label {
+  flex-shrink: 1;
+}
+
+.pc-trust-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pc-trust-stars {
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 1px;
+}
+
+.pc-trust-star-slot {
+  position: relative;
+  display: inline-block;
+  width: 0.9em;
+  line-height: 1;
+}
+
+.pc-trust-star {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 0.95em;
+}
+
+.pc-trust-star-bg {
+  color: var(--portaless-border);
+}
+
+.pc-trust-star-fg {
+  /* El color real se fija inline en JS segun el rango del puntaje
+   * (rojo/naranja/amarillo/verde claro/verde oscuro), igual que el
+   * relleno parcial via clip-path -- ambos dependen del valor exacto,
+   * no de una clase fija. */
+  position: relative;
+}
+
+.pc-trust-score-text {
+  margin-left: 4px;
+}
+
+.pc-trust-votes-text {
+  color: var(--portaless-muted);
+  font-weight: 400;
+}
