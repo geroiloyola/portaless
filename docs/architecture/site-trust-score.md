@@ -1,16 +1,19 @@
-# Site Trust Score — Diseño (v0.0.9.16)
+# Site Trust Score — Diseño (v0.0.9.17)
 
 **Estado real de implementación: tipos + persistencia real (D1/SQLite) +
-3 endpoints HTTP conectados.** `packages/trust-layer/src/site-trust/
-site-trust-score.ts` define los tipos y `InMemorySiteTrustScoreStore`.
-`packages/trust-layer/src/site-trust/store-factory.ts` conecta
-`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno.
-`functions/trust/[siteId].js` (lectura pública), `functions/trust/
-[siteId]/vote.js` (voto community público) y `functions/admin/site-trust/
-[siteId]/self.js` (declaración self, sesión admin) exponen 2 de las 4
-fuentes al mundo real — ver la sección "Endpoints HTTP conectados" para
-por qué `agent` y `escrow_report` siguen sin endpoint. Falta la UI en el
-dashboard — ver `ROADMAP.md` para el detalle de lo pendiente.
+3 endpoints HTTP + UI pública y admin.** `packages/trust-layer/src/
+site-trust/site-trust-score.ts` define los tipos y `InMemorySiteTrustScoreStore`.
+`store-factory.ts` conecta `D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore`
+según el entorno. `functions/trust/[siteId].js` (lectura pública),
+`functions/trust/[siteId]/vote.js` (voto community) y `functions/admin/
+site-trust/[siteId]/self.js` (declaración self) exponen 2 de las 4
+fuentes. `src/pages/trust/[siteId].astro` (pública, muestra las 4 fuentes
+y permite votar `community`) y `src/pages/admin/site-trust/[siteId]/
+self.astro` (dashboard, formulario de las 6 categorías `self`) son las
+2 páginas que consumen esos endpoints — ver la sección "UI conectada"
+para el detalle. Sigue pendiente: `agent` y `escrow_report` sin endpoint
+ni UI, por falta de un mecanismo de autenticación real — ver "Endpoints
+HTTP conectados".
 
 ## Qué es y qué NO es
 
@@ -91,7 +94,7 @@ sitio puede acumular múltiples verificaciones de agente o reportes de
 escrow en el tiempo, y el historial completo importa (no solo el último
 valor).
 
-## Endpoints HTTP conectados (v0.0.9.16)
+## Endpoints HTTP conectados
 
 Tres endpoints conectan `createSiteTrustScoreStore` al mundo real, cada
 uno con la audiencia y el nivel de auth que corresponde a quién puede
@@ -111,10 +114,35 @@ reporta (una API key o firma por proveedor, con una lista de proveedores
 de confianza que tampoco existe todavía). Exponer estos dos sin ese
 mecanismo significaría aceptar que cualquiera declare `verified: true` o
 un `transaction_outcome` falso sobre cualquier sitio — el peor resultado
-posible para las dos fuentes más objetivas del diseño. Este commit
-conecta deliberadamente solo las 2 fuentes que ya tienen un modelo de
-autenticación claro en el repo (sesión admin para `self`, ninguna — por
-diseño — para `community`).
+posible para las dos fuentes más objetivas del diseño.
+
+## UI conectada
+
+Dos páginas Astro consumen los 3 endpoints:
+
+**`src/pages/trust/[siteId].astro`** — pública, sin auth. Consulta
+`GET /trust/:siteId` y renderiza las 4 fuentes con la semántica visual
+correcta para cada una: `self` muestra "Sin declarar" (neutral) cuando
+falta una categoría; `agent` distingue explícitamente "Sin verificar"
+(neutral) de "Verificación fallida" (badge rojo — la señal negativa real
+de `verified: false`); `community` muestra el promedio 1-5 por categoría
+y expone un formulario de voto (estrellas 1-5 + comentario opcional) que
+llama a `POST /trust/:siteId/vote` con un `voterId` anónimo generado una
+vez y persistido en `localStorage` del navegador; `escrow_report` lista
+el historial completo de resultados (no solo el último), con un badge de
+color distinto por resultado (`completed_as_promised` verde,
+`refunded_no_delivery` naranja, `disputed` rojo).
+
+**`src/pages/admin/site-trust/[siteId]/self.astro`** — protegida por
+`functions/admin/_middleware.js` (sesión + rol admin). Un formulario por
+categoría `self`, con checkbox + campo de URL de evidencia opcional, y un
+botón "Guardar" independiente por fila que llama a
+`PUT /admin/site-trust/:siteId/self`. Carga el estado inicial desde el
+mismo `GET /trust/:siteId` público (no hay necesidad de un endpoint admin
+de lectura separado, ya que el snapshot no tiene datos sensibles).
+
+Ninguna de las dos páginas tiene todavía un link de navegación desde el
+resto del dashboard — se acceden hoy solo escribiendo la URL directamente.
 
 ## Cómo se conecta con Protocol APW
 
@@ -153,20 +181,21 @@ escrow ya generó, nunca mover ni retener el dinero en sí.
 
 ## Limitaciones honestas
 
-- No existe ningún endpoint HTTP para `agent` ni `escrow_report` todavía
-  — ver "Endpoints HTTP conectados" arriba para el porqué (falta un
+- No existe ningún endpoint HTTP ni UI para `agent` ni `escrow_report`
+  todavía — ver "Endpoints HTTP conectados" para el porqué (falta un
   mecanismo de autenticación real para ambos).
 - El endpoint `/trust/:siteId/vote` no implementa ningún rate-limiting ni
   prevención de abuso — `voterId` es una huella anónima autogenerada del
-  lado del cliente, y nada impide generar una nueva por request.
-- No existe UI en el dashboard para que un admin complete su
-  autoevaluación (`self`) vía `/admin/site-trust/:siteId/self`, ni para
-  que un visitante vote `community` vía `/trust/:siteId/vote` — ambos
-  endpoints solo son accesibles hoy vía fetch/curl directo.
+  lado del cliente (persistida en `localStorage`), y nada impide borrar
+  ese storage y generar una nueva por request.
+- Ninguna de las 2 páginas nuevas (`/trust/:siteId`,
+  `/admin/site-trust/:siteId/self`) tiene todavía un link de navegación
+  desde el resto del dashboard ni desde ningún otro punto del sitio — se
+  acceden solo escribiendo la URL directamente.
 - `packages/apw-resolver/` sigue siendo un stub — este score no está
   conectado a ninguna resolución real de `did:web` todavía, aunque ya es
   técnicamente consultable en `/trust/:siteId`.
 - No se calcula todavía ningún promedio o resumen sobre `agent`/`escrow_report`
-  (que acumulan historial) — `getSnapshot` devuelve las filas crudas; el
-  cálculo (ej. "% de verificaciones exitosas", "último resultado de
-  escrow") queda para quien consuma el snapshot.
+  (que acumulan historial) — la UI pública muestra la verificación más
+  reciente por categoría y el historial completo de reportes de escrow,
+  pero no calcula, por ejemplo, un "% de verificaciones exitosas".

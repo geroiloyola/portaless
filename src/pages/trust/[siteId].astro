@@ -1,0 +1,459 @@
+---
+// Pagina PUBLICA de Site Trust Score -- v0.0.9.17. Sin auth: consulta
+// GET /trust/:siteId (functions/trust/[siteId].js) y muestra el snapshot
+// completo de las 4 fuentes. Esta pagina es exactamente lo que Protocol
+// APW y cualquier agente externo verian si resolvieran este sitio -- ver
+// docs/architecture/site-trust-score.md.
+//
+// siteId llega por la ruta dinamica de Astro (/trust/ejemplo.com) --
+// coincide 1:1 con el :siteId de los 3 endpoints del commit anterior.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+
+const { siteId } = Astro.params;
+---
+<BaseLayout title={`Site Trust Score — ${siteId}`}>
+  <div class="st-page-header">
+    <h1 class="st-page-title">Site Trust Score</h1>
+    <p class="st-page-site">{siteId}</p>
+    <p class="st-page-subtitle">
+      4 fuentes con estatus epistemico distinto: <strong>self</strong> es lo que el
+      sitio declara sobre si mismo, <strong>agent</strong> es lo que un agente de IA
+      verifico tecnicamente, <strong>community</strong> es la opinion de visitantes,
+      y <strong>escrow_report</strong> es el resultado real de transacciones pasadas
+      (la senal mas fuerte: no es prediccion, es lo que de verdad ocurrio).
+      Ninguna fuente sustituye a las demas.
+    </p>
+  </div>
+
+  <div id="st-loading" class="st-loading">Cargando Site Trust Score…</div>
+  <div id="st-load-error" class="st-load-error" style="display:none;"></div>
+  <div id="st-root" style="display:none;"></div>
+</BaseLayout>
+
+<script define:vars={{ siteId }}>
+  const STORAGE_KEY = "portaless_trust_voter_id";
+
+  function getOrCreateVoterId() {
+    let id = localStorage.getItem(STORAGE_KEY);
+    if (!id) {
+      id = `anon-${crypto.randomUUID()}`;
+      localStorage.setItem(STORAGE_KEY, id);
+    }
+    return id;
+  }
+
+  const SELF_LABELS = {
+    gdpr_compliance: "Cumplimiento GDPR",
+    privacy_policy: "Politica de privacidad",
+    terms_of_service: "Terminos de servicio",
+    payment_security: "Seguridad de pago",
+    data_practices: "Practicas de datos",
+    contact_transparency: "Transparencia de contacto",
+  };
+
+  const AGENT_LABELS = {
+    https_and_headers: "HTTPS y headers de seguridad",
+    structured_data_quality: "Calidad de datos estructurados",
+    machine_readable_policies: "Politicas legibles por maquina",
+    content_freshness: "Frescura del contenido",
+    bot_traffic_anomalies: "Anomalias de trafico de bots",
+  };
+
+  const COMMUNITY_LABELS = {
+    perceived_trustworthiness: "Confiabilidad percibida",
+    content_accuracy: "Precision del contenido",
+    spam_or_deceptive: "Ausencia de spam o engaño",
+    responsiveness: "Capacidad de respuesta",
+  };
+
+  const COMMUNITY_CATEGORIES = Object.keys(COMMUNITY_LABELS);
+
+  const OUTCOME_LABELS = {
+    completed_as_promised: "Completada como se prometio",
+    refunded_no_delivery: "Reembolsada, sin entrega",
+    disputed: "En disputa",
+  };
+
+  const OUTCOME_CLASS = {
+    completed_as_promised: "st-outcome-good",
+    refunded_no_delivery: "st-outcome-warn",
+    disputed: "st-outcome-bad",
+  };
+
+  function renderSelfSection(root, selfEvaluations) {
+    const section = document.createElement("section");
+    section.className = "st-source-section";
+
+    const header = document.createElement("h2");
+    header.className = "st-source-title";
+    header.textContent = "Self — declarado por el sitio";
+    section.appendChild(header);
+
+    const note = document.createElement("p");
+    note.className = "st-source-note";
+    note.textContent = "Afirmacion del propio administrador. Ausencia de una categoria significa que el sitio aun no la completo — no es una senal negativa.";
+    section.appendChild(note);
+
+    const grid = document.createElement("div");
+    grid.className = "st-self-grid";
+
+    for (const [category, label] of Object.entries(SELF_LABELS)) {
+      const entry = selfEvaluations.find((e) => e.category === category);
+      const row = document.createElement("div");
+      row.className = "st-self-row";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "st-self-label";
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const statusEl = document.createElement("span");
+      if (!entry) {
+        statusEl.className = "st-badge st-badge-neutral";
+        statusEl.textContent = "Sin declarar";
+      } else if (entry.declaredValue) {
+        statusEl.className = "st-badge st-badge-good";
+        statusEl.textContent = "Declarado ✓";
+      } else {
+        statusEl.className = "st-badge st-badge-warn";
+        statusEl.textContent = "Declarado: no cumple";
+      }
+      row.appendChild(statusEl);
+
+      if (entry?.evidenceUrl) {
+        const link = document.createElement("a");
+        link.href = entry.evidenceUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "st-evidence-link";
+        link.textContent = "Ver evidencia";
+        row.appendChild(link);
+      }
+
+      grid.appendChild(row);
+    }
+
+    section.appendChild(grid);
+    root.appendChild(section);
+  }
+
+  function renderAgentSection(root, agentVerifications) {
+    const section = document.createElement("section");
+    section.className = "st-source-section";
+
+    const header = document.createElement("h2");
+    header.className = "st-source-title";
+    header.textContent = "Agent — verificado tecnicamente";
+    section.appendChild(header);
+
+    const note = document.createElement("p");
+    note.className = "st-source-note";
+    note.textContent = "A diferencia de las otras fuentes, la ausencia aqui NO es neutral en el mismo sentido: si un agente verifico y fallo, verified queda en false — una señal negativa real. Ausencia total de fila significa que nadie lo verifico todavia.";
+    section.appendChild(note);
+
+    const grid = document.createElement("div");
+    grid.className = "st-self-grid";
+
+    for (const [category, label] of Object.entries(AGENT_LABELS)) {
+      const entries = agentVerifications
+        .filter((v) => v.category === category)
+        .sort((a, b) => new Date(b.verifiedAt) - new Date(a.verifiedAt));
+      const latest = entries[0];
+
+      const row = document.createElement("div");
+      row.className = "st-self-row";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "st-self-label";
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const statusEl = document.createElement("span");
+      if (!latest) {
+        statusEl.className = "st-badge st-badge-neutral";
+        statusEl.textContent = "Sin verificar";
+      } else if (latest.verified) {
+        statusEl.className = "st-badge st-badge-good";
+        statusEl.textContent = "Verificado ✓";
+      } else {
+        statusEl.className = "st-badge st-badge-bad";
+        statusEl.textContent = "Verificacion fallida";
+      }
+      row.appendChild(statusEl);
+
+      if (entries.length > 1) {
+        const historyEl = document.createElement("span");
+        historyEl.className = "st-history-note";
+        historyEl.textContent = `${entries.length} verificaciones en el historial`;
+        row.appendChild(historyEl);
+      }
+
+      grid.appendChild(row);
+    }
+
+    section.appendChild(grid);
+    root.appendChild(section);
+  }
+
+  function renderEscrowSection(root, escrowReports) {
+    const section = document.createElement("section");
+    section.className = "st-source-section";
+
+    const header = document.createElement("h2");
+    header.className = "st-source-title";
+    header.textContent = "Escrow report — resultado real de transacciones (ground truth)";
+    section.appendChild(header);
+
+    const note = document.createElement("p");
+    note.className = "st-source-note";
+    note.textContent = "La señal mas fuerte de las 4: no es opinion ni verificacion tecnica, es lo que de verdad ocurrio con dinero real, reportado por un tercero de escrow. Portaless nunca custodia fondos.";
+    section.appendChild(note);
+
+    if (escrowReports.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "st-empty";
+      empty.textContent = "Sin transacciones reportadas via escrow todavia.";
+      section.appendChild(empty);
+      root.appendChild(section);
+      return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "st-escrow-list";
+
+    const sorted = [...escrowReports].sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+    for (const report of sorted) {
+      const row = document.createElement("div");
+      row.className = "st-escrow-row";
+
+      const outcomeEl = document.createElement("span");
+      outcomeEl.className = `st-badge ${OUTCOME_CLASS[report.transactionOutcome] ?? "st-badge-neutral"}`;
+      outcomeEl.textContent = OUTCOME_LABELS[report.transactionOutcome] ?? report.transactionOutcome;
+      row.appendChild(outcomeEl);
+
+      const meta = document.createElement("span");
+      meta.className = "st-escrow-meta";
+      meta.textContent = `via ${report.escrowProvider} · ${new Date(report.reportedAt).toLocaleDateString()}`;
+      row.appendChild(meta);
+
+      list.appendChild(row);
+    }
+
+    section.appendChild(list);
+    root.appendChild(section);
+  }
+
+  function renderCommunitySection(root, communityVotes, onSubmitVote) {
+    const section = document.createElement("section");
+    section.className = "st-source-section";
+
+    const header = document.createElement("h2");
+    header.className = "st-source-title";
+    header.textContent = "Community — opinion de visitantes";
+    section.appendChild(header);
+
+    const note = document.createElement("p");
+    note.className = "st-source-note";
+    note.textContent = "Atestacion de visitantes humanos. Ausencia significa que nadie voto todavia — no es una señal negativa. Tu voto es anonimo (no requiere cuenta Portaless).";
+    section.appendChild(note);
+
+    const grid = document.createElement("div");
+    grid.className = "st-self-grid";
+
+    for (const [category, label] of Object.entries(COMMUNITY_LABELS)) {
+      const votes = communityVotes.filter((v) => v.category === category);
+      const avg = votes.length ? votes.reduce((s, v) => s + v.score, 0) / votes.length : null;
+
+      const row = document.createElement("div");
+      row.className = "st-self-row";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "st-self-label";
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const statusEl = document.createElement("span");
+      if (avg === null) {
+        statusEl.className = "st-badge st-badge-neutral";
+        statusEl.textContent = "Sin votos";
+      } else {
+        statusEl.className = "st-badge st-badge-good";
+        statusEl.textContent = `${avg.toFixed(1)} / 5 (${votes.length} ${votes.length === 1 ? "voto" : "votos"})`;
+      }
+      row.appendChild(statusEl);
+
+      grid.appendChild(row);
+    }
+
+    section.appendChild(grid);
+
+    const formWrap = document.createElement("div");
+    formWrap.className = "st-vote-form";
+
+    const formTitle = document.createElement("h3");
+    formTitle.className = "st-vote-form-title";
+    formTitle.textContent = "Calificar este sitio";
+    formWrap.appendChild(formTitle);
+
+    const select = document.createElement("select");
+    select.className = "st-vote-select";
+    for (const [category, label] of Object.entries(COMMUNITY_LABELS)) {
+      const opt = document.createElement("option");
+      opt.value = category;
+      opt.textContent = label;
+      select.appendChild(opt);
+    }
+    formWrap.appendChild(select);
+
+    const starsRow = document.createElement("div");
+    starsRow.className = "st-vote-stars-row";
+    let selectedScore = null;
+    const starButtons = [];
+    function paintStars(upTo) {
+      starButtons.forEach((btn, idx) => btn.classList.toggle("st-vote-star-filled", idx < upTo));
+    }
+    for (let i = 1; i <= 5; i++) {
+      const starBtn = document.createElement("button");
+      starBtn.type = "button";
+      starBtn.className = "st-vote-star";
+      starBtn.textContent = "★";
+      starBtn.addEventListener("mouseenter", () => paintStars(i));
+      starBtn.addEventListener("mouseleave", () => paintStars(selectedScore ?? 0));
+      starBtn.addEventListener("click", () => {
+        selectedScore = i;
+        paintStars(i);
+      });
+      starButtons.push(starBtn);
+      starsRow.appendChild(starBtn);
+    }
+    formWrap.appendChild(starsRow);
+
+    const commentInput = document.createElement("textarea");
+    commentInput.className = "st-vote-comment";
+    commentInput.placeholder = "Comentario opcional…";
+    commentInput.rows = 2;
+    formWrap.appendChild(commentInput);
+
+    const feedback = document.createElement("div");
+    feedback.className = "st-vote-feedback";
+
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "button";
+    submitBtn.className = "st-vote-submit";
+    submitBtn.textContent = "Enviar voto";
+    submitBtn.addEventListener("click", async () => {
+      if (!selectedScore) {
+        feedback.textContent = "Elegí una calificación de 1 a 5 estrellas primero.";
+        feedback.classList.add("st-status-error");
+        return;
+      }
+      submitBtn.disabled = true;
+      feedback.classList.remove("st-status-error");
+      feedback.textContent = "Enviando voto…";
+      try {
+        await onSubmitVote(select.value, selectedScore, commentInput.value || undefined);
+        feedback.textContent = "¡Voto registrado! Recargá la página para ver el promedio actualizado.";
+      } catch (err) {
+        feedback.textContent = `Error al votar: ${err.message ?? "desconocido"}`;
+        feedback.classList.add("st-status-error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+    formWrap.appendChild(submitBtn);
+    formWrap.appendChild(feedback);
+
+    section.appendChild(formWrap);
+    root.appendChild(section);
+  }
+
+  async function submitVote(category, score, comment) {
+    const res = await fetch(`/trust/${encodeURIComponent(siteId)}/vote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ category, score, comment, voterId: getOrCreateVoterId() }),
+    });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        message = body?.message ?? body?.error ?? message;
+      } catch {
+        // sin body JSON -- se usa el mensaje generico de arriba
+      }
+      throw new Error(message);
+    }
+  }
+
+  async function init() {
+    const loadingEl = document.getElementById("st-loading");
+    const errorEl = document.getElementById("st-load-error");
+    const rootEl = document.getElementById("st-root");
+
+    try {
+      const res = await fetch(`/trust/${encodeURIComponent(siteId)}`);
+      if (!res.ok) throw new Error(`No se pudo cargar el Trust Score (HTTP ${res.status}).`);
+      const snapshot = await res.json();
+
+      loadingEl.style.display = "none";
+      rootEl.style.display = "";
+
+      renderSelfSection(rootEl, snapshot.self ?? []);
+      renderAgentSection(rootEl, snapshot.agent ?? []);
+      renderCommunitySection(rootEl, snapshot.community ?? [], submitVote);
+      renderEscrowSection(rootEl, snapshot.escrowReports ?? []);
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar el Site Trust Score: ${err.message}`;
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .st-page-header { margin-bottom: 24px; }
+  .st-page-title { margin: 0 0 4px; font-size: 1.4rem; }
+  .st-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
+  .st-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.88rem; max-width: 680px; line-height: 1.55; }
+  .st-loading, .st-load-error { padding: 24px 0; color: var(--portaless-muted); font-size: 0.9rem; }
+  .st-load-error { color: #ff8f8f; }
+
+  .st-source-section { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; background: #14161b; }
+  .st-source-title { margin: 0 0 6px; font-size: 1.02rem; }
+  .st-source-note { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
+  .st-empty { font-size: 0.85rem; color: var(--portaless-muted); font-style: italic; }
+
+  .st-self-grid { display: flex; flex-direction: column; gap: 2px; }
+  .st-self-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--portaless-border); flex-wrap: wrap; }
+  .st-self-row:last-child { border-bottom: none; }
+  .st-self-label { flex: 1; font-size: 0.88rem; min-width: 200px; }
+  .st-history-note { font-size: 0.75rem; color: var(--portaless-muted); }
+  .st-evidence-link { font-size: 0.78rem; color: var(--portaless-accent); }
+
+  .st-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .st-badge-good { background: #2e9e4422; color: #6ee7b7; }
+  .st-badge-warn { background: #f2994a22; color: #ffb86b; }
+  .st-badge-bad { background: #e5484d22; color: #ff8f8f; }
+  .st-badge-neutral { background: #3a3f4722; color: var(--portaless-muted); }
+
+  .st-escrow-list { display: flex; flex-direction: column; gap: 8px; }
+  .st-escrow-row { display: flex; align-items: center; gap: 12px; }
+  .st-escrow-meta { font-size: 0.78rem; color: var(--portaless-muted); }
+  .st-outcome-good { background: #2e9e4422; color: #6ee7b7; }
+  .st-outcome-warn { background: #f2994a22; color: #ffb86b; }
+  .st-outcome-bad { background: #e5484d22; color: #ff8f8f; }
+
+  .st-vote-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--portaless-border); display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+  .st-vote-form-title { margin: 0; font-size: 0.92rem; }
+  .st-vote-select, .st-vote-comment { border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: var(--portaless-fg); font-size: 0.85rem; padding: 8px; font-family: inherit; }
+  .st-vote-stars-row { display: flex; gap: 4px; }
+  .st-vote-star { background: none; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 2px; color: var(--portaless-border); }
+  .st-vote-star.st-vote-star-filled { color: #f2c94c; }
+  .st-vote-submit { align-self: flex-start; border: 1px solid var(--portaless-accent); background: transparent; color: var(--portaless-accent); border-radius: 6px; padding: 6px 16px; font-size: 0.85rem; cursor: pointer; }
+  .st-vote-submit:hover:not(:disabled) { background: var(--portaless-accent); color: #0f1114; }
+  .st-vote-submit:disabled { cursor: wait; opacity: 0.6; }
+  .st-vote-feedback { font-size: 0.78rem; color: var(--portaless-muted); min-height: 1em; }
+  .st-vote-feedback.st-status-error { color: #ff8f8f; }
+</style>
