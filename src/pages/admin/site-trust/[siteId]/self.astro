@@ -1,49 +1,37 @@
 ---
-// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.19.
-// Requiere sesion valida -- protegido por functions/admin/_middleware.js,
-// que corre para toda ruta bajo /admin/* excepto /admin/login. Mismo
-// patron que src/pages/admin/permissions.astro: carga estado real via
-// GET publico (/trust/:siteId, ya que la lectura no requiere sesion), y
-// escribe via PUT /admin/site-trust/:siteId/self (functions/admin/
-// site-trust/[siteId]/self.js, que si exige rol admin del lado del
-// servidor).
+// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.20.
+// Requiere sesion valida -- protegido por functions/admin/_middleware.js.
+// Mismo patron que src/pages/admin/permissions.astro: carga estado real
+// via GET publico (/trust/:siteId), escribe via PUT
+// /admin/site-trust/:siteId/self (functions/admin/site-trust/[siteId]/self.js).
 //
-// siteId llega por la ruta dinamica -- /admin/site-trust/ejemplo.com/self.
-//
-// v0.0.9.18: agrega breadcrumb de navegacion (vuelta a /admin, y link a
-// la vista publica /trust/:siteId de este mismo sitio) -- hasta ahora
-// esta pagina, igual que /trust/:siteId, no tenia ningun link de entrada
-// ni salida y solo se accedia escribiendo la URL a mano. Ver
-// src/pages/admin/index.astro para el punto de entrada real desde el
-// dashboard.
-//
-// FIX (prerender): el proyecto usa output: "static" (Cloudflare Pages).
-// En ese modo Astro exige getStaticPaths() para toda ruta dinamica
-// [siteId] -- necesita la lista completa de valores posibles en
-// build-time. No existe (ni deberia existir) una lista de "sitios
-// conocidos" -- cualquier siteId valido debe resolverse, incluyendo
-// sitios registrados despues del build. prerender = false le indica a
-// Astro que sirva esta ruta on-demand via el adaptador de Cloudflare
-// Pages, en vez de generarla en build-time. Mismo fix que /trust/[siteId].
-export const prerender = false;
+// FIX (build sin adaptador): el proyecto usa output: "static" SIN adaptador
+// de servidor instalado -- prerender = false fallaba con NoAdapterInstalled.
+// Mismo fix que /trust/[siteId].astro: getStaticPaths() vacio a proposito
+// (no existe, ni deberia existir, un registro de "sitios conocidos" en
+// build-time), y el siteId real se lee del lado del cliente via
+// window.location.pathname en vez de Astro.params -- la ruta real
+// /admin/site-trust/:siteId/self de todos modos depende de fetch() al
+// navegador para todo su contenido dinamico.
+export function getStaticPaths() {
+  return [];
+}
 
 import BaseLayout from "../../../../layouts/BaseLayout.astro";
-
-const { siteId } = Astro.params;
 ---
-<BaseLayout title={`Autoevaluación de confianza — ${siteId}`}>
+<BaseLayout title="Autoevaluación de confianza">
   <p class="ss-breadcrumb">
     <a href="/admin">← Panel de administración</a>
     <span class="ss-breadcrumb-sep">·</span>
-    <a href={`/trust/${siteId}`}>Ver página pública de este sitio</a>
+    <a href="#" id="ss-public-link">Ver página pública de este sitio</a>
   </p>
 
   <div class="ss-page-header">
     <h1 class="ss-page-title">Autoevaluación de confianza</h1>
-    <p class="ss-page-site">{siteId}</p>
+    <p class="ss-page-site" id="ss-site-id"></p>
     <p class="ss-page-subtitle">
       Esto es una declaración tuya, no una verificación externa — se muestra
-      como tal en <code>/trust/{siteId}</code>. Marcá cada categoría según
+      como tal en la página pública de este sitio. Marcá cada categoría según
       corresponda a tu sitio hoy, y agregá un link de evidencia cuando sea
       posible (ej. la URL de tu política de privacidad real).
     </p>
@@ -54,7 +42,19 @@ const { siteId } = Astro.params;
   <form id="ss-form" style="display:none;"></form>
 </BaseLayout>
 
-<script define:vars={{ siteId }}>
+<script>
+  // siteId se lee de la URL real en el navegador -- esta pagina no tiene
+  // ningun siteId conocido en build-time (getStaticPaths() esta vacio a
+  // proposito). La ruta real es /admin/site-trust/:siteId/self, asi que
+  // el penultimo segmento de la ruta es el siteId.
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const siteIdIndex = pathParts.length - 2; // ... , siteId, "self"
+  const siteId = decodeURIComponent(pathParts[siteIdIndex] ?? "");
+
+  document.getElementById("ss-site-id").textContent = siteId;
+  document.title = `Autoevaluación de confianza — ${siteId}`;
+  document.getElementById("ss-public-link").href = `/trust/${encodeURIComponent(siteId)}`;
+
   const SELF_CATEGORIES = [
     { id: "gdpr_compliance", label: "Cumplimiento GDPR", hint: "El sitio cumple con GDPR u otra normativa de protección de datos equivalente." },
     { id: "privacy_policy", label: "Política de privacidad", hint: "Existe una política de privacidad publicada y accesible." },
@@ -159,6 +159,13 @@ const { siteId } = Astro.params;
   }
 
   async function init() {
+    if (!siteId) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = "No se pudo determinar el sitio a partir de la URL.";
+      return;
+    }
+
     try {
       const res = await fetch(`/trust/${encodeURIComponent(siteId)}`);
       if (!res.ok) throw new Error(`No se pudo cargar el estado actual (HTTP ${res.status}).`);

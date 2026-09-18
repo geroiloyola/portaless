@@ -1,40 +1,42 @@
 ---
-// Pagina PUBLICA de Site Trust Score -- v0.0.9.19. Sin auth: consulta
+// Pagina PUBLICA de Site Trust Score -- v0.0.9.20. Sin auth: consulta
 // GET /trust/:siteId (functions/trust/[siteId].js) y muestra el snapshot
 // completo de las 4 fuentes. Esta pagina es exactamente lo que Protocol
 // APW y cualquier agente externo verian si resolvieran este sitio -- ver
 // docs/architecture/site-trust-score.md.
 //
-// siteId llega por la ruta dinamica de Astro (/trust/ejemplo.com) --
-// coincide 1:1 con el :siteId de los 3 endpoints del commit anterior.
+// FIX (import): a 2 niveles de profundidad desde src/ (pages/trust/) --
+// el import de BaseLayout sube ../../ , no ../../../.
 //
-// v0.0.9.19: submitVote() maneja explicitamente el 429 (rate_limited) que
-// ahora puede devolver POST /trust/:siteId/vote -- ver functions/trust/
-// [siteId]/vote.js. El rate-limit es server-side por IP hasheada, asi
-// que borrar localStorage y reintentar ya no alcanza para eludirlo.
+// FIX (build sin adaptador): el proyecto usa output: "static" SIN ningun
+// adaptador de servidor instalado (@astrojs/cloudflare, etc.) -- confirmado
+// por el error NoAdapterInstalled tras intentar prerender = false. Ese
+// fix requeria un adaptador que el repo no tiene configurado, y agregarlo
+// es un cambio de infraestructura mas grande que esta pagina puntual.
 //
-// FIX (import): src/pages/trust/[siteId].astro esta a 2 niveles de
-// profundidad desde src/ (pages/trust/) -- el import de BaseLayout debe
-// subir ../../ (a pages/, a src/) y entrar a layouts/, NO ../../../.
-//
-// FIX (prerender): el proyecto usa output: "static" (Cloudflare Pages).
-// En ese modo Astro exige getStaticPaths() para toda ruta dinamica
-// [siteId] -- necesita la lista completa de valores posibles en
-// build-time. No existe (ni deberia existir) una lista de "sitios
-// conocidos" -- cualquier siteId valido debe resolverse, incluyendo
-// sitios registrados despues del build. prerender = false le indica a
-// Astro que sirva esta ruta on-demand via el adaptador de Cloudflare
-// Pages, en vez de generarla en build-time.
-export const prerender = false;
+// En vez de eso: getStaticPaths() devuelve un array vacio a proposito.
+// Esto compila una plantilla "cascaron" sin generar ninguna pagina en
+// build-time (cero rutas conocidas) -- coherente con que no existe (ni
+// deberia existir) un registro de "sitios conocidos". El siteId real NO
+// se lee de Astro.params (eso solo funciona para rutas generadas en
+// build-time) -- se lee del lado del cliente via window.location.pathname,
+// ya que toda esta pagina de todos modos depende de fetch() al navegador
+// para el contenido real (GET /trust/:siteId). Cloudflare Pages sirve
+// site estatico + esta plantilla + Pages Functions resuelve /trust/:siteId
+// como ruta dinamica real del lado del servidor (functions/trust/[siteId].js),
+// asi que el usuario que visita /trust/cualquier-dominio.com de todos
+// modos golpea la Function, no un 404 -- lo unico que hace este archivo
+// .astro es servir el HTML/JS que arma la UI en el navegador.
+export function getStaticPaths() {
+  return [];
+}
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-
-const { siteId } = Astro.params;
 ---
-<BaseLayout title={`Site Trust Score — ${siteId}`}>
+<BaseLayout title="Site Trust Score">
   <div class="st-page-header">
     <h1 class="st-page-title">Site Trust Score</h1>
-    <p class="st-page-site">{siteId}</p>
+    <p class="st-page-site" id="st-site-id"></p>
     <p class="st-page-subtitle">
       4 fuentes con estatus epistemico distinto: <strong>self</strong> es lo que el
       sitio declara sobre si mismo, <strong>agent</strong> es lo que un agente de IA
@@ -50,7 +52,17 @@ const { siteId } = Astro.params;
   <div id="st-root" style="display:none;"></div>
 </BaseLayout>
 
-<script define:vars={{ siteId }}>
+<script>
+  // siteId se lee de la URL real en el navegador -- esta pagina no tiene
+  // ningun siteId conocido en build-time (getStaticPaths() esta vacio a
+  // proposito, ver comentario arriba). La ruta real es /trust/:siteId,
+  // asi que el segmento despues de "/trust/" es el siteId.
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const siteId = decodeURIComponent(pathParts[pathParts.length - 1] ?? "");
+
+  document.getElementById("st-site-id").textContent = siteId;
+  document.title = `Site Trust Score — ${siteId}`;
+
   const STORAGE_KEY = "portaless_trust_voter_id";
 
   function getOrCreateVoterId() {
@@ -410,6 +422,13 @@ const { siteId } = Astro.params;
     const loadingEl = document.getElementById("st-loading");
     const errorEl = document.getElementById("st-load-error");
     const rootEl = document.getElementById("st-root");
+
+    if (!siteId) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = "No se pudo determinar el sitio a consultar desde la URL.";
+      return;
+    }
 
     try {
       const res = await fetch(`/trust/${encodeURIComponent(siteId)}`);
