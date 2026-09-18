@@ -9,6 +9,11 @@
 // createPermissionStore, ver functions/admin/permissions/index.js) y
 // cada toggle hace PUT /admin/permissions -- ya no hay ningun store en
 // memoria involucrado del lado del cliente.
+//
+// v0.0.9.13: agrega voteOnPlugin(), que hace POST a
+// /admin/plugins/:pluginId/vote (ver functions/admin/plugins/[pluginId]/
+// vote.js) y se pasa como onVote a renderPermissionCenter -- habilita el
+// formulario de voto interactivo del badge de trustScore.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import "../../../packages/permissions/src/permission-center-ui.css";
 ---
@@ -60,6 +65,32 @@ import "../../../packages/permissions/src/permission-center-ui.css";
     }
   }
 
+  async function voteOnPlugin(
+    pluginId: string,
+    score: 1 | 2 | 3 | 4 | 5,
+    comment?: string
+  ): Promise<{ trustScore: number; trustScoreVotes: number }> {
+    const res = await fetch(`/admin/plugins/${encodeURIComponent(pluginId)}/vote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ score, comment }),
+    });
+
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.message) message = body.message;
+        else if (body?.error) message = body.error;
+      } catch {
+        // Respuesta sin body JSON -- se usa el mensaje generico de arriba.
+      }
+      throw new Error(message);
+    }
+
+    return res.json();
+  }
+
   async function init(): Promise<void> {
     try {
       const res = await fetch("/admin/permissions");
@@ -83,6 +114,7 @@ import "../../../packages/permissions/src/permission-center-ui.css";
         container: rootEl,
         allGrants,
         onToggle: toggleGrant,
+        onVote: voteOnPlugin,
       });
     } catch (err) {
       loadingEl.style.display = "none";

@@ -272,3 +272,113 @@
   color: var(--portaless-muted);
   font-weight: 400;
 }
+
+/* v0.0.9.13: formulario de voto interactivo del trustScore de plugins.
+ * .pc-trust-summary convierte el badge de solo-lectura (v0.0.9.12) en un
+ * boton clicable; .pc-vote-form es el mini-formulario que se despliega
+ * debajo al hacer click (5 estrellas ENTERAS 1-5, comentario opcional,
+ * boton enviar). Colapsado con max-height + opacity en vez de display:none
+ * para poder animar la apertura sin reflow brusco. */
+
+.pc-trust-summary {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.pc-trust-summary.pc-trust-readonly {
+  cursor: default;
+}
+
+.pc-trust-summary:not(.pc-trust-readonly):hover .pc-trust-stars {
+  filter: brightness(1.15);
+}
+
+.pc-vote-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--portaless-border);
+  border-radius: 10px;
+  background: #1a1d23;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+  width: 100%;
+}
+
+.pc-vote-form.pc-vote-form-open {
+  max-height: 220px;
+  opacity: 1;
+}
+
+.pc-vote-stars-row {
+  display: flex;
+  gap: 4px;
+}
+
+.pc-vote-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 2px;
+  color: var(--portaless-border);
+  transition: color 0.1s ease;
+}
+
+.pc-vote-star.pc-vote-star-filled {
+  color: #f2c94c;
+}
+
+.pc-vote-comment {
+  resize: vertical;
+  min-height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--portaless-border);
+  background: #0f1114;
+  color: var(--portaless-fg);
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+
+.pc-vote-submit {
+  align-self: flex-start;
+  border: 1px solid var(--portaless-accent);
+  background: transparent;
+  color: var(--portaless-accent);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pc-vote-submit:hover:not(:disabled) {
+  background: var(--portaless-accent);
+  color: #0f1114;
+}
+
+.pc-vote-submit:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.pc-vote-feedback {
+  font-size: 0.75rem;
+  color: var(--portaless-muted);
+  min-height: 1em;
+}
+
+.pc-vote-feedback.pc-status-error {
+  color: #ff8f8f;
+}
