@@ -12,7 +12,15 @@
 // ahora puede devolver POST /trust/:siteId/vote -- ver functions/trust/
 // [siteId]/vote.js. El rate-limit es server-side por IP hasheada, asi
 // que borrar localStorage y reintentar ya no alcanza para eludirlo.
-import BaseLayout from "../../../layouts/BaseLayout.astro";
+//
+// FIX: src/pages/trust/[siteId].astro esta a 2 niveles de profundidad
+// desde src/ (pages/trust/) -- el import de BaseLayout debe subir
+// ../../ (a pages/, a src/) y entrar a layouts/, NO ../../../ (ese
+// tercer nivel sube fuera de src/ y rompia el build: UNRESOLVED_IMPORT
+// en CI). src/pages/admin/site-trust/[siteId]/self.astro esta 2 niveles
+// mas profundo (pages/admin/site-trust/[siteId]/) y por eso si necesita
+// ../../../../ -- son rutas distintas, no debe copiarse el mismo conteo.
+import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const { siteId } = Astro.params;
 ---
