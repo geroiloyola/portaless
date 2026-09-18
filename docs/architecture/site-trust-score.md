@@ -1,10 +1,13 @@
-# Site Trust Score — Diseño (v0.0.9.14)
+# Site Trust Score — Diseño (v0.0.9.15)
 
-**Estado real de implementación: interfaz y store en memoria únicamente.**
-`packages/trust-layer/src/site-trust/site-trust-score.ts` define los tipos
-y `InMemorySiteTrustScoreStore` como implementación de referencia. Falta
-persistencia real D1/SQLite, los endpoints HTTP que lo conecten, y la UI —
-ver `ROADMAP.md` para el detalle de lo pendiente.
+**Estado real de implementación: tipos + persistencia real (D1/SQLite) +
+fallback en memoria.** `packages/trust-layer/src/site-trust/
+site-trust-score.ts` define los tipos y `InMemorySiteTrustScoreStore`.
+`packages/trust-layer/src/site-trust/store-factory.ts` conecta
+`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno,
+mismo patrón que `createPermissionStore()` y `createPluginRegistryStore()`.
+Faltan los endpoints HTTP que lo conecten al dashboard/agentes externos, y
+la UI — ver `ROADMAP.md` para el detalle de lo pendiente.
 
 ## Qué es y qué NO es
 
@@ -63,6 +66,28 @@ un visitante humano que evalúe `https_and_headers` sería ruido sin
 criterio; pedirle a un agente que evalúe `perceived_trustworthiness` no
 tiene sentido porque un agente no tiene percepción subjetiva.
 
+## Persistencia real: D1 y SQLite
+
+`createSiteTrustScoreStore(env)` (packages/trust-layer/src/site-trust/
+store-factory.ts) resuelve el backend igual que `createPermissionStore()`:
+`env.DB` presente → `D1SiteTrustScoreStore` (Cloudflare Workers, usa
+`D1DatabaseLike` para no acoplarse al binding real); `env.PORTALESS_SQLITE_PATH`
+presente → `SqliteSiteTrustScoreStore` (self-hosted, `node:sqlite`, Node
+22.5+); si ninguno está disponible, cae a `InMemorySiteTrustScoreStore` con
+una advertencia explícita en consola — nunca falla en silencio.
+
+Cada una de las 4 fuentes se escribe con su propio método
+(`recordSelfEvaluation`, `recordAgentVerification`, `recordCommunityVote`,
+`recordEscrowReport`), y ambos backends garantizan la fila en
+`site_trust_subjects` antes de escribir en la tabla de la fuente
+correspondiente (`ensureSubject`), ya que D1/SQLite no siempre fuerzan
+foreign keys por defecto. `self` y `community` sobrescriben el valor más
+reciente por categoría (u por categoría+votante); `agent` y
+`escrow_report` insertan un registro histórico nuevo en cada llamada — un
+sitio puede acumular múltiples verificaciones de agente o reportes de
+escrow en el tiempo, y el historial completo importa (no solo el último
+valor).
+
 ## Cómo se conecta con Protocol APW
 
 `packages/apw-resolver/` (hoy stub, ver `docs/protocol-apw.md`) resuelve
@@ -100,8 +125,6 @@ escrow ya generó, nunca mover ni retener el dinero en sí.
 
 ## Limitaciones honestas
 
-- No existe todavía persistencia real (D1/SQLite) — solo la interfaz y el
-  store en memoria. Ver `ROADMAP.md`.
 - No existe ningún endpoint HTTP que conecte este store al dashboard ni a
   agentes externos todavía.
 - No existe UI para que un admin complete su autoevaluación (`self`), ni
@@ -111,3 +134,7 @@ escrow ya generó, nunca mover ni retener el dinero en sí.
 - El campo `verified` de `agent` depende de que agentes de IA reales,
   identificados vía Web Bot Auth, ejecuten verificaciones — hoy no existe
   ningún agente verificador de referencia implementado.
+- No se calcula todavía ningún promedio o resumen sobre `agent`/`escrow_report`
+  (que acumulan historial) — `getSnapshot` devuelve las filas crudas; el
+  cálculo (ej. "% de verificaciones exitosas", "último resultado de
+  escrow") queda para quien consuma el snapshot.
