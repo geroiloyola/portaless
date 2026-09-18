@@ -1,10 +1,13 @@
 // Persistencia real de SiteTrustScore para self-hosted (node:sqlite) --
-// v0.0.9.15. Mismo patron que SqlitePermissionStore (packages/permissions/
+// v0.0.9.19. Mismo patron que SqlitePermissionStore (packages/permissions/
 // src/stores/sqlite-permission-store.ts): usa node:sqlite (DatabaseSync,
 // Node 22.5+), crea las tablas via CREATE TABLE IF NOT EXISTS si aun no
 // existen (idempotente frente a alguien que ya corrio schema.sql a mano),
 // y expone la misma API sincrona-envuelta-en-Promise que D1SiteTrustScoreStore
 // para que ambos backends sean intercambiables detras de SiteTrustScoreStore.
+//
+// v0.0.9.19: recordCommunityVote persiste ip_hash (SHA-256(ip + salt),
+// nunca la IP cruda). isRateLimited() consulta la MISMA tabla de votos.
 
 import type {
   SiteTrustScoreStore,
@@ -43,6 +46,7 @@ interface CommunityRow {
   score: number;
   comment: string | null;
   voter_id: string;
+  ip_hash: string;
   voted_at: string;
 }
 
@@ -83,6 +87,7 @@ function rowToCommunity(row: CommunityRow): CommunityTrustVote {
     score: row.score as 1 | 2 | 3 | 4 | 5,
     comment: row.comment ?? undefined,
     voterId: row.voter_id,
+    ipHash: row.ip_hash,
     votedAt: row.voted_at,
   };
 }
@@ -138,9 +143,12 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
         score INTEGER NOT NULL,
         comment TEXT,
         voter_id TEXT NOT NULL,
+        ip_hash TEXT NOT NULL,
         voted_at TEXT NOT NULL,
         PRIMARY KEY (site_id, category, voter_id)
       );
+      CREATE INDEX IF NOT EXISTS idx_site_trust_community_rate_limit
+        ON site_trust_community_votes(site_id, category, ip_hash, voted_at);
       CREATE TABLE IF NOT EXISTS site_trust_escrow_reports (
         site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
         transaction_outcome TEXT NOT NULL,
@@ -232,12 +240,13 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
     this.db
       .prepare(
         `INSERT INTO site_trust_community_votes
-           (site_id, category, score, comment, voter_id, voted_at)
-         VALUES (?, ?, ?, ?, ?, ?)
+           (site_id, category, score, comment, voter_id, ip_hash, voted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(site_id, category, voter_id)
-         DO UPDATE SET score = excluded.score, comment = excluded.comment, voted_at = excluded.voted_at`
+         DO UPDATE SET score = excluded.score, comment = excluded.comment,
+                       ip_hash = excluded.ip_hash, voted_at = excluded.voted_at`
       )
-      .run(vote.siteId, vote.category, vote.score, vote.comment ?? null, vote.voterId, vote.votedAt);
+      .run(vote.siteId, vote.category, vote.score, vote.comment ?? null, vote.voterId, vote.ipHash, vote.votedAt);
     return vote;
   }
 
@@ -250,5 +259,22 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
          VALUES (?, ?, ?, ?, ?)`
       )
       .run(report.siteId, report.transactionOutcome, report.escrowProvider, report.amountCurrency ?? null, report.reportedAt);
+  }
+
+  async isRateLimited(
+    siteId: string,
+    category: CommunityTrustCategory,
+    ipHash: string,
+    windowMs = 24 * 60 * 60 * 1000
+  ): Promise<boolean> {
+    const cutoff = new Date(Date.now() - windowMs).toISOString();
+    const row = this.db
+      .prepare(
+        `SELECT 1 as hit FROM site_trust_community_votes
+         WHERE site_id = ? AND category = ? AND ip_hash = ? AND voted_at > ?
+         LIMIT 1`
+      )
+      .get(siteId, category, ipHash, cutoff);
+    return row !== undefined;
   }
 }

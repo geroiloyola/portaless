@@ -1,5 +1,5 @@
 ---
-// Pagina PUBLICA de Site Trust Score -- v0.0.9.17. Sin auth: consulta
+// Pagina PUBLICA de Site Trust Score -- v0.0.9.19. Sin auth: consulta
 // GET /trust/:siteId (functions/trust/[siteId].js) y muestra el snapshot
 // completo de las 4 fuentes. Esta pagina es exactamente lo que Protocol
 // APW y cualquier agente externo verian si resolvieran este sitio -- ver
@@ -7,6 +7,11 @@
 //
 // siteId llega por la ruta dinamica de Astro (/trust/ejemplo.com) --
 // coincide 1:1 con el :siteId de los 3 endpoints del commit anterior.
+//
+// v0.0.9.19: submitVote() maneja explicitamente el 429 (rate_limited) que
+// ahora puede devolver POST /trust/:siteId/vote -- ver functions/trust/
+// [siteId]/vote.js. El rate-limit es server-side por IP hasheada, asi
+// que borrar localStorage y reintentar ya no alcanza para eludirlo.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 
 const { siteId } = Astro.params;
@@ -65,8 +70,6 @@ const { siteId } = Astro.params;
     spam_or_deceptive: "Ausencia de spam o engaño",
     responsiveness: "Capacidad de respuesta",
   };
-
-  const COMMUNITY_CATEGORIES = Object.keys(COMMUNITY_LABELS);
 
   const OUTCOME_LABELS = {
     completed_as_promised: "Completada como se prometio",
@@ -254,7 +257,7 @@ const { siteId } = Astro.params;
 
     const note = document.createElement("p");
     note.className = "st-source-note";
-    note.textContent = "Atestacion de visitantes humanos. Ausencia significa que nadie voto todavia — no es una señal negativa. Tu voto es anonimo (no requiere cuenta Portaless).";
+    note.textContent = "Atestacion de visitantes humanos. Ausencia significa que nadie voto todavia — no es una señal negativa. Tu voto es anonimo (no requiere cuenta Portaless). Limite: 1 voto por categoria cada 24h desde la misma red.";
     section.appendChild(note);
 
     const grid = document.createElement("div");
@@ -380,6 +383,9 @@ const { siteId } = Astro.params;
         message = body?.message ?? body?.error ?? message;
       } catch {
         // sin body JSON -- se usa el mensaje generico de arriba
+      }
+      if (res.status === 429 && !message) {
+        message = "Ya se registró un voto desde esta red en las últimas 24 horas.";
       }
       throw new Error(message);
     }

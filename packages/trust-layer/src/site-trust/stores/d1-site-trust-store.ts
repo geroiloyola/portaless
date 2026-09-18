@@ -1,4 +1,4 @@
-// Persistencia real de SiteTrustScore sobre Cloudflare D1 -- v0.0.9.15.
+// Persistencia real de SiteTrustScore sobre Cloudflare D1 -- v0.0.9.19.
 // Mismo patron que D1PermissionStore (packages/permissions/src/stores/
 // d1-permission-store.ts) y D1PluginRegistryStore: implementa el contrato
 // SiteTrustScoreStore usando D1DatabaseLike (interfaz minima compartida,
@@ -9,6 +9,12 @@
 // docs/architecture/site-trust-score.md): cada INSERT ON CONFLICT usa la
 // PRIMARY KEY exacta de su tabla en schema.sql. `getSnapshot` corre las 4
 // lecturas en paralelo via Promise.all -- son independientes entre si.
+//
+// v0.0.9.19: recordCommunityVote persiste ip_hash (SHA-256(ip + salt),
+// nunca la IP cruda). isRateLimited() consulta la MISMA tabla de votos --
+// no es un store ni un write separado, es un SELECT 1 con
+// idx_site_trust_community_rate_limit (site_id, category, ip_hash,
+// voted_at) para evitar table scan a medida que la tabla crece.
 
 import type {
   SiteTrustScoreStore,
@@ -57,6 +63,7 @@ interface CommunityRow {
   score: number;
   comment: string | null;
   voter_id: string;
+  ip_hash: string;
   voted_at: string;
 }
 
@@ -97,6 +104,7 @@ function rowToCommunity(row: CommunityRow): CommunityTrustVote {
     score: row.score as 1 | 2 | 3 | 4 | 5,
     comment: row.comment ?? undefined,
     voterId: row.voter_id,
+    ipHash: row.ip_hash,
     votedAt: row.voted_at,
   };
 }
@@ -198,12 +206,13 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
     await this.db
       .prepare(
         `INSERT INTO site_trust_community_votes
-           (site_id, category, score, comment, voter_id, voted_at)
-         VALUES (?, ?, ?, ?, ?, ?)
+           (site_id, category, score, comment, voter_id, ip_hash, voted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(site_id, category, voter_id)
-         DO UPDATE SET score = excluded.score, comment = excluded.comment, voted_at = excluded.voted_at`
+         DO UPDATE SET score = excluded.score, comment = excluded.comment,
+                       ip_hash = excluded.ip_hash, voted_at = excluded.voted_at`
       )
-      .bind(vote.siteId, vote.category, vote.score, vote.comment ?? null, vote.voterId, vote.votedAt)
+      .bind(vote.siteId, vote.category, vote.score, vote.comment ?? null, vote.voterId, vote.ipHash, vote.votedAt)
       .run();
     return vote;
   }
@@ -218,5 +227,23 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
       )
       .bind(report.siteId, report.transactionOutcome, report.escrowProvider, report.amountCurrency ?? null, report.reportedAt)
       .run();
+  }
+
+  async isRateLimited(
+    siteId: string,
+    category: CommunityTrustCategory,
+    ipHash: string,
+    windowMs = 24 * 60 * 60 * 1000
+  ): Promise<boolean> {
+    const cutoff = new Date(Date.now() - windowMs).toISOString();
+    const row = await this.db
+      .prepare(
+        `SELECT 1 as hit FROM site_trust_community_votes
+         WHERE site_id = ? AND category = ? AND ip_hash = ? AND voted_at > ?
+         LIMIT 1`
+      )
+      .bind(siteId, category, ipHash, cutoff)
+      .first<{ hit: number }>();
+    return row !== null;
   }
 }

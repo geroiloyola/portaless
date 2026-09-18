@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS plugin_trust_votes (
 );
 
 -- -----------------------------------------------------------------------------
--- v0.0.9.14 -- Site Trust Score (packages/trust-layer/src/site-trust/site-trust-score.ts)
+-- v0.0.9.19 -- Site Trust Score (packages/trust-layer/src/site-trust/site-trust-score.ts)
 -- -----------------------------------------------------------------------------
 -- Califica SITIOS completos (distinto de plugin_registry/plugin_trust_votes,
 -- que califica plugins instalados). 4 fuentes en 4 tablas separadas -- cada
@@ -189,6 +189,12 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_agent_site_category
   ON site_trust_agent_verifications(site_id, category);
 
 -- Fuente 3: community -- visitantes humanos. Ausencia = neutral.
+-- v0.0.9.19: agrega ip_hash para rate-limiting server-side (ver
+-- docs/architecture/site-trust-score.md, seccion "Rate-limiting"). El
+-- rate-limit NO es una entidad separada del voto: es un SELECT sobre esta
+-- misma tabla ("¿existe una fila con este ip_hash en esta ventana de
+-- 24h?"), no una tabla ni un write adicional. ip_hash es SHA-256(ip +
+-- salt) -- la IP cruda nunca se persiste.
 CREATE TABLE IF NOT EXISTS site_trust_community_votes (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   category TEXT NOT NULL CHECK (category IN (
@@ -198,12 +204,20 @@ CREATE TABLE IF NOT EXISTS site_trust_community_votes (
   score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 5),
   comment TEXT,
   voter_id TEXT NOT NULL,
+  ip_hash TEXT NOT NULL,
   voted_at TEXT NOT NULL,
   PRIMARY KEY (site_id, category, voter_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_site_trust_community_site_category
   ON site_trust_community_votes(site_id, category);
+
+-- Indice dedicado al chequeo de rate-limit: WHERE site_id = ? AND
+-- category = ? AND ip_hash = ? AND voted_at > ?. Sin este indice, el
+-- SELECT hace table scan a medida que la tabla crece (4 categorias x N
+-- sitios x IPs).
+CREATE INDEX IF NOT EXISTS idx_site_trust_community_rate_limit
+  ON site_trust_community_votes(site_id, category, ip_hash, voted_at);
 
 -- Fuente 4: escrow_report -- ground truth de transacciones reales,
 -- reportadas por un tercero (Portaless nunca custodia fondos). Ausencia = neutral.

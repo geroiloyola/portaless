@@ -1,4 +1,4 @@
-// SiteTrustScore -- Protocol APW, v0.0.9.14. Dominio DISTINTO de
+// SiteTrustScore -- Protocol APW, v0.0.9.19. Dominio DISTINTO de
 // PluginRegistryStore/PluginTrustVote (packages/plugin-sandbox/src/registry/):
 // aquel califica PLUGINS instalados; este califica SITIOS completos,
 // pensado para ser consultado por Protocol APW (packages/apw-resolver/,
@@ -18,6 +18,12 @@
 //   escrow_report -> ground truth de una transaccion real, reportada por
 //                     un tercero de escrow (Portaless nunca custodia
 //                     fondos). Ausencia = neutral (sin transacciones aun).
+//
+// v0.0.9.19: CommunityTrustVote agrega ipHash -- habilita rate-limiting
+// server-side (ver isRateLimited). El rate-limit NO es una entidad
+// separada del voto: es una consulta sobre la misma tabla de votos, no un
+// store ni un write adicional. ipHash es SHA-256(ip + salt); la IP cruda
+// nunca se persiste ni se expone en los tipos.
 
 export type SelfTrustCategory =
   | "gdpr_compliance"
@@ -71,6 +77,9 @@ export interface CommunityTrustVote {
   score: 1 | 2 | 3 | 4 | 5;
   comment?: string;
   voterId: string;
+  // SHA-256(ip + salt) -- nunca la IP cruda. Usado solo para el
+  // rate-limit de isRateLimited(); no se expone en la UI publica.
+  ipHash: string;
   votedAt: string;
 }
 
@@ -110,6 +119,15 @@ export interface SiteTrustScoreStore {
   recordAgentVerification(verification: AgentTrustVerification): Promise<void>;
   recordCommunityVote(vote: CommunityTrustVote): Promise<CommunityTrustVote>;
   recordEscrowReport(report: EscrowTrustReport): Promise<void>;
+
+  /**
+   * true si ipHash ya registro un voto para este siteId+category dentro
+   * de windowMs (default 24h) -- usado por functions/trust/[siteId]/
+   * vote.js ANTES de llamar a recordCommunityVote, para que borrar
+   * localStorage y generar un voterId nuevo no alcance para eludir el
+   * limite (el chequeo es por IP, no por voterId).
+   */
+  isRateLimited(siteId: string, category: CommunityTrustCategory, ipHash: string, windowMs?: number): Promise<boolean>;
 }
 
 /**
@@ -161,5 +179,18 @@ export class InMemorySiteTrustScoreStore implements SiteTrustScoreStore {
     const list = this.escrowReports.get(report.siteId) ?? [];
     list.push(report);
     this.escrowReports.set(report.siteId, list);
+  }
+
+  async isRateLimited(
+    siteId: string,
+    category: CommunityTrustCategory,
+    ipHash: string,
+    windowMs = 24 * 60 * 60 * 1000
+  ): Promise<boolean> {
+    const list = this.communityVotes.get(siteId) ?? [];
+    const cutoff = Date.now() - windowMs;
+    return list.some(
+      (v) => v.category === category && v.ipHash === ipHash && new Date(v.votedAt).getTime() > cutoff
+    );
   }
 }
