@@ -13,13 +13,20 @@
 // [siteId]/vote.js. El rate-limit es server-side por IP hasheada, asi
 // que borrar localStorage y reintentar ya no alcanza para eludirlo.
 //
-// FIX: src/pages/trust/[siteId].astro esta a 2 niveles de profundidad
-// desde src/ (pages/trust/) -- el import de BaseLayout debe subir
-// ../../ (a pages/, a src/) y entrar a layouts/, NO ../../../ (ese
-// tercer nivel sube fuera de src/ y rompia el build: UNRESOLVED_IMPORT
-// en CI). src/pages/admin/site-trust/[siteId]/self.astro esta 2 niveles
-// mas profundo (pages/admin/site-trust/[siteId]/) y por eso si necesita
-// ../../../../ -- son rutas distintas, no debe copiarse el mismo conteo.
+// FIX (import): src/pages/trust/[siteId].astro esta a 2 niveles de
+// profundidad desde src/ (pages/trust/) -- el import de BaseLayout debe
+// subir ../../ (a pages/, a src/) y entrar a layouts/, NO ../../../.
+//
+// FIX (prerender): el proyecto usa output: "static" (Cloudflare Pages).
+// En ese modo Astro exige getStaticPaths() para toda ruta dinamica
+// [siteId] -- necesita la lista completa de valores posibles en
+// build-time. No existe (ni deberia existir) una lista de "sitios
+// conocidos" -- cualquier siteId valido debe resolverse, incluyendo
+// sitios registrados despues del build. prerender = false le indica a
+// Astro que sirva esta ruta on-demand via el adaptador de Cloudflare
+// Pages, en vez de generarla en build-time.
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const { siteId } = Astro.params;

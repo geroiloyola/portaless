@@ -1,5 +1,5 @@
 ---
-// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.18.
+// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.19.
 // Requiere sesion valida -- protegido por functions/admin/_middleware.js,
 // que corre para toda ruta bajo /admin/* excepto /admin/login. Mismo
 // patron que src/pages/admin/permissions.astro: carga estado real via
@@ -14,8 +14,19 @@
 // la vista publica /trust/:siteId de este mismo sitio) -- hasta ahora
 // esta pagina, igual que /trust/:siteId, no tenia ningun link de entrada
 // ni salida y solo se accedia escribiendo la URL a mano. Ver
-// src/pages/admin/index.astro (nuevo en este commit) para el punto de
-// entrada real desde el dashboard.
+// src/pages/admin/index.astro para el punto de entrada real desde el
+// dashboard.
+//
+// FIX (prerender): el proyecto usa output: "static" (Cloudflare Pages).
+// En ese modo Astro exige getStaticPaths() para toda ruta dinamica
+// [siteId] -- necesita la lista completa de valores posibles en
+// build-time. No existe (ni deberia existir) una lista de "sitios
+// conocidos" -- cualquier siteId valido debe resolverse, incluyendo
+// sitios registrados despues del build. prerender = false le indica a
+// Astro que sirva esta ruta on-demand via el adaptador de Cloudflare
+// Pages, en vez de generarla en build-time. Mismo fix que /trust/[siteId].
+export const prerender = false;
+
 import BaseLayout from "../../../../layouts/BaseLayout.astro";
 
 const { siteId } = Astro.params;
