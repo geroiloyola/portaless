@@ -1,19 +1,19 @@
-# Site Trust Score — Diseño (v0.0.9.17)
+# Site Trust Score — Diseño (v0.0.9.18)
 
 **Estado real de implementación: tipos + persistencia real (D1/SQLite) +
-3 endpoints HTTP + UI pública y admin.** `packages/trust-layer/src/
-site-trust/site-trust-score.ts` define los tipos y `InMemorySiteTrustScoreStore`.
-`store-factory.ts` conecta `D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore`
-según el entorno. `functions/trust/[siteId].js` (lectura pública),
-`functions/trust/[siteId]/vote.js` (voto community) y `functions/admin/
-site-trust/[siteId]/self.js` (declaración self) exponen 2 de las 4
-fuentes. `src/pages/trust/[siteId].astro` (pública, muestra las 4 fuentes
-y permite votar `community`) y `src/pages/admin/site-trust/[siteId]/
-self.astro` (dashboard, formulario de las 6 categorías `self`) son las
-2 páginas que consumen esos endpoints — ver la sección "UI conectada"
-para el detalle. Sigue pendiente: `agent` y `escrow_report` sin endpoint
-ni UI, por falta de un mecanismo de autenticación real — ver "Endpoints
-HTTP conectados".
+3 endpoints HTTP + UI pública y admin, con navegación.**
+`packages/trust-layer/src/site-trust/site-trust-score.ts` define los
+tipos y `InMemorySiteTrustScoreStore`. `store-factory.ts` conecta
+`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno.
+`functions/trust/[siteId].js` (lectura pública), `functions/trust/
+[siteId]/vote.js` (voto community) y `functions/admin/site-trust/
+[siteId]/self.js` (declaración self) exponen 2 de las 4 fuentes.
+`src/pages/trust/[siteId].astro` y `src/pages/admin/site-trust/[siteId]/
+self.astro` son las 2 páginas que los consumen — y `src/pages/admin/
+index.astro` (nuevo) es el primer punto de entrada real del dashboard
+admin, con breadcrumbs de ida y vuelta entre ambas páginas. Sigue
+pendiente: `agent` y `escrow_report` sin endpoint ni UI, y rate-limiting
+en el voto — ver "Limitaciones honestas".
 
 ## Qué es y qué NO es
 
@@ -42,16 +42,13 @@ ausencia de una fila en `site_trust_agent_verifications` no es lo mismo
 que `verified: false`. Ausencia significa "ningún agente corrió esa
 verificación todavía" (neutral). `verified: false` significa "un agente
 lo intentó y falló" (ej. sin TLS válido) — una señal negativa real que
-debe pesar distinto. El schema y el tipo `AgentTrustVerification` hacen
-esta distinción explícita con un campo `verified` separado del hecho de
-que exista o no la fila.
+debe pesar distinto.
 
 **Por qué `escrow_report` es la señal más fuerte**: las otras 3 fuentes
 son predictoras — intentan anticipar si un sitio es confiable. El reporte
-de escrow es lo que **de verdad ocurrió** con una transacción real. No es
-opinión ni verificación técnica, es el resultado factual. Un agente que
-consulta esta fuente tiene la respuesta directa a la pregunta que más
-importa en comercio: "¿este sitio entrega lo que promete?".
+de escrow es lo que **de verdad ocurrió** con una transacción real. Un
+agente que consulta esta fuente tiene la respuesta directa a la pregunta
+que más importa en comercio: "¿este sitio entrega lo que promete?".
 
 ## Categorías por fuente
 
@@ -67,92 +64,57 @@ importa en comercio: "¿este sitio entrega lo que promete?".
 **`escrow_report`** (1 campo, 3 valores posibles): `transaction_outcome`
 ∈ `completed_as_promised` | `refunded_no_delivery` | `disputed`.
 
-Cada categoría vive en la fuente que puede evaluarla de verdad — pedirle a
-un visitante humano que evalúe `https_and_headers` sería ruido sin
-criterio; pedirle a un agente que evalúe `perceived_trustworthiness` no
-tiene sentido porque un agente no tiene percepción subjetiva.
-
 ## Persistencia real: D1 y SQLite
 
-`createSiteTrustScoreStore(env)` (packages/trust-layer/src/site-trust/
-store-factory.ts) resuelve el backend igual que `createPermissionStore()`:
-`env.DB` presente → `D1SiteTrustScoreStore` (Cloudflare Workers, usa
-`D1DatabaseLike` para no acoplarse al binding real); `env.PORTALESS_SQLITE_PATH`
-presente → `SqliteSiteTrustScoreStore` (self-hosted, `node:sqlite`, Node
-22.5+); si ninguno está disponible, cae a `InMemorySiteTrustScoreStore` con
-una advertencia explícita en consola — nunca falla en silencio.
-
-Cada una de las 4 fuentes se escribe con su propio método
-(`recordSelfEvaluation`, `recordAgentVerification`, `recordCommunityVote`,
-`recordEscrowReport`), y ambos backends garantizan la fila en
-`site_trust_subjects` antes de escribir en la tabla de la fuente
-correspondiente (`ensureSubject`), ya que D1/SQLite no siempre fuerzan
-foreign keys por defecto. `self` y `community` sobrescriben el valor más
+`createSiteTrustScoreStore(env)` resuelve el backend igual que
+`createPermissionStore()`: `env.DB` → `D1SiteTrustScoreStore`;
+`env.PORTALESS_SQLITE_PATH` → `SqliteSiteTrustScoreStore`; si ninguno
+está disponible, cae a `InMemorySiteTrustScoreStore` con advertencia
+explícita en consola. `self` y `community` sobrescriben el valor más
 reciente por categoría (u por categoría+votante); `agent` y
-`escrow_report` insertan un registro histórico nuevo en cada llamada — un
-sitio puede acumular múltiples verificaciones de agente o reportes de
-escrow en el tiempo, y el historial completo importa (no solo el último
-valor).
+`escrow_report` insertan un registro histórico nuevo en cada llamada.
 
 ## Endpoints HTTP conectados
 
-Tres endpoints conectan `createSiteTrustScoreStore` al mundo real, cada
-uno con la audiencia y el nivel de auth que corresponde a quién puede
-generar ese dato de verdad:
-
 | Endpoint | Método | Auth | Quién lo usa |
 |---|---|---|---|
-| `/trust/:siteId` | GET | Ninguna (público) | Protocol APW, agentes externos, dashboard — lee el snapshot completo de las 4 fuentes |
+| `/trust/:siteId` | GET | Ninguna (público) | Protocol APW, agentes externos, dashboard |
 | `/trust/:siteId/vote` | POST | Ninguna (público, `voterId` anónimo) | Visitantes humanos votando `community` |
-| `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` (mismo patrón que `/admin/permissions`) | El propio admin del sitio, declarando `self` |
+| `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` | El propio admin del sitio, declarando `self` |
 
-**Por qué `agent` y `escrow_report` no tienen endpoint todavía**: ambos
-requieren un mecanismo de autenticación que no existe en el repo — `agent`
-necesita verificar la identidad del agente verificador vía Web Bot Auth
-(RFC 9421), y `escrow_report` necesita autenticar al tercero de escrow que
-reporta (una API key o firma por proveedor, con una lista de proveedores
-de confianza que tampoco existe todavía). Exponer estos dos sin ese
-mecanismo significaría aceptar que cualquiera declare `verified: true` o
-un `transaction_outcome` falso sobre cualquier sitio — el peor resultado
-posible para las dos fuentes más objetivas del diseño.
+`agent` y `escrow_report` no tienen endpoint todavía: ambos requieren un
+mecanismo de autenticación que no existe en el repo (Web Bot Auth para
+agentes verificadores, API key/firma por proveedor de escrow).
 
-## UI conectada
+## UI conectada y navegación (v0.0.9.18)
 
-Dos páginas Astro consumen los 3 endpoints:
+**`src/pages/trust/[siteId].astro`** — pública, sin auth. Muestra las 4
+fuentes con la semántica visual correcta: `self` neutral vs. declarado;
+`agent` distingue "Sin verificar" (neutral) de "Verificación fallida"
+(rojo); `community` con formulario de voto (`voterId` anónimo en
+`localStorage`); `escrow_report` con historial completo, color por
+resultado.
 
-**`src/pages/trust/[siteId].astro`** — pública, sin auth. Consulta
-`GET /trust/:siteId` y renderiza las 4 fuentes con la semántica visual
-correcta para cada una: `self` muestra "Sin declarar" (neutral) cuando
-falta una categoría; `agent` distingue explícitamente "Sin verificar"
-(neutral) de "Verificación fallida" (badge rojo — la señal negativa real
-de `verified: false`); `community` muestra el promedio 1-5 por categoría
-y expone un formulario de voto (estrellas 1-5 + comentario opcional) que
-llama a `POST /trust/:siteId/vote` con un `voterId` anónimo generado una
-vez y persistido en `localStorage` del navegador; `escrow_report` lista
-el historial completo de resultados (no solo el último), con un badge de
-color distinto por resultado (`completed_as_promised` verde,
-`refunded_no_delivery` naranja, `disputed` rojo).
+**`src/pages/admin/site-trust/[siteId]/self.astro`** — sesión + rol
+admin. Formulario por categoría con checkbox + URL de evidencia. Desde
+v0.0.9.18 incluye un breadcrumb de ida y vuelta: link a `/admin` y link a
+la vista pública `/trust/:siteId` del mismo sitio.
 
-**`src/pages/admin/site-trust/[siteId]/self.astro`** — protegida por
-`functions/admin/_middleware.js` (sesión + rol admin). Un formulario por
-categoría `self`, con checkbox + campo de URL de evidencia opcional, y un
-botón "Guardar" independiente por fila que llama a
-`PUT /admin/site-trust/:siteId/self`. Carga el estado inicial desde el
-mismo `GET /trust/:siteId` público (no hay necesidad de un endpoint admin
-de lectura separado, ya que el snapshot no tiene datos sensibles).
-
-Ninguna de las dos páginas tiene todavía un link de navegación desde el
-resto del dashboard — se acceden hoy solo escribiendo la URL directamente.
+**`src/pages/admin/index.astro`** (nuevo) — primer punto de entrada real
+del dashboard admin. Hasta esta versión no existía ningún `/admin/index.astro`;
+cada página admin (`permissions.astro`, y luego `site-trust/[siteId]/
+self.astro`) solo era alcanzable escribiendo la URL a mano. Este índice
+linkea directo a `/admin/permissions`, y expone un pequeño formulario que
+pide un `siteId` antes de navegar a su autoevaluación — no asume ningún
+sitio por defecto, porque el repo todavía no tiene un registro de "sitios
+conocidos" (equivalente al `KNOWN_SUBJECTS` que sí existe para plugins en
+`functions/admin/permissions/index.js`).
 
 ## Cómo se conecta con Protocol APW
 
-`packages/apw-resolver/` (hoy stub, ver `docs/protocol-apw.md`) resuelve
-identidad de un sitio vía `did:web`/DNS. Site Trust Score es el dato de
-**confianza** que ese resolver expondría junto a la identidad — un agente
-resolviendo un sitio antes de una transacción puede pedir específicamente
-`agent.https_and_headers` + `agent.bot_traffic_anomalies` (las señales más
-objetivas, verificables sin depender de opinión humana) para decidir si
-avanza.
+`packages/apw-resolver/` (hoy stub) resuelve identidad de un sitio vía
+`did:web`/DNS. Site Trust Score es el dato de **confianza** que ese
+resolver expondría junto a la identidad.
 
 ## Arquitectura de "confianza irrelevante" — el rol real de este score
 
@@ -160,42 +122,35 @@ Site Trust Score **no es** el mecanismo que hace que una transacción sea
 segura. Es el **pre-filtro de eficiencia** que reduce cuánto necesitas
 confiar antes de comprometerte a algo más costoso:
 
-1. **Pre-filtro (este score)**: descarta sitios obviamente malos antes de
-   gastar tiempo o recursos en verificación más profunda.
-2. **Autorización** (fuera de este repo): un mandato criptográfico que
-   limita lo que un agente puede gastar, en qué sitio, hasta cuándo.
-3. **Ejecución con escrow real** (fuera de este repo, tercero): el dinero
-   no va directo al sitio — va a custodia con condiciones de release
-   (entrega confirmada → libera; no entrega → reembolso automático).
-4. **Cierre** (`escrow_report`, este dominio): el resultado real de la
-   transacción alimenta de vuelta el score — el sitio gana o pierde
-   confianza según lo que efectivamente ocurrió, no según lo que declaró.
+1. **Pre-filtro (este score)**: descarta sitios obviamente malos.
+2. **Autorización** (fuera de este repo): mandato criptográfico de gasto.
+3. **Ejecución con escrow real** (fuera de este repo, tercero): custodia
+   con condiciones de release.
+4. **Cierre** (`escrow_report`, este dominio): el resultado real
+   alimenta de vuelta el score.
 
-Los pasos 2 y 3 **no se construyen dentro de Portaless**, por la misma
-razón ya documentada en `ROADMAP.md` ("Trust Layer y Pay per Crawl:
-protocolo abierto, no asegurador"): garantizar un cobro real y custodiar
-fondos requiere licencias financieras que corresponden a una entidad
-regulada, no a este proyecto. Portaless expone el protocolo — el paso 4
-es simplemente **recibir y almacenar** el reporte que un tercero de
-escrow ya generó, nunca mover ni retener el dinero en sí.
+Los pasos 2 y 3 no se construyen dentro de Portaless, misma razón que
+`ROADMAP.md` documenta para Pay per Crawl: requiere licencias financieras
+de una entidad regulada.
 
 ## Limitaciones honestas
 
 - No existe ningún endpoint HTTP ni UI para `agent` ni `escrow_report`
-  todavía — ver "Endpoints HTTP conectados" para el porqué (falta un
-  mecanismo de autenticación real para ambos).
-- El endpoint `/trust/:siteId/vote` no implementa ningún rate-limiting ni
-  prevención de abuso — `voterId` es una huella anónima autogenerada del
-  lado del cliente (persistida en `localStorage`), y nada impide borrar
-  ese storage y generar una nueva por request.
-- Ninguna de las 2 páginas nuevas (`/trust/:siteId`,
-  `/admin/site-trust/:siteId/self`) tiene todavía un link de navegación
-  desde el resto del dashboard ni desde ningún otro punto del sitio — se
-  acceden solo escribiendo la URL directamente.
+  todavía — falta un mecanismo de autenticación real para ambos.
+- El endpoint `/trust/:siteId/vote` no implementa rate-limiting ni
+  prevención de abuso todavía — `voterId` es una huella anónima de
+  `localStorage`, y nada impide borrarla y votar de nuevo. Próximo paso
+  planeado: rate-limit por IP hasheada (`SHA-256(ip + salt)`, nunca la IP
+  cruda) con ventana de 24h — suficiente para que el ataque sea "más
+  molesto que útil", ya que `community` es la señal más débil de las 4
+  por diseño (es atestación, no verificación ni ground truth).
 - `packages/apw-resolver/` sigue siendo un stub — este score no está
-  conectado a ninguna resolución real de `did:web` todavía, aunque ya es
-  técnicamente consultable en `/trust/:siteId`.
+  conectado a ninguna resolución real de `did:web` todavía.
 - No se calcula todavía ningún promedio o resumen sobre `agent`/`escrow_report`
-  (que acumulan historial) — la UI pública muestra la verificación más
-  reciente por categoría y el historial completo de reportes de escrow,
-  pero no calcula, por ejemplo, un "% de verificaciones exitosas".
+  (que acumulan historial) — la UI muestra la verificación más reciente y
+  el historial completo de escrow, pero no un "% de verificaciones
+  exitosas" calculado.
+- `/admin/index.astro` no lista sitios existentes (no hay registro de
+  "sitios conocidos" en el repo) — el formulario de acceso a la
+  autoevaluación pide el `siteId` manualmente en vez de ofrecer un
+  selector.

@@ -1,5 +1,5 @@
 ---
-// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.17.
+// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.18.
 // Requiere sesion valida -- protegido por functions/admin/_middleware.js,
 // que corre para toda ruta bajo /admin/* excepto /admin/login. Mismo
 // patron que src/pages/admin/permissions.astro: carga estado real via
@@ -9,11 +9,24 @@
 // servidor).
 //
 // siteId llega por la ruta dinamica -- /admin/site-trust/ejemplo.com/self.
+//
+// v0.0.9.18: agrega breadcrumb de navegacion (vuelta a /admin, y link a
+// la vista publica /trust/:siteId de este mismo sitio) -- hasta ahora
+// esta pagina, igual que /trust/:siteId, no tenia ningun link de entrada
+// ni salida y solo se accedia escribiendo la URL a mano. Ver
+// src/pages/admin/index.astro (nuevo en este commit) para el punto de
+// entrada real desde el dashboard.
 import BaseLayout from "../../../../layouts/BaseLayout.astro";
 
 const { siteId } = Astro.params;
 ---
 <BaseLayout title={`Autoevaluación de confianza — ${siteId}`}>
+  <p class="ss-breadcrumb">
+    <a href="/admin">← Panel de administración</a>
+    <span class="ss-breadcrumb-sep">·</span>
+    <a href={`/trust/${siteId}`}>Ver página pública de este sitio</a>
+  </p>
+
   <div class="ss-page-header">
     <h1 class="ss-page-title">Autoevaluación de confianza</h1>
     <p class="ss-page-site">{siteId}</p>
@@ -159,6 +172,11 @@ const { siteId } = Astro.params;
 </script>
 
 <style>
+  .ss-breadcrumb { margin: 0 0 18px; font-size: 0.8rem; }
+  .ss-breadcrumb a { color: var(--portaless-accent); text-decoration: none; }
+  .ss-breadcrumb a:hover { text-decoration: underline; }
+  .ss-breadcrumb-sep { margin: 0 8px; color: var(--portaless-muted); }
+
   .ss-page-header { margin-bottom: 24px; }
   .ss-page-title { margin: 0 0 4px; font-size: 1.4rem; }
   .ss-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
