@@ -1,21 +1,20 @@
-# Site Trust Score — Diseño (v0.0.9.21)
+# Site Trust Score — Diseño (v0.0.9.22)
 
 **Estado real de implementación: tipos + persistencia real (D1/SQLite) +
-3 endpoints HTTP + UI pública y admin, con navegación y rate-limiting +
-módulo de verificación de identidad de agentes (sin endpoint conectado
-todavía).** `packages/trust-layer/src/site-trust/site-trust-score.ts`
-define los tipos y `InMemorySiteTrustScoreStore`. `store-factory.ts`
-conecta `D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el
-entorno. `functions/trust/[siteId].js`, `functions/trust/[siteId]/vote.js`
-y `functions/admin/site-trust/[siteId]/self.js` exponen 2 de las 4
-fuentes. `src/pages/trust/[siteId].astro`, `src/pages/admin/site-trust/
-[siteId]/self.astro` y `src/pages/admin/index.astro` completan la UI y
-navegación. El voto de `community` tiene rate-limiting server-side por
-IP. Desde v0.0.9.21, existe el módulo `web-bot-auth.ts` + la allowlist
-`authorized_agents` — el primer paso hacia desbloquear la fuente `agent`
-— pero **todavía no hay ningún endpoint que los use**; eso es el
-siguiente commit del plan. `escrow_report` sigue completamente sin
-tocar.
+4 endpoints HTTP + UI pública y admin, con navegación y rate-limiting +
+verificación de identidad y autorización de agentes.**
+`packages/trust-layer/src/site-trust/site-trust-score.ts` define los
+tipos y `InMemorySiteTrustScoreStore`. `store-factory.ts` conecta
+`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno.
+`functions/trust/[siteId].js`, `functions/trust/[siteId]/vote.js`,
+`functions/admin/site-trust/[siteId]/self.js` y **`functions/trust/
+[siteId]/agent-verification.js`** (nuevo) exponen 3 de las 4 fuentes.
+`src/pages/trust/[siteId].astro`, `src/pages/admin/site-trust/[siteId]/
+self.astro` y `src/pages/admin/index.astro` completan la UI y navegación
+— la sección `agent` de la página pública ya sabía renderizar
+`verified: true/false` desde el commit de UI original; ahora, por
+primera vez, puede recibir datos reales. `escrow_report` sigue
+completamente sin tocar — es la única fuente que falta.
 
 ## Qué es y qué NO es
 
@@ -71,77 +70,65 @@ está disponible, cae a `InMemorySiteTrustScoreStore`.
 | `/trust/:siteId` | GET | Ninguna (público) | Protocol APW, agentes externos, dashboard |
 | `/trust/:siteId/vote` | POST | Ninguna (público, rate-limited por IP) | Visitantes humanos votando `community` |
 | `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` | El propio admin del sitio, declarando `self` |
+| `/trust/:siteId/agent-verification` | POST | Firma Web Bot Auth + allowlist `authorized_agents` | Agentes autorizados reportando `agent` |
 
-`agent` y `escrow_report` todavía no tienen endpoint conectado — ver la
-siguiente sección para el progreso en `agent`.
+`escrow_report` es la única fuente que todavía no tiene endpoint.
 
-## Verificación de identidad de agentes (v0.0.9.21)
+## Verificación de identidad y autorización de agentes (v0.0.9.21–22)
 
 `packages/trust-layer/src/site-trust/web-bot-auth.ts` implementa **solo
 verificación** de identidad vía Web Bot Auth (RFC 9421 HTTP Message
-Signatures, draft-meunier-web-bot-auth-architecture). Portaless nunca
-firma nada — únicamente valida firmas de agentes externos.
+Signatures). Usa el paquete oficial `web-bot-auth` de Cloudflare
+(`verify()` + `verifierFromJWK()`) en vez de reimplementar la
+reconstrucción del signature base string.
 
-**Usa el paquete oficial `web-bot-auth` de Cloudflare** (`verify()` +
-`verifierFromJWK()` de `web-bot-auth/crypto`) en vez de reimplementar la
-reconstrucción del signature base string — ese formato específico ya está
-manejado correctamente por la librería oficial.
+**Identidad ≠ autorización**: Web Bot Auth responde "¿quién eres?",
+nunca "¿tienes permiso?". `authorized_agents` (tabla en `schema.sql` +
+módulo `authorized-agents.ts`) resuelve la segunda pregunta — solo
+agentes con `agent_key_id` en esa tabla, `active = 1`, pueden reportar.
+Fase 1 (actual): allowlist estricta y manual.
 
-### Identidad ≠ autorización — por qué existe `authorized_agents`
+### El endpoint: dos capas de seguridad en orden
 
-Web Bot Auth responde **"¿quién eres?"**, nunca **"¿tienes permiso?"**.
-Cualquiera puede generar un par de claves Ed25519, publicar un JWKS en su
-propio dominio, y `verifyWebBotAuthRequest()` lo validaría como una firma
-genuina — porque lo es. Eso no significa que ese agente deba poder
-reportar `verified: true` sobre cualquier sitio.
+`POST /trust/:siteId/agent-verification` (`functions/trust/[siteId]/
+agent-verification.js`) aplica ambas capas en secuencia:
 
-`authorized_agents` (tabla nueva en `schema.sql`) es la allowlist que
-resuelve esa segunda pregunta: solo agentes cuyo `agent_key_id` esté en
-esta tabla, con `active = 1`, pueden reportar. Fase 1 (esta versión) es
-deliberadamente estricta y manual — Portaless agrega agentes conocidos a
-mano. Una fase 2 futura (no implementada) podría abrir a cualquier agente
-verificado con un peso reducido en el score, en vez de bloquear por
-completo a los no listados.
+1. **Identidad** (`verifyWebBotAuthRequest`): sin firma válida → `401`.
+   A diferencia de `/trust/:siteId/vote`, este endpoint no acepta
+   tráfico anónimo — la fuente `agent` es verificación técnica, no
+   atestación de visitante.
+2. **Autorización** (`authorized_agents.isAuthorized`): identidad válida
+   pero agente no autorizado → `403`. Esta distinción de status code es
+   intencional: `401` significa "no sabemos quién eres", `403` significa
+   "sabemos quién eres, pero no tenés permiso" — información útil para
+   quien integra un agente nuevo y necesita entender por qué falla.
+
+Solo tras pasar ambas capas se persiste `recordAgentVerification()` con
+el `verified` que el agente reporta sobre la categoría — ese valor
+(`true` o `false`) es información válida sobre el *sitio* en ambos casos;
+lo que se bloquea en las capas 1 y 2 es la identidad/autorización del
+*reportante*, no el contenido de su reporte.
 
 ### Cache del JWKS
 
-Cada invocación de una Cloudflare Pages Function es stateless — sin
-cache, cada verificación haría un fetch HTTP al dominio del agente.
+Cada invocación de una Cloudflare Pages Function es stateless.
 `fetchJwksWithCache()` usa un KV namespace (`env.JWKS_CACHE`) con TTL de
 6h. Sin KV configurado, cae a fetch directo con warning explícito.
-
-### Limitaciones de este commit puntual
-
-- **No hay endpoint todavía** que use `web-bot-auth.ts` +
-  `authorized_agents` — este commit es solo el módulo de verificación,
-  el endpoint `POST /trust/:siteId/agent-verification` es el siguiente
-  paso del plan.
-- **Tests con test runner no confirmado**: `web-bot-auth.test.ts` usa la
-  clave de test pública de RFC 9421 Appendix B.1.4, pero no se pudo
-  confirmar si el repo tiene `vitest` (u otro runner) instalado — la
-  ejecución de estos tests depende de eso.
-- **`package.json` no se modificó**: falta agregar la dependencia
-  `web-bot-auth` como paso manual — no se editó a ciegas sin poder leer
-  el contenido real del archivo.
 
 ## UI conectada y navegación
 
 `src/pages/trust/[siteId].astro` (pública), `src/pages/admin/site-trust/
 [siteId]/self.astro` (sesión + rol admin, con breadcrumb) y
-`src/pages/admin/index.astro` (índice del dashboard) completan el ciclo
-tipos → persistencia → endpoint → UI para `self` y `community`.
+`src/pages/admin/index.astro` (índice del dashboard). La sección `agent`
+de la página pública ya distinguía visualmente "Sin verificar" (neutral)
+de "Verificación fallida" (rojo) desde su commit original — ahora recibe
+datos reales por primera vez, sin necesitar ningún cambio de código.
 
 ## Rate-limiting del voto community
 
-`site_trust_community_votes` tiene una columna `ip_hash`
-(`SHA-256(ip + salt)`) y un índice dedicado
-`idx_site_trust_community_rate_limit`. `isRateLimited()` en
-`SiteTrustScoreStore` consulta esa misma tabla — no es un store ni una
-tabla separada. `functions/trust/[siteId]/vote.js` la llama antes de
-`recordCommunityVote()` y devuelve `429` si corresponde. La IP llega vía
-`CF-Connecting-IP`. El límite es 1 voto por IP por sitio+categoría cada
-24h — suficiente para que el ataque sea "más molesto que útil", ya que
-`community` es la señal más débil de las 4 por diseño.
+`site_trust_community_votes` tiene `ip_hash` (`SHA-256(ip + salt)`) e
+índice dedicado. `isRateLimited()` consulta esa misma tabla — no es un
+store separado. Límite: 1 voto por IP por sitio+categoría cada 24h.
 
 ## Cómo se conecta con Protocol APW
 
@@ -163,21 +150,22 @@ licencias financieras de una entidad regulada.
 
 ## Limitaciones honestas
 
-- **`agent`**: el módulo de verificación de identidad y la allowlist de
-  autorización existen, pero no hay ningún endpoint HTTP que los
-  conecte todavía. Próximo commit del plan.
-- **`escrow_report`**: completamente sin tocar — necesita su propia
-  allowlist de proveedores autorizados (`authorized_escrow_providers`,
-  no implementada), análoga a `authorized_agents` pero con credenciales
-  tipo API key en vez de Web Bot Auth.
-- El rate-limit del voto community es deliberadamente simple (1 voto por
-  IP por sitio+categoría cada 24h) — no usa CAPTCHA/Turnstile.
+- **`escrow_report`**: la única fuente sin endpoint todavía. Necesita su
+  propia allowlist de proveedores autorizados
+  (`authorized_escrow_providers`, no implementada), análoga a
+  `authorized_agents` pero con credenciales tipo API key en vez de Web
+  Bot Auth — próximo commit del plan.
+- `authorized_agents` está vacía por defecto — hasta que alguien inserte
+  manualmente un `agent_key_id` real, ningún reporte de `agent` puede
+  pasar la capa de autorización. No hay UI ni endpoint para agregar
+  agentes a la allowlist todavía; es una operación manual sobre la base
+  de datos.
+- No se confirmó si `.github/workflows/ci.yml` ejecuta `npm test` — el
+  script existe (`vitest run`), pero puede no estar conectado al
+  pipeline todavía. No bloqueante para el funcionamiento real del
+  endpoint, solo afecta la cobertura de tests automatizados en CI.
+- El rate-limit del voto community es deliberadamente simple.
 - `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado.
 - `packages/apw-resolver/` sigue siendo un stub.
 - No se calcula ningún promedio o resumen sobre `agent`/`escrow_report`.
-- `/admin/index.astro` no lista sitios existentes — pide el `siteId`
-  manualmente.
-- No se confirmó si el repo tiene un test runner (`vitest` u otro)
-  instalado — los tests nuevos de `web-bot-auth.ts` dependen de eso.
-- `package.json` no incluye todavía la dependencia `web-bot-auth` —
-  paso manual pendiente.
+- `/admin/index.astro` no lista sitios existentes.
