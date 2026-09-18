@@ -1,0 +1,108 @@
+---
+// Indice del dashboard admin -- v0.0.9.18. Hasta ahora no existia ningun
+// /admin/index.astro: cada pagina admin (permissions.astro, y desde el
+// commit anterior, site-trust/[siteId]/self.astro) se accedia solo
+// escribiendo la URL directamente, sin ningun punto de entrada comun.
+// Esta pagina cierra ese hueco con la navegacion minima que YA tiene
+// sentido hoy -- no inventa secciones que no existen (ej. "Sites",
+// "Users") solo para parecer un dashboard completo.
+//
+// site-trust/[siteId]/self requiere un siteId concreto en la URL -- como
+// todavia no existe un registro de "sitios conocidos" (equivalente al
+// KNOWN_SUBJECTS de functions/admin/permissions/index.js para plugins),
+// este indice linkea a un formulario que pide el siteId antes de navegar,
+// en vez de asumir uno. Ver limitaciones en docs/architecture/
+// site-trust-score.md.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Panel de administración — Portaless">
+  <div class="ai-page-header">
+    <h1 class="ai-page-title">Panel de administración</h1>
+    <p class="ai-page-subtitle">Accesos directos a las herramientas de administración del sitio.</p>
+  </div>
+
+  <nav class="ai-nav-grid">
+    <a class="ai-nav-card" href="/admin/permissions">
+      <span class="ai-nav-card-title">Centro de Permisos</span>
+      <span class="ai-nav-card-desc">Conceder o revocar capacidades a plugins y agentes instalados.</span>
+    </a>
+
+    <div class="ai-nav-card ai-nav-card-form">
+      <span class="ai-nav-card-title">Site Trust Score — autoevaluación</span>
+      <span class="ai-nav-card-desc">
+        Declará el cumplimiento de tu propio sitio (GDPR, política de privacidad, seguridad de pago, etc.).
+      </span>
+      <form id="ai-site-trust-form" class="ai-site-trust-form">
+        <input
+          type="text"
+          id="ai-site-id-input"
+          class="ai-site-id-input"
+          placeholder="tu-dominio.com"
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="ai-site-id-submit">Ir</button>
+      </form>
+    </div>
+  </nav>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById("ai-site-trust-form");
+  const input = document.getElementById("ai-site-id-input");
+
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const siteId = input.value.trim();
+    if (!siteId) return;
+    window.location.href = `/admin/site-trust/${encodeURIComponent(siteId)}/self`;
+  });
+</script>
+
+<style>
+  .ai-page-header { margin-bottom: 28px; }
+  .ai-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .ai-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
+
+  .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
+
+  .ai-nav-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+    text-decoration: none;
+    color: var(--portaless-fg);
+    transition: border-color 0.15s ease;
+  }
+
+  a.ai-nav-card:hover { border-color: var(--portaless-accent); }
+
+  .ai-nav-card-title { font-weight: 600; font-size: 0.98rem; }
+  .ai-nav-card-desc { font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.45; }
+
+  .ai-site-trust-form { display: flex; gap: 8px; margin-top: 8px; }
+  .ai-site-id-input {
+    flex: 1;
+    min-width: 0;
+    border-radius: 6px;
+    border: 1px solid var(--portaless-border);
+    background: #0f1114;
+    color: var(--portaless-fg);
+    font-size: 0.85rem;
+    padding: 7px 10px;
+  }
+  .ai-site-id-submit {
+    border: 1px solid var(--portaless-accent);
+    background: transparent;
+    color: var(--portaless-accent);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .ai-site-id-submit:hover { background: var(--portaless-accent); color: #0f1114; }
+</style>

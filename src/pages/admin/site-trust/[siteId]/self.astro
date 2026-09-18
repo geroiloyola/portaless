@@ -1,0 +1,217 @@
+---
+// Formulario ADMIN de autoevaluacion self de Site Trust Score -- v0.0.9.20.
+// Requiere sesion valida -- protegido por functions/admin/_middleware.js.
+// Mismo patron que src/pages/admin/permissions.astro: carga estado real
+// via GET publico (/trust/:siteId), escribe via PUT
+// /admin/site-trust/:siteId/self (functions/admin/site-trust/[siteId]/self.js).
+//
+// FIX (build sin adaptador): el proyecto usa output: "static" SIN adaptador
+// de servidor instalado -- prerender = false fallaba con NoAdapterInstalled.
+// Mismo fix que /trust/[siteId].astro: getStaticPaths() vacio a proposito
+// (no existe, ni deberia existir, un registro de "sitios conocidos" en
+// build-time), y el siteId real se lee del lado del cliente via
+// window.location.pathname en vez de Astro.params -- la ruta real
+// /admin/site-trust/:siteId/self de todos modos depende de fetch() al
+// navegador para todo su contenido dinamico.
+export function getStaticPaths() {
+  return [];
+}
+
+import BaseLayout from "../../../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Autoevaluación de confianza">
+  <p class="ss-breadcrumb">
+    <a href="/admin">← Panel de administración</a>
+    <span class="ss-breadcrumb-sep">·</span>
+    <a href="#" id="ss-public-link">Ver página pública de este sitio</a>
+  </p>
+
+  <div class="ss-page-header">
+    <h1 class="ss-page-title">Autoevaluación de confianza</h1>
+    <p class="ss-page-site" id="ss-site-id"></p>
+    <p class="ss-page-subtitle">
+      Esto es una declaración tuya, no una verificación externa — se muestra
+      como tal en la página pública de este sitio. Marcá cada categoría según
+      corresponda a tu sitio hoy, y agregá un link de evidencia cuando sea
+      posible (ej. la URL de tu política de privacidad real).
+    </p>
+  </div>
+
+  <div id="ss-loading" class="ss-loading">Cargando autoevaluación actual…</div>
+  <div id="ss-load-error" class="ss-load-error" style="display:none;"></div>
+  <form id="ss-form" style="display:none;"></form>
+</BaseLayout>
+
+<script>
+  // siteId se lee de la URL real en el navegador -- esta pagina no tiene
+  // ningun siteId conocido en build-time (getStaticPaths() esta vacio a
+  // proposito). La ruta real es /admin/site-trust/:siteId/self, asi que
+  // el penultimo segmento de la ruta es el siteId.
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const siteIdIndex = pathParts.length - 2; // ... , siteId, "self"
+  const siteId = decodeURIComponent(pathParts[siteIdIndex] ?? "");
+
+  document.getElementById("ss-site-id").textContent = siteId;
+  document.title = `Autoevaluación de confianza — ${siteId}`;
+  document.getElementById("ss-public-link").href = `/trust/${encodeURIComponent(siteId)}`;
+
+  const SELF_CATEGORIES = [
+    { id: "gdpr_compliance", label: "Cumplimiento GDPR", hint: "El sitio cumple con GDPR u otra normativa de protección de datos equivalente." },
+    { id: "privacy_policy", label: "Política de privacidad", hint: "Existe una política de privacidad publicada y accesible." },
+    { id: "terms_of_service", label: "Términos de servicio", hint: "Existen términos de servicio publicados y accesibles." },
+    { id: "payment_security", label: "Seguridad de pago", hint: "Los pagos se procesan mediante un proveedor con estándares de seguridad reconocidos (ej. PCI DSS)." },
+    { id: "data_practices", label: "Prácticas de datos", hint: "El sitio documenta qué datos recolecta y cómo los usa." },
+    { id: "contact_transparency", label: "Transparencia de contacto", hint: "Existe información de contacto real y verificable del operador del sitio." },
+  ];
+
+  const formEl = document.getElementById("ss-form");
+  const loadingEl = document.getElementById("ss-loading");
+  const errorEl = document.getElementById("ss-load-error");
+
+  function buildRow(category, existing) {
+    const row = document.createElement("div");
+    row.className = "ss-row";
+
+    const header = document.createElement("div");
+    header.className = "ss-row-header";
+
+    const label = document.createElement("label");
+    label.className = "ss-row-label";
+    label.htmlFor = `ss-check-${category.id}`;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = `ss-check-${category.id}`;
+    checkbox.checked = existing?.declaredValue === true;
+    checkbox.className = "ss-checkbox";
+
+    label.appendChild(checkbox);
+    const labelText = document.createElement("span");
+    labelText.textContent = ` ${category.label}`;
+    label.appendChild(labelText);
+    header.appendChild(label);
+
+    const status = document.createElement("span");
+    status.className = "ss-row-status";
+    header.appendChild(status);
+
+    row.appendChild(header);
+
+    const hint = document.createElement("p");
+    hint.className = "ss-row-hint";
+    hint.textContent = category.hint;
+    row.appendChild(hint);
+
+    const evidenceInput = document.createElement("input");
+    evidenceInput.type = "url";
+    evidenceInput.className = "ss-evidence-input";
+    evidenceInput.placeholder = "URL de evidencia (opcional)";
+    evidenceInput.value = existing?.evidenceUrl ?? "";
+    row.appendChild(evidenceInput);
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "ss-save-btn";
+    saveBtn.textContent = "Guardar";
+    row.appendChild(saveBtn);
+
+    saveBtn.addEventListener("click", async () => {
+      saveBtn.disabled = true;
+      status.textContent = "Guardando…";
+      status.classList.remove("ss-status-error");
+      try {
+        const res = await fetch(`/admin/site-trust/${encodeURIComponent(siteId)}/self`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            category: category.id,
+            declaredValue: checkbox.checked,
+            evidenceUrl: evidenceInput.value || undefined,
+          }),
+        });
+
+        if (res.status === 401) {
+          window.location.href = "/admin/login?error=1";
+          return;
+        }
+
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`;
+          try {
+            const body = await res.json();
+            message = body?.message ?? body?.error ?? message;
+          } catch {
+            // sin body JSON -- se usa el mensaje generico de arriba
+          }
+          throw new Error(message);
+        }
+
+        status.textContent = "Guardado ✓";
+      } catch (err) {
+        status.textContent = `Error: ${err.message ?? "desconocido"}`;
+        status.classList.add("ss-status-error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    return row;
+  }
+
+  async function init() {
+    if (!siteId) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = "No se pudo determinar el sitio a partir de la URL.";
+      return;
+    }
+
+    try {
+      const res = await fetch(`/trust/${encodeURIComponent(siteId)}`);
+      if (!res.ok) throw new Error(`No se pudo cargar el estado actual (HTTP ${res.status}).`);
+      const snapshot = await res.json();
+
+      loadingEl.style.display = "none";
+      formEl.style.display = "";
+      formEl.className = "ss-form";
+
+      for (const category of SELF_CATEGORIES) {
+        const existing = (snapshot.self ?? []).find((e) => e.category === category.id);
+        formEl.appendChild(buildRow(category, existing));
+      }
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar la autoevaluación: ${err.message}`;
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .ss-breadcrumb { margin: 0 0 18px; font-size: 0.8rem; }
+  .ss-breadcrumb a { color: var(--portaless-accent); text-decoration: none; }
+  .ss-breadcrumb a:hover { text-decoration: underline; }
+  .ss-breadcrumb-sep { margin: 0 8px; color: var(--portaless-muted); }
+
+  .ss-page-header { margin-bottom: 24px; }
+  .ss-page-title { margin: 0 0 4px; font-size: 1.4rem; }
+  .ss-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
+  .ss-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.88rem; max-width: 640px; line-height: 1.55; }
+  .ss-loading, .ss-load-error { padding: 24px 0; color: var(--portaless-muted); font-size: 0.9rem; }
+  .ss-load-error { color: #ff8f8f; }
+
+  .ss-form { display: flex; flex-direction: column; gap: 14px; max-width: 620px; }
+  .ss-row { border: 1px solid var(--portaless-border); border-radius: 10px; padding: 14px 16px; background: #14161b; }
+  .ss-row-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .ss-row-label { display: flex; align-items: center; font-size: 0.92rem; font-weight: 600; cursor: pointer; }
+  .ss-checkbox { width: 16px; height: 16px; accent-color: var(--portaless-accent); }
+  .ss-row-status { font-size: 0.78rem; color: var(--portaless-muted); white-space: nowrap; }
+  .ss-row-status.ss-status-error { color: #ff8f8f; }
+  .ss-row-hint { margin: 6px 0 10px; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.45; }
+  .ss-evidence-input { width: 100%; border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: var(--portaless-fg); font-size: 0.82rem; padding: 6px 8px; margin-bottom: 8px; box-sizing: border-box; }
+  .ss-save-btn { border: 1px solid var(--portaless-accent); background: transparent; color: var(--portaless-accent); border-radius: 6px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; }
+  .ss-save-btn:hover:not(:disabled) { background: var(--portaless-accent); color: #0f1114; }
+  .ss-save-btn:disabled { cursor: wait; opacity: 0.6; }
+</style>

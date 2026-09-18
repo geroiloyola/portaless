@@ -114,10 +114,7 @@ CREATE INDEX IF NOT EXISTS idx_password_reset_username ON password_reset_request
 -- functions/admin/permissions/index.js usaba desde v0.0.9.2. Modelo abierto
 -- por defecto (Shopify App Store / WooCommerce.org / Android Play Store):
 -- cualquiera puede registrar un plugin, y la comunidad regula la confianza
--- via trust_score (promedio de votos), no Portaless. NOTA: solo
--- InMemoryPluginRegistryStore existe por ahora -- estas tablas quedan
--- preparadas para cuando se implementen D1PluginRegistryStore /
--- SqlitePluginRegistryStore (fuera de alcance de v0.0.9.9, ver ROADMAP.md).
+-- via trust_score (promedio de votos), no Portaless.
 
 CREATE TABLE IF NOT EXISTS plugin_registry (
   plugin_id TEXT PRIMARY KEY,
@@ -143,3 +140,97 @@ CREATE TABLE IF NOT EXISTS plugin_trust_votes (
   voted_at TEXT NOT NULL,
   PRIMARY KEY (plugin_id, voter_id)
 );
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.19 -- Site Trust Score (packages/trust-layer/src/site-trust/site-trust-score.ts)
+-- -----------------------------------------------------------------------------
+-- Califica SITIOS completos (distinto de plugin_registry/plugin_trust_votes,
+-- que califica plugins instalados). 4 fuentes en 4 tablas separadas -- cada
+-- una con semantica de ausencia distinta, ver docs/architecture/
+-- site-trust-score.md. Pensado para ser consultado por Protocol APW
+-- (packages/apw-resolver/, hoy stub) al resolver identidad via did:web.
+
+CREATE TABLE IF NOT EXISTS site_trust_subjects (
+  site_id TEXT PRIMARY KEY,
+  first_seen_at TEXT NOT NULL,
+  last_updated_at TEXT NOT NULL
+);
+
+-- Fuente 1: self -- autoevaluacion declarativa del admin. Ausencia = neutral.
+CREATE TABLE IF NOT EXISTS site_trust_self_evaluations (
+  site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
+  category TEXT NOT NULL CHECK (category IN (
+    'gdpr_compliance', 'privacy_policy', 'terms_of_service',
+    'payment_security', 'data_practices', 'contact_transparency'
+  )),
+  declared_value INTEGER NOT NULL CHECK (declared_value IN (0, 1)),
+  evidence_url TEXT,
+  declared_by TEXT NOT NULL,
+  declared_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, category)
+);
+
+-- Fuente 2: agent -- verificacion automatizada via Web Bot Auth. `verified`
+-- false es señal NEGATIVA real (el agente verifico y fallo), no ausencia.
+CREATE TABLE IF NOT EXISTS site_trust_agent_verifications (
+  site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
+  category TEXT NOT NULL CHECK (category IN (
+    'https_and_headers', 'structured_data_quality', 'machine_readable_policies',
+    'content_freshness', 'bot_traffic_anomalies'
+  )),
+  verified INTEGER NOT NULL CHECK (verified IN (0, 1)),
+  detail_json TEXT,
+  agent_key_id TEXT NOT NULL,
+  verified_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, category, agent_key_id, verified_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_trust_agent_site_category
+  ON site_trust_agent_verifications(site_id, category);
+
+-- Fuente 3: community -- visitantes humanos. Ausencia = neutral.
+-- v0.0.9.19: agrega ip_hash para rate-limiting server-side (ver
+-- docs/architecture/site-trust-score.md, seccion "Rate-limiting"). El
+-- rate-limit NO es una entidad separada del voto: es un SELECT sobre esta
+-- misma tabla ("¿existe una fila con este ip_hash en esta ventana de
+-- 24h?"), no una tabla ni un write adicional. ip_hash es SHA-256(ip +
+-- salt) -- la IP cruda nunca se persiste.
+CREATE TABLE IF NOT EXISTS site_trust_community_votes (
+  site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
+  category TEXT NOT NULL CHECK (category IN (
+    'perceived_trustworthiness', 'content_accuracy',
+    'spam_or_deceptive', 'responsiveness'
+  )),
+  score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 5),
+  comment TEXT,
+  voter_id TEXT NOT NULL,
+  ip_hash TEXT NOT NULL,
+  voted_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, category, voter_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_trust_community_site_category
+  ON site_trust_community_votes(site_id, category);
+
+-- Indice dedicado al chequeo de rate-limit: WHERE site_id = ? AND
+-- category = ? AND ip_hash = ? AND voted_at > ?. Sin este indice, el
+-- SELECT hace table scan a medida que la tabla crece (4 categorias x N
+-- sitios x IPs).
+CREATE INDEX IF NOT EXISTS idx_site_trust_community_rate_limit
+  ON site_trust_community_votes(site_id, category, ip_hash, voted_at);
+
+-- Fuente 4: escrow_report -- ground truth de transacciones reales,
+-- reportadas por un tercero (Portaless nunca custodia fondos). Ausencia = neutral.
+CREATE TABLE IF NOT EXISTS site_trust_escrow_reports (
+  site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
+  transaction_outcome TEXT NOT NULL CHECK (transaction_outcome IN (
+    'completed_as_promised', 'refunded_no_delivery', 'disputed'
+  )),
+  escrow_provider TEXT NOT NULL,
+  amount_currency TEXT,
+  reported_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, escrow_provider, reported_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
+  ON site_trust_escrow_reports(site_id);

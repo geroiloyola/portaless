@@ -26,6 +26,17 @@
 // (7.5-9), verde oscuro (9-10). agent/theme no tienen trustScore -- no se
 // renderiza nada para ellos (mismo bloque de codigo, solo se omite si
 // subject.trustScore es undefined).
+//
+// v0.0.9.13: el badge de trustScore ahora es interactivo. Un click lo
+// expande en un mini-formulario de voto (5 estrellas ENTERAS clicables
+// 1-5 -- la escala real de PluginTrustVote.score, no la escala 0-10 de
+// visualizacion -- mas un comentario opcional), conectado a onVote
+// (nueva prop, mismo patron que onToggle: la UI nunca llama a un store
+// directo, solo delega al fetch real que monta la pagina). Cierra el
+// hueco documentado desde el PR #28: "no existe UI para que alguien vote
+// 1-5". Alcance: este voto es la fuente "self"/admin sobre el trustScore
+// de PLUGINS -- no confundir con el futuro SiteTrustScore de sitios
+// completos (dominio distinto, packages/trust-layer).
 
 import type { PermissionGrant, PermissionSubject } from "./types";
 import { capabilityRegistry, listCapabilitiesByCategory } from "../../plugin-sandbox/src/capabilities/capability-registry";
@@ -34,6 +45,9 @@ export interface PermissionCenterOptions {
   container: HTMLElement;
   allGrants: PermissionGrant[]; // Snapshot inicial (subject x capability).
   onToggle: (grant: PermissionGrant) => Promise<void>;
+  // v0.0.9.13: opcional -- si se omite, el badge de trustScore se muestra
+  // en modo solo-lectura (sin click), igual que antes de esta version.
+  onVote?: (pluginId: string, score: 1 | 2 | 3 | 4 | 5, comment?: string) => Promise<{ trustScore: number; trustScoreVotes: number }>;
 }
 
 function riskColor(risk: "bajo" | "medio" | "alto"): string {
@@ -63,24 +77,7 @@ function starFillPercent(score10: number, starIndex: number): number {
   return Math.round(((score10 - starFloor) / 2) * 100);
 }
 
-function buildTrustBadge(subject: PermissionSubject): HTMLElement | null {
-  if (subject.trustScore === undefined) return null;
-
-  // trustScore vive en 0-5 (promedio de votos 1-5) -- se reescala a 0-10
-  // solo para esta visualizacion, igual que Trakt muestra "8.6" en vez
-  // de "4.3 de 5".
-  const score10 = Math.round(subject.trustScore * 2 * 10) / 10;
-  const color = trustColor(score10);
-  const votes = subject.trustScoreVotes ?? 0;
-
-  const badge = document.createElement("span");
-  badge.className = "pc-trust-badge";
-  badge.style.color = color;
-  badge.setAttribute(
-    "aria-label",
-    `Puntuación de confianza de la comunidad: ${score10.toFixed(1)} de 10, ${votes} ${votes === 1 ? "voto" : "votos"}`
-  );
-
+function buildReadonlyStars(score10: number, color: string): HTMLElement {
   const starsWrap = document.createElement("span");
   starsWrap.className = "pc-trust-stars";
 
@@ -105,23 +102,172 @@ function buildTrustBadge(subject: PermissionSubject): HTMLElement | null {
     starsWrap.appendChild(starSlot);
   }
 
-  const scoreText = document.createElement("span");
-  scoreText.className = "pc-trust-score-text";
-  scoreText.textContent = ` ${score10.toFixed(1)}`;
+  return starsWrap;
+}
 
-  const votesText = document.createElement("span");
-  votesText.className = "pc-trust-votes-text";
-  votesText.textContent = ` (${votes} ${votes === 1 ? "comentario" : "comentarios"})`;
+// Formulario de voto: 5 estrellas ENTERAS clicables (escala real 1-5, no
+// la escala 0-10 de visualizacion), + textarea opcional, + boton enviar.
+// Se construye una sola vez y se muestra/oculta con un toggle, en vez de
+// reconstruirse en cada apertura -- mantiene el estado del formulario
+// (score elegido, texto escrito) si el admin lo cierra por error.
+function buildVoteForm(
+  pluginId: string,
+  onVote: NonNullable<PermissionCenterOptions["onVote"]>,
+  onVoteRecorded: (result: { trustScore: number; trustScoreVotes: number }) => void
+): HTMLElement {
+  const form = document.createElement("div");
+  form.className = "pc-vote-form";
 
-  badge.appendChild(starsWrap);
-  badge.appendChild(scoreText);
-  badge.appendChild(votesText);
+  const starsRow = document.createElement("div");
+  starsRow.className = "pc-vote-stars-row";
+
+  let selectedScore: 1 | 2 | 3 | 4 | 5 | null = null;
+  const starButtons: HTMLButtonElement[] = [];
+
+  function paintStars(upTo: number): void {
+    starButtons.forEach((btn, idx) => {
+      btn.classList.toggle("pc-vote-star-filled", idx < upTo);
+    });
+  }
+
+  for (let i = 1; i <= 5; i++) {
+    const starBtn = document.createElement("button");
+    starBtn.type = "button";
+    starBtn.className = "pc-vote-star";
+    starBtn.textContent = "★";
+    starBtn.setAttribute("aria-label", `Calificar con ${i} de 5`);
+
+    starBtn.addEventListener("mouseenter", () => paintStars(i));
+    starBtn.addEventListener("mouseleave", () => paintStars(selectedScore ?? 0));
+    starBtn.addEventListener("click", () => {
+      selectedScore = i as 1 | 2 | 3 | 4 | 5;
+      paintStars(i);
+    });
+
+    starButtons.push(starBtn);
+    starsRow.appendChild(starBtn);
+  }
+
+  const commentInput = document.createElement("textarea");
+  commentInput.className = "pc-vote-comment";
+  commentInput.placeholder = "Comentario opcional…";
+  commentInput.rows = 2;
+
+  const feedback = document.createElement("div");
+  feedback.className = "pc-vote-feedback";
+
+  const submitBtn = document.createElement("button");
+  submitBtn.type = "button";
+  submitBtn.className = "pc-vote-submit";
+  submitBtn.textContent = "Enviar voto";
+
+  submitBtn.addEventListener("click", async () => {
+    if (!selectedScore) {
+      feedback.textContent = "Elegí una calificación de 1 a 5 estrellas primero.";
+      feedback.classList.add("pc-status-error");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    feedback.classList.remove("pc-status-error");
+    feedback.textContent = "Enviando voto…";
+
+    try {
+      const result = await onVote(pluginId, selectedScore, commentInput.value || undefined);
+      feedback.textContent = "¡Voto registrado!";
+      onVoteRecorded(result);
+    } catch (err) {
+      feedback.textContent = `Error al votar: ${(err as Error).message ?? "desconocido"}`;
+      feedback.classList.add("pc-status-error");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  form.appendChild(starsRow);
+  form.appendChild(commentInput);
+  form.appendChild(submitBtn);
+  form.appendChild(feedback);
+
+  return form;
+}
+
+function buildTrustBadge(
+  subject: PermissionSubject,
+  onVote?: PermissionCenterOptions["onVote"]
+): HTMLElement | null {
+  if (subject.trustScore === undefined) return null;
+
+  // trustScore vive en 0-5 (promedio de votos 1-5) -- se reescala a 0-10
+  // solo para esta visualizacion, igual que Trakt muestra "8.6" en vez
+  // de "4.3 de 5".
+  let score10 = Math.round(subject.trustScore * 2 * 10) / 10;
+  let votes = subject.trustScoreVotes ?? 0;
+
+  const badge = document.createElement("span");
+  badge.className = "pc-trust-badge";
+
+  const summary = document.createElement("button");
+  summary.type = "button";
+  summary.className = "pc-trust-summary";
+  // Sin onVote (o sin subject.id -- no deberia pasar para type:"plugin"),
+  // el badge queda como boton deshabilitado visualmente: mismo aspecto,
+  // sin interaccion. Mantiene el modo solo-lectura de v0.0.9.12 intacto
+  // para cualquier consumidor que no pase onVote.
+  if (!onVote) {
+    summary.disabled = true;
+    summary.classList.add("pc-trust-readonly");
+  }
+
+  function renderSummaryContents(): void {
+    summary.innerHTML = "";
+    const color = trustColor(score10);
+    summary.style.color = color;
+    summary.setAttribute(
+      "aria-label",
+      `Puntuación de confianza de la comunidad: ${score10.toFixed(1)} de 10, ${votes} ${votes === 1 ? "voto" : "votos"}.` +
+        (onVote ? " Click para calificar." : "")
+    );
+    summary.appendChild(buildReadonlyStars(score10, color));
+
+    const scoreText = document.createElement("span");
+    scoreText.className = "pc-trust-score-text";
+    scoreText.textContent = ` ${score10.toFixed(1)}`;
+    summary.appendChild(scoreText);
+
+    const votesText = document.createElement("span");
+    votesText.className = "pc-trust-votes-text";
+    votesText.textContent = ` (${votes} ${votes === 1 ? "comentario" : "comentarios"})`;
+    summary.appendChild(votesText);
+  }
+
+  renderSummaryContents();
+  badge.appendChild(summary);
+
+  if (onVote && subject.id) {
+    let voteForm: HTMLElement | null = null;
+
+    summary.addEventListener("click", () => {
+      if (voteForm) {
+        voteForm.classList.toggle("pc-vote-form-open");
+        return;
+      }
+
+      voteForm = buildVoteForm(subject.id, onVote, (result) => {
+        score10 = Math.round(result.trustScore * 2 * 10) / 10;
+        votes = result.trustScoreVotes;
+        renderSummaryContents();
+      });
+      badge.appendChild(voteForm);
+      requestAnimationFrame(() => voteForm?.classList.add("pc-vote-form-open"));
+    });
+  }
 
   return badge;
 }
 
 export function renderPermissionCenter(options: PermissionCenterOptions): void {
-  const { container, allGrants, onToggle } = options;
+  const { container, allGrants, onToggle, onVote } = options;
   const grouped = listCapabilitiesByCategory();
 
   container.innerHTML = "";
@@ -202,7 +348,7 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
           label.textContent = `${subjectIcon(grant.subject.type)} ${grant.subject.displayName}`;
           labelWrap.appendChild(label);
 
-          const trustBadge = buildTrustBadge(grant.subject);
+          const trustBadge = buildTrustBadge(grant.subject, onVote);
           if (trustBadge) {
             labelWrap.appendChild(trustBadge);
           }
