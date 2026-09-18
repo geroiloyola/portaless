@@ -1,13 +1,16 @@
-# Site Trust Score — Diseño (v0.0.9.15)
+# Site Trust Score — Diseño (v0.0.9.16)
 
 **Estado real de implementación: tipos + persistencia real (D1/SQLite) +
-fallback en memoria.** `packages/trust-layer/src/site-trust/
+3 endpoints HTTP conectados.** `packages/trust-layer/src/site-trust/
 site-trust-score.ts` define los tipos y `InMemorySiteTrustScoreStore`.
 `packages/trust-layer/src/site-trust/store-factory.ts` conecta
-`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno,
-mismo patrón que `createPermissionStore()` y `createPluginRegistryStore()`.
-Faltan los endpoints HTTP que lo conecten al dashboard/agentes externos, y
-la UI — ver `ROADMAP.md` para el detalle de lo pendiente.
+`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno.
+`functions/trust/[siteId].js` (lectura pública), `functions/trust/
+[siteId]/vote.js` (voto community público) y `functions/admin/site-trust/
+[siteId]/self.js` (declaración self, sesión admin) exponen 2 de las 4
+fuentes al mundo real — ver la sección "Endpoints HTTP conectados" para
+por qué `agent` y `escrow_report` siguen sin endpoint. Falta la UI en el
+dashboard — ver `ROADMAP.md` para el detalle de lo pendiente.
 
 ## Qué es y qué NO es
 
@@ -88,6 +91,31 @@ sitio puede acumular múltiples verificaciones de agente o reportes de
 escrow en el tiempo, y el historial completo importa (no solo el último
 valor).
 
+## Endpoints HTTP conectados (v0.0.9.16)
+
+Tres endpoints conectan `createSiteTrustScoreStore` al mundo real, cada
+uno con la audiencia y el nivel de auth que corresponde a quién puede
+generar ese dato de verdad:
+
+| Endpoint | Método | Auth | Quién lo usa |
+|---|---|---|---|
+| `/trust/:siteId` | GET | Ninguna (público) | Protocol APW, agentes externos, dashboard — lee el snapshot completo de las 4 fuentes |
+| `/trust/:siteId/vote` | POST | Ninguna (público, `voterId` anónimo) | Visitantes humanos votando `community` |
+| `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` (mismo patrón que `/admin/permissions`) | El propio admin del sitio, declarando `self` |
+
+**Por qué `agent` y `escrow_report` no tienen endpoint todavía**: ambos
+requieren un mecanismo de autenticación que no existe en el repo — `agent`
+necesita verificar la identidad del agente verificador vía Web Bot Auth
+(RFC 9421), y `escrow_report` necesita autenticar al tercero de escrow que
+reporta (una API key o firma por proveedor, con una lista de proveedores
+de confianza que tampoco existe todavía). Exponer estos dos sin ese
+mecanismo significaría aceptar que cualquiera declare `verified: true` o
+un `transaction_outcome` falso sobre cualquier sitio — el peor resultado
+posible para las dos fuentes más objetivas del diseño. Este commit
+conecta deliberadamente solo las 2 fuentes que ya tienen un modelo de
+autenticación claro en el repo (sesión admin para `self`, ninguna — por
+diseño — para `community`).
+
 ## Cómo se conecta con Protocol APW
 
 `packages/apw-resolver/` (hoy stub, ver `docs/protocol-apw.md`) resuelve
@@ -125,15 +153,19 @@ escrow ya generó, nunca mover ni retener el dinero en sí.
 
 ## Limitaciones honestas
 
-- No existe ningún endpoint HTTP que conecte este store al dashboard ni a
-  agentes externos todavía.
-- No existe UI para que un admin complete su autoevaluación (`self`), ni
-  para que un visitante vote (`community`).
+- No existe ningún endpoint HTTP para `agent` ni `escrow_report` todavía
+  — ver "Endpoints HTTP conectados" arriba para el porqué (falta un
+  mecanismo de autenticación real para ambos).
+- El endpoint `/trust/:siteId/vote` no implementa ningún rate-limiting ni
+  prevención de abuso — `voterId` es una huella anónima autogenerada del
+  lado del cliente, y nada impide generar una nueva por request.
+- No existe UI en el dashboard para que un admin complete su
+  autoevaluación (`self`) vía `/admin/site-trust/:siteId/self`, ni para
+  que un visitante vote `community` vía `/trust/:siteId/vote` — ambos
+  endpoints solo son accesibles hoy vía fetch/curl directo.
 - `packages/apw-resolver/` sigue siendo un stub — este score no está
-  conectado a ninguna resolución real de `did:web` todavía.
-- El campo `verified` de `agent` depende de que agentes de IA reales,
-  identificados vía Web Bot Auth, ejecuten verificaciones — hoy no existe
-  ningún agente verificador de referencia implementado.
+  conectado a ninguna resolución real de `did:web` todavía, aunque ya es
+  técnicamente consultable en `/trust/:siteId`.
 - No se calcula todavía ningún promedio o resumen sobre `agent`/`escrow_report`
   (que acumulan historial) — `getSnapshot` devuelve las filas crudas; el
   cálculo (ej. "% de verificaciones exitosas", "último resultado de
