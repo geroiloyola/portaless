@@ -16,16 +16,15 @@
 // porque no habia ningun endpoint HTTP que lo conectara. Este archivo
 // cierra ese hueco, igual que se hizo para PageStore en el PR #6.
 //
-// v0.0.9.10: el catalogo de subjects ya no esta hardcodeado. Antes,
-// KNOWN_SUBJECTS/KNOWN_REQUESTED_CAPABILITIES listaban a mano los 2
-// plugins reales del repo (hello-plugin, commerce-plugin) -- agregar un
-// plugin nuevo requeria editar este archivo. Ahora se derivan de
-// packages/plugin-sandbox/src/registry/plugin-registry.ts (registro
-// dinamico agregado en el PR #21, sin conectar hasta ahora), via
-// createPluginRegistryStore(env). El seed de esos mismos 2 plugins vive
-// hoy en plugin-sandbox/src/registry/store-factory.ts -- ver ese archivo
-// para la limitacion conocida (InMemoryPluginRegistryStore no persiste
-// entre despliegues todavia).
+// v0.0.9.10: el catalogo de subjects ya no esta hardcodeado -- se deriva
+// de packages/plugin-sandbox/src/registry/plugin-registry.ts via
+// createPluginRegistryStore(env).
+//
+// v0.0.9.12: cada subject de tipo "plugin" en el snapshot ahora incluye
+// trustScore/trustScoreVotes (tomados directo de PluginRegistryEntry), para
+// que permission-center-ui.ts pueda mostrar el rating estilo Trakt antes
+// de que un admin conceda una capacidad. agent/theme no tienen trustScore
+// -- esos campos quedan undefined para ellos, ver types.ts.
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
 import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
@@ -41,6 +40,22 @@ async function buildSnapshot(permissionStore, pluginRegistryStore) {
   );
 
   const registeredPlugins = await pluginRegistryStore.list(false);
+  const trustById = new Map(
+    registeredPlugins.map((p) => [p.pluginId, { trustScore: p.trustScore, trustScoreVotes: p.trustScoreVotes }])
+  );
+
+  // Los grants ya existentes en el PermissionStore no traen trustScore
+  // (ese store no sabe nada de plugins) -- se le anexa aca, cruzando por
+  // subject.id, para que la UI tenga el dato sin importar si el grant es
+  // nuevo (default) o ya estaba persistido.
+  for (const grant of existingGrants) {
+    if (grant.subject.type !== "plugin") continue;
+    const trust = trustById.get(grant.subject.id);
+    if (trust) {
+      grant.subject.trustScore = trust.trustScore;
+      grant.subject.trustScoreVotes = trust.trustScoreVotes;
+    }
+  }
 
   const defaults = [];
   for (const plugin of registeredPlugins) {
@@ -48,6 +63,8 @@ async function buildSnapshot(permissionStore, pluginRegistryStore) {
       type: "plugin",
       id: plugin.pluginId,
       displayName: plugin.displayName,
+      trustScore: plugin.trustScore,
+      trustScoreVotes: plugin.trustScoreVotes,
     };
     const requested = plugin.requestedCapabilities ?? [];
     for (const capabilityId of requested) {

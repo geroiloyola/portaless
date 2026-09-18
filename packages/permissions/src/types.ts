@@ -9,6 +9,16 @@ export interface PermissionSubject {
   type: PermissionSubjectType;
   id: string;            // Nombre del plugin, keyId del agente (Trust Layer), o id del theme/skin.
   displayName: string;
+  // v0.0.9.12: trustScore/trustScoreVotes son opcionales y solo se
+  // completan para subjects de tipo "plugin" -- vienen de
+  // PluginRegistryEntry (packages/plugin-sandbox/src/registry/plugin-registry.ts),
+  // no de una votacion sobre el grant en si. Un agente o un theme no
+  // tienen trustScore hoy; el campo queda undefined para esos casos, y la
+  // UI (permission-center-ui.ts) no muestra nada si no esta presente.
+  // Escala de origen: 0-5 (promedio de PluginTrustVote.score, 1-5 entero).
+  // La UI la reescala a 0-10 para mostrarla estilo Trakt.
+  trustScore?: number;
+  trustScoreVotes?: number;
 }
 
 export interface PermissionGrant {
