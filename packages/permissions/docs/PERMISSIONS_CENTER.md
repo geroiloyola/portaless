@@ -49,7 +49,7 @@ aplica `canWrite(role) === "admin"` del lado del servidor, mismo patrón que
 monta `renderPermissionCenter()` contra ese endpoint via `fetch`, con estado
 de carga, guardado y error visibles.
 
-**Catálogo de subjects ya es dinámico (v0.0.9.10), pero aún no persistente**:
+**Catálogo de subjects dinámico y persistente (v0.0.9.10 + v0.0.9.11)**:
 `functions/admin/permissions/index.js` ya no hardcodea `hello-plugin` ni
 `commerce-plugin` en una constante -- deriva el catálogo llamando a
 `createPluginRegistryStore(env).list(false)`
@@ -57,11 +57,14 @@ de carga, guardado y error visibles.
 el registro real agregado en el PR #21
 (`packages/plugin-sandbox/src/registry/plugin-registry.ts`). Agregar un
 plugin nuevo ya no requiere editar el endpoint: basta con `register()` en
-el store. **Limitación que sigue pendiente**: el único backend hoy es
-`InMemoryPluginRegistryStore`, seedeado con `hello-plugin`/`commerce-plugin`
-en `store-factory.ts` -- el registro se resetea a ese seed en cada
-despliegue o reinicio, hasta que se implemente `D1PluginRegistryStore` o
-`SqlitePluginRegistryStore` (ver `ROADMAP.md`).
+el store. Desde v0.0.9.11, ese registro persiste de verdad: el factory
+elige `D1PluginRegistryStore` (Cloudflare, binding `env.DB`) o
+`SqlitePluginRegistryStore` (self-hosted, `env.PORTALESS_SQLITE_PATH`),
+mismo patrón exacto que `createPermissionStore`, usando las tablas
+`plugin_registry`/`plugin_trust_votes` de `schema.sql`. Solo cae a
+`InMemoryPluginRegistryStore` si ninguno de los dos backends está
+configurado -- en ese caso (y solo en ese caso) el registro se resetea al
+seed de `hello-plugin`/`commerce-plugin` en cada reinicio.
 
 ## Limitaciones honestas que quedan pendientes
 
@@ -71,6 +74,10 @@ despliegue o reinicio, hasta que se implemente `D1PluginRegistryStore` o
 - No hay todavía un registro de auditoría de cambios de permisos más allá
   del campo `grantedBy`/`grantedAt` por concesión individual (se sobrescribe
   en cada `setGrant`, no se guarda historial).
+- El Centro de Permisos todavía no muestra el `trustScore` de cada plugin
+  (promedio de votos 1-5 de la comunidad, ya calculado y persistido desde
+  v0.0.9.11) antes de conceder una capacidad -- pendiente de UI, ver
+  `ROADMAP.md`.
 - **Actualización v0.0.9.3**: el bug de binding D1 inconsistente que se
   había encontrado y documentado aquí (`env.PORTALESS_DB` en
   `atomic-elements/persistence/store-factory.ts` vs `env.DB` en esta
