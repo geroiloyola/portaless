@@ -4,6 +4,12 @@
 // completo reemplaza al anterior si se provee, ya que un merge profundo
 // de arbol de bloques requeriria una estrategia de diffing que no existe
 // hoy en PageStore ni en atomic-elements y no se debe improvisar aqui).
+//
+// ACTUALIZACION: mismo ajuste que create-page.ts -- elementNodeSchema.type
+// ahora incluye los 4 ElementType agregados para paginas de "link en bio"
+// (LinkList, SocialIcons, ProfileHeader, StoreBlock). Sin esto, update_page
+// habria rechazado un root que reemplazara bloques existentes por alguno
+// de estos 4 tipos nuevos.
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -23,7 +29,10 @@ const WRITE_CAPABILITY_ID = "content:write";
 const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
   z.object({
     id: z.string(),
-    type: z.enum(["Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer"]),
+    type: z.enum([
+      "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
+      "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
+    ]),
     props: z.record(z.unknown()),
     children: z.array(elementNodeSchema).optional(),
     columnSlots: z.array(z.array(elementNodeSchema)).optional(),
