@@ -32,7 +32,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 |---|---|---|
 | Motor de contenido (Astro) | `src/`, raíz del repo (NO `packages/core/` — ver `docs/architecture/REPO_STRUCTURE_MAP.md`) | ✅ Funcional |
 | Comercio (Medusa/Mercur) | `src/commerce/` | ✅ Funcional (solo lectura de catálogo, sin checkout propio) |
-| Atomic Elements (editor visual) | `packages/atomic-elements/` | ✅ Funcional, con undo/redo y anidamiento visual en columnas |
+| Atomic Elements (editor visual) | `packages/atomic-elements/` | ✅ Funcional, con undo/redo y anidamiento visual en columnas. `ElementType` incluye los 8 tipos originales + 4 nuevos para paginas "link en bio" (`LinkList`, `SocialIcons`, `ProfileHeader`, `StoreBlock`), con `ElementDefinition` real en `elementRegistry`/`elementPalette` |
 | Dashboard + Skin System | `packages/dashboard/` | ✅ Funcional |
 | Autenticación / roles de usuario | `packages/auth/` | ✅ Funcional: usuario/contraseña, roles admin/viewer, MFA/TOTP, recuperación de contraseña, OAuth/SSO (`AuthService`). Guard server-side confirmado en el dashboard. |
 | Centro de Permisos | `packages/permissions/` | ✅ UI funcional con persistencia real (D1PermissionStore/SqlitePermissionStore), endpoints conectados |
@@ -40,7 +40,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 | Sandboxing de plugins | `packages/plugin-sandbox/` | ✅ Adaptador `isolated-vm` self-hosted ejecuta código real, con las 12/12 capacidades del catálogo con puente real vía `ivm.Reference` y pool de isolates reutilizables. Protección activa contra CVE conocida (GHSA-864f-rcv7-6rh4) |
 | Comercio como plugin sandboxeado | `packages/commerce-plugin/` | ✅ Migrado a plugin real ejecutado dentro del sandbox (`isolated-vm` self-hosted), ya no solo manifiesto de referencia |
 | Ledger público de trazabilidad | `packages/trust-layer/src/ledger` | ✅ Persistencia real, lado de escritura y lectura pública conectados |
-| MCP server | `packages/mcp-server/` | 🟡 Parcial, NO funcional end-to-end: existen 5+ archivos de tools reales (`src/tools/create-page.ts`, `update-page.ts`, `query-usage-log.ts`, `grant-capability.ts`, `revoke-permission.ts`, `list-page-components.ts`, `list-installed-plugins.ts`), cada uno exportando `register*Tool(server, deps)`. PERO `createPortalessMcpServer()` (`src/server.ts`) solo crea el `McpServer` base y lo retorna -- NO llama a ninguno de esos `register*Tool`. El servidor que arranca desde `src/index.ts` hoy se conecta sin ninguna tool disponible. Antes de dar por "funcional" este módulo, falta conectar cada tool en `server.ts`. Ver `docs/architecture/mcp-agents.md` para el diseño original. |
+| MCP server | `packages/mcp-server/` | ✅ Conectado end-to-end: `createPortalessMcpServer()` (`src/server.ts`) ya registra las 6 tools reales (`create_page`, `update_page`, `grant_capability`, `revoke_permission`, `list_page_components`, `list_installed_plugins`, `query_usage_log`), y `src/index.ts` construye los stores reales (`PageStore`, `PermissionStore` via sus store-factory, `InMemoryPluginRegistryStore`) antes de arrancar el `StdioServerTransport`. **Limitación conocida y deliberada (Opción A, NO resuelta como Opción B):** `AgentIdentity` se resuelve UNA SOLA VEZ por proceso, desde las variables de entorno `MCP_AGENT_KEY` (obligatoria) / `MCP_AGENT_DISPLAY_NAME`, no por invocación — el SDK de MCP no expone hoy sesión por llamada sobre `StdioServerTransport`. Esto significa que todo el proceso stdio actúa como un único agente fijo, sin verificación criptográfica real (a diferencia de Web Bot Auth, que sí verifica firma Ed25519 por request HTTP). Una identidad de agente real y verificada para stdio (Opción B) es trabajo futuro, no implementado todavía. Ver `docs/architecture/mcp-agents.md` para el diseño original. |
 | Identidad AT Protocol | `packages/identity-atproto/` | ❌ Stub vacío, sin lógica |
 | Protocol APW resolver | `packages/apw-resolver/` | ❌ Stub vacío, solo documentado en `docs/protocol-apw/apw-spec.md` |
 | Plugin SDK | `packages/plugin-sdk/` (no existe todavia) | ❌ Solo diseño/licencia (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) -- ningun codigo construido todavia |
@@ -52,7 +52,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 - `SECURITY.md` — vulnerabilidades conocidas y activas (incluye la CVE real de `isolated-vm`, GHSA-864f-rcv7-6rh4).
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — por qué la estructura real del repo difiere de la propuesta original, y dónde está cada cosa de verdad.
 - `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT (diseño, aun no implementado), y los proyectos/plugins de terceros.
-- `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las tools ya tienen codigo escrito pero no estan conectadas al servidor (ver tabla de arriba) -- ese es el gap real a cerrar, no escribir las tools desde cero.
+- `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las 6 tools ya estan conectadas a `server.ts` (ver tabla de arriba) -- el gap real que queda es la identidad de agente real por invocacion (Opcion B), no conectar las tools (ya resuelto).
 - `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
 - `docs/protocol-apw/apw-spec.md` — diseño del Protocol APW (no implementado).
 - `CONTRIBUTING.md` — cómo proponer cambios.
@@ -60,17 +60,17 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 ## Convenciones de código que este proyecto sigue estrictamente
 
 1. **Todo módulo nuevo es opcional por defecto.** Activar comercio, Trust Layer, o sandboxing nunca debe romper el sitio si el módulo está desactivado. Ver el patrón `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER` en `functions/_middleware.js` y `astro.config.mjs`.
-2. **Ningún plugin recibe más capacidades de las concedidas explícitamente.** La regla vive en `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: siempre se usa lo *concedido* por el Centro de Permisos, nunca lo *solicitado* en el manifiesto del plugin. El mismo principio esta previsto para el mcp-server via `requireCapability()` (`packages/mcp-server/src/permissions/require-capability.ts`) -- pero verifica primero que la tool que vayas a tocar este realmente registrada en `server.ts` (ver tabla de arriba).
+2. **Ningún plugin recibe más capacidades de las concedidas explícitamente.** La regla vive en `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: siempre se usa lo *concedido* por el Centro de Permisos, nunca lo *solicitado* en el manifiesto del plugin. El mismo principio ya esta aplicado en el mcp-server via `requireCapability()` (`packages/mcp-server/src/permissions/require-capability.ts`) dentro de cada tool registrada en `server.ts` (ver tabla de arriba) -- pero recorda que `AgentIdentity` es fija por proceso (Opcion A), no verificada por invocacion.
 3. **Todo manifiesto de plugin declara capacidades atómicas con una razón legible.** Ver el catálogo completo en `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
 4. **Nunca declarar algo como "implementado" si tiene un TODO de integración real pendiente.** Este proyecto prioriza documentar honestamente las limitaciones sobre aparentar funcionalidad — mantén ese estándar en cualquier código o documentación que agregues.
-5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto.
+5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto. (Excepcion aplicada con instruccion explicita: la consolidacion de `mcp-server-sync` y `atomic-elements-design` a `main` se hizo via la rama intermedia `fixes-main`, para poder revisar conflictos antes de tocar `main` directamente.)
 6. **La única superficie que un plugin de terceros podra importar es el futuro `packages/plugin-sdk`** (aun no existe como codigo -- ver nota en la seccion anterior). Mientras tanto, ningun plugin debe importar directamente modulos internos del core — toda comunicacion pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
 
 ## Flujo de trabajo esperado de un agente en este repo
 
 1. Lee `ROADMAP.md` para saber qué prioridad atacar.
 2. Verifica el estado real del módulo afectado en la tabla de este archivo — no confíes solo en el nombre de la carpeta.
-3. Sube los cambios a la rama única `agentic` (no crear ramas nuevas).
+3. Sube los cambios a la rama única `agentic` (no crear ramas nuevas, salvo instrucción explícita del dueño del proyecto -- ver convención #5).
 4. Implementa el cambio, incluyendo un test en `tests/unit/` o `tests/e2e/` si resuelve un `TODO`.
 5. Actualiza `CHANGELOG.md` y marca el checkbox correspondiente en `ROADMAP.md` si aplica.
 6. Abre o actualiza el Pull Request desde `agentic` hacia `main` — nunca mergees directo, incluso si tienes permisos técnicos para hacerlo. El dueño del proyecto aprueba manualmente.
@@ -79,6 +79,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 
 - `isolated-vm` (adaptador self-hosted de sandboxing): versiones ≤7.0.0 son vulnerables a RCE (GHSA-864f-rcv7-6rh4). El código ya rechaza versiones vulnerables al instanciar — no elimines esa verificación.
 - El Centro de Permisos y el ledger de trazabilidad ya tienen persistencia real conectada — no trates sus datos como descartables entre despliegues.
+- El mcp-server corre con una identidad de agente FIJA por proceso (Opcion A, ver tabla de arriba) -- no asumas que hay verificacion criptografica de quien invoca cada tool via stdio. Si se implementa Opcion B en el futuro, actualizar esta seccion y la tabla de estado.
 
 ## Stack técnico de referencia
 
