@@ -2,6 +2,16 @@
 // globales, para que todos los atomos (definidos con var(--accent), etc.)
 // se actualicen automaticamente sin que ningun organismo necesite logica
 // propia de theming.
+//
+// v0.0.9.25: agrega 6 tokens de estado semantico (successBg/successFg,
+// warningBg/warningFg, dangerBg/dangerFg). Antes de este cambio,
+// organisms/registry.ts hardcodeaba 2 paletas hex distintas para el mismo
+// concepto bueno/medio/malo (una en AgentLedgerPanel/PolicyPanel, otra en
+// PermissionsCenterPanel) -- sin ningun punto unico de verdad, y sin forma
+// de que un admin los personalizara via skin.json como ya podia hacer con
+// accent/bg/text. Los valores default elegidos abajo son los que ya usaban
+// AgentLedgerPanel/PolicyPanel antes de este cambio (el set mas repetido de
+// los 2 que existian).
 
 import type { DesignTokens } from "../types";
 
@@ -15,6 +25,12 @@ const TOKEN_TO_CSS_VAR: Record<keyof DesignTokens, string> = {
   panelBorder: "--panel-border",
   text: "--text",
   muted: "--muted",
+  successBg: "--success-bg",
+  successFg: "--success-fg",
+  warningBg: "--warning-bg",
+  warningFg: "--warning-fg",
+  dangerBg: "--danger-bg",
+  dangerFg: "--danger-fg",
 };
 
 export function applyDesignTokens(tokens: DesignTokens, root: HTMLElement = document.documentElement): void {
@@ -37,4 +53,10 @@ export const DEFAULT_TOKENS: DesignTokens = {
   panelBorder: "#eceef5",
   text: "#1b1d26",
   muted: "#8b8ea0",
+  successBg: "#eafaf0",
+  successFg: "#1e8e3e",
+  warningBg: "#fff4e6",
+  warningFg: "#b56d00",
+  dangerBg: "#ffecec",
+  dangerFg: "#d3383f",
 };
