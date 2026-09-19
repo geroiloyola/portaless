@@ -5,11 +5,13 @@ real (D1/SQLite) y endpoint HTTP conectado.** `self` y `community` además
 tienen UI (pública y admin) y navegación. `agent` y `escrow_report` tienen
 endpoint funcional pero **sin UI de escritura ni datos reales todavía** —
 sus allowlists (`authorized_agents`, `authorized_escrow_providers`) están
-vacías por defecto, y no hay ningún flujo (UI ni endpoint) para poblarlas;
-es una operación manual sobre la base de datos. La sección `agent` de la
-página pública (`/trust/:siteId`) ya sabía renderizar estos datos desde
-su commit original — simplemente no tiene nada que mostrar hasta que se
-autorice al menos un agente o proveedor real.
+vacías por defecto. Ya existe tooling CLI self-hosted para poblarlas
+(`scripts/onboard-agent.mjs`, `scripts/onboard-escrow-provider.mjs`), pero
+sigue siendo un alta manual: un humano decide a quién autorizar y corre el
+comando, no hay ningún flujo de autoservicio ni UI de administración. La
+sección `agent` de la página pública (`/trust/:siteId`) ya sabía renderizar
+estos datos desde su commit original — simplemente no tiene nada que
+mostrar hasta que se autorice al menos un agente o proveedor real.
 
 ## Qué es y qué NO es
 
@@ -86,6 +88,28 @@ proveedores verificados manualmente por Portaless. `hashApiKey()`
 reutiliza `crypto.subtle.digest("SHA-256", ...)`, la misma primitiva ya
 usada para hashear IPs en el rate-limit del voto community.
 
+## Onboarding de `agent` y `escrow_report`: CLI self-hosted, Fase 1
+
+`scripts/onboard-agent.mjs` y `scripts/onboard-escrow-provider.mjs`
+reemplazan el SQL manual contra el archivo SQLite por un comando
+reproducible e idempotente (`INSERT ... ON CONFLICT DO UPDATE`, mismo
+patrón que `setGrant()` en `sqlite-permission-store.ts`). Self-hosted
+only (`PORTALESS_SQLITE_PATH`) — no hay variante D1 todavía; si se
+necesita para producción en Cloudflare, replicar el mismo patrón que
+`D1AuthorizedAgentsStore`/`D1AuthorizedEscrowProvidersStore`.
+
+`onboard-escrow-provider.mjs` genera la API key real con
+`crypto.randomBytes(32)`, la imprime una sola vez en stdout para
+entregarla fuera de banda al proveedor, y persiste solo su hash — nunca
+la clave cruda. Re-correr el comando con el mismo `provider-id` rota la
+key (útil si una key se compromete). `onboard-agent.mjs` no genera
+ningún secreto — el agente ya posee su propio par Ed25519 vía Web Bot
+Auth, así que autorizar solo requiere registrar su `agent-key-id`.
+
+Esto sigue siendo Fase 1: un humano decide a quién autorizar y corre el
+comando manualmente. No hay UI de administración ni flujo de
+autoservicio — ver "Limitaciones honestas" abajo.
+
 ## UI conectada y navegación
 
 `src/pages/trust/[siteId].astro` (pública) y `src/pages/admin/
@@ -95,7 +119,8 @@ punto de entrada del dashboard. **`agent` y `escrow_report` no tienen
 ninguna UI de escritura** — sus únicos clientes posibles son agentes de
 IA y proveedores de escrow programáticos, no humanos con navegador. La
 UI pública ya renderiza sus datos si existen (heredado del commit
-original de UI), pero no hay forma humana de generarlos.
+original de UI), pero no hay forma humana de generarlos desde el
+navegador (el CLI de onboarding corre por terminal, no por UI).
 
 ## Rate-limiting del voto community
 
@@ -125,13 +150,16 @@ licencias financieras de una entidad regulada.
 
 - **Las 4 fuentes tienen endpoint, pero solo 2 (`self`, `community`)
   tienen UI y datos reales de ejemplo.** `agent` y `escrow_report`
-  funcionan solo si alguien inserta manualmente una fila en
+  funcionan solo si alguien corre `scripts/onboard-agent.mjs` o
+  `scripts/onboard-escrow-provider.mjs` para insertar una fila en
   `authorized_agents` o `authorized_escrow_providers` — ninguna de las
-  dos tablas tiene datos por defecto, ni existe una UI/endpoint para
-  administrarlas. Es una operación manual sobre la base de datos.
+  dos tablas tiene datos por defecto, y no existe UI de administración
+  para gestionarlas. Sigue siendo un alta manual, ahora con un comando
+  reproducible en vez de SQL escrito a mano.
 - No hay ningún flujo de alta automática para proveedores de escrow —
   es intencional (ver sección arriba), pero significa que integrar un
-  proveedor real requiere coordinación humana fuera de este código.
+  proveedor real requiere coordinación humana fuera de este código
+  (aunque ya con tooling CLI para la parte de persistencia).
 - No se confirmó si `.github/workflows/ci.yml` ejecuta `npm test`.
 - El rate-limit del voto community es deliberadamente simple.
 - `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado.
@@ -139,3 +167,5 @@ licencias financieras de una entidad regulada.
 - No se calcula ningún promedio o resumen sobre `agent`/`escrow_report`
   — ambos acumulan historial crudo, sin agregación.
 - `/admin/index.astro` no lista sitios existentes.
+- Los scripts de onboarding solo soportan SQLite (self-hosted); no hay
+  variante D1 todavía.
