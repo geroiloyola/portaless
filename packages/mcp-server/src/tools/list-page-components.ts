@@ -9,6 +9,14 @@
 // por tipo (displayName, icon, editableProps). Este commit expone solo
 // el ElementType base, que es el dato confirmado; ampliar con esa
 // metadata es una mejora futura una vez se ubique ese registro.
+//
+// ACTUALIZACION: se confirmo el registro (elements/registry.ts,
+// elementPalette) y se agregaron 4 tipos nuevos pensados para paginas de
+// tipo "link en bio" (LinkList, SocialIcons, ProfileHeader, StoreBlock;
+// ver docs/architecture/creator-sites-agentic-workflow.md). Este array
+// sigue hardcodeado -- todavia no lee elementPalette en tiempo real --
+// asi que debe actualizarse a mano cada vez que se agregue un elemento
+// nuevo, hasta que exista esa lectura dinamica.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
@@ -16,6 +24,7 @@ const TOOL_NAME = "list_page_components";
 
 const ELEMENT_TYPES = [
   "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
+  "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
 ] as const;
 
 export function registerListPageComponentsTool(server: McpServer): void {
