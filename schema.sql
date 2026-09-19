@@ -251,3 +251,31 @@ CREATE TABLE IF NOT EXISTS authorized_agents (
 );
 
 CREATE INDEX IF NOT EXISTS idx_authorized_agents_active ON authorized_agents(active);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.23 -- Allowlist de proveedores de escrow autorizados a reportar
+-- -----------------------------------------------------------------------------
+-- Analoga a authorized_agents, pero para la fuente escrow_report en vez de
+-- agent. No hay un estandar publico equivalente a Web Bot Auth para
+-- proveedores de escrow -- el mecanismo aqui es una API key por proveedor,
+-- hasheada antes de persistir (nunca la clave cruda), comparada contra el
+-- header Authorization: Bearer <api_key> del request.
+--
+-- Esta es la parte MENOS "protocolo abierto" de todo SiteTrustScore: no hay
+-- forma de que un proveedor se autoautorice como si pasa con Web Bot Auth
+-- (cualquiera puede publicar un JWKS) -- Portaless emite la API key
+-- manualmente, fuera de banda, la primera vez que un proveedor real se
+-- integra. Coherente con que escrow_report es ground truth: la barrera de
+-- entrada deliberadamente alta protege la fuente mas objetiva del diseño.
+-- Ver docs/architecture/site-trust-score.md.
+
+CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
+  provider_id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1,
+  authorized_at TEXT NOT NULL,
+  authorized_by TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_escrow_providers(active);
