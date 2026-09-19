@@ -43,6 +43,12 @@ function extractDescription(layout: PageLayout): string {
  * devuelven [] -- buildJsonLd simplemente omite el ItemList en esos casos
  * (ver comentario mas abajo sobre por que se omite en vez de emitir uno
  * vacio).
+ *
+ * REGLA DE DISENO (ver CONTRIBUTING.md en la raiz de este paquete): esta
+ * es exactamente el tipo de funcion que debe vivir en el core, nunca en
+ * un plugin de presentacion -- cualquier dato que SiteTrustScore vaya a
+ * verificar (aqui, agent.structured_data_quality) necesita una fuente
+ * que ningun plugin pueda reemplazar silenciosamente.
  */
 async function resolveProductGridProducts(node: ElementNode): Promise<any[]> {
   const props = node.props as { source?: string; limit?: number } | undefined;
@@ -95,9 +101,19 @@ function formatPriceForProduct(product: any, currency: string = DEFAULT_CURRENCY
  * que SiteTrustScore esta diseñado para exponer. Ver
  * docs/architecture/site-trust-score.md.
  *
- * astro-integration/JsonLd.astro (unico consumidor conocido de esta
- * funcion) ya se actualizo con `await buildJsonLd(...)` en el mismo
- * commit -- el frontmatter de Astro soporta await de forma nativa.
+ * v0.0.9.25: el @returns explicito de abajo importa mas de lo habitual
+ * en esta funcion especifica -- ANTES de v0.0.9.24 esta funcion era
+ * SYNC. Es un cambio de contrato real, no solo de implementacion: un
+ * consumidor futuro que copie el patron viejo (`const jsonLd =
+ * buildJsonLd(...)` sin await) va a recibir una Promise en vez del
+ * objeto JSON-LD, y JSON.stringify() de una Promise no lanza -- serializa
+ * silenciosamente un objeto vacio ({}), sin ningun error visible en
+ * build ni en runtime. astro-integration/JsonLd.astro (unico consumidor
+ * conocido hoy) ya usa `await buildJsonLd(...)`.
+ *
+ * @returns {Promise<Record<string, unknown>>} el objeto JSON-LD completo
+ * (@context + @graph) -- SIEMPRE debe consumirse con `await`, nunca
+ * usarse el valor de retorno directo de la llamada.
  */
 export async function buildJsonLd(layout: PageLayout, site: SiteInfo): Promise<Record<string, unknown>> {
   const pageUrl = new URL(layout.slug === "" || layout.slug === "/" ? "/" : `/paginas/${layout.slug}`, site.url).toString();
