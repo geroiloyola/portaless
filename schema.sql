@@ -1,9 +1,17 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.9)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.24)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita el schema.sql del paquete correspondiente y
 -- corre: node scripts/generate-schema.mjs
+--
+-- NOTA v0.0.9.24: la columna key_algorithm de authorized_agents (mas abajo)
+-- se agrego directamente a este archivo maestro, NO al schema.sql fuente de
+-- packages/trust-layer/src/site-trust/ (no disponible para verificar en el
+-- momento de este cambio). Si ese archivo fuente existe por separado,
+-- generate-schema.mjs lo sobreescribira la proxima vez que corra a menos que
+-- alguien tambien agregue key_algorithm ahi. Ver docs/architecture/
+-- site-trust-score.md, seccion "Crypto-agilidad".
 --
 -- Concatena, en un solo archivo idempotente, los esquemas que hasta ahora
 -- vivian dispersos en cada paquete y requerian aplicarse a mano por
@@ -229,6 +237,7 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.21 -- Allowlist de agentes autorizados a reportar sobre SiteTrustScore
+-- (v0.0.9.24 agrega key_algorithm por crypto-agilidad, ver nota debajo)
 -- -----------------------------------------------------------------------------
 -- Web Bot Auth (packages/trust-layer/src/site-trust/web-bot-auth.ts) resuelve
 -- "¿quien eres?" -- esta tabla resuelve "¿tienes permiso?". Sin ella, cualquiera
@@ -240,6 +249,14 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
 -- abrir a cualquier agente verificado con peso reducido en el score, en vez
 -- de bloquear por completo a agentes no listados. Ver docs/architecture/
 -- site-trust-score.md.
+--
+-- key_algorithm (v0.0.9.24): Ed25519 (el unico algoritmo que
+-- web-bot-auth.ts verifica hoy) es vulnerable a computadoras cuanticas via
+-- el algoritmo de Shor. NIST ya estandarizo el reemplazo (FIPS 204,
+-- ML-DSA). Esta columna NO implementa verificacion de un segundo
+-- algoritmo -- solo deja el esquema listo para no requerir una migracion
+-- de datos con filas reales ya en produccion el dia que se implemente. Ver
+-- docs/architecture/site-trust-score.md, seccion "Crypto-agilidad".
 
 CREATE TABLE IF NOT EXISTS authorized_agents (
   agent_key_id TEXT PRIMARY KEY,
@@ -247,7 +264,8 @@ CREATE TABLE IF NOT EXISTS authorized_agents (
   display_name TEXT NOT NULL,
   active INTEGER NOT NULL DEFAULT 1,
   authorized_at TEXT NOT NULL,
-  authorized_by TEXT NOT NULL
+  authorized_by TEXT NOT NULL,
+  key_algorithm TEXT NOT NULL DEFAULT 'ed25519'
 );
 
 CREATE INDEX IF NOT EXISTS idx_authorized_agents_active ON authorized_agents(active);
