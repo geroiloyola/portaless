@@ -1,6 +1,15 @@
 // Contratos de tipos compartidos por todo el modulo de dashboard.
 // Estos tipos son la especificacion formal del formato de skin descrito en
 // Portaless_Skin_System.md.
+//
+// v0.0.9.25: DesignTokens agrega 6 campos de estado semantico (successBg/
+// successFg, warningBg/warningFg, dangerBg/dangerFg) -- antes de este
+// cambio, organisms/registry.ts hardcodeaba 2 paletas hex distintas para
+// el mismo concepto bueno/medio/malo, sin ningun token configurable via
+// skin.json como ya existia para accent/bg/text. Todos opcionales, igual
+// que el resto de la interfaz -- un skin.json existente que no los declare
+// sigue funcionando exactamente igual (fallback a DEFAULT_TOKENS via
+// mergeTokens en loader.ts).
 
 export type AccessMode = "allow" | "charge" | "block";
 
@@ -14,6 +23,12 @@ export interface DesignTokens {
   panelBorder?: string;
   text?: string;
   muted?: string;
+  successBg?: string;
+  successFg?: string;
+  warningBg?: string;
+  warningFg?: string;
+  dangerBg?: string;
+  dangerFg?: string;
 }
 
 /**
