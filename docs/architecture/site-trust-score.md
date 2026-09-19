@@ -1,24 +1,21 @@
-# Site Trust Score — Diseño (v0.0.9.19)
+# Site Trust Score — Diseño (v0.0.9.23)
 
-**Estado real de implementación: tipos + persistencia real (D1/SQLite) +
-3 endpoints HTTP + UI pública y admin, con navegación y rate-limiting.**
-`packages/trust-layer/src/site-trust/site-trust-score.ts` define los
-tipos y `InMemorySiteTrustScoreStore`. `store-factory.ts` conecta
-`D1SiteTrustScoreStore` o `SqliteSiteTrustScoreStore` según el entorno.
-`functions/trust/[siteId].js`, `functions/trust/[siteId]/vote.js` y
-`functions/admin/site-trust/[siteId]/self.js` exponen 2 de las 4 fuentes.
-`src/pages/trust/[siteId].astro`, `src/pages/admin/site-trust/[siteId]/
-self.astro` y `src/pages/admin/index.astro` completan la UI y navegación.
-Desde v0.0.9.19, el voto de `community` tiene rate-limiting server-side
-por IP — ver "Rate-limiting". Sigue pendiente: `agent` y `escrow_report`
-sin endpoint ni UI, por falta de un mecanismo de autenticación real.
+**Estado real de implementación: las 4 fuentes tienen tipos, persistencia
+real (D1/SQLite) y endpoint HTTP conectado.** `self` y `community` además
+tienen UI (pública y admin) y navegación. `agent` y `escrow_report` tienen
+endpoint funcional pero **sin UI de escritura ni datos reales todavía** —
+sus allowlists (`authorized_agents`, `authorized_escrow_providers`) están
+vacías por defecto, y no hay ningún flujo (UI ni endpoint) para poblarlas;
+es una operación manual sobre la base de datos. La sección `agent` de la
+página pública (`/trust/:siteId`) ya sabía renderizar estos datos desde
+su commit original — simplemente no tiene nada que mostrar hasta que se
+autorice al menos un agente o proveedor real.
 
 ## Qué es y qué NO es
 
 Site Trust Score califica **sitios completos**, no plugins. Es un dominio
 deliberadamente separado de `packages/plugin-sandbox/src/registry/
-plugin-registry.ts` — mezclar ambos en la misma tabla o el mismo tipo
-habría sido un error de modelado.
+plugin-registry.ts`.
 
 ## Por qué 4 fuentes, no una sola
 
@@ -28,16 +25,9 @@ a un Trust Score. Las 4 fuentes tienen estatus epistémico distinto:
 | Fuente | Estatus | Quién genera el dato | ¿Ausencia = señal? |
 |---|---|---|---|
 | `self` | Afirmación | El propio admin del sitio, declarando | No — neutral |
-| `agent` | Verificación | Agentes de IA identificados vía Web Bot Auth, comprobando técnicamente | **Sí** — `verified: false` es señal negativa real |
-| `community` | Atestación | Visitantes humanos, opinando sobre su experiencia | No — neutral |
-| `escrow_report` | Ground truth | Terceros de escrow, reportando el resultado real de una transacción | No — neutral (sin transacciones aún) |
-
-**El caso especial de `agent`**: ausencia de fila significa "nadie
-verificó todavía" (neutral); `verified: false` significa "un agente
-verificó y falló" — señal negativa real.
-
-**Por qué `escrow_report` es la señal más fuerte**: es lo que de verdad
-ocurrió con una transacción real, no una predicción.
+| `agent` | Verificación | Agentes de IA identificados vía Web Bot Auth | **Sí** — `verified: false` es señal negativa real |
+| `community` | Atestación | Visitantes humanos, opinando | No — neutral |
+| `escrow_report` | Ground truth | Terceros de escrow, reportando transacciones reales | No — neutral |
 
 ## Categorías por fuente
 
@@ -55,70 +45,63 @@ ocurrió con una transacción real, no una predicción.
 
 ## Persistencia real: D1 y SQLite
 
-`createSiteTrustScoreStore(env)` resuelve el backend igual que
-`createPermissionStore()`: `env.DB` → `D1SiteTrustScoreStore`;
-`env.PORTALESS_SQLITE_PATH` → `SqliteSiteTrustScoreStore`; si ninguno
-está disponible, cae a `InMemorySiteTrustScoreStore`.
+`createSiteTrustScoreStore(env)` resuelve D1 → SQLite → memoria, mismo
+patrón que `createPermissionStore()`.
 
-## Endpoints HTTP conectados
+## Los 4 endpoints, y sus 4 modelos de auth distintos
+
+Ninguna de las 4 fuentes comparte el mismo mecanismo de auth — cada una
+usa el que corresponde a quién genera ese dato de verdad:
 
 | Endpoint | Método | Auth | Quién lo usa |
 |---|---|---|---|
-| `/trust/:siteId` | GET | Ninguna (público) | Protocol APW, agentes externos, dashboard |
-| `/trust/:siteId/vote` | POST | Ninguna (público, rate-limited por IP) | Visitantes humanos votando `community` |
-| `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` | El propio admin del sitio, declarando `self` |
+| `/trust/:siteId` | GET | Ninguna (público) | Cualquiera — lectura del snapshot completo |
+| `/trust/:siteId/vote` | POST | Ninguna, rate-limited por IP | Visitantes humanos → `community` |
+| `/admin/site-trust/:siteId/self` | PUT | Sesión + rol `admin` | El propio admin del sitio → `self` |
+| `/trust/:siteId/agent-verification` | POST | Firma Web Bot Auth + allowlist `authorized_agents` | Agentes autorizados → `agent` |
+| `/trust/:siteId/escrow-report` | POST | API key (Bearer) + allowlist `authorized_escrow_providers` | Proveedores de escrow autorizados → `escrow_report` |
 
-`agent` y `escrow_report` no tienen endpoint todavía: ambos requieren un
-mecanismo de autenticación que no existe en el repo.
+### `agent`: identidad y autorización son 2 capas separadas
+
+Web Bot Auth (RFC 9421, `packages/trust-layer/src/site-trust/
+web-bot-auth.ts`, usando el paquete oficial de Cloudflare) responde
+"¿quién eres?" — cualquiera puede generar un par Ed25519 y publicar un
+JWKS, así que identidad verificada no implica autorización.
+`authorized_agents` resuelve "¿tienes permiso?" por separado. El endpoint
+devuelve `401` si la identidad falla, `403` si la identidad es válida
+pero el agente no está en la allowlist — la distinción de status code es
+intencional y ayuda a diagnosticar integraciones nuevas.
+
+### `escrow_report`: sin mecanismo de autoservicio, a propósito
+
+No existe un estándar público equivalente a Web Bot Auth para
+proveedores de escrow. `authorized_escrow_providers` usa una API key por
+proveedor (hasheada con SHA-256 antes de persistir, nunca la clave
+cruda), que Portaless entrega manualmente y fuera de banda la primera
+vez que un proveedor real se integra — no hay ningún flujo de alta
+automática. Es deliberadamente la barrera de entrada más alta de las 4
+fuentes: `escrow_report` es la señal más objetiva del diseño (ground
+truth, no predicción), y esa barrera protege que solo entren datos de
+proveedores verificados manualmente por Portaless. `hashApiKey()`
+reutiliza `crypto.subtle.digest("SHA-256", ...)`, la misma primitiva ya
+usada para hashear IPs en el rate-limit del voto community.
 
 ## UI conectada y navegación
 
-`src/pages/trust/[siteId].astro` (pública), `src/pages/admin/site-trust/
-[siteId]/self.astro` (sesión + rol admin, con breadcrumb) y
-`src/pages/admin/index.astro` (índice del dashboard) completan el ciclo
-tipos → persistencia → endpoint → UI para `self` y `community`.
+`src/pages/trust/[siteId].astro` (pública) y `src/pages/admin/
+site-trust/[siteId]/self.astro` (sesión + rol admin) cubren `self` y
+`community` de punta a punta, con `src/pages/admin/index.astro` como
+punto de entrada del dashboard. **`agent` y `escrow_report` no tienen
+ninguna UI de escritura** — sus únicos clientes posibles son agentes de
+IA y proveedores de escrow programáticos, no humanos con navegador. La
+UI pública ya renderiza sus datos si existen (heredado del commit
+original de UI), pero no hay forma humana de generarlos.
 
-## Rate-limiting del voto community (v0.0.9.19)
+## Rate-limiting del voto community
 
-El voto de `community` es público y sin sesión por diseño (es atestación
-de visitante, no requiere cuenta Portaless). Hasta v0.0.9.18, la única
-defensa era `voterId` en `localStorage` — trivial de eludir borrando el
-storage del navegador. Esta versión agrega una defensa real, del lado del
-servidor:
-
-**No es una tabla ni un store separado.** `site_trust_community_votes`
-agrega una columna `ip_hash` (`SHA-256(ip + salt)`, la IP cruda nunca se
-persiste). El chequeo de rate-limit es un `SELECT 1` sobre la misma tabla
-de votos: "¿existe una fila con este `site_id`+`category`+`ip_hash`
-dentro de la ventana de 24h?". `isRateLimited()` (nuevo método en
-`SiteTrustScoreStore`, implementado en ambos backends) encapsula esa
-consulta, respaldada por el índice dedicado
-`idx_site_trust_community_rate_limit (site_id, category, ip_hash,
-voted_at)` — sin él, el `SELECT` degrada a table scan a medida que la
-tabla crece.
-
-`functions/trust/[siteId]/vote.js` llama a `isRateLimited()` **antes**
-de `recordCommunityVote()`, y devuelve `429` si ya existe un voto de esa
-IP para ese sitio+categoría en la ventana. Esto es exactamente lo que
-evita que borrar `localStorage` sirva para eludir el límite: el chequeo
-es por IP, no por `voterId`.
-
-La IP llega vía el header `CF-Connecting-IP` — el header canónico en
-Cloudflare Pages/Workers, siempre presente, a diferencia de
-`x-forwarded-for` que Cloudflare no garantiza en el mismo formato. El
-salt para el hash viene de `env.IP_HASH_SALT`; si no está configurado, se
-usa un salt fijo de desarrollo con warning explícito en consola (nunca
-bloquea el voto por falta de configuración, pero avisa).
-
-**Por qué esta ventana y este límite son suficientes**: `community` es la
-señal más débil de las 4 por diseño — es atestación, no verificación
-técnica ni ground truth. El objetivo del rate-limit no es hacer el ataque
-imposible, sino hacerlo "más molesto que útil": pasar de "gratis" (borrar
-localStorage) a "necesito N IPs distintas para mover el promedio un
-puñado de puntos porcentuales". No pretende ser criptográficamente
-robusto ni sustituye algo como Cloudflare Turnstile (evaluado, descartado
-para esta iteración por friccionar a usuarios reales sin necesidad —
-queda como opción de fase 2 si el abuso real lo justifica).
+`site_trust_community_votes` tiene `ip_hash` e índice dedicado.
+`isRateLimited()` consulta esa misma tabla. Límite: 1 voto por IP por
+sitio+categoría cada 24h.
 
 ## Cómo se conecta con Protocol APW
 
@@ -140,20 +123,19 @@ licencias financieras de una entidad regulada.
 
 ## Limitaciones honestas
 
-- No existe ningún endpoint HTTP ni UI para `agent` ni `escrow_report`
-  todavía — falta un mecanismo de autenticación real para ambos.
-- El rate-limit del voto community es deliberadamente simple (1 voto por
-  IP por sitio+categoría cada 24h) — no usa CAPTCHA/Turnstile ni ningún
-  mecanismo anti-bot más sofisticado. Un atacante con múltiples IPs
-  reales sigue pudiendo votar múltiples veces; solo se elevó el costo del
-  ataque, no se eliminó.
-- `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado
-  en el entorno — funcional pero no ideal para producción (todos los
-  despliegues sin configurar ese secret comparten el mismo salt).
+- **Las 4 fuentes tienen endpoint, pero solo 2 (`self`, `community`)
+  tienen UI y datos reales de ejemplo.** `agent` y `escrow_report`
+  funcionan solo si alguien inserta manualmente una fila en
+  `authorized_agents` o `authorized_escrow_providers` — ninguna de las
+  dos tablas tiene datos por defecto, ni existe una UI/endpoint para
+  administrarlas. Es una operación manual sobre la base de datos.
+- No hay ningún flujo de alta automática para proveedores de escrow —
+  es intencional (ver sección arriba), pero significa que integrar un
+  proveedor real requiere coordinación humana fuera de este código.
+- No se confirmó si `.github/workflows/ci.yml` ejecuta `npm test`.
+- El rate-limit del voto community es deliberadamente simple.
+- `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado.
 - `packages/apw-resolver/` sigue siendo un stub.
-- No se calcula todavía ningún promedio o resumen sobre `agent`/
-  `escrow_report` — la UI muestra la verificación más reciente y el
-  historial completo de escrow, pero no un "% de verificaciones
-  exitosas" calculado.
-- `/admin/index.astro` no lista sitios existentes — pide el `siteId`
-  manualmente en vez de ofrecer un selector.
+- No se calcula ningún promedio o resumen sobre `agent`/`escrow_report`
+  — ambos acumulan historial crudo, sin agregación.
+- `/admin/index.astro` no lista sitios existentes.

@@ -13,9 +13,14 @@
     "build": "astro build",
     "preview": "astro preview",
     "setup": "node scripts/setup.mjs",
-    "generate-schema": "node scripts/generate-schema.mjs"
+    "generate-schema": "node scripts/generate-schema.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
-    "astro": "^7.3.3"
+    "astro": "^7.3.3",
+    "web-bot-auth": "^0.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
   }
 }

@@ -189,12 +189,8 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_agent_site_category
   ON site_trust_agent_verifications(site_id, category);
 
 -- Fuente 3: community -- visitantes humanos. Ausencia = neutral.
--- v0.0.9.19: agrega ip_hash para rate-limiting server-side (ver
--- docs/architecture/site-trust-score.md, seccion "Rate-limiting"). El
--- rate-limit NO es una entidad separada del voto: es un SELECT sobre esta
--- misma tabla ("¿existe una fila con este ip_hash en esta ventana de
--- 24h?"), no una tabla ni un write adicional. ip_hash es SHA-256(ip +
--- salt) -- la IP cruda nunca se persiste.
+-- v0.0.9.19: agrega ip_hash para rate-limiting server-side. ip_hash es
+-- SHA-256(ip + salt) -- la IP cruda nunca se persiste.
 CREATE TABLE IF NOT EXISTS site_trust_community_votes (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   category TEXT NOT NULL CHECK (category IN (
@@ -212,10 +208,6 @@ CREATE TABLE IF NOT EXISTS site_trust_community_votes (
 CREATE INDEX IF NOT EXISTS idx_site_trust_community_site_category
   ON site_trust_community_votes(site_id, category);
 
--- Indice dedicado al chequeo de rate-limit: WHERE site_id = ? AND
--- category = ? AND ip_hash = ? AND voted_at > ?. Sin este indice, el
--- SELECT hace table scan a medida que la tabla crece (4 categorias x N
--- sitios x IPs).
 CREATE INDEX IF NOT EXISTS idx_site_trust_community_rate_limit
   ON site_trust_community_votes(site_id, category, ip_hash, voted_at);
 
@@ -234,3 +226,56 @@ CREATE TABLE IF NOT EXISTS site_trust_escrow_reports (
 
 CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
   ON site_trust_escrow_reports(site_id);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.21 -- Allowlist de agentes autorizados a reportar sobre SiteTrustScore
+-- -----------------------------------------------------------------------------
+-- Web Bot Auth (packages/trust-layer/src/site-trust/web-bot-auth.ts) resuelve
+-- "¿quien eres?" -- esta tabla resuelve "¿tienes permiso?". Sin ella, cualquiera
+-- que genere un par Ed25519 y publique un JWKS podria reportar verified:true
+-- para cualquier sitio -- identidad verificada no es lo mismo que autorizacion.
+--
+-- Fase 1 (esta version): allowlist estricta, gestionada manualmente por
+-- Portaless -- 1-2 agentes conocidos. Fase 2 (futura, no implementada):
+-- abrir a cualquier agente verificado con peso reducido en el score, en vez
+-- de bloquear por completo a agentes no listados. Ver docs/architecture/
+-- site-trust-score.md.
+
+CREATE TABLE IF NOT EXISTS authorized_agents (
+  agent_key_id TEXT PRIMARY KEY,
+  signature_agent_url TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1,
+  authorized_at TEXT NOT NULL,
+  authorized_by TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_authorized_agents_active ON authorized_agents(active);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.23 -- Allowlist de proveedores de escrow autorizados a reportar
+-- -----------------------------------------------------------------------------
+-- Analoga a authorized_agents, pero para la fuente escrow_report en vez de
+-- agent. No hay un estandar publico equivalente a Web Bot Auth para
+-- proveedores de escrow -- el mecanismo aqui es una API key por proveedor,
+-- hasheada antes de persistir (nunca la clave cruda), comparada contra el
+-- header Authorization: Bearer <api_key> del request.
+--
+-- Esta es la parte MENOS "protocolo abierto" de todo SiteTrustScore: no hay
+-- forma de que un proveedor se autoautorice como si pasa con Web Bot Auth
+-- (cualquiera puede publicar un JWKS) -- Portaless emite la API key
+-- manualmente, fuera de banda, la primera vez que un proveedor real se
+-- integra. Coherente con que escrow_report es ground truth: la barrera de
+-- entrada deliberadamente alta protege la fuente mas objetiva del diseño.
+-- Ver docs/architecture/site-trust-score.md.
+
+CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
+  provider_id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1,
+  authorized_at TEXT NOT NULL,
+  authorized_by TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_escrow_providers(active);
