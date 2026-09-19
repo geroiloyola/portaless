@@ -6,12 +6,14 @@
 -- corre: node scripts/generate-schema.mjs
 --
 -- NOTA v0.0.9.24: la columna key_algorithm de authorized_agents (mas abajo)
--- se agrego directamente a este archivo maestro, NO al schema.sql fuente de
--- packages/trust-layer/src/site-trust/ (no disponible para verificar en el
--- momento de este cambio). Si ese archivo fuente existe por separado,
--- generate-schema.mjs lo sobreescribira la proxima vez que corra a menos que
--- alguien tambien agregue key_algorithm ahi. Ver docs/architecture/
--- site-trust-score.md, seccion "Crypto-agilidad".
+-- se agrego directamente a este archivo maestro. CONFIRMADO: packages/
+-- trust-layer/src/site-trust/ no tiene un schema.sql de paquete individual
+-- (solo contiene los .ts de stores/logica) -- a diferencia de auth,
+-- permissions, ledger y atomic-elements (que si tienen su schema.sql fuente
+-- propio, listados abajo), las tablas de site-trust (site_trust_*,
+-- authorized_agents, authorized_escrow_providers) se definieron siempre
+-- directo en este archivo maestro. No hay riesgo de que
+-- generate-schema.mjs revierta este cambio por una fuente desactualizada.
 --
 -- Concatena, en un solo archivo idempotente, los esquemas que hasta ahora
 -- vivian dispersos en cada paquete y requerian aplicarse a mano por
