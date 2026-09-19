@@ -1,4 +1,4 @@
-# Site Trust Score — Diseño (v0.0.9.23)
+# Site Trust Score — Diseño (v0.0.9.24)
 
 **Estado real de implementación: las 4 fuentes tienen tipos, persistencia
 real (D1/SQLite) y endpoint HTTP conectado.** `self` y `community` además
@@ -88,6 +88,44 @@ proveedores verificados manualmente por Portaless. `hashApiKey()`
 reutiliza `crypto.subtle.digest("SHA-256", ...)`, la misma primitiva ya
 usada para hashear IPs en el rate-limit del voto community.
 
+## Crypto-agilidad: por que `authorized_agents` guarda el algoritmo
+
+Web Bot Auth (usado hoy por la fuente `agent`) verifica firmas Ed25519 —
+criptografia de curva eliptica clasica, vulnerable al algoritmo de Shor
+en una computadora cuantica suficientemente potente. Esto no es
+exclusivo de Portaless: toda la industria que adopto Web Bot Auth
+(Cloudflare, OpenAI, Amazon) usa el mismo algoritmo hoy, priorizando
+velocidad y simplicidad sobre resistencia cuantica, porque las
+computadoras cuanticas capaces de romperlo todavia no existen.
+
+NIST ya finalizo el reemplazo estandarizado: FIPS 204 (ML-DSA),
+publicado el 13 de agosto de 2024, con el mismo estatus legal que
+AES/SHA-2 — no es una apuesta a un algoritmo futuro sin definir, ya
+tiene implementaciones de produccion.
+
+v0.0.9.24 agrego la columna `key_algorithm` (default `"ed25519"`) a
+`authorized_agents` — solo al backend SQLite por ahora, ver limitacion
+abajo — y el flag `--key-algorithm` en `scripts/onboard-agent.mjs`. Esto
+**no implementa verificacion ML-DSA**: `web-bot-auth.ts` sigue
+verificando exclusivamente Ed25519. Lo unico que hace es dejar el
+esquema listo para no requerir una migracion de datos con filas reales
+ya en produccion en sitios de terceros el dia que se agregue un segundo
+algoritmo — costo de agregar la columna ahora: trivial; costo de
+agregarla despues, con agentes reales ya autorizados en instalaciones de
+terceros: una migracion de datos con downtime o retrocompatibilidad
+cuidadosa.
+
+**Limitacion de esta migracion**: `schema.sql` (la fuente de verdad para
+D1) no se actualizo — no se pudo verificar su contenido exacto con las
+herramientas disponibles al momento de este cambio, y editarlo sin
+verlo arriesgaba corromper el esquema real de produccion.
+`D1AuthorizedAgentsStore` sigue funcionando (lee columnas por nombre),
+pero las filas que D1 inserte no tendran `key_algorithm` hasta que
+alguien con acceso directo al archivo agregue `key_algorithm TEXT NOT
+NULL DEFAULT 'ed25519'` a la definicion de `authorized_agents` en
+`schema.sql`. Ver ROADMAP.md, seccion "Funcionalidades Internas en
+Desarrollo".
+
 ## Onboarding de `agent` y `escrow_report`: CLI self-hosted, Fase 1
 
 `scripts/onboard-agent.mjs` y `scripts/onboard-escrow-provider.mjs`
@@ -169,3 +207,6 @@ licencias financieras de una entidad regulada.
 - `/admin/index.astro` no lista sitios existentes.
 - Los scripts de onboarding solo soportan SQLite (self-hosted); no hay
   variante D1 todavía.
+- `schema.sql` (D1) no tiene la columna `key_algorithm` todavia -- solo
+  el backend SQLite la tiene (ver "Crypto-agilidad" arriba). Pendiente
+  que alguien con acceso directo al archivo la agregue a mano.
