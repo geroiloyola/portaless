@@ -8,6 +8,13 @@ export interface Props {
 }
 
 const { layout, site } = Astro.props;
-const jsonLd = buildJsonLd(layout, site);
+// v0.0.9.24: buildJsonLd() ahora es async -- necesita resolver los
+// productos reales de Medusa para cada ProductGrid antes de poder armar
+// el itemListElement del ItemList (antes se devolvia sin productos, un
+// ItemList vacio que no correspondia al catalogo real). El frontmatter
+// de Astro soporta await de forma nativa, asi que el unico cambio real
+// es agregar la palabra "await" -- ver docs/architecture/site-trust-score.md
+// y el commit que corrige esto en packages/atomic-elements/src/seo/json-ld.ts.
+const jsonLd = await buildJsonLd(layout, site);
 ---
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
