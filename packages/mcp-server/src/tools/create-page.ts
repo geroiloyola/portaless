@@ -13,6 +13,16 @@
 // con el slug final sin sufijo -- una vez que un humano lo aprueba.
 // Si PageStore evoluciona a tener un campo de estado nativo, este
 // mecanismo deberia migrar a usarlo en vez del sufijo de slug.
+//
+// ACTUALIZACION: elementNodeSchema.type solo aceptaba los 8 ElementType
+// originales -- no incluia los 4 tipos agregados para paginas de "link
+// en bio" (LinkList, SocialIcons, ProfileHeader, StoreBlock; ver
+// docs/architecture/creator-sites-agentic-workflow.md y el mismo ajuste
+// ya aplicado en list-page-components.ts). Sin este cambio, un agente
+// que llamara create_page con alguno de esos 4 tipos habria recibido un
+// error de validacion de Zod, aunque elementRegistry y PageStore ya los
+// soportan -- el schema de entrada de esta tool debe reflejar el mismo
+// ElementType real de atomic-elements/types.ts, no una copia congelada.
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -31,7 +41,10 @@ const CAPABILITY_ID = "content:write";
 const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
   z.object({
     id: z.string(),
-    type: z.enum(["Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer"]),
+    type: z.enum([
+      "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
+      "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
+    ]),
     props: z.record(z.unknown()),
     children: z.array(elementNodeSchema).optional(),
     columnSlots: z.array(z.array(elementNodeSchema)).optional(),

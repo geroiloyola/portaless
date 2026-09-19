@@ -1,20 +1,34 @@
 // Catalogo de organismos disponibles para cualquier skin. Un skin NUNCA
 // define un componente nuevo: solo referencia organismos de este registro
-// por nombre y decide donde ubicarlos. Ver Portaless_Skin_System.md, seccion 2.
+// por nombre y decide donde ubicarlos. Ver Portaless_Skin_System.md,
+// seccion 2.
 //
 // ACTUALIZADO en v0.0.5: se agrega "PermissionsCenterPanel", que resume el
 // estado del Centro de Permisos (packages/permissions) directamente en el
 // dashboard -- cuantos permisos de alto riesgo estan concedidos, y a que
 // plugins/agentes.
+//
+// ACTUALIZADO en v0.0.9.25: 2 cambios de diseño, sin alterar el
+// comportamiento visual por defecto de ningun organismo:
+//   1. El mapeo estado/riesgo -> color ya no se hardcodea por organismo --
+//      usa las variables CSS que applyDesignTokens() (skin-engine/tokens.ts)
+//      ya escribe en :root a partir de DesignTokens.successBg/successFg,
+//      warningBg/warningFg, dangerBg/dangerFg. Antes, AgentLedgerPanel y
+//      PolicyPanel usaban un set de hex, y PermissionsCenterPanel otro
+//      distinto para el mismo concepto bueno/medio/malo -- ahora los 3
+//      comparten el mismo origen, configurable por un admin desde el
+//      bloque "tokens" de su skin.json (con herencia via resolveSkin(),
+//      sin necesitar ningun mecanismo nuevo de persistencia).
+//   2. Los valores dinamicos (nombres, labels, montos) ya no se interpolan
+//      en template literals asignados via innerHTML -- pasan por los
+//      helpers de safe-dom.ts (text/tag/row), que usan textContent en vez
+//      de HTML. Cierra un vector de XSS latente: el catalogo de plugins es
+//      abierto por defecto (ver ROADMAP.md, "Ecosistema de plugins"), asi
+//      que un displayName de un plugin o agente de terceros es exactamente
+//      el tipo de dato que no deberia tratarse como HTML confiable.
 
 import type { OrganismDefinition } from "../types";
-
-function el(tag: string, className: string, html: string): HTMLElement {
-  const node = document.createElement(tag);
-  node.className = className;
-  node.innerHTML = html;
-  return node;
-}
+import { el, row, tag, text } from "./safe-dom";
 
 export interface TrafficPoint { day: number; humans: number; agents: number; }
 export interface LedgerEntry { keyId: string; status: "paid" | "pending" | "blocked"; amountUsd: number; }
@@ -22,6 +36,19 @@ export interface ContentItem { title: string; publishedAgo: string; }
 export interface CommerceOrder { id: string; total: number; }
 export interface PolicyRow { signal: "search" | "ai_input" | "ai_train"; access: string; }
 export interface PermissionSummaryRow { subjectName: string; capabilityLabel: string; risk: "bajo" | "medio" | "alto"; }
+
+// Estilos de "tag" de estado -- leen las variables CSS que
+// applyDesignTokens() ya escribe en :root, con el mismo fallback hex que
+// se usaba antes de este cambio si un skin no las sobreescribe.
+const SUCCESS_STYLE = "background:var(--success-bg, #eafaf0);color:var(--success-fg, #1e8e3e);";
+const WARNING_STYLE = "background:var(--warning-bg, #fff4e6);color:var(--warning-fg, #b56d00);";
+const DANGER_STYLE = "background:var(--danger-bg, #ffecec);color:var(--danger-fg, #d3383f);";
+
+const RISK_STYLE: Record<PermissionSummaryRow["risk"], string> = {
+  bajo: SUCCESS_STYLE,
+  medio: WARNING_STYLE,
+  alto: DANGER_STYLE,
+};
 
 const TrafficChartPanel: OrganismDefinition<TrafficPoint[]> = {
   name: "TrafficChartPanel",
@@ -35,15 +62,17 @@ const TrafficChartPanel: OrganismDefinition<TrafficPoint[]> = {
     const points = data
       .map((p, i) => `${(i / (data.length - 1)) * 260},${60 - p.agents / 2}`)
       .join(" ");
-    return el(
-      "div",
-      "organism",
-      `<h4>Tráfico 14 días</h4>
+    // La polyline se construye a partir de numeros calculados (no datos de
+    // texto libre), y el SVG en si no acepta contenido de usuario -- se
+    // mantiene como template literal, a diferencia de los organismos con
+    // filas de texto abajo.
+    const container = el("div", "organism");
+    container.innerHTML = `<h4>Tráfico 14 días</h4>
        <svg viewBox="0 0 260 60" width="100%" height="50" preserveAspectRatio="none">
          <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
        </svg>
-       <div class="stat-delta">humanos + agentes</div>`
-    );
+       <div class="stat-delta">humanos + agentes</div>`;
+    return container;
   },
 };
 
@@ -55,21 +84,15 @@ const AgentLedgerPanel: OrganismDefinition<LedgerEntry[]> = {
     { keyId: "ed25519:14bd…77aa", status: "pending", amountUsd: 0 },
   ],
   render(data) {
-    const rows = data
-      .map((e) => {
-        const tagStyle =
-          e.status === "paid"
-            ? "background:#eafaf0;color:#1e8e3e;"
-            : e.status === "pending"
-            ? "background:#fff4e6;color:#b56d00;"
-            : "background:#ffecec;color:#d3383f;";
-        const label =
-          e.status === "paid" ? `Pagado $${e.amountUsd.toFixed(2)}` :
-          e.status === "pending" ? "Pendiente" : "Bloqueado";
-        return `<div class="row"><span>${e.keyId}</span><span class="tag" style="${tagStyle}">${label}</span></div>`;
-      })
-      .join("");
-    return el("div", "organism", `<h4>Ledger de agentes (Trust Layer)</h4>${rows}`);
+    const container = el("div", "organism", [el("h4", "", [text("Ledger de agentes (Trust Layer)")])]);
+    for (const e of data) {
+      const style = e.status === "paid" ? SUCCESS_STYLE : e.status === "pending" ? WARNING_STYLE : DANGER_STYLE;
+      const label =
+        e.status === "paid" ? `Pagado $${e.amountUsd.toFixed(2)}` :
+        e.status === "pending" ? "Pendiente" : "Bloqueado";
+      container.appendChild(row(e.keyId, tag("tag", style, label)));
+    }
+    return container;
   },
 };
 
@@ -81,10 +104,11 @@ const ContentListPanel: OrganismDefinition<ContentItem[]> = {
     { title: "📄 Protocol APW explicado", publishedAgo: "hace 1 semana" },
   ],
   render(data) {
-    const rows = data
-      .map((c) => `<div class="row"><span>${c.title}</span><span style="color:var(--muted);">${c.publishedAgo}</span></div>`)
-      .join("");
-    return el("div", "organism", `<h4>Contenido reciente</h4>${rows}`);
+    const container = el("div", "organism", [el("h4", "", [text("Contenido reciente")])]);
+    for (const c of data) {
+      container.appendChild(row(c.title, tag("", "color:var(--muted);", c.publishedAgo)));
+    }
+    return container;
   },
 };
 
@@ -93,13 +117,11 @@ const CommerceOrdersPanel: OrganismDefinition<CommerceOrder[]> = {
   displayName: "Pedidos de la tienda",
   mockData: [{ id: "o1", total: 45 }, { id: "o2", total: 60 }],
   render(data) {
-    return el(
-      "div",
-      "organism",
-      `<h4>Pedidos de la tienda</h4>
-       <div class="stat-value">${data.length}</div>
-       <div class="stat-delta">vía Medusa Storefront API</div>`
-    );
+    return el("div", "organism", [
+      el("h4", "", [text("Pedidos de la tienda")]),
+      el("div", "stat-value", [text(data.length)]),
+      el("div", "stat-delta", [text("vía Medusa Storefront API")]),
+    ]);
   },
 };
 
@@ -108,13 +130,11 @@ const CommerceRevenuePanel: OrganismDefinition<{ totalUsd: number }> = {
   displayName: "Ingresos",
   mockData: { totalUsd: 318 },
   render(data) {
-    return el(
-      "div",
-      "organism",
-      `<h4>Ingresos</h4>
-       <div class="stat-value">$${data.totalUsd}</div>
-       <div class="stat-delta">este mes</div>`
-    );
+    return el("div", "organism", [
+      el("h4", "", [text("Ingresos")]),
+      el("div", "stat-value", [text(`$${data.totalUsd}`)]),
+      el("div", "stat-delta", [text("este mes")]),
+    ]);
   },
 };
 
@@ -127,16 +147,12 @@ const PolicyPanel: OrganismDefinition<PolicyRow[]> = {
     { signal: "ai_train", access: "block" },
   ],
   render(data) {
-    const rows = data
-      .map((r) => {
-        const style =
-          r.access === "allow" ? "background:#eafaf0;color:#1e8e3e;" :
-          r.access.startsWith("charge") ? "background:#fff4e6;color:#b56d00;" :
-          "background:#ffecec;color:#d3383f;";
-        return `<div class="row"><span>${r.signal}</span><span class="tag" style="${style}">${r.access}</span></div>`;
-      })
-      .join("");
-    return el("div", "organism", `<h4>Política de contenido</h4>${rows}`);
+    const container = el("div", "organism", [el("h4", "", [text("Política de contenido")])]);
+    for (const r of data) {
+      const style = r.access === "allow" ? SUCCESS_STYLE : r.access.startsWith("charge") ? WARNING_STYLE : DANGER_STYLE;
+      container.appendChild(row(r.signal, tag("tag", style, r.access)));
+    }
+    return container;
   },
 };
 
@@ -150,19 +166,12 @@ const PermissionsCenterPanel: OrganismDefinition<PermissionSummaryRow[]> = {
     { subjectName: "🧩 plugin-newsletter", capabilityLabel: "Enviar correos en nombre del sitio", risk: "medio" },
   ],
   render(data) {
-    const rows = data
-      .map((r) => {
-        const color = r.risk === "alto" ? "#ff6e6e" : r.risk === "medio" ? "#ffb86b" : "#6ee7b7";
-        return `<div class="row"><span>${r.subjectName} — ${r.capabilityLabel}</span>
-          <span class="tag" style="background:${color}22;color:${color};">${r.risk}</span></div>`;
-      })
-      .join("");
-    return el(
-      "div",
-      "organism",
-      `<h4>Permisos concedidos (alto riesgo)</h4>${rows}
-       <div class="stat-delta">Ver Centro de Permisos completo en /admin/permisos</div>`
-    );
+    const container = el("div", "organism", [el("h4", "", [text("Permisos concedidos (alto riesgo)")])]);
+    for (const r of data) {
+      container.appendChild(row(`${r.subjectName} — ${r.capabilityLabel}`, tag("tag", RISK_STYLE[r.risk], r.risk)));
+    }
+    container.appendChild(el("div", "stat-delta", [text("Ver Centro de Permisos completo en /admin/permisos")]));
+    return container;
   },
 };
 
