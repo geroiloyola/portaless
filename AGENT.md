@@ -40,7 +40,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 | Sandboxing de plugins | `packages/plugin-sandbox/` | ✅ Adaptador `isolated-vm` self-hosted ejecuta código real, con las 12/12 capacidades del catálogo con puente real vía `ivm.Reference` y pool de isolates reutilizables. Protección activa contra CVE conocida (GHSA-864f-rcv7-6rh4) |
 | Comercio como plugin sandboxeado | `packages/commerce-plugin/` | ✅ Migrado a plugin real ejecutado dentro del sandbox (`isolated-vm` self-hosted), ya no solo manifiesto de referencia |
 | Ledger público de trazabilidad | `packages/trust-layer/src/ledger` | ✅ Persistencia real, lado de escritura y lectura pública conectados |
-| MCP server | `packages/mcp-server/` | ❌ Stub sin lógica de servidor MCP real — ver `docs/architecture/mcp-agents.md` para la especificación completa del diseño previsto |
+| MCP server | `packages/mcp-server/` | 🟡 Parcial, NO funcional end-to-end: existen 5+ archivos de tools reales (`src/tools/create-page.ts`, `update-page.ts`, `query-usage-log.ts`, `grant-capability.ts`, `revoke-permission.ts`, `list-page-components.ts`, `list-installed-plugins.ts`), cada uno exportando `register*Tool(server, deps)`. PERO `createPortalessMcpServer()` (`src/server.ts`) solo crea el `McpServer` base y lo retorna -- NO llama a ninguno de esos `register*Tool`. El servidor que arranca desde `src/index.ts` hoy se conecta sin ninguna tool disponible. Antes de dar por "funcional" este módulo, falta conectar cada tool en `server.ts`. Ver `docs/architecture/mcp-agents.md` para el diseño original. |
 | Identidad AT Protocol | `packages/identity-atproto/` | ❌ Stub vacío, sin lógica |
 | Protocol APW resolver | `packages/apw-resolver/` | ❌ Stub vacío, solo documentado en `docs/protocol-apw/apw-spec.md` |
 | Plugin SDK | `packages/plugin-sdk/` (no existe todavia) | ❌ Solo diseño/licencia (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) -- ningun codigo construido todavia |
@@ -52,7 +52,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 - `SECURITY.md` — vulnerabilidades conocidas y activas (incluye la CVE real de `isolated-vm`, GHSA-864f-rcv7-6rh4).
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — por qué la estructura real del repo difiere de la propuesta original, y dónde está cada cosa de verdad.
 - `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT (diseño, aun no implementado), y los proyectos/plugins de terceros.
-- `docs/architecture/mcp-agents.md` — especificación completa (no implementación) del servidor MCP previsto para agentes de IA.
+- `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las tools ya tienen codigo escrito pero no estan conectadas al servidor (ver tabla de arriba) -- ese es el gap real a cerrar, no escribir las tools desde cero.
 - `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
 - `docs/protocol-apw/apw-spec.md` — diseño del Protocol APW (no implementado).
 - `CONTRIBUTING.md` — cómo proponer cambios.
@@ -60,7 +60,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 ## Convenciones de código que este proyecto sigue estrictamente
 
 1. **Todo módulo nuevo es opcional por defecto.** Activar comercio, Trust Layer, o sandboxing nunca debe romper el sitio si el módulo está desactivado. Ver el patrón `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER` en `functions/_middleware.js` y `astro.config.mjs`.
-2. **Ningún plugin recibe más capacidades de las concedidas explícitamente.** La regla vive en `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: siempre se usa lo *concedido* por el Centro de Permisos, nunca lo *solicitado* en el manifiesto del plugin.
+2. **Ningún plugin recibe más capacidades de las concedidas explícitamente.** La regla vive en `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: siempre se usa lo *concedido* por el Centro de Permisos, nunca lo *solicitado* en el manifiesto del plugin. El mismo principio esta previsto para el mcp-server via `requireCapability()` (`packages/mcp-server/src/permissions/require-capability.ts`) -- pero verifica primero que la tool que vayas a tocar este realmente registrada en `server.ts` (ver tabla de arriba).
 3. **Todo manifiesto de plugin declara capacidades atómicas con una razón legible.** Ver el catálogo completo en `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
 4. **Nunca declarar algo como "implementado" si tiene un TODO de integración real pendiente.** Este proyecto prioriza documentar honestamente las limitaciones sobre aparentar funcionalidad — mantén ese estándar en cualquier código o documentación que agregues.
 5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto.

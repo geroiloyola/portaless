@@ -15,6 +15,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PluginRegistryStore } from "../../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import { recordToolInvocation } from "../audit/record-tool-invocation";
 
 const TOOL_NAME = "list_installed_plugins";
 
