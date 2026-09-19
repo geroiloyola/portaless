@@ -12,7 +12,15 @@
 //     --agent-key-id=ed25519:AAAA... \
 //     --signature-agent-url=https://agent.example.com \
 //     --display-name="Nombre del agente" \
-//     --authorized-by=gerardo
+//     --authorized-by=gerardo \
+//     [--key-algorithm=ed25519]
+//
+// --key-algorithm es opcional, default "ed25519" -- hoy es el UNICO
+// algoritmo que web-bot-auth.ts sabe verificar, asi que pasar cualquier
+// otro valor aqui no habilita nada por si solo; el flag existe por
+// crypto-agilidad (ver docs/architecture/site-trust-score.md, seccion
+// "Crypto-agilidad"), para no requerir una migracion de datos el dia que
+// se agregue un segundo algoritmo (ej. ML-DSA, FIPS 204).
 //
 // Idempotente: si agent-key-id ya existe, actualiza la fila
 // (ON CONFLICT ... DO UPDATE) en vez de duplicar o fallar.
@@ -51,10 +59,12 @@ export function runOnboardAgent(argv) {
     console.error(`[Portaless Onboarding] Faltan argumentos: ${missing.join(", ")}`);
     console.error(
       "Uso: node scripts/onboard-agent.mjs --agent-key-id=... --signature-agent-url=... " +
-      "--display-name=\"...\" --authorized-by=..."
+      "--display-name=\"...\" --authorized-by=... [--key-algorithm=ed25519]"
     );
     process.exit(1);
   }
+
+  const keyAlgorithm = args.keyAlgorithm || "ed25519";
 
   const dbPath = requireSqlitePath();
   const db = new DatabaseSync(dbPath);
@@ -66,26 +76,29 @@ export function runOnboardAgent(argv) {
       display_name TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1,
       authorized_at TEXT NOT NULL,
-      authorized_by TEXT NOT NULL
+      authorized_by TEXT NOT NULL,
+      key_algorithm TEXT NOT NULL DEFAULT 'ed25519'
     );
   `);
 
   const authorizedAt = new Date().toISOString();
   db.prepare(
     `INSERT INTO authorized_agents
-       (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by)
-     VALUES (?, ?, ?, 1, ?, ?)
+       (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
+     VALUES (?, ?, ?, 1, ?, ?, ?)
      ON CONFLICT(agent_key_id)
      DO UPDATE SET
        signature_agent_url = excluded.signature_agent_url,
        display_name = excluded.display_name,
        active = 1,
        authorized_at = excluded.authorized_at,
-       authorized_by = excluded.authorized_by`
-  ).run(args.agentKeyId, args.signatureAgentUrl, args.displayName, authorizedAt, args.authorizedBy);
+       authorized_by = excluded.authorized_by,
+       key_algorithm = excluded.key_algorithm`
+  ).run(args.agentKeyId, args.signatureAgentUrl, args.displayName, authorizedAt, args.authorizedBy, keyAlgorithm);
 
   console.log(`[Portaless Onboarding] Agente autorizado: ${args.displayName} (${args.agentKeyId})`);
   console.log(`  signature_agent_url: ${args.signatureAgentUrl}`);
+  console.log(`  key_algorithm: ${keyAlgorithm}`);
   console.log(`  authorized_at: ${authorizedAt}`);
   console.log(`  authorized_by: ${args.authorizedBy}`);
 }
