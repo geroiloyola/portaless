@@ -1,10 +1,31 @@
 import type { PageLayout, ElementNode } from "../types";
 
+/**
+ * Vocabulario cerrado de tipos de contenido que un sitio puede declarar
+ * que trae -- pensado para que un agente externo que visite
+ * /trust/[siteId] (Trust Layer, ver docs/architecture/site-trust-score.md)
+ * sepa de antemano que esperar del sitio sin tener que rastrearlo o
+ * inferirlo del HTML. No reemplaza a SiteTrustScore: content_kinds
+ * declara QUE trae el sitio, no SI es confiable -- son preguntas
+ * distintas y complementarias (ver
+ * docs/architecture/creator-sites-agentic-workflow.md).
+ */
+export type ContentKind =
+  | "commerce" | "affiliate" | "editorial" | "research" | "social_links" | "community";
+
 export interface SiteInfo {
   url: string;
   name: string;
   logoUrl?: string;
   sameAs?: string[];
+  /**
+   * Opcional a proposito: un sitio existente que no declare este campo
+   * sigue funcionando igual -- buildJsonLd() y el Trust Layer deben
+   * tratar un content_kinds ausente como "no declarado", nunca como
+   * error. Ver tabla de dependencias en
+   * docs/architecture/creator-sites-agentic-workflow.md.
+   */
+  contentKinds?: ContentKind[];
 }
 
 const DEFAULT_CURRENCY = "usd"; // mismo default que medusa-client.ts formatPrice()
@@ -111,6 +132,12 @@ function formatPriceForProduct(product: any, currency: string = DEFAULT_CURRENCY
  * build ni en runtime. astro-integration/JsonLd.astro (unico consumidor
  * conocido hoy) ya usa `await buildJsonLd(...)`.
  *
+ * v0.0.9.26: agrega site.contentKinds (opcional) al @graph como
+ * additionalProperty de la Organization cuando esta declarado -- mismo
+ * criterio que el resto de este archivo: un campo ausente no cambia el
+ * comportamiento, uno presente se refleja literalmente sin inferencia.
+ * Ver docs/architecture/creator-sites-agentic-workflow.md.
+ *
  * @returns {Promise<Record<string, unknown>>} el objeto JSON-LD completo
  * (@context + @graph) -- SIEMPRE debe consumirse con `await`, nunca
  * usarse el valor de retorno directo de la llamada.
@@ -118,13 +145,22 @@ function formatPriceForProduct(product: any, currency: string = DEFAULT_CURRENCY
 export async function buildJsonLd(layout: PageLayout, site: SiteInfo): Promise<Record<string, unknown>> {
   const pageUrl = new URL(layout.slug === "" || layout.slug === "/" ? "/" : `/paginas/${layout.slug}`, site.url).toString();
 
-  const organization = {
+  const organization: Record<string, unknown> = {
     "@type": "Organization",
     "@id": `${site.url}#organization`,
     name: site.name,
     url: site.url,
     ...(site.logoUrl ? { logo: site.logoUrl } : {}),
     ...(site.sameAs?.length ? { sameAs: site.sameAs } : {}),
+    ...(site.contentKinds?.length
+      ? {
+          additionalProperty: site.contentKinds.map((kind) => ({
+            "@type": "PropertyValue",
+            name: "contentKind",
+            value: kind,
+          })),
+        }
+      : {}),
   };
 
   const webPage: Record<string, unknown> = {
