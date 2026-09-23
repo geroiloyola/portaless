@@ -25,26 +25,68 @@
 // estandarizado por NIST). Ver "Crypto-agilidad" en
 // docs/architecture/site-trust-score.md.
 //
-// LIMITACION de este commit: la columna se agrego solo al CREATE TABLE
-// de SqliteAuthorizedAgentsStore (via IF NOT EXISTS, no rompe bases ya
-// creadas -- pero SQLite tampoco la agrega retroactivamente a una tabla
-// existente sin una migracion explicita de ALTER TABLE, no incluida
-// aqui). schema.sql (usado para D1) NO se actualizo en este commit --
-// no se pudo verificar su contenido exacto con las herramientas
 // RESUELTO (verificado esta sesion): schema.sql (raiz, usado para D1)
 // SI tiene `key_algorithm TEXT NOT NULL DEFAULT 'ed25519'` en la
 // definicion de authorized_agents -- no hubo asimetria real entre el
 // esquema de SQLite y el de D1, era informacion desactualizada.
+//
+// grant/revoke/list (esta sesion): hasta ahora la UNICA forma de dar de
+// alta un agente era scripts/onboard-agent.mjs, un CLI que escribe
+// directo contra SQLite via node:sqlite -- sin ningun camino para D1,
+// y sin posibilidad de exponerlo desde un endpoint HTTP/UI de admin.
+// Se agregan estos 3 metodos a la interfaz (aditivo, no rompe a
+// agent-verification.js, el unico consumidor existente, que solo usa
+// isAuthorized) para que un endpoint bajo functions/admin/ pueda dar de
+// alta, revocar, y listar agentes sin pasar por el CLI. revoke() hace
+// soft-delete (active = 0) en vez de DELETE, coherente con que
+// isAuthorized ya filtra por active = 1 -- se preserva el historial de
+// quien fue autorizado y cuando, igual que el resto del Trust Layer
+// (ver ledger de uso, nunca borra filas).
+
+export interface AuthorizedAgent {
+  agentKeyId: string;
+  signatureAgentUrl: string;
+  displayName: string;
+  active: boolean;
+  authorizedAt: string;
+  authorizedBy: string;
+  keyAlgorithm: string;
+}
+
+export interface GrantAuthorizedAgentInput {
+  agentKeyId: string;
+  signatureAgentUrl: string;
+  displayName: string;
+  authorizedBy: string;
+  keyAlgorithm?: string;
+}
 
 export interface AuthorizedAgentsStore {
   isAuthorized(agentKeyId: string): Promise<boolean>;
+  list(): Promise<AuthorizedAgent[]>;
+  grant(input: GrantAuthorizedAgentInput): Promise<void>;
+  revoke(agentKeyId: string): Promise<void>;
 }
 
 export interface D1DatabaseLike {
   prepare(query: string): {
     bind(...args: unknown[]): {
       first<T = unknown>(): Promise<T | null>;
+      run(): Promise<unknown>;
+      all<T = unknown>(): Promise<{ results: T[] }>;
     };
+  };
+}
+
+function rowToAuthorizedAgent(row: any): AuthorizedAgent {
+  return {
+    agentKeyId: row.agent_key_id,
+    signatureAgentUrl: row.signature_agent_url,
+    displayName: row.display_name,
+    active: Boolean(row.active),
+    authorizedAt: row.authorized_at,
+    authorizedBy: row.authorized_by,
+    keyAlgorithm: row.key_algorithm ?? "ed25519",
   };
 }
 
@@ -57,6 +99,47 @@ export class D1AuthorizedAgentsStore implements AuthorizedAgentsStore {
       .bind(agentKeyId)
       .first<{ hit: number }>();
     return row !== null;
+  }
+
+  async list(): Promise<AuthorizedAgent[]> {
+    const { results } = await this.db
+      .prepare("SELECT * FROM authorized_agents ORDER BY authorized_at DESC")
+      .bind()
+      .all();
+    return results.map(rowToAuthorizedAgent);
+  }
+
+  async grant(input: GrantAuthorizedAgentInput): Promise<void> {
+    const authorizedAt = new Date().toISOString();
+    await this.db
+      .prepare(
+        `INSERT INTO authorized_agents
+           (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
+         VALUES (?, ?, ?, 1, ?, ?, ?)
+         ON CONFLICT(agent_key_id) DO UPDATE SET
+           signature_agent_url = excluded.signature_agent_url,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by,
+           key_algorithm = excluded.key_algorithm`
+      )
+      .bind(
+        input.agentKeyId,
+        input.signatureAgentUrl,
+        input.displayName,
+        authorizedAt,
+        input.authorizedBy,
+        input.keyAlgorithm ?? "ed25519"
+      )
+      .run();
+  }
+
+  async revoke(agentKeyId: string): Promise<void> {
+    await this.db
+      .prepare("UPDATE authorized_agents SET active = 0 WHERE agent_key_id = ?")
+      .bind(agentKeyId)
+      .run();
   }
 }
 
@@ -90,15 +173,89 @@ export class SqliteAuthorizedAgentsStore implements AuthorizedAgentsStore {
       .get(agentKeyId);
     return row !== undefined;
   }
+
+  async list(): Promise<AuthorizedAgent[]> {
+    const rows = this.db
+      .prepare("SELECT * FROM authorized_agents ORDER BY authorized_at DESC")
+      .all();
+    return rows.map(rowToAuthorizedAgent);
+  }
+
+  async grant(input: GrantAuthorizedAgentInput): Promise<void> {
+    const authorizedAt = new Date().toISOString();
+    this.db
+      .prepare(
+        `INSERT INTO authorized_agents
+           (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
+         VALUES (?, ?, ?, 1, ?, ?, ?)
+         ON CONFLICT(agent_key_id) DO UPDATE SET
+           signature_agent_url = excluded.signature_agent_url,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by,
+           key_algorithm = excluded.key_algorithm`
+      )
+      .run(
+        input.agentKeyId,
+        input.signatureAgentUrl,
+        input.displayName,
+        authorizedAt,
+        input.authorizedBy,
+        input.keyAlgorithm ?? "ed25519"
+      );
+  }
+
+  async revoke(agentKeyId: string): Promise<void> {
+    this.db
+      .prepare("UPDATE authorized_agents SET active = 0 WHERE agent_key_id = ?")
+      .run(agentKeyId);
+  }
 }
 
 /** Implementacion en memoria -- util para tests. Nunca autoriza nada por
  * defecto; hay que agregar explicitamente los agentKeyId de prueba. */
 export class InMemoryAuthorizedAgentsStore implements AuthorizedAgentsStore {
-  constructor(private authorizedKeyIds: Set<string> = new Set()) {}
+  private agents = new Map<string, AuthorizedAgent>();
+
+  constructor(authorizedKeyIds: Set<string> = new Set()) {
+    const now = new Date().toISOString();
+    for (const agentKeyId of authorizedKeyIds) {
+      this.agents.set(agentKeyId, {
+        agentKeyId,
+        signatureAgentUrl: "",
+        displayName: agentKeyId,
+        active: true,
+        authorizedAt: now,
+        authorizedBy: "test-seed",
+        keyAlgorithm: "ed25519",
+      });
+    }
+  }
 
   async isAuthorized(agentKeyId: string): Promise<boolean> {
-    return this.authorizedKeyIds.has(agentKeyId);
+    return this.agents.get(agentKeyId)?.active === true;
+  }
+
+  async list(): Promise<AuthorizedAgent[]> {
+    return [...this.agents.values()];
+  }
+
+  async grant(input: GrantAuthorizedAgentInput): Promise<void> {
+    this.agents.set(input.agentKeyId, {
+      agentKeyId: input.agentKeyId,
+      signatureAgentUrl: input.signatureAgentUrl,
+      displayName: input.displayName,
+      active: true,
+      authorizedAt: new Date().toISOString(),
+      authorizedBy: input.authorizedBy,
+      keyAlgorithm: input.keyAlgorithm ?? "ed25519",
+    });
+  }
+
+  async revoke(agentKeyId: string): Promise<void> {
+    const existing = this.agents.get(agentKeyId);
+    if (existing) existing.active = false;
   }
 }
 
