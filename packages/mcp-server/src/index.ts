@@ -14,7 +14,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { createPortalessMcpServer } from "./server.js";
 import { createPageStore } from "../../atomic-elements/src/persistence/store-factory.js";
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
-import { InMemoryPluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry.js";
+import { createPluginRegistryStore } from "../../plugin-sandbox/src/registry/store-factory.js";
 import { InMemoryAuditLogStore } from "./audit/in-memory-audit-log-store.js";
 import type { AgentIdentity } from "./permissions/types.js";
 
@@ -49,10 +49,15 @@ async function main(): Promise<void> {
 
   const pageStore = await createPageStore(env);
   const permissionStore = await createPermissionStore(env);
-  // TODO(futuro): PluginRegistryStore todavia no tiene factory D1/SQLite
-  // propia (solo InMemoryPluginRegistryStore existe hoy) -- usar memoria
-  // aqui es honesto con el estado real, no un atajo oculto.
-  const pluginRegistry = new InMemoryPluginRegistryStore();
+  // PluginRegistryStore ahora usa la misma factory D1/SQLite real que ya
+  // usan functions/admin/permissions/index.js y
+  // functions/admin/plugins/[pluginId]/vote.js -- antes se instanciaba
+  // InMemoryPluginRegistryStore directo, lo que generaba un catalogo de
+  // plugins distinto (y sin persistencia) entre lo que ve un agente via
+  // MCP y lo que ve el panel admin. Sin D1 ni SQLite configurado, sigue
+  // cayendo a memoria (fallback interno de la factory), ahora con seed
+  // de plugins conocidos incluido.
+  const pluginRegistry = await createPluginRegistryStore(env);
   const auditLog = new InMemoryAuditLogStore();
   // TODO(futuro): conectar UsageLedgerStore real de trust-layer
   // (packages/trust-layer/src/ledger/store-factory.ts, mismo patron
