@@ -31,10 +31,10 @@
 // existente sin una migracion explicita de ALTER TABLE, no incluida
 // aqui). schema.sql (usado para D1) NO se actualizo en este commit --
 // no se pudo verificar su contenido exacto con las herramientas
-// disponibles en esta sesion, y editarlo sin verlo arriesgaba corromper
-// el esquema real de produccion. Pendiente: alguien con acceso directo
-// al archivo debe agregar `key_algorithm TEXT NOT NULL DEFAULT
-// 'ed25519'` a la definicion de authorized_agents en schema.sql.
+// RESUELTO (verificado esta sesion): schema.sql (raiz, usado para D1)
+// SI tiene `key_algorithm TEXT NOT NULL DEFAULT 'ed25519'` en la
+// definicion de authorized_agents -- no hubo asimetria real entre el
+// esquema de SQLite y el de D1, era informacion desactualizada.
 
 export interface AuthorizedAgentsStore {
   isAuthorized(agentKeyId: string): Promise<boolean>;
