@@ -15,6 +15,7 @@ import { createPortalessMcpServer } from "./server.js";
 import { createPageStore } from "../../atomic-elements/src/persistence/store-factory.js";
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
 import { createPluginRegistryStore } from "../../plugin-sandbox/src/registry/store-factory.js";
+import { createUsageLedgerStore } from "../../trust-layer/src/ledger/store-factory.js";
 import { InMemoryAuditLogStore } from "./audit/in-memory-audit-log-store.js";
 import type { AgentIdentity } from "./permissions/types.js";
 
@@ -59,13 +60,14 @@ async function main(): Promise<void> {
   // de plugins conocidos incluido.
   const pluginRegistry = await createPluginRegistryStore(env);
   const auditLog = new InMemoryAuditLogStore();
-  // TODO(futuro): conectar UsageLedgerStore real de trust-layer
-  // (packages/trust-layer/src/ledger/store-factory.ts, mismo patron
-  // D1/SQLite) -- fuera de alcance de este commit de conexion inicial.
-  const usageLedger: any = {
-    get: async () => null,
-    increment: async () => {},
-  };
+  // UsageLedgerStore ahora usa la factory real de trust-layer (mismo
+  // patron D1 -> SQLite -> memoria que los stores de arriba), en vez de
+  // un stub inline que no persistia nada y ademas implementaba un metodo
+  // ("increment") que no existe en la interfaz real (get/put). Con esto,
+  // el uso de las 7 tools MCP queda registrado en el mismo ledger publico
+  // que ya exponen los requests HTTP normales via functions/_middleware.js
+  // (GET /.well-known/portaless-usage-log.json, desde v0.0.9.3).
+  const usageLedger = await createUsageLedgerStore(env);
 
   const server = createPortalessMcpServer({
     pageStore,
