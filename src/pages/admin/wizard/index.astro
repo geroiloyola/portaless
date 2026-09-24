@@ -1,0 +1,18 @@
+---
+// src/pages/admin/wizard/index.astro
+//
+// Punto de entrada del Wizard de onboarding. Enrutador simple: redirige
+// siempre al Paso 1 (intencion del sitio). Sin esta pagina, los 5 pasos
+// del wizard (step-1-intent, step-2-infrastructure, step-4-backup-key,
+// step-5-admin-credentials) existen pero no tienen una URL de entrada
+// natural desde /admin -- quedarian huerfanos, solo alcanzables si
+// alguien escribe /admin/wizard/step-1-intent de memoria.
+//
+// Deliberadamente NO decide aqui si el usuario deberia saltarse pasos ya
+// completados (ej. si ya tiene identidad generada) -- cada paso ya hace
+// su propia verificacion contra el backend real (ver site-identity.js,
+// admin-status.js) y maneja el caso de "ya hecho" en su propia UI
+// (ej. status 409 en step-4-backup-key.astro). Este archivo es
+// puramente un redirect, sin logica de estado.
+return Astro.redirect("/admin/wizard/step-1-intent");
+---
