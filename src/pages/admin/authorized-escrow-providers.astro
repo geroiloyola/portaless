@@ -1,0 +1,360 @@
+---
+// UI de administracion para la allowlist de proveedores de escrow
+// autorizados a reportar sobre la fuente "escrow_report" de
+// SiteTrustScore. Requiere sesion valida -- protegido por
+// functions/admin/_middleware.js.
+//
+// Antes de esta pagina, la UNICA forma de dar de alta un proveedor era
+// scripts/onboard-escrow-provider.mjs (CLI, self-hosted only, sin
+// cobertura D1) -- ver ROADMAP.md. Los datos vienen de functions/admin/
+// api/authorized-escrow-providers.js (GET/POST/PATCH).
+//
+// Diferencia clave respecto a authorized-agents.astro: el POST devuelve
+// una apiKey en texto plano generada por el servidor, visible UNA sola
+// vez -- se renderiza en un panel de "copia esta clave ahora" estilo
+// GitHub/AWS, y desaparece al cerrar o al hacer cualquier otra accion.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Proveedores de escrow autorizados — Portaless Admin">
+  <div class="ep-page-header">
+    <h1 class="ep-page-title">Proveedores de escrow autorizados (SiteTrustScore)</h1>
+    <p class="ep-page-subtitle">
+      Allowlist de proveedores con permiso para reportar resultados reales
+      de transaccion sobre la fuente "escrow_report" del Site Trust Score
+      -- la senal mas objetiva de las 4 fuentes. No hay autoservicio: cada
+      alta genera una API key nueva que debes entregar al proveedor fuera
+      de banda. Portaless nunca vuelve a mostrarla despues de este momento.
+    </p>
+  </div>
+
+  <div id="ep-loading" class="ep-loading">Cargando proveedores autorizados…</div>
+  <div id="ep-load-error" class="ep-load-error" style="display:none;"></div>
+
+  <div id="ep-root" style="display:none;">
+    <div id="ep-new-key-panel" class="ep-new-key-panel" style="display:none;">
+      <p class="ep-new-key-label">API key generada -- copiala ahora, no se mostrara de nuevo:</p>
+      <div class="ep-new-key-row">
+        <code id="ep-new-key-value" class="ep-new-key-value"></code>
+        <button id="ep-new-key-copy" class="ep-new-key-copy" type="button">Copiar</button>
+      </div>
+      <button id="ep-new-key-dismiss" class="ep-new-key-dismiss" type="button">Ya la copie, cerrar</button>
+    </div>
+
+    <form id="ep-grant-form" class="ep-form">
+      <h2 class="ep-form-title">Dar de alta un proveedor</h2>
+      <label class="ep-field">
+        <span>Provider ID</span>
+        <input type="text" id="ep-input-id" placeholder="escrow-provider-ejemplo" required autocomplete="off" />
+      </label>
+      <label class="ep-field">
+        <span>Nombre visible</span>
+        <input type="text" id="ep-input-name" placeholder="Nombre del proveedor" required autocomplete="off" />
+      </label>
+      <button type="submit" class="ep-submit">Autorizar proveedor</button>
+      <p id="ep-form-error" class="ep-form-error" style="display:none;"></p>
+    </form>
+
+    <table class="ep-table">
+      <thead>
+        <tr>
+          <th>Provider ID</th>
+          <th>Nombre</th>
+          <th>Estado</th>
+          <th>Autorizado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="ep-table-body"></tbody>
+    </table>
+  </div>
+</BaseLayout>
+
+<script>
+  interface AuthorizedEscrowProvider {
+    providerId: string;
+    displayName: string;
+    active: boolean;
+    authorizedAt: string;
+    authorizedBy: string;
+  }
+
+  const loadingEl = document.getElementById("ep-loading")!;
+  const errorEl = document.getElementById("ep-load-error")!;
+  const rootEl = document.getElementById("ep-root")!;
+  const tableBody = document.getElementById("ep-table-body")!;
+  const form = document.getElementById("ep-grant-form") as HTMLFormElement;
+  const formError = document.getElementById("ep-form-error")!;
+  const newKeyPanel = document.getElementById("ep-new-key-panel")!;
+  const newKeyValue = document.getElementById("ep-new-key-value")!;
+  const newKeyCopyBtn = document.getElementById("ep-new-key-copy")!;
+  const newKeyDismissBtn = document.getElementById("ep-new-key-dismiss")!;
+
+  async function parseErrorMessage(res: Response): Promise<string> {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+      else if (body?.error) message = body.error;
+    } catch {
+      // Respuesta sin body JSON -- se usa el mensaje generico de arriba.
+    }
+    return message;
+  }
+
+  function escapeHtml(value: string): string {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+
+  function renderTable(providers: AuthorizedEscrowProvider[]): void {
+    tableBody.innerHTML = "";
+
+    if (providers.length === 0) {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td colspan="5" class="ep-empty-row">Sin proveedores autorizados todavia.</td>`;
+      tableBody.appendChild(row);
+      return;
+    }
+
+    for (const provider of providers) {
+      const row = document.createElement("tr");
+      const statusLabel = provider.active ? "Activo" : "Revocado";
+      const statusClass = provider.active ? "ep-status-active" : "ep-status-revoked";
+      const authorizedDate = new Date(provider.authorizedAt).toLocaleString();
+
+      row.innerHTML = `
+        <td>${escapeHtml(provider.providerId)}</td>
+        <td>${escapeHtml(provider.displayName)}</td>
+        <td><span class="${statusClass}">${statusLabel}</span></td>
+        <td>${escapeHtml(authorizedDate)}</td>
+        <td></td>
+      `;
+
+      if (provider.active) {
+        const revokeBtn = document.createElement("button");
+        revokeBtn.textContent = "Revocar";
+        revokeBtn.className = "ep-revoke-btn";
+        revokeBtn.addEventListener("click", () => revokeProvider(provider.providerId));
+        row.lastElementChild!.appendChild(revokeBtn);
+      }
+
+      tableBody.appendChild(row);
+    }
+  }
+
+  async function loadProviders(): Promise<void> {
+    const res = await fetch("/admin/api/authorized-escrow-providers");
+
+    if (res.status === 401) {
+      window.location.href = "/admin/login?error=1";
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res));
+    }
+
+    const data = await res.json();
+    renderTable(data.providers ?? []);
+  }
+
+  async function revokeProvider(providerId: string): Promise<void> {
+    if (!confirm(`¿Revocar el proveedor "${providerId}"? Esto no borra su historial, solo desactiva su autorizacion. La API key actual dejara de ser valida.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/admin/api/authorized-escrow-providers", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerId }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(await parseErrorMessage(res));
+      }
+
+      await loadProviders();
+    } catch (err) {
+      alert(`Error al revocar: ${(err as Error).message}`);
+    }
+  }
+
+  function showNewApiKey(apiKey: string): void {
+    newKeyValue.textContent = apiKey;
+    newKeyPanel.style.display = "";
+  }
+
+  function hideNewApiKey(): void {
+    newKeyValue.textContent = "";
+    newKeyPanel.style.display = "none";
+  }
+
+  newKeyCopyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(newKeyValue.textContent ?? "");
+      newKeyCopyBtn.textContent = "¡Copiado!";
+      setTimeout(() => { newKeyCopyBtn.textContent = "Copiar"; }, 1500);
+    } catch {
+      // Clipboard API puede fallar sin HTTPS o sin permiso -- la key
+      // sigue visible en pantalla para copia manual.
+    }
+  });
+
+  newKeyDismissBtn.addEventListener("click", hideNewApiKey);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    formError.style.display = "none";
+    hideNewApiKey();
+
+    const providerId = (document.getElementById("ep-input-id") as HTMLInputElement).value.trim();
+    const displayName = (document.getElementById("ep-input-name") as HTMLInputElement).value.trim();
+
+    if (!providerId || !displayName) return;
+
+    try {
+      const res = await fetch("/admin/api/authorized-escrow-providers", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerId, displayName }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(await parseErrorMessage(res));
+      }
+
+      const { apiKey } = await res.json();
+      form.reset();
+      showNewApiKey(apiKey);
+      await loadProviders();
+    } catch (err) {
+      formError.style.display = "";
+      formError.textContent = (err as Error).message;
+    }
+  });
+
+  async function init(): Promise<void> {
+    try {
+      await loadProviders();
+      loadingEl.style.display = "none";
+      rootEl.style.display = "";
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar proveedores autorizados: ${(err as Error).message}`;
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .ep-page-header { margin-bottom: 28px; }
+  .ep-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .ep-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 640px; line-height: 1.5; }
+
+  .ep-loading, .ep-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
+  .ep-load-error { color: #ff6e6e; }
+
+  .ep-new-key-panel {
+    max-width: 560px;
+    margin-bottom: 24px;
+    padding: 18px 20px;
+    border: 1px solid var(--portaless-accent);
+    border-radius: 12px;
+    background: #14201b;
+  }
+  .ep-new-key-label { margin: 0 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--portaless-accent); }
+  .ep-new-key-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .ep-new-key-value {
+    flex: 1;
+    padding: 8px 10px;
+    background: #0f1114;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    word-break: break-all;
+    color: var(--portaless-fg);
+  }
+  .ep-new-key-copy {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ep-new-key-dismiss {
+    border: none;
+    background: none;
+    color: var(--portaless-muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  .ep-form {
+    max-width: 480px;
+    margin-bottom: 32px;
+    padding: 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+  }
+  .ep-form-title { margin: 0 0 16px; font-size: 1rem; }
+  .ep-field { display: block; margin-bottom: 14px; }
+  .ep-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
+  .ep-field input {
+    width: 100%;
+    background: #0f1114;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    color: var(--portaless-fg);
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+  .ep-submit {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ep-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 10px; }
+
+  .ep-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .ep-table th, .ep-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--portaless-border); }
+  .ep-table th { color: var(--portaless-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .ep-empty-row { text-align: center; color: var(--portaless-muted); padding: 24px; }
+
+  .ep-status-active { color: #6ee7b7; }
+  .ep-status-revoked { color: var(--portaless-muted); }
+
+  .ep-revoke-btn {
+    border: 1px solid #ff6e6e;
+    background: transparent;
+    color: #ff6e6e;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .ep-revoke-btn:hover { background: #ff6e6e; color: #0f1114; }
+</style>
