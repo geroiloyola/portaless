@@ -14,6 +14,8 @@ jobs:
           node-version: "22.12"
       - name: Instalar dependencias
         run: npm install
+      - name: Run tests
+        run: npm test
       - name: Build del sitio
         run: npm run build
       - name: Validar manifiestos de plugins
