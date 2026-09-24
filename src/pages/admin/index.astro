@@ -13,6 +13,13 @@
 // este indice linkea a un formulario que pide el siteId antes de navegar,
 // en vez de asumir uno. Ver limitaciones en docs/architecture/
 // site-trust-score.md.
+//
+// v0.0.9.25: agrega la tarjeta "Editor Visual", enlazando
+// src/pages/admin/editor.astro (pagina nueva de este mismo commit).
+// Reemplaza a public/editor/index.html como camino real de produccion --
+// esa demo standalone sigue existiendo pero queda documentada como tal
+// (elementRegistry duplicado y reducido, sin sesion, sin persistencia
+// real), no como el editor que un admin autenticado deberia usar.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Panel de administración — Portaless">
@@ -22,9 +29,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </div>
 
   <nav class="ai-nav-grid">
+    <a class="ai-nav-card" href="/admin/editor">
+      <span class="ai-nav-card-title">Editor Visual</span>
+      <span class="ai-nav-card-desc">Arma páginas con Atomic Elements: arrastra elementos, edita propiedades, guarda directo en la base de datos del sitio.</span>
+    </a>
+
     <a class="ai-nav-card" href="/admin/permissions">
       <span class="ai-nav-card-title">Centro de Permisos</span>
       <span class="ai-nav-card-desc">Conceder o revocar capacidades a plugins y agentes instalados.</span>
+    </a>
+
+    <a class="ai-nav-card" href="/admin/authorized-agents">
+      <span class="ai-nav-card-title">Agentes autorizados (SiteTrustScore)</span>
+      <span class="ai-nav-card-desc">Allowlist de agentes de IA con permiso para reportar sobre la fuente "agent" del Site Trust Score.</span>
+    </a>
+
+    <a class="ai-nav-card" href="/admin/authorized-escrow-providers">
+      <span class="ai-nav-card-title">Proveedores de escrow (SiteTrustScore)</span>
+      <span class="ai-nav-card-desc">Allowlist de proveedores autorizados a reportar resultados reales de transaccion (fuente "escrow_report").</span>
     </a>
 
     <div class="ai-nav-card ai-nav-card-form">

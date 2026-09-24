@@ -18,15 +18,58 @@
 // deliberadamente la barrera de entrada mas alta de las 4 fuentes,
 // coherente con que escrow_report es ground truth. Ver
 // docs/architecture/site-trust-score.md.
+//
+// grant/revoke/list (esta sesion, mismo patron que authorized-agents.ts):
+// hasta ahora la UNICA forma de dar de alta un proveedor era
+// scripts/onboard-escrow-provider.mjs, un CLI que escribe directo contra
+// SQLite via node:sqlite -- sin ningun camino para D1, y sin ningun
+// endpoint HTTP/UI de administracion. grant() aqui es distinto del de
+// authorized-agents.ts porque la API key NUNCA se recibe del cliente --
+// Portaless la GENERA (crypto.randomUUID(), suficiente entropia para un
+// secreto entregado fuera de banda) y devuelve el valor en texto plano
+// SOLO en la respuesta de este metodo. A partir de ahi, unicamente el
+// hash SHA-256 se persiste -- no existe ningun camino para recuperar la
+// key real despues del alta, mismo principio de "write-once, never
+// readable" que un password hasheado. Si se pierde, la unica opcion es
+// revocar y generar una nueva. revoke() hace soft-delete (active = 0),
+// igual que authorized-agents.ts -- preserva el historial de que
+// proveedor estuvo autorizado y cuando.
+
+export interface AuthorizedEscrowProvider {
+  providerId: string;
+  displayName: string;
+  active: boolean;
+  authorizedAt: string;
+  authorizedBy: string;
+}
+
+export interface GrantAuthorizedEscrowProviderInput {
+  providerId: string;
+  displayName: string;
+  authorizedBy: string;
+}
+
+export interface GrantAuthorizedEscrowProviderResult {
+  provider: AuthorizedEscrowProvider;
+  /** API key en texto plano -- SOLO disponible en este resultado, nunca
+   * se persiste ni se puede recuperar despues. Debe entregarse al
+   * proveedor fuera de banda inmediatamente. */
+  apiKey: string;
+}
 
 export interface AuthorizedEscrowProvidersStore {
   isAuthorized(providerId: string, apiKeyHash: string): Promise<boolean>;
+  list(): Promise<AuthorizedEscrowProvider[]>;
+  grant(input: GrantAuthorizedEscrowProviderInput): Promise<GrantAuthorizedEscrowProviderResult>;
+  revoke(providerId: string): Promise<void>;
 }
 
 export interface D1DatabaseLike {
   prepare(query: string): {
     bind(...args: unknown[]): {
       first<T = unknown>(): Promise<T | null>;
+      run(): Promise<unknown>;
+      all<T = unknown>(): Promise<{ results: T[] }>;
     };
   };
 }
@@ -40,6 +83,20 @@ export async function hashApiKey(apiKey: string): Promise<string> {
     .join("");
 }
 
+function generateApiKey(): string {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
+function rowToProvider(row: any): AuthorizedEscrowProvider {
+  return {
+    providerId: row.provider_id,
+    displayName: row.display_name,
+    active: Boolean(row.active),
+    authorizedAt: row.authorized_at,
+    authorizedBy: row.authorized_by,
+  };
+}
+
 export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvidersStore {
   constructor(private db: D1DatabaseLike) {}
 
@@ -51,6 +108,53 @@ export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvide
       .bind(providerId, apiKeyHash)
       .first<{ hit: number }>();
     return row !== null;
+  }
+
+  async list(): Promise<AuthorizedEscrowProvider[]> {
+    const { results } = await this.db
+      .prepare("SELECT * FROM authorized_escrow_providers ORDER BY authorized_at DESC")
+      .bind()
+      .all();
+    return results.map(rowToProvider);
+  }
+
+  async grant(input: GrantAuthorizedEscrowProviderInput): Promise<GrantAuthorizedEscrowProviderResult> {
+    const apiKey = generateApiKey();
+    const apiKeyHash = await hashApiKey(apiKey);
+    const authorizedAt = new Date().toISOString();
+
+    await this.db
+      .prepare(
+        `INSERT INTO authorized_escrow_providers
+           (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
+         VALUES (?, ?, ?, 1, ?, ?)
+         ON CONFLICT(provider_id) DO UPDATE SET
+           api_key_hash = excluded.api_key_hash,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by`
+      )
+      .bind(input.providerId, apiKeyHash, input.displayName, authorizedAt, input.authorizedBy)
+      .run();
+
+    return {
+      provider: {
+        providerId: input.providerId,
+        displayName: input.displayName,
+        active: true,
+        authorizedAt,
+        authorizedBy: input.authorizedBy,
+      },
+      apiKey,
+    };
+  }
+
+  async revoke(providerId: string): Promise<void> {
+    await this.db
+      .prepare("UPDATE authorized_escrow_providers SET active = 0 WHERE provider_id = ?")
+      .bind(providerId)
+      .run();
   }
 }
 
@@ -85,16 +189,111 @@ export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowPro
       .get(providerId, apiKeyHash);
     return row !== undefined;
   }
+
+  async list(): Promise<AuthorizedEscrowProvider[]> {
+    const rows = this.db
+      .prepare("SELECT * FROM authorized_escrow_providers ORDER BY authorized_at DESC")
+      .all();
+    return rows.map(rowToProvider);
+  }
+
+  async grant(input: GrantAuthorizedEscrowProviderInput): Promise<GrantAuthorizedEscrowProviderResult> {
+    const apiKey = generateApiKey();
+    const apiKeyHash = await hashApiKey(apiKey);
+    const authorizedAt = new Date().toISOString();
+
+    this.db
+      .prepare(
+        `INSERT INTO authorized_escrow_providers
+           (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
+         VALUES (?, ?, ?, 1, ?, ?)
+         ON CONFLICT(provider_id) DO UPDATE SET
+           api_key_hash = excluded.api_key_hash,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by`
+      )
+      .run(input.providerId, apiKeyHash, input.displayName, authorizedAt, input.authorizedBy);
+
+    return {
+      provider: {
+        providerId: input.providerId,
+        displayName: input.displayName,
+        active: true,
+        authorizedAt,
+        authorizedBy: input.authorizedBy,
+      },
+      apiKey,
+    };
+  }
+
+  async revoke(providerId: string): Promise<void> {
+    this.db
+      .prepare("UPDATE authorized_escrow_providers SET active = 0 WHERE provider_id = ?")
+      .run(providerId);
+  }
 }
 
 /** Implementacion en memoria -- util para tests. Nunca autoriza nada por
  * defecto; hay que agregar explicitamente los pares providerId+apiKeyHash
  * de prueba. */
 export class InMemoryAuthorizedEscrowProvidersStore implements AuthorizedEscrowProvidersStore {
-  constructor(private authorizedPairs: Set<string> = new Set()) {}
+  private providers = new Map<string, AuthorizedEscrowProvider & { apiKeyHash: string }>();
+
+  constructor(authorizedPairs: Set<string> = new Set()) {
+    const now = new Date().toISOString();
+    for (const pair of authorizedPairs) {
+      const [providerId, apiKeyHash] = pair.split(":");
+      this.providers.set(providerId, {
+        providerId,
+        displayName: providerId,
+        active: true,
+        authorizedAt: now,
+        authorizedBy: "test-seed",
+        apiKeyHash,
+      });
+    }
+  }
 
   async isAuthorized(providerId: string, apiKeyHash: string): Promise<boolean> {
-    return this.authorizedPairs.has(`${providerId}:${apiKeyHash}`);
+    const provider = this.providers.get(providerId);
+    return provider?.active === true && provider.apiKeyHash === apiKeyHash;
+  }
+
+  async list(): Promise<AuthorizedEscrowProvider[]> {
+    return [...this.providers.values()].map(({ apiKeyHash, ...provider }) => provider);
+  }
+
+  async grant(input: GrantAuthorizedEscrowProviderInput): Promise<GrantAuthorizedEscrowProviderResult> {
+    const apiKey = generateApiKey();
+    const apiKeyHash = await hashApiKey(apiKey);
+    const authorizedAt = new Date().toISOString();
+
+    this.providers.set(input.providerId, {
+      providerId: input.providerId,
+      displayName: input.displayName,
+      active: true,
+      authorizedAt,
+      authorizedBy: input.authorizedBy,
+      apiKeyHash,
+    });
+
+    return {
+      provider: {
+        providerId: input.providerId,
+        displayName: input.displayName,
+        active: true,
+        authorizedAt,
+        authorizedBy: input.authorizedBy,
+      },
+      apiKey,
+    };
+  }
+
+  async revoke(providerId: string): Promise<void> {
+    const existing = this.providers.get(providerId);
+    if (existing) existing.active = false;
   }
 }
 

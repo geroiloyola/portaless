@@ -1,0 +1,210 @@
+---
+// Editor visual de Atomic Elements, integrado al panel de administracion.
+// Requiere sesion valida -- protegido por functions/admin/_middleware.js,
+// que corre para toda ruta bajo /admin/* excepto /admin/login.
+//
+// HALLAZGO que esta pagina resuelve (ver ROADMAP.md, "Funcionalidades
+// Internas en Desarrollo"): public/editor/index.html es una demo standalone
+// con un elementRegistry duplicado y reducido (6 elementos, sin ProductGrid
+// ni los 4 tipos de link-en-bio), sin capa de sesion, sin persistencia real
+// -- solo localStorage. Esta pagina reemplaza esa demo para uso en
+// produccion: hereda BaseLayout (mismo layout del dashboard), usa la
+// validacion de sesion nativa de Astro/Cloudflare Pages, y monta la clase
+// real AtomicElementsEditor (packages/atomic-elements/src/editor/editor-app.ts)
+// con el elementRegistry completo de 12 elementos
+// (packages/atomic-elements/src/elements/registry.ts), no una copia.
+//
+// El slug de la pagina a editar viene por query string (?slug=mi-pagina).
+// Sin slug, se asume "nueva-pagina" como borrador nuevo -- mismo valor por
+// defecto que ya usaba la demo de public/editor/index.html.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import "../../../packages/atomic-elements/src/editor/editor-styles.css";
+---
+<BaseLayout title="Editor Visual — Portaless Admin">
+  <div class="pc-page-header">
+    <h1 class="pc-page-title">Editor Visual</h1>
+    <p class="pc-page-subtitle">
+      Arrastra elementos desde la paleta para armar la pagina. Los cambios
+      se guardan explicitamente con "Guardar pagina" -- nada se publica
+      hasta que lo confirmes.
+    </p>
+  </div>
+
+  <div id="editor-toolbar" class="editor-toolbar">
+    <span id="editor-slug-label" class="editor-slug-label"></span>
+    <div class="editor-toolbar-actions">
+      <button id="btn-export" class="btn">Exportar JSON</button>
+      <button id="btn-save" class="btn primary">Guardar página</button>
+    </div>
+  </div>
+
+  <div id="editor-loading" class="pc-loading">Cargando editor…</div>
+  <div id="editor-load-error" class="pc-load-error" style="display:none;"></div>
+  <div id="editor-save-status" class="editor-save-status" style="display:none;"></div>
+  <div id="editor-root" style="display:none;"></div>
+</BaseLayout>
+
+<style>
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .editor-slug-label {
+    font-size: 12.5px;
+    color: var(--portaless-muted);
+  }
+  .editor-toolbar-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .editor-save-status {
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .editor-save-status.ok {
+    background: rgba(110, 231, 183, 0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(110, 231, 183, 0.3);
+  }
+  .editor-save-status.error {
+    background: rgba(255, 110, 110, 0.12);
+    color: #ff6e6e;
+    border: 1px solid rgba(255, 110, 110, 0.3);
+  }
+</style>
+
+<script>
+  import { mountAtomicElementsEditor } from "../../../packages/atomic-elements/src/editor/editor-app";
+  import type { PageStore } from "../../../packages/atomic-elements/src/persistence/page-store";
+  import type { PageLayout } from "../../../packages/atomic-elements/src/types";
+
+  const loadingEl = document.getElementById("editor-loading")!;
+  const errorEl = document.getElementById("editor-load-error")!;
+  const rootEl = document.getElementById("editor-root")!;
+  const toolbarEl = document.getElementById("editor-toolbar")!;
+  const slugLabelEl = document.getElementById("editor-slug-label")!;
+  const saveStatusEl = document.getElementById("editor-save-status")!;
+  const exportBtn = document.getElementById("btn-export")!;
+  const saveBtn = document.getElementById("btn-save")!;
+
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug") || "nueva-pagina";
+
+  // Implementa la interfaz PageStore real (load/save/list) contra el
+  // endpoint ya existente functions/admin/pages/[slug].js -- NO contra
+  // una ruta /api/ nueva que no existe en el backend. list() no tiene
+  // endpoint real todavia (no hay GET /admin/pages sin slug), asi que
+  // lanza un error explicito en vez de inventar un contrato -- mismo
+  // principio de honestidad que los 501 de node-isolated-vm.ts.
+  class HttpPageStore implements PageStore {
+    async load(pageSlug: string): Promise<PageLayout | null> {
+      const res = await fetch(`/admin/pages/${encodeURIComponent(pageSlug)}`);
+
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        throw new Error("No autenticado.");
+      }
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        throw new Error(`No se pudo cargar la página (HTTP ${res.status}).`);
+      }
+      return res.json();
+    }
+
+    async save(layout: PageLayout): Promise<void> {
+      const res = await fetch(`/admin/pages/${encodeURIComponent(layout.slug)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(layout),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        throw new Error("No autenticado.");
+      }
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body?.message) message = body.message;
+          else if (body?.error) message = body.error;
+        } catch {
+          // Respuesta sin body JSON -- se usa el mensaje generico de arriba.
+        }
+        throw new Error(message);
+      }
+    }
+
+    async list(): Promise<string[]> {
+      throw new Error(
+        "Listado de páginas no implementado todavía: no existe un endpoint GET /admin/pages sin slug en el backend."
+      );
+    }
+  }
+
+  function emptyPageLayout(pageSlug: string): PageLayout {
+    return {
+      version: "0.1",
+      slug: pageSlug,
+      title: "Borrador sin título",
+      description: "",
+      root: [],
+    };
+  }
+
+  function showSaveStatus(kind: "ok" | "error", message: string): void {
+    saveStatusEl.style.display = "";
+    saveStatusEl.className = `editor-save-status ${kind}`;
+    saveStatusEl.textContent = message;
+    window.setTimeout(() => {
+      saveStatusEl.style.display = "none";
+    }, 4000);
+  }
+
+  async function init(): Promise<void> {
+    const store = new HttpPageStore();
+    slugLabelEl.textContent = `Editando: ${slug}`;
+
+    let initialPage: PageLayout;
+    try {
+      const loaded = await store.load(slug);
+      initialPage = loaded ?? emptyPageLayout(slug);
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar el editor: ${(err as Error).message}`;
+      return;
+    }
+
+    loadingEl.style.display = "none";
+    toolbarEl.style.display = "";
+    rootEl.style.display = "";
+
+    const editor = mountAtomicElementsEditor({
+      container: rootEl,
+      store,
+      initialPage,
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      try {
+        await editor.save();
+        showSaveStatus("ok", "Página guardada.");
+      } catch (err) {
+        showSaveStatus("error", `Error al guardar: ${(err as Error).message}`);
+      }
+    });
+
+    exportBtn.addEventListener("click", async () => {
+      const json = editor.exportJSON();
+      await navigator.clipboard?.writeText(json);
+      showSaveStatus("ok", "JSON copiado al portapapeles.");
+    });
+  }
+
+  init();
+</script>
