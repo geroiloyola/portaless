@@ -1,0 +1,114 @@
+---
+// src/pages/admin/wizard/step-1-intent.astro
+//
+// Paso 1 del Wizard de onboarding: captura nombre del sitio, dominio, y
+// un prompt libre de intencion. HALLAZGO: no existe todavia un endpoint
+// que traduzca este prompt a create_page del MCP server -- queda como
+// tarea pendiente explicita. Este archivo solo implementa la UI y guarda
+// las respuestas en sessionStorage para el siguiente paso.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Cuéntanos de tu sitio — Portaless Wizard">
+  <div class="wiz-page-header">
+    <p class="wiz-step-indicator">Paso 1 de 5</p>
+    <h1 class="wiz-page-title">¿De qué trata tu sitio?</h1>
+    <p class="wiz-page-subtitle">
+      Con esto, el agente de Portaless prepara tu primera página. Puedes
+      cambiar todo después desde el editor visual o pidiéndoselo a una IA.
+    </p>
+  </div>
+
+  <form id="wiz-intent-form" class="wiz-form">
+    <label class="wiz-field">
+      <span>Nombre del sitio</span>
+      <input type="text" id="wiz-site-name" placeholder="Mi portafolio" required autocomplete="off" />
+    </label>
+
+    <label class="wiz-field">
+      <span>Dominio</span>
+      <input type="text" id="wiz-site-domain" placeholder="miportafolio.com" required autocomplete="off" />
+      <span class="wiz-field-hint">Sin http:// ni www. -- lo agregamos automáticamente.</span>
+    </label>
+
+    <label class="wiz-field">
+      <span>Cuéntanos de tu sitio</span>
+      <textarea id="wiz-site-intent" rows="4" placeholder="Ej: un portafolio minimalista para mis fotos de arquitectura" required></textarea>
+      <span class="wiz-field-hint">Esto ayuda al agente a elegir el diseño inicial correcto.</span>
+    </label>
+
+    <button type="submit" class="wiz-submit-btn">Continuar</button>
+    <p id="wiz-form-error" class="wiz-form-error" style="display:none;"></p>
+  </form>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById("wiz-intent-form") as HTMLFormElement;
+  const formError = document.getElementById("wiz-form-error")!;
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    formError.style.display = "none";
+
+    const siteName = (document.getElementById("wiz-site-name") as HTMLInputElement).value.trim();
+    const siteDomain = (document.getElementById("wiz-site-domain") as HTMLInputElement)
+      .value.trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\/$/, "");
+    const siteIntent = (document.getElementById("wiz-site-intent") as HTMLTextAreaElement).value.trim();
+
+    if (!siteName || !siteDomain || !siteIntent) {
+      formError.style.display = "";
+      formError.textContent = "Completa los 3 campos para continuar.";
+      return;
+    }
+
+    sessionStorage.setItem(
+      "portaless_wizard_intent",
+      JSON.stringify({ siteName, siteDomain, siteIntent })
+    );
+
+    window.location.href = "/admin/wizard/step-2-infrastructure";
+  });
+</script>
+
+<style>
+  .wiz-page-header { margin-bottom: 28px; max-width: 560px; }
+  .wiz-step-indicator { margin: 0 0 6px; font-size: 0.78rem; color: var(--portaless-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .wiz-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .wiz-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
+
+  .wiz-form {
+    max-width: 480px;
+    padding: 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+  }
+  .wiz-field { display: block; margin-bottom: 18px; }
+  .wiz-field span:first-child { display: block; font-size: 0.85rem; color: var(--portaless-fg); margin-bottom: 6px; font-weight: 600; }
+  .wiz-field input, .wiz-field textarea {
+    width: 100%;
+    background: #0f1114;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    color: var(--portaless-fg);
+    padding: 9px 11px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .wiz-field-hint { display: block; font-size: 0.75rem; color: var(--portaless-muted); margin-top: 5px; }
+
+  .wiz-submit-btn {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .wiz-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 12px; }
+</style>
