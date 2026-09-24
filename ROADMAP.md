@@ -129,7 +129,7 @@ Estado real de las 3 piezas que sostienen esta capa, confirmado en esta sesion:
 |Pieza                                                             |Estado real                                                                                                                                 |
 |------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 |Web Bot Auth (identidad criptografica por sitio, RFC 9421/Ed25519)|Implementado y con tests                                                                                                                    |
-|SiteTrustScore – 4 fuentes (self, agent, community, escrow_report)|Las 4 fuentes tienen endpoint HTTP conectado. `agent` y `escrow_report` sin UI de escritura ni datos reales – allowlists vacias, alta manual|
+|SiteTrustScore – 4 fuentes (self, agent, community, escrow_report)|Las 4 fuentes tienen endpoint HTTP conectado. `agent` y `escrow_report` ya tienen endpoints admin de alta/revocacion (`functions/admin/api/authorized-agents.js`, `.../authorized-escrow-providers.js`) -- falta solo la pagina `.astro` de UI para dejar de depender de curl/fetch manual|
 |Protocol APW (descubrimiento via DNS TXT `_apw.tudominio.com`)    |STUB – solo especificacion en `docs/protocol-apw/apw-spec.md`, sin logica en `packages/apw-resolver/`                                       |
 
 **Tareas – Protocol APW (sacar de estado stub):**
