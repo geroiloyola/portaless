@@ -1,5 +1,5 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.24)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.25)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita el schema.sql del paquete correspondiente y
@@ -7,37 +7,23 @@
 --
 -- NOTA v0.0.9.24: la columna key_algorithm de authorized_agents (mas abajo)
 -- se agrego directamente a este archivo maestro. CONFIRMADO: packages/
--- trust-layer/src/site-trust/ no tiene un schema.sql de paquete individual
--- (solo contiene los .ts de stores/logica) -- a diferencia de auth,
--- permissions, ledger y atomic-elements (que si tienen su schema.sql fuente
--- propio, listados abajo), las tablas de site-trust (site_trust_*,
--- authorized_agents, authorized_escrow_providers) se definieron siempre
--- directo en este archivo maestro. No hay riesgo de que
--- generate-schema.mjs revierta este cambio por una fuente desactualizada.
+-- trust-layer/src/site-trust/ no tiene un schema.sql de paquete individual.
 --
--- Concatena, en un solo archivo idempotente, los esquemas que hasta ahora
--- vivian dispersos en cada paquete y requerian aplicarse a mano por
--- separado:
---   packages/auth/src/stores/schema.sql
---   packages/permissions/src/stores/schema.sql
---   packages/trust-layer/src/ledger/schema.sql
---   packages/atomic-elements/src/persistence/stores/schema.sql
---
--- Los archivos originales de cada paquete NO se eliminan ni se modifican
--- -- siguen siendo la fuente de verdad individual de cada modulo.
+-- NOTA v0.0.9.25: se agrega site_identity (packages/apw-resolver/schema.sql,
+-- fuente propia nueva) -- identidad did:apw del sitio mismo, generada por el
+-- Wizard de onboarding (Paso 3-4). Ver packages/apw-resolver/src/did-apw/.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
---   O usa el instalador completo (schema + admin inicial en un comando):
---   node scripts/setup.mjs
+--   O usa el instalador completo: node scripts/setup.mjs
 --
 -- Todas las sentencias son CREATE TABLE/INDEX IF NOT EXISTS -- correr este
 -- archivo repetidas veces sobre una base de datos que ya tiene las tablas
 -- es seguro y no destruye datos existentes.
 
 -- -----------------------------------------------------------------------------
--- @portaless/auth -- usuarios y sesiones (packages/auth/src/stores/schema.sql)
+-- @portaless/auth -- usuarios y sesiones
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS users (
@@ -58,7 +44,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_username ON sessions(username);
 
 -- -----------------------------------------------------------------------------
--- @portaless/permissions -- Centro de Permisos (packages/permissions/src/stores/schema.sql)
+-- @portaless/permissions -- Centro de Permisos
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS permission_grants (
@@ -75,7 +61,7 @@ CREATE TABLE IF NOT EXISTS permission_grants (
 CREATE INDEX IF NOT EXISTS idx_grants_capability ON permission_grants(capability_id);
 
 -- -----------------------------------------------------------------------------
--- @portaless/trust-layer -- ledger de uso por agentes (packages/trust-layer/src/ledger/schema.sql)
+-- @portaless/trust-layer -- ledger de uso por agentes
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS usage_ledger (
@@ -93,7 +79,7 @@ CREATE TABLE IF NOT EXISTS usage_ledger (
 );
 
 -- -----------------------------------------------------------------------------
--- @portaless/atomic-elements -- paginas persistidas (packages/atomic-elements/src/persistence/stores/schema.sql)
+-- @portaless/atomic-elements -- paginas persistidas
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS pages (
@@ -104,7 +90,7 @@ CREATE TABLE IF NOT EXISTS pages (
 );
 
 -- -----------------------------------------------------------------------------
--- v0.0.9.4 -- Recuperacion de contrasena (packages/auth/src/password-reset-store.ts)
+-- v0.0.9.4 -- Recuperacion de contrasena
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS password_reset_requests (
@@ -118,13 +104,8 @@ CREATE TABLE IF NOT EXISTS password_reset_requests (
 CREATE INDEX IF NOT EXISTS idx_password_reset_username ON password_reset_requests(username);
 
 -- -----------------------------------------------------------------------------
--- v0.0.9.9 -- Registro dinamico de plugins (packages/plugin-sandbox/src/registry/plugin-registry.ts)
+-- v0.0.9.9 -- Registro dinamico de plugins
 -- -----------------------------------------------------------------------------
--- Reemplaza el catalogo hardcodeado (hello-plugin, commerce-plugin) que
--- functions/admin/permissions/index.js usaba desde v0.0.9.2. Modelo abierto
--- por defecto (Shopify App Store / WooCommerce.org / Android Play Store):
--- cualquiera puede registrar un plugin, y la comunidad regula la confianza
--- via trust_score (promedio de votos), no Portaless.
 
 CREATE TABLE IF NOT EXISTS plugin_registry (
   plugin_id TEXT PRIMARY KEY,
@@ -152,13 +133,8 @@ CREATE TABLE IF NOT EXISTS plugin_trust_votes (
 );
 
 -- -----------------------------------------------------------------------------
--- v0.0.9.19 -- Site Trust Score (packages/trust-layer/src/site-trust/site-trust-score.ts)
+-- v0.0.9.19 -- Site Trust Score
 -- -----------------------------------------------------------------------------
--- Califica SITIOS completos (distinto de plugin_registry/plugin_trust_votes,
--- que califica plugins instalados). 4 fuentes en 4 tablas separadas -- cada
--- una con semantica de ausencia distinta, ver docs/architecture/
--- site-trust-score.md. Pensado para ser consultado por Protocol APW
--- (packages/apw-resolver/, hoy stub) al resolver identidad via did:web.
 
 CREATE TABLE IF NOT EXISTS site_trust_subjects (
   site_id TEXT PRIMARY KEY,
@@ -166,7 +142,6 @@ CREATE TABLE IF NOT EXISTS site_trust_subjects (
   last_updated_at TEXT NOT NULL
 );
 
--- Fuente 1: self -- autoevaluacion declarativa del admin. Ausencia = neutral.
 CREATE TABLE IF NOT EXISTS site_trust_self_evaluations (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   category TEXT NOT NULL CHECK (category IN (
@@ -180,8 +155,6 @@ CREATE TABLE IF NOT EXISTS site_trust_self_evaluations (
   PRIMARY KEY (site_id, category)
 );
 
--- Fuente 2: agent -- verificacion automatizada via Web Bot Auth. `verified`
--- false es señal NEGATIVA real (el agente verifico y fallo), no ausencia.
 CREATE TABLE IF NOT EXISTS site_trust_agent_verifications (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   category TEXT NOT NULL CHECK (category IN (
@@ -198,9 +171,6 @@ CREATE TABLE IF NOT EXISTS site_trust_agent_verifications (
 CREATE INDEX IF NOT EXISTS idx_site_trust_agent_site_category
   ON site_trust_agent_verifications(site_id, category);
 
--- Fuente 3: community -- visitantes humanos. Ausencia = neutral.
--- v0.0.9.19: agrega ip_hash para rate-limiting server-side. ip_hash es
--- SHA-256(ip + salt) -- la IP cruda nunca se persiste.
 CREATE TABLE IF NOT EXISTS site_trust_community_votes (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   category TEXT NOT NULL CHECK (category IN (
@@ -221,8 +191,6 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_community_site_category
 CREATE INDEX IF NOT EXISTS idx_site_trust_community_rate_limit
   ON site_trust_community_votes(site_id, category, ip_hash, voted_at);
 
--- Fuente 4: escrow_report -- ground truth de transacciones reales,
--- reportadas por un tercero (Portaless nunca custodia fondos). Ausencia = neutral.
 CREATE TABLE IF NOT EXISTS site_trust_escrow_reports (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
   transaction_outcome TEXT NOT NULL CHECK (transaction_outcome IN (
@@ -239,26 +207,7 @@ CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.21 -- Allowlist de agentes autorizados a reportar sobre SiteTrustScore
--- (v0.0.9.24 agrega key_algorithm por crypto-agilidad, ver nota debajo)
 -- -----------------------------------------------------------------------------
--- Web Bot Auth (packages/trust-layer/src/site-trust/web-bot-auth.ts) resuelve
--- "¿quien eres?" -- esta tabla resuelve "¿tienes permiso?". Sin ella, cualquiera
--- que genere un par Ed25519 y publique un JWKS podria reportar verified:true
--- para cualquier sitio -- identidad verificada no es lo mismo que autorizacion.
---
--- Fase 1 (esta version): allowlist estricta, gestionada manualmente por
--- Portaless -- 1-2 agentes conocidos. Fase 2 (futura, no implementada):
--- abrir a cualquier agente verificado con peso reducido en el score, en vez
--- de bloquear por completo a agentes no listados. Ver docs/architecture/
--- site-trust-score.md.
---
--- key_algorithm (v0.0.9.24): Ed25519 (el unico algoritmo que
--- web-bot-auth.ts verifica hoy) es vulnerable a computadoras cuanticas via
--- el algoritmo de Shor. NIST ya estandarizo el reemplazo (FIPS 204,
--- ML-DSA). Esta columna NO implementa verificacion de un segundo
--- algoritmo -- solo deja el esquema listo para no requerir una migracion
--- de datos con filas reales ya en produccion el dia que se implemente. Ver
--- docs/architecture/site-trust-score.md, seccion "Crypto-agilidad".
 
 CREATE TABLE IF NOT EXISTS authorized_agents (
   agent_key_id TEXT PRIMARY KEY,
@@ -275,19 +224,6 @@ CREATE INDEX IF NOT EXISTS idx_authorized_agents_active ON authorized_agents(act
 -- -----------------------------------------------------------------------------
 -- v0.0.9.23 -- Allowlist de proveedores de escrow autorizados a reportar
 -- -----------------------------------------------------------------------------
--- Analoga a authorized_agents, pero para la fuente escrow_report en vez de
--- agent. No hay un estandar publico equivalente a Web Bot Auth para
--- proveedores de escrow -- el mecanismo aqui es una API key por proveedor,
--- hasheada antes de persistir (nunca la clave cruda), comparada contra el
--- header Authorization: Bearer <api_key> del request.
---
--- Esta es la parte MENOS "protocolo abierto" de todo SiteTrustScore: no hay
--- forma de que un proveedor se autoautorice como si pasa con Web Bot Auth
--- (cualquiera puede publicar un JWKS) -- Portaless emite la API key
--- manualmente, fuera de banda, la primera vez que un proveedor real se
--- integra. Coherente con que escrow_report es ground truth: la barrera de
--- entrada deliberadamente alta protege la fuente mas objetiva del diseño.
--- Ver docs/architecture/site-trust-score.md.
 
 CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
   provider_id TEXT PRIMARY KEY,
@@ -299,3 +235,27 @@ CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
 );
 
 CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_escrow_providers(active);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.25 -- Identidad did:apw del sitio (packages/apw-resolver/schema.sql)
+-- -----------------------------------------------------------------------------
+-- Identidad criptografica que ESTE sitio usa para firmarse a si mismo ante
+-- terceros via Protocol APW (Wizard de onboarding, Paso 3-4). NO confundir
+-- con authorized_agents (agentes EXTERNOS que Portaless autoriza a ACCEDER
+-- a este sitio) ni con authorized_escrow_providers.
+--
+-- La clave privada NUNCA se persiste en texto plano: private_key_jwk_encrypted
+-- guarda el JWK cifrado con AES-GCM. La clave de cifrado vive fuera de esta
+-- base de datos (env var PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY).
+
+CREATE TABLE IF NOT EXISTS site_identity (
+  site_id TEXT PRIMARY KEY,
+  did TEXT NOT NULL UNIQUE,
+  domain TEXT NOT NULL,
+  public_key_jwk TEXT NOT NULL,
+  private_key_jwk_encrypted TEXT NOT NULL,
+  private_key_encryption_iv TEXT NOT NULL,
+  key_algorithm TEXT NOT NULL DEFAULT 'ed25519',
+  created_at TEXT NOT NULL,
+  created_by TEXT NOT NULL
+);
