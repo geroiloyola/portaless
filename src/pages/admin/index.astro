@@ -27,6 +27,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <span class="ai-nav-card-desc">Conceder o revocar capacidades a plugins y agentes instalados.</span>
     </a>
 
+    <a class="ai-nav-card" href="/admin/authorized-agents">
+      <span class="ai-nav-card-title">Agentes autorizados (SiteTrustScore)</span>
+      <span class="ai-nav-card-desc">Allowlist de agentes de IA con permiso para reportar sobre la fuente "agent" del Site Trust Score.</span>
+    </a>
+
+    <a class="ai-nav-card" href="/admin/authorized-escrow-providers">
+      <span class="ai-nav-card-title">Proveedores de escrow (SiteTrustScore)</span>
+      <span class="ai-nav-card-desc">Allowlist de proveedores autorizados a reportar resultados reales de transaccion (fuente "escrow_report").</span>
+    </a>
+
     <div class="ai-nav-card ai-nav-card-form">
       <span class="ai-nav-card-title">Site Trust Score — autoevaluación</span>
       <span class="ai-nav-card-desc">
