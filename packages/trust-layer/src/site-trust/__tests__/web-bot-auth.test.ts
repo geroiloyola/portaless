@@ -1,25 +1,20 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v5 (esta sesion, quinto hallazgo):
+// RFC 9421 Appendix B.1.4. FIX v6 (esta sesion, sexto hallazgo): el fix
+// v5 cambio created/expires a Unix timestamps en segundos (number),
+// asumiendo que la libreria los esperaba asi. El error real de CI fue
+// "params.created.getTime is not a function" -- confirma que
+// getSigningOptions() SI llama a .getTime() sobre `created`, es decir
+// SI espera un objeto Date real, no un number. Se revierte ese cambio
+// puntual a Date (como en v2/v3/v4, que nunca tuvieron este TypeError).
 //
-// 1. Timestamps: se pasa Unix timestamp en segundos (created/expires
-//    como number) en vez de objetos Date -- varias libs de firmas HTTP
-//    esperan segundos enteros, no instancias Date, y un objeto Date sin
-//    convertir puede generar NaN silencioso en la base de la firma.
-// 2. Reconstruccion robusta contra case-sensitivity de headers: en vez
-//    de asumir las claves exactas "Signature"/"Signature-Input", se
-//    itera sobre Object.entries(headers) devueltas por signatureHeaders()
-//    y se aplican con .set() sobre un clone() del request original
-//    (preservando Signature-Agent, que ya estaba en el request).
-// 3. Diagnostico explicito: si verified es false, el test lanza con el
-//    campo `reason` exacto que devuelve verifyWebBotAuthRequest() (ver
-//    modulo real: WebBotAuthVerificationResult.reason), en vez de fallar
-//    con un "expected false to be true" opaco. Esto reemplaza cualquier
-//    necesidad de leer node_modules a ciegas -- el propio test ahora
-//    reporta la causa raiz real si algo sigue mal.
-//
-// NOTA: la propiedad correcta del resultado es `agentKeyId` (ver
-// WebBotAuthVerificationResult en web-bot-auth.ts) -- se mantiene igual
-// que en los tests que ya pasaban, sin cambiar a otra propiedad inexistente.
+// Se mantienen las dos mejoras validas de v5, que nunca fueron la causa
+// de ningun fallo:
+//   1. Reconstruccion case-insensitive de headers (iterar
+//      Object.entries() + .set() sobre un .clone(), en vez de asumir las
+//      claves literales "Signature"/"Signature-Input").
+//   2. Throw explicito con el `reason` real de verifyWebBotAuthRequest()
+//      si verified es false, para que el proximo fallo (si lo hay)
+//      diga la causa exacta en vez de "expected false to be true".
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -49,8 +44,8 @@ async function buildSignedRequest(): Promise<Request> {
     headers: { "Signature-Agent": SIGNATURE_AGENT_URL },
   });
 
-  const created = Math.floor(Date.now() / 1000);
-  const expires = created + 300;
+  const created = new Date();
+  const expires = new Date(created.getTime() + 300_000);
 
   const signer = await signerFromJWK(RFC_9421_ED25519_TEST_KEY);
 
