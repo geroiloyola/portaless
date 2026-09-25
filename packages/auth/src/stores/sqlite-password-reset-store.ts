@@ -1,30 +1,32 @@
-// Persistencia real de tokens de recuperacion de contrasena para
-// despliegues self-hosted -- mismo patron que sqlite-users-store.ts y
-// sqlite-session-store.ts del PR #4 original (node:sqlite / DatabaseSync,
-// requiere Node 22.5+). La tabla password_reset_requests ya existe en
-// schema.sql (raiz, agregada en v0.0.9.4) -- este store la usa via
-// CREATE TABLE IF NOT EXISTS por si se instancia sin haber corrido
-// npm run setup primero.
+// Persistencia real de tokens de recuperacion de contrasena (self-hosted).
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(). Ademas consume() ahora es ATOMICO:
+// UPDATE ... WHERE used_at IS NULL y se verifica changes === 1, asi dos
+// requests concurrentes con el mismo token no pueden consumirlo ambas.
+// Uso: const store = await SqlitePasswordResetStore.open(path);
 
 import type { PasswordResetRequest } from "../types";
 import type { PasswordResetStore } from "../password-reset-store";
 import { randomBytes } from "node:crypto";
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 
 export class SqlitePasswordResetStore implements PasswordResetStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
+  static async open(dbPath: string): Promise<SqlitePasswordResetStore> {
+    return new SqlitePasswordResetStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
       throw new Error(
-        "node:sqlite no esta disponible en este runtime. Requiere Node 22.5+."
+        "SqlitePasswordResetStore ya no acepta una ruta en el constructor (v0.0.9.27). " +
+          "Usa: await SqlitePasswordResetStore.open(path)"
       );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS password_reset_requests (
         token TEXT PRIMARY KEY,
@@ -72,7 +74,10 @@ export class SqlitePasswordResetStore implements PasswordResetStore {
     }
 
     const usedAt = new Date().toISOString();
-    this.db.prepare("UPDATE password_reset_requests SET used_at = ? WHERE token = ?").run(usedAt, token);
+    const info = this.db
+      .prepare("UPDATE password_reset_requests SET used_at = ? WHERE token = ? AND used_at IS NULL")
+      .run(usedAt, token);
+    if (info.changes !== 1) return null;
 
     return {
       token: row.token,
@@ -85,5 +90,9 @@ export class SqlitePasswordResetStore implements PasswordResetStore {
 
   async invalidateAllForUser(username: string): Promise<void> {
     this.db.prepare("DELETE FROM password_reset_requests WHERE username = ?").run(username);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

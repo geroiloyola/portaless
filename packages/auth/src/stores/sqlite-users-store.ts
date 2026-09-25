@@ -1,32 +1,33 @@
-// Persistencia real de usuarios para despliegues self-hosted (sin
-// Cloudflare), usando el modulo nativo "node:sqlite" (DatabaseSync),
-// disponible sin flags desde Node 22.5+. Se eligio sobre better-sqlite3
-// deliberadamente para mantener el mismo principio ya aplicado en
-// password.ts: evitar dependencias nativas externas que requieran
-// compilacion en el servidor del usuario.
+// Persistencia real de usuarios para despliegues self-hosted (sin Cloudflare).
+// v0.0.9.27: migrado de node:sqlite a better-sqlite3 via openSqlite().
+// Motivo: node:sqlite requiere Node 22.5+, y se cargaba con require() en un
+// paquete ESM, donde require no existe -- el constructor lanzaba SIEMPRE y
+// createUsersStore() caia a InMemoryUsersStore en silencio (admin perdido).
 //
-// Si tu version de Node es anterior a 22.5, esta clase lanzara un error
-// claro al instanciarse -- no falla silenciosamente.
+// Uso: const store = await SqliteUsersStore.open(path);
+// El constructor recibe una conexion ya abierta; pasarle un string lanza
+// un error explicito en vez de fallar de forma ambigua.
 
 import type { UserRecord, Role } from "../types";
 import type { UsersStore } from "../users-store";
 import { hashPassword } from "../password";
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export class SqliteUsersStore implements UsersStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
+  static async open(dbPath: string): Promise<SqliteUsersStore> {
+    return new SqliteUsersStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
       throw new Error(
-        "node:sqlite no esta disponible en este runtime. Requiere Node 22.5+ " +
-        "(posiblemente con --experimental-sqlite en versiones intermedias). " +
-        "Alternativa: instalar better-sqlite3 manualmente e implementar UsersStore sobre esa libreria."
+        "SqliteUsersStore ya no acepta una ruta en el constructor (v0.0.9.27). " +
+          "Usa: await SqliteUsersStore.open(path)"
       );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
@@ -80,5 +81,9 @@ export class SqliteUsersStore implements UsersStore {
       role: row.role,
       createdAt: row.created_at,
     }));
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

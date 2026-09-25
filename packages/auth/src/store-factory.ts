@@ -3,10 +3,14 @@
 // packages/plugin-sandbox/src/adapters/adapter-registry.ts.
 //
 // v0.0.9.6: createPasswordResetStore() ya resuelve D1/SQLite reales,
-// mismo patron que createUsersStore/createSessionStore -- antes solo
-// devolvia InMemoryPasswordResetStore sin importar el backend
-// configurado, perdiendo los tokens de recuperacion pendientes en cada
-// restart del proceso/Worker (ver ROADMAP.md, tarea manual 7).
+// mismo patron que createUsersStore/createSessionStore.
+//
+// v0.0.9.27 -- REGLA NUEVA: si PORTALESS_SQLITE_PATH esta definido y SQLite
+// no abre, se LANZA el error. Antes habia un try/catch que caia a memoria:
+// combinado con node:sqlite (inexistente en Node 20 y cargado con require en
+// ESM), el self-host SIEMPRE corria en memoria y el admin creado por
+// `npm run setup` nunca se encontraba en /admin/login. El fallback a memoria
+// queda SOLO para cuando no hay ni DB ni PORTALESS_SQLITE_PATH, con aviso.
 
 import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
@@ -27,22 +31,14 @@ export async function createUsersStore(env: StoreFactoryEnv): Promise<UsersStore
   }
 
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqliteUsersStore } = await import("./stores/sqlite-users-store");
-      return new SqliteUsersStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(
-        `[Portaless Auth] No se pudo inicializar SQLite (${(err as Error).message}). ` +
-        "Usando almacenamiento EN MEMORIA -- los usuarios se perderán al reiniciar."
-      );
-    }
-  } else {
-    console.warn(
-      "[Portaless Auth] Ni DB (D1) ni PORTALESS_SQLITE_PATH están configurados. " +
-      "Usando almacenamiento EN MEMORIA -- los usuarios se perderán al reiniciar."
-    );
+    const { SqliteUsersStore } = await import("./stores/sqlite-users-store");
+    return SqliteUsersStore.open(env.PORTALESS_SQLITE_PATH);
   }
 
+  console.warn(
+    "[Portaless Auth] Ni DB (D1) ni PORTALESS_SQLITE_PATH están configurados. " +
+    "Usando almacenamiento EN MEMORIA -- los usuarios se perderán al reiniciar."
+  );
   return new InMemoryUsersStore();
 }
 
@@ -53,26 +49,13 @@ export async function createSessionStore(env: StoreFactoryEnv): Promise<SessionS
   }
 
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqliteSessionStore } = await import("./stores/sqlite-session-store");
-      return new SqliteSessionStore(env.PORTALESS_SQLITE_PATH);
-    } catch {
-      // El warning ya se emitió en createUsersStore.
-    }
+    const { SqliteSessionStore } = await import("./stores/sqlite-session-store");
+    return SqliteSessionStore.open(env.PORTALESS_SQLITE_PATH);
   }
 
   return new InMemorySessionStore();
 }
 
-/**
- * v0.0.9.6: resuelve D1/SQLite reales, mismo patron que createUsersStore
- * y createSessionStore arriba. Antes de este cambio, siempre devolvia
- * InMemoryPasswordResetStore sin importar env -- los tokens de
- * recuperacion (vida corta, 30 min) se perdian en cada restart del
- * proceso/Worker, aunque D1/SQLite ya estuvieran configurados para
- * usuarios y sesiones. La tabla password_reset_requests ya existe desde
- * v0.0.9.4 en schema.sql (raiz).
- */
 export async function createPasswordResetStore(env: StoreFactoryEnv): Promise<PasswordResetStore> {
   if (env.DB) {
     const { D1PasswordResetStore } = await import("./stores/d1-password-reset-store");
@@ -80,21 +63,13 @@ export async function createPasswordResetStore(env: StoreFactoryEnv): Promise<Pa
   }
 
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqlitePasswordResetStore } = await import("./stores/sqlite-password-reset-store");
-      return new SqlitePasswordResetStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(
-        `[Portaless Auth] No se pudo inicializar SQLite para password reset (${(err as Error).message}). ` +
-        "Usando almacenamiento EN MEMORIA -- los tokens de recuperación se perderán al reiniciar."
-      );
-    }
-  } else {
-    console.warn(
-      "[Portaless Auth] Ni DB (D1) ni PORTALESS_SQLITE_PATH están configurados para password reset. " +
-      "Usando almacenamiento EN MEMORIA -- los tokens de recuperación se perderán al reiniciar."
-    );
+    const { SqlitePasswordResetStore } = await import("./stores/sqlite-password-reset-store");
+    return SqlitePasswordResetStore.open(env.PORTALESS_SQLITE_PATH);
   }
 
+  console.warn(
+    "[Portaless Auth] Ni DB (D1) ni PORTALESS_SQLITE_PATH están configurados para password reset. " +
+    "Usando almacenamiento EN MEMORIA -- los tokens de recuperación se perderán al reiniciar."
+  );
   return new InMemoryPasswordResetStore();
 }
