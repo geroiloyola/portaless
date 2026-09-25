@@ -13,35 +13,25 @@
 // en la tabla authorized_agents.
 // Fase 2 (futura, NO implementada aqui): abrir a cualquier agente
 // verificado con un peso reducido en el score en vez de bloquear por
-// completo a los no listados -- eso requeriria un cambio en como se
-// calcula/expone el snapshot, fuera de alcance de este commit.
+// completo a los no listados.
 //
 // key_algorithm (v0.0.9.24): columna agregada por crypto-agilidad, NO
-// por soporte real de un segundo algoritmo. Ed25519 (el unico que
-// web-bot-auth.ts verifica hoy) es vulnerable a computadoras cuanticas.
-// Guardar el algoritmo junto a cada fila desde ahora evita una
-// migracion de datos con filas reales ya en produccion en sitios de
-// terceros el dia que se agregue verificacion ML-DSA (FIPS 204, ya
-// estandarizado por NIST). Ver "Crypto-agilidad" en
-// docs/architecture/site-trust-score.md.
+// por soporte real de un segundo algoritmo. Ed25519 es vulnerable a
+// computadoras cuanticas; guardar el algoritmo por fila evita una
+// migracion de datos el dia que se agregue ML-DSA (FIPS 204). Ver
+// "Crypto-agilidad" en docs/architecture/site-trust-score.md.
 //
-// RESUELTO (verificado esta sesion): schema.sql (raiz, usado para D1)
-// SI tiene `key_algorithm TEXT NOT NULL DEFAULT 'ed25519'` en la
-// definicion de authorized_agents -- no hubo asimetria real entre el
-// esquema de SQLite y el de D1, era informacion desactualizada.
+// grant/revoke/list: permiten dar de alta, revocar y listar agentes desde
+// un endpoint bajo functions/admin/ sin pasar por el CLI. revoke() hace
+// soft-delete (active = 0) -- se preserva el historial.
 //
-// grant/revoke/list (esta sesion): hasta ahora la UNICA forma de dar de
-// alta un agente era scripts/onboard-agent.mjs, un CLI que escribe
-// directo contra SQLite via node:sqlite -- sin ningun camino para D1,
-// y sin posibilidad de exponerlo desde un endpoint HTTP/UI de admin.
-// Se agregan estos 3 metodos a la interfaz (aditivo, no rompe a
-// agent-verification.js, el unico consumidor existente, que solo usa
-// isAuthorized) para que un endpoint bajo functions/admin/ pueda dar de
-// alta, revocar, y listar agentes sin pasar por el CLI. revoke() hace
-// soft-delete (active = 0) en vez de DELETE, coherente con que
-// isAuthorized ya filtra por active = 1 -- se preserva el historial de
-// quien fue autorizado y cuando, igual que el resto del Trust Layer
-// (ver ledger de uso, nunca borra filas).
+// v0.0.9.27: SqliteAuthorizedAgentsStore migrado de node:sqlite a
+// better-sqlite3 via openSqlite(). Uso: await SqliteAuthorizedAgentsStore.open(path).
+// La factory ya NO cae a memoria si PORTALESS_SQLITE_PATH esta definido y
+// SQLite no abre: antes eso dejaba la allowlist vacia en silencio y todos
+// los agentes legitimos quedaban rechazados sin ningun error visible.
+
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export interface AuthorizedAgent {
   agentKeyId: string;
@@ -90,6 +80,17 @@ function rowToAuthorizedAgent(row: any): AuthorizedAgent {
   };
 }
 
+const GRANT_SQL = `INSERT INTO authorized_agents
+           (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
+         VALUES (?, ?, ?, 1, ?, ?, ?)
+         ON CONFLICT(agent_key_id) DO UPDATE SET
+           signature_agent_url = excluded.signature_agent_url,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by,
+           key_algorithm = excluded.key_algorithm`;
+
 export class D1AuthorizedAgentsStore implements AuthorizedAgentsStore {
   constructor(private db: D1DatabaseLike) {}
 
@@ -112,18 +113,7 @@ export class D1AuthorizedAgentsStore implements AuthorizedAgentsStore {
   async grant(input: GrantAuthorizedAgentInput): Promise<void> {
     const authorizedAt = new Date().toISOString();
     await this.db
-      .prepare(
-        `INSERT INTO authorized_agents
-           (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
-         VALUES (?, ?, ?, 1, ?, ?, ?)
-         ON CONFLICT(agent_key_id) DO UPDATE SET
-           signature_agent_url = excluded.signature_agent_url,
-           display_name = excluded.display_name,
-           active = 1,
-           authorized_at = excluded.authorized_at,
-           authorized_by = excluded.authorized_by,
-           key_algorithm = excluded.key_algorithm`
-      )
+      .prepare(GRANT_SQL)
       .bind(
         input.agentKeyId,
         input.signatureAgentUrl,
@@ -146,14 +136,17 @@ export class D1AuthorizedAgentsStore implements AuthorizedAgentsStore {
 export class SqliteAuthorizedAgentsStore implements AuthorizedAgentsStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+.");
+  static async open(dbPath: string): Promise<SqliteAuthorizedAgentsStore> {
+    return new SqliteAuthorizedAgentsStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqliteAuthorizedAgentsStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqliteAuthorizedAgentsStore.open(path)"
+      );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS authorized_agents (
         agent_key_id TEXT PRIMARY KEY,
@@ -184,18 +177,7 @@ export class SqliteAuthorizedAgentsStore implements AuthorizedAgentsStore {
   async grant(input: GrantAuthorizedAgentInput): Promise<void> {
     const authorizedAt = new Date().toISOString();
     this.db
-      .prepare(
-        `INSERT INTO authorized_agents
-           (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
-         VALUES (?, ?, ?, 1, ?, ?, ?)
-         ON CONFLICT(agent_key_id) DO UPDATE SET
-           signature_agent_url = excluded.signature_agent_url,
-           display_name = excluded.display_name,
-           active = 1,
-           authorized_at = excluded.authorized_at,
-           authorized_by = excluded.authorized_by,
-           key_algorithm = excluded.key_algorithm`
-      )
+      .prepare(GRANT_SQL)
       .run(
         input.agentKeyId,
         input.signatureAgentUrl,
@@ -210,6 +192,10 @@ export class SqliteAuthorizedAgentsStore implements AuthorizedAgentsStore {
     this.db
       .prepare("UPDATE authorized_agents SET active = 0 WHERE agent_key_id = ?")
       .run(agentKeyId);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }
 
@@ -270,16 +256,9 @@ export async function createAuthorizedAgentsStore(
   if (env.DB) {
     return new D1AuthorizedAgentsStore(env.DB as any);
   }
-
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      return new SqliteAuthorizedAgentsStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(`[Portaless AuthorizedAgents] SQLite no disponible (${(err as Error).message}). Usando memoria (sin agentes autorizados).`);
-    }
-  } else {
-    console.warn("[Portaless AuthorizedAgents] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria (sin agentes autorizados).");
+    return SqliteAuthorizedAgentsStore.open(env.PORTALESS_SQLITE_PATH);
   }
-
+  console.warn("[Portaless AuthorizedAgents] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria (sin agentes autorizados).");
   return new InMemoryAuthorizedAgentsStore();
 }
