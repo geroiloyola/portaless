@@ -1,25 +1,29 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v3 (esta sesion, tercer hallazgo de CI):
-// verified quedaba en false (sin lanzar) porque a la firma le faltaban
-// dos elementos que el perfil Web Bot Auth exige explicitamente --ver
-// draft-ietf-webbotauth-httpsig-protocol y el ejemplo oficial de
-// Cloudflare en blog.cloudflare.com/verified-bots-with-cryptography/--:
+// RFC 9421 Appendix B.1.4. FIX v4 (esta sesion, cuarto hallazgo de CI):
+// v1/v2/v3 agregaron created, expires, tag y fields sin exito -- verified
+// seguia false sin lanzar. Comparando contra el ejemplo oficial textual
+// de npmjs.com/package/web-bot-auth (seccion "Signing"/"Verifying"), se
+// detecto que:
 //
-//   Signature-Input: sig=("@authority" "signature-agent");
-//     created=...; expires=...; keyid="..."; tag="web-bot-auth"
-//
-// 1. `tag: "web-bot-auth"` es obligatorio en las opciones de firma (la
-//    spec lo llama MUST). Sin el, verify() del lado del verificador no
-//    reconoce la firma como conforme al perfil Web Bot Auth.
-// 2. El componente "signature-agent" (el header del mismo nombre) DEBE
-//    estar cubierto por la firma -- se declara con `fields` en las
-//    opciones de signatureHeaders(). Sin esto, la base string que firma
-//    el signer no coincide con la que reconstruye el verificador al leer
-//    Signature-Input, y verify() rechaza la firma en silencio.
-//
-// Los fixes v1 (created) y v2 (expires) eran necesarios pero no
-// suficientes -- resolvian el TypeError de getSigningOptions, pero no
-// alcanzaban para que verify() aceptara la firma como valida.
+// 1. `keyid` NUNCA fue una opcion valida de signatureHeaders() -- el
+//    keyid se deriva automaticamente del campo `kid` del JWK pasado a
+//    signerFromJWK(). Pasarlo como opcion no rompe nada (se ignora) pero
+//    tampoco ayuda.
+// 2. El ejemplo oficial de signing solo pasa { created, expires } -- sin
+//    tag ni fields. Se remueven esas opciones no documentadas por si la
+//    version instalada las trata de forma inesperada.
+// 3. El request que se firma DEBE incluir el header Signature-Agent
+//    *antes* de llamar a signatureHeaders(), para que la libreria lo
+//    detecte automaticamente y lo incluya como componente firmado (asi
+//    lo hace el ejemplo con Signature-Agent en draft-meunier-web-bot-
+//    auth-architecture-05, seccion de vectores de prueba). El test ya
+//    hacia esto correctamente desde el principio.
+// 4. Se simplifica la reconstruccion final del signedRequest para seguir
+//    el patron oficial exacto: un Request nuevo con Signature-Agent +
+//    Signature + Signature-Input, en vez de mezclar todos los headers
+//    originales via Object.fromEntries -- para eliminar cualquier
+//    interferencia de headers no relacionados en la reconstruccion de
+//    la base de firma que hace verify().
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -53,15 +57,17 @@ async function buildSignedRequest(): Promise<Request> {
   const expires = new Date(created.getTime() + 300_000);
 
   const headers = await signatureHeaders(request, await signerFromJWK(RFC_9421_ED25519_TEST_KEY), {
-    keyid: RFC_9421_ED25519_TEST_KEY.kid,
     created,
     expires,
-    tag: "web-bot-auth",
-    fields: ["@authority", "signature-agent"],
   });
 
-  return new Request(request, {
-    headers: { ...Object.fromEntries(request.headers), ...headers },
+  return new Request(request.url, {
+    method: request.method,
+    headers: {
+      "Signature-Agent": SIGNATURE_AGENT_URL,
+      Signature: headers["Signature"],
+      "Signature-Input": headers["Signature-Input"],
+    },
   });
 }
 
