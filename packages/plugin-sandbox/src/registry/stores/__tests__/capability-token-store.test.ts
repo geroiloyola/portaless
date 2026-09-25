@@ -12,6 +12,16 @@
 // Manipulacion de tiempo: se usa vi.useFakeTimers() en vez de esperas
 // reales -- el TTL de 5 minutos (300_000ms) se verifica adelantando el
 // reloj con vi.advanceTimersByTime(), no con un setTimeout real.
+//
+// FIX (esta sesion, hallazgo real de CI): el test de deleteExpired()
+// era flaky -- no mockeaba Math.random(), asi que la GC probabilistica
+// (10% de probabilidad en cada issue(), ver maybeGc() en el store real)
+// podia disparar una limpieza de fondo AL EMITIR pless_nuevo, borrando
+// pless_viejo ANTES de que el test llamara a deleteExpired() de forma
+// explicita -- dejando 0 tokens vencidos para contar en 1 de cada ~10
+// corridas. Se fuerza Math.random() a un valor alto (0.9) en este test
+// especifico para desactivar la GC de fondo y aislar el comportamiento
+// de la llamada EXPLICITA a deleteExpired() que el test quiere verificar.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { InMemoryCapabilityTokenStore } from "../capability-token-store";
@@ -24,6 +34,7 @@ describe("InMemoryCapabilityTokenStore", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("issue() registra el token y validate() lo acepta dentro del TTL", async () => {
@@ -90,6 +101,13 @@ describe("InMemoryCapabilityTokenStore", () => {
   });
 
   it("deleteExpired() borra solo los tokens vencidos, preservando los vigentes", async () => {
+    // Math.random() forzado por encima de GC_PROBABILITY (0.1) para que
+    // ningun issue() de este test dispare la GC de fondo -- se aisla asi
+    // el comportamiento de la llamada EXPLICITA a deleteExpired() que
+    // este test quiere verificar, sin interferencia de la limpieza
+    // probabilistica (ver nota de FIX al inicio del archivo).
+    vi.spyOn(Math, "random").mockReturnValue(0.9);
+
     const store = new InMemoryCapabilityTokenStore();
 
     await store.issue("pless_viejo", "hello-plugin", ["content:read"], 300);

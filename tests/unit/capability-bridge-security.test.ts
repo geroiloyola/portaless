@@ -4,6 +4,17 @@
 // compartido (PORTALESS_INTERNAL_BRIDGE_TOKEN) -- valida tokens efimeros
 // con TTL y snapshot de capacidades via CapabilityTokenStore.
 //
+// FIX (esta sesion, hallazgo real de CI): los primeros paths de vi.mock()
+// usaban "../../../../packages/..." -- una ruta relativa calculada desde
+// ESTE archivo (tests/unit/), que resuelve a un modulo DISTINTO del que
+// importa capability-bridge.js internamente (ese archivo vive en
+// functions/api/internal/, y su propio import usa "../../../packages/...").
+// vi.mock() de Vitest resuelve el path de forma relativa al archivo que
+// LO DECLARA, no al modulo que se quiere interceptar -- si las dos rutas
+// no resuelven al mismo modulo real, el mock nunca intercepta el import
+// verdadero. Se corrige a "../../packages/..." (la ruta que SI resuelve
+// al mismo archivo real que importa capability-bridge.js).
+//
 // Mock minimo de env.DB -- solo lo que createCapabilityTokenStore()
 // necesita para caer en la rama D1 (env.DB presente). Se prueba con
 // InMemoryCapabilityTokenStore inyectado directamente via mock del
@@ -13,15 +24,15 @@
 // InMemoryCapabilityTokenStore.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { InMemoryCapabilityTokenStore } from "../../../../packages/plugin-sandbox/src/registry/stores/capability-token-store";
+import { InMemoryCapabilityTokenStore } from "../../packages/plugin-sandbox/src/registry/stores/capability-token-store";
 
 const sharedTokenStore = new InMemoryCapabilityTokenStore();
 
-vi.mock("../../../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory", () => ({
+vi.mock("../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory", () => ({
   createCapabilityTokenStore: vi.fn(async () => sharedTokenStore),
 }));
 
-vi.mock("../../../../packages/atomic-elements/src/persistence/store-factory", () => ({
+vi.mock("../../packages/atomic-elements/src/persistence/store-factory", () => ({
   createPageStore: vi.fn(async () => ({
     load: vi.fn(async (slug: string) =>
       slug === "existing-page" ? { slug: "existing-page", title: "Pagina existente" } : null
@@ -30,7 +41,7 @@ vi.mock("../../../../packages/atomic-elements/src/persistence/store-factory", ()
   })),
 }));
 
-import { onRequestPost } from "../../../../functions/api/internal/capability-bridge.js";
+import { onRequestPost } from "../../functions/api/internal/capability-bridge.js";
 
 function makeContext(headers: Record<string, string>, body: unknown) {
   return {
