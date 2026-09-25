@@ -21,7 +21,7 @@ export async function onRequestGet(context) {
     back.searchParams.set("github", "denied");
     return Response.redirect(back.toString(), 302);
   }
-  const cfg = readGitHubOAuthConfig(context.env, reqUrl.origin);
+  const cfg = await readGitHubOAuthConfig(context.env, reqUrl.origin);
   if (!cfg) return json({ error: "GitHub App no configurada" }, 501);
   const store = await createDeploymentOAuthStore(context.env);
   const r = await completeGitHubOAuth(cfg, store,

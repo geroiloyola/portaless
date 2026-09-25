@@ -1,7 +1,18 @@
 // Flujo OAuth web de GitHub App (user access token) con state + PKCE (S256).
 // Docs: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
+//
+// v0.0.9.27: readGitHubOAuthConfig() es async y lee PRIMERO la config dinamica
+// (App registrada via manifiesto, secretos cifrados en D1/SQLite). Las env vars
+// PORTALESS_GITHUB_APP_CLIENT_ID/SECRET quedan como fallback para quien cree
+// la App a mano. PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY sigue siendo obligatoria.
 import { encryptToken, decryptToken, randomUrlSafe, pkceChallenge } from "./token-crypto";
 import type { DeploymentOAuthStore } from "./oauth-store";
+import {
+  type ProviderConfigStore,
+  GITHUB_APP_PROVIDER_ID,
+  createProviderConfigStore,
+  getProviderConfig,
+} from "./providers-config-store";
 
 export const GITHUB_PROVIDER = "github";
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -14,13 +25,25 @@ export interface GitHubOAuthConfig {
   fetchImpl?: typeof fetch;
 }
 
-export function readGitHubOAuthConfig(env: any, origin: string): GitHubOAuthConfig | null {
+export async function readGitHubOAuthConfig(
+  env: any,
+  origin: string,
+  providerStore?: ProviderConfigStore
+): Promise<GitHubOAuthConfig | null> {
+  const encryptionKey = env?.PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY;
+  if (!encryptionKey) return null;
+  const redirectUri = env?.PORTALESS_GITHUB_OAUTH_REDIRECT_URI || `${origin}/admin/api/oauth/github/callback`;
+
+  const store = providerStore ?? (await createProviderConfigStore(env));
+  const dynamic = await getProviderConfig(store, GITHUB_APP_PROVIDER_ID, encryptionKey);
+  if (dynamic) {
+    return { clientId: dynamic.clientId, clientSecret: dynamic.clientSecret, encryptionKey, redirectUri };
+  }
+
   const clientId = env?.PORTALESS_GITHUB_APP_CLIENT_ID;
   const clientSecret = env?.PORTALESS_GITHUB_APP_CLIENT_SECRET;
-  const encryptionKey = env?.PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY;
-  if (!clientId || !clientSecret || !encryptionKey) return null;
-  return { clientId, clientSecret, encryptionKey,
-    redirectUri: env?.PORTALESS_GITHUB_OAUTH_REDIRECT_URI || `${origin}/admin/api/oauth/github/callback` };
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret, encryptionKey, redirectUri };
 }
 
 export async function beginGitHubOAuth(cfg: GitHubOAuthConfig, store: DeploymentOAuthStore, userId: string): Promise<string> {
