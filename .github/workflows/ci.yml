@@ -19,6 +19,4 @@ jobs:
       - name: Build del sitio
         run: npm run build
       - name: Validar manifiestos de plugins
-        run: |
-          echo "TODO: ejecutar validateManifest() de @portaless/plugin-sandbox"
-          echo "contra cada manifest.json en plugins-registry/ y packages/*/manifest.json"
+        run: npx tsx scripts/validate-manifests.ts
