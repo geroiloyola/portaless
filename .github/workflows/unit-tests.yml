@@ -1,0 +1,96 @@
+# Tests unitarios (tests/unit/) + smoke del self-host SQLite.
+#
+# Existe porque ci.yml / sandbox-e2e.yml no ejecutan vitest sobre tests/unit/
+# y ci.yml filtra por rama base (los PRs apilados contra agentic /
+# deploy-manifest quedaban sin checks).
+#
+# Node 20 es la prueba clave: node:sqlite no existe ahi, asi que si algo
+# sigue dependiendo de el, falla en esa celda de la matriz.
+
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, agentic, deploy-manifest, wizard-intent]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: vitest tests/unit (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Confirmar que node:sqlite no se usa en codigo de produccion
+        run: |
+          if grep -rnE "(from|require\()\s*[\"']node:sqlite[\"']" \
+              --include=*.ts --include=*.js --include=*.mjs \
+              --exclude-dir=node_modules --exclude-dir=tests . ; then
+            echo "::error::Todavia hay imports reales de node:sqlite"
+            exit 1
+          fi
+          echo "OK: sin imports de node:sqlite"
+
+      - name: vitest tests/unit
+        run: npx vitest run tests/unit/ --reporter=verbose
+
+  setup-smoke:
+    name: Smoke npm run setup (SQLite, Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: npm run setup sobre SQLite vacio
+        timeout-minutes: 3
+        env:
+          PORTALESS_SQLITE_PATH: ${{ runner.temp }}/smoke.sqlite
+          CI: "true"
+        run: npm run setup < /dev/null
+
+      - name: Listar tablas creadas
+        if: always()
+        env:
+          PORTALESS_SQLITE_PATH: ${{ runner.temp }}/smoke.sqlite
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = process.env.PORTALESS_SQLITE_PATH;
+            if (!fs.existsSync(p)) { console.log('No se creo el archivo SQLite:', p); process.exit(1); }
+            const D = require('better-sqlite3');
+            const db = new D(p, { readonly: true });
+            const t = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\").all().map(r => r.name);
+            console.log('Tablas (' + t.length + '):', t.join(', '));
+            const u = t.includes('users') ? db.prepare('SELECT COUNT(*) AS n FROM users').get().n : 'sin tabla users';
+            console.log('Usuarios:', u);
+          "
