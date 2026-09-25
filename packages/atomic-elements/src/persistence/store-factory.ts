@@ -20,6 +20,11 @@
 // separados). Aqui SI se mantiene el nombre viejo como fallback, porque a
 // diferencia del binding D1, un self-hosted real podria ya tener
 // PAGES_SQLITE_PATH configurado apuntando a un archivo con datos.
+//
+// v0.0.9.27: SqlitePageStore se abre via SqlitePageStore.open() (better-sqlite3
+// + guardia de runtime workerd en openSqlite). Sin DB y dentro de workerd,
+// ahora falla con el mensaje arquitectonico claro en vez de un error
+// criptico de node:sqlite.
 
 import type { PageStore } from "./page-store";
 import { D1PageStore } from "./stores/d1-page-store";
@@ -40,5 +45,5 @@ export async function createPageStore(env: PageStoreEnv): Promise<PageStore> {
     return new D1PageStore(d1);
   }
   const dbPath = env.PORTALESS_SQLITE_PATH ?? env.PAGES_SQLITE_PATH ?? "./data/pages.sqlite";
-  return new SqlitePageStore(dbPath);
+  return SqlitePageStore.open(dbPath);
 }
