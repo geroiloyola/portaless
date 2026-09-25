@@ -1,29 +1,25 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v4 (esta sesion, cuarto hallazgo de CI):
-// v1/v2/v3 agregaron created, expires, tag y fields sin exito -- verified
-// seguia false sin lanzar. Comparando contra el ejemplo oficial textual
-// de npmjs.com/package/web-bot-auth (seccion "Signing"/"Verifying"), se
-// detecto que:
+// RFC 9421 Appendix B.1.4. FIX v5 (esta sesion, quinto hallazgo):
 //
-// 1. `keyid` NUNCA fue una opcion valida de signatureHeaders() -- el
-//    keyid se deriva automaticamente del campo `kid` del JWK pasado a
-//    signerFromJWK(). Pasarlo como opcion no rompe nada (se ignora) pero
-//    tampoco ayuda.
-// 2. El ejemplo oficial de signing solo pasa { created, expires } -- sin
-//    tag ni fields. Se remueven esas opciones no documentadas por si la
-//    version instalada las trata de forma inesperada.
-// 3. El request que se firma DEBE incluir el header Signature-Agent
-//    *antes* de llamar a signatureHeaders(), para que la libreria lo
-//    detecte automaticamente y lo incluya como componente firmado (asi
-//    lo hace el ejemplo con Signature-Agent en draft-meunier-web-bot-
-//    auth-architecture-05, seccion de vectores de prueba). El test ya
-//    hacia esto correctamente desde el principio.
-// 4. Se simplifica la reconstruccion final del signedRequest para seguir
-//    el patron oficial exacto: un Request nuevo con Signature-Agent +
-//    Signature + Signature-Input, en vez de mezclar todos los headers
-//    originales via Object.fromEntries -- para eliminar cualquier
-//    interferencia de headers no relacionados en la reconstruccion de
-//    la base de firma que hace verify().
+// 1. Timestamps: se pasa Unix timestamp en segundos (created/expires
+//    como number) en vez de objetos Date -- varias libs de firmas HTTP
+//    esperan segundos enteros, no instancias Date, y un objeto Date sin
+//    convertir puede generar NaN silencioso en la base de la firma.
+// 2. Reconstruccion robusta contra case-sensitivity de headers: en vez
+//    de asumir las claves exactas "Signature"/"Signature-Input", se
+//    itera sobre Object.entries(headers) devueltas por signatureHeaders()
+//    y se aplican con .set() sobre un clone() del request original
+//    (preservando Signature-Agent, que ya estaba en el request).
+// 3. Diagnostico explicito: si verified es false, el test lanza con el
+//    campo `reason` exacto que devuelve verifyWebBotAuthRequest() (ver
+//    modulo real: WebBotAuthVerificationResult.reason), en vez de fallar
+//    con un "expected false to be true" opaco. Esto reemplaza cualquier
+//    necesidad de leer node_modules a ciegas -- el propio test ahora
+//    reporta la causa raiz real si algo sigue mal.
+//
+// NOTA: la propiedad correcta del resultado es `agentKeyId` (ver
+// WebBotAuthVerificationResult en web-bot-auth.ts) -- se mantiene igual
+// que en los tests que ya pasaban, sin cambiar a otra propiedad inexistente.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -53,22 +49,22 @@ async function buildSignedRequest(): Promise<Request> {
     headers: { "Signature-Agent": SIGNATURE_AGENT_URL },
   });
 
-  const created = new Date();
-  const expires = new Date(created.getTime() + 300_000);
+  const created = Math.floor(Date.now() / 1000);
+  const expires = created + 300;
 
-  const headers = await signatureHeaders(request, await signerFromJWK(RFC_9421_ED25519_TEST_KEY), {
+  const signer = await signerFromJWK(RFC_9421_ED25519_TEST_KEY);
+
+  const headers = await signatureHeaders(request.clone(), signer, {
     created,
     expires,
-  });
+  } as any);
 
-  return new Request(request.url, {
-    method: request.method,
-    headers: {
-      "Signature-Agent": SIGNATURE_AGENT_URL,
-      Signature: headers["Signature"],
-      "Signature-Input": headers["Signature-Input"],
-    },
-  });
+  const finalRequest = request.clone();
+  for (const [k, v] of Object.entries(headers)) {
+    finalRequest.headers.set(k, v as string);
+  }
+
+  return finalRequest;
 }
 
 describe("verifyWebBotAuthRequest", () => {
@@ -84,6 +80,10 @@ describe("verifyWebBotAuthRequest", () => {
     );
 
     const result = await verifyWebBotAuthRequest(signedRequest);
+
+    if (!result.verified) {
+      throw new Error(`La verificacion fallo. Razon exacta devuelta por verifyWebBotAuthRequest: ${result.reason}`);
+    }
 
     expect(result.verified).toBe(true);
     expect(result.agentKeyId).toBe("test-key-ed25519");
