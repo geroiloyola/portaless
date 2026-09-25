@@ -1,27 +1,15 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4 (la misma que usan los ejemplos de Cloudflare
-// en cloudflareresearch/web-bot-auth/examples/rfc9421-keys/ed25519.json)
-// -- v0.0.9.21. No depende de ningun servicio externo real: firma un
-// request de prueba con signatureHeaders() + signerFromJWK() (la mitad
-// "firmar" del paquete, que Portaless nunca usa en produccion, solo aqui
-// para poder generar un caso de prueba valido) y verifica que
-// verifyWebBotAuthRequest() lo acepte.
-//
-// ADVERTENCIA: no se pudo confirmar si este repo tiene vitest (u otro
-// test runner) instalado y configurado -- no se encontro evidencia de un
-// directorio de tests existente al revisar la estructura del repo. Este
-// archivo se agrega con valor real, pero su ejecucion depende de que se
-// instale y configure vitest como paso separado.
+// RFC 9421 Appendix B.1.4. FIX (esta sesion, hallazgo de CI tras agregar
+// npm test al workflow): signatureHeaders() de la version instalada de
+// web-bot-auth requiere explicitamente un campo `created` (Date) --
+// getSigningOptions() llamaba a .getTime() sobre un valor undefined sin
+// el. Se agrega created: new Date() de forma explicita.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
 import { signerFromJWK } from "web-bot-auth/crypto";
 import { verifyWebBotAuthRequest } from "../web-bot-auth";
 
-// Clave de test RFC 9421 Appendix B.1.4 -- NUNCA usar en produccion, es
-// publica y esta documentada en la spec. Incluye la parte privada (d)
-// solo para poder FIRMAR el request de prueba en este archivo de test;
-// el modulo real (web-bot-auth.ts) solo consume la parte publica (x).
 const RFC_9421_ED25519_TEST_KEY = {
   kty: "OKP",
   crv: "Ed25519",
@@ -47,6 +35,7 @@ async function buildSignedRequest(): Promise<Request> {
 
   const headers = await signatureHeaders(request, await signerFromJWK(RFC_9421_ED25519_TEST_KEY), {
     keyid: RFC_9421_ED25519_TEST_KEY.kid,
+    created: new Date(),
   });
 
   return new Request(request, {

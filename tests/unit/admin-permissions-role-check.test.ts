@@ -1,21 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { onRequestGet, onRequestPut } from "../../functions/admin/permissions/index.js";
 
-// Mock minimo de D1Database en memoria -- implementa solo lo que
-// D1PermissionStore usa (prepare().bind().all()/run()). Evita que
-// createPermissionStore() caiga al fallback SqlitePermissionStore, que
-// requiere node:sqlite y escribiria un archivo real en disco como efecto
-// secundario del test si env.DB fuera undefined.
-//
-// El binding se llama `DB` aqui, y desde v0.0.9.3 tambien en
-// functions/admin/pages/[slug].js (antes usaba env.PORTALESS_DB por un
-// bug de nombre inconsistente, ya corregido -- ver
-// packages/atomic-elements/src/persistence/store-factory.ts). Las 4
-// factories (auth, permissions, trust-layer, atomic-elements) comparten
-// ahora la misma convencion: env.DB para D1, env.PORTALESS_SQLITE_PATH
-// para SQLite self-hosted.
 function makeFakeD1() {
-  const rows = new Map<
+  const permissionRows = new Map<
     string,
     {
       subject_type: string;
@@ -28,7 +15,24 @@ function makeFakeD1() {
     }
   >();
 
-  function key(subjectType: string, subjectId: string, capabilityId: string) {
+  const pluginRows = new Map<
+    string,
+    {
+      plugin_id: string;
+      display_name: string;
+      author: string;
+      source_type: string;
+      manifest_json: string;
+      registered_at: string;
+      installed_at: string | null;
+      active: number;
+      trust_score: number;
+      trust_score_votes: number;
+      audited_by: string | null;
+    }
+  >();
+
+  function permissionKey(subjectType: string, subjectId: string, capabilityId: string) {
     return `${subjectType}:${subjectId}:${capabilityId}`;
   }
 
@@ -41,13 +45,17 @@ function makeFakeD1() {
           return api;
         },
         async first() {
+          if (sql.includes("FROM plugin_registry") && sql.includes("WHERE plugin_id")) {
+            const [pluginId] = boundArgs as [string];
+            return pluginRows.get(pluginId) ?? null;
+          }
           return null;
         },
         async run() {
           if (sql.includes("INSERT INTO permission_grants")) {
             const [subjectType, subjectId, subjectDisplayName, capabilityId, granted, grantedAt, grantedBy] =
               boundArgs as [string, string, string, string, number, string, string | null];
-            rows.set(key(subjectType, subjectId, capabilityId), {
+            permissionRows.set(permissionKey(subjectType, subjectId, capabilityId), {
               subject_type: subjectType,
               subject_id: subjectId,
               subject_display_name: subjectDisplayName,
@@ -57,18 +65,63 @@ function makeFakeD1() {
               granted_by: grantedBy,
             });
           }
+
+          if (sql.includes("INSERT INTO plugin_registry")) {
+            const [
+              pluginId,
+              displayName,
+              author,
+              sourceType,
+              manifestJson,
+              registeredAt,
+              installedAt,
+              active,
+              trustScore,
+              trustScoreVotes,
+              auditedBy,
+            ] = boundArgs as [
+              string,
+              string,
+              string,
+              string,
+              string,
+              string,
+              string | null,
+              number,
+              number,
+              number,
+              string | null
+            ];
+            pluginRows.set(pluginId, {
+              plugin_id: pluginId,
+              display_name: displayName,
+              author,
+              source_type: sourceType,
+              manifest_json: manifestJson,
+              registered_at: registeredAt,
+              installed_at: installedAt,
+              active,
+              trust_score: trustScore,
+              trust_score_votes: trustScoreVotes,
+              audited_by: auditedBy,
+            });
+          }
+
           return { success: true };
         },
         async all() {
+          if (sql.includes("FROM plugin_registry")) {
+            return { results: [...pluginRows.values()] };
+          }
           if (sql.includes("WHERE subject_type")) {
             const [subjectType, subjectId] = boundArgs as [string, string];
             return {
-              results: [...rows.values()].filter(
+              results: [...permissionRows.values()].filter(
                 (r) => r.subject_type === subjectType && r.subject_id === subjectId
               ),
             };
           }
-          return { results: [...rows.values()] };
+          return { results: [...permissionRows.values()] };
         },
       };
       return api;
@@ -146,7 +199,7 @@ describe("functions/admin/permissions/index.js", () => {
   it("PUT rechaza con 400 si el body no tiene la forma esperada", async () => {
     const ctx = makeContext({
       user: { username: "admin1", role: "admin" },
-      body: { capabilityId: "network:fetch" }, // falta subject y granted
+      body: { capabilityId: "network:fetch" },
     });
     const res = await onRequestPut(ctx);
     expect(res.status).toBe(400);
