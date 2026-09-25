@@ -1,5 +1,9 @@
 // Persistencia del flujo OAuth de despliegue: states efimeros (anti-CSRF + PKCE)
 // y credenciales cifradas por proveedor. D1 / SQLite / memoria.
+// v0.0.9.27: el factory abre SQLite via openSqlite() (driver unico + guardia
+// de runtime workerd), en vez de importar better-sqlite3 directo.
+import { openSqlite } from "../../sqlite-driver/src/open";
+
 export interface OAuthStateRecord {
   state: string;
   provider: string;
@@ -116,8 +120,7 @@ let memorySingleton: InMemoryDeploymentOAuthStore | null = null;
 export async function createDeploymentOAuthStore(env: any): Promise<DeploymentOAuthStore> {
   if (env?.DB) return new D1DeploymentOAuthStore(env.DB);
   if (env?.PORTALESS_SQLITE_PATH) {
-    const { default: Database } = await import("better-sqlite3");
-    return new SqliteDeploymentOAuthStore(new Database(env.PORTALESS_SQLITE_PATH));
+    return new SqliteDeploymentOAuthStore(await openSqlite(env.PORTALESS_SQLITE_PATH));
   }
   console.warn("[Portaless Deploy] Sin DB ni PORTALESS_SQLITE_PATH. Credenciales OAuth solo en memoria.");
   return (memorySingleton ??= new InMemoryDeploymentOAuthStore());
