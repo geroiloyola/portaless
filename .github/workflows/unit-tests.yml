@@ -9,9 +9,9 @@
 # La prueba de que nada depende de node:sqlite la da el paso de grep, no la
 # version de Node.
 #
-# TEMPORAL: se usa `npm install` en vez de `npm ci` porque package-lock.json
-# esta desincronizado. Correr el workflow "Regenerate lockfile" y despues
-# volver a `npm ci`.
+# `npm ci` exige que package-lock.json este sincronizado con package.json.
+# Si falla por eso, el workflow "Regenerate lockfile" lo corrige solo en el
+# siguiente push que toque package.json.
 
 name: Unit Tests
 
@@ -44,9 +44,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
 
       - name: Instalar dependencias
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Confirmar que node:sqlite no se usa en codigo de produccion
         run: |
@@ -72,9 +73,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: npm
 
       - name: Instalar dependencias
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: npm run setup sobre SQLite vacio
         timeout-minutes: 3
