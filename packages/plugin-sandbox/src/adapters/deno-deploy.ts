@@ -14,6 +14,16 @@
 // como una integracion nueva sin confirmar -- revisar con cuidado
 // cualquier diferencia de formato de respuesta real vs. lo documentado
 // aqui antes de confiar en produccion.
+//
+// v0.0.9.26 -- FIX DE SEGURIDAD: este adaptador generaba bridgeToken con
+// Math.random() sin registrar nada server-side -- el endpoint interno
+// (functions/api/internal/capability-bridge.js) validaba contra un
+// secreto MAESTRO fijo (PORTALESS_INTERNAL_BRIDGE_TOKEN), nunca contra el
+// token generado aqui, asi que toda llamada real fallaba con 401. Se
+// reemplaza por input.issueCapabilityToken -- un callback que emite y
+// registra el token real (con TTL y snapshot de capacidades) ANTES de
+// construir el bootstrap. Ver ROADMAP.md y
+// packages/plugin-sandbox/src/registry/stores/capability-token-store.ts.
 
 import type {
   SandboxAdapter,
@@ -56,13 +66,14 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * Se resuelven via un bridge HTTP: el codigo bootstrap que se sube como
  * deployment expone un helper `capabilities.xxx(args)` que hace un
  * fetch() al endpoint interno de Portaless declarado en
- * `portalessBridgeUrl`, autenticado con `portalessBridgeToken`
- * (token de corta duracion, generado por request, NUNCA reusado entre
- * ejecuciones). Ese endpoint interno es responsabilidad del caller de
- * este adaptador (no de este archivo) -- exactamente el mismo principio
- * que hostBridge en SandboxExecutionInput, pero expuesto sobre HTTP en
- * vez de invocado in-process porque el codigo corre fuera de este
- * proceso Node.
+ * `portalessBridgeUrl`, autenticado con `portalessBridgeToken` -- un
+ * token efimero real, emitido y registrado por
+ * input.issueCapabilityToken ANTES de construir este bootstrap (ver
+ * nota de seguridad v0.0.9.26 al inicio del archivo). Ese endpoint
+ * interno es responsabilidad del caller de este adaptador (no de este
+ * archivo) -- exactamente el mismo principio que hostBridge en
+ * SandboxExecutionInput, pero expuesto sobre HTTP en vez de invocado
+ * in-process porque el codigo corre fuera de este proceso Node.
  */
 const NON_NETWORK_CAPABILITIES: Array<{ id: CapabilityId; jsName: keyof CapabilityHostBridge }> = [
   { id: "media:read", jsName: "mediaRead" },
@@ -98,7 +109,7 @@ function buildBootstrapCode(params: {
   pluginCode: string;
   allowedHosts: string[];
   bridgeUrl: string | undefined;
-  bridgeToken: string;
+  bridgeToken: string | null;
   grantedNonNetwork: CapabilityId[];
 }): string {
   const { pluginCode, allowedHosts, bridgeUrl, bridgeToken, grantedNonNetwork } = params;
@@ -106,7 +117,6 @@ function buildBootstrapCode(params: {
   const allowedHostsJson = JSON.stringify(allowedHosts);
   const bridgeUrlJson = JSON.stringify(bridgeUrl ?? null);
   const bridgeTokenJson = JSON.stringify(bridgeToken);
-  const capabilityNames = NON_NETWORK_CAPABILITIES.map((c) => c.jsName);
 
   return `
 // --- Bootstrap generado por Portaless (DenoDeployAdapter) ---
@@ -131,8 +141,8 @@ async function __portalessInvokeBridge(capabilityId, jsName, args) {
   if (!__portalessGrantedNonNetwork.has(capabilityId)) {
     throw new Error("Capacidad '" + capabilityId + "' no concedida.");
   }
-  if (!__portalessBridgeUrl) {
-    throw new Error("Capacidad '" + capabilityId + "' concedida pero no hay bridge HTTP configurado (portalessBridgeUrl ausente).");
+  if (!__portalessBridgeUrl || !__portalessBridgeToken) {
+    throw new Error("Capacidad '" + capabilityId + "' concedida pero no hay bridge HTTP configurado (portalessBridgeUrl/Token ausente).");
   }
   const res = await fetch(__portalessBridgeUrl, {
     method: "POST",
@@ -209,11 +219,25 @@ export class DenoDeployAdapter implements SandboxAdapter {
       }
     }
 
-    // Token de corta duracion para el bridge HTTP -- generado por
-    // invocacion, nunca reusado. La verificacion real de este token la
-    // hace el endpoint interno de Portaless (fuera de este adaptador);
-    // aqui solo se genera y se inyecta en el bootstrap subido.
-    const bridgeToken = `pless_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    // v0.0.9.26: token efimero real, emitido y registrado server-side
+    // ANTES de construir el bootstrap -- ver nota de seguridad al inicio
+    // del archivo. Si hay capacidades no-red concedidas pero no se
+    // provee el callback, se falla explicito en vez de generar un token
+    // inseguro que nunca validaria contra nada real.
+    let bridgeToken: string | null = null;
+    if (grantedNonNetwork.length > 0) {
+      if (!input.issueCapabilityToken) {
+        return failure(
+          this.providerName,
+          deniedAttempts,
+          start,
+          "El plugin tiene capacidades no-red concedidas, pero no se proveyo issueCapabilityToken -- " +
+            "no se puede emitir un token seguro para el Capability Bridge HTTP. Ver SandboxExecutionInput.issueCapabilityToken.",
+        );
+      }
+      const issued = await input.issueCapabilityToken(input.manifest.name);
+      bridgeToken = issued.token;
+    }
 
     const bootstrapCode = buildBootstrapCode({
       pluginCode: input.code,

@@ -7,23 +7,39 @@
 // Contrato: packages/plugin-sandbox/src/types.ts ya define
 // SandboxExecutionInput.bridgeUrl (agregado en v0.0.9.1) como la URL de
 // este endpoint. Los adaptadores edge (deno-deploy.ts,
-// cloudflare-workers-for-platforms.ts) inyectan bridgeUrl en el bootstrap
-// que suben al proveedor; el codigo del plugin, corriendo remotamente,
-// hace POST aqui por cada capacidad no-red que invoca.
+// cloudflare-workers-for-platforms.ts) obtienen un token efimero real via
+// SandboxExecutionInput.issueCapabilityToken ANTES de construir el
+// bootstrap que suben al proveedor; el codigo del plugin, corriendo
+// remotamente, hace POST aqui por cada capacidad no-red que invoca.
 //
 // POST /api/internal/capability-bridge
-// Body: { capability: CapabilityId, pluginName: string, args: unknown }
+// Body: { capability: CapabilityId, args: unknown }
 // Respuesta 200: { result: unknown }
-// Respuesta 403: { error: "..." } -- capacidad no concedida al plugin
+// Respuesta 401: { error: "..." } -- token ausente, no encontrado o vencido
+// Respuesta 403: { error: "..." } -- capacidad no incluida en el snapshot del token
 // Respuesta 501: { error: "..." } -- capacidad concedida pero sin handler real
 //
-// SEGURIDAD: este endpoint NO debe exponerse publicamente sin autenticacion.
-// Requiere el header Authorization: Bearer <PORTALESS_INTERNAL_BRIDGE_TOKEN>,
-// un secreto compartido entre Portaless y el adaptador edge que lo invoca --
-// nunca el mismo token que usan sesiones de usuario. Sin ese header valido,
-// responde 401 antes de tocar cualquier capacidad.
+// v0.0.9.26 -- FIX DE SEGURIDAD (hallazgo documentado en ROADMAP.md):
+// este endpoint validaba el header Authorization contra un secreto
+// MAESTRO fijo (env.PORTALESS_INTERNAL_BRIDGE_TOKEN), el mismo para
+// absolutamente todos los plugins y todas las ejecuciones. Los
+// adaptadores edge generaban su propio bridgeToken con Math.random() sin
+// registrar nada server-side, asi que nunca coincidia con el secreto
+// esperado -- toda llamada real desde un adaptador edge fallaba con 401.
+// Ademas, inyectar el secreto maestro real en el bootstrap (la salida
+// facil) hubiera expuesto la clave de TODO el sistema a codigo de
+// terceros no confiable corriendo en infraestructura ajena.
+//
+// Se reemplaza por CapabilityTokenStore (D1/SQLite/memoria, ver
+// packages/plugin-sandbox/src/registry/stores/capability-token-store.ts):
+// cada token es efimero (TTL corto), emitido por ejecucion (no
+// compartido entre plugins), y lleva un snapshot de que capacidades
+// tenia concedidas el plugin al momento de emitirse -- por eso ya NO se
+// vuelve a consultar PermissionStore aqui, y pluginName ya NO viene en
+// el body (se deriva del token, para que un bootstrap comprometido no
+// pueda mentir su propia identidad).
 
-import { createPermissionStore } from "../../../packages/permissions/src/store-factory";
+import { createCapabilityTokenStore } from "../../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory";
 import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
 
 const SUPPORTED_CAPABILITIES = [
@@ -44,31 +60,26 @@ function isSupportedCapability(value) {
   return typeof value === "string" && SUPPORTED_CAPABILITIES.includes(value);
 }
 
-// Usa la interfaz real PermissionStore (packages/permissions/src/
-// permission-store.ts): getGrantsFor(subject) devuelve PermissionGrant[]
-// para ese subject -- no existe un isGranted() directo, asi que se busca
-// el grant especifico por capabilityId dentro de esa lista. subject.type
-// es siempre "plugin" aqui (mismo PermissionSubjectType que usa
-// functions/admin/permissions/index.js para plugins ya instalados);
-// displayName es obligatorio en PermissionSubject pero irrelevante para
-// esta consulta de solo lectura, se usa pluginName como placeholder.
-async function isCapabilityGranted(permissionStore, pluginName, capability) {
-  const grants = await permissionStore.getGrantsFor({
-    type: "plugin",
-    id: pluginName,
-    displayName: pluginName,
-  });
-  const grant = grants.find((g) => g.capabilityId === capability);
-  return Boolean(grant && grant.granted);
-}
-
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   const authHeader = request.headers.get("Authorization") || "";
-  const expectedToken = env.PORTALESS_INTERNAL_BRIDGE_TOKEN;
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-    return new Response(JSON.stringify({ error: "No autorizado." }), {
+  const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/);
+  const token = bearerMatch ? bearerMatch[1] : null;
+
+  if (!token) {
+    return new Response(JSON.stringify({ error: "No autorizado: falta el header Authorization." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const tokenStore = await createCapabilityTokenStore(env);
+  const validation = await tokenStore.validate(token);
+
+  if (!validation.valid) {
+    const reason = validation.reason === "expired" ? "El token expiro." : "El token no existe o ya fue invalidado.";
+    return new Response(JSON.stringify({ error: `No autorizado: ${reason}` }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
@@ -84,19 +95,23 @@ export async function onRequestPost(context) {
     });
   }
 
-  const { capability, pluginName, args } = body || {};
-  if (!isSupportedCapability(capability) || typeof pluginName !== "string") {
-    return new Response(JSON.stringify({ error: "capability o pluginName invalidos." }), {
+  const { capability, args } = body || {};
+  if (!isSupportedCapability(capability)) {
+    return new Response(JSON.stringify({ error: "capability invalida." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  const permissionStore = await createPermissionStore(env);
-  const granted = await isCapabilityGranted(permissionStore, pluginName, capability);
+  // Ya no se consulta PermissionStore aqui -- el snapshot de capacidades
+  // concedidas viaja en el token mismo, congelado al momento de emitirse
+  // (ver nota de diseño en capability-token-store.ts: evita una condicion
+  // de carrera si un admin revoca un permiso a mitad de una ejecucion en
+  // curso, y ahorra una consulta secundaria en cada invocacion).
+  const granted = validation.grantedCapabilities.includes(capability);
   if (!granted) {
     return new Response(
-      JSON.stringify({ error: `Capacidad '${capability}' no concedida a '${pluginName}'.` }),
+      JSON.stringify({ error: `Capacidad '${capability}' no incluida en el token de '${validation.pluginName}'.` }),
       { status: 403, headers: { "Content-Type": "application/json" } }
     );
   }
