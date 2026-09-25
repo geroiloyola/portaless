@@ -90,6 +90,23 @@ export interface SandboxExecutionInput {
    * process.env.PORTALESS_CAPABILITY_BRIDGE_URL.
    */
   bridgeUrl?: string;
+  /**
+   * v0.0.9.26: callback opcional que emite un token efimero del
+   * Capability Bridge HTTP, ANTES de construir el bootstrap que se sube
+   * al proveedor edge (Deno Deploy / Cloudflare Workers for Platforms).
+   * Reemplaza la generacion insegura de bridgeToken con Math.random() que
+   * hacian los adaptadores -- ver hallazgo de seguridad en ROADMAP.md
+   * ("Refactorizar capability-bridge.js para tokens efimeros") y el
+   * store real en packages/plugin-sandbox/src/registry/stores/
+   * capability-token-store.ts. Ignorado por adaptadores self-hosted
+   * (node-isolated-vm.ts), que invocan hostBridge in-process y no
+   * necesitan ningun token HTTP. Si un adaptador edge recibe capacidades
+   * no-red concedidas pero este callback no esta presente, debe fallar
+   * explicito (ver adapters/deno-deploy.ts y
+   * adapters/cloudflare-workers-for-platforms.ts) en vez de generar un
+   * token inseguro o silenciosamente inoperante.
+   */
+  issueCapabilityToken?: (pluginName: string) => Promise<{ token: string; expiresAt: string }>;
 }
 
 export interface SandboxExecutionResult {
