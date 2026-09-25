@@ -1,4 +1,7 @@
 // Fabrica de persistencia del Centro de Permisos.
+// v0.0.9.27: si PORTALESS_SQLITE_PATH esta definido y SQLite no abre, se LANZA
+// el error (antes caia a memoria en silencio: los permisos concedidos se
+// perdian al reiniciar). Memoria solo si no hay ni DB ni ruta.
 import type { PermissionStore } from "./permission-store";
 import { InMemoryPermissionStore } from "./permission-store";
 
@@ -10,14 +13,9 @@ export async function createPermissionStore(env: PermissionStoreFactoryEnv): Pro
     return new D1PermissionStore(env.DB as any);
   }
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqlitePermissionStore } = await import("./stores/sqlite-permission-store");
-      return new SqlitePermissionStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(`[Portaless Permissions] SQLite no disponible (${(err as Error).message}). Usando memoria.`);
-    }
-  } else {
-    console.warn("[Portaless Permissions] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
+    const { SqlitePermissionStore } = await import("./stores/sqlite-permission-store");
+    return SqlitePermissionStore.open(env.PORTALESS_SQLITE_PATH);
   }
+  console.warn("[Portaless Permissions] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
   return new InMemoryPermissionStore();
 }
