@@ -1,20 +1,26 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v6 (esta sesion, sexto hallazgo): el fix
-// v5 cambio created/expires a Unix timestamps en segundos (number),
-// asumiendo que la libreria los esperaba asi. El error real de CI fue
-// "params.created.getTime is not a function" -- confirma que
-// getSigningOptions() SI llama a .getTime() sobre `created`, es decir
-// SI espera un objeto Date real, no un number. Se revierte ese cambio
-// puntual a Date (como en v2/v3/v4, que nunca tuvieron este TypeError).
+// RFC 9421 Appendix B.1.4. FIX v7 (esta sesion, septimo hallazgo -- el
+// diagnostico explicito agregado en v6 dio fruto): con created/expires
+// como Date, la firma se genera y verify() la acepta criptograficamente
+// -- pero verifyWebBotAuthRequest() devolvia reason: "keyid_not_in_jwks".
+// El modulo real extrae el keyid con un regex literal sobre el header
+// Signature-Input:
 //
-// Se mantienen las dos mejoras validas de v5, que nunca fueron la causa
-// de ningun fallo:
-//   1. Reconstruccion case-insensitive de headers (iterar
-//      Object.entries() + .set() sobre un .clone(), en vez de asumir las
-//      claves literales "Signature"/"Signature-Input").
-//   2. Throw explicito con el `reason` real de verifyWebBotAuthRequest()
-//      si verified es false, para que el proximo fallo (si lo hay)
-//      diga la causa exacta en vez de "expected false to be true".
+//   const match = sigInput.match(/keyid="([^"]+)"/);
+//
+// v4/v5/v6 habian quitado la opcion `keyid` de signatureHeaders(),
+// asumiendo (por el ejemplo textual de npmjs.com/package/web-bot-auth)
+// que se derivaba automaticamente del campo `kid` del JWK. Esa asuncion
+// era incorrecta para esta version instalada: sin `keyid` explicito, el
+// Signature-Input generado no incluye keyid="..." en el formato que el
+// regex de extractKeyId() espera, y el lookup en el JWKS mockeado no
+// encuentra ninguna clave. Se reincorpora `keyid` explicitamente en las
+// opciones de firma.
+//
+// Se mantienen las mejoras validas de v6/v5: created/expires como Date,
+// reconstruccion case-insensitive de headers, y el throw explicito con
+// el `reason` real -- que fue justamente lo que permitio aislar esta
+// causa raiz sin seguir adivinando a ciegas.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -52,6 +58,7 @@ async function buildSignedRequest(): Promise<Request> {
   const headers = await signatureHeaders(request.clone(), signer, {
     created,
     expires,
+    keyid: RFC_9421_ED25519_TEST_KEY.kid,
   } as any);
 
   const finalRequest = request.clone();
