@@ -1,26 +1,48 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v7 (esta sesion, septimo hallazgo -- el
-// diagnostico explicito agregado en v6 dio fruto): con created/expires
-// como Date, la firma se genera y verify() la acepta criptograficamente
-// -- pero verifyWebBotAuthRequest() devolvia reason: "keyid_not_in_jwks".
-// El modulo real extrae el keyid con un regex literal sobre el header
-// Signature-Input:
+// RFC 9421 Appendix B.1.4. FIX v8 (esta sesion, octavo hallazgo -- cierre
+// del diagnostico leyendo el codigo fuente real instalado en node_modules,
+// no por inferencia): la causa raiz nunca fue `created`/`expires`, `tag`,
+// `fields` ni el nombre del import. Es esta:
 //
-//   const match = sigInput.match(/keyid="([^"]+)"/);
+// `SignatureParams` (el tercer argumento de signatureHeaders()) NO tiene
+// campo `keyid` -- su forma real, segun dist/index.d.ts, es solo
+// `{ created, expires, nonce?, key? }`. Cualquier `keyid` que le
+// pasemos ahi se ignora en silencio (JS no valida props extra), que es
+// por lo que v5/v7 con `keyid: RFC_9421_ED25519_TEST_KEY.kid` no tuvo
+// ningun efecto pese a parecer razonable.
 //
-// v4/v5/v6 habian quitado la opcion `keyid` de signatureHeaders(),
-// asumiendo (por el ejemplo textual de npmjs.com/package/web-bot-auth)
-// que se derivaba automaticamente del campo `kid` del JWK. Esa asuncion
-// era incorrecta para esta version instalada: sin `keyid` explicito, el
-// Signature-Input generado no incluye keyid="..." en el formato que el
-// regex de extractKeyId() espera, y el lookup en el JWKS mockeado no
-// encuentra ninguna clave. Se reincorpora `keyid` explicitamente en las
-// opciones de firma.
+// El keyid que termina realmente en el header Signature-Input SIEMPRE
+// sale de `signer.keyid`, fijado dentro de `Ed25519Signer.fromJWK()`
+// (ver dist/chunk-*.mjs):
 //
-// Se mantienen las mejoras validas de v6/v5: created/expires como Date,
-// reconstruccion case-insensitive de headers, y el throw explicito con
-// el `reason` real -- que fue justamente lo que permitio aislar esta
-// causa raiz sin seguir adivinando a ciegas.
+//   const keyid = await jwkToKeyID(jwk, WEBCRYPTO_SHA256, BASE64URL_DECODE);
+//   return new Ed25519Signer(keyid, key);
+//
+// jwkToKeyID (el paquete `jsonwebkey-thumbprint`) calcula el thumbprint
+// SHA-256 del JWK segun RFC 7638 -- IGNORA por completo el campo `kid`
+// que el JWK ya trae escrito. Verificado empiricamente instalando
+// web-bot-auth@0.1.0 en un entorno aislado: para esta clave de test, el
+// signer.keyid real es el thumbprint calculado, nunca el string
+// "test-key-ed25519" que el JWK de prueba declara.
+//
+// Por eso `verifyWebBotAuthRequest()` devolvia siempre reason:
+// "keyid_not_in_jwks" -- el JWKS mockeado publicaba un JWK con
+// `kid: "test-key-ed25519"` (arbitrario), pero el Signature-Input real
+// llevaba `keyid="<thumbprint-real>"`. selectKeyByKeyId() nunca podia
+// encontrar coincidencia por mas que cambiaramos date vs timestamp,
+// tag, o fields -- la firma criptografica siempre fue valida, el unico
+// problema era el key lookup por un `kid` que no correspondia.
+//
+// Fix: capturar `signer.keyid` (el thumbprint real) despues de crear el
+// signer, y usar ESE valor -- no un string fijo -- como `kid` del JWK
+// publico que se publica en el mock del JWKS para el test positivo y
+// para el de cache KV (los unicos dos que esperan verified:true).
+//
+// Se mantienen las mejoras validas de v5/v6: created/expires como Date,
+// reconstruccion case-insensitive de headers via Object.entries(), y el
+// throw explicito con el `reason` real -- fue justamente ese diagnostico
+// el que permitio descartar canonicalizacion y aislar el key lookup como
+// unica causa.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -35,16 +57,12 @@ const RFC_9421_ED25519_TEST_KEY = {
   d: "n4Ni-HpISpVObnQMW0wOhCKROaIKqKtW_2ZYb2p9KcU",
 };
 
-const PUBLIC_ONLY_JWK = {
-  kty: RFC_9421_ED25519_TEST_KEY.kty,
-  crv: RFC_9421_ED25519_TEST_KEY.crv,
-  kid: RFC_9421_ED25519_TEST_KEY.kid,
-  x: RFC_9421_ED25519_TEST_KEY.x,
-};
-
 const SIGNATURE_AGENT_URL = "https://agent.example.test";
 
-async function buildSignedRequest(): Promise<Request> {
+// Firma el request y devuelve tanto el Request final como el keyid REAL
+// (thumbprint) que la libreria uso -- necesario para publicar un JWKS
+// mockeado que realmente matchee.
+async function buildSignedRequest(): Promise<{ request: Request; realKeyId: string }> {
   const request = new Request("https://portaless.example/trust/site.example/agent-verification", {
     method: "POST",
     headers: { "Signature-Agent": SIGNATURE_AGENT_URL },
@@ -58,15 +76,25 @@ async function buildSignedRequest(): Promise<Request> {
   const headers = await signatureHeaders(request.clone(), signer, {
     created,
     expires,
-    keyid: RFC_9421_ED25519_TEST_KEY.kid,
-  } as any);
+  });
 
   const finalRequest = request.clone();
   for (const [k, v] of Object.entries(headers)) {
     finalRequest.headers.set(k, v as string);
   }
 
-  return finalRequest;
+  return { request: finalRequest, realKeyId: signer.keyid };
+}
+
+// JWK publico con el `kid` igual al thumbprint real que calculo el
+// signer -- no al `kid` arbitrario que trae RFC_9421_ED25519_TEST_KEY.
+function publicJwkWithRealKeyId(realKeyId: string) {
+  return {
+    kty: RFC_9421_ED25519_TEST_KEY.kty,
+    crv: RFC_9421_ED25519_TEST_KEY.crv,
+    kid: realKeyId,
+    x: RFC_9421_ED25519_TEST_KEY.x,
+  };
 }
 
 describe("verifyWebBotAuthRequest", () => {
@@ -75,10 +103,10 @@ describe("verifyWebBotAuthRequest", () => {
   });
 
   it("verifica correctamente un request firmado con una clave que existe en el JWKS", async () => {
-    const signedRequest = await buildSignedRequest();
+    const { request: signedRequest, realKeyId } = await buildSignedRequest();
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ keys: [PUBLIC_ONLY_JWK] }), { status: 200 })
+      new Response(JSON.stringify({ keys: [publicJwkWithRealKeyId(realKeyId)] }), { status: 200 })
     );
 
     const result = await verifyWebBotAuthRequest(signedRequest);
@@ -88,7 +116,7 @@ describe("verifyWebBotAuthRequest", () => {
     }
 
     expect(result.verified).toBe(true);
-    expect(result.agentKeyId).toBe("test-key-ed25519");
+    expect(result.agentKeyId).toBe(realKeyId);
   });
 
   it("devuelve verified:false si faltan los headers de firma -- nunca lanza", async () => {
@@ -103,7 +131,7 @@ describe("verifyWebBotAuthRequest", () => {
   });
 
   it("devuelve verified:false si el keyid no esta en el JWKS publicado", async () => {
-    const signedRequest = await buildSignedRequest();
+    const { request: signedRequest } = await buildSignedRequest();
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ keys: [] }), { status: 200 })
@@ -116,8 +144,10 @@ describe("verifyWebBotAuthRequest", () => {
   });
 
   it("usa el cache KV si esta disponible, evitando un fetch repetido", async () => {
+    const { request: firstRequest, realKeyId } = await buildSignedRequest();
+
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ keys: [PUBLIC_ONLY_JWK] }), { status: 200 })
+      new Response(JSON.stringify({ keys: [publicJwkWithRealKeyId(realKeyId)] }), { status: 200 })
     );
 
     const store = new Map<string, string>();
@@ -128,8 +158,10 @@ describe("verifyWebBotAuthRequest", () => {
       },
     };
 
-    await verifyWebBotAuthRequest(await buildSignedRequest(), kv);
-    await verifyWebBotAuthRequest(await buildSignedRequest(), kv);
+    const { request: secondRequest } = await buildSignedRequest();
+
+    await verifyWebBotAuthRequest(firstRequest, kv);
+    await verifyWebBotAuthRequest(secondRequest, kv);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
