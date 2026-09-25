@@ -4,130 +4,140 @@
 
 **Less Portals, More Simplicity**
 
-Un CMS ligero, open source y modular — pensado para publicarse sin hosting pagado, sin plugins que rompan el sitio, y con control real sobre qué agentes de IA acceden a tu contenido.
+A lightweight, open source, modular CMS — built to be published without paid hosting, without plugins that break your site, and with real control over which AI agents can access your content.
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 [![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-orange.svg)](./ROADMAP.md)
 [![Astro](https://img.shields.io/badge/built%20with-Astro-ff5a03.svg)](https://astro.build)
 
-[Roadmap](./ROADMAP.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Seguridad](./SECURITY.md) · [Licenciamiento](./docs/architecture/licensing-boundaries.md) · [Contribuir](./CONTRIBUTING.md)
+[Roadmap](./ROADMAP.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## ¿Qué es Portaless?
+## What is Portaless?
 
-Portaless es un CMS construido sobre [Astro](https://astro.build) que resuelve, por diseño arquitectónico, los problemas estructurales más persistentes de WordPress:
+Portaless is a CMS built on [Astro](https://astro.build) that solves, by architectural design, the most persistent structural problems of WordPress:
 
-- **Sin base de datos expuesta ni servidor propio que administrar** — el sitio se compila a HTML estático y se sirve desde infraestructura gratuita (GitHub Pages, Cloudflare Pages).
-- **Plugins sandboxeados con permisos atómicos**, en vez de acceso irrestricto al core (la causa del 96% de las vulnerabilidades históricas de WordPress).
-- **Control granular sobre agentes de IA**: identificación criptográfica de bots, políticas de cobro por scraping, y un ledger público de trazabilidad.
-- **Editor visual propio (Atomic Elements)**, pensado para ser radicalmente más liviano que Elementor.
-- **Dashboard modular con "skins"** intercambiables sin escribir CSS ni PHP.
-- **Cuentas protegidas de verdad**: verificación en dos pasos, recuperación de contraseña, e inicio de sesión con proveedores externos (Google, GitHub, etc.).
+- **No exposed database, no server to manage** — the site compiles to static HTML and is served from free infrastructure (GitHub Pages, Cloudflare Pages).
+- **Sandboxed plugins with atomic permissions**, instead of unrestricted access to the core (the root cause of 96% of WordPress's historical vulnerabilities).
+- **Granular control over AI agents**: cryptographic bot identification, pay-per-crawl policies, and a public traceability ledger.
+- **A native visual editor (Atomic Elements)**, designed to be radically lighter than Elementor.
+- **A modular dashboard with swappable "skins"**, no CSS or PHP required.
+- **Real account protection**: two-factor authentication, password recovery, and login via external providers (Google, GitHub, etc.).
+- **Cross-site trust and discovery** via Protocol APW and a public `SiteTrustScore`, so independent Portaless instances can verify each other without any central authority.
 
-> **Estado actual: alpha / MVP.** No todo lo descrito en el whitepaper está implementado todavía. Antes de usarlo en producción, lee la sección [Estado real por módulo](#estado-real-por-módulo) y el [`ROADMAP.md`](./ROADMAP.md).
+> **Current status: alpha / MVP.** Not everything described in the whitepaper is implemented yet. Before using this in production, read the [Real status by module](#real-status-by-module) section and [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
-## Índice
+## Table of contents
 
-- [Características](#características)
-- [Novedades recientes](#novedades-recientes)
-- [Estado real por módulo](#estado-real-por-módulo)
-- [Instalación](#instalación)
+- [Features](#features)
+- [Recent updates](#recent-updates)
+- [Real status by module](#real-status-by-module)
+- [Installation](#installation)
   - [macOS](#macos)
   - [Linux](#linux)
   - [Windows](#windows)
-- [Primeros pasos](#primeros-pasos)
-- [Configuración](#configuración)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Despliegue](#despliegue)
-- [Autenticación](#autenticación)
-- [Licenciamiento](#licenciamiento)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Deployment](#deployment)
+- [Authentication](#authentication)
+- [Licensing](#licensing)
 - [Roadmap](#roadmap)
-- [Seguridad](#seguridad)
-- [Contribuir](#contribuir)
-- [Licencia](#licencia)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Características
+## Features
 
-| Módulo | Qué hace |
+| Module | What it does |
 |---|---|
-| **Motor de contenido** | Astro + Markdown, sitio 100% estático, sin runtime de servidor obligatorio |
-| **Atomic Elements** | Editor visual de arrastrar-y-soltar para páginas, sin la profundidad de DOM ni el peso de Elementor |
-| **Dashboard + Skin System** | Panel de administración modular: cada "skin" reordena los mismos componentes vía un JSON, sin tocar código |
-| **Comercio (Medusa/Mercur)** | Módulo opcional que consume el catálogo de una tienda externa — nunca reimplementa checkout ni pagos |
-| **Trust Layer** | Identificación de agentes de IA (Web Bot Auth), políticas de acceso (`allow`/`charge`/`block`) y ledger de trazabilidad, ahora consultable públicamente |
-| **Plugin Sandbox** | Aislamiento de plugins multi-proveedor (Cloudflare, Deno Deploy, Fastly, o self-hosted con `isolated-vm`), con las 12 capacidades del catálogo conectadas de verdad |
-| **Centro de Permisos** | Control atómico de capacidades por plugin/agente, igual que la pantalla de Privacidad de iOS/Android — ya conectado a persistencia real |
-| **Autenticación** | Login usuario/contraseña con roles (`admin`/`viewer`), verificación en 2 pasos, recuperación de contraseña, e inicio de sesión con proveedores externos (OAuth/SSO) |
+| **Content engine** | Astro + Markdown, 100% static site, no mandatory server runtime |
+| **Atomic Elements** | Drag-and-drop visual page editor, without Elementor's DOM depth or page weight — includes 4 elements for sovereign link-in-bio pages (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) |
+| **Dashboard + Skin System** | Modular admin panel: each "skin" rearranges the same components via a JSON file, no code required |
+| **Commerce (Medusa/Mercur)** | Optional module that consumes an external store's catalog — never reimplements checkout or payments |
+| **Trust Layer** | AI agent identification (Web Bot Auth, RFC 9421/Ed25519), access policies (`allow`/`charge`/`block`), and a publicly queryable traceability ledger |
+| **SiteTrustScore** | Public, multi-source trust score per site (`self`, `agent`, `community`, `escrow_report`), with admin UI to grant/revoke authorized agents and escrow providers without touching a terminal |
+| **Protocol APW** | Cross-site discovery via DNS TXT record (`_apw.yourdomain.com`), resolved over DNS-over-HTTPS, with a manifest (`siteId`, `trustUrl`, `contentKinds`) and a CLI to publish it |
+| **MCP server** | Native Model Context Protocol server — an AI agent can create/update pages, query the usage ledger, list installed plugins, and manage permissions directly |
+| **Plugin Sandbox** | Multi-provider plugin isolation (Cloudflare, Deno Deploy, Fastly, or self-hosted via `isolated-vm`), with all 12 capabilities from the catalog wired to real code |
+| **Permissions Center** | Atomic per-plugin/per-agent capability control, like the iOS/Android Privacy screen — connected to real persistence, with a community-driven `trustScore` badge per plugin |
+| **Authentication** | Username/password login with roles (`admin`/`viewer`), two-factor authentication, password recovery, and login via external providers (OAuth/SSO) |
 
-## Novedades recientes
+## Recent updates
 
-Un resumen sin tecnicismos de lo que se agregó en las últimas versiones (v0.0.9 a v0.0.9.4), para quien no sigue el `ROADMAP.md` línea por línea:
+A plain-language summary of what shipped across recent versions, for anyone who doesn't read `ROADMAP.md` line by line:
 
-- **Los plugins ya pueden leer y escribir contenido del sitio.** Antes, aunque le dieras permiso a un plugin para tocar el contenido de una página desde el Centro de Permisos, esa acción no funcionaba de verdad — solo existía el "no". Ahora el "sí" también funciona, siempre dentro del sandbox aislado.
-- **Tu cuenta de administrador está mejor protegida.** Se agregó verificación en dos pasos (el típico código de 6 dígitos de una app como Google Authenticator), un flujo para recuperar la contraseña si la olvidas, e inicio de sesión con proveedores externos (Google, GitHub, o cualquier otro que configures) — sin necesitar crear otra contraseña.
-- **Instalar Portaless por primera vez es un solo comando.** Antes había que aplicar 4 archivos SQL distintos a mano y crear el usuario administrador con un script separado. Ahora `npm run setup` hace las dos cosas de una vez (para instalaciones self-hosted con SQLite).
-- **La licencia cambió de MIT a AGPL-3.0.** Esto protege que Portaless siga siendo un proyecto abierto: cualquiera puede instalarlo y usarlo gratis, pero si alguien toma el código, lo modifica, y lo ofrece como servicio a terceros, tiene que compartir esos cambios de vuelta. Los plugins de terceros (incluidos los que vendas o los que sean de código cerrado) siguen sin ninguna obligación de este tipo, porque corren aislados del núcleo — ver [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) para el detalle completo.
-- **El registro de actividad de agentes de IA ya se puede consultar.** El Trust Layer llevaba tiempo registrando qué agentes visitan tu sitio, pero esa información no se podía ver desde ningún lado. Ahora existe una URL pública (`/.well-known/portaless-usage-log.json`) que la muestra, igual que ya pasaba con la política de contenido.
-- **El Centro de Permisos ahora guarda los cambios de verdad.** Antes de v0.0.9.2, otorgar o revocar un permiso desde el panel era solo visual y no se guardaba en ningún lado permanente. Ahora sí persiste, con la misma protección de "solo administradores pueden cambiar esto" que el resto del panel.
-- **Cloudflare Workers y Deno Deploy ya tienen integración real** (no solo un boceto) para correr plugins en la nube de esos proveedores, aunque todavía no se probó contra una cuenta real — falta ese último paso de verificación práctica.
+- **Cross-site trust and discovery now exist.** Any Portaless site can publish a signed, publicly resolvable manifest (Protocol APW) and expose a `SiteTrustScore` built from four independent sources — its own claims, verified AI agents, community votes, and third-party escrow reports. An admin can grant or revoke authorized agents and escrow providers entirely from the dashboard.
+- **An AI agent can now run the whole site.** A native MCP server exposes real tools — creating and updating pages, querying the public usage ledger, listing installed plugins, granting or revoking permissions — so an agent like Claude can manage a Portaless site through conversation instead of a visual editor.
+- **Four new elements for link-in-bio pages.** `ProfileHeader`, `LinkList`, `SocialIcons`, and `StoreBlock` let you replicate what paid link-in-bio tools offer, at zero cost, with your own domain and no third-party branding.
+- **Plugins can now read and write site content for real.** Previously, granting a plugin permission to touch page content from the Permissions Center didn't actually do anything — only the "deny" path worked. Now the "allow" path works too, always inside the isolated sandbox.
+- **Your admin account is better protected.** Two-factor authentication (the standard 6-digit code from an authenticator app), a password recovery flow, and login via external providers (Google, GitHub, or anything else you configure) — no separate password required.
+- **Installing Portaless for the first time is one command.** Previously this meant applying 4 separate SQL files by hand and creating the admin user with a separate script. Now `npm run setup` does both in a single step (for self-hosted SQLite installs).
+- **The license changed from MIT to AGPL-3.0.** This protects Portaless from being forked into a closed commercial service: anyone can install and use it for free, but if someone takes the code, modifies it, and offers it as a service to others, they must share those changes back. Third-party plugins (including paid or closed-source ones) carry no such obligation, because they run isolated from the core — see [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) for the full breakdown.
+- **The AI agent activity log is now publicly queryable.** The Trust Layer had been recording which AI agents visit your site for a while, but that data had no public view. It's now available at a public URL (`/.well-known/portaless-usage-log.json`), the same way the content policy already was.
+- **The Permissions Center now actually saves changes.** Before, granting or revoking a permission from the panel was visual only and never persisted anywhere. Now it does, with the same "admin-only" protection as the rest of the panel.
+- **Cloudflare Workers and Deno Deploy have real integrations** (not just a sketch) for running plugins on those providers' infrastructure, though neither has been verified against a real account yet — that final practical verification step is still pending.
 
-## Estado real por módulo
+## Real status by module
 
-Este proyecto documenta explícitamente qué está implementado y qué es un esqueleto pendiente. No asumas funcionalidad por el nombre de una carpeta — consulta [`AGENT.md`](./AGENT.md) y [`ROADMAP.md`](./ROADMAP.md) para el detalle vivo. Resumen:
+This project explicitly documents what's implemented versus what's a pending skeleton. Don't assume functionality from a folder name — check [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) for the live detail. Summary:
 
-| Módulo | Estado |
+| Module | Status |
 |---|---|
-| Motor de contenido, comercio (lectura), Atomic Elements, Dashboard | ✅ Funcional |
-| Autenticación (login + persistencia D1/SQLite + 2FA + recuperación de contraseña + OAuth/SSO) | ✅ Funcional — ver nota de integración pendiente en [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) |
-| Centro de Permisos | ✅ UI conectada a persistencia real (D1/SQLite) vía `functions/admin/permissions/index.js`, con guard server-side `canWrite(role)` — catálogo de plugins aún sembrado a mano, ver [`PERMISSIONS_CENTER.md`](./packages/permissions/docs/PERMISSIONS_CENTER.md) |
-| Trust Layer (políticas + ledger) | ✅ Escritura conectada desde v0.0.6, lectura pública conectada en v0.0.9.3 vía `GET /.well-known/portaless-usage-log.json` — ver [`TRUST_LAYER_SETUP.md`](./packages/trust-layer/docs/TRUST_LAYER_SETUP.md) |
-| Sandboxing de plugins (4 adaptadores) | 🟡 `isolated-vm` (self-hosted) ejecuta código real con pool de isolates y **12/12 capacidades con puente real** (incluye `content:read`/`content:write` desde v0.0.9.4); Cloudflare Workers for Platforms y Deno Deploy hacen la llamada real a sus APIs (sin verificar contra cuenta real todavía, solo tests con `fetch` mockeado); Fastly sigue siendo solo contrato + TODOs detallados, sin llamada real a su API |
-| Verificación criptográfica Web Bot Auth | ✅ Valida firma Ed25519 (RFC 9421) con cache del directorio de claves y verificación de unicidad de nonce |
-| Instalación / puesta en marcha | ✅ Comando único (`npm run setup`) para SQLite self-hosted — Cloudflare D1 sigue usando `wrangler d1 execute` por separado |
-| MCP nativo, Identidad AT Protocol, Protocol APW | ❌ Solo stubs / diseño documentado |
+| Content engine, commerce (read), Atomic Elements, Dashboard | ✅ Functional |
+| Authentication (login + D1/SQLite persistence + 2FA + password recovery + OAuth/SSO) | ✅ Functional — see pending integration note in [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) |
+| Permissions Center | ✅ UI connected to real persistence (D1/SQLite) via `functions/admin/permissions/index.js`, with server-side guard `canWrite(role)` — plugin catalog now backed by a real dynamic registry with community `trustScore`, see [`PERMISSIONS_CENTER.md`](./packages/permissions/docs/PERMISSIONS_CENTER.md) |
+| Trust Layer (policies + ledger) | ✅ Write path connected since v0.0.6, public read path connected in v0.0.9.3 via `GET /.well-known/portaless-usage-log.json` — see [`TRUST_LAYER_SETUP.md`](./packages/trust-layer/docs/TRUST_LAYER_SETUP.md) |
+| SiteTrustScore (4 sources: self, agent, community, escrow_report) | ✅ All 4 sources have a connected HTTP endpoint; `agent` and `escrow_report` have a full admin lifecycle (grant/revoke UI, no manual API calls needed). Pending: both allowlists are empty by default, and there's no automated onboarding flow for a second escrow provider yet |
+| Protocol APW (cross-site discovery via DNS TXT) | ✅ Real resolution via DNS-over-HTTPS (Cloudflare 1.1.1.1), manifest format, and a publishing CLI. Pending: `did:web`/`did:apw` and consumption from a future Portaless Index |
+| MCP server | ✅ 6 real tools connected end-to-end (`list_page_components`, `query_usage_log`, `list_installed_plugins`, `create_page`, `update_page`, `grant_capability`, `revoke_permission`). Known limitation: agent identity is resolved once per process, not per call — documented as an active security consideration in `AGENT.md` |
+| Plugin sandboxing (4 adapters) | 🟡 `isolated-vm` (self-hosted) runs real code with an isolate pool and **12/12 capabilities with a real bridge**; Cloudflare Workers for Platforms and Deno Deploy make real calls to their APIs (not yet verified against a real account, only tested with mocked `fetch`); Fastly remains contract + detailed TODOs only, no real API call yet |
+| Web Bot Auth cryptographic verification | ✅ Validates Ed25519 signatures (RFC 9421) with key-directory caching and nonce-uniqueness checks |
+| Installation / setup | ✅ Single command (`npm run setup`) for self-hosted SQLite — Cloudflare D1 still uses `wrangler d1 execute` separately |
+| Native AT Protocol identity, Portaless Cloud Images, Portaless Index | ❌ Design/spec stage only, or not started |
 
 ---
 
-## Instalación
+## Installation
 
-### Requisitos previos
+### Prerequisites
 
-- **Node.js ≥ 20** (recomendado **22.5+** si quieres persistencia SQLite self-hosted vía `node:sqlite`, sin dependencias compiladas).
+- **Node.js ≥ 20** (**22.5+** recommended if you want self-hosted SQLite persistence via `node:sqlite`, with no compiled dependencies).
 - **Git**.
-- Una cuenta de **GitHub** o **Cloudflare** si vas a desplegar (ambos tienen planes gratuitos suficientes).
+- A **GitHub** or **Cloudflare** account if you plan to deploy (both have free tiers that are sufficient).
 
 ### macOS
 
 ```bash
-# Instalar Node.js (via Homebrew)
+# Install Node.js (via Homebrew)
 brew install node@22
 
-# Clonar el repositorio
+# Clone the repository
 git clone https://github.com/geroiloyola/portaless.git
 cd portaless
 
-# Instalar dependencias (usa npm workspaces para los packages/*)
+# Install dependencies (uses npm workspaces for packages/*)
 npm install
 ```
 
 ### Linux
 
 ```bash
-# Debian/Ubuntu — instalar Node.js 22.x via NodeSource
+# Debian/Ubuntu — install Node.js 22.x via NodeSource
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs git
 
 # Fedora/RHEL
 sudo dnf install nodejs git
 
-# Clonar y instalar
+# Clone and install
 git clone https://github.com/geroiloyola/portaless.git
 cd portaless
 npm install
@@ -135,19 +145,19 @@ npm install
 
 ### Windows
 
-**Opción recomendada: WSL2** (Windows Subsystem for Linux), para evitar problemas de rutas y permisos con Astro y `node:sqlite`:
+**Recommended: WSL2** (Windows Subsystem for Linux), to avoid path and permission issues with Astro and `node:sqlite`:
 
 ```powershell
 wsl --install
 ```
 
-Luego, dentro de la terminal de WSL (Ubuntu), sigue los pasos de la sección **Linux** de arriba.
+Then, inside the WSL terminal (Ubuntu), follow the **Linux** steps above.
 
-**Alternativa sin WSL** (PowerShell):
+**Alternative without WSL** (PowerShell):
 
 ```powershell
-# Instalar Node.js desde https://nodejs.org (elige la version 22 LTS)
-# o via winget:
+# Install Node.js from https://nodejs.org (choose version 22 LTS)
+# or via winget:
 winget install OpenJS.NodeJS.LTS
 
 git clone https://github.com/geroiloyola/portaless.git
@@ -157,153 +167,155 @@ npm install
 
 ---
 
-## Primeros pasos
+## Getting started
 
 ```bash
-# Levantar el servidor de desarrollo
+# Start the dev server
 npm run dev
 ```
 
-Abre [http://localhost:4321](http://localhost:4321) — deberías ver el sitio de ejemplo con el blog inicial.
+Open [http://localhost:4321](http://localhost:4321) — you should see the example site with the starter blog.
 
 ```bash
-# Compilar para producción (genera ./dist)
+# Build for production (generates ./dist)
 npm run build
 
-# Previsualizar el build de producción localmente
+# Preview the production build locally
 npm run preview
 ```
 
-Si vas a usar el panel de administración (`/admin`) en un despliegue self-hosted con SQLite, corre además:
+If you're going to use the admin panel (`/admin`) on a self-hosted SQLite deployment, also run:
 
 ```bash
-# Crea las tablas necesarias y el primer usuario admin, en un solo paso
+# Creates the necessary tables and the first admin user, in one step
 npm run setup
 ```
 
-Ver la sección [Autenticación](#autenticación) para el detalle completo, incluyendo el flujo equivalente para Cloudflare D1.
+See the [Authentication](#authentication) section for the full detail, including the equivalent flow for Cloudflare D1.
 
 ---
 
-## Configuración
+## Configuration
 
-Todas las variables de entorno son opcionales — Portaless funciona sin configurar nada, sirviendo solo el sitio estático base.
+All environment variables are optional — Portaless works out of the box, serving just the base static site.
 
-| Variable | Módulo | Descripción |
+| Variable | Module | Description |
 |---|---|---|
-| `ENABLE_COMMERCE` | Comercio | `true` para activar `/tienda` (requiere `src/commerce/config.ts`, ver [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
-| `ENABLE_TRUST_LAYER` | Trust Layer | `true` para activar la verificación de agentes de IA en `functions/_middleware.js` |
-| `PORTALESS_ADMIN_USERNAME` / `PORTALESS_ADMIN_PASSWORD` | Autenticación | Credenciales del primer usuario admin, usadas por `npm run setup` |
-| `PORTALESS_SQLITE_PATH` | Autenticación | Ruta a un archivo SQLite para persistencia self-hosted (requiere Node 22.5+) |
-| `PORTALESS_OAUTH_<PROVEEDOR>_CLIENT_ID` / `_CLIENT_SECRET` / `_AUTH_URL` / `_TOKEN_URL` / `_USERINFO_URL` | Autenticación (OAuth/SSO) | Configuración de cada proveedor externo de login (ej. `PORTALESS_OAUTH_GOOGLE_CLIENT_ID`) — sin esto, el inicio de sesión con ese proveedor simplemente no aparece disponible |
-| `PORTALESS_DEV_MODE` | Autenticación (recuperación de contraseña) | `1` para que el endpoint de recuperación devuelva el token en la respuesta, útil solo en desarrollo local sin servidor de correo configurado |
-| `DB` (binding, no env var tradicional) | Autenticación, Permisos, Trust Layer, Páginas | Binding de Cloudflare D1, configurado en `wrangler.toml` |
+| `ENABLE_COMMERCE` | Commerce | `true` to enable `/tienda` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
+| `ENABLE_TRUST_LAYER` | Trust Layer | `true` to enable AI agent verification in `functions/_middleware.js` |
+| `PORTALESS_ADMIN_USERNAME` / `PORTALESS_ADMIN_PASSWORD` | Authentication | Credentials for the first admin user, used by `npm run setup` |
+| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence (requires Node 22.5+) |
+| `PORTALESS_OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` / `_AUTH_URL` / `_TOKEN_URL` / `_USERINFO_URL` | Authentication (OAuth/SSO) | Configuration for each external login provider (e.g. `PORTALESS_OAUTH_GOOGLE_CLIENT_ID`) — without this, login via that provider simply won't appear as an option |
+| `PORTALESS_DEV_MODE` | Authentication (password recovery) | `1` so the recovery endpoint returns the token in the response, useful only for local development without a configured mail server |
+| `DB` (binding, not a traditional env var) | Authentication, Permissions, Trust Layer, Pages | Cloudflare D1 binding, configured in `wrangler.toml` |
 
-Copia `src/commerce/config.example.ts` a `config.ts` si vas a activar comercio.
+Copy `src/commerce/config.example.ts` to `config.ts` if you're enabling commerce.
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 ```
 portaless/
-├── src/                    # Sitio Astro (páginas, contenido, layouts, comercio)
+├── src/                    # Astro site (pages, content, layouts, commerce)
 ├── packages/
-│   ├── atomic-elements/    # Editor visual de páginas
-│   ├── dashboard/          # Panel admin + Skin System
-│   ├── permissions/        # Centro de Permisos
-│   ├── plugin-sandbox/     # Sandboxing multi-proveedor
-│   ├── trust-layer/        # Identificación de agentes de IA
-│   ├── auth/                # Autenticación (login, roles, 2FA, recuperación, OAuth, persistencia)
-│   ├── commerce-plugin/    # Manifiesto de referencia del módulo de comercio
-│   ├── mcp-server/         # Stub — no implementado
-│   ├── identity-atproto/   # Stub — no implementado
-│   └── apw-resolver/       # Stub — no implementado
-├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recuperación)
-├── scripts/                # Instalación (schema.sql + admin inicial en un comando)
-├── docs/                   # Whitepaper, arquitectura, guías de deploy, fronteras de licencia
-├── examples/               # Configuraciones de referencia (blog, landing, tienda)
-├── tests/                  # Pruebas unitarias y e2e
-└── ROADMAP.md              # Estado priorizado del proyecto
+│   ├── atomic-elements/    # Visual page editor
+│   ├── dashboard/          # Admin panel + Skin System
+│   ├── permissions/        # Permissions Center
+│   ├── plugin-sandbox/     # Multi-provider sandboxing
+│   ├── trust-layer/        # AI agent identification + SiteTrustScore
+│   ├── apw-resolver/       # Protocol APW: DNS-over-HTTPS resolver + manifest + publishing CLI
+│   ├── mcp-server/         # Native MCP server (6 real tools connected)
+│   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, persistence)
+│   ├── commerce-plugin/    # Reference manifest for the commerce module
+│   └── identity-atproto/   # Stub — not implemented
+├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints)
+├── scripts/                # Setup (schema.sql + initial admin in one command)
+├── docs/                   # Whitepaper, architecture, deployment guides, licensing boundaries, Protocol APW spec
+├── examples/               # Reference configurations (blog, landing page, store)
+├── tests/                  # Unit and e2e tests
+└── ROADMAP.md              # Prioritized project status
 ```
 
-Ver [`docs/architecture/REPO_STRUCTURE_MAP.md`](./docs/architecture/REPO_STRUCTURE_MAP.md) si buscas algo y no está donde esperarías.
+See [`docs/architecture/REPO_STRUCTURE_MAP.md`](./docs/architecture/REPO_STRUCTURE_MAP.md) if you're looking for something and it's not where you'd expect.
 
 ---
 
-## Despliegue
+## Deployment
 
-### GitHub Pages (gratis)
+### GitHub Pages (free)
 
-Ver guía completa: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md). El workflow en `.github/workflows/ci.yml` construye el sitio automáticamente en cada push a `main`.
+Full guide: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md). The workflow in `.github/workflows/ci.yml` builds the site automatically on every push to `main`.
 
-### Cloudflare Pages (gratis, recomendado si usas Trust Layer o autenticación con D1)
+### Cloudflare Pages (free, recommended if using Trust Layer or D1 authentication)
 
-Ver guía completa: [`docs/DEPLOY_CLOUDFLARE_PAGES.md`](./docs/DEPLOY_CLOUDFLARE_PAGES.md). Necesario si quieres usar `functions/` (middlewares, sandboxing, login, OAuth, recuperación de contraseña) — GitHub Pages no soporta funciones edge.
+Full guide: [`docs/DEPLOY_CLOUDFLARE_PAGES.md`](./docs/DEPLOY_CLOUDFLARE_PAGES.md). Required if you want to use `functions/` (middlewares, sandboxing, login, OAuth, password recovery, trust endpoints) — GitHub Pages doesn't support edge functions.
 
 ---
 
-## Autenticación
+## Authentication
 
 ```bash
-# Self-hosted con SQLite -- aplica el esquema de base de datos Y crea el
-# primer usuario admin, en un solo comando
+# Self-hosted with SQLite -- applies the database schema AND creates the
+# first admin user, in a single command
 PORTALESS_ADMIN_USERNAME=admin \
-PORTALESS_ADMIN_PASSWORD=una-contraseña-de-al-menos-8-caracteres \
+PORTALESS_ADMIN_PASSWORD=a-password-with-at-least-8-characters \
 PORTALESS_SQLITE_PATH=./portaless.db \
 npm run setup
 ```
 
-Luego visita `/admin/login`. Desde ahí también puedes:
+Then visit `/admin/login`. From there you can also:
 
-- Activar **verificación en dos pasos** (2FA) para tu cuenta.
-- Recuperar tu contraseña si la olvidaste, vía `/admin/password-reset`.
-- Iniciar sesión con un proveedor externo configurado (`/admin/oauth/<proveedor>/start`), si agregaste sus variables de entorno.
+- Enable **two-factor authentication** (2FA) for your account.
+- Recover your password if you forgot it, via `/admin/password-reset`.
+- Log in with a configured external provider (`/admin/oauth/<provider>/start`), if you added its environment variables.
 
-Para Cloudflare D1, aplica el esquema con `wrangler d1 execute <NOMBRE_DB> --file=schema.sql` — el primer usuario admin se crea automáticamente la primera vez que el sistema detecta que no existe ninguno.
+For Cloudflare D1, apply the schema with `wrangler d1 execute <DB_NAME> --file=schema.sql` — the first admin user is created automatically the first time the system detects that none exists.
 
-Ver [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) para el detalle completo, incluyendo las limitaciones honestas que quedan (ver [`ROADMAP.md`](./ROADMAP.md) para el estado exacto de cada pieza).
+See [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) for the full detail, including the honest limitations that remain (see [`ROADMAP.md`](./ROADMAP.md) for the exact status of each piece).
 
 ---
 
-## Licenciamiento
+## Licensing
 
-Portaless (el núcleo: CMS, dashboard, autenticación, Trust Layer, Centro de Permisos, motor del sandbox) se distribuye bajo **AGPL-3.0**. En términos simples: puedes instalarlo, usarlo, y modificarlo libremente, incluso en un negocio propio — la única obligación aparece si tomas una versión modificada del núcleo y la ofreces como servicio en línea a terceros, en cuyo caso debes compartir esos cambios.
+Portaless (the core: CMS, dashboard, authentication, Trust Layer, Permissions Center, sandbox engine) is distributed under **AGPL-3.0**. In plain terms: you can install it, use it, and modify it freely, even inside your own business — the only obligation kicks in if you take a modified version of the core and offer it as an online service to third parties, in which case you must share those changes back.
 
-Los **plugins de terceros** (vendidos, gratuitos, o de código cerrado) no tienen esa obligación, siempre que corran dentro del sandbox aislado y solo usen la API pública documentada — es exactamente el mismo principio que permite vender plugins cerrados de WordPress. Ver [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) para la explicación completa, incluyendo preguntas frecuentes para quien quiera desarrollar o vender plugins.
+**Third-party plugins** (paid, free, or closed-source) carry no such obligation, as long as they run inside the isolated sandbox and only use the documented public API — this is the same principle that allows selling closed-source WordPress plugins. See [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) for the full explanation, including FAQs for anyone building or selling plugins.
 
 ---
 
 ## Roadmap
 
-El estado priorizado y actualizado del proyecto vive en [`ROADMAP.md`](./ROADMAP.md), con tres niveles:
+The prioritized, up-to-date status of the project lives in [`ROADMAP.md`](./ROADMAP.md), organized into three categories:
 
-- 🔴 **Alta prioridad** — bloquea que el proyecto sea "funcional" en el corto plazo.
-- 🟡 **Prioridad media** — mejora sustancial, parcialmente alcanzable.
-- ⚪ **Baja prioridad** — fuera de alcance de corto plazo (MCP nativo, identidad AT Protocol, Protocol APW, cobro real vía Pay per Crawl).
+- **Features in production** — already built, merged to `main`, and functional today.
+- **Internal features in development** — still pending, but exclusively Portaless's responsibility, with no third-party dependency.
+- **External features** — depend on a third party (payment companies, cloud providers, other open source projects) to be completed.
 
----
-
-## Seguridad
-
-Ver [`SECURITY.md`](./SECURITY.md) para vulnerabilidades conocidas y activas en este MVP, incluyendo el manejo de la CVE real de `isolated-vm` (GHSA-864f-rcv7-6rh4) y las limitaciones actuales de la verificación criptográfica del Trust Layer. Para reportar una vulnerabilidad, no abras un Issue público — contacta directamente a los mantenedores.
+Two notable items currently in active design/spec work: a **one-click onboarding** flow so non-technical users can deploy a site via an AI agent without opening a terminal, and **Portaless Cloud Images**, a native APW-integrated image hosting layer where every published image carries a cryptographic signature, an existence timestamp, and the publisher's site identity as verifiable metadata.
 
 ---
 
-## Contribuir
+## Security
 
-Lee [`CONTRIBUTING.md`](./CONTRIBUTING.md) y [`AGENT.md`](./AGENT.md) (este último especialmente si vas a usar un agente de IA para contribuir — contiene el mapa de estado real de cada módulo). Todo cambio va en una rama con Pull Request, nunca commit directo a `main`.
+See [`SECURITY.md`](./SECURITY.md) for known and active vulnerabilities in this MVP, including the handling of the real `isolated-vm` CVE (GHSA-864f-rcv7-6rh4) and the current limitations of the Trust Layer's cryptographic verification. To report a vulnerability, do not open a public Issue — contact the maintainers directly.
 
 ---
 
-## Licencia
+## Contributing
 
-[AGPL-3.0](./LICENSE) para el núcleo del proyecto — instálalo, modifícalo, y úsalo libremente; si ofreces una versión modificada como servicio a terceros, comparte esos cambios. Los plugins de terceros, incluidos los de código cerrado, se rigen por [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md), no por esta licencia.
+Read [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`AGENT.md`](./AGENT.md) (the latter especially if you're using an AI agent to contribute — it contains the real status map of every module). Every change goes through a branch and Pull Request, never a direct commit to `main`.
+
+---
+
+## License
+
+[AGPL-3.0](./LICENSE) for the project's core — install it, modify it, and use it freely; if you offer a modified version as a service to third parties, share those changes back. Third-party plugins, including closed-source ones, are governed by [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md), not by this license.
 
 ---
 
 <div align="center">
 
-**Portaless** — menos portales aislados, más facilidad real para crear los que valga la pena crear.
+**Portaless** — fewer isolated portals, more real ease to build the ones worth building.
 
 </div>

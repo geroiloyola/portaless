@@ -1,0 +1,235 @@
+---
+// src/pages/admin/wizard/step-4-backup-key.astro
+//
+// Paso 4 del Wizard de onboarding: pantalla de exportacion de la clave
+// privada Ed25519 del sitio (identidad did:apw, generada via POST
+// /admin/api/site-identity). Unico momento de friccion dura justificada
+// del Wizard. Mismo patron visual que authorized-escrow-providers.astro.
+//
+// NOTA DE DISEÑO (retroalimentacion externa validada): la clave privada
+// ya se cifra y persiste server-side (AES-GCM, ver site-identity-store.ts)
+// -- eso YA es la "Opcion CMS" recomendada, no la opcion stateless. Lo
+// que SIGUE PENDIENTE como mejora futura: hoy la clave de cifrado es un
+// secreto de infraestructura fijo (PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY),
+// no una contraseña maestra elegida por el usuario. Migrar a una
+// contraseña maestra por-usuario requeriria derivar la clave de cifrado
+// via PBKDF2/Argon2 en este mismo paso -- documentado aqui como tarea
+// pendiente explicita, no implementado en esta sesion.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Asegura tu identidad — Portaless Wizard">
+  <div class="wiz-page-header">
+    <p class="wiz-step-indicator">Paso 4 de 5</p>
+    <h1 class="wiz-page-title">Guarda tu clave de identidad</h1>
+    <p class="wiz-page-subtitle">
+      Tu sitio ya tiene una identidad criptografica propia (did:apw). Esta
+      clave privada es la unica forma de recuperar esa identidad si
+      alguna vez pierdes tu base de datos -- respalda tu SiteTrustScore y
+      cualquier firma futura de contenido. Portaless nunca la vuelve a
+      mostrar despues de esta pantalla.
+    </p>
+  </div>
+
+  <div id="wiz-loading" class="wiz-loading">Generando tu identidad…</div>
+  <div id="wiz-load-error" class="wiz-load-error" style="display:none;"></div>
+
+  <div id="wiz-root" style="display:none;">
+    <div class="wiz-did-panel">
+      <p class="wiz-did-label">Tu identidad publica (did:apw):</p>
+      <code id="wiz-did-value" class="wiz-did-value"></code>
+    </div>
+
+    <div class="wiz-key-panel">
+      <p class="wiz-key-label">Clave privada -- copiala ahora, no se mostrara de nuevo:</p>
+      <div class="wiz-key-row">
+        <code id="wiz-key-value" class="wiz-key-value"></code>
+        <button id="wiz-key-copy" class="wiz-key-copy" type="button">Copiar</button>
+      </div>
+      <label class="wiz-confirm-checkbox">
+        <input type="checkbox" id="wiz-confirm-saved" />
+        <span>Ya guarde esta clave en un lugar seguro fuera de Portaless</span>
+      </label>
+    </div>
+
+    <button id="wiz-continue" class="wiz-continue-btn" type="button" disabled>
+      Continuar al panel de administracion
+    </button>
+    <p id="wiz-continue-error" class="wiz-continue-error" style="display:none;"></p>
+  </div>
+</BaseLayout>
+
+<script>
+  interface SiteIdentityResponse {
+    identity: { did: string; domain: string; siteId: string };
+    didDocument: unknown;
+    privateKeyJwk: JsonWebKey;
+  }
+
+  const loadingEl = document.getElementById("wiz-loading")!;
+  const errorEl = document.getElementById("wiz-load-error")!;
+  const rootEl = document.getElementById("wiz-root")!;
+  const didValueEl = document.getElementById("wiz-did-value")!;
+  const keyValueEl = document.getElementById("wiz-key-value")!;
+  const copyBtn = document.getElementById("wiz-key-copy")!;
+  const confirmCheckbox = document.getElementById("wiz-confirm-saved") as HTMLInputElement;
+  const continueBtn = document.getElementById("wiz-continue") as HTMLButtonElement;
+  const continueError = document.getElementById("wiz-continue-error")!;
+
+  async function parseErrorMessage(res: Response): Promise<string> {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+      else if (body?.error) message = body.error;
+    } catch {}
+    return message;
+  }
+
+  async function generateIdentity(): Promise<void> {
+    const domain = window.location.hostname;
+
+    const res = await fetch("/admin/api/site-identity", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ domain }),
+    });
+
+    if (res.status === 401) {
+      window.location.href = "/admin/login?error=1";
+      return;
+    }
+
+    if (res.status === 409) {
+      const body = await res.json();
+      didValueEl.textContent = body.identity?.did ?? "(identidad ya generada)";
+      keyValueEl.textContent = "(la clave privada solo se mostro la primera vez -- no es posible recuperarla)";
+      copyBtn.style.display = "none";
+      confirmCheckbox.checked = true;
+      confirmCheckbox.disabled = true;
+      continueBtn.disabled = false;
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res));
+    }
+
+    const data: SiteIdentityResponse = await res.json();
+    didValueEl.textContent = data.identity.did;
+    keyValueEl.textContent = JSON.stringify(data.privateKeyJwk);
+  }
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(keyValueEl.textContent ?? "");
+      copyBtn.textContent = "¡Copiado!";
+      setTimeout(() => { copyBtn.textContent = "Copiar"; }, 1500);
+    } catch {}
+  });
+
+  confirmCheckbox.addEventListener("change", () => {
+    continueBtn.disabled = !confirmCheckbox.checked;
+  });
+
+  continueBtn.addEventListener("click", () => {
+    continueError.style.display = "none";
+    window.location.href = "/admin/wizard/step-5-admin-credentials";
+  });
+
+  async function init(): Promise<void> {
+    try {
+      await generateIdentity();
+      loadingEl.style.display = "none";
+      rootEl.style.display = "";
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al generar tu identidad: ${(err as Error).message}`;
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .wiz-page-header { margin-bottom: 28px; max-width: 640px; }
+  .wiz-step-indicator { margin: 0 0 6px; font-size: 0.78rem; color: var(--portaless-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .wiz-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .wiz-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
+
+  .wiz-loading, .wiz-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
+  .wiz-load-error { color: #ff6e6e; }
+
+  .wiz-did-panel {
+    max-width: 560px;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+  }
+  .wiz-did-label { margin: 0 0 8px; font-size: 0.8rem; color: var(--portaless-muted); }
+  .wiz-did-value { font-size: 0.85rem; color: var(--portaless-fg); word-break: break-all; }
+
+  .wiz-key-panel {
+    max-width: 560px;
+    margin-bottom: 24px;
+    padding: 18px 20px;
+    border: 1px solid var(--portaless-accent);
+    border-radius: 12px;
+    background: #14201b;
+  }
+  .wiz-key-label { margin: 0 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--portaless-accent); }
+  .wiz-key-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .wiz-key-value {
+    flex: 1;
+    padding: 8px 10px;
+    background: #0f1114;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    word-break: break-all;
+    color: var(--portaless-fg);
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .wiz-key-copy {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+  .wiz-confirm-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--portaless-fg);
+    cursor: pointer;
+  }
+  .wiz-confirm-checkbox input { margin-top: 2px; }
+
+  .wiz-continue-btn {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .wiz-continue-btn:disabled {
+    background: transparent;
+    color: var(--portaless-muted);
+    border-color: var(--portaless-border);
+    cursor: not-allowed;
+  }
+  .wiz-continue-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 10px; }
+</style>
