@@ -4,8 +4,14 @@
 # y ci.yml filtra por rama base (los PRs apilados contra agentic /
 # deploy-manifest quedaban sin checks).
 #
-# Node 20 es la prueba clave: node:sqlite no existe ahi, asi que si algo
-# sigue dependiendo de el, falla en esa celda de la matriz.
+# Node 24 es obligatorio: isolated-vm@7 (sandbox de plugins) exige
+# node >= 24. Node 22 corre como informativo (no bloquea).
+# La prueba de que nada depende de node:sqlite la da el paso de grep, no la
+# version de Node.
+#
+# TEMPORAL: se usa `npm install` en vez de `npm ci` porque package-lock.json
+# esta desincronizado. Correr el workflow "Regenerate lockfile" y despues
+# volver a `npm ci`.
 
 name: Unit Tests
 
@@ -27,20 +33,20 @@ jobs:
     name: vitest tests/unit (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ matrix.node == '22' }}
     strategy:
       fail-fast: false
       matrix:
-        node: ["20", "22"]
+        node: ["24", "22"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Confirmar que node:sqlite no se usa en codigo de produccion
         run: |
@@ -56,7 +62,7 @@ jobs:
         run: npx vitest run tests/unit/ --reporter=verbose
 
   setup-smoke:
-    name: Smoke npm run setup (SQLite, Node 20)
+    name: Smoke npm run setup (SQLite, Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
@@ -65,11 +71,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: npm
+          node-version: "24"
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: npm run setup sobre SQLite vacio
         timeout-minutes: 3

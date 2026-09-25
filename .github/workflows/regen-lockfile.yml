@@ -1,0 +1,48 @@
+# Regenera package-lock.json y lo commitea en la rama elegida.
+#
+# Existe porque package.json se edito via API (sin poder correr npm) y el
+# lockfile quedo desincronizado: faltan better-sqlite3, vitest, tsx,
+# web-bot-auth y esbuild 0.28 -> `npm ci` falla para cualquiera.
+#
+# Solo se ejecuta manualmente (workflow_dispatch). Es el UNICO workflow con
+# permiso de escritura, y solo toca package-lock.json.
+#
+# Nota: los commits hechos con GITHUB_TOKEN no disparan otros workflows.
+# Despues de correr este, ejecutar "Unit Tests" a mano desde Actions.
+
+name: Regenerate lockfile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Regenerar package-lock.json
+        run: npm install --package-lock-only --no-audit --no-fund
+
+      - name: Validar que npm ci ahora funciona
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Commitear si cambio
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json ya estaba sincronizado, nada que commitear."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: regenerar package-lock.json (sincronizar con package.json)"
+          git push
