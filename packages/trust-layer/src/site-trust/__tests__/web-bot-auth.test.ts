@@ -1,9 +1,12 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX (esta sesion, hallazgo de CI tras agregar
-// npm test al workflow): signatureHeaders() de la version instalada de
-// web-bot-auth requiere explicitamente un campo `created` (Date) --
-// getSigningOptions() llamaba a .getTime() sobre un valor undefined sin
-// el. Se agrega created: new Date() de forma explicita.
+// RFC 9421 Appendix B.1.4. FIX v2 (esta sesion, segundo hallazgo de CI):
+// signatureHeaders() de la version instalada de web-bot-auth exige TANTO
+// `created` COMO `expires` en sus opciones -- ver ejemplo oficial de
+// Cloudflare (blog.cloudflare.com/web-bot-auth/), que usa exactamente
+// { created, expires } con expires = created + 300_000ms. El fix v1 solo
+// agrego `created`, lo cual no fue suficiente: getSigningOptions() sigue
+// llamando .getTime() sobre `expires`, que quedaba undefined. Se agrega
+// ahora expires = created + 5 minutos, como en el ejemplo de referencia.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -33,9 +36,13 @@ async function buildSignedRequest(): Promise<Request> {
     headers: { "Signature-Agent": SIGNATURE_AGENT_URL },
   });
 
+  const created = new Date();
+  const expires = new Date(created.getTime() + 300_000);
+
   const headers = await signatureHeaders(request, await signerFromJWK(RFC_9421_ED25519_TEST_KEY), {
     keyid: RFC_9421_ED25519_TEST_KEY.kid,
-    created: new Date(),
+    created,
+    expires,
   });
 
   return new Request(request, {
