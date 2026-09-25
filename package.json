@@ -16,6 +16,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "setup": "tsx scripts/setup.mjs",
+    "setup:d1": "tsx scripts/setup-d1.mjs",
     "generate-schema": "node scripts/generate-schema.mjs",
     "test": "vitest run"
   },
