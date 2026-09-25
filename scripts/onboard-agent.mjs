@@ -2,10 +2,15 @@
 // Script de onboarding manual -- Fase 1 de authorized-agents.ts (que
 // documenta explicitamente que esta fase es "lista estricta, gestionada
 // manualmente", sin flujo de autoservicio). Self-hosted only: escribe
-// directo contra el archivo SQLite en PORTALESS_SQLITE_PATH via
-// node:sqlite (Node 22.5+), mismo patron que SqliteAuthorizedAgentsStore
-// -- reutiliza el mismo CREATE TABLE IF NOT EXISTS para no depender de
-// que schema.sql ya se haya aplicado.
+// directo contra el archivo SQLite en PORTALESS_SQLITE_PATH, mismo
+// esquema que SqliteAuthorizedAgentsStore -- reutiliza el mismo CREATE
+// TABLE IF NOT EXISTS para no depender de que schema.sql ya se haya
+// aplicado.
+//
+// v0.0.9.27: node:sqlite -> better-sqlite3 (mismo driver que
+// packages/sqlite-driver). Se importa directo y no via openSqlite() porque
+// este script corre standalone (node scripts/...) sin build previo de los
+// paquetes TS; la guardia de workerd no aplica, un CLI siempre corre en Node.
 //
 // Uso:
 //   node scripts/onboard-agent.mjs \
@@ -25,7 +30,7 @@
 // Idempotente: si agent-key-id ya existe, actualiza la fila
 // (ON CONFLICT ... DO UPDATE) en vez de duplicar o fallar.
 
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 
 function parseArgs(argv) {
   const out = {};
@@ -67,40 +72,44 @@ export function runOnboardAgent(argv) {
   const keyAlgorithm = args.keyAlgorithm || "ed25519";
 
   const dbPath = requireSqlitePath();
-  const db = new DatabaseSync(dbPath);
+  const db = new Database(dbPath);
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS authorized_agents (
-      agent_key_id TEXT PRIMARY KEY,
-      signature_agent_url TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      active INTEGER NOT NULL DEFAULT 1,
-      authorized_at TEXT NOT NULL,
-      authorized_by TEXT NOT NULL,
-      key_algorithm TEXT NOT NULL DEFAULT 'ed25519'
-    );
-  `);
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS authorized_agents (
+        agent_key_id TEXT PRIMARY KEY,
+        signature_agent_url TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        authorized_at TEXT NOT NULL,
+        authorized_by TEXT NOT NULL,
+        key_algorithm TEXT NOT NULL DEFAULT 'ed25519'
+      );
+    `);
 
-  const authorizedAt = new Date().toISOString();
-  db.prepare(
-    `INSERT INTO authorized_agents
-       (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
-     VALUES (?, ?, ?, 1, ?, ?, ?)
-     ON CONFLICT(agent_key_id)
-     DO UPDATE SET
-       signature_agent_url = excluded.signature_agent_url,
-       display_name = excluded.display_name,
-       active = 1,
-       authorized_at = excluded.authorized_at,
-       authorized_by = excluded.authorized_by,
-       key_algorithm = excluded.key_algorithm`
-  ).run(args.agentKeyId, args.signatureAgentUrl, args.displayName, authorizedAt, args.authorizedBy, keyAlgorithm);
+    const authorizedAt = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO authorized_agents
+         (agent_key_id, signature_agent_url, display_name, active, authorized_at, authorized_by, key_algorithm)
+       VALUES (?, ?, ?, 1, ?, ?, ?)
+       ON CONFLICT(agent_key_id)
+       DO UPDATE SET
+         signature_agent_url = excluded.signature_agent_url,
+         display_name = excluded.display_name,
+         active = 1,
+         authorized_at = excluded.authorized_at,
+         authorized_by = excluded.authorized_by,
+         key_algorithm = excluded.key_algorithm`
+    ).run(args.agentKeyId, args.signatureAgentUrl, args.displayName, authorizedAt, args.authorizedBy, keyAlgorithm);
 
-  console.log(`[Portaless Onboarding] Agente autorizado: ${args.displayName} (${args.agentKeyId})`);
-  console.log(`  signature_agent_url: ${args.signatureAgentUrl}`);
-  console.log(`  key_algorithm: ${keyAlgorithm}`);
-  console.log(`  authorized_at: ${authorizedAt}`);
-  console.log(`  authorized_by: ${args.authorizedBy}`);
+    console.log(`[Portaless Onboarding] Agente autorizado: ${args.displayName} (${args.agentKeyId})`);
+    console.log(`  signature_agent_url: ${args.signatureAgentUrl}`);
+    console.log(`  key_algorithm: ${keyAlgorithm}`);
+    console.log(`  authorized_at: ${authorizedAt}`);
+    console.log(`  authorized_by: ${args.authorizedBy}`);
+  } finally {
+    db.close();
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

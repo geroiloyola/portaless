@@ -1,13 +1,14 @@
-// Persistencia real de SiteTrustScore para self-hosted (node:sqlite) --
-// v0.0.9.19. Mismo patron que SqlitePermissionStore (packages/permissions/
-// src/stores/sqlite-permission-store.ts): usa node:sqlite (DatabaseSync,
-// Node 22.5+), crea las tablas via CREATE TABLE IF NOT EXISTS si aun no
-// existen (idempotente frente a alguien que ya corrio schema.sql a mano),
-// y expone la misma API sincrona-envuelta-en-Promise que D1SiteTrustScoreStore
+// Persistencia real de SiteTrustScore para self-hosted -- v0.0.9.19. Mismo
+// patron que SqlitePermissionStore: crea las tablas via CREATE TABLE IF NOT
+// EXISTS (idempotente frente a alguien que ya corrio schema.sql a mano) y
+// expone la misma API sincrona-envuelta-en-Promise que D1SiteTrustScoreStore
 // para que ambos backends sean intercambiables detras de SiteTrustScoreStore.
 //
 // v0.0.9.19: recordCommunityVote persiste ip_hash (SHA-256(ip + salt),
 // nunca la IP cruda). isRateLimited() consulta la MISMA tabla de votos.
+//
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(). Uso: await SqliteSiteTrustScoreStore.open(path).
 
 import type {
   SiteTrustScoreStore,
@@ -21,6 +22,7 @@ import type {
   EscrowTrustReport,
   EscrowTransactionOutcome,
 } from "../site-trust-score";
+import { openSqlite } from "../../../../sqlite-driver/src/open";
 
 interface SelfRow {
   site_id: string;
@@ -105,14 +107,17 @@ function rowToEscrow(row: EscrowRow): EscrowTrustReport {
 export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+.");
+  static async open(dbPath: string): Promise<SqliteSiteTrustScoreStore> {
+    return new SqliteSiteTrustScoreStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqliteSiteTrustScoreStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqliteSiteTrustScoreStore.open(path)"
+      );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS site_trust_subjects (
         site_id TEXT PRIMARY KEY,
@@ -276,5 +281,9 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
       )
       .get(siteId, category, ipHash, cutoff);
     return row !== undefined;
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

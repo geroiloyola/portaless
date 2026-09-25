@@ -1,6 +1,9 @@
-// Persistencia real del ledger para self-hosted (node:sqlite).
+// Persistencia real del ledger para self-hosted.
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(). Uso: await SqliteUsageLedgerStore.open(path).
 import type { UsageLogPeriod, AgentUsageEntry } from "./log-schema";
 import type { UsageLedgerStore } from "./log-writer";
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 interface RowType {
   period: string; operator_key_id: string; operator_name_claimed: string | null;
@@ -19,11 +22,18 @@ function rowToEntry(row: RowType): AgentUsageEntry {
 
 export class SqliteUsageLedgerStore implements UsageLedgerStore {
   private db: any;
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try { ({ DatabaseSync } = require("node:sqlite")); }
-    catch { throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+."); }
-    this.db = new DatabaseSync(dbPath);
+
+  static async open(dbPath: string): Promise<SqliteUsageLedgerStore> {
+    return new SqliteUsageLedgerStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqliteUsageLedgerStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqliteUsageLedgerStore.open(path)"
+      );
+    }
+    this.db = db;
     this.db.exec(`CREATE TABLE IF NOT EXISTS usage_ledger (
       period TEXT NOT NULL, operator_key_id TEXT NOT NULL, operator_name_claimed TEXT,
       requests_total INTEGER NOT NULL DEFAULT 0, requests_charged INTEGER NOT NULL DEFAULT 0,
@@ -52,5 +62,9 @@ export class SqliteUsageLedgerStore implements UsageLedgerStore {
         agent.requestsCharged, agent.requestsFreeTier, agent.revenueUsd, agent.policyViolationsDetected,
         agent.firstSeen, agent.lastSeen);
     }
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

@@ -8,11 +8,17 @@
 // (InMemoryPluginRegistryStore, seedeado). v0.0.9.11: agrega persistencia
 // real (D1PluginRegistryStore / SqlitePluginRegistryStore), mismo patron
 // exacto que packages/permissions/src/store-factory.ts -- env.DB primero
-// (Cloudflare D1), despues env.PORTALESS_SQLITE_PATH (self-hosted,
-// node:sqlite), cayendo a InMemoryPluginRegistryStore solo si ninguno de
-// los dos esta disponible. El seed de hello-plugin/commerce-plugin sigue
-// aplicandose siempre que el store este vacio, sin importar el backend,
-// para no perder el catalogo minimo funcional en un despliegue nuevo.
+// (Cloudflare D1), despues env.PORTALESS_SQLITE_PATH (self-hosted),
+// cayendo a InMemoryPluginRegistryStore solo si ninguno de los dos esta
+// configurado. El seed de hello-plugin/commerce-plugin sigue aplicandose
+// siempre que el store este vacio, sin importar el backend, para no
+// perder el catalogo minimo funcional en un despliegue nuevo.
+//
+// v0.0.9.27: SQLite via SqlitePluginRegistryStore.open() (better-sqlite3).
+// Si PORTALESS_SQLITE_PATH esta definido y SQLite no abre, se LANZA el
+// error. Antes caia a un InMemory seedeado: el Centro de Permisos seguia
+// mostrando los 2 plugins demo como si todo funcionara, y cualquier plugin
+// registrado despues se perdia al reiniciar.
 
 import {
   InMemoryPluginRegistryStore,
@@ -66,20 +72,13 @@ export async function createPluginRegistryStore(
   }
 
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqlitePluginRegistryStore } = await import("./stores/sqlite-plugin-registry-store");
-      const store = new SqlitePluginRegistryStore(env.PORTALESS_SQLITE_PATH);
-      await seedKnownPluginsIfEmpty(store);
-      return store;
-    } catch (err) {
-      console.warn(
-        `[Portaless PluginRegistry] SQLite no disponible (${(err as Error).message}). Usando memoria.`,
-      );
-    }
-  } else {
-    console.warn("[Portaless PluginRegistry] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
+    const { SqlitePluginRegistryStore } = await import("./stores/sqlite-plugin-registry-store");
+    const store = await SqlitePluginRegistryStore.open(env.PORTALESS_SQLITE_PATH);
+    await seedKnownPluginsIfEmpty(store);
+    return store;
   }
 
+  console.warn("[Portaless PluginRegistry] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
   if (!cachedStore) {
     cachedStore = new InMemoryPluginRegistryStore();
     await seedKnownPluginsIfEmpty(cachedStore);
