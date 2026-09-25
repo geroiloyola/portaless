@@ -139,7 +139,36 @@ describe("DenoDeployAdapter -- integracion real v0.0.9.1 (fetch mockeado)", () =
     expect(uploadedBody).toContain('"api.ejemplo.com"');
   });
 
-  it("capacidad no-red concedida sin bridgeUrl configurado -- el bootstrap documenta el fallo pero la creacion de deployment sigue OK", async () => {
+  // v0.0.9.26 -- el fix de seguridad del Capability Bridge cambio este
+  // contrato: sin issueCapabilityToken, un plugin con capacidades no-red
+  // concedidas ya NO llega a subir un bootstrap (antes se generaba un
+  // token inseguro con Math.random() que nunca validaba contra nada).
+  // El test original se divide en dos: el fallo explicito temprano, y el
+  // caso con token emitido pero sin bridgeUrl (intencion original).
+  it("capacidad no-red concedida SIN issueCapabilityToken -- falla explicito y NO crea ninguna deployment", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ id: "abc", domains: ["abc.deno.dev"] }));
+
+    const adapter = new DenoDeployAdapter({
+      projectId: "proj-1",
+      apiToken: "tok-1",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const result = await adapter.execute({
+      manifest: makeManifest({
+        requestedCapabilities: [{ id: "storage:read", reason: "test" }],
+      }),
+      granted: new Set(["storage:read"]) as GrantedCapabilities,
+      code: "",
+      payload: null,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("issueCapabilityToken");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("capacidad no-red concedida CON token emitido pero sin bridgeUrl -- el bootstrap documenta el fallo pero la creacion de deployment sigue OK", async () => {
     let uploadedBody: string | undefined;
     const fetchImpl = vi.fn(async (url: string | URL, init?: RequestInit) => {
       if (String(url).includes("/deployments")) {
@@ -156,15 +185,28 @@ describe("DenoDeployAdapter -- integracion real v0.0.9.1 (fetch mockeado)", () =
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
-    await adapter.execute({
-      manifest: makeManifest({
-        requestedCapabilities: [{ id: "storage:read", reason: "test" }],
-      }),
-      granted: new Set(["storage:read"]) as GrantedCapabilities,
-      code: "",
-      payload: null,
-    });
+    const issueCapabilityToken = vi.fn(async () => ({
+      token: "pless_test_token",
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    }));
 
+    const previousBridgeUrl = process.env.PORTALESS_CAPABILITY_BRIDGE_URL;
+    delete process.env.PORTALESS_CAPABILITY_BRIDGE_URL;
+    try {
+      await adapter.execute({
+        manifest: makeManifest({
+          requestedCapabilities: [{ id: "storage:read", reason: "test" }],
+        }),
+        granted: new Set(["storage:read"]) as GrantedCapabilities,
+        code: "",
+        payload: null,
+        issueCapabilityToken,
+      });
+    } finally {
+      if (previousBridgeUrl !== undefined) process.env.PORTALESS_CAPABILITY_BRIDGE_URL = previousBridgeUrl;
+    }
+
+    expect(issueCapabilityToken).toHaveBeenCalledWith("test-plugin");
     expect(uploadedBody).toContain('"storage:read"');
     expect(uploadedBody).toContain("no hay bridge HTTP configurado");
   });
