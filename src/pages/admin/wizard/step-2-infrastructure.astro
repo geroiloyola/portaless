@@ -1,11 +1,18 @@
 ---
 // src/pages/admin/wizard/step-2-infrastructure.astro
 //
-// Paso 2 del Wizard de onboarding: autorizacion OAuth con el proveedor
-// de despliegue. DISTINTO del OAuth de login de admin ya existente. No
-// existe todavia ningun endpoint que implemente este flujo -- este
-// archivo muestra la UI con botones deshabilitados y una nota honesta
-// de "en construccion", en vez de simular un flujo que no existe.
+// Paso 2 del Wizard de onboarding: conexion con el proveedor de despliegue.
+// DISTINTO del OAuth de login de admin.
+//
+// v0.0.9.27: GitHub Pages ya tiene flujo real en 2 pasos, guiado por
+// GET /admin/api/oauth/github/status (nunca expone tokens):
+//   A) Sin App: "Crear GitHub App" -> /admin/api/oauth/github/manifest/start
+//      (registro por manifiesto; GitHub vuelve aca via setup_url con
+//      ?github=app_installed tras instalarla).
+//   B) App registrada (manifiesto o env vars) sin cuenta conectada:
+//      "Conectar cuenta" -> /admin/api/oauth/github/start (OAuth + PKCE).
+//   C) Conectado: muestra la cuenta y permite continuar.
+// Cloudflare Pages sigue "Proximamente": no hay flujo implementado.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Conecta tu infraestructura — Portaless Wizard">
@@ -18,12 +25,15 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     </p>
   </div>
 
+  <p class="wiz-flash" id="gh-flash" hidden></p>
+
   <div class="wiz-provider-grid">
-    <button class="wiz-provider-card" data-provider="github-pages" disabled>
+    <div class="wiz-provider-card wiz-provider-card--active" data-provider="github-pages">
       <span class="wiz-provider-name">GitHub Pages</span>
       <span class="wiz-provider-desc">Gratis para siempre. Ideal si ya usas GitHub.</span>
-      <span class="wiz-provider-badge">Próximamente</span>
-    </button>
+      <span class="wiz-gh-status" id="gh-status">Comprobando estado…</span>
+      <a class="wiz-gh-action" id="gh-action" hidden></a>
+    </div>
 
     <button class="wiz-provider-card" data-provider="cloudflare-pages" disabled>
       <span class="wiz-provider-name">Cloudflare Pages</span>
@@ -33,8 +43,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   </div>
 
   <p class="wiz-not-ready-note">
-    La autorización automática todavía no está lista. Mientras tanto,
-    puedes desplegar tu sitio siguiendo la guía manual.
+    ¿Prefieres hacerlo a mano? Puedes desplegar tu sitio siguiendo la guía manual.
   </p>
   <a href="/docs/DEPLOY_GITHUB_PAGES.md" class="wiz-manual-link">Ver guía de despliegue manual →</a>
 
@@ -43,11 +52,65 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   </div>
 </BaseLayout>
 
+<script>
+  const FLASH: Record<string, string> = {
+    app_installed: "GitHub App instalada. Ahora conecta tu cuenta para autorizar los despliegues.",
+    connected: "Cuenta de GitHub conectada.",
+    denied: "Cancelaste la autorización en GitHub. Puedes reintentar cuando quieras.",
+  };
+
+  const flashKey = new URLSearchParams(location.search).get("github");
+  const flash = document.getElementById("gh-flash") as HTMLParagraphElement;
+  if (flashKey && FLASH[flashKey]) {
+    flash.textContent = FLASH[flashKey];
+    flash.hidden = false;
+  }
+
+  const statusEl = document.getElementById("gh-status") as HTMLSpanElement;
+  const action = document.getElementById("gh-action") as HTMLAnchorElement;
+
+  function show(text: string, href: string, label: string) {
+    statusEl.textContent = text;
+    action.href = href;
+    action.textContent = label;
+    action.hidden = false;
+  }
+
+  async function loadStatus() {
+    try {
+      const res = await fetch("/admin/api/oauth/github/status", { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const s = await res.json();
+      if (s.connected) {
+        show(`Conectado como @${s.accountLogin || "(cuenta sin nombre)"}.`, "/admin/wizard/step-4-backup-key", "Continuar →");
+      } else if (s.appRegistered || s.envConfigured) {
+        const label = s.appSlug ? ` (${s.appSlug})` : "";
+        show(`GitHub App lista${label}. Paso B: conecta tu cuenta.`, "/admin/api/oauth/github/start", "Conectar cuenta de GitHub");
+      } else {
+        show("Paso A: crea la GitHub App de este sitio (1 clic).", "/admin/api/oauth/github/manifest/start", "Crear GitHub App");
+      }
+    } catch (e) {
+      statusEl.textContent = `No se pudo leer el estado de la conexión (${(e as Error).message}).`;
+    }
+  }
+
+  loadStatus();
+</script>
+
 <style>
   .wiz-page-header { margin-bottom: 28px; max-width: 560px; }
   .wiz-step-indicator { margin: 0 0 6px; font-size: 0.78rem; color: var(--portaless-muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .wiz-page-title { margin: 0 0 6px; font-size: 1.4rem; }
   .wiz-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
+
+  .wiz-flash {
+    max-width: 560px;
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
 
   .wiz-provider-grid {
     display: grid;
@@ -69,6 +132,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     cursor: not-allowed;
     opacity: 0.7;
   }
+  .wiz-provider-card--active { cursor: default; opacity: 1; }
   .wiz-provider-name { font-size: 0.95rem; font-weight: 600; color: var(--portaless-fg); }
   .wiz-provider-desc { font-size: 0.8rem; color: var(--portaless-muted); }
   .wiz-provider-badge {
@@ -82,6 +146,19 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     text-transform: uppercase;
     letter-spacing: 0.03em;
   }
+  .wiz-gh-status { font-size: 0.8rem; color: var(--portaless-muted); margin-top: 4px; }
+  .wiz-gh-action {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    background: var(--portaless-accent);
+    color: #0b0c0f;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .wiz-gh-action:hover { filter: brightness(1.1); }
 
   .wiz-not-ready-note { max-width: 560px; font-size: 0.85rem; color: var(--portaless-muted); margin-bottom: 8px; }
   .wiz-manual-link { display: inline-block; font-size: 0.85rem; color: var(--portaless-accent); margin-bottom: 24px; }

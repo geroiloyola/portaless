@@ -7,6 +7,7 @@
 //    POST /app-manifests/{code}/conversions y persiste los secretos cifrados.
 //    Si la persistencia falla DESPUES del canje, la App ya existe en GitHub:
 //    se devuelve orphanHtmlUrl para que el usuario la borre y reintente.
+// 3. Tras instalar la App, GitHub devuelve al usuario al Wizard via setup_url.
 import { randomUrlSafe } from "./token-crypto";
 import type { DeploymentOAuthStore } from "./oauth-store";
 import { type ProviderConfigStore, GITHUB_APP_PROVIDER_ID, saveProviderConfig } from "./providers-config-store";
@@ -23,6 +24,8 @@ export function buildGitHubAppManifest(origin: string) {
     url: origin,
     redirect_url: `${origin}/admin/api/oauth/github/manifest/callback`,
     callback_urls: [`${origin}/admin/api/oauth/github/callback`],
+    setup_url: `${origin}/admin/wizard/step-2-infrastructure?github=app_installed`,
+    setup_on_update: false,
     hook_attributes: { url: `${origin}/admin/api/oauth/github/webhook`, active: false },
     public: false,
     default_permissions: { contents: "write", pages: "write", administration: "write", metadata: "read" },
