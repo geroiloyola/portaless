@@ -4,6 +4,9 @@
   "description": "Portaless: CMS ligero open source basado en Astro, sin hosting pagado, con modulo de comercio opcional, Trust Layer para agentes de IA, dashboard modular con skins, Atomic Elements",
   "type": "module",
   "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "packages/*"
   ],
@@ -12,16 +15,17 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "setup": "node scripts/setup.mjs",
+    "setup": "tsx scripts/setup.mjs",
     "generate-schema": "node scripts/generate-schema.mjs",
     "test": "vitest run"
   },
   "dependencies": {
     "astro": "^7.3.3",
+    "better-sqlite3": "^12.0.0",
     "web-bot-auth": "^0.1.0"
   },
   "devDependencies": {
-    "vitest": "^5.0.1",
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.13",
+    "vitest": "^5.0.1"
   }
 }
