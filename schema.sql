@@ -1,5 +1,5 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.26)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.27)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita el schema.sql del paquete correspondiente y
@@ -18,10 +18,16 @@
 -- reemplazando el secreto estatico PORTALESS_INTERNAL_BRIDGE_TOKEN. Ver
 -- packages/plugin-sandbox/src/registry/stores/capability-token-store.ts.
 --
+-- NOTA v0.0.9.27: se agregan deployment_oauth_states y deployment_credentials
+-- (Motor de Despliegue, OAuth de infraestructura con GitHub App) directamente
+-- a este archivo maestro, mismo precedente que v0.0.9.24. Fuente original:
+-- schema-additions/deployment-oauth.sql (se conserva como referencia).
+-- Ver packages/deploy-engine/src/oauth-store.ts.
+--
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
---   O usa el instalador completo: node scripts/setup.mjs
+--   O usa el instalador completo: npm run setup
 --
 -- Todas las sentencias son CREATE TABLE/INDEX IF NOT EXISTS -- correr este
 -- archivo repetidas veces sobre una base de datos que ya tiene las tablas
@@ -287,3 +293,32 @@ CREATE TABLE IF NOT EXISTS capability_bridge_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_capability_bridge_tokens_expires_at
   ON capability_bridge_tokens(expires_at);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.27 -- Motor de Despliegue: OAuth de infraestructura (GitHub App)
+-- -----------------------------------------------------------------------------
+-- deployment_oauth_states: state + code_verifier PKCE, un solo uso (se borra
+-- al consumirse), TTL 10 min, atado al admin que inicio el flujo.
+-- deployment_credentials: access/refresh token CIFRADOS con AES-GCM
+-- (clave en env var PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY, nunca aqui).
+
+CREATE TABLE IF NOT EXISTS deployment_oauth_states (
+  state TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  code_verifier TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_deployment_oauth_states_expires ON deployment_oauth_states (expires_at);
+
+CREATE TABLE IF NOT EXISTS deployment_credentials (
+  provider TEXT PRIMARY KEY,
+  account_login TEXT NOT NULL DEFAULT '',
+  access_token_enc TEXT NOT NULL,
+  refresh_token_enc TEXT,
+  access_expires_at TEXT,
+  refresh_expires_at TEXT,
+  connected_by TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
