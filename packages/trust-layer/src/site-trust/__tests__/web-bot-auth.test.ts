@@ -1,12 +1,25 @@
 // Tests de verifyWebBotAuthRequest() usando la clave de test oficial de
-// RFC 9421 Appendix B.1.4. FIX v2 (esta sesion, segundo hallazgo de CI):
-// signatureHeaders() de la version instalada de web-bot-auth exige TANTO
-// `created` COMO `expires` en sus opciones -- ver ejemplo oficial de
-// Cloudflare (blog.cloudflare.com/web-bot-auth/), que usa exactamente
-// { created, expires } con expires = created + 300_000ms. El fix v1 solo
-// agrego `created`, lo cual no fue suficiente: getSigningOptions() sigue
-// llamando .getTime() sobre `expires`, que quedaba undefined. Se agrega
-// ahora expires = created + 5 minutos, como en el ejemplo de referencia.
+// RFC 9421 Appendix B.1.4. FIX v3 (esta sesion, tercer hallazgo de CI):
+// verified quedaba en false (sin lanzar) porque a la firma le faltaban
+// dos elementos que el perfil Web Bot Auth exige explicitamente --ver
+// draft-ietf-webbotauth-httpsig-protocol y el ejemplo oficial de
+// Cloudflare en blog.cloudflare.com/verified-bots-with-cryptography/--:
+//
+//   Signature-Input: sig=("@authority" "signature-agent");
+//     created=...; expires=...; keyid="..."; tag="web-bot-auth"
+//
+// 1. `tag: "web-bot-auth"` es obligatorio en las opciones de firma (la
+//    spec lo llama MUST). Sin el, verify() del lado del verificador no
+//    reconoce la firma como conforme al perfil Web Bot Auth.
+// 2. El componente "signature-agent" (el header del mismo nombre) DEBE
+//    estar cubierto por la firma -- se declara con `fields` en las
+//    opciones de signatureHeaders(). Sin esto, la base string que firma
+//    el signer no coincide con la que reconstruye el verificador al leer
+//    Signature-Input, y verify() rechaza la firma en silencio.
+//
+// Los fixes v1 (created) y v2 (expires) eran necesarios pero no
+// suficientes -- resolvian el TypeError de getSigningOptions, pero no
+// alcanzaban para que verify() aceptara la firma como valida.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { signatureHeaders } from "web-bot-auth";
@@ -43,6 +56,8 @@ async function buildSignedRequest(): Promise<Request> {
     keyid: RFC_9421_ED25519_TEST_KEY.kid,
     created,
     expires,
+    tag: "web-bot-auth",
+    fields: ["@authority", "signature-agent"],
   });
 
   return new Request(request, {
