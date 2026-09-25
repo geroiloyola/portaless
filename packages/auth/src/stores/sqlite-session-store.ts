@@ -1,25 +1,30 @@
-// Persistencia real de sesiones para despliegues self-hosted. Mismo
-// motor (node:sqlite) y mismas advertencias que sqlite-users-store.ts.
+// Persistencia real de sesiones para despliegues self-hosted.
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(), mismo cambio que sqlite-users-store.ts.
+// Uso: const store = await SqliteSessionStore.open(path);
 
 import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "../types";
 import type { SessionStore } from "../session-store";
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export class SqliteSessionStore implements SessionStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
+  static async open(dbPath: string): Promise<SqliteSessionStore> {
+    return new SqliteSessionStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
       throw new Error(
-        "node:sqlite no esta disponible en este runtime. Requiere Node 22.5+."
+        "SqliteSessionStore ya no acepta una ruta en el constructor (v0.0.9.27). " +
+          "Usa: await SqliteSessionStore.open(path)"
       );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY,
@@ -72,5 +77,9 @@ export class SqliteSessionStore implements SessionStore {
 
   async destroy(token: string): Promise<void> {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }
