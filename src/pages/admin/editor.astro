@@ -17,6 +17,10 @@
 // El slug de la pagina a editar viene por query string (?slug=mi-pagina).
 // Sin slug, se asume "nueva-pagina" como borrador nuevo -- mismo valor por
 // defecto que ya usaba la demo de public/editor/index.html.
+//
+// v0.0.9.28: la pagina (Dashboard) inyecta fetchProductPreview al editor. El
+// paquete atomic-elements no conoce /admin ni sesiones; la llamada a
+// /admin/api/product-preview con la sesion del admin vive aqui.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import "../../../packages/atomic-elements/src/editor/editor-styles.css";
 ---
@@ -79,6 +83,7 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
 
 <script>
   import { mountAtomicElementsEditor } from "../../../packages/atomic-elements/src/editor/editor-app";
+  import type { ProductPreviewQuery } from "../../../packages/atomic-elements/src/editor/product-preview-loader";
   import type { PageStore } from "../../../packages/atomic-elements/src/persistence/page-store";
   import type { PageLayout } from "../../../packages/atomic-elements/src/types";
 
@@ -146,6 +151,27 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     }
   }
 
+  // v0.0.9.28: vista previa real del ProductGrid. Ante 401 NO redirige (se
+  // perderian cambios sin guardar a mitad de la edicion): el bloque muestra
+  // el aviso y el admin decide cuando recargar.
+  async function fetchProductPreview({ columns, limit }: ProductPreviewQuery): Promise<string> {
+    const res = await fetch(`/admin/api/product-preview?columns=${columns}&limit=${limit}`, {
+      credentials: "same-origin",
+    });
+    if (res.status === 401) {
+      throw new Error("tu sesión venció. Guarda y recarga la página para volver a iniciar sesión.");
+    }
+    let body: any = {};
+    try {
+      body = await res.json();
+    } catch {
+      // Respuesta sin body JSON.
+    }
+    if (!res.ok) throw new Error(body?.message || body?.error || `HTTP ${res.status}`);
+    if (typeof body?.html !== "string") throw new Error("respuesta inválida del servidor.");
+    return body.html;
+  }
+
   function emptyPageLayout(pageSlug: string): PageLayout {
     return {
       version: "0.1",
@@ -188,6 +214,7 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
       container: rootEl,
       store,
       initialPage,
+      fetchProductPreview,
     });
 
     saveBtn.addEventListener("click", async () => {
