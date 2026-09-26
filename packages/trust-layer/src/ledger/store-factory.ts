@@ -1,4 +1,7 @@
 // Fabrica de persistencia del ledger del Trust Layer.
+// v0.0.9.27: si PORTALESS_SQLITE_PATH esta definido y SQLite no abre, se LANZA
+// el error (antes caia a memoria en silencio: el uso y la facturacion de
+// agentes se perdian al reiniciar). Memoria solo si no hay ni DB ni ruta.
 import type { UsageLedgerStore } from "./log-writer";
 import { InMemoryUsageLedgerStore } from "./log-writer";
 
@@ -10,14 +13,9 @@ export async function createUsageLedgerStore(env: LedgerStoreFactoryEnv): Promis
     return new D1UsageLedgerStore(env.DB as any);
   }
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      const { SqliteUsageLedgerStore } = await import("./sqlite-log-store");
-      return new SqliteUsageLedgerStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(`[Portaless Trust Layer] SQLite no disponible (${(err as Error).message}). Usando memoria.`);
-    }
-  } else {
-    console.warn("[Portaless Trust Layer] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
+    const { SqliteUsageLedgerStore } = await import("./sqlite-log-store");
+    return SqliteUsageLedgerStore.open(env.PORTALESS_SQLITE_PATH);
   }
+  console.warn("[Portaless Trust Layer] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria.");
   return new InMemoryUsageLedgerStore();
 }

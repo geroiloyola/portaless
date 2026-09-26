@@ -2,10 +2,14 @@
 // src/pages/admin/wizard/step-1-intent.astro
 //
 // Paso 1 del Wizard de onboarding: captura nombre del sitio, dominio, y
-// un prompt libre de intencion. HALLAZGO: no existe todavia un endpoint
-// que traduzca este prompt a create_page del MCP server -- queda como
-// tarea pendiente explicita. Este archivo solo implementa la UI y guarda
-// las respuestas en sessionStorage para el siguiente paso.
+// un prompt libre de intencion.
+//
+// v0.0.9.27 (item 2): al enviar, el prompt se traduce a un borrador real via
+// POST /admin/api/wizard/generate-page (plantillas deterministas, ver
+// packages/onboarding/src/intent-to-layout.ts). El resultado se guarda en
+// sessionStorage (portaless_wizard_page) para ofrecer "Abrir mi borrador"
+// al final del Wizard. Si la generacion falla, el Wizard NO se bloquea:
+// el borrador se puede crear despues desde el editor.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Cuéntanos de tu sitio — Portaless Wizard">
@@ -21,7 +25,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   <form id="wiz-intent-form" class="wiz-form">
     <label class="wiz-field">
       <span>Nombre del sitio</span>
-      <input type="text" id="wiz-site-name" placeholder="Mi portafolio" required autocomplete="off" />
+      <input type="text" id="wiz-site-name" placeholder="Mi portafolio" required autocomplete="off" maxlength="80" />
     </label>
 
     <label class="wiz-field">
@@ -32,11 +36,11 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 
     <label class="wiz-field">
       <span>Cuéntanos de tu sitio</span>
-      <textarea id="wiz-site-intent" rows="4" placeholder="Ej: un portafolio minimalista para mis fotos de arquitectura" required></textarea>
+      <textarea id="wiz-site-intent" rows="4" maxlength="1000" placeholder="Ej: un portafolio minimalista para mis fotos de arquitectura" required></textarea>
       <span class="wiz-field-hint">Esto ayuda al agente a elegir el diseño inicial correcto.</span>
     </label>
 
-    <button type="submit" class="wiz-submit-btn">Continuar</button>
+    <button type="submit" id="wiz-submit-btn" class="wiz-submit-btn">Continuar</button>
     <p id="wiz-form-error" class="wiz-form-error" style="display:none;"></p>
   </form>
 </BaseLayout>
@@ -44,8 +48,9 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 <script>
   const form = document.getElementById("wiz-intent-form") as HTMLFormElement;
   const formError = document.getElementById("wiz-form-error")!;
+  const submitBtn = document.getElementById("wiz-submit-btn") as HTMLButtonElement;
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     formError.style.display = "none";
 
@@ -63,10 +68,27 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       return;
     }
 
-    sessionStorage.setItem(
-      "portaless_wizard_intent",
-      JSON.stringify({ siteName, siteDomain, siteIntent })
-    );
+    sessionStorage.setItem("portaless_wizard_intent", JSON.stringify({ siteName, siteDomain, siteIntent }));
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Preparando tu primera página…";
+    try {
+      const res = await fetch("/admin/api/wizard/generate-page", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ siteName, siteIntent, siteDomain }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+      sessionStorage.setItem(
+        "portaless_wizard_page",
+        JSON.stringify({ slug: data.slug, editorUrl: data.editorUrl, templateId: data.templateId })
+      );
+    } catch (err) {
+      // No bloqueante: el borrador se puede crear despues desde el editor.
+      sessionStorage.setItem("portaless_wizard_page", JSON.stringify({ error: (err as Error).message }));
+    }
 
     window.location.href = "/admin/wizard/step-2-infrastructure";
   });
@@ -110,5 +132,6 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     font-weight: 600;
     cursor: pointer;
   }
+  .wiz-submit-btn:disabled { opacity: 0.6; cursor: wait; }
   .wiz-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 12px; }
 </style>

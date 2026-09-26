@@ -6,43 +6,39 @@
 //
 // DECISION DE SEGURIDAD DELIBERADA: este endpoint NO tiene ninguna
 // contraparte de escritura. El unico mecanismo real de creacion de admin
-// es `npm run setup` (CLI, SQLite self-hosted) o la creacion automatica
-// del primer admin en D1 al primer login. Un endpoint de registro sin
-// proteccion seria una puerta de escalada de privilegios.
+// es `npm run setup` (CLI, SQLite self-hosted) o `npm run setup:d1`
+// (Wrangler CLI, D1). Un endpoint de registro sin proteccion seria una
+// puerta de escalada de privilegios.
 //
 // Sin autenticacion requerida -- a diferencia de los demas endpoints de
 // functions/admin/api/, este debe ser accesible ANTES de que exista una
 // sesion, porque su proposito es decirle a un usuario sin sesion que
 // hacer para obtener una.
+//
+// v0.0.9.27:
+//   - Ya no abre SQLite por su cuenta con node:sqlite: usa createUsersStore(env),
+//     el MISMO camino que el login, asi lo que informa coincide con lo que
+//     el login va a encontrar.
+//   - Si el backend falla (D1 caido, SQLite que no abre, o SQLite nativo dentro
+//     de workerd) responde 503 en vez de adminExists:false. Antes, cualquier
+//     error le decia al usuario "crea tu admin" aunque ya existiera.
+//   - adminExists cuenta solo usuarios con rol admin.
+
+import { createUsersStore } from "../../../../packages/auth/src/store-factory";
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+}
 
 export async function onRequestGet(context) {
   const { env } = context;
+  const backend = env?.DB ? "d1" : env?.PORTALESS_SQLITE_PATH ? "sqlite" : "memory";
 
-  let backend = "memory";
-  let adminExists = false;
-
-  if (env.DB) {
-    backend = "d1";
-    try {
-      const row = await env.DB.prepare("SELECT COUNT(*) as count FROM users").first();
-      adminExists = (row?.count ?? 0) > 0;
-    } catch {
-      adminExists = false;
-    }
-  } else if (env.PORTALESS_SQLITE_PATH) {
-    backend = "sqlite";
-    try {
-      const { DatabaseSync } = await import("node:sqlite");
-      const db = new DatabaseSync(env.PORTALESS_SQLITE_PATH);
-      const row = db.prepare("SELECT COUNT(*) as count FROM users").get();
-      adminExists = (row?.count ?? 0) > 0;
-    } catch {
-      adminExists = false;
-    }
+  try {
+    const store = await createUsersStore(env ?? {});
+    const users = await store.listUsers();
+    return json({ adminExists: users.some((u) => u.role === "admin"), backend });
+  } catch (err) {
+    return json({ error: "backend_unavailable", backend, message: err?.message ?? String(err) }, 503);
   }
-
-  return new Response(JSON.stringify({ adminExists, backend }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
 }

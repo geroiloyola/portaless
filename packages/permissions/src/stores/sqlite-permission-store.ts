@@ -1,6 +1,9 @@
-// Persistencia real del Centro de Permisos para self-hosted (node:sqlite).
+// Persistencia real del Centro de Permisos para self-hosted.
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(). Uso: await SqlitePermissionStore.open(path).
 import type { PermissionGrant, PermissionSubject } from "../types";
 import type { PermissionStore } from "../permission-store";
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 interface GrantRow {
   subject_type: string; subject_id: string; subject_display_name: string;
@@ -17,11 +20,18 @@ function rowToGrant(row: GrantRow): PermissionGrant {
 
 export class SqlitePermissionStore implements PermissionStore {
   private db: any;
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try { ({ DatabaseSync } = require("node:sqlite")); }
-    catch { throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+."); }
-    this.db = new DatabaseSync(dbPath);
+
+  static async open(dbPath: string): Promise<SqlitePermissionStore> {
+    return new SqlitePermissionStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqlitePermissionStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqlitePermissionStore.open(path)"
+      );
+    }
+    this.db = db;
     this.db.exec(`CREATE TABLE IF NOT EXISTS permission_grants (
       subject_type TEXT NOT NULL, subject_id TEXT NOT NULL, subject_display_name TEXT NOT NULL,
       capability_id TEXT NOT NULL, granted INTEGER NOT NULL, granted_at TEXT NOT NULL, granted_by TEXT,
@@ -48,5 +58,9 @@ export class SqlitePermissionStore implements PermissionStore {
   async getAllGrants(): Promise<PermissionGrant[]> {
     const rows = this.db.prepare("SELECT * FROM permission_grants").all() as GrantRow[];
     return rows.map(rowToGrant);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

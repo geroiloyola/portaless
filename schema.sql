@@ -23,6 +23,9 @@
 -- a este archivo maestro, mismo precedente que v0.0.9.24. Fuente original:
 -- schema-additions/deployment-oauth.sql (se conserva como referencia).
 -- Ver packages/deploy-engine/src/oauth-store.ts.
+-- Tambien deployment_providers_config (GitHub App registrada via manifiesto,
+-- secretos cifrados). Fuente: schema-additions/deployment-providers-config.sql.
+-- Ver packages/deploy-engine/src/providers-config-store.ts.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
@@ -320,5 +323,27 @@ CREATE TABLE IF NOT EXISTS deployment_credentials (
   access_expires_at TEXT,
   refresh_expires_at TEXT,
   connected_by TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.27 -- Configuracion dinamica de la GitHub App (registro via manifiesto)
+-- -----------------------------------------------------------------------------
+-- Identidad de la App (no tokens de usuario: esos van en deployment_credentials).
+-- client_secret, pem y webhook_secret CIFRADOS con PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY.
+-- webhook_secret_enc nullable: el webhook se registra con active=false hasta
+-- que exista el receptor que valide X-Hub-Signature-256.
+
+CREATE TABLE IF NOT EXISTS deployment_providers_config (
+  provider_id TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL,
+  app_slug TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  client_secret_enc TEXT NOT NULL,
+  private_key_enc TEXT NOT NULL,
+  webhook_secret_enc TEXT,
+  html_url TEXT,
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

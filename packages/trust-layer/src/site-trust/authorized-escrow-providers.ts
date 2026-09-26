@@ -1,39 +1,26 @@
 // Allowlist de proveedores de escrow autorizados a reportar sobre la
 // fuente "escrow_report" de SiteTrustScore -- v0.0.9.23. Analoga a
-// authorized-agents.ts (que resuelve la misma pregunta para "agent"),
-// pero con un mecanismo distinto: no hay estandar publico equivalente a
-// Web Bot Auth para proveedores de escrow, asi que la autenticacion es
-// una API key hasheada por proveedor, no una firma criptografica de
-// requests individuales.
+// authorized-agents.ts, pero sin estandar publico equivalente a Web Bot
+// Auth: la autenticacion es una API key hasheada por proveedor.
 //
-// hashApiKey() usa Web Crypto (SHA-256), la misma primitiva que ya usa
-// functions/trust/[siteId]/vote.js para hashear IPs -- consistente con
-// el resto del repo, sin agregar una dependencia de hashing nueva.
+// hashApiKey() usa Web Crypto (SHA-256), la misma primitiva que
+// functions/trust/[siteId]/vote.js para hashear IPs.
 //
-// A diferencia de authorized_agents (donde CUALQUIERA puede generar un
-// par Ed25519 y publicar un JWKS -- Web Bot Auth verifica identidad, no
-// otorga autorizacion), aqui no hay ningun mecanismo de autoservicio en
-// absoluto: Portaless genera y entrega la API key manualmente, fuera de
-// banda, la primera vez que un proveedor real se integra. Es
-// deliberadamente la barrera de entrada mas alta de las 4 fuentes,
-// coherente con que escrow_report es ground truth. Ver
+// No hay autoservicio: Portaless genera y entrega la API key fuera de
+// banda. Es deliberadamente la barrera de entrada mas alta de las 4
+// fuentes, coherente con que escrow_report es ground truth. Ver
 // docs/architecture/site-trust-score.md.
 //
-// grant/revoke/list (esta sesion, mismo patron que authorized-agents.ts):
-// hasta ahora la UNICA forma de dar de alta un proveedor era
-// scripts/onboard-escrow-provider.mjs, un CLI que escribe directo contra
-// SQLite via node:sqlite -- sin ningun camino para D1, y sin ningun
-// endpoint HTTP/UI de administracion. grant() aqui es distinto del de
-// authorized-agents.ts porque la API key NUNCA se recibe del cliente --
-// Portaless la GENERA (crypto.randomUUID(), suficiente entropia para un
-// secreto entregado fuera de banda) y devuelve el valor en texto plano
-// SOLO en la respuesta de este metodo. A partir de ahi, unicamente el
-// hash SHA-256 se persiste -- no existe ningun camino para recuperar la
-// key real despues del alta, mismo principio de "write-once, never
-// readable" que un password hasheado. Si se pierde, la unica opcion es
-// revocar y generar una nueva. revoke() hace soft-delete (active = 0),
-// igual que authorized-agents.ts -- preserva el historial de que
-// proveedor estuvo autorizado y cuando.
+// grant() GENERA la key (crypto.randomUUID()) y la devuelve en texto plano
+// SOLO en su resultado; solo se persiste el hash SHA-256 (write-once, never
+// readable). revoke() hace soft-delete (active = 0).
+//
+// v0.0.9.27: SqliteAuthorizedEscrowProvidersStore migrado de node:sqlite a
+// better-sqlite3 via openSqlite(). Uso: await SqliteAuthorizedEscrowProvidersStore.open(path).
+// La factory ya NO cae a memoria si PORTALESS_SQLITE_PATH esta definido y
+// SQLite no abre (antes: todos los reportes de escrow rechazados en silencio).
+
+import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export interface AuthorizedEscrowProvider {
   providerId: string;
@@ -97,6 +84,16 @@ function rowToProvider(row: any): AuthorizedEscrowProvider {
   };
 }
 
+const GRANT_SQL = `INSERT INTO authorized_escrow_providers
+           (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
+         VALUES (?, ?, ?, 1, ?, ?)
+         ON CONFLICT(provider_id) DO UPDATE SET
+           api_key_hash = excluded.api_key_hash,
+           display_name = excluded.display_name,
+           active = 1,
+           authorized_at = excluded.authorized_at,
+           authorized_by = excluded.authorized_by`;
+
 export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvidersStore {
   constructor(private db: D1DatabaseLike) {}
 
@@ -124,17 +121,7 @@ export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvide
     const authorizedAt = new Date().toISOString();
 
     await this.db
-      .prepare(
-        `INSERT INTO authorized_escrow_providers
-           (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
-         VALUES (?, ?, ?, 1, ?, ?)
-         ON CONFLICT(provider_id) DO UPDATE SET
-           api_key_hash = excluded.api_key_hash,
-           display_name = excluded.display_name,
-           active = 1,
-           authorized_at = excluded.authorized_at,
-           authorized_by = excluded.authorized_by`
-      )
+      .prepare(GRANT_SQL)
       .bind(input.providerId, apiKeyHash, input.displayName, authorizedAt, input.authorizedBy)
       .run();
 
@@ -161,14 +148,17 @@ export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvide
 export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowProvidersStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+.");
+  static async open(dbPath: string): Promise<SqliteAuthorizedEscrowProvidersStore> {
+    return new SqliteAuthorizedEscrowProvidersStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqliteAuthorizedEscrowProvidersStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqliteAuthorizedEscrowProvidersStore.open(path)"
+      );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
         provider_id TEXT PRIMARY KEY,
@@ -203,17 +193,7 @@ export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowPro
     const authorizedAt = new Date().toISOString();
 
     this.db
-      .prepare(
-        `INSERT INTO authorized_escrow_providers
-           (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
-         VALUES (?, ?, ?, 1, ?, ?)
-         ON CONFLICT(provider_id) DO UPDATE SET
-           api_key_hash = excluded.api_key_hash,
-           display_name = excluded.display_name,
-           active = 1,
-           authorized_at = excluded.authorized_at,
-           authorized_by = excluded.authorized_by`
-      )
+      .prepare(GRANT_SQL)
       .run(input.providerId, apiKeyHash, input.displayName, authorizedAt, input.authorizedBy);
 
     return {
@@ -232,6 +212,10 @@ export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowPro
     this.db
       .prepare("UPDATE authorized_escrow_providers SET active = 0 WHERE provider_id = ?")
       .run(providerId);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }
 
@@ -308,20 +292,11 @@ export async function createAuthorizedEscrowProvidersStore(
   if (env.DB) {
     return new D1AuthorizedEscrowProvidersStore(env.DB as any);
   }
-
   if (env.PORTALESS_SQLITE_PATH) {
-    try {
-      return new SqliteAuthorizedEscrowProvidersStore(env.PORTALESS_SQLITE_PATH);
-    } catch (err) {
-      console.warn(
-        `[Portaless AuthorizedEscrowProviders] SQLite no disponible (${(err as Error).message}). Usando memoria (sin proveedores autorizados).`
-      );
-    }
-  } else {
-    console.warn(
-      "[Portaless AuthorizedEscrowProviders] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria (sin proveedores autorizados)."
-    );
+    return SqliteAuthorizedEscrowProvidersStore.open(env.PORTALESS_SQLITE_PATH);
   }
-
+  console.warn(
+    "[Portaless AuthorizedEscrowProviders] Sin DB ni PORTALESS_SQLITE_PATH. Usando memoria (sin proveedores autorizados)."
+  );
   return new InMemoryAuthorizedEscrowProvidersStore();
 }

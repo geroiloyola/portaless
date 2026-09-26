@@ -1,11 +1,15 @@
-// Persistencia real de paginas para self-hosted (node:sqlite), server-side.
+// Persistencia real de paginas para self-hosted, server-side.
 // Implementa la MISMA interfaz PageStore ya definida en
 // packages/atomic-elements/src/persistence/page-store.ts (load/save/list).
-// Mismo patron que packages/permissions/src/stores/sqlite-permission-store.ts.
+//
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(), mismo cambio que los stores de auth.
+// Uso: const store = await SqlitePageStore.open(path);
 
 import type { PageLayout } from "../../types";
 import type { PageStore } from "../page-store";
 import { validatePageLayout } from "../page-schema";
+import { openSqlite } from "../../../../sqlite-driver/src/open";
 
 interface PageRow {
   slug: string;
@@ -17,14 +21,17 @@ interface PageRow {
 export class SqlitePageStore implements PageStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+.");
+  static async open(dbPath: string): Promise<SqlitePageStore> {
+    return new SqlitePageStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqlitePageStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqlitePageStore.open(path)"
+      );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`CREATE TABLE IF NOT EXISTS pages (
       slug TEXT PRIMARY KEY,
       layout_json TEXT NOT NULL,
@@ -41,7 +48,7 @@ export class SqlitePageStore implements PageStore {
   async save(layout: PageLayout): Promise<void> {
     const result = validatePageLayout(layout);
     if (!result.valid) {
-      throw new Error("Layout inv\u00e1lido: " + result.errors.join("; "));
+      throw new Error("Layout inválido: " + result.errors.join("; "));
     }
     const updatedAt = new Date().toISOString();
     this.db
@@ -57,5 +64,9 @@ export class SqlitePageStore implements PageStore {
   async list(): Promise<string[]> {
     const rows = this.db.prepare("SELECT slug FROM pages").all() as { slug: string }[];
     return rows.map((r) => r.slug);
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

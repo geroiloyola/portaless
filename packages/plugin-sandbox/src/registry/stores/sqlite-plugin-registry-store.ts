@@ -1,8 +1,11 @@
-// Persistencia real del registro de plugins para self-hosted (node:sqlite).
+// Persistencia real del registro de plugins para self-hosted.
 // Mismo patron que packages/permissions/src/stores/sqlite-permission-store.ts.
 //
 // requestedCapabilities se guarda serializado en manifest_json, igual que
 // en D1PluginRegistryStore -- ver ese archivo para el detalle de por que.
+//
+// v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
+// better-sqlite3 via openSqlite(). Uso: await SqlitePluginRegistryStore.open(path).
 
 import type {
   PluginRegistryEntry,
@@ -11,6 +14,7 @@ import type {
   PluginTrustVote,
 } from "../plugin-registry";
 import type { CapabilityRequest } from "../../types";
+import { openSqlite } from "../../../../sqlite-driver/src/open";
 
 interface PluginRow {
   plugin_id: string;
@@ -48,14 +52,17 @@ function rowToEntry(row: PluginRow): PluginRegistryEntry {
 export class SqlitePluginRegistryStore implements PluginRegistryStore {
   private db: any;
 
-  constructor(dbPath: string) {
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("node:sqlite no esta disponible. Requiere Node 22.5+.");
+  static async open(dbPath: string): Promise<SqlitePluginRegistryStore> {
+    return new SqlitePluginRegistryStore(await openSqlite(dbPath));
+  }
+
+  constructor(db: any) {
+    if (typeof db === "string") {
+      throw new Error(
+        "SqlitePluginRegistryStore ya no acepta una ruta en el constructor (v0.0.9.27). Usa: await SqlitePluginRegistryStore.open(path)"
+      );
     }
-    this.db = new DatabaseSync(dbPath);
+    this.db = db;
     this.db.exec(`CREATE TABLE IF NOT EXISTS plugin_registry (
       plugin_id TEXT PRIMARY KEY,
       display_name TEXT NOT NULL,
@@ -177,5 +184,9 @@ export class SqlitePluginRegistryStore implements PluginRegistryStore {
       throw new Error(`Plugin "${vote.pluginId}" no esta registrado.`);
     }
     return updated;
+  }
+
+  close(): void {
+    this.db.close();
   }
 }

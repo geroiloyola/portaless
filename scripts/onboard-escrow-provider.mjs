@@ -8,6 +8,10 @@
 // solo su hash SHA-256 (via Web Crypto, misma primitiva que hashApiKey()
 // en authorized-escrow-providers.ts) -- nunca la key en texto plano.
 //
+// v0.0.9.27: node:sqlite -> better-sqlite3 (mismo driver que
+// packages/sqlite-driver), importado directo porque este script corre
+// standalone sin build previo de los paquetes TS.
+//
 // Uso:
 //   node scripts/onboard-escrow-provider.mjs \
 //     --provider-id=escrow-example \
@@ -19,7 +23,7 @@
 // invalidada de inmediato. Util para rotacion manual si una key se
 // compromete.
 
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 import { randomBytes, webcrypto } from "node:crypto";
 
 function parseArgs(argv) {
@@ -76,35 +80,38 @@ export async function runOnboardEscrowProvider(argv) {
   }
 
   const dbPath = requireSqlitePath();
-  const db = new DatabaseSync(dbPath);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
-      provider_id TEXT PRIMARY KEY,
-      api_key_hash TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      active INTEGER NOT NULL DEFAULT 1,
-      authorized_at TEXT NOT NULL,
-      authorized_by TEXT NOT NULL
-    );
-  `);
-
   const apiKey = generateApiKey();
   const apiKeyHash = await hashApiKey(apiKey);
   const authorizedAt = new Date().toISOString();
 
-  db.prepare(
-    `INSERT INTO authorized_escrow_providers
-       (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
-     VALUES (?, ?, ?, 1, ?, ?)
-     ON CONFLICT(provider_id)
-     DO UPDATE SET
-       api_key_hash = excluded.api_key_hash,
-       display_name = excluded.display_name,
-       active = 1,
-       authorized_at = excluded.authorized_at,
-       authorized_by = excluded.authorized_by`
-  ).run(args.providerId, apiKeyHash, args.displayName, authorizedAt, args.authorizedBy);
+  const db = new Database(dbPath);
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
+        provider_id TEXT PRIMARY KEY,
+        api_key_hash TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        authorized_at TEXT NOT NULL,
+        authorized_by TEXT NOT NULL
+      );
+    `);
+
+    db.prepare(
+      `INSERT INTO authorized_escrow_providers
+         (provider_id, api_key_hash, display_name, active, authorized_at, authorized_by)
+       VALUES (?, ?, ?, 1, ?, ?)
+       ON CONFLICT(provider_id)
+       DO UPDATE SET
+         api_key_hash = excluded.api_key_hash,
+         display_name = excluded.display_name,
+         active = 1,
+         authorized_at = excluded.authorized_at,
+         authorized_by = excluded.authorized_by`
+    ).run(args.providerId, apiKeyHash, args.displayName, authorizedAt, args.authorizedBy);
+  } finally {
+    db.close();
+  }
 
   console.log(`[Portaless Onboarding] Proveedor de escrow autorizado: ${args.displayName} (${args.providerId})`);
   console.log(`  authorized_at: ${authorizedAt}`);

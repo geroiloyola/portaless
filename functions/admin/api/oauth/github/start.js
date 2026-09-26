@@ -15,8 +15,13 @@ function json(body, status = 200) {
 export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
-  const cfg = readGitHubOAuthConfig(context.env, new URL(context.request.url).origin);
-  if (!cfg) return json({ error: "GitHub App no configurada (PORTALESS_GITHUB_APP_CLIENT_ID/SECRET, PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY)" }, 501);
+  const cfg = await readGitHubOAuthConfig(context.env, new URL(context.request.url).origin);
+  if (!cfg) {
+    return json({
+      error: "GitHub App no configurada. Registrala en 1 clic via /admin/api/oauth/github/manifest/start, " +
+        "o carga PORTALESS_GITHUB_APP_CLIENT_ID/SECRET. PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY es obligatoria.",
+    }, 501);
+  }
   const store = await createDeploymentOAuthStore(context.env);
   const url = await beginGitHubOAuth(cfg, store, String(g.user.id ?? g.user.email));
   return Response.redirect(url, 302);
