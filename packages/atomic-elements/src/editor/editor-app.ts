@@ -5,9 +5,22 @@ import { renderPropertyPanel } from "./property-panel";
 import type { PageStore } from "../persistence/page-store";
 import { EditorHistory } from "./history";
 import { resolveContainer as resolveContainerInTree, moveNodeInTree } from "./tree-ops";
+import {
+  ProductPreviewLoader,
+  clampPreviewQuery,
+  productPreviewKey,
+  type ProductPreviewFetcher,
+  type ProductPreviewState,
+} from "./product-preview-loader";
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function esc(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
+  );
 }
 
 type Path = number[];
@@ -16,6 +29,12 @@ export interface EditorAppOptions {
   container: HTMLElement;
   store: PageStore;
   initialPage: PageLayout;
+  /**
+   * v0.0.9.28: lo inyecta la pagina del Dashboard (src/pages/admin/editor.astro),
+   * que habla con /admin/api/product-preview con la sesion del admin. Sin el,
+   * ProductGrid muestra su placeholder estatico (renderHTML).
+   */
+  fetchProductPreview?: ProductPreviewFetcher;
 }
 
 export class AtomicElementsEditor {
@@ -23,11 +42,17 @@ export class AtomicElementsEditor {
   private selectedId: string | null = null;
   private store: PageStore;
   private root: HTMLElement;
+  private productPreview: ProductPreviewLoader | null = null;
 
   constructor(private options: EditorAppOptions) {
     this.history = new EditorHistory(options.initialPage);
     this.store = options.store;
     this.root = options.container;
+    if (options.fetchProductPreview) {
+      this.productPreview = new ProductPreviewLoader(options.fetchProductPreview, (key, state) =>
+        this.patchProductPreviews(key, state)
+      );
+    }
     this.bindKeyboardShortcuts();
     this.render();
   }
@@ -165,6 +190,59 @@ export class AtomicElementsEditor {
     return toolbar;
   }
 
+  // v0.0.9.28: HTML de un ProductGrid segun el estado de su carga real.
+  // `fallback` es el placeholder estatico de renderHTML.
+  private productPreviewHTML(state: ProductPreviewState, fallback: string): string {
+    const note = (text: string, color: string) =>
+      `<div style="font-size:11px;color:${color};margin-top:6px;">${esc(text)}</div>`;
+    if (state.status === "ready") return state.html;
+    if (state.status === "loading") return fallback + note("Cargando productos reales\u2026", "#888");
+    return fallback + note(`No se pudo cargar la vista previa: ${state.error}`, "#ff8f8f");
+  }
+
+  // Reemplaza SOLO los bloques ProductGrid afectados, sin re-renderizar el
+  // editor entero (no se pierde el foco del panel de propiedades).
+  private patchProductPreviews(key: string, state: ProductPreviewState): void {
+    this.root.querySelectorAll<HTMLElement>("[data-product-preview-key]").forEach((el) => {
+      if (el.dataset.productPreviewKey !== key) return;
+      const fallback = elementRegistry.ProductGrid.renderHTML({
+        source: "medusa",
+        columns: Number(el.dataset.columns),
+        limit: Number(el.dataset.limit),
+      });
+      el.innerHTML = this.productPreviewHTML(state, fallback);
+    });
+  }
+
+  // v0.0.9.28: antes el canvas solo mostraba la barra (icono + nombre) de
+  // cada bloque, sin vista previa. Ahora renderiza el HTML real del registro
+  // (que ya escapa sus props con esc()). pointer-events:none para que un
+  // click seleccione el bloque en vez de seguir enlaces de la vista previa.
+  private renderPreview(node: ElementNode): HTMLElement {
+    const preview = document.createElement("div");
+    preview.className = "ae-block-preview";
+    preview.style.pointerEvents = "none";
+
+    const def = elementRegistry[node.type];
+    const props: any = { ...def.defaultProps, ...(node.props as Record<string, unknown>) };
+
+    try {
+      if (node.type === "ProductGrid" && props.source === "medusa" && this.productPreview) {
+        const query = clampPreviewQuery(props);
+        preview.dataset.productPreviewKey = productPreviewKey(query);
+        preview.dataset.columns = String(query.columns);
+        preview.dataset.limit = String(query.limit);
+        const fallback = def.renderHTML({ ...props, ...query });
+        preview.innerHTML = this.productPreviewHTML(this.productPreview.get(query), fallback);
+      } else {
+        preview.innerHTML = def.renderHTML(props);
+      }
+    } catch (err) {
+      preview.innerHTML = `<div style="font-size:11px;color:#ff8f8f;">Error al renderizar: ${esc((err as Error).message)}</div>`;
+    }
+    return preview;
+  }
+
   private renderEditableNode(node: ElementNode, path: Path): HTMLElement {
     const block = document.createElement("div");
     block.className = "ae-block" + (this.selectedId === node.id ? " ae-selected" : "");
@@ -227,6 +305,8 @@ export class AtomicElementsEditor {
       });
 
       block.appendChild(grid);
+    } else {
+      block.appendChild(this.renderPreview(node));
     }
 
     return block;
