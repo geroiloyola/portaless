@@ -98,9 +98,7 @@ Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no dep
 
 - [ ] Conectar `issueCapabilityToken` en el caller real (`sandbox-runtime.ts` o quien construya `SandboxExecutionInput` para adaptadores edge): generar el token, registrarlo con `CapabilityTokenStore.issue(token, pluginName, granted)` y devolverlo. Sin esto, los adaptadores edge fallan explicito (de forma segura) ante cualquier capacidad no-red. Prerrequisito del item "Despliegue y Pruebas Edge Reales".
 - [ ] Documentar `PORTALESS_CAPABILITY_BRIDGE_URL` en `.env.example` (URL del Capability Bridge que usan los adaptadores edge como fallback de `input.bridgeUrl`). **[Refactor v0.0.9.26]** Tarea nueva, extraida de la entrada historica del endpoint HTTP del bridge. No verificado si ya existe en `.env.example`.
-- [ ] MCP server: identidad de agente por invocacion (Opcion B) – HOY: `AgentIdentity` es fija por proceso (Opcion A, via `MCP_AGENT_KEY`), no verificada por invocacion, porque el SDK de MCP no expone sesion por llamada sobre `StdioServerTransport`. Bloqueante para cualquier escenario donde una misma instancia deba distinguir entre multiples agentes/usuarios de forma segura. Documentado como riesgo de seguridad activo en `AGENT.md`.
 - [ ] Verificacion real de firmas ML-DSA (FIPS 204) en `web-bot-auth.ts` — el esquema ya tiene `key_algorithm`, el codigo solo verifica Ed25519. **[Refactor v0.0.9.26]** Tarea extraida de la entrada "Crypto-agilidad post-cuantica" en Produccion.
-- [ ] Derivar `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` por usuario (o contraseña maestra) en vez de un secreto de infraestructura fijo; y flujo de rotacion de la identidad `did:apw` (hoy el POST responde 409 si ya existe). No bloqueante en single-tenant. **[Refactor v0.0.9.26]** Tareas extraidas de la entrada "Identidad did:apw" en Produccion.
 - [ ] Identidad AT Protocol
 
 ### Self-host
