@@ -52,6 +52,7 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 - [x] Ecosistema de plugins abierto+cerrado con trustScore comunitario – CERRADO end-to-end esta sesion, ver linea movida a “Funcionalidades en Produccion”. Se mantiene aqui unicamente la vision de largo plazo, ver seccion “Ecosistema de plugins” mas abajo. **[Refactor v0.0.9.26]** Movida desde "Funcionalidades Internas en Desarrollo", donde figuraba como `[~]` aunque ya estaba cerrada (duplicado de "Registro dinamico de plugins con trustScore comunitario"). La vision de largo plazo sigue en la seccion "Ecosistema de plugins".
 - [x] Refactorizar `capability-bridge.js` para tokens efimeros – RESUELTO en v0.0.9.26 (PR #40, mergeado). `capability-bridge.js` ya no valida contra `PORTALESS_INTERNAL_BRIDGE_TOKEN`: valida contra `CapabilityTokenStore` (D1/SQLite/memoria, tabla `capability_bridge_tokens` con indice en `expires_at`). Tokens por EJECUCION (no por invocacion individual, decision deliberada: un plugin hace varias llamadas al bridge por ejecucion), TTL 5 min, scopeados a `plugin_name`, con snapshot inmutable de capacidades al emitir, GC probabilistica. `pluginName` ya no se acepta del body. `deno-deploy.ts` y `cloudflare-workers-for-platforms.ts` piden el token via `SandboxExecutionInput.issueCapabilityToken` y fallan explicito si falta. 17 tests nuevos (incluye escalada de privilegios: token con `content:read` recibe 403 en `content:write`, y rechazo del esquema viejo con 401), verdes en CI. **[Refactor v0.0.9.26]** Pendiente vigente para activar el flujo real: conectar `issueCapabilityToken` en el caller que construye `SandboxExecutionInput` (ver "Funcionalidades Internas en Desarrollo"). Commits principales en `agentic`: `b88f0fc`, `22d203f`, `8fceb2a`, `f31a317`, `a512dbe`.
 - [x] Endpoint HTTP interno real que exponga `CapabilityHostBridge` sobre HTTP (`bridgeUrl`, ya definido en `SandboxExecutionInput` desde v0.0.9.1) – v0.0.9.9, codigo completo en `functions/api/internal/capability-bridge.js`: valida `Authorization: Bearer <PORTALESS_INTERNAL_BRIDGE_TOKEN>`, consulta `PermissionStore` real para verificar la concesion, y despacha `content:read`/`content:write` a `PageStore` real (las 9 capacidades restantes responden 501 explicito, mismo principio NOT_CONFIGURED que `node-isolated-vm.ts`). **Pendiente para cerrar esta linea**: (1) agregar `PORTALESS_INTERNAL_BRIDGE_TOKEN` a `.env.example`; (2) modificar `deno-deploy.ts` y `cloudflare-workers-for-platforms.ts` para que apunten `bridgeUrl` a este endpoint; (3) prueba real contra una cuenta de Cloudflare/Deno (ver “Funciones Externas” – ese ultimo paso depende de un proveedor externo, el resto es responsabilidad interna). **[Refactor v0.0.9.26]** HISTORICO, reemplazado por v0.0.9.26 (PR #40). Movida desde "Funcionalidades Internas en Desarrollo". El endpoint existe, pero el esquema descrito aqui (`Bearer PORTALESS_INTERNAL_BRIDGE_TOKEN` + consulta a `PermissionStore`) ya no es el vigente: hoy valida tokens efimeros via `CapabilityTokenStore` con snapshot de capacidades. De sus 3 pendientes: (1) agregar `PORTALESS_INTERNAL_BRIDGE_TOKEN` a `.env.example` queda OBSOLETO (esa variable ya no se usa); (2) los adaptadores ya usan `input.bridgeUrl ?? PORTALESS_CAPABILITY_BRIDGE_URL`; (3) la prueba real sigue en "Funciones Externas".
+- [x] Conectar `issueCapabilityToken` en el caller real que construye `SandboxExecutionInput` para adaptadores edge – RESUELTO en v0.0.9.27 (PR #43, mergeado). `SandboxRuntime` ya emite tokens efimeros reales via `issueCapabilityToken` (snapshot exacto de lo concedido al pluginName solicitante; rechaza si otro pluginName intenta usarlo). Pendiente real, no bloqueante: todavia no existe un caller de produccion que instancie `new SandboxRuntime` fuera de los tests.
 
 ### Trust Layer, identidad y Protocol APW
 
@@ -88,6 +89,24 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 
 - [x] Aseguramiento de Calidad Continua (CI/CD) — auditado y corregido. `npm test` detiene el job al devolver un exit code distinto de 0; confirmado empíricamente mediante los fallos reales y posteriores runs verdes de GitHub Actions. El placeholder de validación de manifiestos fue reemplazado por `scripts/validate-manifests.ts`, ejecutado mediante `tsx` y conectado a la misma `validateManifest()` que usa producción. Pendiente operativo externo: verificar que el check `build` esté configurado como required status check en las branch protection rules de `main`. **[Refactor v0.0.9.26]** La verificacion de branch protection se movio a "Tareas manuales pendientes" (depende de GitHub Settings, no de codigo). Commits: `d56700d` (script real), `a31bca3` (`tsx` en devDependencies). Validado en el PR #40.
 
+### Sesion Larga
+
+- [x] Protocol APW: resolver real – RESUELTO en v0.0.9.26 (PR #38, mergeado). `packages/apw-resolver/` sale del stub: `src/dns-txt/dns-txt.ts` implementa `resolveApwTxtRecord()` via DNS-over-HTTPS (Cloudflare 1.1.1.1); `src/manifest.ts` define el payload (`siteId`, `trustUrl`, `contentKinds`); `src/index.ts` expone `resolveApwManifest()`; `src/dnslink/cli.mjs` genera el TXT record. Especificacion formal en `docs/protocol-apw/APW-SPEC-v1.0.md`. Tests reales (22 casos) mas integracion contra DoH real gateada por `PORTALESS_ENABLE_NETWORK_TESTS=1`. Pendiente: `did:web`/`did:apw` (ver entrada siguiente) y consumo desde Portaless Index.
+
+- [x] Identidad `did:apw` del sitio – RESUELTO en v0.0.9.27 (PR #39, mergeado). `packages/apw-resolver/src/did-apw/generate.ts` genera un par de claves Ed25519 real; `document.ts` construye un documento DID W3C-compatible (`did:apw:tudominio.com`); `site-identity-store.ts` persiste la clave privada cifrada con AES-GCM (D1/SQLite/InMemory). `functions/admin/api/site-identity.js` devuelve la clave privada en texto plano una sola vez, responde 409 si ya existe. Pendiente: derivacion de la clave de cifrado por usuario y flujo de rotacion.
+
+- [x] Refactorizar `capability-bridge.js` para tokens efimeros – RESUELTO en v0.0.9.26 (PR #40, mergeado). Ya no valida contra un secreto estatico compartido (`PORTALESS_INTERNAL_BRIDGE_TOKEN`): valida contra `CapabilityTokenStore` (D1/SQLite/memoria), TTL 5 min, scopeado por plugin, snapshot inmutable de capacidades al emitir. 17 tests, incluye test de escalada de privilegios.
+
+- [x] Paso 2 del Wizard: OAuth de infraestructura real con GitHub App – RESUELTO en v0.0.9.27 (PRs #41 y #43, mergeados). Flujo OAuth con PKCE S256, `state` de un solo uso atado al admin, tokens cifrados con AES-GCM. El boton real en `step-2-infrastructure.astro` reemplaza la UI "Proximamente". Pendiente: verificar contra una cuenta real de GitHub; refresh automatico del token.
+
+- [x] Self-host SQLite real, sin fallback silencioso a memoria – RESUELTO en v0.0.9.27 (PR #42, mergeado). Corrige 2 bugs reales encontrados en prueba end-to-end (Node 20.20.1): `node:sqlite` cargado con `require` en paquete ESM, y un `try/catch` que caia a memoria en silencio sin persistir nada. Migrado a `better-sqlite3` en todos los stores. `store-factory.ts` ahora lanza error explicito en vez de degradar en silencio.
+
+- [x] Paso 1 del Wizard: generacion determinista de la primera pagina – RESUELTO en v0.0.9.27 (PRs #44 y #45, mergeados). `packages/onboarding/src/intent-to-layout.ts` (4 plantillas: portfolio, store, link-in-bio, landing) detras de una interfaz enchufable a futuro LLM/Nuvid. `POST /admin/api/wizard/generate-page` genera un borrador real desde el Paso 1; el Paso 5 ofrece abrirlo en el editor. Pendiente: verificacion visual del borrador generado; textos genericos fuera del campo de intencion.
+
+- [x] Vista previa real y ProductGrid conectado dentro del canvas del Editor Visual – RESUELTO en v0.0.9.28 (PR #47, mergeado). Antes, el canvas solo mostraba icono + nombre de cada bloque, ningun elemento se veia de verdad. Ahora renderiza el HTML real de cada bloque; ProductGrid con `source: "medusa"` pide productos reales via `/admin/api/product-preview` con cache y debounce de 300 ms. 15 tests nuevos.
+
+- [x] CI de tests unitarios real, en Node 22 y 24 – RESUELTO en v0.0.9.27 (PR #46, mergeado). `unit-tests.yml` corre vitest en Node 24 (bloqueante) y 22 (informativo), mas grep de `node:sqlite` y smoke de `npm run setup`.
+
 -----
 
 ## Funcionalidades Internas en Desarrollo
@@ -96,7 +115,6 @@ Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no dep
 
 ### Seguridad, sandbox e identidad de agentes
 
-- [ ] Conectar `issueCapabilityToken` en el caller real (`sandbox-runtime.ts` o quien construya `SandboxExecutionInput` para adaptadores edge): generar el token, registrarlo con `CapabilityTokenStore.issue(token, pluginName, granted)` y devolverlo. Sin esto, los adaptadores edge fallan explicito (de forma segura) ante cualquier capacidad no-red. Prerrequisito del item "Despliegue y Pruebas Edge Reales".
 - [ ] Documentar `PORTALESS_CAPABILITY_BRIDGE_URL` en `.env.example` (URL del Capability Bridge que usan los adaptadores edge como fallback de `input.bridgeUrl`). **[Refactor v0.0.9.26]** Tarea nueva, extraida de la entrada historica del endpoint HTTP del bridge. No verificado si ya existe en `.env.example`.
 - [ ] Verificacion real de firmas ML-DSA (FIPS 204) en `web-bot-auth.ts` — el esquema ya tiene `key_algorithm`, el codigo solo verifica Ed25519. **[Refactor v0.0.9.26]** Tarea extraida de la entrada "Crypto-agilidad post-cuantica" en Produccion.
 - [ ] Identidad AT Protocol
@@ -365,13 +383,32 @@ Portaless Cloud Images no existe todavia – ni como stub ni como spec formal. L
 |#19|fix/v0.0.9.7-password-reset-persistence-roadmap -> main     |Mergeado          |Persistencia real D1/SQLite para PasswordResetStore, ROADMAP.md con aclaraciones de negocio                                                                             |
 |#20|docs/v0.0.9.8-roadmap-restructure -> main                   |Mergeado          |ROADMAP.md reorganizado en 3 categorias: Produccion / Internas / Externas                                                                                               |
 |#21|feat/v0.0.9.9-plugin-ecosystem -> main                      |Mergeado (via #28)|Limpieza de tipos en node-isolated-vm.ts, registro dinamico de plugins con trustScore comunitario, endpoint HTTP interno de CapabilityHostBridge, ROADMAP.md actualizado|
-|#28|agentic -> main                                             |Mergeado          |Ecosistema de plugins: registro dinamico, persistencia D1/SQLite, UI de trustScore – cierra el pendiente parcial del PR #21                                             |
-|#33|mcp-server-sync -> fixes-main                               |Mergeado          |Conecta las 6 tools reales del MCP server a createPortalessMcpServer(); fix de import faltante; ElementType nuevos aceptados en create_page/update_page                 |
-|#34|atomic-elements-design -> fixes-main                        |Mergeado          |Incorpora los 4 ElementType de link-en-bio (LinkList, SocialIcons, ProfileHeader, StoreBlock)                                                                           |
-|#35|fixes-main -> main                                          |Mergeado          |Consolida mcp-server-sync + atomic-elements-design en main; AGENT.md actualizado con el estado real del MCP server                                                      |
-|#36|main -> agentic                                             |Mergeado          |Sincroniza agentic con los cambios de main (mcp-server conectado, Atomic Elements link-en-bio) antes de esta actualizacion de ROADMAP.md                                |
-|#37-#39|—|Sin registrar en este roadmap|Numeros de PR no documentados aqui; completar consultando el historial de GitHub antes de asumir su contenido **[Refactor v0.0.9.26]**|
-|#40|agentic -> main|Mergeado|Security fix: tokens efimeros en Capability Bridge (`CapabilityTokenStore`, tabla `capability_bridge_tokens`), 17 tests de seguridad, CI real de validacion de manifiestos (`scripts/validate-manifests.ts` + `tsx`), fixes de tests de `web-bot-auth` y `admin-permissions`|
+| #22 | mcp-server-sync -> main | Mergeado | Servidor MCP nativo funcional: permisos, auditoria, primeras tools reales |
+| #23 | mcp-server-sync -> main | Mergeado | Tools de administracion del MCP server (commit final 6/6) |
+| #24 | docs-license-audit -> main | Mergeado | Correccion licencia MIT->AGPL-3.0 y estado real en AGENT.md, package.json, CHANGELOG.md, CONTRIBUTING.md |
+| #25 | public-audit-prep -> main | Mergeado | Public audit prep |
+| #26 | main -> agentic | Mergeado | Sincronizacion main->agentic (fixes de SQLi, .gitignore y SECURITY.md) |
+| #27 | agentic -> main | Mergeado | Correcciones de auditoria previa a publicacion: branding, CI, dev-mode y licenciamiento del SDK |
+| #28 | agentic -> main | Mergeado | Ecosistema de plugins: registro dinamico, persistencia D1/SQLite, UI de trustScore |
+| #29 | agentic -> main | Mergeado | SiteTrustScore: diseño, persistencia D1/SQLite, endpoints HTTP, UI y rate-limiting |
+| #30 | agentic -> main | Mergeado | SiteTrustScore: endpoints de agent y escrow_report – las 4 fuentes completas |
+| #31 | agentic -> main | Mergeado | SiteTrustScore: CLI de onboarding self-hosted + crypto-agilidad post-cuantica |
+| #32 | agentic -> main | Mergeado | Fix: restaura elementRegistry pisado por error de ruta |
+| #33 | mcp-server-sync -> fixes-main | Mergeado | Conecta las 6 tools reales del MCP server a createPortalessMcpServer() |
+| #34 | atomic-elements-design -> fixes-main | Mergeado | Incorpora los 4 ElementType de link-en-bio |
+| #35 | fixes-main -> main | Mergeado | Consolida mcp-server-sync + atomic-elements-design en main |
+| #36 | main -> agentic | Mergeado | Sincroniza agentic con los cambios de main |
+| #37 | agentic -> main | Mergeado | Sincroniza ROADMAP.md de agentic a main |
+| #38 | agentic -> main | Mergeado | Protocol APW: especificacion formal + resolver real |
+| #39 | agentic -> main | Mergeado | did:apw identity + Wizard de onboarding (5 pasos, end-to-end) |
+| #40 | agentic -> main | Mergeado | Security fix: tokens efimeros en Capability Bridge + CI real de manifiestos |
+| #41 | agentic -> main | Mergeado | Motor de Despliegue: OAuth de infraestructura con GitHub App |
+| #42 | agentic -> main | Mergeado | Self-host SQLite real (better-sqlite3, sin fallback silencioso a memoria) |
+| #43 | deploy-manifest -> agentic | Mergeado | GitHub App Manifest & Edge Token Issuer |
+| #44 | wizard-intent -> deploy-manifest | Mergeado | Deterministic Layout Generation para el Onboarding |
+| #45 | wizard-intent -> agentic | Mergeado | Item 2 (Deterministic Layout Generation) -- lo que quedo afuera del PR #43 |
+| #46 | agentic -> main | Mergeado | v0.0.9.27: migracion SQLite + items 1 y 2 (GitHub App, Wizard) + CI de tests unitarios |
+| #47 | agentic -> main | Mergeado | Vista previa real en el canvas del Editor Visual + ProductGrid con Medusa |
 
 ## Tareas manuales pendientes
 
@@ -381,7 +418,7 @@ Portaless Cloud Images no existe todavia – ni como stub ni como spec formal. L
 1. Revisar y, si aplica, re-licenciar bajo AGPL-3.0 cualquier codigo de terceros vendorizado o dependencia embebida directamente en el arbol del repo – REVISADO en v0.0.9.5: sin vendor/third_party en el arbol raiz; infra/ es config propia de despliegue; plugins-registry/ solo tiene un README. Sin hallazgos, no sustituye una auditoria legal formal de las dependencias de npm.
 1. Probar `DenoDeployAdapter` y `CloudflareWorkersForPlatformsAdapter` (v0.0.9.1) contra cuentas reales de prueba – solo estan verificados con `fetch` mockeado. En espera de credenciales, sin fecha estimada.
 1. Desplegar el Worker “dispatcher” fijo que requiere `CloudflareWorkersForPlatformsAdapter`. Fuera de alcance hasta contar con cuenta real.
-1. Agregar `PORTALESS_INTERNAL_BRIDGE_TOKEN` a `.env.example`, y modificar `deno-deploy.ts`/`cloudflare-workers-for-platforms.ts` para que apunten `bridgeUrl` al endpoint nuevo (`functions/api/internal/capability-bridge.js`, v0.0.9.9). El codigo del endpoint ya esta completo – falta conectarlo a los adaptadores edge y probarlo contra una cuenta real. **[Refactor v0.0.9.26]** OBSOLETA desde v0.0.9.26 (PR #40): `PORTALESS_INTERNAL_BRIDGE_TOKEN` ya no existe; el bridge valida tokens efimeros. Lo vigente es documentar `PORTALESS_CAPABILITY_BRIDGE_URL` y conectar `issueCapabilityToken` (ver "Funcionalidades Internas en Desarrollo").
+1. `PORTALESS_INTERNAL_BRIDGE_TOKEN` en `.env.example` – OBSOLETO desde v0.0.9.26 (PR #40): esa variable ya no existe, el bridge valida tokens efimeros. Lo vigente es documentar `PORTALESS_CAPABILITY_BRIDGE_URL` (ver "Funcionalidades Internas en Desarrollo" -- verificado por busqueda de codigo que sigue sin estar en `.env.example`).
 1. Publicar `docs/architecture/licensing-boundaries.md` de forma visible desde el README. – HECHO en v0.0.9.4 (PR #15).
 1. Agregar UI de trustScore en el Centro de Permisos – HECHO esta sesion (`buildTrustBadge()` en `permission-center-ui.ts`, ver “Funcionalidades en Produccion”).
 1. Confirmar si `.github/workflows/ci.yml` ejecuta `npm test` – señalado como no confirmado en `docs/architecture/site-trust-score.md` durante esta sesion; no bloqueante para los commits que lo mencionan, pero pendiente de verificacion manual antes de asumir que cualquier PR reciente paso CI en verde solo porque el PR quedo abierto sin errores visibles. **[Refactor v0.0.9.26]** HECHO: `ci.yml` ejecuta `npm test` y el job se detiene ante fallos (confirmado empiricamente en el PR #40).
