@@ -18,6 +18,7 @@
     "setup": "tsx scripts/setup.mjs",
     "setup:d1": "tsx scripts/setup-d1.mjs",
     "generate-schema": "node scripts/generate-schema.mjs",
+    "publish": "tsx scripts/publish-site.mjs",
     "test": "vitest run"
   },
   "dependencies": {
