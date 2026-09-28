@@ -111,12 +111,65 @@ export async function completeGitHubOAuth(
   return { ok: true, accountLogin: login };
 }
 
+type StoredCredential = NonNullable<Awaited<ReturnType<DeploymentOAuthStore["getCredential"]>>>;
+
 /** Uso server-side exclusivo (Tarea 2). Nunca exponer por HTTP. */
 export async function getGitHubAccessToken(cfg: GitHubOAuthConfig, store: DeploymentOAuthStore): Promise<string | null> {
   const c = await store.getCredential(GITHUB_PROVIDER);
   if (!c) return null;
   if (c.accessExpiresAt && Date.parse(c.accessExpiresAt) - Date.now() < 60_000) {
-    return null; // TODO siguiente commit: refresh con refresh_token (ghr_), rota ambos tokens.
+    return refreshGitHubAccessToken(cfg, store, c);
   }
   return decryptToken(c.accessTokenEnc, cfg.encryptionKey);
+}
+
+/**
+ * Renueva el access token (ghu_) usando el refresh token (ghr_) guardado.
+ * GitHub App user-to-server: rota AMBOS tokens en cada refresh -- el
+ * refresh_token anterior queda invalido despues de usarse una vez. Devuelve
+ * null (sin lanzar) si no hay refresh token, si ya vencio, o si GitHub
+ * rechaza el intercambio -- mismo principio de fallo silencioso que ya
+ * tenia getGitHubAccessToken para el token vencido.
+ */
+async function refreshGitHubAccessToken(
+  cfg: GitHubOAuthConfig,
+  store: DeploymentOAuthStore,
+  c: StoredCredential
+): Promise<string | null> {
+  if (!c.refreshTokenEnc) return null;
+  if (c.refreshExpiresAt && Date.parse(c.refreshExpiresAt) <= Date.now()) return null;
+
+  const f = cfg.fetchImpl ?? fetch;
+  const refreshToken = await decryptToken(c.refreshTokenEnc, cfg.encryptionKey);
+  let tok: any;
+  try {
+    const res = await f("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify({
+        client_id: cfg.clientId,
+        client_secret: cfg.clientSecret,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+    tok = await res.json();
+    if (!res.ok || tok.error || !tok.access_token) return null;
+  } catch {
+    return null;
+  }
+
+  const t = Date.now();
+  await store.saveCredential({
+    ...c,
+    accessTokenEnc: await encryptToken(tok.access_token, cfg.encryptionKey),
+    refreshTokenEnc: tok.refresh_token ? await encryptToken(tok.refresh_token, cfg.encryptionKey) : c.refreshTokenEnc,
+    accessExpiresAt: tok.expires_in ? new Date(t + tok.expires_in * 1000).toISOString() : null,
+    refreshExpiresAt: tok.refresh_token_expires_in
+      ? new Date(t + tok.refresh_token_expires_in * 1000).toISOString()
+      : c.refreshExpiresAt,
+    updatedAt: new Date(t).toISOString(),
+  });
+
+  return tok.access_token;
 }
