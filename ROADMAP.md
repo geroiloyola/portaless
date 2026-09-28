@@ -96,6 +96,7 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 ### Self-host (Ready)
 
 - [x] Self-host SQLite real, sin fallback silencioso a memoria – RESUELTO en v0.0.9.27 (PR #42, mergeado). Corrige 2 bugs reales encontrados en prueba end-to-end (Node 20.20.1): `node:sqlite` cargado con `require` en paquete ESM, y un `try/catch` que caia a memoria en silencio sin persistir nada. Migrado a `better-sqlite3` en todos los stores. `store-factory.ts` ahora lanza error explicito en vez de degradar en silencio.
+- [x] `engines.node` corregido a `>=24.0.0` y README actualizado (5 secciones) – RESUELTO en v0.0.9.29. Confirmado contra el `package.json` real de `isolated-vm@7` en GitHub: declara `"engines": {"node": ">=24.0.0"}`. Antes, con `engines: ">=20"`, `npm install` en Node 20-23 solo emitia un warning (no bloqueaba) y el sandbox de plugins fallaba despues, en tiempo de ejecucion, sin aviso claro. README.md tambien tenia 2 problemas: el minimo desactualizado, y una recomendacion obsoleta sobre `node:sqlite` (reemplazado por `better-sqlite3` desde el PR #42). Commits: `521f359` (package.json), `0048205` (README.md).
 
 -----
 
@@ -111,10 +112,6 @@ Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no dep
 - [ ] Conectar un caller de produccion real que instancie `new SandboxRuntime` fuera de los tests – `issueCapabilityToken` ya emite tokens reales (PR #43), pero todavia no existe el punto de entrada de produccion que construya `SandboxExecutionInput` usandolo.
 - [ ] MCP server: identidad de agente por invocacion (Opcion B) – HOY: `AgentIdentity` es fija por proceso (Opcion A, via `MCP_AGENT_KEY`). Bloqueante para cualquier escenario donde una misma instancia deba distinguir entre multiples agentes/usuarios de forma segura. Documentado como riesgo de seguridad activo en `AGENT.md`.
 - [ ] Identidad AT Protocol
-
-### Self-host
-
-- [ ] Revisar si `isolated-vm@7` (que exige Node >= 24) esta correctamente reflejado en `engines` de `package.json` (hoy `>=20` tras el PR #42) y en la documentacion de self-host, para evitar que alguien instale en Node 20-23 y el sandbox de plugins falle en silencio.
 
 ### Onboarding (Wizard)
 
@@ -401,6 +398,10 @@ Portaless Cloud Images no existe todavia – ni como stub ni como spec formal. L
 | #45 | wizard-intent -> agentic | Mergeado | Item 2 (Deterministic Layout Generation) -- lo que quedo afuera del PR #43 |
 | #46 | agentic -> main | Mergeado | v0.0.9.27: migracion SQLite + items 1 y 2 (GitHub App, Wizard) + CI de tests unitarios |
 | #47 | agentic -> main | Mergeado | Vista previa real en el canvas del Editor Visual + ProductGrid con Medusa |
+| #48 | agentic -> main | Mergeado | Sincroniza ROADMAP.md con los PRs #22 a #47 |
+| #49 | agentic -> main | Mergeado | Motor de Despliegue: publicar el sitio real en GitHub Pages |
+| #50 | agentic -> main | Mergeado | Wizard: instruccion npm run publish cuando GitHub ya esta conectado |
+| #51 | agentic -> main | Mergeado | Fix: engines.node >=24 y README (isolated-vm@7) |
 
 ## Tareas manuales pendientes
 
