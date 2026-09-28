@@ -13,6 +13,14 @@
 //      "Conectar cuenta" -> /admin/api/oauth/github/start (OAuth + PKCE).
 //   C) Conectado: muestra la cuenta y permite continuar.
 // Cloudflare Pages sigue "Proximamente": no hay flujo implementado.
+//
+// v0.0.9.29: cuando el estado es "Conectado" (C), se agrega un bloque
+// informativo con el comando real que publica el sitio (scripts/publish-site.mjs,
+// ver docs/architecture/deployment-engine.md). No es un boton -- ese script
+// necesita filesystem y child_process reales (astro build), que no existen
+// en el runtime edge de las Cloudflare Pages Functions que sirven esta
+// misma pagina. El admin lo corre a mano desde su terminal self-hosted,
+// mismo principio que npm run setup.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Conecta tu infraestructura — Portaless Wizard">
@@ -33,6 +41,11 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       <span class="wiz-provider-desc">Gratis para siempre. Ideal si ya usas GitHub.</span>
       <span class="wiz-gh-status" id="gh-status">Comprobando estado…</span>
       <a class="wiz-gh-action" id="gh-action" hidden></a>
+      <div class="wiz-publish-note" id="gh-publish-note" hidden>
+        <p class="wiz-publish-note-title">Para publicar tu sitio, corre esto desde la terminal donde tienes Portaless instalado:</p>
+        <code class="wiz-publish-cmd" id="gh-publish-cmd">npm run publish</code>
+        <p class="wiz-publish-note-detail" id="gh-publish-detail"></p>
+      </div>
     </div>
 
     <button class="wiz-provider-card" data-provider="cloudflare-pages" disabled>
@@ -68,6 +81,8 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 
   const statusEl = document.getElementById("gh-status") as HTMLSpanElement;
   const action = document.getElementById("gh-action") as HTMLAnchorElement;
+  const publishNote = document.getElementById("gh-publish-note") as HTMLDivElement;
+  const publishDetail = document.getElementById("gh-publish-detail") as HTMLParagraphElement;
 
   function show(text: string, href: string, label: string) {
     statusEl.textContent = text;
@@ -83,6 +98,10 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       const s = await res.json();
       if (s.connected) {
         show(`Conectado como @${s.accountLogin || "(cuenta sin nombre)"}.`, "/admin/wizard/step-4-backup-key", "Continuar →");
+        if (s.accountLogin) {
+          publishDetail.textContent = `Tu sitio quedara publicado en https://${s.accountLogin}.github.io/. El comando compila el sitio y sube el resultado -- no publica nada hasta que lo corras.`;
+          publishNote.hidden = false;
+        }
       } else if (s.appRegistered || s.envConfigured) {
         const label = s.appSlug ? ` (${s.appSlug})` : "";
         show(`GitHub App lista${label}. Paso B: conecta tu cuenta.`, "/admin/api/oauth/github/start", "Conectar cuenta de GitHub");
@@ -159,6 +178,25 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     text-decoration: none;
   }
   .wiz-gh-action:hover { filter: brightness(1.1); }
+
+  .wiz-publish-note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 8px;
+    background: #0f1115;
+  }
+  .wiz-publish-note-title { margin: 0 0 6px; font-size: 0.78rem; color: var(--portaless-muted); }
+  .wiz-publish-cmd {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #1c1f26;
+    color: var(--portaless-accent);
+    font-size: 0.85rem;
+    font-family: "SFMono-Regular", Consolas, monospace;
+  }
+  .wiz-publish-note-detail { margin: 6px 0 0; font-size: 0.76rem; color: var(--portaless-muted); line-height: 1.4; }
 
   .wiz-not-ready-note { max-width: 560px; font-size: 0.85rem; color: var(--portaless-muted); margin-bottom: 8px; }
   .wiz-manual-link { display: inline-block; font-size: 0.85rem; color: var(--portaless-accent); margin-bottom: 24px; }
