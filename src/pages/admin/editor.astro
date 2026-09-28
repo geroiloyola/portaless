@@ -143,11 +143,13 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
         throw new Error(message);
       }
     }
-
-    async list(): Promise<string[]> {
-      throw new Error(
-        "Listado de páginas no implementado todavía: no existe un endpoint GET /admin/pages sin slug en el backend."
-      );
+        async list(): Promise<string[]> {
+      const res = await fetch("/admin/pages", { credentials: "same-origin" });
+      if (!res.ok) {
+        throw new Error(`No se pudo listar las páginas (HTTP ${res.status}).`);
+      }
+      const data = await res.json();
+      return Array.isArray(data.slugs) ? data.slugs : [];
     }
   }
 
