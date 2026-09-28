@@ -20,6 +20,15 @@
 // esa demo standalone sigue existiendo pero queda documentada como tal
 // (elementRegistry duplicado y reducido, sin sesion, sin persistencia
 // real), no como el editor que un admin autenticado deberia usar.
+//
+// v0.0.9.29: agrega el checklist diferido de onboarding (Fase 2, ver
+// ROADMAP.md seccion "Onboarding de un click: Wizard + Checklist
+// diferido"). Consulta GET /admin/api/apw-verification-status (nuevo) --
+// que a su vez usa resolveApwManifest(), ya implementado en
+// packages/apw-resolver desde hace varias sesiones. Deliberadamente NO
+// bloqueante: si el DNS no propago todavia, o si el usuario nunca
+// completa esto, el resto del panel funciona exactamente igual. Ver la
+// entrada correspondiente en ROADMAP.md.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Panel de administración — Portaless">
@@ -27,6 +36,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <h1 class="ai-page-title">Panel de administración</h1>
     <p class="ai-page-subtitle">Accesos directos a las herramientas de administración del sitio.</p>
   </div>
+
+  <section class="ai-apw-checklist" id="ai-apw-checklist">
+    <div class="ai-apw-checklist-row">
+      <div class="ai-apw-checklist-text">
+        <span class="ai-apw-checklist-title">Reclamar tu identidad verificada (Protocol APW)</span>
+        <p class="ai-apw-checklist-desc" id="ai-apw-desc">Comprobando si tu dominio ya tiene publicado el registro TXT de Protocol APW…</p>
+      </div>
+      <div class="ai-apw-checklist-actions">
+        <span class="ai-apw-badge" id="ai-apw-badge" hidden>✓ Sitio Verificado</span>
+        <button type="button" class="ai-apw-verify-btn" id="ai-apw-verify-btn">Verificar ahora</button>
+      </div>
+    </div>
+  </section>
 
   <nav class="ai-nav-grid">
     <a class="ai-nav-card" href="/admin/editor">
@@ -81,10 +103,86 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   });
 </script>
 
+<script>
+  // Checklist diferido de Protocol APW -- ver comentario de cabecera del
+  // archivo. Nunca bloquea: si falla la consulta o el DNS no propago,
+  // el resto del dashboard sigue funcionando igual.
+  const apwDesc = document.getElementById("ai-apw-desc");
+  const apwBadge = document.getElementById("ai-apw-badge");
+  const apwBtn = document.getElementById("ai-apw-verify-btn");
+
+  const REASON_LABELS = {
+    no_valid_manifest_found: "Todavía no encontramos un manifiesto APW válido en tu DNS.",
+  };
+
+  async function checkApwStatus() {
+    apwBtn.disabled = true;
+    apwBtn.textContent = "Verificando…";
+    try {
+      const res = await fetch("/admin/api/apw-verification-status", { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.verified) {
+        apwBadge.hidden = false;
+        apwDesc.textContent = `Dominio verificado (${data.domain}). Tu identidad APW ya es públicamente resoluble.`;
+        apwBtn.hidden = true;
+      } else {
+        apwBadge.hidden = true;
+        apwBtn.hidden = false;
+        const reasonLabel = REASON_LABELS[data.reason] || `Motivo: ${data.reason}.`;
+        apwDesc.textContent = `Registro TXT de Protocol APW no encontrado todavía en ${data.domain}. ${reasonLabel} Esto es normal si acabás de publicar el sitio -- la propagación de DNS puede tardar minutos u horas. Podés seguir usando el panel con normalidad mientras tanto.`;
+      }
+    } catch (e) {
+      apwDesc.textContent = `No pudimos comprobar el estado de la verificación (${e.message}). Podés reintentar cuando quieras -- el resto del panel funciona igual.`;
+    } finally {
+      apwBtn.disabled = false;
+      apwBtn.textContent = "Verificar ahora";
+    }
+  }
+
+  apwBtn?.addEventListener("click", checkApwStatus);
+  checkApwStatus();
+</script>
+
 <style>
   .ai-page-header { margin-bottom: 28px; }
   .ai-page-title { margin: 0 0 6px; font-size: 1.4rem; }
   .ai-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
+
+  .ai-apw-checklist {
+    max-width: 780px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+  }
+  .ai-apw-checklist-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .ai-apw-checklist-text { flex: 1; min-width: 220px; }
+  .ai-apw-checklist-title { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.5; }
+  .ai-apw-checklist-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .ai-apw-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ai-apw-verify-btn {
+    border: 1px solid var(--portaless-accent);
+    background: transparent;
+    color: var(--portaless-accent);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ai-apw-verify-btn:hover { background: var(--portaless-accent); color: #0f1114; }
+  .ai-apw-verify-btn:disabled { opacity: 0.6; cursor: default; }
 
   .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
 
