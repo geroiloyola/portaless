@@ -109,7 +109,7 @@ This project explicitly documents what's implemented versus what's a pending ske
 
 ### Prerequisites
 
-- **Node.js ≥ 20** (**22.5+** recommended if you want self-hosted SQLite persistence via `node:sqlite`, with no compiled dependencies).
+- **Node.js ≥ 24** (required by `isolated-vm@7`, used for self-hosted plugin sandboxing — installing on Node 20-23 will let `npm install` succeed with only a warning, then fail silently at runtime when the sandbox loads). Self-hosted SQLite persistence uses `better-sqlite3` (a compiled native dependency, not `node:sqlite`) — no extra Node version requirement beyond the 24 minimum above.
 - **Git**.
 - A **GitHub** or **Cloudflare** account if you plan to deploy (both have free tiers that are sufficient).
 
@@ -117,7 +117,7 @@ This project explicitly documents what's implemented versus what's a pending ske
 
 ```bash
 # Install Node.js (via Homebrew)
-brew install node@22
+brew install node@24
 
 # Clone the repository
 git clone https://github.com/geroiloyola/portaless.git
@@ -130,8 +130,8 @@ npm install
 ### Linux
 
 ```bash
-# Debian/Ubuntu — install Node.js 22.x via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+# Debian/Ubuntu — install Node.js 24.x via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt-get install -y nodejs git
 
 # Fedora/RHEL
@@ -145,7 +145,7 @@ npm install
 
 ### Windows
 
-**Recommended: WSL2** (Windows Subsystem for Linux), to avoid path and permission issues with Astro and `node:sqlite`:
+**Recommended: WSL2** (Windows Subsystem for Linux), to avoid path and permission issues with Astro and native compiled dependencies like `better-sqlite3`:
 
 ```powershell
 wsl --install
@@ -156,7 +156,7 @@ Then, inside the WSL terminal (Ubuntu), follow the **Linux** steps above.
 **Alternative without WSL** (PowerShell):
 
 ```powershell
-# Install Node.js from https://nodejs.org (choose version 22 LTS)
+# Install Node.js from https://nodejs.org (choose version 24 LTS)
 # or via winget:
 winget install OpenJS.NodeJS.LTS
 
@@ -204,7 +204,7 @@ All environment variables are optional — Portaless works out of the box, servi
 | `ENABLE_COMMERCE` | Commerce | `true` to enable `/tienda` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
 | `ENABLE_TRUST_LAYER` | Trust Layer | `true` to enable AI agent verification in `functions/_middleware.js` |
 | `PORTALESS_ADMIN_USERNAME` / `PORTALESS_ADMIN_PASSWORD` | Authentication | Credentials for the first admin user, used by `npm run setup` |
-| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence (requires Node 22.5+) |
+| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence, via `better-sqlite3` — no special Node version requirement beyond the project minimum (Node ≥ 24, see Prerequisites) |
 | `PORTALESS_OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` / `_AUTH_URL` / `_TOKEN_URL` / `_USERINFO_URL` | Authentication (OAuth/SSO) | Configuration for each external login provider (e.g. `PORTALESS_OAUTH_GOOGLE_CLIENT_ID`) — without this, login via that provider simply won't appear as an option |
 | `PORTALESS_DEV_MODE` | Authentication (password recovery) | `1` so the recovery endpoint returns the token in the response, useful only for local development without a configured mail server |
 | `DB` (binding, not a traditional env var) | Authentication, Permissions, Trust Layer, Pages | Cloudflare D1 binding, configured in `wrangler.toml` |
