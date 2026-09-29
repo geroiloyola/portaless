@@ -6,15 +6,13 @@
 // /admin/api/site-identity). Unico momento de friccion dura justificada
 // del Wizard. Mismo patron visual que authorized-escrow-providers.astro.
 //
-// NOTA DE DISEÑO (retroalimentacion externa validada): la clave privada
-// ya se cifra y persiste server-side (AES-GCM, ver site-identity-store.ts)
-// -- eso YA es la "Opcion CMS" recomendada, no la opcion stateless. Lo
-// que SIGUE PENDIENTE como mejora futura: hoy la clave de cifrado es un
-// secreto de infraestructura fijo (PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY),
-// no una contraseña maestra elegida por el usuario. Migrar a una
-// contraseña maestra por-usuario requeriria derivar la clave de cifrado
-// via PBKDF2/Argon2 en este mismo paso -- documentado aqui como tarea
-// pendiente explicita, no implementado en esta sesion.
+// NOTA DE DISEÑO: la clave privada se cifra y persiste server-side
+// (AES-GCM con PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY, ver
+// site-identity-store.ts). v0.0.9.30: se DESCARTO derivar la clave de
+// cifrado de una contraseña del usuario -- en un reset por email el
+// servidor no conoce la contraseña vieja y la identidad quedaria
+// irrecuperable. Si la clave se pierde o se filtra, el camino es rotar la
+// identidad (/admin/wizard/rotate-identity), que exige contraseña + 2FA.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Asegura tu identidad — Portaless Wizard">
@@ -49,6 +47,11 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
         <input type="checkbox" id="wiz-confirm-saved" />
         <span>Ya guarde esta clave en un lugar seguro fuera de Portaless</span>
       </label>
+      <p id="wiz-rotate-hint" class="wiz-rotate-hint" style="display:none;">
+        ¿Perdiste la clave o crees que se filtro?
+        <a href="/admin/wizard/rotate-identity">Rotar identidad</a>
+        -- genera una clave nueva y la muestra una sola vez. Pide tu contraseña y tu codigo 2FA.
+      </p>
     </div>
 
     <button id="wiz-continue" class="wiz-continue-btn" type="button" disabled>
@@ -74,6 +77,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   const confirmCheckbox = document.getElementById("wiz-confirm-saved") as HTMLInputElement;
   const continueBtn = document.getElementById("wiz-continue") as HTMLButtonElement;
   const continueError = document.getElementById("wiz-continue-error")!;
+  const rotateHint = document.getElementById("wiz-rotate-hint")!;
 
   async function parseErrorMessage(res: Response): Promise<string> {
     let message = `HTTP ${res.status}`;
@@ -107,6 +111,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       confirmCheckbox.checked = true;
       confirmCheckbox.disabled = true;
       continueBtn.disabled = false;
+      rotateHint.style.display = "";
       return;
     }
 
@@ -214,6 +219,8 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     cursor: pointer;
   }
   .wiz-confirm-checkbox input { margin-top: 2px; }
+  .wiz-rotate-hint { margin: 14px 0 0; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
+  .wiz-rotate-hint a { color: var(--portaless-accent); }
 
   .wiz-continue-btn {
     border: 1px solid var(--portaless-accent);

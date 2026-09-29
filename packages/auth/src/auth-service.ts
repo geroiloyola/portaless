@@ -21,6 +21,10 @@
 //     si el usuario tiene 2FA, ademas el codigo TOTP. Usuarios solo-OAuth
 //     (sin contrasena) necesitan 2FA activo para pasarla. Un codigo por
 //     email queda pendiente: no hay backend de email:send todavia.
+//   - Cambiar o resetear la contrasena cierra TODAS las sesiones del
+//     usuario (incluida la actual): si alguien tenia una sesion robada,
+//     la pierde. Requiere SessionStore.destroyAllForUser(); si el backend
+//     no lo implementa todavia, se avisa por consola.
 
 import { randomBytes } from "node:crypto";
 import type { LoginResult, Role, OAuthProfile } from "./types";
@@ -152,6 +156,7 @@ export class AuthService {
     if (!check.ok) return { success: false, error: check.reason };
     await this.users.setPasswordByUsername(username, newPassword);
     if (this.passwordResets) await this.passwordResets.invalidateAllForUser(username);
+    await this.revokeAllSessions(username);
     await this.recordPasswordEvent(username, "change", context);
     return { success: true };
   }
@@ -184,8 +189,17 @@ export class AuthService {
     }
     await this.users.setPasswordByUsername(request.username, newPassword);
     await this.passwordResets.invalidateAllForUser(request.username);
+    await this.revokeAllSessions(request.username);
     await this.recordPasswordEvent(request.username, "reset", context);
     return { success: true };
+  }
+
+  private async revokeAllSessions(username: string) {
+    if (!this.sessions.destroyAllForUser) {
+      console.warn(`[Portaless Auth] El SessionStore no implementa destroyAllForUser -- las sesiones abiertas de ${username} siguen activas.`);
+      return;
+    }
+    await this.sessions.destroyAllForUser(username);
   }
 
   private async recordPasswordEvent(username: string, kind: PasswordEventKind, context: PasswordEventContext) {

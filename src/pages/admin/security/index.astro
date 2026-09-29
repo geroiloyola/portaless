@@ -1,0 +1,212 @@
+---
+// src/pages/admin/security/index.astro (v0.0.9.30)
+//
+// Pantalla de seguridad de la cuenta: cambio de contraseña (POST
+// /admin/api/change-password) e historial de cambios (GET
+// /admin/api/password-events). El historial muestra fecha, tipo, IP,
+// navegador y pais/ciudad aproximados -- nunca la contraseña.
+// Cambiar la contraseña cierra todas las sesiones, asi que despues se
+// redirige al login.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Seguridad — Portaless">
+  <div class="sec-header">
+    <h1 class="sec-title">Seguridad de tu cuenta</h1>
+    <p class="sec-subtitle">
+      Revisa cuando y desde donde se cambio tu contraseña. Si ves un cambio que no hiciste,
+      cambiala ahora y activa el 2FA.
+    </p>
+  </div>
+
+  <section class="sec-panel">
+    <h2 class="sec-h2">Cambiar contraseña</h2>
+    <form id="sec-change-form">
+      <label class="sec-label">Contraseña actual
+        <input class="sec-input" type="password" name="currentPassword" autocomplete="current-password" required />
+      </label>
+      <label class="sec-label">Contraseña nueva (minimo 8 caracteres)
+        <input class="sec-input" type="password" name="newPassword" autocomplete="new-password" minlength="8" required />
+      </label>
+      <label class="sec-label">Repite la contraseña nueva
+        <input class="sec-input" type="password" name="repeatPassword" autocomplete="new-password" minlength="8" required />
+      </label>
+      <label class="sec-label">Codigo 2FA (si lo tienes activo)
+        <input class="sec-input" type="text" name="totpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+      </label>
+      <button class="sec-btn" type="submit" id="sec-change-btn">Cambiar contraseña</button>
+      <p id="sec-change-msg" class="sec-msg" style="display:none;"></p>
+    </form>
+  </section>
+
+  <section class="sec-panel">
+    <h2 class="sec-h2">Historial de cambios de contraseña</h2>
+    <p id="sec-history-empty" class="sec-muted" style="display:none;">Todavia no hay cambios registrados.</p>
+    <p id="sec-history-error" class="sec-error" style="display:none;"></p>
+    <table id="sec-history" class="sec-table" style="display:none;">
+      <thead>
+        <tr><th>Fecha</th><th>Tipo</th><th>IP</th><th>Ubicacion aprox.</th><th>Navegador</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <p class="sec-muted"><a href="/admin/wizard/rotate-identity">Rotar identidad did:apw</a></p>
+</BaseLayout>
+
+<script>
+  interface PasswordEvent {
+    kind: "reset" | "change";
+    occurredAt: string;
+    ip: string | null;
+    userAgent: string | null;
+    country: string | null;
+    city: string | null;
+  }
+
+  const KIND_LABEL: Record<string, string> = { reset: "Recuperacion por enlace", change: "Cambio estando logueado" };
+
+  function cell(text: string): HTMLTableCellElement {
+    const td = document.createElement("td");
+    td.textContent = text;
+    return td;
+  }
+
+  async function loadHistory(): Promise<void> {
+    const table = document.getElementById("sec-history") as HTMLTableElement;
+    const empty = document.getElementById("sec-history-empty")!;
+    const error = document.getElementById("sec-history-error")!;
+    try {
+      const res = await fetch("/admin/api/password-events");
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { events } = (await res.json()) as { events: PasswordEvent[] };
+      if (!events.length) {
+        empty.style.display = "";
+        return;
+      }
+      const tbody = table.querySelector("tbody")!;
+      for (const e of events) {
+        const tr = document.createElement("tr");
+        const place = [e.city, e.country].filter(Boolean).join(", ") || "desconocida";
+        tr.append(
+          cell(new Date(e.occurredAt).toLocaleString()),
+          cell(KIND_LABEL[e.kind] ?? e.kind),
+          cell(e.ip ?? "desconocida"),
+          cell(place),
+          cell(e.userAgent ?? "desconocido")
+        );
+        tbody.append(tr);
+      }
+      table.style.display = "";
+    } catch (err) {
+      error.textContent = `No se pudo cargar el historial: ${(err as Error).message}`;
+      error.style.display = "";
+    }
+  }
+
+  const REASONS: Record<string, string> = {
+    password_required: "Ingresa tu contraseña actual.",
+    invalid_password: "La contraseña actual no es correcta.",
+    totp_required: "Ingresa el codigo de tu app de 2FA.",
+    invalid_totp: "El codigo de 2FA no es correcto o expiro.",
+    no_step_up_factor: "Tu cuenta no tiene contraseña ni 2FA.",
+    user_not_found: "No se encontro tu usuario.",
+  };
+
+  const form = document.getElementById("sec-change-form") as HTMLFormElement;
+  const msg = document.getElementById("sec-change-msg")!;
+  const btn = document.getElementById("sec-change-btn") as HTMLButtonElement;
+
+  function showMsg(text: string, ok: boolean) {
+    msg.textContent = text;
+    msg.className = ok ? "sec-msg sec-ok" : "sec-msg sec-error";
+    msg.style.display = "";
+  }
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const newPassword = String(fd.get("newPassword") || "");
+    if (newPassword !== String(fd.get("repeatPassword") || "")) {
+      showMsg("Las contraseñas nuevas no coinciden.", false);
+      return;
+    }
+    const body: Record<string, string> = {
+      currentPassword: String(fd.get("currentPassword") || ""),
+      newPassword,
+    };
+    const totp = String(fd.get("totpCode") || "").trim();
+    if (totp) body.totpCode = totp;
+
+    btn.disabled = true;
+    try {
+      const res = await fetch("/admin/api/change-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(REASONS[data.error] ?? data.error ?? "No se pudo cambiar la contraseña.");
+      form.reset();
+      showMsg("Contraseña cambiada. Se cerraron todas tus sesiones: vuelve a iniciar sesion.", true);
+      setTimeout(() => { window.location.href = "/admin/login"; }, 2500);
+    } catch (err) {
+      showMsg((err as Error).message, false);
+      btn.disabled = false;
+    }
+  });
+
+  loadHistory();
+</script>
+
+<style>
+  .sec-header { margin-bottom: 24px; max-width: 720px; }
+  .sec-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .sec-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
+  .sec-panel {
+    max-width: 720px;
+    margin-bottom: 24px;
+    padding: 18px 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: #14161b;
+  }
+  .sec-h2 { margin: 0 0 12px; font-size: 1rem; }
+  .sec-label { display: block; margin-bottom: 12px; font-size: 0.85rem; color: var(--portaless-fg); }
+  .sec-input {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    margin-top: 4px;
+    padding: 8px 10px;
+    background: #0f1114;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    color: var(--portaless-fg);
+    font-size: 0.9rem;
+    box-sizing: border-box;
+  }
+  .sec-btn {
+    border: 1px solid var(--portaless-accent);
+    background: var(--portaless-accent);
+    color: #0f1114;
+    border-radius: 6px;
+    padding: 9px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sec-msg { margin: 10px 0 0; font-size: 0.85rem; }
+  .sec-ok { color: var(--portaless-accent); }
+  .sec-error { color: #ff6e6e; font-size: 0.85rem; }
+  .sec-muted { color: var(--portaless-muted); font-size: 0.85rem; }
+  .sec-muted a { color: var(--portaless-accent); }
+  .sec-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sec-table th, .sec-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--portaless-border); vertical-align: top; }
+  .sec-table th { color: var(--portaless-muted); font-weight: 600; }
+  .sec-table td:last-child { max-width: 220px; word-break: break-word; color: var(--portaless-muted); }
+</style>
