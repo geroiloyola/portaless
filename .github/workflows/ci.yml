@@ -11,7 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.12"
+          # Alineado con "engines.node": ">=24.0.0" de package.json;
+          # isolated-vm@7 (sandbox de plugins) exige Node >= 24.
+          node-version: "24"
       - name: Instalar dependencias
         run: npm install
       - name: Run tests

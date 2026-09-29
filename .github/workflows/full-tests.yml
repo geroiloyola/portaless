@@ -4,18 +4,24 @@
 # Por que existe:
 #   - unit-tests.yml solo corre tests/unit/.
 #   - sandbox-e2e.yml solo corre UN test e2e.
-#   - ci.yml (npm test) si corre todo, pero solo en PRs contra main, en
-#     Node 22.12 (isolated-vm@7 pide Node >= 24) y sin cobertura.
+#   - ci.yml (npm test) corre todo, pero solo en PRs contra main y sin
+#     cobertura.
 # Este workflow es el que deberia marcarse como "required" en la regla de
-# proteccion de main: si falla un solo test de cualquier parte, no se
-# mergea.
+# proteccion de main: si falla un solo test de cualquier parte, o si la
+# cobertura baja del minimo, no se mergea.
 #
 # Cobertura: @vitest/coverage-v8 se instala con --no-save para no tocar
 # package.json ni package-lock.json. La version DEBE coincidir con la de
-# vitest (hoy 5.0.2, ver logs del CI); si se actualiza vitest, actualizar
-# COVERAGE_VERSION. Por ahora la cobertura es INFORMATIVA (no falla el
-# job): primero hay que ver el numero real. Despues se fija un minimo con
-# --coverage.thresholds.lines=N y el job falla si baja.
+# vitest (hoy 5.0.2); si se actualiza vitest, actualizar COVERAGE_VERSION.
+#
+# Umbrales (v0.0.9.30): linea de base medida en el merge del PR #55 =
+# lineas 47.43 / sentencias 46.67 / funciones 49.17 / ramas 42.51.
+# Los minimos quedan ~2-3 puntos por debajo (45/44/46/40) para absorber
+# variaciones del reporte sin volver fragil el pipeline. Subirlos de a poco
+# a medida que se agreguen tests; nunca bajarlos para hacer pasar un PR.
+#
+# *.sql se excluye: coverage-v8 intentaba parsear los schema.sql como
+# JavaScript y llenaba el log de PARSE_ERROR.
 
 name: Full Tests
 
@@ -70,6 +76,11 @@ jobs:
           --coverage.include='src/**/*.ts'
           --coverage.exclude='**/*.test.ts'
           --coverage.exclude='**/tests/**'
+          --coverage.exclude='**/*.sql'
+          --coverage.thresholds.lines=45
+          --coverage.thresholds.statements=44
+          --coverage.thresholds.functions=46
+          --coverage.thresholds.branches=40
 
       - name: Resumen de cobertura en la pagina del run
         if: always()
@@ -79,12 +90,13 @@ jobs:
             const p = 'coverage/coverage-summary.json';
             if (!fs.existsSync(p)) { console.log('Sin reporte de cobertura.'); process.exit(0); }
             const t = JSON.parse(fs.readFileSync(p, 'utf8')).total;
-            const row = (k, label) => '| ' + label + ' | ' + t[k].pct + '% | ' + t[k].covered + ' / ' + t[k].total + ' |';
+            const min = { lines: 45, statements: 44, functions: 46, branches: 40 };
+            const row = (k, label) => '| ' + label + ' | ' + t[k].pct + '% | ' + min[k] + '% | ' + t[k].covered + ' / ' + t[k].total + ' |';
             const md = [
               '## Cobertura de tests',
               '',
-              '| Metrica | % | Cubierto / total |',
-              '|---|---|---|',
+              '| Metrica | % | Minimo | Cubierto / total |',
+              '|---|---|---|---|',
               row('lines', 'Lineas'),
               row('statements', 'Sentencias'),
               row('functions', 'Funciones'),
