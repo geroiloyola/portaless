@@ -10,13 +10,27 @@
 // en el TXT record _apw.<dominio> de la URL con la que se sirvio esta
 // request. No compara contra un siteId esperado de antemano -- si alguien
 // controla el DNS del dominio lo suficiente como para publicar un TXT
-// record ahi, esa es la señal de propiedad real que Protocol APW define.
+// record ahi, esa es la senal de propiedad real que Protocol APW define.
 //
-// Diseño deliberado: esto NUNCA bloquea nada. Si el DNS no propago todavia
+// v0.0.9.30: ademas devuelve `txtRecord` ({ name, value, bytes }): el
+// registro exacto que el usuario tiene que pegar en su proveedor de DNS,
+// generado con buildApwManifest()/serializeApwManifest() -- las mismas
+// funciones que usa packages/apw-resolver/src/dnslink/cli.mjs. Antes esto
+// solo se podia obtener corriendo el CLI a mano, lo que dejaba afuera a
+// un usuario no tecnico. `withinLimit` avisa si el valor supera los
+// ~512 bytes practicos de una respuesta DNS (mismo limite que valida el CLI).
+//
+// Diseno deliberado: esto NUNCA bloquea nada. Si el DNS no propago todavia
 // (puede tardar minutos u horas), el sitio sigue funcionando exactamente
-// igual -- el checklist es informativo, no un gate. Ver la entrada
-// correspondiente en ROADMAP.md sobre que pasa si nunca se completa.
-import { resolveApwManifest } from "../../../packages/apw-resolver/src/index";
+// igual -- el checklist es informativo, no un gate.
+import {
+  resolveApwManifest,
+  buildApwManifest,
+  serializeApwManifest,
+  APW_TXT_PREFIX,
+} from "../../../packages/apw-resolver/src/index";
+
+const TXT_PRACTICAL_LIMIT_BYTES = 512;
 
 function requireAdmin(context) {
   // Mismo contrato que el resto de /admin: _middleware.js expone context.data.user.
@@ -27,6 +41,18 @@ function requireAdmin(context) {
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+}
+
+function buildSuggestedTxtRecord(domain) {
+  const value = serializeApwManifest(buildApwManifest({ siteId: domain, contentKinds: ["mixed"] }));
+  const bytes = new TextEncoder().encode(value).length;
+  return {
+    name: `${APW_TXT_PREFIX}.${domain}`,
+    type: "TXT",
+    value,
+    bytes,
+    withinLimit: bytes <= TXT_PRACTICAL_LIMIT_BYTES,
+  };
 }
 
 export async function onRequestGet(context) {
@@ -41,5 +67,6 @@ export async function onRequestGet(context) {
     verified: result.resolved,
     reason: result.reason,
     manifest: result.manifest ?? null,
+    txtRecord: buildSuggestedTxtRecord(domain),
   });
 }
