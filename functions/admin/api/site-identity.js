@@ -6,18 +6,32 @@
 // valida (context.data.user) para GET, y canWrite(role) del lado del
 // SERVIDOR para POST.
 //
-// v0.0.9.30 -- rotacion. POST con { rotate: true, confirm: "ROTAR" }
-// reemplaza la identidad existente por un par de claves nuevo. El campo
-// confirm evita rotaciones accidentales (un doble click o un reintento del
-// wizard no debe destruir la clave vigente). domain es opcional al rotar:
-// si no viene, se reusa el de la identidad actual. Sin rotate, el
-// comportamiento es el mismo de antes (409 si ya existe).
+// v0.0.9.30 -- rotacion. POST con
+//   { rotate: true, confirm: "ROTAR", password, totpCode? }
+// reemplaza la identidad existente por un par de claves nuevo.
+//   - confirm evita rotaciones accidentales (doble click, reintento).
+//   - password (+ totpCode si el admin tiene 2FA) es verificacion
+//     reforzada via AuthService.verifyStepUp(): una sesion robada sola no
+//     alcanza para destruir la identidad del sitio.
+//   - domain es opcional al rotar: si no viene, se reusa el actual.
+// Sin rotate, el comportamiento es el mismo de antes (409 si ya existe).
 
 import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { generateApwDid } from "../../../packages/apw-resolver/src/did-apw/generate.ts";
+import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 
 const SITE_ID = "default";
 const ROTATE_CONFIRMATION = "ROTAR";
+
+const STEP_UP_MESSAGES = {
+  password_required: "Ingresa tu contrasena actual para rotar la identidad.",
+  invalid_password: "La contrasena no es correcta.",
+  totp_required: "Ingresa el codigo de tu app de 2FA.",
+  invalid_totp: "El codigo de 2FA no es correcto o expiro.",
+  no_step_up_factor: "Tu cuenta no tiene contrasena ni 2FA. Activa 2FA antes de rotar la identidad.",
+  user_not_found: "No se encontro tu usuario.",
+};
 
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -58,7 +72,7 @@ export async function onRequestPost(context) {
     return json({ error: "invalid_json_body" }, 400);
   }
 
-  const { domain, rotate, confirm } = body ?? {};
+  const { domain, rotate, confirm, password, totpCode } = body ?? {};
   if (domain !== undefined && (typeof domain !== "string" || !domain.trim())) {
     return json({ error: "invalid_body", message: "domain debe ser un string no vacio." }, 400);
   }
@@ -79,6 +93,16 @@ export async function onRequestPost(context) {
         400
       );
     }
+
+    const auth = new AuthService(await createUsersStore(env), await createSessionStore(env));
+    const check = await auth.verifyStepUp(user.username, {
+      password: typeof password === "string" ? password : undefined,
+      totpCode: typeof totpCode === "string" ? totpCode : undefined,
+    });
+    if (!check.ok) {
+      return json({ error: "step_up_failed", reason: check.reason, message: STEP_UP_MESSAGES[check.reason] ?? "Verificacion fallida." }, 401);
+    }
+
     const keyPair = await generateApwDid(domain ?? existing.domain);
     const record = await store.rotate(SITE_ID, keyPair, user.username);
     return json(
@@ -95,7 +119,7 @@ export async function onRequestPost(context) {
     return json(
       {
         error: "identity_already_exists",
-        message: `Este sitio ya tiene una identidad did:apw. Para reemplazarla, envia { rotate: true, confirm: "${ROTATE_CONFIRMATION}" }.`,
+        message: "Este sitio ya tiene una identidad did:apw. Para reemplazarla, usa la pantalla de rotacion (/admin/wizard/rotate-identity).",
         identity: existing,
       },
       409

@@ -1,0 +1,134 @@
+---
+// /admin/wizard/rotate-identity (v0.0.9.30)
+// Pantalla para rotar la identidad did:apw del sitio. Llama a
+// POST /admin/api/site-identity con { rotate: true, confirm: "ROTAR",
+// password, totpCode }. La clave privada nueva se muestra UNA sola vez y
+// se ofrece para descargar, igual que en step-4-backup-key.
+// Pagina autocontenida a proposito (sin layout compartido) para no
+// depender de componentes que puedan cambiar; protegida por el mismo
+// middleware de /admin/*.
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rotar identidad did:apw | Portaless</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+      .warn { background: #fff4e5; border: 1px solid #f0b35b; border-radius: 8px; padding: 1rem; }
+      label { display: block; margin-top: 1rem; font-weight: 600; }
+      input { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; }
+      button { margin-top: 1.25rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: 6px; cursor: pointer; }
+      #rotate-btn { background: #c0392b; color: #fff; }
+      #rotate-btn:disabled { background: #ccc; cursor: not-allowed; }
+      #download-btn { background: #1f6feb; color: #fff; }
+      .error { color: #c0392b; margin-top: 1rem; }
+      code { word-break: break-all; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/admin/wizard">&larr; Volver al wizard</a></p>
+    <h1>Rotar identidad did:apw</h1>
+    <p>Identidad actual: <code id="current-did">cargando...</code></p>
+
+    <div class="warn">
+      <strong>Esto no se puede deshacer.</strong> La clave actual se descarta: todo lo firmado con ella deja de verificar.
+      Rota solo si crees que la clave se filtro o si sabes que necesitas una nueva.
+    </div>
+
+    <form id="rotate-form">
+      <label>Contrasena actual
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <label>Codigo 2FA (si lo tienes activo)
+        <input type="text" name="totpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+      </label>
+      <label>Escribe ROTAR para confirmar
+        <input type="text" name="confirm" autocomplete="off" required />
+      </label>
+      <button type="submit" id="rotate-btn" disabled>Rotar identidad</button>
+      <p class="error" id="error" hidden></p>
+    </form>
+
+    <section id="result" hidden>
+      <h2>Identidad rotada</h2>
+      <p>Anterior: <code id="previous-did"></code></p>
+      <p>Nueva: <code id="new-did"></code></p>
+      <div class="warn">
+        Descarga ahora la clave privada nueva. <strong>No se vuelve a mostrar.</strong>
+      </div>
+      <button type="button" id="download-btn">Descargar clave privada</button>
+    </section>
+
+    <script>
+      const form = document.getElementById("rotate-form");
+      const btn = document.getElementById("rotate-btn");
+      const errorEl = document.getElementById("error");
+      const confirmInput = form.elements.namedItem("confirm");
+      let privateKeyJwk = null;
+
+      fetch("/admin/api/site-identity")
+        .then((r) => r.json())
+        .then(({ identity }) => {
+          document.getElementById("current-did").textContent = identity ? identity.did : "sin identidad (genera una en el wizard)";
+          if (!identity) form.hidden = true;
+        })
+        .catch(() => (document.getElementById("current-did").textContent = "no se pudo cargar"));
+
+      confirmInput.addEventListener("input", () => {
+        btn.disabled = confirmInput.value.trim() !== "ROTAR";
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.hidden = true;
+        btn.disabled = true;
+        const fd = new FormData(form);
+        const body = {
+          rotate: true,
+          confirm: String(fd.get("confirm") || "").trim(),
+          password: String(fd.get("password") || ""),
+        };
+        const totp = String(fd.get("totpCode") || "").trim();
+        if (totp) body.totpCode = totp;
+
+        try {
+          const res = await fetch("/admin/api/site-identity", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || data.error || "Error al rotar.");
+          privateKeyJwk = data.privateKeyJwk;
+          form.reset();
+          form.hidden = true;
+          document.getElementById("previous-did").textContent = data.previousDid;
+          document.getElementById("new-did").textContent = data.identity.did;
+          document.getElementById("current-did").textContent = data.identity.did;
+          document.getElementById("result").hidden = false;
+        } catch (err) {
+          errorEl.textContent = err.message;
+          errorEl.hidden = false;
+          btn.disabled = confirmInput.value.trim() !== "ROTAR";
+        }
+      });
+
+      document.getElementById("download-btn").addEventListener("click", () => {
+        if (!privateKeyJwk) return;
+        const blob = new Blob([JSON.stringify(privateKeyJwk, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "portaless-did-apw-private-key.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      window.addEventListener("beforeunload", (e) => {
+        if (privateKeyJwk) e.preventDefault();
+      });
+    </script>
+  </body>
+</html>
