@@ -1,5 +1,8 @@
 // Persistencia real de sesiones sobre Cloudflare D1. Mismo binding "DB"
 // que d1-users-store.ts.
+//
+// v0.0.9.30: destroyAllForUser() -- cierra todas las sesiones de un
+// usuario (cambio o reset de contrasena).
 
 import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "../types";
@@ -54,5 +57,12 @@ export class D1SessionStore implements SessionStore {
 
   async destroy(token: string): Promise<void> {
     await this.db.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+  }
+
+  async destroyAllForUser(username: string): Promise<number> {
+    const result = (await this.db.prepare("DELETE FROM sessions WHERE username = ?").bind(username).run()) as
+      | { meta?: { changes?: number } }
+      | undefined;
+    return Number(result?.meta?.changes ?? 0);
   }
 }

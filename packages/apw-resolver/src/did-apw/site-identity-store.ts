@@ -8,6 +8,21 @@
 // La clave privada nunca se persiste en claro -- se cifra con AES-GCM
 // usando una clave de cifrado que vive FUERA de esta base de datos
 // (PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY, env var, nunca en schema.sql).
+//
+// DECISION (v0.0.9.30): la clave de cifrado NO se deriva de la contrasena
+// del admin. Se evaluo y se descarto: en un reset por email el servidor no
+// conoce la contrasena vieja, asi que no puede descifrar para volver a
+// cifrar, y la identidad quedaria irrecuperable. Con la clave del servidor,
+// cambiar o resetear la contrasena no toca site_identity. Contra que
+// protege: extraccion de la base de datos sola (sin las env vars). Contra
+// que NO protege: alguien con acceso a la DB Y a las env vars del servidor.
+//
+// ROTACION (v0.0.9.30): rotate() reemplaza el par de claves (y el did) en
+// una sola sentencia UPDATE -- atomica, nunca deja la fila a medias. La
+// clave vieja se descarta: no hay historial de claves todavia, asi que
+// cualquier firma hecha con la clave vieja deja de ser verificable contra
+// el DID document nuevo. Eso es lo esperado si la rotacion es por
+// compromiso de la clave.
 
 import type { ApwKeyPair } from "./types";
 
@@ -24,8 +39,12 @@ export interface SiteIdentityRecord {
 export interface SiteIdentityStore {
   get(siteId: string): Promise<SiteIdentityRecord | null>;
   create(siteId: string, keyPair: ApwKeyPair, createdBy: string): Promise<SiteIdentityRecord>;
+  /** Reemplaza la identidad existente por keyPair. Lanza "site_identity_not_found" si no hay identidad. */
+  rotate(siteId: string, keyPair: ApwKeyPair, rotatedBy: string): Promise<SiteIdentityRecord>;
   getDecryptedPrivateKey(siteId: string): Promise<JsonWebKey | null>;
 }
+
+export const SITE_IDENTITY_NOT_FOUND = "site_identity_not_found";
 
 const ENCRYPTION_KEY_ENV = "PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY";
 
@@ -78,6 +97,9 @@ function rowToRecord(row: any): SiteIdentityRecord {
   };
 }
 
+const UPDATE_SQL =
+  "UPDATE site_identity SET did = ?, domain = ?, public_key_jwk = ?, private_key_jwk_encrypted = ?, private_key_encryption_iv = ?, key_algorithm = 'ed25519', created_at = ?, created_by = ? WHERE site_id = ?";
+
 export class D1SiteIdentityStore implements SiteIdentityStore {
   constructor(private readonly db: D1Database, private readonly env: Record<string, string | undefined>) {}
 
@@ -99,6 +121,17 @@ export class D1SiteIdentityStore implements SiteIdentityStore {
       .bind(siteId, keyPair.did, keyPair.domain, JSON.stringify(keyPair.publicKeyJwk), ciphertext, iv, createdAt, createdBy)
       .run();
     return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt, createdBy };
+  }
+
+  async rotate(siteId: string, keyPair: ApwKeyPair, rotatedBy: string): Promise<SiteIdentityRecord> {
+    const { ciphertext, iv } = await encryptPrivateKey(keyPair.privateKeyJwk, this.env);
+    const createdAt = new Date().toISOString();
+    const result = await this.db
+      .prepare(UPDATE_SQL)
+      .bind(keyPair.did, keyPair.domain, JSON.stringify(keyPair.publicKeyJwk), ciphertext, iv, createdAt, rotatedBy, siteId)
+      .run();
+    if (!result?.meta?.changes) throw new Error(SITE_IDENTITY_NOT_FOUND);
+    return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt, createdBy: rotatedBy };
   }
 
   async getDecryptedPrivateKey(siteId: string): Promise<JsonWebKey | null> {
@@ -132,6 +165,16 @@ export class SqliteSiteIdentityStore implements SiteIdentityStore {
     return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt, createdBy };
   }
 
+  async rotate(siteId: string, keyPair: ApwKeyPair, rotatedBy: string): Promise<SiteIdentityRecord> {
+    const { ciphertext, iv } = await encryptPrivateKey(keyPair.privateKeyJwk, this.env);
+    const createdAt = new Date().toISOString();
+    const result = this.db
+      .prepare(UPDATE_SQL)
+      .run(keyPair.did, keyPair.domain, JSON.stringify(keyPair.publicKeyJwk), ciphertext, iv, createdAt, rotatedBy, siteId);
+    if (!result?.changes) throw new Error(SITE_IDENTITY_NOT_FOUND);
+    return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt, createdBy: rotatedBy };
+  }
+
   async getDecryptedPrivateKey(siteId: string): Promise<JsonWebKey | null> {
     const row = this.db
       .prepare("SELECT private_key_jwk_encrypted, private_key_encryption_iv FROM site_identity WHERE site_id = ?")
@@ -161,6 +204,23 @@ export class InMemorySiteIdentityStore implements SiteIdentityStore {
       keyAlgorithm: "ed25519",
       createdAt: new Date().toISOString(),
       createdBy,
+    };
+    this.records.set(siteId, record);
+    this.encryptedKeys.set(siteId, { ciphertext, iv });
+    return record;
+  }
+
+  async rotate(siteId: string, keyPair: ApwKeyPair, rotatedBy: string): Promise<SiteIdentityRecord> {
+    if (!this.records.has(siteId)) throw new Error(SITE_IDENTITY_NOT_FOUND);
+    const { ciphertext, iv } = await encryptPrivateKey(keyPair.privateKeyJwk, this.env);
+    const record: SiteIdentityRecord = {
+      siteId,
+      did: keyPair.did,
+      domain: keyPair.domain,
+      publicKeyJwk: keyPair.publicKeyJwk,
+      keyAlgorithm: "ed25519",
+      createdAt: new Date().toISOString(),
+      createdBy: rotatedBy,
     };
     this.records.set(siteId, record);
     this.encryptedKeys.set(siteId, { ciphertext, iv });

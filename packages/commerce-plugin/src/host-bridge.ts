@@ -3,6 +3,26 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NodeIsolatedVmAdapter } from "../../plugin-sandbox/src/adapters/node-isolated-vm";
 import type { PluginManifest, GrantedCapabilities } from "../../plugin-sandbox/src/types";
+import { createPermissionStore } from "../../permissions/src/store-factory";
+
+// v0.0.9.30 -- FIX DE SEGURIDAD: antes, granted era TODO lo que pedia el
+// manifiesto (requestedCapabilities). El commerce-plugin se autoconcedia
+// sus capacidades y el Centro de Permisos (/admin/permissions) no tenia
+// ningun efecto sobre el. Ahora se aplica la misma regla que
+// SandboxRuntime: granted = lo que el admin concedio para el subject
+// { type: "plugin", id: manifest.name } INTERSECCION lo que declara el
+// manifiesto. Una capacidad concedida pero no declarada nunca llega al
+// plugin, y una declarada pero no concedida tampoco.
+//
+// Consecuencia visible: hasta que el admin conceda network:fetch al
+// commerce-plugin, la tienda no muestra productos (isCommerceEnabled
+// devuelve false y fetchProducts lanza con un mensaje que dice que
+// conceder). Los permisos se leen en cada llamada: una revocacion aplica
+// en el proximo render, sin reiniciar.
+//
+// Los permisos se leen de process.env: este archivo solo corre en Node
+// self-hosted (isolated-vm no existe en workerd), donde el store se
+// resuelve via PORTALESS_SQLITE_PATH.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(__dirname, "..");
@@ -27,7 +47,23 @@ function getIsolatedVmVersion(): string {
   }
 }
 
-function loadPluginArtifacts(config: CommerceConfig): { manifest: PluginManifest; code: string; granted: GrantedCapabilities } {
+export class CommercePermissionError extends Error {
+  constructor(pluginName: string, missing: string[]) {
+    super(
+      `El plugin "${pluginName}" no tiene concedido: ${missing.join(", ")}. ` +
+        `Concedelo en /admin/permissions para que la tienda muestre productos.`
+    );
+    this.name = "CommercePermissionError";
+  }
+}
+
+async function getConcededCapabilities(pluginName: string): Promise<Set<string>> {
+  const store = await createPermissionStore(process.env as { DB?: unknown; PORTALESS_SQLITE_PATH?: string });
+  const grants = await store.getGrantsFor({ type: "plugin", id: pluginName, displayName: pluginName });
+  return new Set(grants.filter((g) => g.granted).map((g) => g.capabilityId));
+}
+
+async function loadPluginArtifacts(config: CommerceConfig): Promise<{ manifest: PluginManifest; code: string; granted: GrantedCapabilities }> {
   if (!cachedManifest || !cachedCode) {
     const manifestRaw = readFileSync(join(PLUGIN_ROOT, "manifest.json"), "utf-8");
     const manifest = JSON.parse(manifestRaw) as PluginManifest;
@@ -38,7 +74,13 @@ function loadPluginArtifacts(config: CommerceConfig): { manifest: PluginManifest
     cachedManifest = manifest;
     cachedCode = readFileSync(join(PLUGIN_ROOT, "src", "plugin-entry.js"), "utf-8");
   }
-  const granted: GrantedCapabilities = new Set(cachedManifest.requestedCapabilities.map((c) => c.id));
+
+  const conceded = await getConcededCapabilities(cachedManifest.name);
+  const requested = cachedManifest.requestedCapabilities.map((c) => c.id);
+  const missing = requested.filter((id) => !conceded.has(id));
+  if (missing.length > 0) throw new CommercePermissionError(cachedManifest.name, missing);
+
+  const granted: GrantedCapabilities = new Set(requested.filter((id) => conceded.has(id)));
   return { manifest: cachedManifest, code: cachedCode as string, granted };
 }
 
@@ -84,7 +126,7 @@ async function runPluginAction(config: CommerceConfig, payload: Record<string, u
   if (!available) {
     throw new Error("isolated-vm no esta instalado. Corre: npm install isolated-vm --workspace=@portaless/plugin-sandbox");
   }
-  const { manifest, code, granted } = loadPluginArtifacts(config);
+  const { manifest, code, granted } = await loadPluginArtifacts(config);
   const result = await adapter.execute({ manifest, granted, code, payload });
   if (!result.success) {
     throw new Error(`Error ejecutando commerce-plugin en el sandbox: ${result.error}`);
@@ -96,7 +138,8 @@ export async function sandboxedIsCommerceEnabled(config: CommerceConfig | null):
   if (!config?.medusaUrl) return false;
   try {
     return Boolean(await runPluginAction(config, { action: "isCommerceEnabled", medusaUrl: config.medusaUrl }));
-  } catch {
+  } catch (err) {
+    if (err instanceof CommercePermissionError) console.warn(`[Portaless Commerce] ${err.message}`);
     return false;
   }
 }

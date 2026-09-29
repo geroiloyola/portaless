@@ -2,6 +2,9 @@
 // v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
 // better-sqlite3 via openSqlite(), mismo cambio que sqlite-users-store.ts.
 // Uso: const store = await SqliteSessionStore.open(path);
+//
+// v0.0.9.30: destroyAllForUser() -- cierra todas las sesiones de un
+// usuario (cambio o reset de contrasena).
 
 import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "../types";
@@ -77,6 +80,11 @@ export class SqliteSessionStore implements SessionStore {
 
   async destroy(token: string): Promise<void> {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+
+  async destroyAllForUser(username: string): Promise<number> {
+    const info = this.db.prepare("DELETE FROM sessions WHERE username = ?").run(username);
+    return Number(info?.changes ?? 0);
   }
 
   close(): void {

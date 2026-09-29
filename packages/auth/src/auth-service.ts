@@ -9,12 +9,29 @@
 // comportamiento es identico al de v0.0.6 (login directo). Si SI tiene
 // 2FA, login() devuelve mfaRequired:true en vez de una sesion, y el
 // caller debe llamar a completeMfaLogin() con el codigo TOTP.
+//
+// v0.0.9.30:
+//   - Historial: si se provee un PasswordEventStore (4to parametro,
+//     opcional para no romper callers), completePasswordReset() y
+//     changePassword() registran hora, IP y ubicacion aproximada. Nunca
+//     la contrasena. Si el registro falla, el cambio NO se revierte (el
+//     usuario ya tiene la contrasena nueva); se avisa por consola.
+//   - verifyStepUp(): verificacion reforzada para acciones sensibles
+//     (rotar did:apw, cambiar contrasena). Exige la contrasena actual y,
+//     si el usuario tiene 2FA, ademas el codigo TOTP. Usuarios solo-OAuth
+//     (sin contrasena) necesitan 2FA activo para pasarla. Un codigo por
+//     email queda pendiente: no hay backend de email:send todavia.
+//   - Cambiar o resetear la contrasena cierra TODAS las sesiones del
+//     usuario (incluida la actual): si alguien tenia una sesion robada,
+//     la pierde. Requiere SessionStore.destroyAllForUser(); si el backend
+//     no lo implementa todavia, se avisa por consola.
 
 import { randomBytes } from "node:crypto";
 import type { LoginResult, Role, OAuthProfile } from "./types";
 import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
 import type { PasswordResetStore } from "./password-reset-store";
+import type { PasswordEventContext, PasswordEventKind, PasswordEventStore } from "./password-event-store";
 import { verifyPassword } from "./password";
 import { verifyTotpCode, generateTotpSecret, buildTotpUri } from "./totp";
 
@@ -26,11 +43,21 @@ interface PendingMfaChallenge {
 }
 const pendingMfaChallenges = new Map<string, PendingMfaChallenge>();
 
+export interface StepUpCredentials {
+  password?: string;
+  totpCode?: string;
+}
+
+export type StepUpResult =
+  | { ok: true }
+  | { ok: false; reason: "user_not_found" | "password_required" | "invalid_password" | "totp_required" | "invalid_totp" | "no_step_up_factor" };
+
 export class AuthService {
   constructor(
     private users: UsersStore,
     private sessions: SessionStore,
-    private passwordResets?: PasswordResetStore
+    private passwordResets?: PasswordResetStore,
+    private passwordEvents?: PasswordEventStore
   ) {}
 
   async login(username: string, plainPassword: string): Promise<LoginResult> {
@@ -98,6 +125,46 @@ export class AuthService {
     await this.users.clearTotpSecret(username);
   }
 
+  /** Verificacion reforzada para acciones sensibles. Ver comentario del modulo. */
+  async verifyStepUp(username: string, creds: StepUpCredentials): Promise<StepUpResult> {
+    const user = await this.users.findByUsername(username);
+    if (!user) return { ok: false, reason: "user_not_found" };
+
+    const hasPassword = Boolean(user.passwordHash);
+    const hasTotp = Boolean(user.totpSecret);
+    if (!hasPassword && !hasTotp) return { ok: false, reason: "no_step_up_factor" };
+
+    if (hasPassword) {
+      if (!creds.password) return { ok: false, reason: "password_required" };
+      if (!verifyPassword(creds.password, user.passwordHash)) return { ok: false, reason: "invalid_password" };
+    }
+    if (hasTotp) {
+      if (!creds.totpCode) return { ok: false, reason: "totp_required" };
+      if (!verifyTotpCode(user.totpSecret as string, creds.totpCode)) return { ok: false, reason: "invalid_totp" };
+    }
+    return { ok: true };
+  }
+
+  async changePassword(
+    username: string,
+    currentPassword: string,
+    newPassword: string,
+    totpCode?: string,
+    context: PasswordEventContext = {}
+  ): Promise<{ success: boolean; error?: string }> {
+    const check = await this.verifyStepUp(username, { password: currentPassword, totpCode });
+    if (!check.ok) return { success: false, error: check.reason };
+    await this.users.setPasswordByUsername(username, newPassword);
+    if (this.passwordResets) await this.passwordResets.invalidateAllForUser(username);
+    await this.revokeAllSessions(username);
+    await this.recordPasswordEvent(username, "change", context);
+    return { success: true };
+  }
+
+  async listPasswordEvents(username: string, limit = 20) {
+    return this.passwordEvents ? this.passwordEvents.listForUser(username, limit) : [];
+  }
+
   async requestPasswordReset(username: string): Promise<{ token: string } | null> {
     if (!this.passwordResets) {
       throw new Error("PasswordResetStore no configurado -- AuthService se construyo sin soporte de recuperación.");
@@ -108,7 +175,11 @@ export class AuthService {
     return { token: request.token };
   }
 
-  async completePasswordReset(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  async completePasswordReset(
+    token: string,
+    newPassword: string,
+    context: PasswordEventContext = {}
+  ): Promise<{ success: boolean; error?: string }> {
     if (!this.passwordResets) {
       throw new Error("PasswordResetStore no configurado -- AuthService se construyo sin soporte de recuperación.");
     }
@@ -118,7 +189,26 @@ export class AuthService {
     }
     await this.users.setPasswordByUsername(request.username, newPassword);
     await this.passwordResets.invalidateAllForUser(request.username);
+    await this.revokeAllSessions(request.username);
+    await this.recordPasswordEvent(request.username, "reset", context);
     return { success: true };
+  }
+
+  private async revokeAllSessions(username: string) {
+    if (!this.sessions.destroyAllForUser) {
+      console.warn(`[Portaless Auth] El SessionStore no implementa destroyAllForUser -- las sesiones abiertas de ${username} siguen activas.`);
+      return;
+    }
+    await this.sessions.destroyAllForUser(username);
+  }
+
+  private async recordPasswordEvent(username: string, kind: PasswordEventKind, context: PasswordEventContext) {
+    if (!this.passwordEvents) return;
+    try {
+      await this.passwordEvents.record({ username, kind, occurredAt: new Date().toISOString(), ...context });
+    } catch (err) {
+      console.warn(`[Portaless Auth] No se pudo registrar el evento de contrasena (${kind}) de ${username}: ${(err as Error).message}`);
+    }
   }
 
   async loginWithOAuth(profile: OAuthProfile, defaultRole: Role = "viewer"): Promise<LoginResult> {
