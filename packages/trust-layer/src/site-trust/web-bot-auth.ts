@@ -21,15 +21,50 @@
 // con TTL, para no golpear el dominio del agente en cada verificacion.
 // Sin KV configurado, cae a fetch directo cada vez (mas lento, pero
 // funcional -- nunca falla en silencio, ver el warning en el codigo).
+//
+// v0.0.9.30 -- ML-DSA (FIPS 204, post-cuantico). Antes este modulo solo
+// verificaba Ed25519, aunque `authorized_agents` ya tenia la columna
+// `key_algorithm` desde v0.0.9.24. Ahora, si el JWK del agente es de tipo
+// post-cuantico (formato del borrador IETF de JOSE/COSE para ML-DSA:
+// `kty: "AKP"`, `alg: "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87"`, clave
+// publica en `pub` como base64url), se arma un verificador propio con
+// @noble/post-quantum y se lo pasa al MISMO verify() de web-bot-auth, que
+// sigue construyendo el signature base de RFC 9421. El camino Ed25519
+// (verifierFromJWK) queda EXACTAMENTE igual que antes.
+//
+// ORDEN DE ARGUMENTOS (corregido tras el primer CI del PR #54): en
+// @noble/post-quantum 0.5.x la API es sign(mensaje, claveSecreta) y
+// verify(firma, mensaje, clavePublica) -- alineada con @noble/curves v2.
+// Versiones anteriores (y parte de su documentacion) usaban el orden
+// inverso. Con el orden equivocado, verify() lanzaba y el try/catch lo
+// convertia en false: el verificador rechazaba TODAS las firmas, incluso
+// las validas, sin ningun error visible. Si se actualiza la libreria,
+// revisar este orden primero.
+//
+// Advertencias honestas:
+// - @noble/post-quantum no tiene todavia una auditoria independiente
+//   (lo dice su propio README), a diferencia de @noble/curves. Es la mejor
+//   opcion en JS puro compatible con Node y workerd, pero no debe
+//   presentarse como "auditada".
+// - No hay proteccion contra ataques de canal lateral (tampoco en noble);
+//   aca solo se VERIFICAN firmas con claves publicas, no se manejan
+//   secretos, asi que el riesgo es acotado.
+// - La forma del verificador que espera web-bot-auth cambio entre
+//   versiones (funcion que lanza en 0.1.x vs. objeto con verify() que
+//   devuelve boolean en main). createMlDsaVerifier() cumple ambas formas.
+//   No se verifico todavia contra un agente real que firme con ML-DSA.
 
 import { verify } from "web-bot-auth";
 import { verifierFromJWK } from "web-bot-auth/crypto";
+import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
 
 const JWKS_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6h -- las claves de un agente no rotan seguido
 
 export interface WebBotAuthVerificationResult {
   verified: boolean;
   agentKeyId: string | null;
+  /** Algoritmo de la clave que verifico la firma: "ed25519" o "ml-dsa-44/65/87". Coincide con authorized_agents.key_algorithm. */
+  keyAlgorithm?: string;
   reason?: string;
 }
 
@@ -40,13 +75,84 @@ export interface KvNamespaceLike {
 
 interface Jwk {
   kty: string;
-  crv: string;
+  crv?: string;
   kid?: string;
-  x: string;
+  x?: string;
+  /** ML-DSA (kty "AKP"): algoritmo concreto. */
+  alg?: string;
+  /** ML-DSA (kty "AKP"): clave publica en base64url. */
+  pub?: string;
 }
 
 interface Jwks {
   keys: Jwk[];
+}
+
+const ML_DSA_BY_ALG = {
+  "ML-DSA-44": ml_dsa44,
+  "ML-DSA-65": ml_dsa65,
+  "ML-DSA-87": ml_dsa87,
+} as const;
+
+type MlDsaAlg = keyof typeof ML_DSA_BY_ALG;
+
+export function isMlDsaJwk(jwk: { kty?: string; alg?: string }): boolean {
+  return jwk.kty === "AKP" && typeof jwk.alg === "string" && jwk.alg in ML_DSA_BY_ALG;
+}
+
+/** Mapea un JWK al valor que usa authorized_agents.key_algorithm. */
+export function jwkKeyAlgorithm(jwk: Jwk): string {
+  if (isMlDsaJwk(jwk)) return (jwk.alg as string).toLowerCase();
+  if (jwk.kty === "OKP" && jwk.crv === "Ed25519") return "ed25519";
+  return "unknown";
+}
+
+function base64UrlToBytes(value: string): Uint8Array {
+  const b64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+  const bin = atob(padded);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function toBytes(data: string | Uint8Array): Uint8Array {
+  return typeof data === "string" ? new TextEncoder().encode(data) : data;
+}
+
+/**
+ * Construye un verificador ML-DSA compatible con verify() de web-bot-auth.
+ * Es a la vez:
+ *  - una funcion (data, signature) que LANZA si la firma es invalida
+ *    (forma usada por web-bot-auth 0.1.x), y
+ *  - un objeto con { algorithm, keyid, verify(data, signature) => boolean }
+ *    (forma de la interfaz Verifier en versiones posteriores).
+ * Lanza al construirse si el JWK no es ML-DSA o la clave publica esta vacia.
+ */
+export function createMlDsaVerifier(jwk: Jwk) {
+  if (!isMlDsaJwk(jwk)) throw new Error("unsupported_pq_algorithm");
+  if (!jwk.pub) throw new Error("missing_ml_dsa_public_key");
+  const impl = ML_DSA_BY_ALG[jwk.alg as MlDsaAlg];
+  const publicKey = base64UrlToBytes(jwk.pub);
+
+  const check = (data: string | Uint8Array, signature: Uint8Array): boolean => {
+    try {
+      // @noble/post-quantum 0.5.x: verify(firma, mensaje, clavePublica).
+      return impl.verify(signature, toBytes(data), publicKey);
+    } catch {
+      return false;
+    }
+  };
+
+  const fn = async (data: string | Uint8Array, signature: Uint8Array): Promise<void> => {
+    if (!check(data, signature)) throw new Error("invalid_ml_dsa_signature");
+  };
+
+  return Object.assign(fn, {
+    algorithm: (jwk.alg as string).toLowerCase(),
+    keyid: jwk.kid ?? "",
+    verify: async (data: string | Uint8Array, signature: Uint8Array): Promise<boolean> => check(data, signature),
+  });
 }
 
 async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLike): Promise<Jwks> {
@@ -132,10 +238,12 @@ export async function verifyWebBotAuthRequest(
       return { verified: false, agentKeyId: keyId, reason: "keyid_not_in_jwks" };
     }
 
-    const verifier = await verifierFromJWK(jwk);
+    const keyAlgorithm = jwkKeyAlgorithm(jwk);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const verifier: any = isMlDsaJwk(jwk) ? createMlDsaVerifier(jwk) : await verifierFromJWK(jwk as any);
     await verify(request, verifier);
 
-    return { verified: true, agentKeyId: keyId };
+    return { verified: true, agentKeyId: keyId, keyAlgorithm };
   } catch (err) {
     return { verified: false, agentKeyId: keyId, reason: (err as Error).message };
   }

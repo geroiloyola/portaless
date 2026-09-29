@@ -29,6 +29,11 @@
 // bloqueante: si el DNS no propago todavia, o si el usuario nunca
 // completa esto, el resto del panel funciona exactamente igual. Ver la
 // entrada correspondiente en ROADMAP.md.
+//
+// v0.0.9.30: mientras el sitio no esta verificado, el banner muestra el
+// registro TXT exacto (nombre + valor) con botones de copiar, tomado de
+// `txtRecord` en la respuesta del endpoint. Ya no hace falta correr
+// packages/apw-resolver/src/dnslink/cli.mjs a mano.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Panel de administración — Portaless">
@@ -47,6 +52,31 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <span class="ai-apw-badge" id="ai-apw-badge" hidden>✓ Sitio Verificado</span>
         <button type="button" class="ai-apw-verify-btn" id="ai-apw-verify-btn">Verificar ahora</button>
       </div>
+    </div>
+
+    <div class="ai-apw-txt" id="ai-apw-txt" hidden>
+      <p class="ai-apw-txt-intro">
+        Entrá al panel de tu proveedor de dominio (donde compraste el dominio o donde administrás el DNS), creá un registro nuevo con estos datos y guardá:
+      </p>
+      <div class="ai-apw-txt-field">
+        <span class="ai-apw-txt-label">Tipo</span>
+        <code class="ai-apw-txt-code">TXT</code>
+      </div>
+      <div class="ai-apw-txt-field">
+        <span class="ai-apw-txt-label">Nombre / Host</span>
+        <code class="ai-apw-txt-code" id="ai-apw-txt-name"></code>
+        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-name">Copiar</button>
+      </div>
+      <div class="ai-apw-txt-field">
+        <span class="ai-apw-txt-label">Valor / Contenido</span>
+        <code class="ai-apw-txt-code ai-apw-txt-value" id="ai-apw-txt-value"></code>
+        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-value">Copiar</button>
+      </div>
+      <p class="ai-apw-txt-hint">
+        Algunos proveedores completan el dominio solos: si tu panel ya muestra “<span id="ai-apw-txt-domain"></span>” al lado del campo Nombre, escribí solo <code>_apw</code>.
+        Después volvé acá y tocá “Verificar ahora”.
+      </p>
+      <p class="ai-apw-txt-warn" id="ai-apw-txt-warn" hidden></p>
     </div>
   </section>
 
@@ -110,10 +140,32 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const apwDesc = document.getElementById("ai-apw-desc");
   const apwBadge = document.getElementById("ai-apw-badge");
   const apwBtn = document.getElementById("ai-apw-verify-btn");
+  const apwTxt = document.getElementById("ai-apw-txt");
+  const apwTxtName = document.getElementById("ai-apw-txt-name");
+  const apwTxtValue = document.getElementById("ai-apw-txt-value");
+  const apwTxtDomain = document.getElementById("ai-apw-txt-domain");
+  const apwTxtWarn = document.getElementById("ai-apw-txt-warn");
 
   const REASON_LABELS = {
     no_valid_manifest_found: "Todavía no encontramos un manifiesto APW válido en tu DNS.",
   };
+
+  function renderTxtRecord(txtRecord, domain) {
+    if (!txtRecord) {
+      apwTxt.hidden = true;
+      return;
+    }
+    apwTxtName.textContent = txtRecord.name;
+    apwTxtValue.textContent = txtRecord.value;
+    apwTxtDomain.textContent = domain;
+    if (txtRecord.withinLimit === false) {
+      apwTxtWarn.textContent = `Atención: el valor ocupa ${txtRecord.bytes} bytes, más que el límite práctico de 512 de un registro DNS. Algunos proveedores podrían rechazarlo.`;
+      apwTxtWarn.hidden = false;
+    } else {
+      apwTxtWarn.hidden = true;
+    }
+    apwTxt.hidden = false;
+  }
 
   async function checkApwStatus() {
     apwBtn.disabled = true;
@@ -126,11 +178,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         apwBadge.hidden = false;
         apwDesc.textContent = `Dominio verificado (${data.domain}). Tu identidad APW ya es públicamente resoluble.`;
         apwBtn.hidden = true;
+        apwTxt.hidden = true;
       } else {
         apwBadge.hidden = true;
         apwBtn.hidden = false;
         const reasonLabel = REASON_LABELS[data.reason] || `Motivo: ${data.reason}.`;
-        apwDesc.textContent = `Registro TXT de Protocol APW no encontrado todavía en ${data.domain}. ${reasonLabel} Esto es normal si acabás de publicar el sitio -- la propagación de DNS puede tardar minutos u horas. Podés seguir usando el panel con normalidad mientras tanto.`;
+        apwDesc.textContent = `Registro TXT de Protocol APW no encontrado todavía en ${data.domain}. ${reasonLabel} Si ya lo agregaste, la propagación de DNS puede tardar minutos u horas. Podés seguir usando el panel con normalidad mientras tanto.`;
+        renderTxtRecord(data.txtRecord, data.domain);
       }
     } catch (e) {
       apwDesc.textContent = `No pudimos comprobar el estado de la verificación (${e.message}). Podés reintentar cuando quieras -- el resto del panel funciona igual.`;
@@ -139,6 +193,25 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       apwBtn.textContent = "Verificar ahora";
     }
   }
+
+  document.querySelectorAll(".ai-apw-copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.textContent || "");
+        btn.textContent = "Copiado ✓";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        btn.textContent = "Seleccionado: Ctrl+C";
+      }
+      setTimeout(() => { btn.textContent = "Copiar"; }, 2000);
+    });
+  });
 
   apwBtn?.addEventListener("click", checkApwStatus);
   checkApwStatus();
@@ -183,6 +256,35 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
   .ai-apw-verify-btn:hover { background: var(--portaless-accent); color: #0f1114; }
   .ai-apw-verify-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .ai-apw-txt { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
+  .ai-apw-txt-intro { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.5; }
+  .ai-apw-txt-field { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .ai-apw-txt-label { width: 130px; flex-shrink: 0; font-size: 0.78rem; color: var(--portaless-muted); }
+  .ai-apw-txt-code {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 6px;
+    background: #0f1114;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+  }
+  .ai-apw-txt-value { user-select: all; }
+  .ai-apw-copy-btn {
+    border: 1px solid var(--portaless-border);
+    background: transparent;
+    color: var(--portaless-fg);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ai-apw-copy-btn:hover { border-color: var(--portaless-accent); color: var(--portaless-accent); }
+  .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.5; }
+  .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: #f5a623; }
 
   .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
 

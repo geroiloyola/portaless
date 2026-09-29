@@ -22,6 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@noble/post-quantum": "^0.5.0",
     "astro": "^7.3.3",
     "better-sqlite3": "^12.0.0",
     "web-bot-auth": "^0.1.0"
