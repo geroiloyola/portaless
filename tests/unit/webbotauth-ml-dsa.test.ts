@@ -6,6 +6,10 @@
 // verify() booleano). La ruta completa verifyWebBotAuthRequest() con un
 // request firmado con ML-DSA de punta a punta NO esta cubierta todavia:
 // requiere armar el signature base RFC 9421 con un firmante ML-DSA.
+//
+// Orden de argumentos en @noble/post-quantum 0.5.x: sign(mensaje,
+// claveSecreta) y verify(firma, mensaje, clavePublica). El primer CI del
+// PR #54 fallo porque este test usaba el orden inverso.
 import { describe, it, expect } from "vitest";
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
 import {
@@ -35,7 +39,7 @@ describe("ML-DSA verifier (FIPS 204)", () => {
     it(`acepta una firma valida ${alg} (forma objeto y forma funcion)`, async () => {
       const { keys, jwk, impl } = makeKey(alg);
       const data = new TextEncoder().encode(MESSAGE);
-      const sig = impl.sign(keys.secretKey, data);
+      const sig = impl.sign(data, keys.secretKey);
       const v = createMlDsaVerifier(jwk);
       expect(await v.verify(data, sig)).toBe(true);
       await expect(v(MESSAGE, sig)).resolves.toBeUndefined();
@@ -48,7 +52,7 @@ describe("ML-DSA verifier (FIPS 204)", () => {
     const a = makeKey("ML-DSA-65");
     const b = makeKey("ML-DSA-65");
     const data = new TextEncoder().encode(MESSAGE);
-    const sig = b.impl.sign(b.keys.secretKey, data);
+    const sig = b.impl.sign(data, b.keys.secretKey);
     const v = createMlDsaVerifier(a.jwk);
     expect(await v.verify(data, sig)).toBe(false);
     await expect(v(data, sig)).rejects.toThrow("invalid_ml_dsa_signature");
@@ -56,7 +60,7 @@ describe("ML-DSA verifier (FIPS 204)", () => {
 
   it("rechaza un mensaje alterado", async () => {
     const { keys, jwk, impl } = makeKey("ML-DSA-65");
-    const sig = impl.sign(keys.secretKey, new TextEncoder().encode(MESSAGE));
+    const sig = impl.sign(new TextEncoder().encode(MESSAGE), keys.secretKey);
     const v = createMlDsaVerifier(jwk);
     expect(await v.verify(MESSAGE + "x", sig)).toBe(false);
   });

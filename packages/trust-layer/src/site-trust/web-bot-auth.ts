@@ -32,6 +32,15 @@
 // sigue construyendo el signature base de RFC 9421. El camino Ed25519
 // (verifierFromJWK) queda EXACTAMENTE igual que antes.
 //
+// ORDEN DE ARGUMENTOS (corregido tras el primer CI del PR #54): en
+// @noble/post-quantum 0.5.x la API es sign(mensaje, claveSecreta) y
+// verify(firma, mensaje, clavePublica) -- alineada con @noble/curves v2.
+// Versiones anteriores (y parte de su documentacion) usaban el orden
+// inverso. Con el orden equivocado, verify() lanzaba y el try/catch lo
+// convertia en false: el verificador rechazaba TODAS las firmas, incluso
+// las validas, sin ningun error visible. Si se actualiza la libreria,
+// revisar este orden primero.
+//
 // Advertencias honestas:
 // - @noble/post-quantum no tiene todavia una auditoria independiente
 //   (lo dice su propio README), a diferencia de @noble/curves. Es la mejor
@@ -128,7 +137,8 @@ export function createMlDsaVerifier(jwk: Jwk) {
 
   const check = (data: string | Uint8Array, signature: Uint8Array): boolean => {
     try {
-      return impl.verify(publicKey, toBytes(data), signature);
+      // @noble/post-quantum 0.5.x: verify(firma, mensaje, clavePublica).
+      return impl.verify(signature, toBytes(data), publicKey);
     } catch {
       return false;
     }
