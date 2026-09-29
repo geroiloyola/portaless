@@ -75,6 +75,7 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 - [x] Atomic Elements: 4 `ElementType` nuevos para paginas “link en bio” – esta sesion (rama `atomic-elements-design`, PR #34, consolidado via `fixes-main`). `LinkList`, `SocialIcons`, `ProfileHeader`, `StoreBlock` agregados a `ElementType` (`packages/atomic-elements/src/types.ts`), con `ElementDefinition` real en `elementRegistry`/`elementPalette`, y aceptados por las tools `create_page`/`update_page` del MCP server (el `z.enum` de `elementNodeSchema.type` se extendio para no rechazar estos 4 tipos). Ver `docs/architecture/creator-sites-agentic-workflow.md`.
 - [x] Integrar el Editor Visual de Atomic Elements al panel de administracion de produccion – CERRADO esta sesion (rama `agentic`, commits `20c59d0c`, `5d9cb9a3`). `src/pages/admin/editor.astro` (pagina nueva) hereda `BaseLayout` y la validacion de sesion nativa de `functions/admin/_middleware.js` -- ya no es necesario abrir `public/editor/index.html` (que sigue existiendo como demo standalone, documentada como tal, sin sesion ni persistencia real) para editar una pagina en produccion. Monta la clase real `AtomicElementsEditor` (`packages/atomic-elements/src/editor/editor-app.ts`, con undo/redo, drag-and-drop, columnas anidadas) con el `elementRegistry` completo de 12 elementos -- no la copia reducida de 6 que tenia la demo. `HttpPageStore` (nuevo, definido dentro de `editor.astro`) implementa la interfaz `PageStore` real contra `GET`/`PUT /admin/pages/:slug` (el mismo endpoint de `functions/admin/pages/[slug].js` ya conectado desde v0.0.8), respetando la firma exacta `save(layout: PageLayout)` -- `list()` lanza un error explicito porque no existe todavia un endpoint de listado (`GET /admin/pages` sin slug), sin fingir un contrato que el backend no tiene. Tarjeta "Editor Visual" enlazada como primera del nav grid en `src/pages/admin/index.astro`. `functions/admin/api/product-preview.js` (BFF de `ProductGrid`, ya listo desde una sesion anterior) queda disponible para conectarse al editor en cuanto se aborde el placeholder visual de `ProductGrid` dentro del canvas -- ver tarea nueva mas abajo. **[Refactor v0.0.9.26]** Pendientes vigentes como tareas propias en "Funcionalidades Internas en Desarrollo": endpoint de listado `GET /admin/pages` y ProductGrid real en el canvas.
 - [x] Vista previa real y ProductGrid conectado dentro del canvas del Editor Visual – RESUELTO en v0.0.9.28 (PR #47, mergeado). Antes el canvas solo mostraba icono + nombre de cada bloque. Ahora renderiza el HTML real de cada bloque; ProductGrid con `source: "medusa"` pide productos reales via `/admin/api/product-preview` con cache y debounce de 300 ms. 15 tests nuevos. No verificado: render real en navegador con una tienda Medusa/Mercur conectada.
+- [x] Endpoint de listado GET /admin/pages (sin slug) – RESUELTO (PR #52, mergeado). `functions/admin/pages/index.js` expone `pageStore.list()` (ya implementado en D1PageStore/SqlitePageStore desde v0.0.8) via HTTP, mismo guard de sesion que `[slug].js` (401 sin `context.data.user`, sin exigir canWrite porque es solo lectura). `HttpPageStore.list()` en `src/pages/admin/editor.astro` ya no lanza el error explicito -- llama al endpoint real.
 
 ### MCP server
 
@@ -86,7 +87,11 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 
 - [x] Onboarding de un click – IMPLEMENTADO end-to-end esta sesion (rama `agentic`, commits `0c5d117d`, `7472f093`, `d9319932`, `9feb908d`, `29f15453`). Los 5 pasos del Wizard existen como codigo real y estan conectados: `src/pages/admin/wizard/index.astro` (enrutador, redirige a Paso 1) → `step-1-intent.astro` (intencion del sitio, guarda en sessionStorage) → `step-2-infrastructure.astro` (seleccion de proveedor de despliegue, UI honesta marcada "Proximamente" porque el OAuth real no existe todavia) → `step-4-backup-key.astro` (genera identidad `did:apw` real via `POST /admin/api/site-identity`, muestra la clave privada Ed25519 en texto plano una sola vez) → `step-5-admin-credentials.astro` (detecta si ya existe un admin via `GET /admin/api/wizard/admin-status`, guia al usuario sin exponer ningun endpoint de registro). Paso 3 (generacion de identidad) esta fusionado dentro del Paso 4, no es una pantalla separada. **Decision de seguridad deliberada**: no existe ni existira un endpoint HTTP que cree un usuario admin sin proteccion -- el unico mecanismo real sigue siendo `npm run setup` o la creacion automatica en D1 al primer login; inventar uno hubiera sido una puerta de escalada de privilegios. Ver seccion "Onboarding de un click: Wizard + Checklist diferido" mas abajo, actualizada con el detalle real de implementacion.**[Refactor v0.0.9.28]** Lo cerrado aqui es la ESTRUCTURA del Wizard (5 pasos navegables + identidad real en Paso 4). El Paso 1 y el Paso 2 ya tienen backend real: ver las dos entradas siguientes (PRs #41, #43, #44 y #45).
 - [x] Paso 1 del Wizard: generacion determinista de la primera pagina – RESUELTO en v0.0.9.27 (PRs #44 y #45, mergeados). `packages/onboarding/src/intent-to-layout.ts` (4 plantillas: portfolio, store, link-in-bio, landing) detras de una interfaz enchufable a futuro LLM/Nuvid. `POST /admin/api/wizard/generate-page` genera un borrador real desde el Paso 1; el Paso 5 ofrece abrirlo en el editor. Pendiente: verificacion visual del borrador generado; textos genericos fuera del campo de intencion.
-- [x] Paso 2 del Wizard: OAuth de infraestructura real con GitHub App – RESUELTO en v0.0.9.27 (PRs #41 y #43, mergeados). Flujo OAuth con PKCE S256, `state` de un solo uso atado al admin, tokens cifrados con AES-GCM. El boton real en `step-2-infrastructure.astro` reemplaza la UI "Proximamente". Pendiente: verificar contra una cuenta real de GitHub; refresh automatico del token.
+- [x] Paso 2 del Wizard: OAuth de infraestructura real con GitHub App – RESUELTO en v0.0.9.27 (PRs #41 y #43, mergeados). Flujo OAuth con PKCE S256, `state` de un solo uso atado al admin, tokens cifrados con AES-GCM. El boton real en `step-2-infrastructure.astro` reemplaza la UI "Proximamente". Pendiente: verificar contra una cuenta real de GitHub. **[v0.0.9.29]** El refresh automatico del token ya esta resuelto (PR #53), ver la entrada siguiente.
+- [x] Refresh automatico del token OAuth de GitHub – RESUELTO en v0.0.9.29 (PR #53, mergeado). `getGitHubAccessToken()` ya no devuelve `null` cuando el access token (ghu_) esta a menos de 60s de vencer: llama a `refreshGitHubAccessToken()`, que usa el `refresh_token` (ghr_) guardado con `grant_type=refresh_token` contra `https://github.com/login/oauth/access_token`, rota ambos tokens (GitHub invalida el refresh_token anterior tras usarlo) y persiste el par nuevo via `store.saveCredential()`. Devuelve `null` sin lanzar si no hay refresh token, si vencio, o si GitHub rechaza. Commit `739ae21`. No verificado: sin test que cubra el camino de refresh; no probado contra una cuenta real de GitHub.
+- [x] Checklist diferido del dashboard + insignia "Sitio Verificado" (Protocol APW) – RESUELTO en v0.0.9.29 (PR #53, mergeado). `functions/admin/api/apw-verification-status.js` (nuevo, admin-only) llama a `resolveApwManifest(hostname)` (ya existente, sin cambios) y devuelve `{ domain, verified, reason, manifest }`. `src/pages/admin/index.astro` muestra un banner arriba del nav grid: consulta al cargar, muestra la insignia si `verified`, y si no explica que la propagacion DNS puede tardar y ofrece "Verificar ahora". Patron equivalente a la verificacion por TXT de Google Search Console dentro de un widget no bloqueante estilo WooCommerce Setup. Commits `fcb00c6`, `e64a483`. No verificado: sin tests del endpoint; en localhost siempre da "no encontrado" (esperado); no probado contra un dominio real con `_apw.` publicado.
+- [x] Definido que pasa si el usuario nunca completa el checklist diferido – RESUELTO en v0.0.9.29 (PR #53). Nada se bloquea: ningun codigo depende del estado de verificacion. Sin insignia, sin Trust Layer (`ENABLE_TRUST_LAYER` sigue en `false` por defecto) y sin 2FA, el sitio y el panel funcionan igual. El checklist es informativo, nunca un gate.
+
 
 ### Calidad continua (CI/CD)
 
@@ -112,16 +117,6 @@ Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no dep
 - [ ] Conectar un caller de produccion real que instancie `new SandboxRuntime` fuera de los tests – `issueCapabilityToken` ya emite tokens reales (PR #43), pero todavia no existe el punto de entrada de produccion que construya `SandboxExecutionInput` usandolo.
 - [ ] MCP server: identidad de agente por invocacion (Opcion B) – HOY: `AgentIdentity` es fija por proceso (Opcion A, via `MCP_AGENT_KEY`). Bloqueante para cualquier escenario donde una misma instancia deba distinguir entre multiples agentes/usuarios de forma segura. Documentado como riesgo de seguridad activo en `AGENT.md`.
 - [ ] Identidad AT Protocol
-
-### Onboarding (Wizard)
-
-- [ ] Checklist diferido del dashboard con verificacion asincrona del TXT record de Protocol APW via `resolveApwManifest()` e insignia "Sitio Verificado". **[Refactor v0.0.9.26]** Misma procedencia; detalle completo en la seccion de Onboarding.
-- [ ] Definir que sucede si el usuario nunca completa el checklist diferido: el sitio debe seguir siendo completamente funcional sin insignia de verificado, sin Trust Layer configurado, y sin 2FA.
-- [ ] Refresh automatico del token OAuth de GitHub cuando vence (hoy `getGitHubAccessToken()` devuelve `null` sin intentar renovarlo). Extraido del PR #41.
-
-### Editor Visual
-
-- [ ] Endpoint de listado `GET /admin/pages` (sin slug) para que `HttpPageStore.list()` deje de lanzar error explicito. **[Refactor v0.0.9.26]** Tarea extraida de la entrada "Integrar el Editor Visual" en Produccion.
 
 ### Cloud Images
 
@@ -278,8 +273,8 @@ Seccion nueva (esta sesion). Diseño explicito, sin implementar todavia — ver 
 
 Una vez que el usuario aterriza en `src/pages/admin/index.astro`, recibe un checklist de configuracion (estilo lista de tareas de onboarding comercial, gamificado, nunca bloqueante):
 
+- [x] Reclamar tu identidad verificada (Protocol APW) — RESUELTO en v0.0.9.29 (PR #53). Banner en `src/pages/admin/index.astro` con boton "Verificar ahora" e insignia "Sitio Verificado", via `resolveApwManifest()`. Pendiente menor: el banner todavia NO muestra el valor exacto del TXT record a copiar (hoy eso requiere correr `dnslink/cli.mjs` a mano).
 - [ ] Publicar el sitio — ya hecho por el agente MCP durante el Wizard, aparece tildado desde el primer ingreso. **[Refactor v0.0.9.26]** Depende del Paso 1 del Wizard (aun sin backend), por eso sigue `[ ]`.
-- [ ] Reclamar tu identidad verificada (Protocol APW) — el panel muestra el valor exacto del TXT record (usando el CLI `dnslink/cli.mjs` ya implementado), con un boton "Verificar". Cuando el DNS propaga, el sistema lo detecta de forma asincrona (reutilizando `resolveApwManifest()` ya implementado) y otorga una insignia de "Sitio Verificado" — sin que el usuario tenga que quedarse esperando en ninguna pantalla.
 - [ ] Configurar reglas de IA (Trust Layer) — definir politica `allow`/`charge`/`block` para agentes que rastrean el sitio.
 - [ ] Activar autenticacion de dos factores (2FA).
 - [ ] Configurar comercio (Medusa/Mercur), si aplica al tipo de sitio elegido.
@@ -290,10 +285,10 @@ Una vez que el usuario aterriza en `src/pages/admin/index.astro`, recibe un chec
 
 - [x] Generacion invisible de claves Ed25519 + exportacion de clave privada en texto plano una sola vez — `step-4-backup-key.astro` + `site-identity.js`.
 - [x] Checklist/Wizard conectado con un punto de entrada real — `src/pages/admin/wizard/index.astro`.
-- [ ] Endpoint/flujo de "Intencion del sitio" que traduzca el prompt libre a `create_page` del MCP server — Paso 1 solo guarda la intencion en `sessionStorage`, sin backend de IA todavia.
-- [ ] Flujo de autorizacion OAuth con el proveedor de despliegue elegido (GitHub Pages / Cloudflare Pages) — Paso 2 es UI honesta sin backend, marcada "Proximamente".
-- [ ] Checklist del dashboard con verificacion asincrona del TXT record de Protocol APW (la parte diferida, distinta del Wizard bloqueante) — no iniciado.
-- [ ] Definir que sucede si el usuario nunca completa el checklist diferido — el sitio debe seguir siendo completamente funcional sin insignia de verificado, sin Trust Layer configurado, y sin 2FA, ya que ninguno de esos 3 es requisito para que el sitio exista y se sirva.
+- [x] Endpoint/flujo de "Intencion del sitio" — RESUELTO en v0.0.9.27 (PRs #44 y #45) con plantillas deterministas (`intent-to-layout.ts`), no con IA. La traduccion via LLM/Nuvid sigue siendo una mejora futura, no un bloqueante.
+- [x] Flujo de autorizacion OAuth con el proveedor de despliegue — RESUELTO para GitHub Pages en v0.0.9.27 (PRs #41 y #43). Cloudflare Pages sigue "Proximamente".
+- [x] Checklist del dashboard con verificacion asincrona del TXT record de Protocol APW — RESUELTO en v0.0.9.29 (PR #53).
+- [x] Definir que sucede si el usuario nunca completa el checklist diferido — RESUELTO en v0.0.9.29 (PR #53): nada se bloquea.
 
 -----
 
@@ -402,6 +397,9 @@ Portaless Cloud Images no existe todavia – ni como stub ni como spec formal. L
 | #49 | agentic -> main | Mergeado | Motor de Despliegue: publicar el sitio real en GitHub Pages |
 | #50 | agentic -> main | Mergeado | Wizard: instruccion npm run publish cuando GitHub ya esta conectado |
 | #51 | agentic -> main | Mergeado | Fix: engines.node >=24 y README (isolated-vm@7) |
+| #52 | agentic -> main | Mergeado | Editor Visual: endpoint GET /admin/pages (listado sin slug) + HttpPageStore.list() real |
+| #53 | agentic -> main | Mergeado | Onboarding: refresh OAuth de GitHub + checklist diferido de verificacion APW |
+
 
 ## Tareas manuales pendientes
 
@@ -419,9 +417,8 @@ Portaless Cloud Images no existe todavia – ni como stub ni como spec formal. L
 1. Flujo de onboarding de un segundo proveedor real de `escrow_report` (la UI de alta ya existe) – ver seccion “Portaless Public”.
 1. Conectar `packages/trust-layer/src/billing/settlement-adapter.ts` contra un backend real (AI Crawl Control de Cloudflare es el unico previsto hoy) – ver misma seccion.
 1. ~~Dar a `PluginRegistryStore` del MCP server una factory D1/SQLite propia~~ – CERRADO, ver "Funcionalidades Internas en Desarrollo". `index.ts` ya usa `createPluginRegistryStore(env)`.
-1. Disenar e implementar el flujo de onboarding de un click para usuarios no tecnicos – ver seccion “Publico objetivo y casos de uso ideales”. **[Refactor v0.0.9.26]** PARCIAL: estructura del Wizard hecha; pendientes Paso 1, Paso 2 y checklist diferido (ver "Funcionalidades Internas en Desarrollo").
 1. Especificar el formato de metadatos de imagen APW y evaluar Cloudflare R2 como proveedor inicial de Portaless Cloud Images – ver seccion “Portaless Cloud Images y APW como SSOT criptografico”.
-
+1. Disenar e implementar el flujo de onboarding de un click para usuarios no tecnicos – ver seccion “Publico objetivo y casos de uso ideales”. **[v0.0.9.29]** HECHO en codigo: Wizard de 5 pasos, Paso 1 (PRs #44/#45), Paso 2 GitHub (PRs #41/#43), publicacion real (PRs #49/#50) y checklist diferido (PR #53). Pendiente manual: probar el flujo completo de punta a punta contra una cuenta real de GitHub y un dominio real con TXT `_apw.` publicado.
 1. Verificar en GitHub Settings → Branches que `main` tenga una regla de proteccion con *Require status checks to pass before merging* y el check `build` marcado como requerido. **[Refactor v0.0.9.26]** Tarea nueva, extraida de la entrada de CI/CD en Produccion. No verificable via el conector de GitHub disponible.
 
 -----
