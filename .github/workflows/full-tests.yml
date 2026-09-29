@@ -1,0 +1,106 @@
+# Full Tests -- corre TODOS los tests del repo (tests/unit, tests/e2e y los
+# tests dentro de packages/) en una sola pasada, con reporte de cobertura.
+#
+# Por que existe:
+#   - unit-tests.yml solo corre tests/unit/.
+#   - sandbox-e2e.yml solo corre UN test e2e.
+#   - ci.yml (npm test) si corre todo, pero solo en PRs contra main, en
+#     Node 22.12 (isolated-vm@7 pide Node >= 24) y sin cobertura.
+# Este workflow es el que deberia marcarse como "required" en la regla de
+# proteccion de main: si falla un solo test de cualquier parte, no se
+# mergea.
+#
+# Cobertura: @vitest/coverage-v8 se instala con --no-save para no tocar
+# package.json ni package-lock.json. La version DEBE coincidir con la de
+# vitest (hoy 5.0.2, ver logs del CI); si se actualiza vitest, actualizar
+# COVERAGE_VERSION. Por ahora la cobertura es INFORMATIVA (no falla el
+# job): primero hay que ver el numero real. Despues se fija un minimo con
+# --coverage.thresholds.lines=N y el job falla si baja.
+
+name: Full Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, agentic, deploy-manifest, wizard-intent]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COVERAGE_VERSION: "5.0.2"
+
+jobs:
+  all-tests:
+    name: Todos los tests + cobertura (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Instalar isolated-vm (bindings nativos del sandbox) y coverage-v8
+        run: |
+          npm install --no-save isolated-vm@^7.0.1 --prefix packages/plugin-sandbox
+          npm install --no-save --no-audit --no-fund "@vitest/coverage-v8@${COVERAGE_VERSION}"
+
+      - name: Correr todos los tests con cobertura
+        run: >
+          npx vitest run
+          --reporter=verbose
+          --coverage.enabled
+          --coverage.provider=v8
+          --coverage.reporter=text-summary
+          --coverage.reporter=json-summary
+          --coverage.reporter=html
+          --coverage.include='packages/**/src/**'
+          --coverage.include='functions/**'
+          --coverage.include='src/**/*.ts'
+          --coverage.exclude='**/*.test.ts'
+          --coverage.exclude='**/tests/**'
+
+      - name: Resumen de cobertura en la pagina del run
+        if: always()
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'coverage/coverage-summary.json';
+            if (!fs.existsSync(p)) { console.log('Sin reporte de cobertura.'); process.exit(0); }
+            const t = JSON.parse(fs.readFileSync(p, 'utf8')).total;
+            const row = (k, label) => '| ' + label + ' | ' + t[k].pct + '% | ' + t[k].covered + ' / ' + t[k].total + ' |';
+            const md = [
+              '## Cobertura de tests',
+              '',
+              '| Metrica | % | Cubierto / total |',
+              '|---|---|---|',
+              row('lines', 'Lineas'),
+              row('statements', 'Sentencias'),
+              row('functions', 'Funciones'),
+              row('branches', 'Ramas'),
+              '',
+              'Reporte HTML completo (archivo por archivo) en el artifact coverage-html.',
+            ].join('\n');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
+            console.log(md);
+          "
+
+      - name: Subir reporte HTML de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: ignore
