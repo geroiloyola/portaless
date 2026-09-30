@@ -1,0 +1,79 @@
+---
+// /setup -- primer arranque de Portaless self-hosted (ADR-002).
+// Pagina estatica: todo el estado viene de GET /api/setup/status y el alta del
+// primer admin va a POST /api/setup/complete. No muestra codigos ni secretos.
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Configurar Portaless</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 3rem auto; padding: 0 1rem; color: #1f2933; }
+      label { display: block; margin-top: 1rem; font-weight: 600; }
+      input { width: 100%; padding: .6rem; margin-top: .3rem; box-sizing: border-box; }
+      button { margin-top: 1.5rem; padding: .7rem 1.2rem; width: 100%; cursor: pointer; }
+      .warning { background: #fff7e6; border: 1px solid #f0b429; padding: .8rem; margin: 1rem 0; }
+      .error { color: #b42318; margin-top: 1rem; min-height: 1.2em; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Configurar Portaless</h1>
+    <p id="loading">Comprobando el estado de la instalacion...</p>
+    <p id="unavailable" hidden>La configuracion inicial no esta disponible en esta instalacion.</p>
+    <div id="key-warning" class="warning" hidden>
+      Esta instalacion genero la clave de cifrado dentro del volumen de datos. Para mayor separacion de seguridad,
+      configura <code>PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY</code> como secreto de tu plataforma y respaldala por separado.
+    </div>
+    <form id="setup-form" hidden>
+      <p>Ingresa el codigo que aparece en los logs del servidor o en <code>SETUP_CODE.txt</code>.</p>
+      <label>Codigo de configuracion <input name="code" autocomplete="one-time-code" required /></label>
+      <label>Usuario admin <input name="username" autocomplete="username" minlength="3" maxlength="32" required /></label>
+      <label>Contrasena <input name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
+      <label>Confirmar contrasena <input name="confirm" type="password" autocomplete="new-password" minlength="12" required /></label>
+      <button type="submit">Crear administrador</button>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const messages = {
+        invalid_setup_code: "Codigo invalido o vencido. Si se agoto, reinicia el servidor para generar uno nuevo.",
+        setup_disabled: "La configuracion ya se completo.",
+        invalid_username: "Usuario de 3 a 32 caracteres: letras, numeros, punto, guion o guion bajo.",
+        weak_password: "La contrasena debe tener al menos 12 caracteres.",
+      };
+      async function init() {
+        try {
+          const res = await fetch("/api/setup/status", { cache: "no-store" });
+          if (!res.ok) throw new Error();
+          const status = await res.json();
+          if (!status.needsSetup) return location.replace("/admin/login");
+          $("key-warning").hidden = !status.keySourceWarning;
+          $("setup-form").hidden = false;
+        } catch {
+          $("unavailable").hidden = false;
+        } finally {
+          $("loading").hidden = true;
+        }
+      }
+      $("setup-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        if (form.get("password") !== form.get("confirm")) return ($("error").textContent = "Las contrasenas no coinciden.");
+        $("error").textContent = "";
+        const res = await fetch("/api/setup/complete", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: form.get("code"), username: form.get("username"), password: form.get("password") }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body.success) return location.replace(body.redirect || "/admin/login");
+        if (body.error === "setup_disabled") return location.replace("/admin/login");
+        $("error").textContent = messages[body.error] || "No se pudo completar la configuracion.";
+      });
+      init();
+    </script>
+  </body>
+</html>

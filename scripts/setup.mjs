@@ -8,6 +8,9 @@
 //     independiente que el admin exista en el archivo antes de decir OK.
 //   - El paso 1/2 verifica que las tablas criticas existan tras aplicar
 //     schema.sql (incluye las de OAuth de despliegue, v0.0.9.27).
+// PR B (first-run): applySchema() y REQUIRED_TABLES se exportan para que
+//   server/first-run.mjs reutilice la migracion sin duplicar SQL. main() solo
+//   corre cuando el archivo se ejecuta directamente: importarlo no instala nada.
 //
 //   npm run setup   (usa tsx: este script importa modulos .ts del repo)
 //
@@ -18,21 +21,17 @@
 //                             genera una aleatoria y se imprime UNA sola vez.
 //
 // Este script NO cubre Cloudflare D1 -- usa
-// `wrangler d1 execute <NOMBRE_DB> --file=schema.sql`.
+// `wrangler d1 execute --file=schema.sql`.
 
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "..");
 
-const sqlitePath = process.env.PORTALESS_SQLITE_PATH || join(rootDir, "portaless.db");
-const adminUsername = process.env.PORTALESS_ADMIN_USERNAME || "admin";
-const adminPasswordFromEnv = process.env.PORTALESS_ADMIN_PASSWORD;
-
-const REQUIRED_TABLES = [
+export const REQUIRED_TABLES = [
   "users",
   "sessions",
   "permission_grants",
@@ -42,6 +41,10 @@ const REQUIRED_TABLES = [
   "deployment_oauth_states",
   "deployment_credentials",
 ];
+
+function defaultSqlitePath() {
+  return process.env.PORTALESS_SQLITE_PATH || join(rootDir, "portaless.db");
+}
 
 function generateRandomPassword() {
   return randomBytes(18).toString("base64url");
@@ -56,8 +59,8 @@ async function loadDatabase() {
   }
 }
 
-async function applySchema() {
-  console.log(`\n[1/2] Aplicando schema.sql a ${sqlitePath} ...`);
+export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = false } = {}) {
+  if (!quiet) console.log(`\n[1/2] Aplicando schema.sql a ${sqlitePath} ...`);
   const Database = await loadDatabase();
 
   const schemaPath = join(rootDir, "schema.sql");
@@ -75,10 +78,11 @@ async function applySchema() {
   if (missing.length > 0) {
     throw new Error(`schema.sql se aplico pero faltan tablas criticas: ${missing.join(", ")}`);
   }
-  console.log(`      OK -- ${tables.length} tablas presentes, incluidas las ${REQUIRED_TABLES.length} criticas.`);
+  if (!quiet) console.log(`  OK -- ${tables.length} tablas presentes, incluidas las ${REQUIRED_TABLES.length} criticas.`);
+  return tables;
 }
 
-async function createInitialAdmin() {
+async function createInitialAdmin(sqlitePath, adminUsername, adminPasswordFromEnv) {
   console.log(`\n[2/2] Creando usuario admin inicial ("${adminUsername}") si no existe ninguno ...`);
 
   const { SqliteUsersStore } = await import("../packages/auth/src/stores/sqlite-users-store.ts");
@@ -89,8 +93,8 @@ async function createInitialAdmin() {
   try {
     const existingUsers = await usersStore.listUsers();
     if (existingUsers.length > 0) {
-      console.log(`      SKIP -- ya existen ${existingUsers.length} usuario(s) registrado(s). No se crea un admin nuevo.`);
-      console.log("      (Si necesitas resetear, usa /admin/password-reset o borra manualmente la tabla 'users'.)");
+      console.log(`  SKIP -- ya existen ${existingUsers.length} usuario(s) registrado(s). No se crea un admin nuevo.`);
+      console.log("  (Si necesitas resetear, usa /admin/password-reset o borra manualmente la tabla 'users'.)");
       return;
     }
     password = adminPasswordFromEnv || generateRandomPassword();
@@ -112,28 +116,34 @@ async function createInitialAdmin() {
     );
   }
 
-  console.log(`      OK -- usuario "${adminUsername}" persistido y verificado en ${sqlitePath}.`);
+  console.log(`  OK -- usuario "${adminUsername}" persistido y verificado en ${sqlitePath}.`);
   if (!adminPasswordFromEnv) {
-    console.log("\n      ================================================================");
-    console.log("      CONTRASEÑA GENERADA (guardala ahora, no se muestra de nuevo):");
-    console.log(`      ${password}`);
-    console.log("      ================================================================\n");
+    console.log("\n  ================================================================");
+    console.log("  CONTRASEÑA GENERADA (guardala ahora, no se muestra de nuevo):");
+    console.log(`  ${password}`);
+    console.log("  ================================================================\n");
   }
 }
 
 async function main() {
+  const sqlitePath = defaultSqlitePath();
+  const adminUsername = process.env.PORTALESS_ADMIN_USERNAME || "admin";
+  const adminPasswordFromEnv = process.env.PORTALESS_ADMIN_PASSWORD;
+
   console.log("Portaless -- instalacion de base de datos + admin inicial (v0.0.9.27)");
   console.log(`Base de datos SQLite: ${sqlitePath}`);
 
-  await applySchema();
-  await createInitialAdmin();
+  await applySchema(sqlitePath);
+  await createInitialAdmin(sqlitePath, adminUsername, adminPasswordFromEnv);
 
   console.log("\nListo. Ya puedes iniciar sesion en /admin/login.");
   console.log("Nota: este script cubre SQLite self-hosted. Para Cloudflare D1, ver el");
   console.log("comentario al inicio de este archivo y de schema.sql en la raiz.\n");
 }
 
-main().catch((err) => {
-  console.error("\nFallo la instalacion:", err.message);
-  process.exit(1);
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error("\nFallo la instalacion:", err.message);
+    process.exit(1);
+  });
+}
