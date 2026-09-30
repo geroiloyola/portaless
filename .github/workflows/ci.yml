@@ -22,3 +22,51 @@ jobs:
         run: npm run build
       - name: Validar manifiestos de plugins
         run: npx tsx scripts/validate-manifests.ts
+
+  # ADR-004: construye la imagen real y recorre el primer arranque completo:
+  # arranque -> /api/setup/status -> setup con el codigo -> reinicio -> setup bloqueado.
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagen
+        run: docker build -t portaless:ci .
+      - name: Arrancar contenedor
+        run: docker run -d --name portaless -p 3000:3000 -v portaless-data:/data portaless:ci
+      - name: Esperar /healthz
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:3000/healthz && exit 0
+            sleep 2
+          done
+          docker logs portaless; exit 1
+      - name: Verificar setup pendiente y usuario no privilegiado
+        run: |
+          set -euo pipefail
+          test "$(curl -fsS http://127.0.0.1:3000/api/setup/status | jq -c .)" = '{"needsSetup":true,"keySourceWarning":true}'
+          test "$(docker exec portaless stat -c %u /data/portaless.db)" = "1000"
+          test "$(docker exec portaless stat -c %a /data/SETUP_CODE.txt)" = "600"
+      - name: Completar setup
+        run: |
+          set -euo pipefail
+          CODE="$(docker exec portaless cat /data/SETUP_CODE.txt | tr -d '[:space:]')"
+          STATUS="$(curl -s -o /tmp/setup.json -w '%{http_code}' -X POST http://127.0.0.1:3000/api/setup/complete \
+            -H 'content-type: application/json' \
+            -d "{\"code\":\"$CODE\",\"username\":\"admin\",\"password\":\"una-contrasena-larga\"}")"
+          cat /tmp/setup.json; echo
+          test "$STATUS" = "201"
+          docker exec portaless test ! -e /data/SETUP_CODE.txt
+      - name: Reiniciar y verificar persistencia
+        run: |
+          set -euo pipefail
+          docker restart portaless
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:3000/healthz >/dev/null && break; sleep 2; done
+          test "$(curl -fsS http://127.0.0.1:3000/api/setup/status | jq -r .needsSetup)" = "false"
+          STATUS="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3000/api/setup/complete \
+            -H 'content-type: application/json' \
+            -d '{"code":"AAAAAAAA","username":"otro","password":"una-contrasena-larga"}')"
+          test "$STATUS" = "410"
+      - name: Logs del contenedor
+        if: always()
+        run: docker logs portaless || true

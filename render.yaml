@@ -1,0 +1,24 @@
+# Blueprint de Render para Portaless self-hosted (ADR-004).
+# Los discos persistentes requieren un plan pago: con plan free el Blueprint se
+# rechaza. Sin disco, SQLite y los secretos se pierden en cada deploy.
+services:
+  - type: web
+    name: portaless
+    runtime: docker
+    plan: starter
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    disk:
+      name: portaless-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: PORTALESS_SQLITE_PATH
+        value: /data/portaless.db
+      # Generar con `openssl rand -base64 32` y cargarla en el dashboard.
+      - key: PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY
+        sync: false
+      # Opcional: codigo de configuracion fijo en vez de leerlo de los logs.
+      - key: PORTALESS_SETUP_CODE
+        sync: false
