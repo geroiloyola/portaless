@@ -12,9 +12,9 @@
   ],
   "scripts": {
     "dev": "astro dev",
-    "start": "node server/node-runtime.mjs",
+    "start": "tsx scripts/start-docker.mjs",
     "start:self-host": "tsx scripts/start-docker.mjs",
-    "self-host:dev": "PORTALESS_SQLITE_PATH=./portaless.db node server/node-runtime.mjs",
+    "self-host:dev": "PORTALESS_SQLITE_PATH=./portaless.db tsx scripts/start-docker.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "setup": "tsx scripts/setup.mjs",
@@ -27,10 +27,10 @@
     "@noble/post-quantum": "^0.5.0",
     "astro": "^7.3.3",
     "better-sqlite3": "^12.0.0",
+    "tsx": "^4.23.13",
     "web-bot-auth": "^0.1.0"
   },
   "devDependencies": {
-    "tsx": "^4.23.13",
     "vitest": "^5.0.1"
   }
 }

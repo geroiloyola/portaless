@@ -1,0 +1,22 @@
+# Portaless self-hosted con Docker Compose (ADR-004).
+#   docker compose up -d
+#   docker compose logs portaless   # muestra el codigo de configuracion
+# Luego abrir http://localhost:3000/setup
+services:
+  portaless:
+    build: .
+    image: portaless:local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORTALESS_SQLITE_PATH: /data/portaless.db
+      # Recomendado: generar con `openssl rand -base64 32` y guardarla fuera del volumen.
+      # PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ${PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY}
+      # Opcional: fijar el codigo de configuracion en vez de leerlo de los logs.
+      # PORTALESS_SETUP_CODE: ${PORTALESS_SETUP_CODE}
+    volumes:
+      - portaless-data:/data
+
+volumes:
+  portaless-data:
