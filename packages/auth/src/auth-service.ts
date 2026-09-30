@@ -25,6 +25,12 @@
 //     usuario (incluida la actual): si alguien tenia una sesion robada,
 //     la pierde. Requiere SessionStore.destroyAllForUser(); si el backend
 //     no lo implementa todavia, se avisa por consola.
+//
+// Limite de intentos MFA: cada challenge admite MFA_MAX_ATTEMPTS codigos
+// incorrectos. Al agotarlos se borra y hay que volver a iniciar sesion (lo que
+// exige la contrasena otra vez). PENDIENTE: pendingMfaChallenges vive en la
+// memoria del proceso; en Cloudflare cada isolate tiene su propio Map y en
+// self-host un reinicio los borra. Moverlo a D1/SQLite es un cambio aparte.
 
 import { randomBytes } from "node:crypto";
 import type { LoginResult, Role, OAuthProfile } from "./types";
@@ -36,10 +42,12 @@ import { verifyPassword } from "./password";
 import { verifyTotpCode, generateTotpSecret, buildTotpUri } from "./totp";
 
 const MFA_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+export const MFA_MAX_ATTEMPTS = 5;
 interface PendingMfaChallenge {
   username: string;
   role: Role;
   expiresAt: number;
+  failedAttempts: number;
 }
 const pendingMfaChallenges = new Map<string, PendingMfaChallenge>();
 
@@ -77,6 +85,7 @@ export class AuthService {
         username: user.username,
         role: user.role,
         expiresAt: Date.now() + MFA_CHALLENGE_TTL_MS,
+        failedAttempts: 0,
       });
       return { success: false, mfaRequired: true, mfaChallengeToken: challengeToken };
     }
@@ -87,7 +96,7 @@ export class AuthService {
 
   async completeMfaLogin(challengeToken: string, totpCode: string): Promise<LoginResult> {
     const challenge = pendingMfaChallenges.get(challengeToken);
-    if (!challenge || challenge.expiresAt < Date.now()) {
+    if (!challenge || challenge.expiresAt < Date.now() || challenge.failedAttempts >= MFA_MAX_ATTEMPTS) {
       pendingMfaChallenges.delete(challengeToken);
       return { success: false, error: "El código de verificación expiró. Inicia sesión de nuevo." };
     }
@@ -99,6 +108,11 @@ export class AuthService {
     }
 
     if (!verifyTotpCode(user.totpSecret, totpCode)) {
+      challenge.failedAttempts += 1;
+      if (challenge.failedAttempts >= MFA_MAX_ATTEMPTS) {
+        pendingMfaChallenges.delete(challengeToken);
+        return { success: false, error: "Demasiados códigos incorrectos. Inicia sesión de nuevo." };
+      }
       return { success: false, error: "Código de verificación incorrecto." };
     }
 
