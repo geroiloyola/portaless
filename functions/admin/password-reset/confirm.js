@@ -4,6 +4,7 @@
 //
 // v0.0.9.30: registra el evento en el historial de contrasenas (hora, IP,
 // user agent y pais/ciudad que informa Cloudflare). Nunca la contrasena.
+// Minimo de 12 caracteres, igual que el primer admin de /setup (ADR-002).
 
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import {
@@ -15,6 +16,8 @@ import {
   createPasswordEventStore,
   passwordEventContextFromRequest,
 } from "../../../packages/auth/src/password-event-store.ts";
+
+const MIN_PASSWORD_LENGTH = 12;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -37,9 +40,9 @@ export async function onRequestPost(context) {
     });
   }
 
-  if (typeof newPassword !== "string" || newPassword.length < 8) {
+  if (typeof newPassword !== "string" || newPassword.length < MIN_PASSWORD_LENGTH) {
     return new Response(
-      JSON.stringify({ success: false, error: "La contraseña nueva debe tener al menos 8 caracteres." }),
+      JSON.stringify({ success: false, error: `La contraseña nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }

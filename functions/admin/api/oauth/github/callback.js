@@ -1,3 +1,10 @@
+// GET /admin/api/oauth/github/callback -- conexion de la GitHub App para despliegues.
+// Requiere sesion de admin (functions/admin/_middleware.js expone context.data.user).
+//
+// La credencial queda asociada a context.data.user.username. AuthService.validateSession()
+// solo devuelve { username, role }: antes se usaba String(user.id ?? user.email), que
+// siempre valia "undefined" y dejaba todas las credenciales con el mismo dueno.
+
 import { createDeploymentOAuthStore } from "../../../../../packages/deploy-engine/src/oauth-store";
 import { readGitHubOAuthConfig, completeGitHubOAuth } from "../../../../../packages/deploy-engine/src/github-oauth";
 
@@ -6,6 +13,7 @@ function requireAdmin(context) {
   const user = context.data?.user;
   if (!user) return { error: json({ error: "No autenticado" }, 401) };
   if (user.role !== "admin") return { error: json({ error: "Solo un admin puede conectar infraestructura" }, 403) };
+  if (typeof user.username !== "string" || !user.username) return { error: json({ error: "Sesion sin usuario" }, 401) };
   return { user };
 }
 function json(body, status = 200) {
@@ -26,7 +34,7 @@ export async function onRequestGet(context) {
   const store = await createDeploymentOAuthStore(context.env);
   const r = await completeGitHubOAuth(cfg, store,
     { code: reqUrl.searchParams.get("code"), state: reqUrl.searchParams.get("state") },
-    String(g.user.id ?? g.user.email));
+    g.user.username);
   if (!r.ok) return json({ error: r.error }, r.status);
   back.searchParams.set("github", "connected");
   return Response.redirect(back.toString(), 302);

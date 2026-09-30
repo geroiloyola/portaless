@@ -4,10 +4,13 @@
 // Pasa por AuthService.changePassword(), que exige la contrasena actual y
 // el codigo 2FA si el usuario lo tiene activo, y registra el evento en el
 // historial (hora, IP, ubicacion aproximada).
+// Minimo de 12 caracteres, igual que el primer admin de /setup (ADR-002).
 
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore, createPasswordResetStore } from "../../../packages/auth/src/store-factory.ts";
 import { createPasswordEventStore, passwordEventContextFromRequest } from "../../../packages/auth/src/password-event-store.ts";
+
+const MIN_PASSWORD_LENGTH = 12;
 
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -29,8 +32,8 @@ export async function onRequestPost(context) {
   if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
     return json({ success: false, error: "Se requieren currentPassword y newPassword." }, 400);
   }
-  if (newPassword.length < 8) {
-    return json({ success: false, error: "La contrasena nueva debe tener al menos 8 caracteres." }, 400);
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    return json({ success: false, error: `La contrasena nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` }, 400);
   }
 
   const auth = new AuthService(
