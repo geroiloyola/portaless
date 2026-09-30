@@ -1,6 +1,8 @@
 // Cloudflare Pages Function -- GET /admin/oauth/:provider/callback
 // Recibe el redirect del proveedor OAuth, valida state+PKCE, intercambia
 // el codigo por el perfil del usuario, y crea la sesion de Portaless.
+//
+// Las cookies llevan Secure solo en HTTPS, igual que login.js y start.js.
 
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
@@ -56,12 +58,13 @@ export async function onRequestGet(context) {
     return Response.redirect(new URL("/admin/login?error=1", url.origin), 302);
   }
 
+  const secure = url.protocol === "https:" ? "; Secure" : "";
   const headers = new Headers({ Location: new URL("/admin", url.origin).toString() });
   headers.append(
     "Set-Cookie",
-    `portaless_session=${result.session.token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
+    `portaless_session=${result.session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${secure}`
   );
-  headers.append("Set-Cookie", `portaless_oauth_state=; Path=/admin/oauth/${provider}/callback; Max-Age=0`);
+  headers.append("Set-Cookie", `portaless_oauth_state=; Path=/admin/oauth/${provider}/callback; Max-Age=0${secure}`);
 
   return new Response(null, { status: 302, headers });
 }
