@@ -1,7 +1,8 @@
 // Cloudflare Pages Function -- middleware exclusivo de las rutas
 // /admin/*. Protege el dashboard verificando la cookie de sesion antes de
-// servir cualquier ruta bajo este prefijo. La ruta /admin/login queda
-// explicitamente excluida.
+// servir cualquier ruta bajo este prefijo. Las rutas que se usan ANTES de
+// tener sesion (login, 2FA, recuperacion de contrasena, OAuth de login) estan
+// en una allowlist de coincidencia exacta: packages/auth/src/public-admin-paths.ts.
 //
 // ACTUALIZADO: ya no usa stores en memoria hardcodeados. Resuelve el
 // backend de persistencia real (D1 en Cloudflare, o SQLite self-hosted)
@@ -10,6 +11,7 @@
 
 import { AuthService } from "../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
+import { isPublicAdminPath } from "../../packages/auth/src/public-admin-paths.ts";
 
 function getCookie(request, name) {
   const cookieHeader = request.headers.get("Cookie") || "";
@@ -21,7 +23,7 @@ export async function onRequest(context) {
   const { request, next, env } = context;
   const url = new URL(request.url);
 
-  if (url.pathname === "/admin/login") {
+  if (isPublicAdminPath(url.pathname)) {
     return next();
   }
 
@@ -45,3 +47,4 @@ export async function onRequest(context) {
 
   return next();
 }
+

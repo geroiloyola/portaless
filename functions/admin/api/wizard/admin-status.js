@@ -15,12 +15,10 @@
 // Un endpoint de registro SIN esas protecciones seguiria siendo una puerta de
 // escalada de privilegios.
 //
-// Sin autenticacion requerida -- a diferencia de los demas endpoints de
-// functions/admin/api/, este debe ser accesible ANTES de que exista una
-// sesion, porque su proposito es decirle a un usuario sin sesion que
-// hacer para obtener una.
-// NOTA (bug conocido, PR aparte): functions/admin/_middleware.js hoy solo
-// excluye /admin/login, asi que esta ruta recibe un 302 sin sesion.
+// REQUIERE SESION (PR D): el wizard completo es onboarding de un admin ya
+// logueado, asi que este endpoint queda detras de functions/admin/_middleware.js
+// y NO esta en packages/auth/src/public-admin-paths.ts. Quien todavia no tiene
+// cuenta usa /setup y GET /api/setup/status, fuera de /admin.
 //
 // v0.0.9.27:
 //   - Ya no abre SQLite por su cuenta con node:sqlite: usa createUsersStore(env),
