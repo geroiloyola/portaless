@@ -1,17 +1,18 @@
-// Tests unitarios reales de verifyWebBotAuthRequest(): construye firmas
-// Ed25519 genuinas via WebCrypto (no fixtures fabricadas a mano) y mockea
-// unicamente global.fetch (el directorio de claves remoto del operador),
-// que es el unico limite de red real de esta funcion.
+// Tests de webbotauth/verify.ts, el verificador del middleware (todas las
+// plataformas). Firmas Ed25519 reales via WebCrypto; solo se mockea fetch
+// (el directorio de claves del operador).
 //
-// Cubre especificamente los dos gaps que v0.0.9 cierra -- ver
-// ROADMAP.md "Cache del directorio de claves Web Bot Auth" y
-// "verificacion de unicidad de nonce":
-// 1. El directorio se cachea entre requests (no hay un fetch por request).
-// 2. Un Signature-Input/Signature reenviado tal cual (replay) es
-//    rechazado la segunda vez, aunque la firma siga siendo
-//    criptograficamente valida.
+// PR H: el helper firma como un agente real de draft-03: Signature-Agent con
+// comillas, tag="web-bot-auth", signature-agent entre los componentes y
+// created/expires. Antes los tests firmaban con buildSignatureBase() de
+// rfc9421.ts, la misma funcion que verifica: un error en ella (descartaba tag
+// y nonce de @signature-params) quedaba oculto. Por eso se agrega un test de
+// interoperabilidad que firma con la libreria web-bot-auth, otra
+// implementacion independiente.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { signatureHeaders } from "web-bot-auth";
+import { signerFromJWK } from "web-bot-auth/crypto";
 import {
   verifyWebBotAuthRequest,
   __resetDirectoryCacheForTests,
@@ -21,6 +22,7 @@ import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-la
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "test-key-1";
+const DEFAULT_COMPONENTS = '"@method" "@authority" "@path" "signature-agent"';
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
@@ -37,7 +39,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 async function generateKeyPair() {
   const keyPair = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;
   const rawPublic = new Uint8Array(await crypto.subtle.exportKey("raw", keyPair.publicKey));
-  return { privateKey: keyPair.privateKey, publicKeyX: bytesToBase64Url(rawPublic) };
+  return { keyPair, privateKey: keyPair.privateKey, publicKeyX: bytesToBase64Url(rawPublic) };
 }
 
 interface SignedRequestOptions {
@@ -48,39 +50,39 @@ interface SignedRequestOptions {
   expires?: number;
   method?: string;
   url?: string;
+  signatureAgentHeader?: string;
+  components?: string;
 }
 
 async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> {
   const method = opts.method ?? "GET";
   const url = opts.url ?? "https://mysite.example/paginas/foo";
   const created = opts.created ?? Math.floor(Date.now() / 1000);
+  const expires = opts.expires ?? created + 300;
+  const agentHeader = opts.signatureAgentHeader ?? `"${OPERATOR_ORIGIN}"`;
 
   const paramsLine =
-    `("@method" "@authority" "@path")` +
+    `(${opts.components ?? DEFAULT_COMPONENTS})` +
+    `;created=${created};expires=${expires}` +
     `;keyid="${opts.keyId}";alg="ed25519"` +
-    `;created=${created}` +
-    (opts.expires ? `;expires=${opts.expires}` : "") +
-    (opts.nonce ? `;nonce="${opts.nonce}"` : "");
+    (opts.nonce ? `;nonce="${opts.nonce}"` : "") +
+    `;tag="web-bot-auth"`;
 
-  // La request "a firmar" se construye sin Signature todavia -- solo para
-  // que buildSignatureBase() (la MISMA funcion que usa verify.ts en
-  // produccion) calcule la base exacta a partir de Signature-Input, en vez
-  // de duplicar esa logica a mano en el test y arriesgar una base
-  // ligeramente distinta a la real.
   const unsigned = new Request(url, {
     method,
-    headers: { "Signature-Agent": OPERATOR_ORIGIN, "Signature-Input": `sig1=${paramsLine}` },
+    headers: { "Signature-Agent": agentHeader, "Signature-Input": `sig1=${paramsLine}` },
   });
   const parsed = parseSignatureInput(`sig1=${paramsLine}`);
   if (!parsed) throw new Error("test helper: Signature-Input construido no parseo");
   const signatureBase = buildSignatureBase(unsigned, parsed);
+  if (!signatureBase) throw new Error("test helper: falta un header firmado");
 
   const signatureBytes = new Uint8Array(
     await crypto.subtle.sign("Ed25519", opts.privateKey, new TextEncoder().encode(signatureBase))
   );
 
   const headers = new Headers({
-    "Signature-Agent": OPERATOR_ORIGIN,
+    "Signature-Agent": agentHeader,
     "Signature-Input": `sig1=${paramsLine}`,
     Signature: `sig1=:${bytesToBase64(signatureBytes)}:`,
   });
@@ -88,7 +90,7 @@ async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> 
   return new Request(url, { method, headers });
 }
 
-describe("verifyWebBotAuthRequest", () => {
+describe("verifyWebBotAuthRequest (middleware)", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -109,16 +111,68 @@ describe("verifyWebBotAuthRequest", () => {
     });
   }
 
-  it("verifica una request correctamente firmada con Ed25519 real", async () => {
+  it("verifica una request firmada segun draft-03 y devuelve agentKeyId para el ledger", async () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     mockDirectoryOnce(publicKeyX);
 
-    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID });
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "n-1" });
     const result = await verifyWebBotAuthRequest(request);
 
     expect(result.verified, `deberia verificar. razon: ${result.reason}`).toBe(true);
+    // Regresion del #65: el middleware lee agentKeyId; nunca debe quedar "unknown".
+    expect(result.agentKeyId).toBe(KEY_ID);
     expect(result.keyRecord?.keyId).toBe(KEY_ID);
+    expect(result.keyRecord?.operator).toBe(OPERATOR_ORIGIN);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("interoperabilidad: verifica una firma hecha por la libreria web-bot-auth", async () => {
+    // Si falla con signature_agent_not_signed, la libreria no cubre
+    // signature-agent por defecto: hay que revisarlo antes de mergear.
+    const { keyPair, publicKeyX } = await generateKeyPair();
+    const jwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+    const signer = await signerFromJWK(jwk as never);
+    mockDirectoryOnce(publicKeyX, signer.keyid);
+
+    const request = new Request("https://mysite.example/paginas/foo", {
+      headers: { "Signature-Agent": `"${OPERATOR_ORIGIN}"` },
+    });
+    const created = new Date();
+    const headers = await signatureHeaders(request.clone(), signer, {
+      created,
+      expires: new Date(created.getTime() + 300_000),
+    });
+    const signed = request.clone();
+    for (const [k, v] of Object.entries(headers)) signed.headers.set(k, v as string);
+
+    const result = await verifyWebBotAuthRequest(signed);
+    expect(result.verified, `deberia verificar. razon: ${result.reason}. Signature-Input: ${signed.headers.get("Signature-Input")}`).toBe(true);
+  });
+
+  it("rechaza Signature-Agent sin comillas aunque la firma sea valida", async () => {
+    const { privateKey } = await generateKeyPair();
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, signatureAgentHeader: OPERATOR_ORIGIN });
+    const result = await verifyWebBotAuthRequest(request);
+    expect(result).toMatchObject({ verified: false, reason: "invalid_signature_agent" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rechaza una firma que no cubre signature-agent", async () => {
+    const { privateKey } = await generateKeyPair();
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, components: '"@method" "@authority" "@path"' });
+    const result = await verifyWebBotAuthRequest(request);
+    expect(result).toMatchObject({ verified: false, reason: "signature_agent_not_signed" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rechaza si se cambia Signature-Agent despues de firmar", async () => {
+    const { privateKey, publicKeyX } = await generateKeyPair();
+    mockDirectoryOnce(publicKeyX);
+    const original = await buildSignedRequest({ privateKey, keyId: KEY_ID });
+    const headers = new Headers(original.headers);
+    headers.set("Signature-Agent", `"${OPERATOR_ORIGIN}/otro"`);
+    const result = await verifyWebBotAuthRequest(new Request(original.url, { headers }));
+    expect(result).toMatchObject({ verified: false, reason: "signature_verification_failed" });
   });
 
   it("cachea el directorio de claves: la segunda request al mismo operador no vuelve a fetchear", async () => {
@@ -126,28 +180,21 @@ describe("verifyWebBotAuthRequest", () => {
     mockDirectoryOnce(publicKeyX);
 
     const first = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "nonce-a" });
-    const firstResult = await verifyWebBotAuthRequest(first);
-    expect(firstResult.verified).toBe(true);
+    expect((await verifyWebBotAuthRequest(first)).verified).toBe(true);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
     const second = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "nonce-b" });
     const secondResult = await verifyWebBotAuthRequest(second);
     expect(secondResult.verified, `deberia verificar. razon: ${secondResult.reason}`).toBe(true);
-    // Sigue en 1: el directorio se sirvio desde cache, no se volvio a llamar fetch.
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("rechaza un replay exacto de la misma request firmada (nonce reusado)", async () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     mockDirectoryOnce(publicKeyX);
-    mockDirectoryOnce(publicKeyX); // por si el cache no aplicara, no deberia hacer fallar el test por falta de mock
+    mockDirectoryOnce(publicKeyX);
 
-    const nonce = "replay-nonce-123";
-    const created = Math.floor(Date.now() / 1000);
-    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce, created });
-
-    // Clonamos la request original ANTES de consumirla, para simular un
-    // atacante interceptando y reenviando el mismo mensaje firmado tal cual.
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "replay-nonce-123" });
     const replay = request.clone();
 
     const firstResult = await verifyWebBotAuthRequest(request);
@@ -158,24 +205,21 @@ describe("verifyWebBotAuthRequest", () => {
     expect(replayResult.reason).toBe("nonce_replayed");
   });
 
-  it("dos requests distintas con nonces distintos del mismo operador ambas verifican", async () => {
+  it("dos requests con nonces distintos del mismo operador ambas verifican", async () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     mockDirectoryOnce(publicKeyX);
 
     const reqA = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "nonce-unique-a" });
     const reqB = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: "nonce-unique-b" });
 
-    const resultA = await verifyWebBotAuthRequest(reqA);
-    const resultB = await verifyWebBotAuthRequest(reqB);
-
-    expect(resultA.verified).toBe(true);
-    expect(resultB.verified).toBe(true);
+    expect((await verifyWebBotAuthRequest(reqA)).verified).toBe(true);
+    expect((await verifyWebBotAuthRequest(reqB)).verified).toBe(true);
   });
 
   it("rechaza una firma criptograficamente invalida (clave equivocada)", async () => {
     const { publicKeyX } = await generateKeyPair();
-    const attacker = await generateKeyPair(); // el atacante firma con SU propia clave...
-    mockDirectoryOnce(publicKeyX); // ...pero el directorio solo publica la clave legitima.
+    const attacker = await generateKeyPair();
+    mockDirectoryOnce(publicKeyX);
 
     const request = await buildSignedRequest({ privateKey: attacker.privateKey, keyId: KEY_ID });
     const result = await verifyWebBotAuthRequest(request);
@@ -195,11 +239,11 @@ describe("verifyWebBotAuthRequest", () => {
     expect(result.reason).toBe("keyid_not_in_directory");
   });
 
-  it("rechaza una firma expirada (created fuera de la ventana MAX_SIGNATURE_AGE_SECONDS)", async () => {
+  it("rechaza una firma vieja (created fuera de la ventana MAX_SIGNATURE_AGE_SECONDS)", async () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     mockDirectoryOnce(publicKeyX);
 
-    const staleCreated = Math.floor(Date.now() / 1000) - 3600; // 1 hora atras
+    const staleCreated = Math.floor(Date.now() / 1000) - 3600;
     const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, created: staleCreated });
     const result = await verifyWebBotAuthRequest(request);
 

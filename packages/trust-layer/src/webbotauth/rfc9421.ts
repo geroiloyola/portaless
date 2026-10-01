@@ -1,18 +1,27 @@
+// PR H: @signature-params se toma tal como llego en Signature-Input (RFC 9421,
+// 2.3). Antes se reconstruia solo con keyid/alg/created/expires y se perdian
+// tag y nonce: ninguna firma real de Web Bot Auth (siempre lleva tag) podia
+// verificar. Los tests no lo detectaban porque firmaban con esta misma
+// funcion. alg pasa a ser opcional (draft-03 no lo exige) y un header firmado
+// que no viene en la request invalida la firma en vez de serializarse vacio.
+
 export interface ParsedSignatureInput {
   label: string;
   coveredComponents: string[];
   keyId: string;
-  algorithm: string;
+  algorithm?: string;
   created?: number;
   expires?: number;
   nonce?: string;
+  /** Valor tal como llego despues de "label=". */
+  signatureParams: string;
 }
 
 export function parseSignatureInput(headerValue: string): ParsedSignatureInput | null {
-  const match = headerValue.match(/^([a-zA-Z0-9_-]+)=\(([^)]*)\)(.*)$/);
+  const match = headerValue.trim().match(/^([a-zA-Z0-9_*.-]+)=(\(([^)]*)\)(.*))$/);
   if (!match) return null;
 
-  const [, label, componentsRaw, paramsRaw] = match;
+  const [, label, signatureParams, componentsRaw, paramsRaw] = match;
   const coveredComponents = componentsRaw
     .split(" ")
     .map((c) => c.trim().replace(/^"|"$/g, ""))
@@ -25,7 +34,7 @@ export function parseSignatureInput(headerValue: string): ParsedSignatureInput |
     params[m[1]] = m[3] !== undefined ? m[3] : m[2];
   }
 
-  if (!params.keyid || !params.alg) return null;
+  if (!params.keyid) return null;
 
   return {
     label,
@@ -35,6 +44,7 @@ export function parseSignatureInput(headerValue: string): ParsedSignatureInput |
     created: params.created ? Number(params.created) : undefined,
     expires: params.expires ? Number(params.expires) : undefined,
     nonce: params.nonce,
+    signatureParams: signatureParams.trim(),
   };
 }
 
@@ -48,7 +58,8 @@ export function parseSignatureHeader(headerValue: string, label: string): Uint8A
   return bytes;
 }
 
-export function buildSignatureBase(request: Request, parsed: ParsedSignatureInput): string {
+/** Devuelve null si un header firmado no esta presente en la request. */
+export function buildSignatureBase(request: Request, parsed: ParsedSignatureInput): string | null {
   const url = new URL(request.url);
   const lines: string[] = [];
 
@@ -68,18 +79,13 @@ export function buildSignatureBase(request: Request, parsed: ParsedSignatureInpu
         break;
       default: {
         const headerValue = request.headers.get(component);
-        lines.push(`"${component}": ${headerValue ?? ""}`);
+        if (headerValue === null) return null;
+        lines.push(`"${component}": ${headerValue.trim()}`);
       }
     }
   }
 
-  const paramsLine =
-    `"@signature-params": (${parsed.coveredComponents.map((c) => `"${c}"`).join(" ")})` +
-    `;keyid="${parsed.keyId}";alg="${parsed.algorithm}"` +
-    (parsed.created ? `;created=${parsed.created}` : "") +
-    (parsed.expires ? `;expires=${parsed.expires}` : "");
-
-  lines.push(paramsLine);
+  lines.push(`"@signature-params": ${parsed.signatureParams}`);
   return lines.join("\n");
 }
 

@@ -1,77 +1,50 @@
 // Verificacion de identidad de agentes via Web Bot Auth (RFC 9421 HTTP
 // Message Signatures) -- v0.0.9.21. Portaless NUNCA firma nada -- solo
 // verifica firmas de agentes externos que reportan sobre la fuente
-// "agent" de SiteTrustScore. Usa el paquete oficial `web-bot-auth` de
-// Cloudflare (verify() + verifierFromJWK()) en vez de reimplementar la
-// reconstruccion del signature base string (RFC 9421 seccion 2.5) --
-// ese formato especifico (ver draft-meunier-web-bot-auth-architecture)
-// ya esta manejado correctamente por la libreria oficial.
+// "agent" de SiteTrustScore. Usa el paquete oficial `web-bot-auth`
+// (verify() + verifierFromJWK()) en vez de reimplementar la
+// reconstruccion del signature base string (RFC 9421 seccion 2.5).
 //
-// IMPORTANTE -- esto verifica IDENTIDAD, no AUTORIZACION. verify() aqui
-// responde "¿esta firma es realmente de agent.example.com?", nunca
-// "¿tiene agent.example.com permiso para reportar en Portaless?". Esa
-// segunda pregunta la resuelve la allowlist `authorized_agents` (ver
-// schema.sql y authorized-agents.ts) -- sin ella, cualquiera que genere
-// un par Ed25519 y publique un JWKS podria reportar verified:true para
-// cualquier sitio. Web Bot Auth resuelve "quien eres", la allowlist
+// IMPORTANTE -- esto verifica IDENTIDAD, no AUTORIZACION. La autorizacion
+// la resuelve la allowlist `authorized_agents` (ver schema.sql y
+// authorized-agents.ts). Web Bot Auth resuelve "quien eres", la allowlist
 // resuelve "tienes permiso".
 //
-// Cache del JWKS: Cloudflare Pages Functions no tiene estado entre
-// invocaciones -- fetchJwksWithCache() usa un KV namespace (env.JWKS_CACHE)
-// con TTL, para no golpear el dominio del agente en cada verificacion.
-// Sin KV configurado, cae a fetch directo cada vez (mas lento, pero
-// funcional -- nunca falla en silencio, ver el warning en el codigo).
+// Cache del JWKS: fetchJwksWithCache() usa un KV namespace (env.JWKS_CACHE)
+// con TTL. Sin KV, cae a fetch directo cada vez (con warning).
 //
-// v0.0.9.30 -- ML-DSA (FIPS 204, post-cuantico). Antes este modulo solo
-// verificaba Ed25519, aunque `authorized_agents` ya tenia la columna
-// `key_algorithm` desde v0.0.9.24. Ahora, si el JWK del agente es de tipo
-// post-cuantico (formato del borrador IETF de JOSE/COSE para ML-DSA:
+// v0.0.9.30 -- ML-DSA (FIPS 204, post-cuantico): si el JWK del agente es
 // `kty: "AKP"`, `alg: "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87"`, clave
-// publica en `pub` como base64url), se arma un verificador propio con
-// @noble/post-quantum y se lo pasa al MISMO verify() de web-bot-auth, que
-// sigue construyendo el signature base de RFC 9421. El camino Ed25519
-// (verifierFromJWK) queda EXACTAMENTE igual que antes.
+// publica en `pub`, se arma un verificador con @noble/post-quantum y se pasa
+// al MISMO verify() de web-bot-auth. El camino Ed25519 no cambia.
 //
-// ORDEN DE ARGUMENTOS (corregido tras el primer CI del PR #54): en
-// @noble/post-quantum 0.5.x la API es sign(mensaje, claveSecreta) y
-// verify(firma, mensaje, clavePublica) -- alineada con @noble/curves v2.
-// Versiones anteriores (y parte de su documentacion) usaban el orden
-// inverso. Con el orden equivocado, verify() lanzaba y el try/catch lo
-// convertia en false: el verificador rechazaba TODAS las firmas, incluso
-// las validas, sin ningun error visible. Si se actualiza la libreria,
-// revisar este orden primero.
+// ORDEN DE ARGUMENTOS (PR #54): en @noble/post-quantum 0.5.x es
+// verify(firma, mensaje, clavePublica). Con el orden equivocado verify()
+// lanzaba y el try/catch lo convertia en false sin error visible. Si se
+// actualiza la libreria, revisar este orden primero.
 //
-// PR C -- paridad con Cloudflare en la lectura de headers:
-// - Signature-Agent (draft-03) es un string estructurado ENTRE COMILLAS:
-//   Signature-Agent: "https://agent.example". Antes se pasaba crudo a
-//   new URL() y las comillas lo hacian fallar siempre. Ahora se aceptan
-//   la forma con comillas y la forma sin comillas (anterior a draft-03),
-//   se agrega https:// si falta el esquema, se exige HTTPS (el valor del
-//   header termina en un fetch: sin esto el servidor podia pedir a
-//   cualquier URL) y se rechaza la forma de diccionario (sig1="..."),
-//   igual que Cloudflare.
-// - Signature-Input: se exige tag="web-bot-auth" y el keyid se toma de
-//   ESA misma firma. Antes una regex tomaba el primer keyid del header,
-//   aunque fuera de otra firma. Si hay mas de una firma se rechaza:
-//   verify() de la libreria no permite elegir cual verificar, y no puede
-//   quedar verificada una firma distinta de la que aporta el keyid.
+// PR H -- la lectura de Signature-Agent y Signature-Input vive en
+// webbotauth/headers.ts, compartida con el verificador del middleware
+// (webbotauth/verify.ts), para que los dos apliquen exactamente las mismas
+// reglas de draft-03 en todas las plataformas. Se reexportan aca para no
+// romper imports existentes. Cambio respecto de PR C: ya no se acepta
+// Signature-Agent sin comillas ni sin esquema, y signature-agent tiene que
+// estar entre los componentes firmados.
 //
 // Advertencias honestas:
-// - @noble/post-quantum no tiene todavia una auditoria independiente
-//   (lo dice su propio README), a diferencia de @noble/curves. Es la mejor
-//   opcion en JS puro compatible con Node y workerd, pero no debe
-//   presentarse como "auditada".
-// - No hay proteccion contra ataques de canal lateral (tampoco en noble);
-//   aca solo se VERIFICAN firmas con claves publicas, no se manejan
-//   secretos, asi que el riesgo es acotado.
-// - La forma del verificador que espera web-bot-auth cambio entre
-//   versiones (funcion que lanza en 0.1.x vs. objeto con verify() que
-//   devuelve boolean en main). createMlDsaVerifier() cumple ambas formas.
-//   No se verifico todavia contra un agente real que firme con ML-DSA.
+// - @noble/post-quantum no tiene todavia una auditoria independiente.
+// - Aca solo se VERIFICAN firmas con claves publicas; el riesgo de canal
+//   lateral es acotado.
+// - createMlDsaVerifier() cumple las dos formas de verificador de
+//   web-bot-auth (0.1.x y main). No se verifico contra un agente real ML-DSA.
 
 import { verify } from "web-bot-auth";
 import { verifierFromJWK } from "web-bot-auth/crypto";
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
+import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "../webbotauth/headers";
+
+export { parseSignatureAgent, parseWebBotAuthSignatureInput };
+export type { SignatureInputParse } from "../webbotauth/headers";
 
 const JWKS_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6h -- las claves de un agente no rotan seguido
 
@@ -137,12 +110,9 @@ function toBytes(data: string | Uint8Array): Uint8Array {
 
 /**
  * Construye un verificador ML-DSA compatible con verify() de web-bot-auth.
- * Es a la vez:
- *  - una funcion (data, signature) que LANZA si la firma es invalida
- *    (forma usada por web-bot-auth 0.1.x), y
- *  - un objeto con { algorithm, keyid, verify(data, signature) => boolean }
- *    (forma de la interfaz Verifier en versiones posteriores).
- * Lanza al construirse si el JWK no es ML-DSA o la clave publica esta vacia.
+ * Es a la vez una funcion (data, signature) que LANZA si la firma es
+ * invalida (web-bot-auth 0.1.x) y un objeto { algorithm, keyid, verify }
+ * que devuelve boolean (versiones posteriores).
  */
 export function createMlDsaVerifier(jwk: Jwk) {
   if (!isMlDsaJwk(jwk)) throw new Error("unsupported_pq_algorithm");
@@ -202,70 +172,8 @@ function selectKeyByKeyId(jwks: Jwks, keyId: string): Jwk | null {
 }
 
 /**
- * Interpreta el header Signature-Agent y devuelve el origin HTTPS del agente,
- * o null si el valor no es aceptable. Acepta:
- *   "https://agent.example"   (draft-03, string estructurado)
- *   "agent.example"           (sin esquema: se asume https)
- *   https://agent.example     (sin comillas, anterior a draft-03)
- * Rechaza la forma de diccionario (sig1="..."), comillas desbalanceadas,
- * esquemas distintos de https y valores que no son URL.
- */
-export function parseSignatureAgent(raw: string | null): string | null {
-  if (raw === null) return null;
-  let value = raw.trim();
-  if (!value) return null;
-  if (/^[a-z*][a-z0-9_.*-]*=/i.test(value)) return null;
-  if (value.startsWith('"') || value.endsWith('"')) {
-    if (value.length < 2 || !value.startsWith('"') || !value.endsWith('"')) return null;
-    value = value.slice(1, -1);
-    if (value.includes('"') || value.includes("\\")) return null;
-  }
-  if (!value) return null;
-  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = `https://${value}`;
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:") return null;
-    if (url.username || url.password) return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
-
-export type SignatureInputParse =
-  | { ok: true; label: string; keyId: string }
-  | { ok: false; reason: "missing_signature_input" | "multiple_signatures_unsupported" | "missing_web_bot_auth_tag" | "missing_keyid" };
-
-const MEMBER_RE = /([a-z*][a-z0-9_.*-]*)=\(([^)]*)\)((?:;[a-z*][a-z0-9_.*-]*(?:=(?:"[^"]*"|[^;,\s]*))?)*)/gi;
-const PARAM_RE = /;([a-z*][a-z0-9_.*-]*)(?:=(?:"([^"]*)"|([^;,\s]*)))?/gi;
-
-/**
- * Lee Signature-Input y devuelve el keyid de la firma con tag="web-bot-auth".
- * Exige una sola firma en el header (ver comentario del modulo).
- */
-export function parseWebBotAuthSignatureInput(raw: string | null): SignatureInputParse {
-  if (!raw || !raw.trim()) return { ok: false, reason: "missing_signature_input" };
-  const members = [...raw.matchAll(MEMBER_RE)];
-  if (members.length === 0) return { ok: false, reason: "missing_signature_input" };
-  if (members.length > 1) return { ok: false, reason: "multiple_signatures_unsupported" };
-
-  const [, label, , paramsRaw] = members[0];
-  const params = new Map<string, string>();
-  for (const p of (paramsRaw ?? "").matchAll(PARAM_RE)) {
-    params.set(p[1].toLowerCase(), p[2] ?? p[3] ?? "");
-  }
-  if (params.get("tag") !== "web-bot-auth") return { ok: false, reason: "missing_web_bot_auth_tag" };
-  const keyId = params.get("keyid");
-  if (!keyId) return { ok: false, reason: "missing_keyid" };
-  return { ok: true, label, keyId };
-}
-
-/**
  * Verifica la identidad del firmante de un request HTTP via Web Bot Auth.
- * NO consulta ninguna allowlist -- ver comentario del modulo. Devuelve
- * verified:false (nunca lanza) para cualquier fallo de verificacion,
- * coherente con la semantica de AgentTrustVerification: la ausencia de
- * firma valida es una señal, no una excepcion no manejada.
+ * NO consulta ninguna allowlist. Devuelve verified:false (nunca lanza).
  */
 export async function verifyWebBotAuthRequest(
   request: Request,

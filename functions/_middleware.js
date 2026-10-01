@@ -1,18 +1,21 @@
-// Cloudflare Pages Function - middleware global del Trust Layer.
+// Cloudflare Pages Function - middleware global del Trust Layer. Corre igual
+// en self-host: server/node-runtime.mjs carga los _middleware.js de functions/.
 // ACTUALIZADO v0.0.6: ledger via store-factory.ts (D1/SQLite), no memoria.
 //
-// PR C: verifyWebBotAuthRequest() devuelve { verified, agentKeyId, ... }.
-// Antes se leia result.keyRecord.keyId, que no existe: todo request con firma
-// valida lanzaba TypeError y respondia 500.
+// El verificador es webbotauth/verify.ts (exportado por index.ts), sin
+// dependencias fuera de WebCrypto.
+//
+// PR H: correccion de PR C. PR C cambio la lectura del keyId a
+// result.agentKeyId diciendo que result.keyRecord.keyId no existia. Era falso
+// para este verificador: verify.ts devolvia keyRecord, no agentKeyId, y desde
+// ese cambio todo agente verificado quedaba como "unknown" en el ledger.
+// verify.ts ahora devuelve los dos campos y aca se leen ambos.
 //
 // PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
 // /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
 //
-// PR C: politica "charge". Antes CUALQUIER valor en X-Payment-Proof dejaba
-// pasar al agente y registraba charged:true en el ledger, sin que nadie
-// cobrara: contenido de pago gratis y un ledger con cobros que no existieron.
-// Hasta que haya settlement real (PR E: crawler-price detras de Cloudflare o
-// x402 en self-host), "charge" responde siempre 402 y nunca registra cobro.
+// PR C: politica "charge". Hasta que haya settlement real, "charge" responde
+// siempre 402 y nunca registra cobro.
 //
 // PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
 // defaultContentPolicy(). Ver load-policy.ts.
@@ -59,7 +62,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "verification_failed", reason: result.reason }), { status: 401, headers: { "content-type": "application/json" } });
   }
 
-  const operatorKeyId = result.agentKeyId ?? "unknown";
+  const operatorKeyId = result.agentKeyId ?? result.keyRecord?.keyId ?? "unknown";
 
   if (rule.access === "block") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
