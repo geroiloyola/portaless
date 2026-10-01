@@ -1,69 +1,66 @@
+// GET /sitemap.xml -- generado en build. La logica esta en src/lib/sitemap.ts.
+//
+// Fuentes (mismo criterio que /llms.txt):
+//   - Home y /blog/: lastmod = pubDate del post mas reciente.
+//   - Posts publicados (sin borradores): lastmod = pubDate.
+//   - Paginas de src/content/pages/*.json, sin barra final para coincidir con
+//     su canonical en paginas/[slug].astro.
+//   - Productos de la tienda si el commerce esta activo.
+//
+// Antes las paginas salian de page-store, que en build estatico esta vacio:
+// el sitemap nunca listaba paginas ni posts y todas las URLs llevaban la
+// fecha del build como lastmod. Tampoco respetaba el base de Astro.
+
 import type { APIRoute } from "astro";
+import { getCollection } from "astro:content";
 import { getSiteUrl } from "../lib/seo";
+import { publishedPosts } from "../lib/llms-txt";
+import { buildSitemapXml, type SitemapEntry } from "../lib/sitemap";
 
-interface SitemapUrl {
-  loc: string;
-  lastmod?: string;
-  changefreq?: "daily" | "weekly" | "monthly";
-  priority?: number;
-}
+const pageModules = import.meta.glob<{ default: { slug?: string } }>("../content/pages/*.json", { eager: true });
 
-async function collectPageSlugs(): Promise<string[]> {
-  try {
-    const mod: any = await import("../../packages/atomic-elements/src/persistence/page-store");
-    const store = mod.pageStore ?? mod.defaultPageStore ?? mod;
-    for (const methodName of ["listAllPageSlugs", "listSlugs", "getAllSlugs", "list", "listPages"]) {
-      const candidate = mod[methodName] ?? store?.[methodName];
-      if (typeof candidate === "function") {
-        const result = await candidate.call(store?.[methodName] ? store : undefined);
-        if (Array.isArray(result)) {
-          return result.map((item: any) => (typeof item === "string" ? item : item?.slug)).filter(Boolean);
-        }
-      }
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-async function collectCommerceUrls(siteUrl: string): Promise<SitemapUrl[]> {
+async function collectCommerceEntries(): Promise<SitemapEntry[]> {
   try {
     const { isCommerceEnabled, fetchProducts } = await import("../commerce/medusa-client");
-    const enabled = await isCommerceEnabled();
-    if (!enabled) return [];
+    if (!(await isCommerceEnabled())) return [];
     const products = await fetchProducts();
-    return products.map((product: any) => ({
-      loc: `${siteUrl}/tienda/${product.handle}`,
-      changefreq: "weekly" as const,
-      priority: 0.7,
-    }));
+    return products
+      .filter((product: any) => typeof product?.handle === "string" && product.handle.length > 0)
+      .map((product: any) => ({
+        path: `/tienda/${encodeURIComponent(product.handle)}`,
+        changefreq: "weekly" as const,
+        priority: 0.7,
+      }));
   } catch {
     return [];
   }
 }
 
 export const GET: APIRoute = async ({ site }) => {
-  const siteUrl = getSiteUrl(site);
-  const now = new Date().toISOString();
+  const posts = publishedPosts(await getCollection("posts"));
+  const latest = posts[0]?.data.pubDate;
 
-  const urls: SitemapUrl[] = [
-    { loc: `${siteUrl}/`, lastmod: now, changefreq: "weekly", priority: 1.0 },
-    { loc: `${siteUrl}/blog`, changefreq: "weekly", priority: 0.6 },
+  const pageSlugs = Object.values(pageModules)
+    .map((mod) => mod.default?.slug)
+    .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
+
+  const entries: SitemapEntry[] = [
+    { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
+    { path: "/blog/", lastmod: latest, changefreq: "weekly", priority: 0.6 },
+    ...posts.map((post) => ({
+      path: `/blog/${post.id}/`,
+      lastmod: post.data.pubDate,
+      changefreq: "monthly" as const,
+      priority: 0.7,
+    })),
+    ...pageSlugs.map((slug) => ({
+      path: `/paginas/${encodeURIComponent(slug)}`,
+      changefreq: "monthly" as const,
+      priority: 0.8,
+    })),
+    ...(await collectCommerceEntries()),
   ];
 
-  const pageSlugs = await collectPageSlugs();
-  for (const slug of pageSlugs) {
-    urls.push({ loc: `${siteUrl}/paginas/${slug}`, lastmod: now, changefreq: "monthly", priority: 0.8 });
-  }
-
-  urls.push(...(await collectCommerceUrls(siteUrl)));
-
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}\n    ${u.changefreq ? `<changefreq>${u.changefreq}</changefreq>` : ""}\n    ${u.priority !== undefined ? `<priority>${u.priority.toFixed(1)}</priority>` : ""}\n  </url>`).join("\n")}
-</urlset>
-`;
-
+  const body = buildSitemapXml(getSiteUrl(site), import.meta.env.BASE_URL, entries);
   return new Response(body, { headers: { "Content-Type": "application/xml; charset=utf-8" } });
 };
