@@ -14,21 +14,22 @@
 // localStorage y generar un voterId nuevo no alcanza para eludir el
 // limite, porque isRateLimited() chequea por ip_hash, no por voterId.
 //
-// La IP llega via el header CF-Connecting-IP (canonico en Cloudflare
-// Pages/Workers, siempre presente) -- NO x-forwarded-for, que Cloudflare
-// no garantiza en el mismo formato. Se hashea con SHA-256 + salt antes de
-// persistir; la IP cruda nunca toca el store. El salt viene de
-// env.IP_HASH_SALT -- si no esta configurado, se usa un salt fijo de
-// desarrollo con warning explicito (nunca falla en silencio, pero tampoco
-// bloquea el voto por falta de configuracion en un entorno de prueba).
+// APW v1.2 (B8): la IP sale de getClientIp() -- CF-Connecting-IP en
+// Cloudflare, y en el runtime Node el header interno que calcula el propio
+// runtime (X-Forwarded-For solo desde PORTALESS_TRUSTED_PROXIES, si no la
+// IP del socket). Antes solo se leia CF-Connecting-IP y en self-host el
+// voto respondia siempre 400 missing_client_ip. Se hashea con SHA-256 +
+// salt antes de persistir; la IP cruda nunca toca el store. El salt viene
+// de env.IP_HASH_SALT -- si no esta configurado, se usa un salt fijo de
+// desarrollo con warning explicito.
 //
 // La ventana es de 24h y el limite es 1 voto por IP por sitio+categoria --
 // suficiente para que el ataque de inflar el propio community score sea
-// "mas molesto que util", ya que community es la señal mas debil de las
-// 4 por diseño (atestacion, no verificacion ni ground truth). No pretende
-// ser criptograficamente robusto.
+// "mas molesto que util", ya que community es la senal mas debil de las
+// 4 por diseno. No pretende ser criptograficamente robusto.
 
 import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { getClientIp } from "../../../packages/trust-layer/src/net/client-ip.ts";
 
 const COMMUNITY_CATEGORIES = [
   "perceived_trustworthiness",
@@ -96,7 +97,7 @@ export async function onRequestPost(context) {
     );
   }
 
-  const clientIp = request.headers.get("CF-Connecting-IP");
+  const clientIp = getClientIp(request, env);
   if (!clientIp) {
     return new Response(
       JSON.stringify({ error: "missing_client_ip", message: "No se pudo determinar la IP del visitante." }),

@@ -1,3 +1,5 @@
+> **Nota de estado (octubre 2026):** este documento se conserva sin cambios de fondo como anterioridad citable del diseno de Protocol APW. Su seccion 12 ("Estado real de implementacion") refleja la version v0.0.9.11 y ya no esta vigente: `packages/apw-resolver/` esta implementado (lectura DNS-over-HTTPS, manifiesto, CLI de publicacion e identidad `did:apw` con rotacion). El estado actual, las brechas y las versiones siguientes del protocolo estan en [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md).
+
 # Protocol APW — Especificación Formal v1.0
 
 **Autor**: Gerardo Loyola

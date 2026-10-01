@@ -1,3 +1,5 @@
+> **REEMPLAZADO (octubre 2026).** Este resumen conceptual ya no refleja el estado real: `packages/apw-resolver/` esta implementado (lectura DNS-over-HTTPS de `_apw.<dominio>`, manifiesto, CLI de publicacion e identidad `did:apw` con rotacion). La especificacion vigente es [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md); el diseno original con fecha citable es [`APW-SPEC-v1.0.md`](./APW-SPEC-v1.0.md). Se conserva el texto original debajo como registro historico.
+
 # Protocol APW (Air Portal Websites)
 ## Especificación Técnica Resumida
 
