@@ -1,14 +1,16 @@
 ---
-// PR D (llms.txt): cada post publicado declara su version markdown
-// (/blog/<id>.md, generada por [...slug].md.ts) con rel="alternate".
-// Los borradores no tienen .md, asi que no se enlaza nada para no apuntar a
-// un 404. NOTA: esta ruta todavia publica el HTML de los borradores; se
-// corrige aparte porque cambia lo que hoy esta publicado.
+// Detalle de cada post. Solo se generan los publicados (draft !== true):
+// antes getStaticPaths generaba tambien los borradores, que no aparecian en
+// los listados (index.astro y blog/index.astro ya filtraban) pero quedaban
+// accesibles por URL directa. Mismo criterio que /llms.txt y /blog/<id>.md
+// (publishedPosts() en src/lib/llms-txt.ts).
+//
+// PR D (llms.txt): cada post declara su version markdown con rel="alternate".
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("posts");
+  const posts = await getCollection("posts", ({ data }) => data.draft !== true);
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },
@@ -17,9 +19,7 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
-const markdownUrl = post.data.draft
-  ? undefined
-  : `${import.meta.env.BASE_URL.replace(/\/$/, "")}/blog/${post.id}.md`;
+const markdownUrl = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/blog/${post.id}.md`;
 ---
 <BaseLayout title={`${post.data.title} — Portaless`} description={post.data.description} markdownUrl={markdownUrl}>
   <article>
