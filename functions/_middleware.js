@@ -1,18 +1,25 @@
-// Cloudflare Pages Function - middleware global del Trust Layer.
+// Cloudflare Pages Function - middleware global del Trust Layer. Corre igual
+// en self-host: server/node-runtime.mjs carga los _middleware.js de functions/.
 // ACTUALIZADO v0.0.6: ledger via store-factory.ts (D1/SQLite), no memoria.
 //
-// PR C: verifyWebBotAuthRequest() devuelve { verified, agentKeyId, ... }.
-// Antes se leia result.keyRecord.keyId, que no existe: todo request con firma
-// valida lanzaba TypeError y respondia 500.
+// El verificador es webbotauth/verify.ts (exportado por index.ts), sin
+// dependencias fuera de WebCrypto.
+//
+// PR H: correccion de PR C. PR C cambio la lectura del keyId a
+// result.agentKeyId diciendo que result.keyRecord.keyId no existia. Era falso
+// para este verificador: verify.ts devolvia keyRecord, no agentKeyId, y desde
+// ese cambio todo agente verificado quedaba como "unknown" en el ledger.
+// verify.ts ahora devuelve los dos campos y aca se leen ambos.
 //
 // PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
 // /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
 //
-// PR C: politica "charge". Antes CUALQUIER valor en X-Payment-Proof dejaba
-// pasar al agente y registraba charged:true en el ledger, sin que nadie
-// cobrara: contenido de pago gratis y un ledger con cobros que no existieron.
-// Hasta que haya settlement real (PR E: crawler-price detras de Cloudflare o
-// x402 en self-host), "charge" responde siempre 402 y nunca registra cobro.
+// PR H: politica "charge" con proveedores pay-per-crawl. Solo cobra si el
+// manifiesto declara settlement_provider Y hay una activacion verificada en
+// la base (billing/pay-per-crawl/resolve.ts). Con cloudflare-pay-per-crawl,
+// Cloudflare cobra y el origen solo agrega crawler-price; el ledger registra
+// charged:false porque el origen no sabe si el crawler pago. Sin proveedor
+// activo, "charge" responde 402 settlement:not_available y nunca registra cobro.
 //
 // PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
 // defaultContentPolicy(). Ver load-policy.ts.
@@ -24,6 +31,8 @@ import {
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
+import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -59,7 +68,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "verification_failed", reason: result.reason }), { status: 401, headers: { "content-type": "application/json" } });
   }
 
-  const operatorKeyId = result.agentKeyId ?? "unknown";
+  const operatorKeyId = result.agentKeyId ?? result.keyRecord?.keyId ?? "unknown";
 
   if (rule.access === "block") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
@@ -68,6 +77,9 @@ export async function onRequest(context) {
 
   if (rule.access === "charge") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    const activationStore = await createSettlementActivationStore(env);
+    const settled = await resolvePayPerCrawl({ policy, rule, request, next, store: activationStore });
+    if (settled) return settled.response;
     return new Response(JSON.stringify({
       error: "payment_required",
       price_usd: rule.price_usd,

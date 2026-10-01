@@ -10,6 +10,12 @@
 // que se lee del Signature-Input generado y el directorio responde la clave
 // con ese kid.
 //
+// PR H: Signature-Agent tiene que estar en la request ANTES de firmar. La
+// libreria solo cubre signature-agent si el header ya esta presente; si se
+// agrega despues, la firma no lo protege y un intermediario podria cambiar el
+// directorio de claves. El verificador rechaza esas firmas
+// (signature_agent_not_signed), igual que Cloudflare.
+//
 // Si "rechaza una firma vencida" falla, verify() no esta controlando
 // expires y se aceptan replays: es un hallazgo de seguridad, no un test roto.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,14 +42,19 @@ const DIRECTORY_URL = "https://agent.example/.well-known/http-message-signatures
 async function signFor(url: string, created: Date, expires: Date) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const signer = await signerFromJWK(RFC_9421_ED25519_TEST_KEY as any);
-  const h = await signatureHeaders(new Request(url), signer, { created, expires });
+  const toSign = new Request(url, { headers: { "Signature-Agent": AGENT } });
+  const h = await signatureHeaders(toSign, signer, { created, expires });
   const headers = {
     Signature: h["Signature"],
     "Signature-Input": h["Signature-Input"],
     "Signature-Agent": AGENT,
   };
   const parsed = parseWebBotAuthSignatureInput(headers["Signature-Input"]);
-  if (!parsed.ok) throw new Error(`Signature-Input generado no compatible con el verificador: ${parsed.reason}`);
+  if (!parsed.ok) {
+    throw new Error(
+      `Signature-Input generado no compatible con el verificador: ${parsed.reason}. Signature-Input: ${headers["Signature-Input"]}`
+    );
+  }
   return { headers, keyId: parsed.keyId };
 }
 
@@ -104,5 +115,20 @@ describe("verifyWebBotAuthRequest de punta a punta (Ed25519 real)", () => {
     const result = await verifyWebBotAuthRequest(new Request(SITE_URL, { headers }));
 
     expect(result.verified).toBe(false);
+  });
+
+  it("rechaza la firma si Signature-Agent se agrega despues de firmar", async () => {
+    const now = new Date();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const signer = await signerFromJWK(RFC_9421_ED25519_TEST_KEY as any);
+    const h = await signatureHeaders(new Request(SITE_URL), signer, { created: now, expires: new Date(now.getTime() + 60_000) });
+    const fetchSpy = mockDirectory([]);
+
+    const result = await verifyWebBotAuthRequest(
+      new Request(SITE_URL, { headers: { Signature: h["Signature"], "Signature-Input": h["Signature-Input"], "Signature-Agent": AGENT } })
+    );
+
+    expect(result).toMatchObject({ verified: false, reason: "signature_agent_not_signed" });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

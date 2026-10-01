@@ -4,39 +4,19 @@
 // plugins/agentes/themes que lo solicitan, con un switch individual --
 // nunca un permiso "todo o nada" por plugin.
 //
-// v0.0.9.2: esta UI ya NO recibe un `PermissionStore` directo -- antes
-// options.store.setGrant(...) se llamaba desde el navegador, lo cual no
-// tiene sentido para D1PermissionStore/SqlitePermissionStore (son
-// implementaciones server-side, D1 ni siquiera existe en el cliente) y
-// ademas duplicaba la escritura junto con onToggle. Ahora el unico canal
-// de escritura es onToggle, que quien monte este componente conecta a un
-// fetch real contra /admin/permissions (ver src/pages/admin/permissions.astro).
-// Esto tambien agrega manejo de estado por fila: "guardando..." mientras
-// la promesa esta en vuelo, revertir visualmente si onToggle rechaza, y
-// deshabilitar el switch para evitar doble-click durante el guardado.
+// v0.0.9.2: el unico canal de escritura es onToggle (fetch real contra
+// /admin/permissions, ver src/pages/admin/permissions.astro), con estado
+// por fila: "guardando...", revertir si falla, switch deshabilitado
+// durante el guardado.
 //
-// v0.0.9.12: agrega el badge de trustScore estilo Trakt junto al nombre
-// de cada subject de tipo "plugin" (grant.subject.trustScore, ver
-// types.ts). Diseño: 5 estrellas, escala 0-10 (el trustScore real vive en
-// 0-5 -- promedio de PluginTrustVote.score -- y se multiplica x2 solo para
-// esta visualizacion), cada estrella representa 2 puntos y se rellena de
-// forma PARCIAL via clip-path cuando el puntaje cae a mitad de una
-// estrella (ej. 8.6 -> 4 estrellas llenas + la 5ta al 30%). Color dinamico
-// por rango: rojo (<4), naranja (4-6), amarillo (6-7.5), verde claro
-// (7.5-9), verde oscuro (9-10). agent/theme no tienen trustScore -- no se
-// renderiza nada para ellos (mismo bloque de codigo, solo se omite si
-// subject.trustScore es undefined).
+// v0.0.9.12: badge de trustScore estilo Trakt para subjects "plugin"
+// (5 estrellas, escala 0-10, relleno parcial via clip-path, color por rango).
 //
-// v0.0.9.13: el badge de trustScore ahora es interactivo. Un click lo
-// expande en un mini-formulario de voto (5 estrellas ENTERAS clicables
-// 1-5 -- la escala real de PluginTrustVote.score, no la escala 0-10 de
-// visualizacion -- mas un comentario opcional), conectado a onVote
-// (nueva prop, mismo patron que onToggle: la UI nunca llama a un store
-// directo, solo delega al fetch real que monta la pagina). Cierra el
-// hueco documentado desde el PR #28: "no existe UI para que alguien vote
-// 1-5". Alcance: este voto es la fuente "self"/admin sobre el trustScore
-// de PLUGINS -- no confundir con el futuro SiteTrustScore de sitios
-// completos (dominio distinto, packages/trust-layer).
+// v0.0.9.13: el badge es interactivo: voto 1-5 + comentario via onVote.
+//
+// PR H: subjects "settlement-provider" (proveedores pay-per-crawl) no
+// tienen switch: muestran su estado y un enlace a /admin/settlement, unico
+// lugar donde se activan, con credenciales verificadas.
 
 import type { PermissionGrant, PermissionSubject } from "./types";
 import { capabilityRegistry, listCapabilitiesByCategory } from "../../plugin-sandbox/src/capabilities/capability-registry";
@@ -50,11 +30,14 @@ export interface PermissionCenterOptions {
   onVote?: (pluginId: string, score: 1 | 2 | 3 | 4 | 5, comment?: string) => Promise<{ trustScore: number; trustScoreVotes: number }>;
 }
 
+const SETTLEMENT_CONFIG_URL = "/admin/settlement";
+
 function riskColor(risk: "bajo" | "medio" | "alto"): string {
   return risk === "alto" ? "#ff6e6e" : risk === "medio" ? "#ffb86b" : "#6ee7b7";
 }
 
 function subjectIcon(type: PermissionGrant["subject"]["type"]): string {
+  if (type === "settlement-provider") return "💳";
   return type === "plugin" ? "🧩" : type === "agent" ? "🤖" : "🎨";
 }
 
@@ -107,9 +90,7 @@ function buildReadonlyStars(score10: number, color: string): HTMLElement {
 
 // Formulario de voto: 5 estrellas ENTERAS clicables (escala real 1-5, no
 // la escala 0-10 de visualizacion), + textarea opcional, + boton enviar.
-// Se construye una sola vez y se muestra/oculta con un toggle, en vez de
-// reconstruirse en cada apertura -- mantiene el estado del formulario
-// (score elegido, texto escrito) si el admin lo cierra por error.
+// Se construye una sola vez y se muestra/oculta con un toggle.
 function buildVoteForm(
   pluginId: string,
   onVote: NonNullable<PermissionCenterOptions["onVote"]>,
@@ -198,9 +179,6 @@ function buildTrustBadge(
 ): HTMLElement | null {
   if (subject.trustScore === undefined) return null;
 
-  // trustScore vive en 0-5 (promedio de votos 1-5) -- se reescala a 0-10
-  // solo para esta visualizacion, igual que Trakt muestra "8.6" en vez
-  // de "4.3 de 5".
   let score10 = Math.round(subject.trustScore * 2 * 10) / 10;
   let votes = subject.trustScoreVotes ?? 0;
 
@@ -210,10 +188,6 @@ function buildTrustBadge(
   const summary = document.createElement("button");
   summary.type = "button";
   summary.className = "pc-trust-summary";
-  // Sin onVote (o sin subject.id -- no deberia pasar para type:"plugin"),
-  // el badge queda como boton deshabilitado visualmente: mismo aspecto,
-  // sin interaccion. Mantiene el modo solo-lectura de v0.0.9.12 intacto
-  // para cualquier consumidor que no pase onVote.
   if (!onVote) {
     summary.disabled = true;
     summary.classList.add("pc-trust-readonly");
@@ -264,6 +238,19 @@ function buildTrustBadge(
   }
 
   return badge;
+}
+
+// PR H: fila de un proveedor de cobro. Sin switch: estado + enlace.
+function buildSettlementControl(grant: PermissionGrant): HTMLElement {
+  const link = document.createElement("a");
+  link.className = "pc-settlement-configure";
+  link.href = `${SETTLEMENT_CONFIG_URL}#${encodeURIComponent(grant.subject.id)}`;
+  link.textContent = grant.granted ? "Activo · Administrar" : "Configurar";
+  link.setAttribute(
+    "aria-label",
+    `${grant.granted ? "Administrar" : "Configurar"} el cobro con ${grant.subject.displayName}. Requiere credenciales verificadas.`
+  );
+  return link;
 }
 
 export function renderPermissionCenter(options: PermissionCenterOptions): void {
@@ -356,6 +343,14 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
           const status = document.createElement("span");
           status.className = "pc-subject-status";
 
+          if (grant.subject.type === "settlement-provider") {
+            row.appendChild(labelWrap);
+            row.appendChild(status);
+            row.appendChild(buildSettlementControl(grant));
+            subjectList.appendChild(row);
+            continue;
+          }
+
           const switchEl = document.createElement("button");
           switchEl.type = "button";
           switchEl.className = "pc-switch" + (grant.granted ? " pc-on" : "");
@@ -384,10 +379,6 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
               switchEl.setAttribute("aria-checked", String(updated.granted));
               status.textContent = "";
             } catch (err) {
-              // Revierte visualmente -- el toggle no se aplico en el
-              // servidor, asi que el switch no debe quedar en el estado
-              // nuevo. Nunca falla en silencio: el mensaje queda visible
-              // hasta el proximo intento.
               switchEl.classList.toggle("pc-on", previousGranted);
               switchEl.setAttribute("aria-checked", String(previousGranted));
               status.textContent = `Error al guardar: ${(err as Error).message ?? "desconocido"}`;

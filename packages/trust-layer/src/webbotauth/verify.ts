@@ -1,3 +1,14 @@
+// Verificador Web Bot Auth del middleware. Solo usa WebCrypto, sin
+// dependencias: es el que corre en Cloudflare Pages, en self-host Node y en
+// cualquier otra plataforma con Functions.
+//
+// PR H: la lectura de Signature-Agent y Signature-Input sale de headers.ts,
+// compartido con site-trust/web-bot-auth.ts. Antes se hacia new URL() sobre
+// el header crudo: el formato estandar con comillas siempre fallaba y la
+// forma sin comillas (no estandar) pasaba. Tambien se exigen created y
+// expires (draft-03) y se devuelve agentKeyId, el mismo campo que el
+// verificador de site-trust, que es el que lee el middleware para el ledger.
+
 import {
   parseSignatureInput,
   parseSignatureHeader,
@@ -5,6 +16,7 @@ import {
   verifyEd25519Signature,
   base64UrlToBytes,
 } from "./rfc9421";
+import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "./headers";
 
 export interface KeyRecord {
   keyId: string;
@@ -15,22 +27,18 @@ export interface KeyRecord {
 export interface VerifyResult {
   verified: boolean;
   reason?: string;
+  agentKeyId?: string | null;
+  keyAlgorithm?: string;
   keyRecord?: KeyRecord;
 }
 
 const DIRECTORY_PATH = "/.well-known/http-message-signatures-directory";
 const MAX_SIGNATURE_AGE_SECONDS = 300;
 
-// v0.0.9: cache del directorio de claves con TTL. Antes de este cambio,
-// verifyWebBotAuthRequest() hacia un fetch() nuevo en CADA request, incluso
-// para el mismo operador repetido miles de veces por minuto -- ver
-// ROADMAP.md "Cache del directorio de claves Web Bot Auth". Reutiliza el
-// mismo Map en memoria que key-directory.ts ya declaraba pero que ningun
-// llamador usaba (resolveAgentKeyDirectory() nunca era invocado desde
-// aqui); no se reexporta ese Map directamente porque su shape
-// (AgentKeyRecord[], PEM) difiere del que este archivo necesita (JWK OKP
-// crudo tal cual lo entrega el directorio remoto) -- se mantiene un cache
-// propio con la MISMA politica de TTL para no mezclar ambos contratos.
+// v0.0.9: cache del directorio de claves con TTL, para no hacer un fetch()
+// nuevo en cada request del mismo operador. Ver ROADMAP.md "Cache del
+// directorio de claves Web Bot Auth". Shape propio (JWK OKP crudo), distinto
+// del de key-directory.ts.
 const DIRECTORY_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos.
 
 interface DirectoryResponse {
@@ -68,20 +76,9 @@ async function fetchOperatorKeyDirectory(operatorOrigin: string): Promise<Direct
   }
 }
 
-// v0.0.9: verificacion de unicidad de nonce, para prevenir ataques de
-// replay -- ver ROADMAP.md "verificacion de unicidad de nonce". Antes de
-// este cambio, rfc9421.ts ya extraia el nonce de Signature-Input pero
-// nada lo usaba: una request firmada legitima podia reenviarse tal cual
-// (mismo Signature-Input + Signature) cuantas veces quisiera un atacante
-// dentro de la ventana de MAX_SIGNATURE_AGE_SECONDS, y la firma seguiria
-// validando porque criptograficamente es la misma request. Se guarda cada
-// nonce visto con su vencimiento (mismo horizonte que la ventana de edad
-// de firma: fuera de esa ventana la firma ya se rechaza por
-// signature_too_old/signature_expired, asi que no hace falta recordar el
-// nonce mas alla de eso). Nota: en memoria por proceso -- valido para un
-// solo runtime; si Portaless corre en multiples workers/edge locations
-// sin estado compartido, cada uno tiene su propia ventana de deduplicacion
-// (documentado como limite conocido en README.md).
+// v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. En memoria por
+// proceso: con multiples workers sin estado compartido cada uno tiene su
+// propia ventana (limite conocido, documentado en README.md).
 const NONCE_WINDOW_MS = MAX_SIGNATURE_AGE_SECONDS * 1000;
 const seenNonces = new Map<string, number>(); // nonce -> expiresAt (epoch ms)
 
@@ -91,10 +88,6 @@ function pruneExpiredNonces(now: number): void {
   }
 }
 
-/**
- * Registra un nonce si no se ha visto antes dentro de la ventana vigente.
- * Devuelve false (y NO lo registra otra vez) si es un replay.
- */
 function registerNonceIfUnseen(nonce: string): boolean {
   const now = Date.now();
   pruneExpiredNonces(now);
@@ -109,8 +102,8 @@ export function __resetNonceStoreForTests(): void {
 }
 
 export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyResult> {
-  const signatureAgent = request.headers.get("Signature-Agent");
-  if (!signatureAgent) return { verified: false, reason: "missing_signature_agent_header" };
+  const rawSignatureAgent = request.headers.get("Signature-Agent");
+  if (!rawSignatureAgent) return { verified: false, reason: "missing_signature_agent_header" };
 
   const signatureInputHeader = request.headers.get("Signature-Input");
   const signatureHeader = request.headers.get("Signature");
@@ -118,25 +111,22 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
     return { verified: false, reason: "missing_signature_headers" };
   }
 
+  const operatorOrigin = parseSignatureAgent(rawSignatureAgent);
+  if (!operatorOrigin) return { verified: false, reason: "invalid_signature_agent" };
+
+  const webBotAuth = parseWebBotAuthSignatureInput(signatureInputHeader);
+  if (!webBotAuth.ok) return { verified: false, reason: webBotAuth.reason };
+
   const parsed = parseSignatureInput(signatureInputHeader);
   if (!parsed) return { verified: false, reason: "malformed_signature_input" };
-  if (parsed.algorithm !== "ed25519") return { verified: false, reason: `unsupported_algorithm:${parsed.algorithm}` };
-
-  if (parsed.expires) {
-    const now = Math.floor(Date.now() / 1000);
-    if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
-  }
-  if (parsed.created) {
-    const now = Math.floor(Date.now() / 1000);
-    if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
+  if (parsed.algorithm && parsed.algorithm !== "ed25519") {
+    return { verified: false, reason: `unsupported_algorithm:${parsed.algorithm}` };
   }
 
-  let operatorOrigin: string;
-  try {
-    operatorOrigin = new URL(signatureAgent).origin;
-  } catch {
-    return { verified: false, reason: "invalid_signature_agent_url" };
-  }
+  if (!parsed.created || !parsed.expires) return { verified: false, reason: "missing_created_or_expires" };
+  const now = Math.floor(Date.now() / 1000);
+  if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
+  if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
 
   const directory = await fetchOperatorKeyDirectory(operatorOrigin);
   if (!directory) return { verified: false, reason: "key_directory_unreachable" };
@@ -151,21 +141,23 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
   if (!signatureBytes) return { verified: false, reason: "malformed_signature_header" };
 
   const signatureBase = buildSignatureBase(request, parsed);
+  if (!signatureBase) return { verified: false, reason: "covered_header_missing" };
   const publicKeyRaw = base64UrlToBytes(keyEntry.x);
 
   const cryptoOk = await verifyEd25519Signature(signatureBase, signatureBytes, publicKeyRaw);
   if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
 
-  // Unicidad de nonce: se revisa DESPUES de confirmar la firma valida, no
-  // antes -- si se revisara antes, un atacante sin la clave privada podria
-  // sondear que nonces ya fueron consumidos por el sitio (oraculo de
-  // informacion) enviando firmas invalidas con distintos nonces. Solo una
-  // request que ya demostro poseer la clave privada correcta llega a
-  // consumir/gastar un nonce.
+  // El nonce se consume DESPUES de validar la firma: si no, cualquiera sin la
+  // clave podria sondear que nonces ya se usaron.
   if (parsed.nonce) {
     const isFirstUse = registerNonceIfUnseen(parsed.nonce);
     if (!isFirstUse) return { verified: false, reason: "nonce_replayed" };
   }
 
-  return { verified: true, keyRecord: { keyId: parsed.keyId, operator: operatorOrigin, publicKeyJwk: keyEntry } };
+  return {
+    verified: true,
+    agentKeyId: parsed.keyId,
+    keyAlgorithm: "ed25519",
+    keyRecord: { keyId: parsed.keyId, operator: operatorOrigin, publicKeyJwk: keyEntry },
+  };
 }

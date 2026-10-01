@@ -22,7 +22,12 @@ export type CapabilityId =
   | "storage:read"
   | "storage:write"
   | "agent:identify"       // Leer info de agentes de IA verificados (Trust Layer).
-  | "site:admin";          // Capacidad de alto riesgo: modificar configuracion del sitio.
+  | "site:admin"           // Capacidad de alto riesgo: modificar configuracion del sitio.
+  // PR H: cobro por acceso de agentes. NO es una capacidad de plugins: solo
+  // la tienen subjects "settlement-provider" y solo se concede via
+  // POST /admin/settlement tras verificar credenciales (nunca por el PUT
+  // generico de /admin/permissions).
+  | "billing:pay-per-crawl";
 
 export interface CapabilityRequest {
   id: CapabilityId;
@@ -57,6 +62,7 @@ export type GrantedCapabilities = Set<CapabilityId>;
  * seria enganoso -- la capacidad SI esta concedida, solo falta conectar
  * el backend real). Cuando un backend real exista, basta con proveer el
  * handler correspondiente aqui -- el contrato del adaptador no cambia.
+ * PR H: billing:pay-per-crawl no tiene handler de sandbox a proposito.
  */
 export interface CapabilityHostBridge {
   mediaRead?(payload: { path: string }): Promise<unknown>;
