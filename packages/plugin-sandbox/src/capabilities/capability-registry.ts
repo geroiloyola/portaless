@@ -8,7 +8,7 @@ import type { CapabilityId } from "../types";
 
 export interface CapabilityDefinition {
   id: CapabilityId;
-  category: "Contenido" | "Red" | "Comercio" | "Almacenamiento" | "Agentes IA" | "Administración";
+  category: "Contenido" | "Red" | "Comercio" | "Almacenamiento" | "Agentes IA" | "Administración" | "Cobros";
   label: string;
   description: string;
   risk: "bajo" | "medio" | "alto";
@@ -85,6 +85,14 @@ export const capabilityRegistry: Record<CapabilityId, CapabilityDefinition> = {
     id: "site:admin", category: "Administración",
     label: "Modificar configuración del sitio",
     description: "Capacidad de más alto riesgo: cambia ajustes globales del sitio.",
+    risk: "alto",
+  },
+  // PR H: solo para subjects settlement-provider. Se concede unicamente desde
+  // /admin/settlement tras verificar las credenciales del proveedor.
+  "billing:pay-per-crawl": {
+    id: "billing:pay-per-crawl", category: "Cobros",
+    label: "Cobrar el acceso de agentes de IA (pay per crawl)",
+    description: "Un proveedor externo cobra a los crawlers por cada acceso. Portaless no toca el dinero. Requiere credenciales verificadas del proveedor.",
     risk: "alto",
   },
 };

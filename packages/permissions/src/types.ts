@@ -3,11 +3,13 @@
 // este centro y una capacidad de un plugin sandboxeado son la misma cosa,
 // vista desde dos lados (el administrador que concede, el plugin que usa).
 
-export type PermissionSubjectType = "plugin" | "agent" | "theme";
+// PR H: "settlement-provider" = proveedor de pay-per-crawl (ej.
+// cloudflare-pay-per-crawl). Sus grants solo los escribe /admin/settlement.
+export type PermissionSubjectType = "plugin" | "agent" | "theme" | "settlement-provider";
 
 export interface PermissionSubject {
   type: PermissionSubjectType;
-  id: string;            // Nombre del plugin, keyId del agente (Trust Layer), o id del theme/skin.
+  id: string;            // Nombre del plugin, keyId del agente (Trust Layer), id del theme/skin o del proveedor de cobro.
   displayName: string;
   // v0.0.9.12: trustScore/trustScoreVotes son opcionales y solo se
   // completan para subjects de tipo "plugin" -- vienen de

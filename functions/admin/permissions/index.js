@@ -9,25 +9,24 @@
 // que llame este endpoint directamente con curl/fetch, saltandose la UI,
 // no puede escribir igual.
 //
-// v0.0.9.2: primera conexion real. Antes, packages/permissions/src/
-// store-factory.ts (createPermissionStore) existia con implementaciones
-// D1/SQLite completas, pero ningun archivo del repo lo invocaba -- el
-// Centro de Permisos corria efectivamente en memoria, sin persistencia,
-// porque no habia ningun endpoint HTTP que lo conectara. Este archivo
-// cierra ese hueco, igual que se hizo para PageStore en el PR #6.
+// v0.0.9.2: primera conexion real del PermissionStore (D1/SQLite).
+// v0.0.9.10: el catalogo de subjects se deriva del plugin registry.
+// v0.0.9.12: subjects "plugin" incluyen trustScore/trustScoreVotes.
 //
-// v0.0.9.10: el catalogo de subjects ya no esta hardcodeado -- se deriva
-// de packages/plugin-sandbox/src/registry/plugin-registry.ts via
-// createPluginRegistryStore(env).
-//
-// v0.0.9.12: cada subject de tipo "plugin" en el snapshot ahora incluye
-// trustScore/trustScoreVotes (tomados directo de PluginRegistryEntry), para
-// que permission-center-ui.ts pueda mostrar el rating estilo Trakt antes
-// de que un admin conceda una capacidad. agent/theme no tienen trustScore
-// -- esos campos quedan undefined para ellos, ver types.ts.
+// PR H: los grants de cobro (billing:* o subject settlement-provider) NO se
+// escriben por este PUT: responde 409 requires_activation_flow. Solo
+// POST /admin/settlement los escribe, despues de verificar las credenciales
+// del proveedor. El snapshot incluye una fila por proveedor pay-per-crawl
+// para que el Centro de Permisos la muestre.
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
 import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
+import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import {
+  BILLING_CAPABILITY,
+  SETTLEMENT_SUBJECT_TYPE,
+  isSettlementGrant,
+} from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-service.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -44,10 +43,6 @@ async function buildSnapshot(permissionStore, pluginRegistryStore) {
     registeredPlugins.map((p) => [p.pluginId, { trustScore: p.trustScore, trustScoreVotes: p.trustScoreVotes }])
   );
 
-  // Los grants ya existentes en el PermissionStore no traen trustScore
-  // (ese store no sabe nada de plugins) -- se le anexa aca, cruzando por
-  // subject.id, para que la UI tenga el dato sin importar si el grant es
-  // nuevo (default) o ya estaba persistido.
   for (const grant of existingGrants) {
     if (grant.subject.type !== "plugin") continue;
     const trust = trustById.get(grant.subject.id);
@@ -66,12 +61,23 @@ async function buildSnapshot(permissionStore, pluginRegistryStore) {
       trustScore: plugin.trustScore,
       trustScoreVotes: plugin.trustScoreVotes,
     };
-    const requested = plugin.requestedCapabilities ?? [];
+    const requested = (plugin.requestedCapabilities ?? []).filter((c) => !isSettlementGrant("plugin", c));
     for (const capabilityId of requested) {
       const key = `${subject.type}:${subject.id}:${capabilityId}`;
       if (!existingKeys.has(key)) {
         defaults.push({ subject, capabilityId, granted: false });
       }
+    }
+  }
+
+  for (const provider of listPayPerCrawlProviders()) {
+    const key = `${SETTLEMENT_SUBJECT_TYPE}:${provider.id}:${BILLING_CAPABILITY}`;
+    if (!existingKeys.has(key)) {
+      defaults.push({
+        subject: { type: SETTLEMENT_SUBJECT_TYPE, id: provider.id, displayName: provider.displayName },
+        capabilityId: BILLING_CAPABILITY,
+        granted: false,
+      });
     }
   }
 
@@ -145,6 +151,16 @@ export async function onRequestPut(context) {
         message: "Se requiere { subject: { type, id, displayName }, capabilityId, granted }.",
       }),
       { status: 400, headers: { "content-type": "application/json" } }
+    );
+  }
+
+  if (isSettlementGrant(subject.type, capabilityId)) {
+    return new Response(
+      JSON.stringify({
+        error: "requires_activation_flow",
+        message: "Los cobros se activan desde /admin/settlement con credenciales verificadas del proveedor.",
+      }),
+      { status: 409, headers: { "content-type": "application/json" } }
     );
   }
 

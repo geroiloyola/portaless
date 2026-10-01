@@ -1,0 +1,149 @@
+---
+// /admin/settlement (PR H): activar o desactivar un proveedor pay-per-crawl.
+// Protegida por functions/admin/_middleware.js como todo /admin/*.
+// Llama a GET/POST /admin/settlement (functions/admin/settlement/index.js).
+// Pagina autocontenida, mismo criterio que rotate-identity.astro.
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cobros por acceso de agentes | Portaless</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 680px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+      .warn { background: #fff4e5; border: 1px solid #f0b35b; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+      label { display: block; margin-top: .9rem; font-weight: 600; }
+      input[type=text], input[type=password] { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; }
+      .check { font-weight: 400; display: flex; gap: .5rem; align-items: flex-start; }
+      button { margin-top: 1rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: 6px; cursor: pointer; background: #1f6feb; color: #fff; }
+      button.danger { background: #c0392b; }
+      .error { color: #c0392b; margin-top: .75rem; }
+      .ok { color: #1e7e34; margin-top: .75rem; }
+      small { color: #555; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/admin/permissions">&larr; Centro de Permisos</a></p>
+    <h1>Cobros por acceso de agentes</h1>
+    <p>Dominio del sitio (identidad APW): <code id="site-host">cargando…</code></p>
+    <div class="warn">
+      Portaless no toca el dinero: el proveedor cobra a los crawlers. Sin credenciales verificadas no se activa ni el permiso ni el proveedor.
+    </div>
+    <div id="providers"></div>
+    <p class="error" id="load-error" hidden></p>
+
+    <script>
+      const root = document.getElementById("providers");
+      const loadError = document.getElementById("load-error");
+
+      const REASONS = {
+        token_rejected: "Cloudflare rechazo el token. Usa un API token con permiso Zone Read.",
+        invalid_zone_id: "El Zone ID no tiene el formato esperado (32 caracteres hexadecimales).",
+        zone_not_active: "La zona no esta activa en Cloudflare.",
+        zone_does_not_match_site: "La zona no corresponde al dominio APW del sitio.",
+        missing_api_token: "Falta el API token.",
+        cloudflare_unreachable: "No se pudo contactar a Cloudflare.",
+      };
+      const ERRORS = {
+        site_identity_required: "Primero genera la identidad APW del sitio en el wizard: define el dominio.",
+        encryption_key_missing: "Falta PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY (32+ caracteres) en el servidor.",
+        origin_lock_not_confirmed: "Confirma que el origen solo acepta trafico del proveedor.",
+        step_up_failed: "Contrasena o codigo 2FA incorrectos.",
+      };
+
+      async function post(body) {
+        const res = await fetch("/admin/settlement", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(REASONS[data.reason] || ERRORS[data.error] || data.message || data.error || `HTTP ${res.status}`);
+        return data;
+      }
+
+      function field(name, label, type, help) {
+        const l = document.createElement("label");
+        l.textContent = label;
+        const i = document.createElement("input");
+        i.type = type;
+        i.name = name;
+        i.autocomplete = "off";
+        l.appendChild(i);
+        if (help) {
+          const s = document.createElement("small");
+          s.textContent = ` ${help}`;
+          l.appendChild(s);
+        }
+        return l;
+      }
+
+      function render(provider) {
+        const card = document.createElement("section");
+        card.className = "card";
+        card.id = provider.id;
+        const h = document.createElement("h2");
+        h.textContent = provider.displayName;
+        card.appendChild(h);
+        const msg = document.createElement("p");
+
+        if (provider.active) {
+          const p = document.createElement("p");
+          p.textContent = `Activo desde ${provider.verifiedAt} (por ${provider.activatedBy}). Zona: ${provider.metadata?.zone_name ?? "-"}.`;
+          card.appendChild(p);
+          const off = document.createElement("button");
+          off.className = "danger";
+          off.textContent = "Desactivar";
+          off.onclick = async () => {
+            off.disabled = true;
+            try { await post({ action: "deactivate", providerId: provider.id }); location.reload(); }
+            catch (e) { msg.className = "error"; msg.textContent = e.message; off.disabled = false; }
+          };
+          card.appendChild(off);
+          card.appendChild(msg);
+          return card;
+        }
+
+        const form = document.createElement("form");
+        for (const c of provider.credentials) form.appendChild(field(`cred:${c.key}`, c.label, c.secret ? "password" : "text", c.help));
+        const lock = document.createElement("label");
+        lock.className = "check";
+        lock.innerHTML = '<input type="checkbox" name="lock" /> <span>Confirmo que el origen solo acepta trafico que pasa por el proveedor (por ejemplo Cloudflare Tunnel o Authenticated Origin Pulls). Si no, cualquiera puede falsificar la senal de cobro.</span>';
+        form.appendChild(lock);
+        form.appendChild(field("password", "Tu contrasena actual", "password"));
+        form.appendChild(field("totpCode", "Codigo 2FA (si lo tienes activo)", "text"));
+        const btn = document.createElement("button");
+        btn.type = "submit";
+        btn.textContent = "Verificar y activar";
+        form.appendChild(btn);
+        form.appendChild(msg);
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          btn.disabled = true;
+          msg.className = "";
+          msg.textContent = "Verificando con el proveedor…";
+          const fd = new FormData(form);
+          const credentials = {};
+          for (const c of provider.credentials) credentials[c.key] = String(fd.get(`cred:${c.key}`) || "").trim();
+          const body = { action: "activate", providerId: provider.id, credentials, confirmOriginLocked: fd.get("lock") === "on", password: String(fd.get("password") || "") };
+          const totp = String(fd.get("totpCode") || "").trim();
+          if (totp) body.totpCode = totp;
+          try { await post(body); form.reset(); location.reload(); }
+          catch (err) { msg.className = "error"; msg.textContent = err.message; btn.disabled = false; }
+        };
+        card.appendChild(form);
+        return card;
+      }
+
+      fetch("/admin/settlement")
+        .then((r) => { if (r.status === 401) { location.href = "/admin/login?error=1"; throw new Error("401"); } return r.json(); })
+        .then((data) => {
+          document.getElementById("site-host").textContent = data.siteHost || "sin identidad APW (genera una en el wizard)";
+          for (const p of data.providers || []) root.appendChild(render(p));
+        })
+        .catch((e) => { if (e.message !== "401") { loadError.hidden = false; loadError.textContent = `No se pudo cargar: ${e.message}`; } });
+    </script>
+  </body>
+</html>
