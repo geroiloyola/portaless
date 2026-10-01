@@ -5,6 +5,11 @@ import { join, resolve } from "node:path";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
 import { createFirstRunService } from "../../server/first-run.mjs";
 
+// Arranca el runtime dos veces con SQLite real, aplica schema.sql y hashea
+// contrasenas: supera el timeout por defecto de vitest (5 s), sobre todo con
+// cobertura. Ya fallaba en main por timeout; se fija uno explicito.
+const FIRST_RUN_E2E_TIMEOUT_MS = 30_000;
+
 const repo = resolve(__dirname, "../..");
 const cleanup: Array<() => void> = [];
 afterEach(() => { while (cleanup.length) cleanup.pop()!(); });
@@ -55,5 +60,5 @@ describe("self-host first-run (SQLite real)", () => {
     expect(second.envPatch.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY).toBe(first.envPatch.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY);
     expect((await fetch(second.base + "/api/setup/status").then((r) => r.json())).needsSetup).toBe(false);
     expect((await send(second.base, { code, username: "otro", password: "una-contrasena-larga" })).status).toBe(410);
-  });
+  }, FIRST_RUN_E2E_TIMEOUT_MS);
 });
