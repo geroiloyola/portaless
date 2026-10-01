@@ -11,6 +11,8 @@
 // PR B (first-run): applySchema() y REQUIRED_TABLES se exportan para que
 //   server/first-run.mjs reutilice la migracion sin duplicar SQL. main() solo
 //   corre cuando el archivo se ejecuta directamente: importarlo no instala nada.
+// PR #62: auth_mfa_challenges y auth_rate_limits pasan a ser criticas (login
+//   con 2FA y /admin/password-reset/request dependen de ellas).
 //
 //   npm run setup   (usa tsx: este script importa modulos .ts del repo)
 //
@@ -34,6 +36,8 @@ const rootDir = join(__dirname, "..");
 export const REQUIRED_TABLES = [
   "users",
   "sessions",
+  "auth_mfa_challenges",
+  "auth_rate_limits",
   "permission_grants",
   "pages",
   "site_identity",
