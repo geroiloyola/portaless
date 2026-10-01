@@ -14,8 +14,12 @@
 // PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
 // /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
 //
-// PR C: politica "charge". Hasta que haya settlement real, "charge" responde
-// siempre 402 y nunca registra cobro.
+// PR H: politica "charge" con proveedores pay-per-crawl. Solo cobra si el
+// manifiesto declara settlement_provider Y hay una activacion verificada en
+// la base (billing/pay-per-crawl/resolve.ts). Con cloudflare-pay-per-crawl,
+// Cloudflare cobra y el origen solo agrega crawler-price; el ledger registra
+// charged:false porque el origen no sabe si el crawler pago. Sin proveedor
+// activo, "charge" responde 402 settlement:not_available y nunca registra cobro.
 //
 // PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
 // defaultContentPolicy(). Ver load-policy.ts.
@@ -27,6 +31,8 @@ import {
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
+import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -71,6 +77,9 @@ export async function onRequest(context) {
 
   if (rule.access === "charge") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    const activationStore = await createSettlementActivationStore(env);
+    const settled = await resolvePayPerCrawl({ policy, rule, request, next, store: activationStore });
+    if (settled) return settled.response;
     return new Response(JSON.stringify({
       error: "payment_required",
       price_usd: rule.price_usd,
