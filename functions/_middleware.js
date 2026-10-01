@@ -1,5 +1,9 @@
 // Cloudflare Pages Function - middleware global del Trust Layer.
 // ACTUALIZADO v0.0.6: ledger via store-factory.ts (D1/SQLite), no memoria.
+//
+// PR C: verifyWebBotAuthRequest() devuelve { verified, agentKeyId, ... }.
+// Antes se leia result.keyRecord.keyId, que no existe: todo request con firma
+// valida lanzaba TypeError y respondia 500.
 
 import {
   verifyWebBotAuthRequest,
@@ -40,18 +44,20 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "verification_failed", reason: result.reason }), { status: 401, headers: { "content-type": "application/json" } });
   }
 
+  const operatorKeyId = result.agentKeyId ?? "unknown";
+
   if (rule.access === "block") {
-    await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: false, amountUsd: 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
     return new Response(JSON.stringify({ error: "ai_input_blocked_by_policy" }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
   if (rule.access === "charge") {
     const paymentHeader = request.headers.get("X-Payment-Proof");
     if (!paymentHeader) {
-      await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: false, amountUsd: 0 });
+      await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
       return new Response(JSON.stringify({ error: "payment_required", price_usd: rule.price_usd, unit: rule.unit }), { status: 402, headers: { "content-type": "application/json" } });
     }
-    await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: true, amountUsd: rule.price_usd ?? 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: true, amountUsd: rule.price_usd ?? 0 });
   }
 
   return next();
