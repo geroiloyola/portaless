@@ -1,4 +1,9 @@
 ---
+// PR D (llms.txt): cada post publicado declara su version markdown
+// (/blog/<id>.md, generada por [...slug].md.ts) con rel="alternate".
+// Los borradores no tienen .md, asi que no se enlaza nada para no apuntar a
+// un 404. NOTA: esta ruta todavia publica el HTML de los borradores; se
+// corrige aparte porque cambia lo que hoy esta publicado.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
 
@@ -12,8 +17,11 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+const markdownUrl = post.data.draft
+  ? undefined
+  : `${import.meta.env.BASE_URL.replace(/\/$/, "")}/blog/${post.id}.md`;
 ---
-<BaseLayout title={`${post.data.title} — Portaless`} description={post.data.description}>
+<BaseLayout title={`${post.data.title} — Portaless`} description={post.data.description} markdownUrl={markdownUrl}>
   <article>
     <h1>{post.data.title}</h1>
     <p class="badge">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
