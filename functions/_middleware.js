@@ -7,6 +7,12 @@
 //
 // PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
 // /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
+//
+// PR C: politica "charge". Antes CUALQUIER valor en X-Payment-Proof dejaba
+// pasar al agente y registraba charged:true en el ledger, sin que nadie
+// cobrara: contenido de pago gratis y un ledger con cobros que no existieron.
+// Hasta que haya settlement real (PR E: crawler-price detras de Cloudflare o
+// x402 en self-host), "charge" responde siempre 402 y nunca registra cobro.
 
 import {
   verifyWebBotAuthRequest,
@@ -57,12 +63,15 @@ export async function onRequest(context) {
   }
 
   if (rule.access === "charge") {
-    const paymentHeader = request.headers.get("X-Payment-Proof");
-    if (!paymentHeader) {
-      await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
-      return new Response(JSON.stringify({ error: "payment_required", price_usd: rule.price_usd, unit: rule.unit }), { status: 402, headers: { "content-type": "application/json" } });
-    }
-    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: true, amountUsd: rule.price_usd ?? 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    return new Response(JSON.stringify({
+      error: "payment_required",
+      price_usd: rule.price_usd,
+      unit: rule.unit,
+      settlement: "not_available",
+      message: "Este sitio cobra el acceso de agentes pero todavia no tiene un medio de pago verificable. No reintentes con un comprobante: no se acepta ninguno.",
+      policy_url: `${new URL(request.url).origin}/.well-known/portaless-content-policy.json`,
+    }), { status: 402, headers: { "content-type": "application/json" } });
   }
 
   return next();
