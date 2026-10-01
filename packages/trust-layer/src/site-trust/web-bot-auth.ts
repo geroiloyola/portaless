@@ -41,6 +41,21 @@
 // las validas, sin ningun error visible. Si se actualiza la libreria,
 // revisar este orden primero.
 //
+// PR C -- paridad con Cloudflare en la lectura de headers:
+// - Signature-Agent (draft-03) es un string estructurado ENTRE COMILLAS:
+//   Signature-Agent: "https://agent.example". Antes se pasaba crudo a
+//   new URL() y las comillas lo hacian fallar siempre. Ahora se aceptan
+//   la forma con comillas y la forma sin comillas (anterior a draft-03),
+//   se agrega https:// si falta el esquema, se exige HTTPS (el valor del
+//   header termina en un fetch: sin esto el servidor podia pedir a
+//   cualquier URL) y se rechaza la forma de diccionario (sig1="..."),
+//   igual que Cloudflare.
+// - Signature-Input: se exige tag="web-bot-auth" y el keyid se toma de
+//   ESA misma firma. Antes una regex tomaba el primer keyid del header,
+//   aunque fuera de otra firma. Si hay mas de una firma se rechaza:
+//   verify() de la libreria no permite elegir cual verificar, y no puede
+//   quedar verificada una firma distinta de la que aporta el keyid.
+//
 // Advertencias honestas:
 // - @noble/post-quantum no tiene todavia una auditoria independiente
 //   (lo dice su propio README), a diferencia de @noble/curves. Es la mejor
@@ -186,21 +201,63 @@ function selectKeyByKeyId(jwks: Jwks, keyId: string): Jwk | null {
   return jwks.keys.find((k) => k.kid === keyId) ?? null;
 }
 
-// Extrae Signature-Agent del header del mismo nombre -- draft-meunier-
-// web-bot-auth-architecture lo define como la URL base donde vive el
-// directorio de claves del agente (no necesariamente el mismo dominio
-// que Signature-Input/keyid, aunque en la practica suele coincidir).
-function extractSignatureAgent(request: Request): string | null {
-  return request.headers.get("Signature-Agent");
+/**
+ * Interpreta el header Signature-Agent y devuelve el origin HTTPS del agente,
+ * o null si el valor no es aceptable. Acepta:
+ *   "https://agent.example"   (draft-03, string estructurado)
+ *   "agent.example"           (sin esquema: se asume https)
+ *   https://agent.example     (sin comillas, anterior a draft-03)
+ * Rechaza la forma de diccionario (sig1="..."), comillas desbalanceadas,
+ * esquemas distintos de https y valores que no son URL.
+ */
+export function parseSignatureAgent(raw: string | null): string | null {
+  if (raw === null) return null;
+  let value = raw.trim();
+  if (!value) return null;
+  if (/^[a-z*][a-z0-9_.*-]*=/i.test(value)) return null;
+  if (value.startsWith('"') || value.endsWith('"')) {
+    if (value.length < 2 || !value.startsWith('"') || !value.endsWith('"')) return null;
+    value = value.slice(1, -1);
+    if (value.includes('"') || value.includes("\\")) return null;
+  }
+  if (!value) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return null;
+    if (url.username || url.password) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
 }
 
-// Extrae el keyid declarado en el header Signature-Input -- necesario
-// para seleccionar cual JWK del JWKS usar antes de poder verificar.
-function extractKeyId(request: Request): string | null {
-  const sigInput = request.headers.get("Signature-Input");
-  if (!sigInput) return null;
-  const match = sigInput.match(/keyid="([^"]+)"/);
-  return match?.[1] ?? null;
+export type SignatureInputParse =
+  | { ok: true; label: string; keyId: string }
+  | { ok: false; reason: "missing_signature_input" | "multiple_signatures_unsupported" | "missing_web_bot_auth_tag" | "missing_keyid" };
+
+const MEMBER_RE = /([a-z*][a-z0-9_.*-]*)=\(([^)]*)\)((?:;[a-z*][a-z0-9_.*-]*(?:=(?:"[^"]*"|[^;,\s]*))?)*)/gi;
+const PARAM_RE = /;([a-z*][a-z0-9_.*-]*)(?:=(?:"([^"]*)"|([^;,\s]*)))?/gi;
+
+/**
+ * Lee Signature-Input y devuelve el keyid de la firma con tag="web-bot-auth".
+ * Exige una sola firma en el header (ver comentario del modulo).
+ */
+export function parseWebBotAuthSignatureInput(raw: string | null): SignatureInputParse {
+  if (!raw || !raw.trim()) return { ok: false, reason: "missing_signature_input" };
+  const members = [...raw.matchAll(MEMBER_RE)];
+  if (members.length === 0) return { ok: false, reason: "missing_signature_input" };
+  if (members.length > 1) return { ok: false, reason: "multiple_signatures_unsupported" };
+
+  const [, label, , paramsRaw] = members[0];
+  const params = new Map<string, string>();
+  for (const p of (paramsRaw ?? "").matchAll(PARAM_RE)) {
+    params.set(p[1].toLowerCase(), p[2] ?? p[3] ?? "");
+  }
+  if (params.get("tag") !== "web-bot-auth") return { ok: false, reason: "missing_web_bot_auth_tag" };
+  const keyId = params.get("keyid");
+  if (!keyId) return { ok: false, reason: "missing_keyid" };
+  return { ok: true, label, keyId };
 }
 
 /**
@@ -221,15 +278,20 @@ export async function verifyWebBotAuthRequest(
     return { verified: false, agentKeyId: null, reason: "missing_signature_headers" };
   }
 
-  const signatureAgent = extractSignatureAgent(request);
-  if (!signatureAgent) {
+  const rawSignatureAgent = request.headers.get("Signature-Agent");
+  if (!rawSignatureAgent) {
     return { verified: false, agentKeyId: null, reason: "missing_signature_agent_header" };
   }
-
-  const keyId = extractKeyId(request);
-  if (!keyId) {
-    return { verified: false, agentKeyId: null, reason: "missing_keyid" };
+  const signatureAgent = parseSignatureAgent(rawSignatureAgent);
+  if (!signatureAgent) {
+    return { verified: false, agentKeyId: null, reason: "invalid_signature_agent" };
   }
+
+  const parsedInput = parseWebBotAuthSignatureInput(signatureInput);
+  if (!parsedInput.ok) {
+    return { verified: false, agentKeyId: null, reason: parsedInput.reason };
+  }
+  const keyId = parsedInput.keyId;
 
   try {
     const jwks = await fetchJwksWithCache(signatureAgent, kv);

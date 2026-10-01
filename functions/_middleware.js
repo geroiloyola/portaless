@@ -1,12 +1,29 @@
 // Cloudflare Pages Function - middleware global del Trust Layer.
 // ACTUALIZADO v0.0.6: ledger via store-factory.ts (D1/SQLite), no memoria.
+//
+// PR C: verifyWebBotAuthRequest() devuelve { verified, agentKeyId, ... }.
+// Antes se leia result.keyRecord.keyId, que no existe: todo request con firma
+// valida lanzaba TypeError y respondia 500.
+//
+// PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
+// /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
+//
+// PR C: politica "charge". Antes CUALQUIER valor en X-Payment-Proof dejaba
+// pasar al agente y registraba charged:true en el ledger, sin que nadie
+// cobrara: contenido de pago gratis y un ledger con cobros que no existieron.
+// Hasta que haya settlement real (PR E: crawler-price detras de Cloudflare o
+// x402 en self-host), "charge" responde siempre 402 y nunca registra cobro.
+//
+// PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
+// defaultContentPolicy(). Ver load-policy.ts.
 
 import {
   verifyWebBotAuthRequest,
   recordAgentAccess,
-  defaultContentPolicy,
 } from "../packages/trust-layer/src/index.ts";
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
+import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
+import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -16,6 +33,7 @@ function looksLikeAutomatedAgent(request) {
 export async function onRequest(context) {
   const { request, env, next } = context;
   if (env.ENABLE_TRUST_LAYER !== "true") return next();
+  if (isPublicBotRoute(new URL(request.url).pathname)) return next();
 
   const ledgerStore = await createUsageLedgerStore(env);
   const hasSignature = request.headers.get("Signature-Agent") !== null;
@@ -32,7 +50,8 @@ export async function onRequest(context) {
   }
 
   const result = await verifyWebBotAuthRequest(request);
-  const policy = defaultContentPolicy(new URL(request.url).origin);
+  const origin = new URL(request.url).origin;
+  const policy = await loadContentPolicy(origin, env.ASSETS);
   const rule = policy.policies.ai_input;
 
   if (!result.verified) {
@@ -40,18 +59,23 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "verification_failed", reason: result.reason }), { status: 401, headers: { "content-type": "application/json" } });
   }
 
+  const operatorKeyId = result.agentKeyId ?? "unknown";
+
   if (rule.access === "block") {
-    await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: false, amountUsd: 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
     return new Response(JSON.stringify({ error: "ai_input_blocked_by_policy" }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
   if (rule.access === "charge") {
-    const paymentHeader = request.headers.get("X-Payment-Proof");
-    if (!paymentHeader) {
-      await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: false, amountUsd: 0 });
-      return new Response(JSON.stringify({ error: "payment_required", price_usd: rule.price_usd, unit: rule.unit }), { status: 402, headers: { "content-type": "application/json" } });
-    }
-    await recordAgentAccess(ledgerStore, { operatorKeyId: result.keyRecord.keyId, charged: true, amountUsd: rule.price_usd ?? 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    return new Response(JSON.stringify({
+      error: "payment_required",
+      price_usd: rule.price_usd,
+      unit: rule.unit,
+      settlement: "not_available",
+      message: "Este sitio cobra el acceso de agentes pero todavia no tiene un medio de pago verificable. No reintentes con un comprobante: no se acepta ninguno.",
+      policy_url: `${origin}/.well-known/portaless-content-policy.json`,
+    }), { status: 402, headers: { "content-type": "application/json" } });
   }
 
   return next();
