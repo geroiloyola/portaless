@@ -7,9 +7,17 @@
 // a /admin/login-mfa?challenge=<mfaChallengeToken> para que el usuario
 // complete el segundo paso. Ver docs/architecture/authentication.md,
 // seccion 2FA, y functions/admin/login-mfa.js (segundo paso).
+//
+// El challenge se guarda con createMfaChallengeStore(env) (D1/SQLite), asi
+// login-mfa.js lo encuentra aunque la request siguiente caiga en otro isolate
+// de Cloudflare o el self-host se haya reiniciado.
 
 import { AuthService } from "../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
+import {
+  createUsersStore,
+  createSessionStore,
+  createMfaChallengeStore,
+} from "../../packages/auth/src/store-factory.ts";
 
 export async function onRequestGet(context) {
   return context.next();
@@ -20,7 +28,8 @@ export async function onRequestPost(context) {
 
   const usersStore = await createUsersStore(env);
   const sessionStore = await createSessionStore(env);
-  const authService = new AuthService(usersStore, sessionStore);
+  const mfaChallengeStore = await createMfaChallengeStore(env);
+  const authService = new AuthService(usersStore, sessionStore, undefined, undefined, mfaChallengeStore);
 
   const formData = await request.formData();
   const username = String(formData.get("username") || "").trim();

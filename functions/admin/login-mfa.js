@@ -9,9 +9,17 @@
 //
 // La cookie lleva Secure solo en HTTPS, igual que login.js: en self-hosted por
 // HTTP en una IP de red local el navegador descartaria una cookie Secure.
+//
+// El challenge se lee de createMfaChallengeStore(env), el mismo store donde
+// login.js lo guardo. Los fallos se cuentan ahi (maximo MFA_MAX_ATTEMPTS),
+// asi que repartir intentos entre isolates no saltea el limite.
 
 import { AuthService } from "../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
+import {
+  createUsersStore,
+  createSessionStore,
+  createMfaChallengeStore,
+} from "../../packages/auth/src/store-factory.ts";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -27,7 +35,7 @@ export async function onRequestPost(context) {
   }
 
   const { challengeToken, code } = body || {};
-  if (!challengeToken || !code) {
+  if (typeof challengeToken !== "string" || !challengeToken || typeof code !== "string" || !code) {
     return new Response(JSON.stringify({ success: false, error: "Faltan challengeToken o code." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -36,7 +44,8 @@ export async function onRequestPost(context) {
 
   const usersStore = await createUsersStore(env);
   const sessionStore = await createSessionStore(env);
-  const authService = new AuthService(usersStore, sessionStore);
+  const mfaChallengeStore = await createMfaChallengeStore(env);
+  const authService = new AuthService(usersStore, sessionStore, undefined, undefined, mfaChallengeStore);
 
   const result = await authService.completeMfaLogin(challengeToken, code);
 
