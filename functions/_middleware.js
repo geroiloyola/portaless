@@ -4,6 +4,9 @@
 // PR C: verifyWebBotAuthRequest() devuelve { verified, agentKeyId, ... }.
 // Antes se leia result.keyRecord.keyId, que no existe: todo request con firma
 // valida lanzaba TypeError y respondia 500.
+//
+// PR C: las rutas de descubrimiento (robots.txt, llms.txt, sitemap.xml,
+// /.well-known/*, /blog/*.md) pasan sin firma. Ver public-bot-routes.ts.
 
 import {
   verifyWebBotAuthRequest,
@@ -11,6 +14,7 @@ import {
   defaultContentPolicy,
 } from "../packages/trust-layer/src/index.ts";
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
+import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -20,6 +24,7 @@ function looksLikeAutomatedAgent(request) {
 export async function onRequest(context) {
   const { request, env, next } = context;
   if (env.ENABLE_TRUST_LAYER !== "true") return next();
+  if (isPublicBotRoute(new URL(request.url).pathname)) return next();
 
   const ledgerStore = await createUsageLedgerStore(env);
   const hasSignature = request.headers.get("Signature-Agent") !== null;
