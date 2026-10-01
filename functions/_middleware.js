@@ -13,14 +13,17 @@
 // cobrara: contenido de pago gratis y un ledger con cobros que no existieron.
 // Hasta que haya settlement real (PR E: crawler-price detras de Cloudflare o
 // x402 en self-host), "charge" responde siempre 402 y nunca registra cobro.
+//
+// PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
+// defaultContentPolicy(). Ver load-policy.ts.
 
 import {
   verifyWebBotAuthRequest,
   recordAgentAccess,
-  defaultContentPolicy,
 } from "../packages/trust-layer/src/index.ts";
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
+import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -47,7 +50,8 @@ export async function onRequest(context) {
   }
 
   const result = await verifyWebBotAuthRequest(request);
-  const policy = defaultContentPolicy(new URL(request.url).origin);
+  const origin = new URL(request.url).origin;
+  const policy = await loadContentPolicy(origin, env.ASSETS);
   const rule = policy.policies.ai_input;
 
   if (!result.verified) {
@@ -70,7 +74,7 @@ export async function onRequest(context) {
       unit: rule.unit,
       settlement: "not_available",
       message: "Este sitio cobra el acceso de agentes pero todavia no tiene un medio de pago verificable. No reintentes con un comprobante: no se acepta ninguno.",
-      policy_url: `${new URL(request.url).origin}/.well-known/portaless-content-policy.json`,
+      policy_url: `${origin}/.well-known/portaless-content-policy.json`,
     }), { status: 402, headers: { "content-type": "application/json" } });
   }
 
