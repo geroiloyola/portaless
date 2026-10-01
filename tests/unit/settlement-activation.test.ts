@@ -34,6 +34,9 @@ const settlement = await import("../../functions/admin/settlement/index.js");
 const permissions = await import("../../functions/admin/permissions/index.js");
 
 const ZONE_ID = "0123456789abcdef0123456789abcdef";
+// Valor inconfundible: no puede aparecer por casualidad en etiquetas publicas
+// ("API token de Cloudflare" contiene "tok" y generaba un falso positivo).
+const SECRET_TOKEN = "SECRETO-NO-EXPONER-7f3a9c";
 const ENV = { PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: "k".repeat(40) };
 const ADMIN = { username: "admin", role: "admin" };
 
@@ -43,7 +46,7 @@ function ctx(body: unknown, user: object | null = ADMIN, env: object = ENV) {
 const activateBody = (extra: object = {}) => ({
   action: "activate",
   providerId: "cloudflare-pay-per-crawl",
-  credentials: { api_token: "tok", zone_id: ZONE_ID },
+  credentials: { api_token: SECRET_TOKEN, zone_id: ZONE_ID },
   confirmOriginLocked: true,
   password: "correcta",
   ...extra,
@@ -73,7 +76,7 @@ describe("POST /admin/settlement activate", () => {
     const act = await (state.activations as InMemorySettlementActivationStore).get("cloudflare-pay-per-crawl");
     expect(act?.metadata).toEqual({ zone_id: ZONE_ID, zone_name: "site.example" });
     expect(act?.credentialEnc.startsWith("v1.")).toBe(true);
-    expect(act?.credentialEnc).not.toContain("tok");
+    expect(act?.credentialEnc).not.toContain(SECRET_TOKEN);
     expect(await billingGrant()).toMatchObject({ granted: true, subject: { type: "settlement-provider", id: "cloudflare-pay-per-crawl" } });
   });
 
@@ -123,7 +126,8 @@ describe("POST /admin/settlement activate", () => {
     const res = await settlement.onRequestGet({ data: { user: ADMIN }, env: ENV });
     const text = await res.text();
     expect(text).not.toContain("credentialEnc");
-    expect(text).not.toContain("tok");
+    expect(text).not.toContain(SECRET_TOKEN);
+    expect(text).not.toContain("v1.");
     expect(JSON.parse(text)).toMatchObject({ siteHost: "site.example", providers: [{ id: "cloudflare-pay-per-crawl", active: true }] });
   });
 });
