@@ -11,13 +11,18 @@
 // ESM), el self-host SIEMPRE corria en memoria y el admin creado por
 // `npm run setup` nunca se encontraba en /admin/login. El fallback a memoria
 // queda SOLO para cuando no hay ni DB ni PORTALESS_SQLITE_PATH, con aviso.
+//
+// createMfaChallengeStore() y createRateLimitStore(): estado efimero de auth
+// que tiene que compartirse entre requests (ver ephemeral-auth-store.ts).
 
 import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
 import type { PasswordResetStore } from "./password-reset-store";
+import type { MfaChallengeStore, RateLimitStore } from "./ephemeral-auth-store";
 import { InMemoryUsersStore } from "./users-store";
 import { InMemorySessionStore } from "./session-store";
 import { InMemoryPasswordResetStore } from "./password-reset-store";
+import { InMemoryRateLimitStore, sharedInMemoryMfaChallengeStore } from "./ephemeral-auth-store";
 
 export interface StoreFactoryEnv {
   DB?: unknown;
@@ -72,4 +77,34 @@ export async function createPasswordResetStore(env: StoreFactoryEnv): Promise<Pa
     "Usando almacenamiento EN MEMORIA -- los tokens de recuperación se perderán al reiniciar."
   );
   return new InMemoryPasswordResetStore();
+}
+
+export async function createMfaChallengeStore(env: StoreFactoryEnv): Promise<MfaChallengeStore> {
+  if (env.DB) {
+    const { D1MfaChallengeStore } = await import("./stores/d1-ephemeral-auth-store");
+    return new D1MfaChallengeStore(env.DB as any);
+  }
+
+  if (env.PORTALESS_SQLITE_PATH) {
+    const { SqliteMfaChallengeStore } = await import("./stores/sqlite-ephemeral-auth-store");
+    return SqliteMfaChallengeStore.open(env.PORTALESS_SQLITE_PATH);
+  }
+
+  return sharedInMemoryMfaChallengeStore;
+}
+
+const fallbackRateLimitStore = new InMemoryRateLimitStore();
+
+export async function createRateLimitStore(env: StoreFactoryEnv): Promise<RateLimitStore> {
+  if (env.DB) {
+    const { D1RateLimitStore } = await import("./stores/d1-ephemeral-auth-store");
+    return new D1RateLimitStore(env.DB as any);
+  }
+
+  if (env.PORTALESS_SQLITE_PATH) {
+    const { SqliteRateLimitStore } = await import("./stores/sqlite-ephemeral-auth-store");
+    return SqliteRateLimitStore.open(env.PORTALESS_SQLITE_PATH);
+  }
+
+  return fallbackRateLimitStore;
 }
