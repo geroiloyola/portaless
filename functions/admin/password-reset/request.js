@@ -13,13 +13,29 @@
 // devolver el token de reset en la respuesta HTTP. Esto evita que un despliegue
 // mal configurado exponga tokens de recuperacion a cualquiera que llame al
 // endpoint. Ver SECURITY.md.
+//
+// Rate limit: 5 pedidos por IP y 3 por usuario por hora (ver
+// packages/auth/src/password-reset-rate-limit.ts). Al pasarse se responde el
+// mismo 200 que en un pedido valido, sin generar token.
 
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import {
   createUsersStore,
   createSessionStore,
   createPasswordResetStore,
+  createRateLimitStore,
 } from "../../../packages/auth/src/store-factory.ts";
+import {
+  allowPasswordResetRequest,
+  clientIpFromHeaders,
+} from "../../../packages/auth/src/password-reset-rate-limit.ts";
+
+function okResponse(devToken) {
+  return new Response(JSON.stringify({ success: true, devToken }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -53,11 +69,17 @@ export async function onRequestPost(context) {
   }
 
   const { username } = body || {};
-  if (!username) {
+  if (typeof username !== "string" || !username.trim()) {
     return new Response(JSON.stringify({ success: false, error: "Falta username." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  const rateLimits = await createRateLimitStore(env);
+  const allowed = await allowPasswordResetRequest(rateLimits, clientIpFromHeaders(request.headers), username);
+  if (!allowed) {
+    return okResponse(undefined);
   }
 
   const usersStore = await createUsersStore(env);
@@ -69,8 +91,5 @@ export async function onRequestPost(context) {
 
   const devToken = env.PORTALESS_DEV_MODE === "1" && result ? result.token : undefined;
 
-  return new Response(JSON.stringify({ success: true, devToken }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return okResponse(devToken);
 }

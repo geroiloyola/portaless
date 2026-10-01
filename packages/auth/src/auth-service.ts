@@ -28,9 +28,14 @@
 //
 // Limite de intentos MFA: cada challenge admite MFA_MAX_ATTEMPTS codigos
 // incorrectos. Al agotarlos se borra y hay que volver a iniciar sesion (lo que
-// exige la contrasena otra vez). PENDIENTE: pendingMfaChallenges vive en la
-// memoria del proceso; en Cloudflare cada isolate tiene su propio Map y en
-// self-host un reinicio los borra. Moverlo a D1/SQLite es un cambio aparte.
+// exige la contrasena otra vez).
+//
+// Challenges MFA persistentes: se guardan en un MfaChallengeStore (5to
+// parametro, opcional). login.js y login-mfa.js deben pasar el de
+// createMfaChallengeStore(env) para que el challenge emitido en una request
+// exista en la siguiente (en Cloudflare cada isolate tiene su memoria, y en
+// self-host un reinicio la borra). Si no se pasa, se usa un store en memoria
+// compartido por el proceso: mismo comportamiento que el Map de antes.
 
 import { randomBytes } from "node:crypto";
 import type { LoginResult, Role, OAuthProfile } from "./types";
@@ -38,18 +43,15 @@ import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
 import type { PasswordResetStore } from "./password-reset-store";
 import type { PasswordEventContext, PasswordEventKind, PasswordEventStore } from "./password-event-store";
+import type { MfaChallengeStore } from "./ephemeral-auth-store";
+import { sharedInMemoryMfaChallengeStore } from "./ephemeral-auth-store";
 import { verifyPassword } from "./password";
 import { verifyTotpCode, generateTotpSecret, buildTotpUri } from "./totp";
 
 const MFA_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 export const MFA_MAX_ATTEMPTS = 5;
-interface PendingMfaChallenge {
-  username: string;
-  role: Role;
-  expiresAt: number;
-  failedAttempts: number;
-}
-const pendingMfaChallenges = new Map<string, PendingMfaChallenge>();
+
+const MFA_EXPIRED_ERROR = "El código de verificación expiró. Inicia sesión de nuevo.";
 
 export interface StepUpCredentials {
   password?: string;
@@ -65,7 +67,8 @@ export class AuthService {
     private users: UsersStore,
     private sessions: SessionStore,
     private passwordResets?: PasswordResetStore,
-    private passwordEvents?: PasswordEventStore
+    private passwordEvents?: PasswordEventStore,
+    private mfaChallenges: MfaChallengeStore = sharedInMemoryMfaChallengeStore
   ) {}
 
   async login(username: string, plainPassword: string): Promise<LoginResult> {
@@ -81,11 +84,10 @@ export class AuthService {
 
     if (user.totpSecret) {
       const challengeToken = randomBytes(24).toString("hex");
-      pendingMfaChallenges.set(challengeToken, {
+      await this.mfaChallenges.create(challengeToken, {
         username: user.username,
         role: user.role,
         expiresAt: Date.now() + MFA_CHALLENGE_TTL_MS,
-        failedAttempts: 0,
       });
       return { success: false, mfaRequired: true, mfaChallengeToken: challengeToken };
     }
@@ -95,28 +97,37 @@ export class AuthService {
   }
 
   async completeMfaLogin(challengeToken: string, totpCode: string): Promise<LoginResult> {
-    const challenge = pendingMfaChallenges.get(challengeToken);
-    if (!challenge || challenge.expiresAt < Date.now() || challenge.failedAttempts >= MFA_MAX_ATTEMPTS) {
-      pendingMfaChallenges.delete(challengeToken);
-      return { success: false, error: "El código de verificación expiró. Inicia sesión de nuevo." };
+    const challenge = await this.mfaChallenges.get(challengeToken, Date.now());
+    if (!challenge || challenge.failedAttempts >= MFA_MAX_ATTEMPTS) {
+      await this.mfaChallenges.delete(challengeToken);
+      return { success: false, error: MFA_EXPIRED_ERROR };
     }
 
     const user = await this.users.findByUsername(challenge.username);
     if (!user || !user.totpSecret) {
-      pendingMfaChallenges.delete(challengeToken);
+      await this.mfaChallenges.delete(challengeToken);
       return { success: false, error: "No fue posible verificar el segundo factor." };
     }
 
     if (!verifyTotpCode(user.totpSecret, totpCode)) {
-      challenge.failedAttempts += 1;
-      if (challenge.failedAttempts >= MFA_MAX_ATTEMPTS) {
-        pendingMfaChallenges.delete(challengeToken);
+      const failures = await this.mfaChallenges.recordFailure(challengeToken, Date.now());
+      if (failures === null) {
+        return { success: false, error: MFA_EXPIRED_ERROR };
+      }
+      if (failures >= MFA_MAX_ATTEMPTS) {
+        await this.mfaChallenges.delete(challengeToken);
         return { success: false, error: "Demasiados códigos incorrectos. Inicia sesión de nuevo." };
       }
       return { success: false, error: "Código de verificación incorrecto." };
     }
 
-    pendingMfaChallenges.delete(challengeToken);
+    // consume() es atomico: si otra request ya uso este challenge (o agoto los
+    // intentos) entre el get() y aca, devuelve null y no se emite sesion.
+    const consumed = await this.mfaChallenges.consume(challengeToken, Date.now(), MFA_MAX_ATTEMPTS);
+    if (!consumed) {
+      return { success: false, error: MFA_EXPIRED_ERROR };
+    }
+
     const session = await this.sessions.create(user.username, user.role);
     session.mfaVerified = true;
     return { success: true, session };
