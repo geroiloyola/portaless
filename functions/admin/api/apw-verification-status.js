@@ -25,6 +25,11 @@
 // `identity` con el resultado de resolveApwIdentity() (TXT + did.json). Si
 // no hay identidad, todo sigue igual que antes (manifiesto v1).
 //
+// APW v1.2 (B6): si el historial encadenado ya tiene entradas, el TXT sugerido
+// incluye `h` (hash de la ultima entrada) y `identity.h` lo informa. `h`
+// cambia con cada atestacion nueva: entre una actualizacion del TXT y la
+// siguiente, las entradas nuevas todavia no estan ancladas en el DNS.
+//
 // Diseno deliberado: esto NUNCA bloquea nada. Si el DNS no propago todavia
 // (puede tardar minutos u horas), el sitio sigue funcionando exactamente
 // igual -- el checklist es informativo, no un gate.
@@ -36,7 +41,7 @@ import {
   jwkThumbprint,
   APW_TXT_PREFIX,
 } from "../../../packages/apw-resolver/src/index";
-import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 
 const TXT_PRACTICAL_LIMIT_BYTES = 512;
 const SITE_ID = "default";
@@ -52,9 +57,9 @@ function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-function buildSuggestedTxtRecord(domain, k) {
+function buildSuggestedTxtRecord(domain, k, h) {
   const value = serializeApwManifest(
-    buildApwManifest({ siteId: domain, contentKinds: ["mixed"], ...(k ? { k } : {}) })
+    buildApwManifest({ siteId: domain, contentKinds: ["mixed"], ...(k ? { k } : {}), ...(k && h ? { h } : {}) })
   );
   const bytes = new TextEncoder().encode(value).length;
   return {
@@ -77,6 +82,16 @@ async function loadKeyThumbprint(env) {
   }
 }
 
+async function loadHistoryHead(env) {
+  try {
+    const log = await createAttestationLogStore(env);
+    const head = await log.head(SITE_ID);
+    return head ? head.entryHash : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
@@ -84,6 +99,7 @@ export async function onRequestGet(context) {
   const domain = new URL(context.request.url).hostname;
   const result = await resolveApwManifest(domain);
   const local = await loadKeyThumbprint(context.env);
+  const h = local ? await loadHistoryHead(context.env) : null;
   const identity = local ? await resolveApwIdentity(domain) : null;
 
   return json({
@@ -91,11 +107,12 @@ export async function onRequestGet(context) {
     verified: result.resolved,
     reason: result.reason,
     manifest: result.manifest ?? null,
-    txtRecord: buildSuggestedTxtRecord(domain, local?.k),
+    txtRecord: buildSuggestedTxtRecord(domain, local?.k, h),
     identity: local
       ? {
           did: local.did,
           k: local.k,
+          h,
           verified: identity?.verified ?? false,
           reason: identity?.reason ?? null,
         }

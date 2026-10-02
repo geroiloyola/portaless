@@ -8,8 +8,17 @@
 // workerd) en vez de node:sqlite. Misma API prepare/run/get/all/exec, por lo
 // que SqliteSiteIdentityStore no cambia. Si PORTALESS_SQLITE_PATH esta
 // definido y SQLite no abre, se lanza el error (nunca cae a memoria).
+//
+// APW v1.2 (seccion 5.4): createAttestationLogStore() sigue el mismo patron
+// para el historial encadenado.
 
 import { D1SiteIdentityStore, SqliteSiteIdentityStore, InMemorySiteIdentityStore, type SiteIdentityStore } from "./site-identity-store";
+import {
+  D1AttestationLogStore,
+  SqliteAttestationLogStore,
+  InMemoryAttestationLogStore,
+  type AttestationLogStore,
+} from "./attestation-log-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export async function createSiteIdentityStore(env: Record<string, any>): Promise<SiteIdentityStore> {
@@ -24,4 +33,18 @@ export async function createSiteIdentityStore(env: Record<string, any>): Promise
     "[site-identity-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemorySiteIdentityStore. La identidad did:apw generada NO persistira entre reinicios."
   );
   return new InMemorySiteIdentityStore(env);
+}
+
+export async function createAttestationLogStore(env: Record<string, any>): Promise<AttestationLogStore> {
+  if (env.DB) {
+    return new D1AttestationLogStore(env.DB);
+  }
+  if (env.PORTALESS_SQLITE_PATH) {
+    const db = await openSqlite(env.PORTALESS_SQLITE_PATH);
+    return new SqliteAttestationLogStore(db);
+  }
+  console.warn(
+    "[attestation-log-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemoryAttestationLogStore. El historial encadenado NO persistira entre reinicios."
+  );
+  return new InMemoryAttestationLogStore();
 }
