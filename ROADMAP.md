@@ -83,6 +83,7 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 - [x] `kid` DID en los JWS del sitio (ERRATA E-3) – PR #73, mergeado. `did:apw:<dominio>#key-<n>` con `key_sequence`. Las entradas viejas siguen verificando por la huella. Migración automática con `ALTER TABLE`. `create()` y `rotate()` pasan a INSERT estricto.
 - [x] Atestaciones firmadas por el emisor (APW v1.2, 5.3, B4 y B5) – PR #74, mergeado. `agent-verification` y `escrow-report` exigen `body.attestation` (JWS EdDSA). Rechazan un body que no coincida con lo firmado (400) y un `jti` repetido (409). El JWS se guarda junto a la fila de SiteTrustScore y se anota en el historial. Los proveedores de escrow registran `public_key_jwk`. ERRATA E-4. También corrige: las rutas de import de esos dos endpoints (salían del repo) y el orden de `listKeys()`.
 - [x] `schema.sql` maestro al día con #71, #73 y #74 – PR #75.
+- [x] APW B7 — `community` marcado explícitamente como señal local/no verificable en el MVP. `GET /trust/:siteId` conserva los arrays existentes y agrega `verification.community { status: "local_only", verifiable: false }`: `voterId` viene de localStorage e `ipHash` solo sirve para rate limit. Sin identidad criptográfica ni prueba exportable del votante. PR #<número>.
 
 ### Atomic Elements, Editor Visual y SEO
 
@@ -141,7 +142,6 @@ Reorganizado en 3 categorias, no por prioridad sino por quien es responsable de 
 Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no depende de ningun proveedor externo, tercero, ni proyecto aparte.
 
 - [ ] APW B3: firma de artefactos del sitio (5.2). JCS (RFC 8785) con una dependencia auditada, `/.well-known/apw-manifest.jws` y atestaciones `self`. Se posterga para no usar un canonicalizador propio.
-- [ ] APW B7: `community` sigue fuera de la cadena (MVP). Marcarla en la API como señal local, no verificable.
 - [ ] APW B9: gobernanza de lectura y `reader_conduct` (sección 6).
 - [ ] Campo de clave pública en `/admin/authorized-escrow-providers`. Hoy se carga solo por API o con `scripts/onboard-escrow-provider.mjs`.
 - [ ] Anclaje de `h` en el DNS: cambia con cada atestación y el TXT se actualiza a mano.
