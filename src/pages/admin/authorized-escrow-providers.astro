@@ -7,12 +7,18 @@
 // Antes de esta pagina, la UNICA forma de dar de alta un proveedor era
 // scripts/onboard-escrow-provider.mjs (CLI, self-hosted only, sin
 // cobertura D1) -- ver ROADMAP.md. Los datos vienen de functions/admin/
-// api/authorized-escrow-providers.js (GET/POST/PATCH).
+// api/authorized-escrow-providers.js (GET/POST/PUT/PATCH).
 //
 // Diferencia clave respecto a authorized-agents.astro: el POST devuelve
 // una apiKey en texto plano generada por el servidor, visible UNA sola
 // vez -- se renderiza en un panel de "copia esta clave ahora" estilo
 // GitHub/AWS, y desaparece al cerrar o al hacer cualquier otra accion.
+//
+// APW v1.2 (5.3, ERRATA E-4): cada proveedor necesita su clave publica
+// Ed25519 para que sus reportes firmados se acepten. Se puede cargar en el
+// alta (opcional) o despues, desde la tabla, con PUT: eso NO rota la API key.
+// La clave se valida en el navegador antes de enviarla y el servidor vuelve
+// a validarla; nunca se acepta un JWK con `d` (la parte privada).
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Proveedores de escrow autorizados — Portaless Admin">
@@ -24,6 +30,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       -- la senal mas objetiva de las 4 fuentes. No hay autoservicio: cada
       alta genera una API key nueva que debes entregar al proveedor fuera
       de banda. Portaless nunca vuelve a mostrarla despues de este momento.
+    </p>
+    <p class="ep-page-subtitle">
+      Cada proveedor firma sus reportes con su propia clave Ed25519. Pedile su
+      clave <strong>publica</strong> en formato JWK y cargala aca: sin ella el
+      proveedor queda autorizado pero sus reportes se rechazan.
     </p>
   </div>
 
@@ -37,6 +48,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <code id="ep-new-key-value" class="ep-new-key-value"></code>
         <button id="ep-new-key-copy" class="ep-new-key-copy" type="button">Copiar</button>
       </div>
+      <p id="ep-new-key-warning" class="ep-warning" style="display:none;">
+        Este proveedor todavia no tiene clave publica: no va a poder reportar hasta que la cargues desde la tabla.
+      </p>
       <button id="ep-new-key-dismiss" class="ep-new-key-dismiss" type="button">Ya la copie, cerrar</button>
     </div>
 
@@ -50,9 +64,38 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <span>Nombre visible</span>
         <input type="text" id="ep-input-name" placeholder="Nombre del proveedor" required autocomplete="off" />
       </label>
+      <label class="ep-field">
+        <span>Clave publica Ed25519 (JWK) -- opcional, se puede cargar despues</span>
+        <textarea
+          id="ep-input-key"
+          rows="3"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."}'
+        ></textarea>
+      </label>
       <button type="submit" class="ep-submit">Autorizar proveedor</button>
       <p id="ep-form-error" class="ep-form-error" style="display:none;"></p>
     </form>
+
+    <div id="ep-key-panel" class="ep-key-panel" style="display:none;">
+      <h2 class="ep-form-title">Clave publica de <span id="ep-key-panel-provider"></span></h2>
+      <p class="ep-key-panel-hint">
+        Pega la clave publica Ed25519 del proveedor en formato JWK. Esto no cambia su API key.
+      </p>
+      <textarea
+        id="ep-key-panel-input"
+        rows="3"
+        spellcheck="false"
+        autocomplete="off"
+        placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."}'
+      ></textarea>
+      <div class="ep-key-panel-actions">
+        <button id="ep-key-panel-save" class="ep-submit" type="button">Guardar clave</button>
+        <button id="ep-key-panel-cancel" class="ep-new-key-dismiss" type="button">Cancelar</button>
+      </div>
+      <p id="ep-key-panel-error" class="ep-form-error" style="display:none;"></p>
+    </div>
 
     <table class="ep-table">
       <thead>
@@ -60,6 +103,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <th>Provider ID</th>
           <th>Nombre</th>
           <th>Estado</th>
+          <th>Clave publica</th>
           <th>Autorizado</th>
           <th></th>
         </tr>
@@ -70,13 +114,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  interface PublicKeyJwk {
+    kty: string;
+    crv: string;
+    x: string;
+  }
+
   interface AuthorizedEscrowProvider {
     providerId: string;
     displayName: string;
     active: boolean;
     authorizedAt: string;
     authorizedBy: string;
+    publicKeyJwk: PublicKeyJwk | null;
   }
+
+  const API = "/admin/api/authorized-escrow-providers";
 
   const loadingEl = document.getElementById("ep-loading")!;
   const errorEl = document.getElementById("ep-load-error")!;
@@ -86,8 +139,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const formError = document.getElementById("ep-form-error")!;
   const newKeyPanel = document.getElementById("ep-new-key-panel")!;
   const newKeyValue = document.getElementById("ep-new-key-value")!;
+  const newKeyWarning = document.getElementById("ep-new-key-warning")!;
   const newKeyCopyBtn = document.getElementById("ep-new-key-copy")!;
   const newKeyDismissBtn = document.getElementById("ep-new-key-dismiss")!;
+  const keyPanel = document.getElementById("ep-key-panel")!;
+  const keyPanelProvider = document.getElementById("ep-key-panel-provider")!;
+  const keyPanelInput = document.getElementById("ep-key-panel-input") as HTMLTextAreaElement;
+  const keyPanelSave = document.getElementById("ep-key-panel-save") as HTMLButtonElement;
+  const keyPanelCancel = document.getElementById("ep-key-panel-cancel")!;
+  const keyPanelError = document.getElementById("ep-key-panel-error")!;
+
+  let editingProviderId: string | null = null;
 
   async function parseErrorMessage(res: Response): Promise<string> {
     let message = `HTTP ${res.status}`;
@@ -107,12 +169,106 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     return div.innerHTML;
   }
 
+  /**
+   * Valida la clave en el navegador para dar un error claro antes de enviarla.
+   * El servidor vuelve a validar exactamente lo mismo.
+   */
+  function parsePublicKeyInput(raw: string): { ok: true; jwk: PublicKeyJwk } | { ok: false; message: string } {
+    let jwk: any;
+    try {
+      jwk = JSON.parse(raw);
+    } catch {
+      return { ok: false, message: "La clave publica tiene que ser un JSON valido." };
+    }
+    if (!jwk || typeof jwk !== "object" || Array.isArray(jwk)) {
+      return { ok: false, message: "La clave publica tiene que ser un objeto JWK." };
+    }
+    if (jwk.d !== undefined) {
+      return {
+        ok: false,
+        message: "Esa clave incluye la parte privada (d). Nunca la cargues aca: pedile al proveedor solo la clave publica.",
+      };
+    }
+    if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
+      return { ok: false, message: 'Solo se aceptan claves Ed25519: "kty": "OKP" y "crv": "Ed25519".' };
+    }
+    if (typeof jwk.x !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(jwk.x)) {
+      return { ok: false, message: 'El campo "x" tiene que ser la clave publica en base64url (43 caracteres).' };
+    }
+    return { ok: true, jwk: { kty: "OKP", crv: "Ed25519", x: jwk.x } };
+  }
+
+  function redirectIfUnauthenticated(res: Response): boolean {
+    if (res.status === 401) {
+      window.location.href = "/admin/login?error=1";
+      return true;
+    }
+    return false;
+  }
+
+  function renderKeyCell(cell: HTMLElement, provider: AuthorizedEscrowProvider): void {
+    if (provider.publicKeyJwk) {
+      const label = document.createElement("span");
+      label.className = "ep-key-ok";
+      label.textContent = `Registrada (${provider.publicKeyJwk.x.slice(0, 8)}…)`;
+      label.title = provider.publicKeyJwk.x;
+      cell.appendChild(label);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "ep-link-btn";
+      copyBtn.textContent = "Copiar";
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(provider.publicKeyJwk));
+          copyBtn.textContent = "¡Copiada!";
+          setTimeout(() => { copyBtn.textContent = "Copiar"; }, 1500);
+        } catch {
+          // Sin permiso de portapapeles: la huella sigue visible en el title.
+        }
+      });
+      cell.appendChild(copyBtn);
+    } else {
+      const missing = document.createElement("span");
+      missing.className = "ep-key-missing";
+      missing.textContent = "Falta: no puede reportar";
+      cell.appendChild(missing);
+    }
+  }
+
+  function renderActionsCell(cell: HTMLElement, provider: AuthorizedEscrowProvider): void {
+    const keyBtn = document.createElement("button");
+    keyBtn.type = "button";
+    keyBtn.className = "ep-key-btn";
+    keyBtn.textContent = provider.publicKeyJwk ? "Cambiar clave" : "Cargar clave";
+    keyBtn.addEventListener("click", () => openKeyPanel(provider));
+    cell.appendChild(keyBtn);
+
+    if (provider.publicKeyJwk) {
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "ep-link-btn";
+      removeBtn.textContent = "Quitar clave";
+      removeBtn.addEventListener("click", () => removePublicKey(provider.providerId));
+      cell.appendChild(removeBtn);
+    }
+
+    if (provider.active) {
+      const revokeBtn = document.createElement("button");
+      revokeBtn.type = "button";
+      revokeBtn.textContent = "Revocar";
+      revokeBtn.className = "ep-revoke-btn";
+      revokeBtn.addEventListener("click", () => revokeProvider(provider.providerId));
+      cell.appendChild(revokeBtn);
+    }
+  }
+
   function renderTable(providers: AuthorizedEscrowProvider[]): void {
     tableBody.innerHTML = "";
 
     if (providers.length === 0) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td colspan="5" class="ep-empty-row">Sin proveedores autorizados todavia.</td>`;
+      row.innerHTML = `<td colspan="6" class="ep-empty-row">Sin proveedores autorizados todavia.</td>`;
       tableBody.appendChild(row);
       return;
     }
@@ -127,36 +283,89 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <td>${escapeHtml(provider.providerId)}</td>
         <td>${escapeHtml(provider.displayName)}</td>
         <td><span class="${statusClass}">${statusLabel}</span></td>
+        <td class="ep-key-cell"></td>
         <td>${escapeHtml(authorizedDate)}</td>
-        <td></td>
+        <td class="ep-actions-cell"></td>
       `;
 
-      if (provider.active) {
-        const revokeBtn = document.createElement("button");
-        revokeBtn.textContent = "Revocar";
-        revokeBtn.className = "ep-revoke-btn";
-        revokeBtn.addEventListener("click", () => revokeProvider(provider.providerId));
-        row.lastElementChild!.appendChild(revokeBtn);
-      }
-
+      renderKeyCell(row.querySelector(".ep-key-cell") as HTMLElement, provider);
+      renderActionsCell(row.querySelector(".ep-actions-cell") as HTMLElement, provider);
       tableBody.appendChild(row);
     }
   }
 
   async function loadProviders(): Promise<void> {
-    const res = await fetch("/admin/api/authorized-escrow-providers");
-
-    if (res.status === 401) {
-      window.location.href = "/admin/login?error=1";
-      return;
-    }
-
-    if (!res.ok) {
-      throw new Error(await parseErrorMessage(res));
-    }
+    const res = await fetch(API);
+    if (redirectIfUnauthenticated(res)) return;
+    if (!res.ok) throw new Error(await parseErrorMessage(res));
 
     const data = await res.json();
     renderTable(data.providers ?? []);
+  }
+
+  async function putPublicKey(providerId: string, publicKeyJwk: PublicKeyJwk | null): Promise<void> {
+    const res = await fetch(API, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ providerId, publicKeyJwk }),
+    });
+    if (redirectIfUnauthenticated(res)) return;
+    if (!res.ok) throw new Error(await parseErrorMessage(res));
+  }
+
+  function openKeyPanel(provider: AuthorizedEscrowProvider): void {
+    editingProviderId = provider.providerId;
+    keyPanelProvider.textContent = provider.displayName || provider.providerId;
+    keyPanelInput.value = provider.publicKeyJwk ? JSON.stringify(provider.publicKeyJwk) : "";
+    keyPanelError.style.display = "none";
+    keyPanel.style.display = "";
+    keyPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    keyPanelInput.focus();
+  }
+
+  function closeKeyPanel(): void {
+    editingProviderId = null;
+    keyPanelInput.value = "";
+    keyPanelError.style.display = "none";
+    keyPanel.style.display = "none";
+  }
+
+  keyPanelCancel.addEventListener("click", closeKeyPanel);
+
+  keyPanelSave.addEventListener("click", async () => {
+    if (!editingProviderId) return;
+    keyPanelError.style.display = "none";
+
+    const parsed = parsePublicKeyInput(keyPanelInput.value.trim());
+    if (!parsed.ok) {
+      keyPanelError.textContent = parsed.message;
+      keyPanelError.style.display = "";
+      return;
+    }
+
+    keyPanelSave.disabled = true;
+    try {
+      await putPublicKey(editingProviderId, parsed.jwk);
+      closeKeyPanel();
+      await loadProviders();
+    } catch (err) {
+      keyPanelError.textContent = (err as Error).message;
+      keyPanelError.style.display = "";
+    } finally {
+      keyPanelSave.disabled = false;
+    }
+  });
+
+  async function removePublicKey(providerId: string): Promise<void> {
+    if (!confirm(`¿Quitar la clave publica de "${providerId}"? Sus reportes se van a rechazar hasta que cargues otra. Su API key no cambia.`)) {
+      return;
+    }
+    try {
+      await putPublicKey(providerId, null);
+      await loadProviders();
+    } catch (err) {
+      alert(`Error al quitar la clave: ${(err as Error).message}`);
+    }
   }
 
   async function revokeProvider(providerId: string): Promise<void> {
@@ -165,19 +374,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
 
     try {
-      const res = await fetch("/admin/api/authorized-escrow-providers", {
+      const res = await fetch(API, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ providerId }),
       });
-
-      if (res.status === 401) {
-        window.location.href = "/admin/login?error=1";
-        return;
-      }
-      if (!res.ok) {
-        throw new Error(await parseErrorMessage(res));
-      }
+      if (redirectIfUnauthenticated(res)) return;
+      if (!res.ok) throw new Error(await parseErrorMessage(res));
 
       await loadProviders();
     } catch (err) {
@@ -185,13 +388,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
   }
 
-  function showNewApiKey(apiKey: string): void {
+  function showNewApiKey(apiKey: string, hasPublicKey: boolean): void {
     newKeyValue.textContent = apiKey;
+    newKeyWarning.style.display = hasPublicKey ? "none" : "";
     newKeyPanel.style.display = "";
   }
 
   function hideNewApiKey(): void {
     newKeyValue.textContent = "";
+    newKeyWarning.style.display = "none";
     newKeyPanel.style.display = "none";
   }
 
@@ -215,27 +420,33 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const providerId = (document.getElementById("ep-input-id") as HTMLInputElement).value.trim();
     const displayName = (document.getElementById("ep-input-name") as HTMLInputElement).value.trim();
+    const rawKey = (document.getElementById("ep-input-key") as HTMLTextAreaElement).value.trim();
 
     if (!providerId || !displayName) return;
 
-    try {
-      const res = await fetch("/admin/api/authorized-escrow-providers", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId, displayName }),
-      });
-
-      if (res.status === 401) {
-        window.location.href = "/admin/login?error=1";
+    let publicKeyJwk: PublicKeyJwk | null = null;
+    if (rawKey) {
+      const parsed = parsePublicKeyInput(rawKey);
+      if (!parsed.ok) {
+        formError.style.display = "";
+        formError.textContent = parsed.message;
         return;
       }
-      if (!res.ok) {
-        throw new Error(await parseErrorMessage(res));
-      }
+      publicKeyJwk = parsed.jwk;
+    }
 
-      const { apiKey } = await res.json();
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerId, displayName, ...(publicKeyJwk ? { publicKeyJwk } : {}) }),
+      });
+      if (redirectIfUnauthenticated(res)) return;
+      if (!res.ok) throw new Error(await parseErrorMessage(res));
+
+      const { apiKey, provider } = await res.json();
       form.reset();
-      showNewApiKey(apiKey);
+      showNewApiKey(apiKey, Boolean(provider?.publicKeyJwk));
       await loadProviders();
     } catch (err) {
       formError.style.display = "";
@@ -261,7 +472,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <style>
   .ep-page-header { margin-bottom: 28px; }
   .ep-page-title { margin: 0 0 6px; font-size: 1.4rem; }
-  .ep-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 640px; line-height: 1.5; }
+  .ep-page-subtitle { margin: 0 0 8px; color: var(--portaless-muted); font-size: 0.9rem; max-width: 640px; line-height: 1.5; }
 
   .ep-loading, .ep-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
   .ep-load-error { color: #ff6e6e; }
@@ -306,8 +517,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     text-decoration: underline;
     padding: 0;
   }
+  .ep-warning { margin: 0 0 10px; font-size: 0.8rem; color: #f5a623; line-height: 1.4; }
 
-  .ep-form {
+  .ep-form, .ep-key-panel {
     max-width: 480px;
     margin-bottom: 32px;
     padding: 20px;
@@ -315,10 +527,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     border-radius: 12px;
     background: #14161b;
   }
+  .ep-key-panel { border-color: var(--portaless-accent); }
+  .ep-key-panel-hint { margin: 0 0 10px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.4; }
+  .ep-key-panel-actions { display: flex; gap: 14px; align-items: center; margin-top: 12px; }
   .ep-form-title { margin: 0 0 16px; font-size: 1rem; }
   .ep-field { display: block; margin-bottom: 14px; }
   .ep-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
-  .ep-field input {
+  .ep-field input, .ep-field textarea, .ep-key-panel textarea {
     width: 100%;
     background: #0f1114;
     border: 1px solid var(--portaless-border);
@@ -327,6 +542,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     padding: 8px 10px;
     font-size: 0.85rem;
   }
+  .ep-field textarea, .ep-key-panel textarea { font-family: ui-monospace, monospace; font-size: 0.78rem; resize: vertical; }
   .ep-submit {
     border: 1px solid var(--portaless-accent);
     background: var(--portaless-accent);
@@ -337,15 +553,43 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     font-weight: 600;
     cursor: pointer;
   }
+  .ep-submit:disabled { opacity: 0.6; cursor: default; }
   .ep-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 10px; }
 
   .ep-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .ep-table th, .ep-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--portaless-border); }
+  .ep-table th, .ep-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--portaless-border); vertical-align: middle; }
   .ep-table th { color: var(--portaless-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .ep-empty-row { text-align: center; color: var(--portaless-muted); padding: 24px; }
 
   .ep-status-active { color: #6ee7b7; }
   .ep-status-revoked { color: var(--portaless-muted); }
+
+  .ep-key-ok { color: #6ee7b7; font-family: ui-monospace, monospace; font-size: 0.78rem; margin-right: 8px; }
+  .ep-key-missing { color: #f5a623; font-size: 0.8rem; }
+
+  .ep-actions-cell { white-space: nowrap; }
+  .ep-actions-cell > * + * { margin-left: 8px; }
+
+  .ep-key-btn {
+    border: 1px solid var(--portaless-accent);
+    background: transparent;
+    color: var(--portaless-accent);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .ep-key-btn:hover { background: var(--portaless-accent); color: #0f1114; }
+
+  .ep-link-btn {
+    border: none;
+    background: none;
+    color: var(--portaless-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
 
   .ep-revoke-btn {
     border: 1px solid #ff6e6e;
