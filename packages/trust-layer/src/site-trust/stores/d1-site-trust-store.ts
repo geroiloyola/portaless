@@ -19,6 +19,9 @@
 // APW v1.2 (ERRATA E-4): agent y escrow_report guardan attestation_jws y
 // attestation_jti. Las columnas y los indices unicos por emisor se crean al
 // primer write (ensureAttestationSchema), sin migracion manual.
+//
+// APW v1.2 (B3, ERRATA E-5): self tambien guarda attestation_jws y
+// attestation_jti en su upsert por categoria.
 
 import type {
   SiteTrustScoreStore,
@@ -57,6 +60,8 @@ interface SelfRow {
   evidence_url: string | null;
   declared_by: string;
   declared_at: string;
+  attestation_jws?: string | null;
+  attestation_jti?: string | null;
 }
 
 interface AgentRow {
@@ -98,6 +103,8 @@ function rowToSelf(row: SelfRow): SelfTrustEvaluation {
     evidenceUrl: row.evidence_url ?? undefined,
     declaredBy: row.declared_by,
     declaredAt: row.declared_at,
+    attestationJws: row.attestation_jws ?? undefined,
+    attestationJti: row.attestation_jti ?? undefined,
   };
 }
 
@@ -196,17 +203,20 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
   }
 
   async recordSelfEvaluation(evaluation: SelfTrustEvaluation): Promise<void> {
+    await this.ensureAttestationSchema();
     await ensureSubject(this.db, evaluation.siteId);
     await this.db
       .prepare(
         `INSERT INTO site_trust_self_evaluations
-           (site_id, category, declared_value, evidence_url, declared_by, declared_at)
-         VALUES (?, ?, ?, ?, ?, ?)
+           (site_id, category, declared_value, evidence_url, declared_by, declared_at, attestation_jws, attestation_jti)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(site_id, category)
          DO UPDATE SET declared_value = excluded.declared_value,
                        evidence_url = excluded.evidence_url,
                        declared_by = excluded.declared_by,
-                       declared_at = excluded.declared_at`
+                       declared_at = excluded.declared_at,
+                       attestation_jws = excluded.attestation_jws,
+                       attestation_jti = excluded.attestation_jti`
       )
       .bind(
         evaluation.siteId,
@@ -214,7 +224,9 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
         evaluation.declaredValue ? 1 : 0,
         evaluation.evidenceUrl ?? null,
         evaluation.declaredBy,
-        evaluation.declaredAt
+        evaluation.declaredAt,
+        evaluation.attestationJws ?? null,
+        evaluation.attestationJti ?? null
       )
       .run();
   }

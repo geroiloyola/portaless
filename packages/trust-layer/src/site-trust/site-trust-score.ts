@@ -29,8 +29,11 @@
 // de la atestacion del emisor (attestationJws) junto a la fila existente --
 // no hay un store paralelo -- y su jti, unico por emisor. Las columnas se
 // agregan solas (ALTER TABLE) a las bases anteriores; las filas viejas
-// quedan con attestation_jws NULL (no verificables). `self` y `community`
-// no cambian en este paso.
+// quedan con attestation_jws NULL (no verificables). `community` no cambia.
+//
+// APW v1.2 (5.2/5.3, B3, ERRATA E-5): `self` tambien guarda el JWS que firma
+// el propio sitio. La fila sigue siendo upsert por categoria: guarda la
+// atestacion VIGENTE; las anteriores quedan en el historial encadenado.
 
 export type SelfTrustCategory =
   | "gdpr_compliance"
@@ -65,6 +68,10 @@ export interface SelfTrustEvaluation {
   evidenceUrl?: string;
   declaredBy: string;
   declaredAt: string;
+  /** JWS compacto de la atestacion self firmada por el sitio (5.2/5.3). */
+  attestationJws?: string;
+  /** jti de esa atestacion. */
+  attestationJti?: string;
 }
 
 export interface AgentTrustVerification {
@@ -125,12 +132,14 @@ export interface SiteTrustSnapshot {
 /** Lo lanzan recordAgentVerification / recordEscrowReport si el jti ya existe para ese emisor. */
 export const DUPLICATE_ATTESTATION_JTI = "duplicate_attestation_jti";
 
-/** Columnas nuevas para bases anteriores a E-4. En una base nueva el ALTER falla con "duplicate column" y se ignora. */
+/** Columnas nuevas para bases anteriores a E-4/E-5. En una base nueva el ALTER falla con "duplicate column" y se ignora. */
 export const ATTESTATION_COLUMN_MIGRATIONS = [
   "ALTER TABLE site_trust_agent_verifications ADD COLUMN attestation_jws TEXT",
   "ALTER TABLE site_trust_agent_verifications ADD COLUMN attestation_jti TEXT",
   "ALTER TABLE site_trust_escrow_reports ADD COLUMN attestation_jws TEXT",
   "ALTER TABLE site_trust_escrow_reports ADD COLUMN attestation_jti TEXT",
+  "ALTER TABLE site_trust_self_evaluations ADD COLUMN attestation_jws TEXT",
+  "ALTER TABLE site_trust_self_evaluations ADD COLUMN attestation_jti TEXT",
 ];
 
 export const ATTESTATION_INDEXES = [
