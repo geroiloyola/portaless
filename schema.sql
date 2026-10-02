@@ -31,6 +31,16 @@
 -- @portaless/auth. Fuente: packages/auth/src/stores/schema.sql (editado ahi y
 -- copiado aca en la misma posicion que produce generate-schema.mjs).
 --
+-- NOTA APW v1.2 (PRs #71, #73, #74):
+--   - La seccion de apw-resolver (site_identity, site_identity_keys,
+--     site_attestation_log) es copia de packages/apw-resolver/schema.sql.
+--   - site_trust_agent_verifications y site_trust_escrow_reports agregan
+--     attestation_jws / attestation_jti y un indice unico por emisor (ERRATA
+--     E-4). authorized_escrow_providers agrega public_key_jwk. Estas tablas no
+--     tienen schema.sql de paquete: se editan aca, mismo precedente que v0.0.9.24.
+--   - Las bases anteriores NO necesitan reaplicar este archivo: los stores
+--     agregan estas columnas e indices solos (ALTER TABLE al primer uso).
+--
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
@@ -181,6 +191,9 @@ CREATE TABLE IF NOT EXISTS plugin_trust_votes (
 -- -----------------------------------------------------------------------------
 -- v0.0.9.19 -- Site Trust Score
 -- -----------------------------------------------------------------------------
+-- APW v1.2 (ERRATA E-4): agent y escrow_report guardan el JWS de la atestacion
+-- firmada por el emisor (attestation_jws) y su jti, unico por emisor. Filas
+-- anteriores quedan con attestation_jws NULL (no verificables por terceros).
 
 CREATE TABLE IF NOT EXISTS site_trust_subjects (
   site_id TEXT PRIMARY KEY,
@@ -211,11 +224,16 @@ CREATE TABLE IF NOT EXISTS site_trust_agent_verifications (
   detail_json TEXT,
   agent_key_id TEXT NOT NULL,
   verified_at TEXT NOT NULL,
+  attestation_jws TEXT,
+  attestation_jti TEXT,
   PRIMARY KEY (site_id, category, agent_key_id, verified_at)
 );
 
 CREATE INDEX IF NOT EXISTS idx_site_trust_agent_site_category
   ON site_trust_agent_verifications(site_id, category);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_trust_agent_jti
+  ON site_trust_agent_verifications(agent_key_id, attestation_jti) WHERE attestation_jti IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS site_trust_community_votes (
   site_id TEXT NOT NULL REFERENCES site_trust_subjects(site_id),
@@ -245,11 +263,16 @@ CREATE TABLE IF NOT EXISTS site_trust_escrow_reports (
   escrow_provider TEXT NOT NULL,
   amount_currency TEXT,
   reported_at TEXT NOT NULL,
+  attestation_jws TEXT,
+  attestation_jti TEXT,
   PRIMARY KEY (site_id, escrow_provider, reported_at)
 );
 
 CREATE INDEX IF NOT EXISTS idx_site_trust_escrow_site
   ON site_trust_escrow_reports(site_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_trust_escrow_jti
+  ON site_trust_escrow_reports(escrow_provider, attestation_jti) WHERE attestation_jti IS NOT NULL;
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.21 -- Allowlist de agentes autorizados a reportar sobre SiteTrustScore
@@ -270,6 +293,9 @@ CREATE INDEX IF NOT EXISTS idx_authorized_agents_active ON authorized_agents(act
 -- -----------------------------------------------------------------------------
 -- v0.0.9.23 -- Allowlist de proveedores de escrow autorizados a reportar
 -- -----------------------------------------------------------------------------
+-- APW v1.2 (ERRATA E-4): public_key_jwk es la clave publica Ed25519 del
+-- proveedor ({ kty, crv, x }). Verifica la atestacion JWS de sus reportes.
+-- Sin ella, el proveedor queda autorizado pero no puede reportar.
 
 CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
   provider_id TEXT PRIMARY KEY,
@@ -277,7 +303,8 @@ CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
   display_name TEXT NOT NULL,
   active INTEGER NOT NULL DEFAULT 1,
   authorized_at TEXT NOT NULL,
-  authorized_by TEXT NOT NULL
+  authorized_by TEXT NOT NULL,
+  public_key_jwk TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_escrow_providers(active);
@@ -305,6 +332,62 @@ CREATE TABLE IF NOT EXISTS site_identity (
   created_at TEXT NOT NULL,
   created_by TEXT NOT NULL
 );
+
+-- APW v1.2, seccion 5.4: historial de claves del sitio. site_identity guarda
+-- la clave ACTUAL; aca queda cada clave que el sitio tuvo, con su ventana
+-- valid_from / valid_to, para verificar entradas viejas del historial
+-- encadenado despues de rotar. kid = huella RFC 7638 de la clave publica.
+-- La privada solo existe en la clave activa: al rotar se pone en NULL.
+-- El indice parcial impide dos claves activas a la vez por sitio.
+--
+-- ERRATA E-3: key_id = did:apw:<dominio>#key-<n> (el `kid` de los JWS que firma
+-- el sitio) y key_sequence = <n>, unico por sitio. Las bases creadas por el
+-- PR #71 no tienen estas columnas: el store las agrega solo (ALTER TABLE) y
+-- asigna #key-1, #key-2... por fecha de alta.
+-- Los stores tambien crean estas tablas al vuelo (mismo DDL).
+
+CREATE TABLE IF NOT EXISTS site_identity_keys (
+  kid TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL,
+  public_key_jwk TEXT NOT NULL,
+  private_key_encrypted TEXT,
+  private_key_encryption_iv TEXT,
+  key_algorithm TEXT NOT NULL DEFAULT 'ed25519',
+  valid_from TEXT NOT NULL,
+  valid_to TEXT,
+  key_id TEXT,
+  key_sequence INTEGER
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_active
+  ON site_identity_keys(site_id) WHERE valid_to IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_site_identity_keys_site
+  ON site_identity_keys(site_id, valid_from);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_seq
+  ON site_identity_keys(site_id, key_sequence);
+
+-- APW v1.2, seccion 5.4: historial encadenado. Una fila por entrada; entry_jws
+-- es la fuente de verdad (los verificadores recalculan hashes y firmas).
+-- PK (site_id, seq): dos escrituras simultaneas no pueden bifurcar la cadena.
+-- Indice unico (site_id, att_hash): la misma atestacion no se registra dos veces.
+-- kid = huella RFC 7638 de la clave que firmo la entrada.
+
+CREATE TABLE IF NOT EXISTS site_attestation_log (
+  site_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  entry_jws TEXT NOT NULL,
+  entry_hash TEXT NOT NULL,
+  prev_hash TEXT,
+  att_hash TEXT NOT NULL,
+  kid TEXT NOT NULL,
+  ts TEXT NOT NULL,
+  PRIMARY KEY (site_id, seq)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att
+  ON site_attestation_log(site_id, att_hash);
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.26 -- Tokens efimeros del Capability Bridge HTTP
