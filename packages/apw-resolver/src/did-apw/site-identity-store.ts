@@ -27,9 +27,18 @@
 // nueva en una sola transaccion). Las tablas nuevas se crean al primer uso
 // (CREATE IF NOT EXISTS) y la identidad que ya existia se copia sola a
 // site_identity_keys la primera vez, asi no hace falta migrar a mano.
+//
+// IDENTIFICADORES DE CLAVE (ERRATA E-3): cada clave tiene dos identificadores.
+//   kid      huella RFC 7638 (ERRATA E-1). Es lo que va en `k` del TXT.
+//   keyId    did:apw:<dominio>#key-<n> (key_id / key_sequence). Es el `kid` de
+//            los JWS que firma el sitio (APW v1.2, seccion 5.2).
+// Las columnas key_id y key_sequence se agregan solas (ALTER TABLE) a las
+// bases creadas por el PR #71, y las claves existentes reciben #key-1,
+// #key-2... segun su fecha de alta.
 
 import type { ApwKeyPair } from "./types";
 import { jwkThumbprint } from "./fingerprint";
+import { didKeyId } from "./key-id";
 import { D1Adapter, SqliteAdapter, type SqlAdapter, type SqlStatement } from "./sql-adapter";
 
 export interface SiteIdentityRecord {
@@ -42,9 +51,13 @@ export interface SiteIdentityRecord {
   createdBy: string;
 }
 
-/** Una clave que el sitio uso en algun momento. kid = huella RFC 7638 (igual a `k` del TXT). */
+/** Una clave que el sitio uso en algun momento. */
 export interface SiteIdentityKeyRecord {
+  /** Huella RFC 7638 (igual a `k` del TXT cuando la clave esta activa). */
   kid: string;
+  /** did:apw:<dominio>#key-<n>: el `kid` de los JWS firmados con esta clave. */
+  keyId: string;
+  keySequence: number;
   siteId: string;
   publicKeyJwk: JsonWebKey;
   keyAlgorithm: string;
@@ -53,7 +66,10 @@ export interface SiteIdentityKeyRecord {
 }
 
 export interface ActiveSigningKey {
+  /** Huella RFC 7638. */
   kid: string;
+  /** did:apw:<dominio>#key-<n>. */
+  keyId: string;
   publicKeyJwk: JsonWebKey;
   privateKeyJwk: JsonWebKey;
 }
@@ -126,6 +142,8 @@ function rowToRecord(row: any): SiteIdentityRecord {
 function rowToKey(row: any): SiteIdentityKeyRecord {
   return {
     kid: row.kid,
+    keyId: row.key_id,
+    keySequence: Number(row.key_sequence),
     siteId: row.site_id,
     publicKeyJwk: JSON.parse(row.public_key_jwk),
     keyAlgorithm: row.key_algorithm,
@@ -134,8 +152,7 @@ function rowToKey(row: any): SiteIdentityKeyRecord {
   };
 }
 
-export const SITE_IDENTITY_KEYS_DDL = [
-  `CREATE TABLE IF NOT EXISTS site_identity_keys (
+const KEYS_TABLE_DDL = `CREATE TABLE IF NOT EXISTS site_identity_keys (
     kid TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
     public_key_jwk TEXT NOT NULL,
@@ -143,11 +160,27 @@ export const SITE_IDENTITY_KEYS_DDL = [
     private_key_encryption_iv TEXT,
     key_algorithm TEXT NOT NULL DEFAULT 'ed25519',
     valid_from TEXT NOT NULL,
-    valid_to TEXT
-  )`,
+    valid_to TEXT,
+    key_id TEXT,
+    key_sequence INTEGER
+  )`;
+
+// Para bases creadas por el PR #71 (sin key_id / key_sequence). En una base
+// nueva el CREATE TABLE ya las trae y el ALTER falla con "duplicate column",
+// que se ignora.
+const KEYS_ADD_COLUMNS_DDL = [
+  "ALTER TABLE site_identity_keys ADD COLUMN key_id TEXT",
+  "ALTER TABLE site_identity_keys ADD COLUMN key_sequence INTEGER",
+];
+
+const KEYS_INDEX_DDL = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_active ON site_identity_keys(site_id) WHERE valid_to IS NULL",
   "CREATE INDEX IF NOT EXISTS idx_site_identity_keys_site ON site_identity_keys(site_id, valid_from)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_seq ON site_identity_keys(site_id, key_sequence)",
 ];
+
+/** DDL de una base nueva. Una base de #71 necesita antes KEYS_ADD_COLUMNS_DDL (lo hace el store solo). */
+export const SITE_IDENTITY_KEYS_DDL = [KEYS_TABLE_DDL, ...KEYS_INDEX_DDL];
 
 const INSERT_IDENTITY_SQL =
   "INSERT INTO site_identity (site_id, did, domain, public_key_jwk, private_key_jwk_encrypted, private_key_encryption_iv, key_algorithm, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, 'ed25519', ?, ?)";
@@ -155,11 +188,18 @@ const INSERT_IDENTITY_SQL =
 const UPDATE_IDENTITY_SQL =
   "UPDATE site_identity SET did = ?, domain = ?, public_key_jwk = ?, private_key_jwk_encrypted = ?, private_key_encryption_iv = ?, key_algorithm = 'ed25519', created_at = ?, created_by = ? WHERE site_id = ?";
 
+// create() y rotate() usan INSERT estricto: si falla, se revierte toda la
+// transaccion. Con INSERT OR IGNORE una rotacion podia cerrar la clave vieja
+// y no insertar la nueva, dejando al sitio sin clave activa.
 const INSERT_KEY_SQL =
-  "INSERT OR IGNORE INTO site_identity_keys (kid, site_id, public_key_jwk, private_key_encrypted, private_key_encryption_iv, key_algorithm, valid_from, valid_to) VALUES (?, ?, ?, ?, ?, 'ed25519', ?, NULL)";
+  "INSERT INTO site_identity_keys (kid, site_id, public_key_jwk, private_key_encrypted, private_key_encryption_iv, key_algorithm, valid_from, valid_to, key_id, key_sequence) VALUES (?, ?, ?, ?, ?, 'ed25519', ?, NULL, ?, ?)";
+
+const INSERT_KEY_IGNORE_SQL = INSERT_KEY_SQL.replace("INSERT INTO", "INSERT OR IGNORE INTO");
 
 const CLOSE_ACTIVE_KEY_SQL =
   "UPDATE site_identity_keys SET valid_to = ?, private_key_encrypted = NULL, private_key_encryption_iv = NULL WHERE site_id = ? AND valid_to IS NULL";
+
+const KEY_COLUMNS = "kid, key_id, key_sequence, site_id, public_key_jwk, key_algorithm, valid_from, valid_to";
 
 function insertKey(
   siteId: string,
@@ -167,9 +207,19 @@ function insertKey(
   publicKeyJwk: JsonWebKey,
   ciphertext: string,
   iv: string,
-  validFrom: string
+  validFrom: string,
+  keyId: string,
+  keySequence: number,
+  ignoreConflict = false
 ): SqlStatement {
-  return { sql: INSERT_KEY_SQL, params: [kid, siteId, JSON.stringify(publicKeyJwk), ciphertext, iv, validFrom] };
+  return {
+    sql: ignoreConflict ? INSERT_KEY_IGNORE_SQL : INSERT_KEY_SQL,
+    params: [kid, siteId, JSON.stringify(publicKeyJwk), ciphertext, iv, validFrom, keyId, keySequence],
+  };
+}
+
+function isConstraintError(err: unknown): boolean {
+  return /unique|constraint/i.test(String((err as Error)?.message));
 }
 
 /** Implementacion unica sobre SqlAdapter: D1 y SQLite comparten el mismo SQL. */
@@ -181,7 +231,15 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
   private ensureSchema(): Promise<void> {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
-        for (const ddl of SITE_IDENTITY_KEYS_DDL) await this.sql.run(ddl);
+        await this.sql.run(KEYS_TABLE_DDL);
+        for (const alter of KEYS_ADD_COLUMNS_DDL) {
+          try {
+            await this.sql.run(alter);
+          } catch (err) {
+            if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
+          }
+        }
+        for (const ddl of KEYS_INDEX_DDL) await this.sql.run(ddl);
       })();
       this.schemaReady.catch(() => {
         this.schemaReady = null;
@@ -190,20 +248,65 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
     return this.schemaReady;
   }
 
-  /** Copia la identidad que ya existia a site_identity_keys la primera vez. */
+  /**
+   * Deja site_identity_keys al dia para este sitio: copia la identidad que ya
+   * existia (con key_id #key-1) y asigna key_id / key_sequence a las claves
+   * creadas por el PR #71, en orden de fecha de alta.
+   */
   private async ensureKeys(siteId: string): Promise<void> {
     await this.ensureSchema();
-    const has = await this.sql.first("SELECT kid FROM site_identity_keys WHERE site_id = ? LIMIT 1", [siteId]);
-    if (has) return;
-    const row = await this.sql.first(
-      "SELECT public_key_jwk, private_key_jwk_encrypted, private_key_encryption_iv, created_at FROM site_identity WHERE site_id = ?",
+    const identity = await this.sql.first(
+      "SELECT did, public_key_jwk, private_key_jwk_encrypted, private_key_encryption_iv, created_at FROM site_identity WHERE site_id = ?",
       [siteId]
     );
-    if (!row) return;
-    const publicKeyJwk = JSON.parse(row.public_key_jwk) as JsonWebKey;
-    const kid = await jwkThumbprint(publicKeyJwk);
-    const stmt = insertKey(siteId, kid, publicKeyJwk, row.private_key_jwk_encrypted, row.private_key_encryption_iv, row.created_at);
-    await this.sql.run(stmt.sql, stmt.params);
+    if (!identity) return;
+
+    const has = await this.sql.first("SELECT kid FROM site_identity_keys WHERE site_id = ? LIMIT 1", [siteId]);
+    if (!has) {
+      const publicKeyJwk = JSON.parse(identity.public_key_jwk) as JsonWebKey;
+      const kid = await jwkThumbprint(publicKeyJwk);
+      const stmt = insertKey(
+        siteId,
+        kid,
+        publicKeyJwk,
+        identity.private_key_jwk_encrypted,
+        identity.private_key_encryption_iv,
+        identity.created_at,
+        didKeyId(identity.did, 1),
+        1,
+        true
+      );
+      await this.sql.run(stmt.sql, stmt.params);
+    }
+    await this.backfillKeyIds(siteId, identity.did);
+  }
+
+  private async maxKeySequence(siteId: string): Promise<number> {
+    const row = await this.sql.first("SELECT COALESCE(MAX(key_sequence), 0) AS max_seq FROM site_identity_keys WHERE site_id = ?", [siteId]);
+    return Number(row?.max_seq ?? 0);
+  }
+
+  private async backfillKeyIds(siteId: string, did: string): Promise<void> {
+    const pending = await this.sql.all(
+      "SELECT kid FROM site_identity_keys WHERE site_id = ? AND (key_id IS NULL OR key_sequence IS NULL) ORDER BY valid_from ASC, kid ASC",
+      [siteId]
+    );
+    if (pending.length === 0) return;
+    let sequence = await this.maxKeySequence(siteId);
+    try {
+      await this.sql.atomic(
+        pending.map((row) => {
+          sequence += 1;
+          return {
+            sql: "UPDATE site_identity_keys SET key_id = ?, key_sequence = ? WHERE kid = ?",
+            params: [didKeyId(did, sequence), sequence, row.kid],
+          };
+        })
+      );
+    } catch (err) {
+      // Otra peticion asigno las secuencias primero (indice unico): nada que hacer.
+      if (!isConstraintError(err)) throw err;
+    }
   }
 
   async get(siteId: string): Promise<SiteIdentityRecord | null> {
@@ -224,7 +327,7 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
         sql: INSERT_IDENTITY_SQL,
         params: [siteId, keyPair.did, keyPair.domain, JSON.stringify(keyPair.publicKeyJwk), ciphertext, iv, createdAt, createdBy],
       },
-      insertKey(siteId, kid, keyPair.publicKeyJwk, ciphertext, iv, createdAt),
+      insertKey(siteId, kid, keyPair.publicKeyJwk, ciphertext, iv, createdAt, didKeyId(keyPair.did, 1), 1),
     ]);
     return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt, createdBy };
   }
@@ -236,6 +339,7 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
 
     const { ciphertext, iv } = await encryptPrivateKey(keyPair.privateKeyJwk, this.env);
     const kid = await jwkThumbprint(keyPair.publicKeyJwk);
+    const sequence = (await this.maxKeySequence(siteId)) + 1;
     const now = new Date().toISOString();
     const [changed] = await this.sql.atomic([
       {
@@ -243,7 +347,7 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
         params: [keyPair.did, keyPair.domain, JSON.stringify(keyPair.publicKeyJwk), ciphertext, iv, now, rotatedBy, siteId],
       },
       { sql: CLOSE_ACTIVE_KEY_SQL, params: [now, siteId] },
-      insertKey(siteId, kid, keyPair.publicKeyJwk, ciphertext, iv, now),
+      insertKey(siteId, kid, keyPair.publicKeyJwk, ciphertext, iv, now, didKeyId(keyPair.did, sequence), sequence),
     ]);
     if (!changed) throw new Error(SITE_IDENTITY_NOT_FOUND);
     return { siteId, did: keyPair.did, domain: keyPair.domain, publicKeyJwk: keyPair.publicKeyJwk, keyAlgorithm: "ed25519", createdAt: now, createdBy: rotatedBy };
@@ -261,7 +365,7 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
   async listKeys(siteId: string): Promise<SiteIdentityKeyRecord[]> {
     await this.ensureKeys(siteId);
     const rows = await this.sql.all(
-      "SELECT kid, site_id, public_key_jwk, key_algorithm, valid_from, valid_to FROM site_identity_keys WHERE site_id = ? ORDER BY valid_from ASC, kid ASC",
+      `SELECT ${KEY_COLUMNS} FROM site_identity_keys WHERE site_id = ? ORDER BY valid_from ASC, kid ASC`,
       [siteId]
     );
     return rows.map(rowToKey);
@@ -270,12 +374,13 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
   async getActiveSigningKey(siteId: string): Promise<ActiveSigningKey | null> {
     await this.ensureKeys(siteId);
     const row = await this.sql.first(
-      "SELECT kid, public_key_jwk, private_key_encrypted, private_key_encryption_iv FROM site_identity_keys WHERE site_id = ? AND valid_to IS NULL",
+      "SELECT kid, key_id, public_key_jwk, private_key_encrypted, private_key_encryption_iv FROM site_identity_keys WHERE site_id = ? AND valid_to IS NULL",
       [siteId]
     );
-    if (!row || !row.private_key_encrypted || !row.private_key_encryption_iv) return null;
+    if (!row || !row.key_id || !row.private_key_encrypted || !row.private_key_encryption_iv) return null;
     return {
       kid: row.kid,
+      keyId: row.key_id,
       publicKeyJwk: JSON.parse(row.public_key_jwk),
       privateKeyJwk: await decryptPrivateKey(row.private_key_encrypted, row.private_key_encryption_iv, this.env),
     };
@@ -309,11 +414,13 @@ export class InMemorySiteIdentityStore implements SiteIdentityStore {
     return this.records.get(siteId) ?? null;
   }
 
-  private async newKey(siteId: string, keyPair: ApwKeyPair, validFrom: string): Promise<MemoryKey> {
+  private async newKey(siteId: string, keyPair: ApwKeyPair, validFrom: string, sequence: number): Promise<MemoryKey> {
     const encrypted = await encryptPrivateKey(keyPair.privateKeyJwk, this.env);
     return {
       record: {
         kid: await jwkThumbprint(keyPair.publicKeyJwk),
+        keyId: didKeyId(keyPair.did, sequence),
+        keySequence: sequence,
         siteId,
         publicKeyJwk: keyPair.publicKeyJwk,
         keyAlgorithm: "ed25519",
@@ -336,7 +443,7 @@ export class InMemorySiteIdentityStore implements SiteIdentityStore {
       createdBy,
     };
     this.records.set(siteId, record);
-    this.keys.set(siteId, [await this.newKey(siteId, keyPair, createdAt)]);
+    this.keys.set(siteId, [await this.newKey(siteId, keyPair, createdAt, 1)]);
     return record;
   }
 
@@ -344,7 +451,8 @@ export class InMemorySiteIdentityStore implements SiteIdentityStore {
     const list = this.keys.get(siteId);
     if (!this.records.has(siteId) || !list) throw new Error(SITE_IDENTITY_NOT_FOUND);
     const now = new Date().toISOString();
-    const next = await this.newKey(siteId, keyPair, now);
+    const sequence = list.reduce((max, k) => Math.max(max, k.record.keySequence), 0) + 1;
+    const next = await this.newKey(siteId, keyPair, now, sequence);
     for (const k of list) {
       if (k.record.validTo === null) {
         k.record.validTo = now;
@@ -380,6 +488,7 @@ export class InMemorySiteIdentityStore implements SiteIdentityStore {
     if (!active?.encrypted) return null;
     return {
       kid: active.record.kid,
+      keyId: active.record.keyId,
       publicKeyJwk: active.record.publicKeyJwk,
       privateKeyJwk: await decryptPrivateKey(active.encrypted.ciphertext, active.encrypted.iv, this.env),
     };

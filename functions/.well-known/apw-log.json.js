@@ -7,6 +7,11 @@
 // sin acceso a la base de datos. Las claves se sirven solo con sus miembros
 // publicos (crv, kty, x): nunca la privada.
 //
+// Cada clave trae (ERRATA E-3):
+//   keyId / keySequence  did:apw:<dominio>#key-<n>: el `kid` de los JWS nuevos.
+//   fingerprint          huella RFC 7638: la que se compara con `k` del TXT.
+//   kid                  alias de `fingerprint`, para verificadores anteriores.
+//
 // Paginado: ?from=<seq> (default 1) y ?limit=<n> (default 100, max 500).
 // `next` es la seq desde la que pedir la pagina siguiente, o null.
 // `head` es la ultima entrada: su hash es el `h` que va en el TXT.
@@ -51,6 +56,9 @@ export async function onRequestGet(context) {
     try {
       keys.push({
         kid: key.kid,
+        fingerprint: key.kid,
+        keyId: key.keyId,
+        keySequence: key.keySequence,
         publicKeyJwk: publicJwkMembers(key.publicKeyJwk),
         validFrom: key.validFrom,
         validTo: key.validTo,

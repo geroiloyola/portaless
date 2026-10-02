@@ -20,12 +20,18 @@
 // verifica contra ESA clave, siempre que su `ts` caiga en la ventana
 // [valid_from, valid_to] de la clave. Asi rotar no invalida el pasado.
 //
+// ERRATA E-3: el `kid` del header de las entradas nuevas es el identificador
+// DID de la clave (did:apw:<dominio>#key-<n>, APW v1.2 seccion 5.2). Las
+// entradas creadas antes (PR #71) usan la huella RFC 7638 como `kid`:
+// verifyChain() acepta ambos, asi el historial existente sigue verificando.
+//
 // Todavia no existe un endpoint que acepte atestaciones de emisores:
 // appendAttestation() queda listo y sin caller de produccion.
 
 import { LOG_SEQ_CONFLICT, type AttestationLogEntry, type AttestationLogStore } from './attestation-log-store';
 import type { SiteIdentityStore, ActiveSigningKey } from './site-identity-store';
 import { jwkThumbprint, publicJwkMembers } from './fingerprint';
+import { parseDidKeyId } from './key-id';
 
 const HASH_RE = /^[A-Za-z0-9_-]{43}$/;
 const COMPACT_JWS_RE = /^[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$/;
@@ -60,7 +66,7 @@ export interface AttestationPayload {
 }
 
 async function signEntry(payload: AttestationPayload, key: ActiveSigningKey): Promise<string> {
-  const header = textToB64Url(JSON.stringify({ alg: 'EdDSA', kid: key.kid, typ: 'apw-log+jws' }));
+  const header = textToB64Url(JSON.stringify({ alg: 'EdDSA', kid: key.keyId, typ: 'apw-log+jws' }));
   const body = textToB64Url(JSON.stringify(payload));
   const { kty, crv, x, d } = key.privateKeyJwk;
   const privateKey = await crypto.subtle.importKey('jwk', { kty, crv, x, d } as JsonWebKey, { name: 'Ed25519' }, false, ['sign']);
@@ -80,6 +86,8 @@ export interface AppendDeps {
 /**
  * Agrega una atestacion (JWS compacto del emisor) al historial del sitio.
  * Lanza: invalid_attestation_jws, site_identity_not_found, duplicate_attestation.
+ * La columna `kid` de la entrada guarda la huella RFC 7638 de la clave que
+ * firmo; el header del JWS lleva su identificador DID.
  */
 export async function appendAttestation(deps: AppendDeps, attestationJws: string): Promise<AttestationLogEntry> {
   if (typeof attestationJws !== 'string' || !COMPACT_JWS_RE.test(attestationJws)) {
@@ -121,7 +129,10 @@ export async function appendAttestation(deps: AppendDeps, attestationJws: string
 
 /** Clave publica con su ventana de validez, tal como la publica /.well-known/apw-log.json. */
 export interface ChainKey {
+  /** Huella RFC 7638 de la clave publica (en el JSON publicado tambien como `fingerprint`). */
   kid: string;
+  /** did:apw:<dominio>#key-<n>. Ausente en claves de verificadores anteriores a E-3. */
+  keyId?: string | null;
   publicKeyJwk: JsonWebKey;
   validFrom: string;
   validTo: string | null;
@@ -137,6 +148,8 @@ export interface VerifyChainOptions {
   anchorHead?: string | null;
   /** `k` publicado en el TXT. Debe ser la clave activa (valid_to null) del log. */
   activeFingerprint?: string | null;
+  /** did:apw:<dominio> esperado: todos los keyId publicados deben pertenecer a ese DID. */
+  expectedDid?: string | null;
 }
 
 export type ChainFailure =
@@ -174,14 +187,25 @@ export async function verifyChain(entries: ChainEntry[], keys: ChainKey[], opts:
     anchoredSeq: null,
   });
 
+  // Cada clave se registra por su huella y, si la publica, por su keyId DID:
+  // el `kid` del header de una entrada puede ser cualquiera de los dos.
   const verifyKeys = new Map<string, CryptoKey>();
   const keyById = new Map<string, ChainKey>();
   for (const key of keys) {
     try {
       const pub = publicJwkMembers(key.publicKeyJwk);
       if ((await jwkThumbprint(pub)) !== key.kid) return fail('key_kid_mismatch');
-      verifyKeys.set(key.kid, await crypto.subtle.importKey('jwk', pub, { name: 'Ed25519' }, false, ['verify']));
-      keyById.set(key.kid, key);
+      if (key.keyId !== undefined && key.keyId !== null) {
+        const parsed = parseDidKeyId(key.keyId);
+        if (!parsed || (opts.expectedDid && parsed.did !== opts.expectedDid)) return fail('key_kid_mismatch');
+      }
+      const cryptoKey = await crypto.subtle.importKey('jwk', pub, { name: 'Ed25519' }, false, ['verify']);
+      const ids = key.keyId ? [key.kid, key.keyId] : [key.kid];
+      for (const id of ids) {
+        if (keyById.has(id)) return fail('key_kid_mismatch');
+        keyById.set(id, key);
+        verifyKeys.set(id, cryptoKey);
+      }
     } catch {
       return fail('key_kid_mismatch');
     }

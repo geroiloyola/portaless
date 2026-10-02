@@ -12,6 +12,11 @@
 //   a `h` se informan como no ancladas (`unanchoredEntries`): el sitio puede
 //   haber agregado entradas desde la ultima vez que se actualizo el DNS.
 //
+// ERRATA E-3: cada clave publicada trae `fingerprint` (huella RFC 7638, la que
+// se compara con `k`) y `keyId` (did:apw:<dominio>#key-<n>, el `kid` de los
+// JWS nuevos). Se exige que todos los keyId pertenezcan al DID del dominio.
+// Un documento anterior a E-3, sin esos campos, sigue verificando por `kid`.
+//
 // Vive en su propio archivo (no en index.ts) para evitar un import circular.
 
 import { resolveApwManifest } from '../index';
@@ -38,6 +43,17 @@ export interface ApwHistoryResult {
 
 const PAGE_LIMIT = 500;
 const MAX_PAGES = 40;
+
+/** Pasa una clave del documento publicado a ChainKey. `fingerprint` manda sobre el alias `kid`. */
+function toChainKey(raw: any): ChainKey {
+  return {
+    kid: String(raw?.fingerprint ?? raw?.kid ?? ''),
+    keyId: typeof raw?.keyId === 'string' ? raw.keyId : null,
+    publicKeyJwk: raw?.publicKeyJwk,
+    validFrom: raw?.validFrom,
+    validTo: raw?.validTo ?? null,
+  };
+}
 
 export async function resolveApwHistory(domain: string, fetchImpl: typeof fetch = fetch): Promise<ApwHistoryResult> {
   const host = String(domain || '').trim().toLowerCase().replace(/[.]$/, '');
@@ -67,14 +83,18 @@ export async function resolveApwHistory(domain: string, fetchImpl: typeof fetch 
       return { verified: false, reason: 'invalid_log_document', domain: host };
     }
     if (doc.did !== `did:apw:${host}`) return { verified: false, reason: 'did_mismatch', domain: host };
-    if (keys === null) keys = doc.keys as ChainKey[];
+    if (keys === null) keys = doc.keys.map(toChainKey);
     for (const e of doc.entries) entries.push({ seq: e.seq, jws: e.jws });
     if (doc.next === null || doc.next === undefined) break;
     from = Number(doc.next);
     if (!Number.isInteger(from) || from < 1) return { verified: false, reason: 'invalid_log_document', domain: host };
   }
 
-  const result = await verifyChain(entries, keys ?? [], { anchorHead: manifest.h ?? null, activeFingerprint: manifest.k });
+  const result = await verifyChain(entries, keys ?? [], {
+    anchorHead: manifest.h ?? null,
+    activeFingerprint: manifest.k,
+    expectedDid: `did:apw:${host}`,
+  });
   if (!result.valid) {
     return { verified: false, reason: result.reason as ChainFailure, domain: host, length: result.length };
   }

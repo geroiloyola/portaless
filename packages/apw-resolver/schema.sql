@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS site_identity (
 -- encadenado despues de rotar. kid = huella RFC 7638 de la clave publica.
 -- La privada solo existe en la clave activa: al rotar se pone en NULL.
 -- El indice parcial impide dos claves activas a la vez por sitio.
+--
+-- ERRATA E-3: key_id = did:apw:<dominio>#key-<n> (el `kid` de los JWS que firma
+-- el sitio) y key_sequence = <n>, unico por sitio. Las bases creadas por el
+-- PR #71 no tienen estas columnas: el store las agrega solo (ALTER TABLE) y
+-- asigna #key-1, #key-2... por fecha de alta.
 -- Los stores tambien crean estas tablas al vuelo (mismo DDL).
 
 CREATE TABLE IF NOT EXISTS site_identity_keys (
@@ -36,7 +41,9 @@ CREATE TABLE IF NOT EXISTS site_identity_keys (
   private_key_encryption_iv TEXT,
   key_algorithm TEXT NOT NULL DEFAULT 'ed25519',
   valid_from TEXT NOT NULL,
-  valid_to TEXT
+  valid_to TEXT,
+  key_id TEXT,
+  key_sequence INTEGER
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_active
@@ -45,10 +52,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_active
 CREATE INDEX IF NOT EXISTS idx_site_identity_keys_site
   ON site_identity_keys(site_id, valid_from);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_seq
+  ON site_identity_keys(site_id, key_sequence);
+
 -- APW v1.2, seccion 5.4: historial encadenado. Una fila por entrada; entry_jws
 -- es la fuente de verdad (los verificadores recalculan hashes y firmas).
 -- PK (site_id, seq): dos escrituras simultaneas no pueden bifurcar la cadena.
 -- Indice unico (site_id, att_hash): la misma atestacion no se registra dos veces.
+-- kid = huella RFC 7638 de la clave que firmo la entrada.
 
 CREATE TABLE IF NOT EXISTS site_attestation_log (
   site_id TEXT NOT NULL,

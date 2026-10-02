@@ -35,7 +35,7 @@ Es el mismo calculo que usa Web Bot Auth para el `keyid`, asi que la huella APW 
 
 - **Hash**: `base64url(SHA-256(jws))` sin padding, calculado sobre el JWS compacto tal cual (43 caracteres). Aplica a `prev`, `att` y `h`.
 - **Primera entrada**: `seq: 1` y `prev: null`.
-- **JWS**: compacto, header `{ "alg": "EdDSA", "kid": "<huella de la clave del sitio>", "typ": "apw-log+jws" }`. `kid` es la misma huella RFC 7638 que `k` (E-1).
+- **JWS**: compacto, header `{ "alg": "EdDSA", "kid": "<huella de la clave del sitio>", "typ": "apw-log+jws" }`. `kid` es la misma huella RFC 7638 que `k` (E-1). *(Reemplazado por E-3 para las entradas nuevas.)*
 - **`ts`**: ISO 8601 en UTC. No puede ser anterior al `ts` de la entrada previa.
 - **Publicacion**: `GET /.well-known/apw-log.json`, paginado con `?from=<seq>&limit=<n>` (maximo 500). Devuelve `did`, `head`, `length`, `keys`, `entries` (`{ seq, jws }`) y `next`.
 
@@ -53,3 +53,30 @@ Es el mismo calculo que usa Web Bot Auth para el `keyid`, asi que la huella APW 
 - `ts` lo declara el propio sitio. Con una clave comprometida se podrian firmar entradas con fechas viejas dentro de la ventana de esa clave; el anclaje de `h` en el DNS y los testigos externos acotan ese riesgo.
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/history-log.ts` (`appendAttestation()`, `verifyChain()`) y `history-resolver.ts` (`resolveApwHistory()`).
+
+## E-3 — Identificador DID de la clave en los JWS del sitio (APW v1.2, secciones 5.2 y 5.4)
+
+**Fecha**: Octubre 2026
+
+**Problema**: la seccion 5.2 exige que todo JWS firmado por el sitio lleve `kid: "did:apw:<dominio>#key-1"`. E-2 definio el `kid` de las entradas del historial como la huella RFC 7638, que es el identificador de `k`. Son dos cosas distintas: el `kid` de un JWS debe poder resolverse a un `verificationMethod` del documento DID, y la huella sirve para enlazar la clave con el TXT.
+
+**Texto vigente**: cada clave del sitio tiene dos identificadores y los publica ambos.
+
+| Campo | Valor | Uso |
+|---|---|---|
+| `keyId` | `did:apw:<dominio>#key-<n>` | `kid` del header de todo JWS que firma el sitio |
+| `keySequence` | `<n>`, entero desde 1, unico por sitio | Crece con cada rotacion; no se reutiliza |
+| `fingerprint` | huella RFC 7638 (E-1) | Se compara con `k` del TXT. Se publica tambien como `kid`, por compatibilidad |
+
+**Verificacion**:
+
+- Una entrada se resuelve por el `kid` de su header, que puede ser el `keyId` o, en entradas anteriores a E-3, la huella.
+- El `keyId` debe tener el formato `did:apw:<dominio>#key-<n>` con `<n>` entero positivo sin ceros a la izquierda, y el DID debe ser el del dominio verificado.
+- Dos claves no pueden compartir identificador (ni un `keyId` puede coincidir con la huella de otra).
+- La huella publicada debe ser el thumbprint de la clave publica; `k` del TXT debe coincidir con la huella de la clave activa.
+
+**Transicion**: las entradas del historial creadas antes de E-3 se conservan sin cambios y siguen verificando por su huella. Las entradas nuevas firman con el `keyId`. Las claves existentes reciben `#key-1`, `#key-2`... segun su fecha de alta. La columna `kid` del log sigue guardando la huella de la clave que firmo.
+
+**No incluido**: el manifiesto extendido firmado (`/.well-known/apw-manifest.jws`, seccion 5.2) requiere JCS (RFC 8785) y se publica en un cambio aparte, con una dependencia auditada.
+
+**Implementacion**: `packages/apw-resolver/src/did-apw/key-id.ts` (`didKeyId()`, `parseDidKeyId()`), `site-identity-store.ts` y `history-log.ts`.
