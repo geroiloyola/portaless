@@ -31,17 +31,20 @@
 // El unico caso que nunca se persiste es cuando la identidad, la
 // autorizacion o la atestacion del REPORTANTE fallan -- eso no es una
 // senal sobre el sitio, es un request invalido.
+//
+// Rutas de import: este archivo esta a tres niveles de la raiz del repo
+// (functions/trust/[siteId]/), asi que el prefijo es ../../../packages/.
 
 import {
   verifyWebBotAuthRequest,
   resolveAgentDirectoryKey,
   parseSignatureAgent,
-} from "../../../../packages/trust-layer/src/site-trust/web-bot-auth.ts";
-import { createAuthorizedAgentsStore } from "../../../../packages/trust-layer/src/site-trust/authorized-agents.ts";
-import { createSiteTrustScoreStore } from "../../../../packages/trust-layer/src/site-trust/store-factory.ts";
-import { DUPLICATE_ATTESTATION_JTI } from "../../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
-import { verifyAttestation } from "../../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { recordInSiteHistory } from "../../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+} from "../../../packages/trust-layer/src/site-trust/web-bot-auth.ts";
+import { createAuthorizedAgentsStore } from "../../../packages/trust-layer/src/site-trust/authorized-agents.ts";
+import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
+import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
+import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
 
 const AGENT_CATEGORIES = [
   "https_and_headers",

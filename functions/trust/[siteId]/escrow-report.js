@@ -23,12 +23,15 @@
 // almacena el resultado que un tercero regulado ya determino. Ver
 // ROADMAP.md, seccion "Trust Layer y Pay per Crawl: protocolo abierto,
 // no asegurador".
+//
+// Rutas de import: este archivo esta a tres niveles de la raiz del repo
+// (functions/trust/[siteId]/), asi que el prefijo es ../../../packages/.
 
-import { hashApiKey, createAuthorizedEscrowProvidersStore } from "../../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
-import { createSiteTrustScoreStore } from "../../../../packages/trust-layer/src/site-trust/store-factory.ts";
-import { DUPLICATE_ATTESTATION_JTI } from "../../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
-import { verifyAttestation } from "../../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { recordInSiteHistory } from "../../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { hashApiKey, createAuthorizedEscrowProvidersStore } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
+import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
+import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
 
 const TRANSACTION_OUTCOMES = ["completed_as_promised", "refunded_no_delivery", "disputed"];
 
