@@ -34,6 +34,15 @@
 // registro TXT exacto (nombre + valor) con botones de copiar, tomado de
 // `txtRecord` en la respuesta del endpoint. Ya no hace falta correr
 // packages/apw-resolver/src/dnslink/cli.mjs a mano.
+//
+// v0.0.9.31 (APW v1.2): el banner muestra `identity` (desde PR #70) y
+// `identity.h` (desde PR #71): DID, huella k, cabeza del historial y el
+// resultado de la verificacion TXT + did.json con el motivo en lenguaje
+// simple. Ademas detecta un TXT desactualizado -- publicado sin la k actual
+// (manifiesto v1 viejo o clave rotada) o con un h anterior al del historial
+// -- y muestra el valor nuevo para reemplazarlo. Antes un TXT v1 daba
+// "Sitio Verificado" y nunca pedia actualizarse. Sin identidad, el banner
+// se comporta igual que antes.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Panel de administración — Portaless">
@@ -50,11 +59,35 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       </div>
       <div class="ai-apw-checklist-actions">
         <span class="ai-apw-badge" id="ai-apw-badge" hidden>✓ Sitio Verificado</span>
+        <span class="ai-apw-badge" id="ai-apw-identity-badge" hidden>✓ Identidad verificada</span>
         <button type="button" class="ai-apw-verify-btn" id="ai-apw-verify-btn">Verificar ahora</button>
       </div>
     </div>
 
+    <div class="ai-apw-identity" id="ai-apw-identity" hidden>
+      <p class="ai-apw-identity-status" id="ai-apw-identity-status"></p>
+      <div class="ai-apw-txt-field">
+        <span class="ai-apw-txt-label">Identidad (DID)</span>
+        <code class="ai-apw-txt-code" id="ai-apw-identity-did"></code>
+        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-did">Copiar</button>
+      </div>
+      <div class="ai-apw-txt-field">
+        <span class="ai-apw-txt-label">Huella de la clave (k)</span>
+        <code class="ai-apw-txt-code" id="ai-apw-identity-k"></code>
+        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-k">Copiar</button>
+      </div>
+      <div class="ai-apw-txt-field" id="ai-apw-identity-h-row" hidden>
+        <span class="ai-apw-txt-label">Historial (h)</span>
+        <code class="ai-apw-txt-code" id="ai-apw-identity-h"></code>
+        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-h">Copiar</button>
+      </div>
+      <p class="ai-apw-txt-hint">
+        Estos datos son públicos. Cualquier agente puede comprobarlos en tu registro TXT y en <code>/.well-known/did.json</code>.
+      </p>
+    </div>
+
     <div class="ai-apw-txt" id="ai-apw-txt" hidden>
+      <p class="ai-apw-txt-warn" id="ai-apw-txt-stale" hidden></p>
       <p class="ai-apw-txt-intro">
         Entrá al panel de tu proveedor de dominio (donde compraste el dominio o donde administrás el DNS), creá un registro nuevo con estos datos y guardá:
       </p>
@@ -139,18 +172,37 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   // el resto del dashboard sigue funcionando igual.
   const apwDesc = document.getElementById("ai-apw-desc");
   const apwBadge = document.getElementById("ai-apw-badge");
+  const apwIdentityBadge = document.getElementById("ai-apw-identity-badge");
   const apwBtn = document.getElementById("ai-apw-verify-btn");
   const apwTxt = document.getElementById("ai-apw-txt");
   const apwTxtName = document.getElementById("ai-apw-txt-name");
   const apwTxtValue = document.getElementById("ai-apw-txt-value");
   const apwTxtDomain = document.getElementById("ai-apw-txt-domain");
   const apwTxtWarn = document.getElementById("ai-apw-txt-warn");
+  const apwTxtStale = document.getElementById("ai-apw-txt-stale");
+  const apwIdentity = document.getElementById("ai-apw-identity");
+  const apwIdentityStatus = document.getElementById("ai-apw-identity-status");
+  const apwIdentityDid = document.getElementById("ai-apw-identity-did");
+  const apwIdentityK = document.getElementById("ai-apw-identity-k");
+  const apwIdentityHRow = document.getElementById("ai-apw-identity-h-row");
+  const apwIdentityH = document.getElementById("ai-apw-identity-h");
 
   const REASON_LABELS = {
     no_valid_manifest_found: "Todavía no encontramos un manifiesto APW válido en tu DNS.",
   };
 
-  function renderTxtRecord(txtRecord, domain) {
+  // Motivos de resolveApwIdentity() (packages/apw-resolver/src/index.ts).
+  const IDENTITY_REASON_LABELS = {
+    no_txt_records: "Todavía no hay ningún registro TXT _apw publicado.",
+    no_valid_manifest_found: "El registro TXT publicado no es un manifiesto APW válido.",
+    manifest_without_key: "El registro TXT publicado no incluye la huella de tu clave (k). Reemplazalo por el valor de abajo.",
+    did_document_unreachable: "No pudimos leer /.well-known/did.json en tu dominio.",
+    invalid_did_document: "El documento /.well-known/did.json de tu dominio no es válido.",
+    did_mismatch: "El documento /.well-known/did.json pertenece a otro dominio.",
+    key_mismatch: "La clave publicada en el TXT no coincide con la de tu sitio. Si rotaste la clave, reemplazá el TXT por el valor de abajo.",
+  };
+
+  function renderTxtRecord(txtRecord, domain, staleMessage) {
     if (!txtRecord) {
       apwTxt.hidden = true;
       return;
@@ -164,7 +216,53 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     } else {
       apwTxtWarn.hidden = true;
     }
+    if (staleMessage) {
+      apwTxtStale.textContent = staleMessage;
+      apwTxtStale.hidden = false;
+    } else {
+      apwTxtStale.hidden = true;
+    }
     apwTxt.hidden = false;
+  }
+
+  // El TXT publicado esta desactualizado si no tiene la k actual del sitio
+  // (manifiesto v1 viejo o clave rotada) o si su h no es la cabeza actual
+  // del historial encadenado.
+  function staleTxtMessage(data) {
+    const identity = data.identity;
+    if (!identity || !data.manifest) return null;
+    if (data.manifest.k !== identity.k) {
+      return "Tu registro TXT está desactualizado: no incluye la huella de tu clave actual. Reemplazá el valor por el de abajo (no hace falta crear un registro nuevo).";
+    }
+    if (identity.h && data.manifest.h !== identity.h) {
+      return "Tu historial tiene entradas nuevas que todavía no están ancladas en el DNS. Reemplazá el valor del TXT por el de abajo para anclarlas.";
+    }
+    return null;
+  }
+
+  function renderIdentity(identity) {
+    if (!identity) {
+      apwIdentity.hidden = true;
+      apwIdentityBadge.hidden = true;
+      return;
+    }
+    apwIdentityDid.textContent = identity.did;
+    apwIdentityK.textContent = identity.k;
+    if (identity.h) {
+      apwIdentityH.textContent = identity.h;
+      apwIdentityHRow.hidden = false;
+    } else {
+      apwIdentityHRow.hidden = true;
+    }
+    if (identity.verified) {
+      apwIdentityStatus.textContent = "Identidad verificada: tu registro TXT y /.well-known/did.json publican la misma clave.";
+      apwIdentityBadge.hidden = false;
+    } else {
+      const label = IDENTITY_REASON_LABELS[identity.reason] || `Motivo: ${identity.reason}.`;
+      apwIdentityStatus.textContent = `Identidad todavía no verificada. ${label}`;
+      apwIdentityBadge.hidden = true;
+    }
+    apwIdentity.hidden = false;
   }
 
   async function checkApwStatus() {
@@ -174,17 +272,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const res = await fetch("/admin/api/apw-verification-status", { credentials: "same-origin" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      renderIdentity(data.identity);
       if (data.verified) {
+        const stale = staleTxtMessage(data);
         apwBadge.hidden = false;
         apwDesc.textContent = `Dominio verificado (${data.domain}). Tu identidad APW ya es públicamente resoluble.`;
-        apwBtn.hidden = true;
-        apwTxt.hidden = true;
+        if (stale) {
+          apwBtn.hidden = false;
+          renderTxtRecord(data.txtRecord, data.domain, stale);
+        } else {
+          apwBtn.hidden = true;
+          apwTxt.hidden = true;
+        }
       } else {
         apwBadge.hidden = true;
         apwBtn.hidden = false;
         const reasonLabel = REASON_LABELS[data.reason] || `Motivo: ${data.reason}.`;
         apwDesc.textContent = `Registro TXT de Protocol APW no encontrado todavía en ${data.domain}. ${reasonLabel} Si ya lo agregaste, la propagación de DNS puede tardar minutos u horas. Podés seguir usando el panel con normalidad mientras tanto.`;
-        renderTxtRecord(data.txtRecord, data.domain);
+        renderTxtRecord(data.txtRecord, data.domain, null);
       }
     } catch (e) {
       apwDesc.textContent = `No pudimos comprobar el estado de la verificación (${e.message}). Podés reintentar cuando quieras -- el resto del panel funciona igual.`;
@@ -234,7 +339,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-apw-checklist-text { flex: 1; min-width: 220px; }
   .ai-apw-checklist-title { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
   .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.5; }
-  .ai-apw-checklist-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .ai-apw-checklist-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
   .ai-apw-badge {
     padding: 4px 10px;
     border-radius: 999px;
@@ -256,6 +361,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
   .ai-apw-verify-btn:hover { background: var(--portaless-accent); color: #0f1114; }
   .ai-apw-verify-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .ai-apw-identity { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
+  .ai-apw-identity-status { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.5; }
 
   .ai-apw-txt { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
   .ai-apw-txt-intro { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.5; }
@@ -285,6 +393,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-apw-copy-btn:hover { border-color: var(--portaless-accent); color: var(--portaless-accent); }
   .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.5; }
   .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: #f5a623; }
+  #ai-apw-txt-stale { margin: 0 0 10px; }
 
   .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
 
