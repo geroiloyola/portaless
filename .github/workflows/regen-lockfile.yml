@@ -1,15 +1,12 @@
 # Regenera package-lock.json y lo commitea en la rama donde corre.
 #
-# Existe porque package.json se edito via API (sin poder correr npm) y el
-# lockfile quedo desincronizado: faltan better-sqlite3, vitest, tsx,
-# web-bot-auth y esbuild 0.28 -> `npm ci` falla para cualquiera.
+# Existe porque package.json se edita via API (sin poder correr npm) y el
+# lockfile queda desincronizado -> `npm ci` falla para cualquiera.
 #
 # Triggers:
-#   - push a las ramas de trabajo cuando cambia package.json o este archivo.
-#     (GitHub solo muestra el boton "Run workflow" de workflow_dispatch si
-#     el workflow existe en la rama por defecto, main; por eso el trigger
-#     por push es el que realmente se usa mientras esto no este en main.)
-#   - workflow_dispatch, para cuando este archivo llegue a main.
+#   - push a ramas de trabajo (incluye feat/**) cuando cambia package.json o
+#     este archivo.
+#   - workflow_dispatch, cuando este archivo este en main.
 #
 # Nunca corre en main. Solo toca package-lock.json. Los commits hechos con
 # GITHUB_TOKEN no disparan otros workflows, asi que no hay bucle; despues de
@@ -19,7 +16,7 @@ name: Regenerate lockfile
 
 on:
   push:
-    branches: [agentic, deploy-manifest, wizard-intent]
+    branches: [agentic, deploy-manifest, wizard-intent, "feat/**"]
     paths:
       - package.json
       - .github/workflows/regen-lockfile.yml
