@@ -13,8 +13,41 @@
 // functions/admin/permissions/index.js cerro para el Centro de Permisos
 // en el PR #6, y que functions/admin/plugins/[pluginId]/vote.js cerro
 // para el voto de plugins.
+//
+// APW v1.2, B7 (MVP): agrega `verification`, metadatos ADITIVOS que indican
+// como debe interpretar un consumidor cada fuente. No cambia ni elimina los
+// arrays existentes. `community` es explicitamente local_only: voterId nace
+// en localStorage e ipHash solo limita frecuencia; no hay identidad
+// criptografica ni prueba exportable. `agent` y `escrow_report` son
+// verificables solo en filas con attestationJws (ERRATA E-4). `self` queda
+// pendiente de JCS y del manifiesto firmado (B3).
 
 import { createSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/store-factory.ts";
+
+const VERIFICATION = Object.freeze({
+  self: {
+    status: "pending_jcs",
+    verifiable: false,
+    reason: "Las atestaciones self requieren JCS y la firma del sitio; se implementan con el manifiesto APW firmado.",
+  },
+  agent: {
+    status: "verifiable_if_attested",
+    verifiable: true,
+    proofField: "attestationJws",
+    reason: "Solo las filas que incluyen attestationJws tienen una prueba criptográfica exportable.",
+  },
+  community: {
+    status: "local_only",
+    verifiable: false,
+    reason: "MVP: voterId viene de localStorage e ipHash solo limita frecuencia; no hay identidad criptográfica ni prueba exportable del votante.",
+  },
+  escrow_report: {
+    status: "verifiable_if_attested",
+    verifiable: true,
+    proofField: "attestationJws",
+    reason: "Solo las filas que incluyen attestationJws tienen una prueba criptográfica exportable.",
+  },
+});
 
 export async function onRequestGet(context) {
   const { env, params } = context;
@@ -30,7 +63,7 @@ export async function onRequestGet(context) {
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
 
-  return new Response(JSON.stringify(snapshot), {
+  return new Response(JSON.stringify({ ...snapshot, verification: VERIFICATION }), {
     status: 200,
     headers: { "content-type": "application/json" },
   });
