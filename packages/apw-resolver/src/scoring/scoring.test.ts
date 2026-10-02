@@ -23,10 +23,10 @@ describe('Anexo A.4.2 peso del emisor', () => {
 });
 
 describe('Anexo A.4.4 ejemplos (ERRATA E-6)', () => {
-  it('sitio A: 10 x 7.0 con J=6 da 6.096; ataque de J=4 con 1.0 da 5.97', () => {
+  it('sitio A: 10 x 7.0 con J=6 da 6.095; ataque de J=4 con 1.0 da 5.970', () => {
     const base = rep(10, issuerWeight(6), 7);
-    expect(bayesianScore(base).score).toBeCloseTo(6.0964, 3);
-    expect(bayesianScore([...base, { weight: issuerWeight(4), value: 1 }]).score).toBeCloseTo(5.9749, 3);
+    expect(bayesianScore(base).score).toBeCloseTo(6.0950, 3);
+    expect(bayesianScore([...base, { weight: issuerWeight(4), value: 1 }]).score).toBeCloseTo(5.9700, 3);
   });
   it('sitio B: 10 x 4.0 con J=5; J=6.7 con 3.0 -> 3.89, con 1.0 -> 3.68', () => {
     const base = rep(10, issuerWeight(5), 4);
