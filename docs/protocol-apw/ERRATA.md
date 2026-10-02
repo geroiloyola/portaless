@@ -80,3 +80,33 @@ Es el mismo calculo que usa Web Bot Auth para el `keyid`, asi que la huella APW 
 **No incluido**: el manifiesto extendido firmado (`/.well-known/apw-manifest.jws`, seccion 5.2) requiere JCS (RFC 8785) y se publica en un cambio aparte, con una dependencia auditada.
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/key-id.ts` (`didKeyId()`, `parseDidKeyId()`), `site-identity-store.ts` y `history-log.ts`.
+
+## E-4 — Entrega y verificacion de atestaciones del emisor (APW v1.2, seccion 5.3)
+
+**Fecha**: Octubre 2026
+
+**Alcance**: la seccion 5.3 define el payload de la atestacion y quien la firma, pero no como se entrega ni que se valida. Quedan definidos asi para `agent` y `escrow_report`.
+
+**Entrega**: el JWS compacto va en `body.attestation`, junto a los campos planos de siempre. Los campos planos tienen que coincidir con el payload firmado; si no coinciden, se responde `400 attestation_mismatch`. La firma manda: un cuerpo plano distinto nunca se acepta.
+
+| Fuente | Endpoint | Clave que verifica | `iss` | Coincidencia exigida |
+|---|---|---|---|---|
+| `agent` | `POST /trust/:siteId/agent-verification` | La del directorio Web Bot Auth del agente; `kid` del header = `keyid` de la firma HTTP | Origen de `Signature-Agent` | `cat` = `category`, `val` = `verified` |
+| `escrow_report` | `POST /trust/:siteId/escrow-report` | `public_key_jwk` registrada del proveedor | `escrowProvider` | `cat` = `transactionOutcome`, `val` = `true` |
+
+**Validaciones** (en este orden):
+
+- Header: `alg` = `EdDSA`; si trae `typ`, debe ser `apw-attestation+jws`.
+- Clave Ed25519 (`kty: "OKP"`). Las claves ML-DSA no se aceptan para atestaciones.
+- Firma valida sobre los bytes recibidos. El receptor no canonicaliza el payload.
+- Payload: `typ` = `apw-attestation+jws`; `sub` = `did:apw:<siteId>`; `src` = la fuente del endpoint; `iss` como en la tabla (las URLs https se comparan por origen).
+- `iat` dentro de +-300 segundos del reloj del receptor.
+- `jti` (1 a 128 caracteres ASCII visibles) unico por emisor. Un `jti` repetido responde `409 duplicate_attestation`.
+
+La autenticacion previa no cambia: `agent` sigue exigiendo Web Bot Auth y la allowlist `authorized_agents`; `escrow_report` sigue exigiendo la API key. Un proveedor sin `public_key_jwk` queda autorizado pero no puede reportar (`403 provider_without_public_key`).
+
+**Persistencia**: el JWS se guarda completo en la fila existente de SiteTrustScore (`attestation_jws`, `attestation_jti`), sin un store paralelo. Si `sub` es el DID del propio sitio, el JWS se anota ademas en el historial encadenado (5.4). Si el historial falla, el reporte igual queda guardado y la respuesta lo indica con `logged: false`. Las filas anteriores a E-4 quedan con `attestation_jws` vacio: no son verificables por terceros.
+
+**No incluido**: las atestaciones `self` las firma el propio sitio y requieren JCS (5.2); van junto con `/.well-known/apw-manifest.jws`. `community` queda fuera de la cadena en el MVP (B7).
+
+**Implementacion**: `packages/trust-layer/src/site-trust/attestation.ts` (`verifyAttestation()`), `functions/trust/[siteId]/agent-verification.js`, `escrow-report.js` y `packages/apw-resolver/src/did-apw/record-attestation.ts`.
