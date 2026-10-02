@@ -8,6 +8,12 @@ import { buildApwManifest } from "../../packages/apw-resolver/src/manifest.ts";
 const DID = "did:apw:ejemplo.com";
 const KID = `${DID}#key-1`;
 
+function b64UrlDecodeText(part: string): string {
+  const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  return new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)));
+}
+
 async function keyPair() {
   const kp = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;
   const priv = (await crypto.subtle.exportKey("jwk", kp.privateKey)) as JsonWebKey;
@@ -40,10 +46,8 @@ describe("JWS del sitio", () => {
   it("firma y verifica; el payload viaja en forma JCS", async () => {
     const { priv, pub } = await keyPair();
     const jws = await signSiteJws({ z: 1, a: "x" }, { keyId: KID, privateKeyJwk: priv }, MANIFEST_TYP);
-    const payloadText = new TextDecoder().decode(
-      Uint8Array.from(atob(jws.split(".")[1].replace(/-/g, "+").replace(/_/g, "/") + "=="), (c) => c.charCodeAt(0))
-    );
-    expect(payloadText).toBe('{"a":"x","z":1}');
+    expect(b64UrlDecodeText(jws.split(".")[1])).toBe('{"a":"x","z":1}');
+    expect(b64UrlDecodeText(jws.split(".")[0])).toBe(`{"alg":"EdDSA","kid":"${KID}","typ":"${MANIFEST_TYP}"}`);
     const r = await verifySiteJws(jws, pub, { kid: KID, typ: MANIFEST_TYP });
     expect(r.ok).toBe(true);
   });
