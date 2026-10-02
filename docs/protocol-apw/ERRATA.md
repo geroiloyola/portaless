@@ -110,3 +110,43 @@ La autenticacion previa no cambia: `agent` sigue exigiendo Web Bot Auth y la all
 **No incluido**: las atestaciones `self` las firma el propio sitio y requieren JCS (5.2); van junto con `/.well-known/apw-manifest.jws`. `community` queda fuera de la cadena en el MVP (B7).
 
 **Implementacion**: `packages/trust-layer/src/site-trust/attestation.ts` (`verifyAttestation()`), `functions/trust/[siteId]/agent-verification.js`, `escrow-report.js` y `packages/apw-resolver/src/did-apw/record-attestation.ts`.
+
+## E-5 — Artefactos firmados por el sitio: JCS, manifiesto extendido y `self` (APW v1.2, secciones 5.2 y 5.3)
+
+**Fecha**: Octubre 2026
+
+**Alcance**: cierra B3 y lo que E-3 y E-4 dejaron como "No incluido". La seccion 5.2 dice que todo artefacto del sitio es un JWS con payload JCS y que el primero es el manifiesto extendido, pero no fija el `typ`, el payload exacto ni como se verifica. Quedan definidos asi.
+
+**Texto reemplazado en 5.2**: `kid: "did:apw:<dominio>#key-1"` pasa a ser `kid` = `keyId` de la clave activa, `did:apw:<dominio>#key-<n>` (E-3). Con una sola clave es `#key-1`; despues de rotar, firmar con `#key-1` haria imposible encontrar la clave correcta.
+
+**Firma (emisor = el sitio)**:
+
+- JWS compacto (RFC 7515), header `{ "alg": "EdDSA", "kid": "<keyId>", "typ": "<typ>" }`. El header tambien se serializa con JCS.
+- Payload serializado con **JCS (RFC 8785)** antes de firmar. Solo valores I-JSON: el emisor rechaza `undefined`, `NaN`, `Infinity`, `bigint`, funciones y objetos que no sean planos, en vez de omitirlos o convertirlos.
+- El `kid` debe pertenecer al DID del firmante: un sitio no firma con un `keyId` de otro dominio.
+
+**Verificacion de un artefacto del sitio**:
+
+- `alg` = `EdDSA`, `typ` y `kid` exactamente los esperados.
+- Firma valida con la clave publica de ese `kid` (del documento DID o de `keys` del log, E-2/E-3).
+- El payload recibido debe estar **en forma JCS**: si `JCS(JSON.parse(payload))` no reproduce los bytes firmados, se rechaza (`not_canonical`). Esto es mas estricto que E-4, donde el receptor no canonicaliza, porque aca el emisor es siempre una implementacion APW y JCS es obligatorio.
+
+**Manifiesto extendido**: `GET /.well-known/apw-manifest.jws`.
+
+- `typ`: `apw-manifest+jws`. Respuesta `application/jose`, publica (sin Web Bot Auth), cache corta.
+- Payload: los mismos campos del TXT `_apw.<dominio>` (`v`, `siteId`, `trustUrl`, `contentKinds`, `k`, `h`, y `rg` cuando exista) mas `did` (el DID del sitio) e `iat` (segundos Unix). TXT y manifiesto salen de la misma funcion, asi que no pueden divergir.
+- Un resolver acepta el manifiesto si: la firma verifica con la clave del `kid`; la huella RFC 7638 de esa clave es `k` del TXT; y `siteId`, `trustUrl`, `contentKinds` y `k` coinciden con el TXT.
+- `h` del manifiesto puede ser **mas nuevo** que el del TXT: el manifiesto se firma con la cabeza actual del historial y el TXT se actualiza a mano. No se exige igualdad; el resolver verifica que el `h` del TXT aparezca en la cadena y que la cadena llegue hasta el `h` del manifiesto (las entradas intermedias quedan sin anclar, E-2).
+- Sin identidad responde `404 site_identity_not_found`, igual que `did.json`.
+
+**Atestaciones `self`**: mismo formato que 5.3 y E-4.
+
+- `iss` = `sub` = `did:apw:<dominio>` del sitio; `src` = `self`; `cat` = categoria declarada; `val` = valor declarado; `jti` aleatorio.
+- Header `typ`: `apw-attestation+jws`, `kid` = `keyId` activo. Se verifican con el mismo `verifyAttestation()` de E-4, usando la clave del `kid` y `iss` = el DID del sitio.
+- **Persistencia**: el JWS se guarda en la fila existente de `site_trust_self_evaluations` (`attestation_jws`, `attestation_jti`), sin store paralelo, como en E-4. La fila es upsert por categoria y guarda la atestacion **vigente**; las anteriores quedan en el historial encadenado, donde se anota cada declaracion.
+- Si el sitio no tiene identidad, la declaracion se guarda sin JWS y la respuesta informa `signed: false`. La firma es aditiva: no bloquea al admin que no completo el wizard. Esas filas no son verificables por terceros.
+- `self` sigue siendo la senal mas debil (peso fijo 0.25 en el Anexo A, A.4.2); la firma la hace atribuible, no mas confiable.
+
+**Dependencia**: JCS se implementa con el paquete `canonicalize`, listado en RFC 8785 como implementacion JavaScript de referencia.
+
+**Implementacion**: `packages/apw-resolver/src/did-apw/site-jws.ts` (`jcs()`, `signSiteJws()`, `verifySiteJws()`, `signSelfAttestation()`, `signSiteManifest()`), `site-manifest.ts` (`buildSiteManifest()`), `functions/.well-known/apw-manifest.jws.js`, `functions/admin/site-trust/[siteId]/self.js` y los stores D1/SQLite de SiteTrustScore.
