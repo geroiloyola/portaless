@@ -31,6 +31,10 @@
 // Signature-Agent sin comillas ni sin esquema, y signature-agent tiene que
 // estar entre los componentes firmados.
 //
+// APW v1.2 (5.3, ERRATA E-4): resolveAgentDirectoryKey() expone la clave del
+// directorio del agente, con la misma cache, para verificar la atestacion
+// JWS que el agente manda en el cuerpo. No cambia verifyWebBotAuthRequest().
+//
 // Advertencias honestas:
 // - @noble/post-quantum no tiene todavia una auditoria independiente.
 // - Aca solo se VERIFICAN firmas con claves publicas; el riesgo de canal
@@ -71,6 +75,9 @@ interface Jwk {
   /** ML-DSA (kty "AKP"): clave publica en base64url. */
   pub?: string;
 }
+
+/** Clave publica tal como la publica el directorio Web Bot Auth del agente. */
+export type AgentDirectoryJwk = Jwk;
 
 interface Jwks {
   keys: Jwk[];
@@ -169,6 +176,20 @@ async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLik
 
 function selectKeyByKeyId(jwks: Jwks, keyId: string): Jwk | null {
   return jwks.keys.find((k) => k.kid === keyId) ?? null;
+}
+
+/**
+ * Clave publica `keyId` del directorio Web Bot Auth de `signatureAgent`,
+ * con la misma cache que verifyWebBotAuthRequest(). null si no esta.
+ * Lanza si el directorio no se puede leer.
+ */
+export async function resolveAgentDirectoryKey(
+  signatureAgent: string,
+  keyId: string,
+  kv?: KvNamespaceLike
+): Promise<AgentDirectoryJwk | null> {
+  const jwks = await fetchJwksWithCache(signatureAgent, kv);
+  return selectKeyByKeyId(jwks, keyId);
 }
 
 /**

@@ -9,6 +9,10 @@
 //
 // v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
 // better-sqlite3 via openSqlite(). Uso: await SqliteSiteTrustScoreStore.open(path).
+//
+// APW v1.2 (ERRATA E-4): agent y escrow_report guardan attestation_jws y
+// attestation_jti. El constructor agrega las columnas (ALTER TABLE) y los
+// indices unicos por emisor a las bases anteriores.
 
 import type {
   SiteTrustScoreStore,
@@ -21,6 +25,13 @@ import type {
   CommunityTrustCategory,
   EscrowTrustReport,
   EscrowTransactionOutcome,
+} from "../site-trust-score";
+import {
+  ATTESTATION_COLUMN_MIGRATIONS,
+  ATTESTATION_INDEXES,
+  DUPLICATE_ATTESTATION_JTI,
+  isDuplicateColumnError,
+  isUniqueViolation,
 } from "../site-trust-score";
 import { openSqlite } from "../../../../sqlite-driver/src/open";
 
@@ -40,6 +51,8 @@ interface AgentRow {
   detail_json: string | null;
   agent_key_id: string;
   verified_at: string;
+  attestation_jws?: string | null;
+  attestation_jti?: string | null;
 }
 
 interface CommunityRow {
@@ -58,6 +71,8 @@ interface EscrowRow {
   escrow_provider: string;
   amount_currency: string | null;
   reported_at: string;
+  attestation_jws?: string | null;
+  attestation_jti?: string | null;
 }
 
 function rowToSelf(row: SelfRow): SelfTrustEvaluation {
@@ -79,6 +94,8 @@ function rowToAgent(row: AgentRow): AgentTrustVerification {
     detail: row.detail_json ? JSON.parse(row.detail_json) : undefined,
     agentKeyId: row.agent_key_id,
     verifiedAt: row.verified_at,
+    attestationJws: row.attestation_jws ?? undefined,
+    attestationJti: row.attestation_jti ?? undefined,
   };
 }
 
@@ -101,6 +118,8 @@ function rowToEscrow(row: EscrowRow): EscrowTrustReport {
     escrowProvider: row.escrow_provider,
     amountCurrency: row.amount_currency ?? undefined,
     reportedAt: row.reported_at,
+    attestationJws: row.attestation_jws ?? undefined,
+    attestationJti: row.attestation_jti ?? undefined,
   };
 }
 
@@ -163,6 +182,14 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
         PRIMARY KEY (site_id, escrow_provider, reported_at)
       );
     `);
+    for (const sql of ATTESTATION_COLUMN_MIGRATIONS) {
+      try {
+        this.db.exec(sql);
+      } catch (err) {
+        if (!isDuplicateColumnError(err)) throw err;
+      }
+    }
+    for (const sql of ATTESTATION_INDEXES) this.db.exec(sql);
   }
 
   private ensureSubject(siteId: string): void {
@@ -224,20 +251,27 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
 
   async recordAgentVerification(verification: AgentTrustVerification): Promise<void> {
     this.ensureSubject(verification.siteId);
-    this.db
-      .prepare(
-        `INSERT INTO site_trust_agent_verifications
-           (site_id, category, verified, detail_json, agent_key_id, verified_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        verification.siteId,
-        verification.category,
-        verification.verified ? 1 : 0,
-        verification.detail ? JSON.stringify(verification.detail) : null,
-        verification.agentKeyId,
-        verification.verifiedAt
-      );
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO site_trust_agent_verifications
+             (site_id, category, verified, detail_json, agent_key_id, verified_at, attestation_jws, attestation_jti)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          verification.siteId,
+          verification.category,
+          verification.verified ? 1 : 0,
+          verification.detail ? JSON.stringify(verification.detail) : null,
+          verification.agentKeyId,
+          verification.verifiedAt,
+          verification.attestationJws ?? null,
+          verification.attestationJti ?? null
+        );
+    } catch (err) {
+      if (verification.attestationJti && isUniqueViolation(err)) throw new Error(DUPLICATE_ATTESTATION_JTI);
+      throw err;
+    }
   }
 
   async recordCommunityVote(vote: CommunityTrustVote): Promise<CommunityTrustVote> {
@@ -257,13 +291,26 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
 
   async recordEscrowReport(report: EscrowTrustReport): Promise<void> {
     this.ensureSubject(report.siteId);
-    this.db
-      .prepare(
-        `INSERT INTO site_trust_escrow_reports
-           (site_id, transaction_outcome, escrow_provider, amount_currency, reported_at)
-         VALUES (?, ?, ?, ?, ?)`
-      )
-      .run(report.siteId, report.transactionOutcome, report.escrowProvider, report.amountCurrency ?? null, report.reportedAt);
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO site_trust_escrow_reports
+             (site_id, transaction_outcome, escrow_provider, amount_currency, reported_at, attestation_jws, attestation_jti)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          report.siteId,
+          report.transactionOutcome,
+          report.escrowProvider,
+          report.amountCurrency ?? null,
+          report.reportedAt,
+          report.attestationJws ?? null,
+          report.attestationJti ?? null
+        );
+    } catch (err) {
+      if (report.attestationJti && isUniqueViolation(err)) throw new Error(DUPLICATE_ATTESTATION_JTI);
+      throw err;
+    }
   }
 
   async isRateLimited(
