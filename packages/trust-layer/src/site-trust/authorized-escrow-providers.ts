@@ -27,6 +27,10 @@
 // conserva la que ya tenia (COALESCE). La API key se genera igual que en
 // scripts/onboard-escrow-provider.mjs: prefijo pless_escrow_ + 32 bytes
 // aleatorios en base64url.
+//
+// setPublicKey() carga, reemplaza o quita (null) la clave publica SIN rotar
+// la API key ni cambiar el estado del proveedor. grant() rota la API key; para
+// solo actualizar la clave, usar setPublicKey().
 
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
@@ -63,6 +67,12 @@ export interface AuthorizedEscrowProvidersStore {
   revoke(providerId: string): Promise<void>;
   /** Clave publica de un proveedor ACTIVO, o null. */
   getPublicKeyJwk(providerId: string): Promise<JsonWebKey | null>;
+  /**
+   * Carga, reemplaza o quita (null) la clave publica sin rotar la API key.
+   * Lanza INVALID_PUBLIC_KEY_JWK si la clave no es valida. Devuelve false si
+   * el proveedor no existe.
+   */
+  setPublicKey(providerId: string, publicKeyJwk: unknown): Promise<boolean>;
 }
 
 export interface D1DatabaseLike {
@@ -78,6 +88,7 @@ export interface D1DatabaseLike {
 export const INVALID_PUBLIC_KEY_JWK = "invalid_public_key_jwk";
 
 const ADD_PUBLIC_KEY_COLUMN_SQL = "ALTER TABLE authorized_escrow_providers ADD COLUMN public_key_jwk TEXT";
+const SET_PUBLIC_KEY_SQL = "UPDATE authorized_escrow_providers SET public_key_jwk = ? WHERE provider_id = ?";
 
 function isDuplicateColumnError(err: unknown): boolean {
   return /duplicate column/i.test(String((err as Error)?.message));
@@ -129,6 +140,12 @@ export function normalizeProviderPublicKey(input: unknown): JsonWebKey {
     throw new Error(INVALID_PUBLIC_KEY_JWK);
   }
   return { kty: "OKP", crv: "Ed25519", x: jwk.x };
+}
+
+/** null o undefined quitan la clave; cualquier otro valor tiene que ser una clave valida. */
+function serializePublicKeyOrNull(input: unknown): string | null {
+  if (input === null || input === undefined) return null;
+  return JSON.stringify(normalizeProviderPublicKey(input));
 }
 
 function parsePublicKey(raw: unknown): JsonWebKey | null {
@@ -252,6 +269,18 @@ export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvide
       .first<{ public_key_jwk: string | null }>();
     return parsePublicKey(row?.public_key_jwk);
   }
+
+  async setPublicKey(providerId: string, publicKeyJwk: unknown): Promise<boolean> {
+    const serialized = serializePublicKeyOrNull(publicKeyJwk);
+    await this.ensureSchema();
+    const exists = await this.db
+      .prepare("SELECT 1 as hit FROM authorized_escrow_providers WHERE provider_id = ?")
+      .bind(providerId)
+      .first<{ hit: number }>();
+    if (!exists) return false;
+    await this.db.prepare(SET_PUBLIC_KEY_SQL).bind(serialized, providerId).run();
+    return true;
+  }
 }
 
 export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowProvidersStore {
@@ -332,6 +361,12 @@ export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowPro
     return parsePublicKey(row?.public_key_jwk);
   }
 
+  async setPublicKey(providerId: string, publicKeyJwk: unknown): Promise<boolean> {
+    const serialized = serializePublicKeyOrNull(publicKeyJwk);
+    const result = this.db.prepare(SET_PUBLIC_KEY_SQL).run(serialized, providerId);
+    return (result?.changes ?? 0) > 0;
+  }
+
   close(): void {
     this.db.close();
   }
@@ -395,6 +430,14 @@ export class InMemoryAuthorizedEscrowProvidersStore implements AuthorizedEscrowP
   async getPublicKeyJwk(providerId: string): Promise<JsonWebKey | null> {
     const provider = this.providers.get(providerId);
     return provider?.active ? provider.publicKeyJwk : null;
+  }
+
+  async setPublicKey(providerId: string, publicKeyJwk: unknown): Promise<boolean> {
+    const serialized = serializePublicKeyOrNull(publicKeyJwk);
+    const provider = this.providers.get(providerId);
+    if (!provider) return false;
+    provider.publicKeyJwk = serialized ? JSON.parse(serialized) : null;
+    return true;
   }
 }
 

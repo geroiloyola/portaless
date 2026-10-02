@@ -3,25 +3,30 @@
 // seguridad que functions/admin/permissions/index.js y su gemelo
 // functions/admin/api/authorized-agents.js: requiere sesion valida
 // (context.data.user) para GET, y canWrite(role) del lado del SERVIDOR
-// para POST/PATCH.
+// para POST/PUT/PATCH.
 //
 // GET   /admin/api/authorized-escrow-providers -> { providers }
 //       (nunca incluye api_key_hash; si incluye publicKeyJwk, que es publica).
 // POST  /admin/api/authorized-escrow-providers -> alta/actualizacion (grant).
 //       Body { providerId, displayName, publicKeyJwk? }. La API key la
-//       GENERA el store y solo aparece en esta respuesta (apiKey).
+//       GENERA el store y solo aparece en esta respuesta (apiKey). Re-autorizar
+//       un proveedor existente ROTA su API key.
+// PUT   /admin/api/authorized-escrow-providers -> carga, reemplaza o quita la
+//       clave publica. Body { providerId, publicKeyJwk } (null para quitarla).
+//       NO rota la API key ni cambia el estado del proveedor. 404 si no existe.
 // PATCH /admin/api/authorized-escrow-providers -> revocacion (active = 0).
 //
 // APW v1.2 (5.3, ERRATA E-4): publicKeyJwk es la clave publica Ed25519 del
 // proveedor ({ kty: "OKP", crv: "Ed25519", x }), objeto o string JSON. Sin
 // ella el proveedor queda autorizado pero no puede reportar (el endpoint
-// exige una atestacion firmada). Re-autorizar sin publicKeyJwk conserva la
-// clave que ya tenia.
+// exige una atestacion firmada).
 
 import {
   createAuthorizedEscrowProvidersStore,
   INVALID_PUBLIC_KEY_JWK,
 } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+
+const INVALID_KEY_MESSAGE = 'publicKeyJwk debe ser una clave publica Ed25519: { "kty": "OKP", "crv": "Ed25519", "x": "..." }.';
 
 function canWrite(role) {
   return role === "admin";
@@ -37,6 +42,14 @@ function unauthenticated() {
 
 function forbidden(role) {
   return json({ error: "forbidden", message: `El rol '${role}' no tiene permiso de escritura. Se requiere rol 'admin'.` }, 403);
+}
+
+async function readJson(request) {
+  try {
+    return { body: await request.json() };
+  } catch {
+    return { error: json({ error: "invalid_json_body" }, 400) };
+  }
 }
 
 export async function onRequestGet(context) {
@@ -55,12 +68,8 @@ export async function onRequestPost(context) {
   if (!user) return unauthenticated();
   if (!canWrite(user.role)) return forbidden(user.role);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body" }, 400);
-  }
+  const { body, error } = await readJson(request);
+  if (error) return error;
 
   const { providerId, displayName, publicKeyJwk } = body ?? {};
   if (typeof providerId !== "string" || !providerId || typeof displayName !== "string" || !displayName) {
@@ -78,16 +87,47 @@ export async function onRequestPost(context) {
     });
   } catch (err) {
     if (err?.message === INVALID_PUBLIC_KEY_JWK) {
-      return json(
-        { error: "invalid_public_key_jwk", message: 'publicKeyJwk debe ser una clave publica Ed25519: { "kty": "OKP", "crv": "Ed25519", "x": "..." }.' },
-        400
-      );
+      return json({ error: "invalid_public_key_jwk", message: INVALID_KEY_MESSAGE }, 400);
     }
     throw err;
   }
 
   // apiKey en texto plano -- SOLO aparece en esta respuesta.
   return json({ provider: granted.provider, apiKey: granted.apiKey }, 200);
+}
+
+export async function onRequestPut(context) {
+  const { request, data, env } = context;
+
+  const user = data?.user;
+  if (!user) return unauthenticated();
+  if (!canWrite(user.role)) return forbidden(user.role);
+
+  const { body, error } = await readJson(request);
+  if (error) return error;
+
+  const { providerId } = body ?? {};
+  if (typeof providerId !== "string" || !providerId || !body || !("publicKeyJwk" in body)) {
+    return json(
+      { error: "invalid_public_key_body", message: "Se requiere { providerId, publicKeyJwk } (publicKeyJwk null para quitarla)." },
+      400
+    );
+  }
+  const publicKeyJwk = body.publicKeyJwk === "" ? null : body.publicKeyJwk;
+
+  const store = await createAuthorizedEscrowProvidersStore(env);
+  let found;
+  try {
+    found = await store.setPublicKey(providerId, publicKeyJwk);
+  } catch (err) {
+    if (err?.message === INVALID_PUBLIC_KEY_JWK) {
+      return json({ error: "invalid_public_key_jwk", message: INVALID_KEY_MESSAGE }, 400);
+    }
+    throw err;
+  }
+  if (!found) return json({ error: "provider_not_found", message: `No existe el proveedor '${providerId}'.` }, 404);
+
+  return json({ ok: true }, 200);
 }
 
 export async function onRequestPatch(context) {
@@ -97,12 +137,8 @@ export async function onRequestPatch(context) {
   if (!user) return unauthenticated();
   if (!canWrite(user.role)) return forbidden(user.role);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body" }, 400);
-  }
+  const { body, error } = await readJson(request);
+  if (error) return error;
 
   const { providerId } = body ?? {};
   if (typeof providerId !== "string" || !providerId) {
