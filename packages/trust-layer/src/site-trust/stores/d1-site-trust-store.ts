@@ -15,6 +15,10 @@
 // no es un store ni un write separado, es un SELECT 1 con
 // idx_site_trust_community_rate_limit (site_id, category, ip_hash,
 // voted_at) para evitar table scan a medida que la tabla crece.
+//
+// APW v1.2 (ERRATA E-4): agent y escrow_report guardan attestation_jws y
+// attestation_jti. Las columnas y los indices unicos por emisor se crean al
+// primer write (ensureAttestationSchema), sin migracion manual.
 
 import type {
   SiteTrustScoreStore,
@@ -27,6 +31,13 @@ import type {
   CommunityTrustCategory,
   EscrowTrustReport,
   EscrowTransactionOutcome,
+} from "../site-trust-score";
+import {
+  ATTESTATION_COLUMN_MIGRATIONS,
+  ATTESTATION_INDEXES,
+  DUPLICATE_ATTESTATION_JTI,
+  isDuplicateColumnError,
+  isUniqueViolation,
 } from "../site-trust-score";
 
 export interface D1DatabaseLike {
@@ -55,6 +66,8 @@ interface AgentRow {
   detail_json: string | null;
   agent_key_id: string;
   verified_at: string;
+  attestation_jws?: string | null;
+  attestation_jti?: string | null;
 }
 
 interface CommunityRow {
@@ -73,6 +86,8 @@ interface EscrowRow {
   escrow_provider: string;
   amount_currency: string | null;
   reported_at: string;
+  attestation_jws?: string | null;
+  attestation_jti?: string | null;
 }
 
 function rowToSelf(row: SelfRow): SelfTrustEvaluation {
@@ -94,6 +109,8 @@ function rowToAgent(row: AgentRow): AgentTrustVerification {
     detail: row.detail_json ? JSON.parse(row.detail_json) : undefined,
     agentKeyId: row.agent_key_id,
     verifiedAt: row.verified_at,
+    attestationJws: row.attestation_jws ?? undefined,
+    attestationJti: row.attestation_jti ?? undefined,
   };
 }
 
@@ -116,6 +133,8 @@ function rowToEscrow(row: EscrowRow): EscrowTrustReport {
     escrowProvider: row.escrow_provider,
     amountCurrency: row.amount_currency ?? undefined,
     reportedAt: row.reported_at,
+    attestationJws: row.attestation_jws ?? undefined,
+    attestationJti: row.attestation_jti ?? undefined,
   };
 }
 
@@ -136,7 +155,28 @@ async function ensureSubject(db: D1DatabaseLike, siteId: string): Promise<void> 
 }
 
 export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
+  private attestationSchema: Promise<void> | null = null;
+
   constructor(private db: D1DatabaseLike) {}
+
+  private ensureAttestationSchema(): Promise<void> {
+    if (!this.attestationSchema) {
+      this.attestationSchema = (async () => {
+        for (const sql of ATTESTATION_COLUMN_MIGRATIONS) {
+          try {
+            await this.db.prepare(sql).bind().run();
+          } catch (err) {
+            if (!isDuplicateColumnError(err)) throw err;
+          }
+        }
+        for (const sql of ATTESTATION_INDEXES) await this.db.prepare(sql).bind().run();
+      })();
+      this.attestationSchema.catch(() => {
+        this.attestationSchema = null;
+      });
+    }
+    return this.attestationSchema;
+  }
 
   async getSnapshot(siteId: string): Promise<SiteTrustSnapshot> {
     const [selfRes, agentRes, communityRes, escrowRes] = await Promise.all([
@@ -180,25 +220,33 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
   }
 
   async recordAgentVerification(verification: AgentTrustVerification): Promise<void> {
+    await this.ensureAttestationSchema();
     await ensureSubject(this.db, verification.siteId);
     // Sin ON CONFLICT: cada verificacion es un registro historico nuevo
     // (la PK incluye verified_at), a diferencia de self/community que
     // sobrescriben el valor mas reciente por categoria/votante.
-    await this.db
-      .prepare(
-        `INSERT INTO site_trust_agent_verifications
-           (site_id, category, verified, detail_json, agent_key_id, verified_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .bind(
-        verification.siteId,
-        verification.category,
-        verification.verified ? 1 : 0,
-        verification.detail ? JSON.stringify(verification.detail) : null,
-        verification.agentKeyId,
-        verification.verifiedAt
-      )
-      .run();
+    try {
+      await this.db
+        .prepare(
+          `INSERT INTO site_trust_agent_verifications
+             (site_id, category, verified, detail_json, agent_key_id, verified_at, attestation_jws, attestation_jti)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .bind(
+          verification.siteId,
+          verification.category,
+          verification.verified ? 1 : 0,
+          verification.detail ? JSON.stringify(verification.detail) : null,
+          verification.agentKeyId,
+          verification.verifiedAt,
+          verification.attestationJws ?? null,
+          verification.attestationJti ?? null
+        )
+        .run();
+    } catch (err) {
+      if (verification.attestationJti && isUniqueViolation(err)) throw new Error(DUPLICATE_ATTESTATION_JTI);
+      throw err;
+    }
   }
 
   async recordCommunityVote(vote: CommunityTrustVote): Promise<CommunityTrustVote> {
@@ -218,15 +266,29 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
   }
 
   async recordEscrowReport(report: EscrowTrustReport): Promise<void> {
+    await this.ensureAttestationSchema();
     await ensureSubject(this.db, report.siteId);
-    await this.db
-      .prepare(
-        `INSERT INTO site_trust_escrow_reports
-           (site_id, transaction_outcome, escrow_provider, amount_currency, reported_at)
-         VALUES (?, ?, ?, ?, ?)`
-      )
-      .bind(report.siteId, report.transactionOutcome, report.escrowProvider, report.amountCurrency ?? null, report.reportedAt)
-      .run();
+    try {
+      await this.db
+        .prepare(
+          `INSERT INTO site_trust_escrow_reports
+             (site_id, transaction_outcome, escrow_provider, amount_currency, reported_at, attestation_jws, attestation_jti)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .bind(
+          report.siteId,
+          report.transactionOutcome,
+          report.escrowProvider,
+          report.amountCurrency ?? null,
+          report.reportedAt,
+          report.attestationJws ?? null,
+          report.attestationJti ?? null
+        )
+        .run();
+    } catch (err) {
+      if (report.attestationJti && isUniqueViolation(err)) throw new Error(DUPLICATE_ATTESTATION_JTI);
+      throw err;
+    }
   }
 
   async isRateLimited(

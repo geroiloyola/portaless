@@ -35,6 +35,10 @@
 // Las columnas key_id y key_sequence se agregan solas (ALTER TABLE) a las
 // bases creadas por el PR #71, y las claves existentes reciben #key-1,
 // #key-2... segun su fecha de alta.
+//
+// listKeys() ordena por key_sequence: es unica por sitio, a diferencia de
+// valid_from, que puede empatar si dos rotaciones caen en el mismo
+// milisegundo.
 
 import type { ApwKeyPair } from "./types";
 import { jwkThumbprint } from "./fingerprint";
@@ -365,7 +369,7 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
   async listKeys(siteId: string): Promise<SiteIdentityKeyRecord[]> {
     await this.ensureKeys(siteId);
     const rows = await this.sql.all(
-      `SELECT ${KEY_COLUMNS} FROM site_identity_keys WHERE site_id = ? ORDER BY valid_from ASC, kid ASC`,
+      `SELECT ${KEY_COLUMNS} FROM site_identity_keys WHERE site_id = ? ORDER BY key_sequence ASC, valid_from ASC, kid ASC`,
       [siteId]
     );
     return rows.map(rowToKey);
