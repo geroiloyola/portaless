@@ -206,3 +206,36 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 **Pendiente en el MVP**: la carga de `reader_conduct` desde el historial del lector. Hasta entonces todo lector verificado tiene R-01 y R-05 neutros (4.0, peso 0), asi que una politica activa con umbrales rechaza a todos los lectores.
 
 **Implementacion**: `packages/apw-resolver/src/scoring/read-policy-store.ts`, `reader-identity.ts`, `policy.ts`, `functions/trust/[siteId].js` y `functions/_middleware.js` (`context.data.webBotAuth`).
+
+## E-9 — Reputacion del lector: reader_conduct publicado y completitud (LTP v1.2, 6.4; cierra el pendiente de E-8)
+
+**Fecha**: Octubre 2026
+
+**Problema**: E-8 dejo pendiente la carga de `reader_conduct`: todo lector verificado tenia R-01 y R-05 neutros, y una politica activa rechazaba a todos. El historial (5.4) solo guarda el hash de cada atestacion, asi que nadie puede leer su contenido.
+
+**Texto vigente**:
+
+- **Paquete publico**: el historial guarda el JWS completo de cada atestacion (`att_jws`) y lo publica en `GET /.well-known/apw-attestations.json` (`{ did, entries: [{ seq, att, jws }], next }`). La entrada firmada del log no cambia: sigue conteniendo solo el hash.
+- **Carga del lector**: quien evalua verifica la cadena del lector (5.4), baja el paquete y exige:
+  - que cada JWS tenga su hash `att` en la cadena (no se puede inventar ni alterar);
+  - completitud: que cada `att` de la cadena tenga su JWS (no se puede ocultar una `policy_violation` ya anotada).
+  - Las entradas con `ts` anterior a `legacyCutoff` (2026-10-04) pueden no tener JWS; segun `legacyEntriesWithoutJws` se ignoran o rompen la completitud.
+- Cada `reader_conduct` con `sub` igual al DID del lector, y cuyo emisor no sea el propio lector, se verifica con `verifyAttestation()` (E-4) contra las claves publicadas del emisor. La clave activa debe ser `k` de su TXT y el `iat` debe caer dentro de la ventana de la clave. La ventana de +-300 s sobre `iat` no aplica al leer del historial (`skipIatWindow`): el `ts` firmado de la cadena prueba cuando se anoto.
+- **Fail-closed**: si una `reader_conduct` no se puede verificar, el lector queda `apw_unresolvable` con motivo `reader_conduct_*`. Un lector no puede descartar sus negativas alegando que no verifican.
+- **Emision**: el sitio registra en el ledger el DID candidato del lector (`did:apw:<host de Signature-Agent>`, sin verificar). `POST /admin/api/reader-conduct/emit` (admin + step-up) emite por periodo solo si `operatorKeyId` es `k` del TXT del lector. Firma con la clave activa (E-3), usa un `jti` determinista (emisor, lector, periodo, categoria) y anota cada emision en el historial propio: el emisor publica lo que emitio.
+
+**Limitaciones**:
+
+- Omision en el origen: un lector puede no anotar desde el principio una atestacion que recibio. Que el emisor publique lo que emitio permite detectarlo comparando; automatizarlo requiere testigos (seccion 7).
+- Equivocation: un lector podria mostrar cadenas distintas a distintos visitantes. Lo acotan el anclaje de `h` en el DNS y los testigos externos.
+- `ts` lo declara el propio lector (E-2): uno nuevo podria fechar entradas antes de `legacyCutoff` para esquivar la completitud.
+- R-05 arranca apagado (`policyDimensions`): un sitio solo no ve suficientes evaluadores para calibrar (A.4.3).
+
+**Como actualizar** (`packages/apw-resolver/src/scoring/reader-conduct-config.ts`):
+
+- Exigir R-05: `policyDimensions["R-05"] = true`, sin migracion.
+- Nuevas categorias: agregar una regla en `CONDUCT_RULES` cuando el ledger tenga el dato.
+- Endurecer historiales viejos: `legacyEntriesWithoutJws = "reject"`.
+- Emitir mas seguido que una vez por mes requiere un ledger con esa granularidad.
+
+**Implementacion**: `scoring/reader-attestations.ts` (`loadReaderConduct()`), `reader-conduct-emitter.ts`, `reader-conduct-config.ts`, `reader-identity.ts`, `did-apw/history-resolver.ts` (`includeEntries`), `trust-layer/site-trust/attestation.ts` (`skipIatWindow`), el ledger (`reader_did`), `functions/_middleware.js` y `functions/admin/api/reader-conduct/emit.js`.
