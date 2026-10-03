@@ -150,3 +150,59 @@ La autenticacion previa no cambia: `agent` sigue exigiendo Web Bot Auth y la all
 **Dependencia**: JCS se implementa con el paquete `canonicalize`, listado en RFC 8785 como implementacion JavaScript de referencia.
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/site-jws.ts` (`jcs()`, `signSiteJws()`, `verifySiteJws()`, `signSelfAttestation()`, `signSiteManifest()`), `site-manifest.ts` (`buildSiteManifest()`), `functions/.well-known/apw-manifest.jws.js`, `functions/admin/site-trust/[siteId]/self.js` y los stores D1/SQLite de SiteTrustScore.
+
+## E-6 — Ejemplo del sitio A (Anexo A, A.4.4)
+
+**Fecha**: Octubre 2026
+
+**Problema**: el ejemplo dice que el sitio A tiene 6.10 en W-10 con 10 atestaciones de emisores con J = 6.0 (w = 0.69). Con P = 3 ese valor es inalcanzable: aun si las 10 atestaciones valen 7.0, el puntaje maximo es (3 x 4.0 + 6.944 x 7.0) / (3 + 6.944) = 6.095. Llegar a 6.10 exigiria atestaciones de 7.007, fuera de la escala.
+
+**Texto vigente**: el sitio A tiene **6.095** en W-10 con 10 atestaciones de 7.0 de emisores con J = 6.0 (w = 25/36 = 0.694). Un emisor con J = 4.0 lo ataca con un 1.0: A baja a **5.970** (-2.05%). El ejemplo del sitio B no cambia (3.892 con un 3.0; 3.676 con un 1.0). La conclusion tampoco: por cada punto de desviacion, un emisor de 6.7 (w = 0.9025) mueve el puntaje 3.61 veces mas que uno de 4.0.
+
+**Vectores de prueba**: `w(4) = 0.25`, `w(6.7) = 0.9025`, `w(1) = 0`; sitio A 6.0950 -> 5.9700; sitio B 3.8919 y 3.6756; sin atestaciones, 4.0.
+
+**Implementacion**: `packages/apw-resolver/src/scoring/scoring.ts` (`issuerWeight()`, `bayesianScore()`) y `scoring.test.ts`.
+
+## E-7 — Calibracion de R-05 (Anexo A, A.4.3)
+
+**Fecha**: Octubre 2026
+
+**Problema 1**: A.4.3 dice que J es mayor cuanto menor es la desviacion media, pero no da la funcion.
+
+**Problema 2**: compara cada atestacion contra "el puntaje de la dimension evaluada sin contarla". Ese puntaje incluye el previo P = 3 en 4.0, que lo tira hacia el neutro. Un evaluador honesto que califica alto algo realmente bueno queda lejos de ese puntaje y pierde peso. Con 4 emisores honestos que califican 6.5 a cuatro sitios y un atacante que les pone 1.0, la regla literal da J = 3.98 a los honestos (peor que un emisor nuevo) y J = 1.57 al atacante.
+
+**Texto vigente**:
+
+- `J = max(1, 7 - 1.5 x d)`, donde `d` es la desviacion absoluta media de las atestaciones del emisor en la escala 1 a 7. Un emisor sin atestaciones comparables queda en J = 4.0.
+- La desviacion de cada atestacion se mide contra el **promedio ponderado de los demas emisores** sobre el mismo sujeto y dimension, **sin el previo P** (leave-one-out). P se sigue usando para el puntaje publicado (A.4.3), no para calibrar.
+- J se calcula por punto fijo: se parte de J = 4.0 para todos y se itera (8 rondas en esta version), porque el peso de cada emisor depende del J de los demas.
+- No cuentan para el R-05 propio: las atestaciones `self` ni las de un emisor sobre si mismo. Si los demas emisores no tienen peso, la atestacion no se compara.
+
+Con esta regla, el escenario anterior da J = 7.0 a los honestos y J = 1.0 al atacante. Con honestos en 4.5 y 3.5 y un atacante en 7.0: honestos 6.2 y 5.8, atacante 2.56.
+
+El factor 1.5, el numero de rondas y P son valores por defecto de esta version, ajustables con nuevos vectores de prueba.
+
+**Implementacion**: `packages/apw-resolver/src/scoring/scoring.ts` (`judgeFromDeviation()`, `calibrateJudges()`).
+
+## E-8 — Almacenamiento y aplicacion de la politica de lectura (APW v1.2, secciones 6.3, 6.5 y 6.9)
+
+**Fecha**: Octubre 2026
+
+**Texto original (6.5)**: las politicas se administran desde el Centro de Permisos con la capacidad `trust:read-governance`.
+
+**Problema**: el Centro de Permisos guarda grants (sujeto x capacidad). La politica de lectura no es un permiso de un actor: es la configuracion global del sitio, una por `siteId`.
+
+**Texto vigente**:
+
+- La politica vive en su propia tabla tipada, `site_trust_read_policies`: `enabled`, `require_apw_identity` (fijo en 1), `min_r01`, `min_r01_weight`, `min_r05`, `min_r05_weight`, `on_fail` (`401`, `402` o `403`). Los valores por defecto son los de A.6.
+- Sin fila, o con `enabled = 0`, la lectura es publica (A.6).
+- El Centro de Permisos se reserva para **excepciones por lector**: un grant `trust:read-governance-bypass` sobre el DID de un lector le permite leer aunque no cumpla los umbrales. Ese grant no se implementa en este cambio.
+- El manifiesto solo anuncia `rg: true`; la politica completa nunca se publica.
+
+**Identidad del lector (6.3)**: se exige que la huella RFC 7638 de la clave que firmo la request Web Bot Auth sea `k` del TXT del origen `Signature-Agent`, y que su historial verifique. En el MVP solo se acepta la clave activa (`k`); las claves no activas listadas en `did.json` quedan fuera. Estados: sin firma valida -> `401`; firma valida sin APW -> `on_fail`; APW que no se puede comprobar -> `on_fail`; APW verificado -> se evaluan los umbrales.
+
+**Aplicacion (6.9)**: el resultado se cachea por host y huella (5 minutos si verifica, 60 segundos si falla). Cualquier error de resolucion aplica `on_fail`; nunca se abre por defecto. Si la tabla de politicas no se puede leer, `GET /trust/:siteId` responde `503`. Al rechazar, la respuesta incluye lo que siempre es publico (`verification` y cantidad de filas por fuente); la proyeccion de las dimensiones W publicas queda pendiente.
+
+**Pendiente en el MVP**: la carga de `reader_conduct` desde el historial del lector. Hasta entonces todo lector verificado tiene R-01 y R-05 neutros (4.0, peso 0), asi que una politica activa con umbrales rechaza a todos los lectores.
+
+**Implementacion**: `packages/apw-resolver/src/scoring/read-policy-store.ts`, `reader-identity.ts`, `policy.ts`, `functions/trust/[siteId].js` y `functions/_middleware.js` (`context.data.webBotAuth`).
