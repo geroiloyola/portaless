@@ -8,6 +8,9 @@
 // futura, anclarse a un log tipo Certificate Transparency para volverla
 // resistente a modificacion retroactiva -- ver Portaless_Trust_Layer.md,
 // seccion 3.1, para el razonamiento legal detras de esta decision.
+//
+// ERRATA E-9: readerDid se fija la primera vez que llega para un
+// operatorKeyId en el periodo y no se pisa despues.
 
 import type { AgentUsageEntry, UsageLogPeriod } from "./log-schema";
 
@@ -38,6 +41,7 @@ export async function recordAgentAccess(
   params: {
     operatorKeyId: string;
     operatorNameClaimed?: string;
+    readerDid?: string;
     charged: boolean;
     amountUsd: number;
     policyViolation?: boolean;
@@ -51,7 +55,7 @@ export async function recordAgentAccess(
   };
 
   const nowIso = new Date().toISOString();
-  let entry = existing.agents.find((a) => a.operatorKeyId === params.operatorKeyId);
+  let entry: AgentUsageEntry | undefined = existing.agents.find((a) => a.operatorKeyId === params.operatorKeyId);
 
   if (!entry) {
     entry = {
@@ -67,6 +71,7 @@ export async function recordAgentAccess(
     };
     existing.agents.push(entry);
   }
+  if (params.readerDid && !entry.readerDid) entry.readerDid = params.readerDid;
 
   entry.requestsTotal += 1;
   entry.lastSeen = nowIso;

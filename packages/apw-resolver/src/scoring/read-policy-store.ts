@@ -10,6 +10,10 @@
 // valores por defecto son los de A.6 (APW + R-01 >= 5.0 y R-05 >= 5.0, cada
 // una con suma de pesos >= 2.0).
 //
+// ERRATA E-9: que dimensiones se exigen lo decide
+// READER_CONDUCT_CONFIG.policyDimensions (hoy R-01 si, R-05 no). La tabla
+// guarda los umbrales de las dos, asi que encender R-05 no requiere migracion.
+//
 // require_apw_identity queda fijo en 1 en el MVP (CHECK): una politica que
 // exige reputacion sin identidad no tiene sentido, la reputacion es del DID.
 //
@@ -18,6 +22,7 @@
 
 import { D1Adapter, SqliteAdapter, type SqlAdapter } from "../did-apw/sql-adapter";
 import type { OnFail, ReadPolicy } from "./policy";
+import { READER_CONDUCT_CONFIG } from "./reader-conduct-config";
 
 export interface ReadPolicyRecord {
   siteId: string;
@@ -82,19 +87,19 @@ export function validateReadPolicyInput(input: ReadPolicyInput): void {
   if (!ok) throw new Error(INVALID_READ_POLICY);
 }
 
-/** Politica efectiva para evaluatePolicy(), o null si la lectura es publica. */
-export function toReadPolicy(record: ReadPolicyRecord | null): ReadPolicy | null {
+/**
+ * Politica efectiva para evaluatePolicy(), o null si la lectura es publica.
+ * Incluye solo las dimensiones activas en READER_CONDUCT_CONFIG.policyDimensions.
+ */
+export function toReadPolicy(
+  record: ReadPolicyRecord | null,
+  dimensions: Readonly<Record<"R-01" | "R-05", boolean>> = READER_CONDUCT_CONFIG.policyDimensions
+): ReadPolicy | null {
   if (!record || !record.enabled) return null;
-  return {
-    resource: "/trust/*",
-    action: "read",
-    require: {
-      identity: "apw_verified",
-      "R-01": { min: record.minR01, min_weight: record.minR01Weight },
-      "R-05": { min: record.minR05, min_weight: record.minR05Weight },
-    },
-    on_fail: record.onFail,
-  };
+  const require: ReadPolicy["require"] = { identity: "apw_verified" };
+  if (dimensions["R-01"]) require["R-01"] = { min: record.minR01, min_weight: record.minR01Weight };
+  if (dimensions["R-05"]) require["R-05"] = { min: record.minR05, min_weight: record.minR05Weight };
+  return { resource: "/trust/*", action: "read", require, on_fail: record.onFail };
 }
 
 function rowToRecord(row: any): ReadPolicyRecord {

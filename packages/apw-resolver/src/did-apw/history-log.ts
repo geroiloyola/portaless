@@ -25,8 +25,9 @@
 // entradas creadas antes (PR #71) usan la huella RFC 7638 como `kid`:
 // verifyChain() acepta ambos, asi el historial existente sigue verificando.
 //
-// Todavia no existe un endpoint que acepte atestaciones de emisores:
-// appendAttestation() queda listo y sin caller de produccion.
+// ERRATA E-9: appendAttestation() guarda tambien el JWS del emisor (attJws)
+// para publicarlo en /.well-known/apw-attestations.json. La entrada firmada no
+// cambia: sigue conteniendo solo el hash.
 
 import { LOG_SEQ_CONFLICT, type AttestationLogEntry, type AttestationLogStore } from './attestation-log-store';
 import type { SiteIdentityStore, ActiveSigningKey } from './site-identity-store';
@@ -113,6 +114,7 @@ export async function appendAttestation(deps: AppendDeps, attestationJws: string
       entryHash: await sha256B64Url(entryJws),
       prevHash: prev,
       attHash,
+      attJws: attestationJws,
       kid: key.kid,
       ts,
     };

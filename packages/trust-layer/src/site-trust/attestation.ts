@@ -7,12 +7,16 @@
 //
 // Aca solo se VERIFICA: los bytes del JWS se validan tal como llegan, sin
 // canonicalizar nada (la canonicalizacion es problema del emisor). Por eso
-// este modulo no necesita JCS. Las atestaciones `self`, que firma el propio
-// sitio, van con JCS en un cambio aparte.
+// este modulo no necesita JCS.
 //
 // Solo EdDSA sobre Ed25519 (kty OKP). Una clave ML-DSA del directorio de un
 // agente se rechaza con unsupported_key: la seccion 5.3 pide la misma clave
 // Ed25519 que el agente publica en su directorio Web Bot Auth.
+//
+// ERRATA E-9: skipIatWindow omite el chequeo de +-300 s sobre iat. Solo para
+// atestaciones leidas del historial publicado de un tercero: alli la ventana no
+// aplica (pueden tener meses) y el ts firmado de la cadena prueba cuando se
+// anotaron. Al RECIBIR una atestacion (endpoints) la ventana sigue vigente.
 
 export const ATTESTATION_TYP = "apw-attestation+jws";
 /** Margen aceptado para iat, en segundos, hacia atras y hacia adelante. */
@@ -53,6 +57,8 @@ export interface AttestationExpectations {
   iss: string;
   /** Si se indica, el header del JWS debe traer exactamente este kid. */
   kid?: string;
+  /** E-9: solo para atestaciones leidas de un historial publicado. */
+  skipIatWindow?: boolean;
 }
 
 export type VerifyAttestationResult =
@@ -156,7 +162,9 @@ export async function verifyAttestation(
   if (payload.sub !== expected.sub) return fail("sub_mismatch");
   if (payload.src !== expected.src) return fail("src_mismatch");
   if (!sameIssuer(payload.iss, expected.iss)) return fail("iss_mismatch");
-  if (Math.abs(nowMs / 1000 - payload.iat) > ATTESTATION_IAT_WINDOW_SECONDS) return fail("iat_out_of_window");
+  if (!expected.skipIatWindow && Math.abs(nowMs / 1000 - payload.iat) > ATTESTATION_IAT_WINDOW_SECONDS) {
+    return fail("iat_out_of_window");
+  }
 
   return {
     ok: true,

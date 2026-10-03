@@ -1,12 +1,17 @@
 // Persistencia real del ledger para self-hosted.
 // v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
 // better-sqlite3 via openSqlite(). Uso: await SqliteUsageLedgerStore.open(path).
+//
+// ERRATA E-9: columna reader_did. Las bases anteriores se migran solas al
+// abrir (ALTER TABLE ADD COLUMN si falta); sus filas quedan con null. Un
+// reader_did ya guardado no se pisa (COALESCE). reader_did va AL FINAL de
+// los parametros: el orden de las 10 columnas originales no cambia.
 import type { UsageLogPeriod, AgentUsageEntry } from "./log-schema";
 import type { UsageLedgerStore } from "./log-writer";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 interface RowType {
-  period: string; operator_key_id: string; operator_name_claimed: string | null;
+  period: string; operator_key_id: string; operator_name_claimed: string | null; reader_did?: string | null;
   requests_total: number; requests_charged: number; requests_free_tier: number;
   revenue_usd: number; policy_violations_detected: number; first_seen: string; last_seen: string;
 }
@@ -14,11 +19,21 @@ interface RowType {
 function rowToEntry(row: RowType): AgentUsageEntry {
   return {
     operatorKeyId: row.operator_key_id, operatorNameClaimed: row.operator_name_claimed ?? undefined,
+    readerDid: row.reader_did ?? undefined,
     requestsTotal: row.requests_total, requestsCharged: row.requests_charged,
     requestsFreeTier: row.requests_free_tier, revenueUsd: row.revenue_usd,
     policyViolationsDetected: row.policy_violations_detected, firstSeen: row.first_seen, lastSeen: row.last_seen,
   };
 }
+
+const UPSERT_SQL = `INSERT INTO usage_ledger (period, operator_key_id, operator_name_claimed, requests_total, requests_charged,
+    requests_free_tier, revenue_usd, policy_violations_detected, first_seen, last_seen, reader_did)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   ON CONFLICT(period, operator_key_id) DO UPDATE SET
+     requests_total = excluded.requests_total, requests_charged = excluded.requests_charged,
+     requests_free_tier = excluded.requests_free_tier, revenue_usd = excluded.revenue_usd,
+     policy_violations_detected = excluded.policy_violations_detected, last_seen = excluded.last_seen,
+     reader_did = COALESCE(usage_ledger.reader_did, excluded.reader_did)`;
 
 export class SqliteUsageLedgerStore implements UsageLedgerStore {
   private db: any;
@@ -39,7 +54,12 @@ export class SqliteUsageLedgerStore implements UsageLedgerStore {
       requests_total INTEGER NOT NULL DEFAULT 0, requests_charged INTEGER NOT NULL DEFAULT 0,
       requests_free_tier INTEGER NOT NULL DEFAULT 0, revenue_usd REAL NOT NULL DEFAULT 0,
       policy_violations_detected INTEGER NOT NULL DEFAULT 0, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,
+      reader_did TEXT,
       PRIMARY KEY (period, operator_key_id));`);
+    const columns = this.db.prepare("PRAGMA table_info(usage_ledger)").all() as Array<{ name: string }>;
+    if (!columns.some((c) => c.name === "reader_did")) {
+      this.db.exec("ALTER TABLE usage_ledger ADD COLUMN reader_did TEXT");
+    }
   }
 
   async get(period: string): Promise<UsageLogPeriod | null> {
@@ -49,18 +69,11 @@ export class SqliteUsageLedgerStore implements UsageLedgerStore {
   }
 
   async put(period: string, data: UsageLogPeriod): Promise<void> {
+    const stmt = this.db.prepare(UPSERT_SQL);
     for (const agent of data.agents) {
-      this.db.prepare(
-        `INSERT INTO usage_ledger (period, operator_key_id, operator_name_claimed, requests_total, requests_charged,
-          requests_free_tier, revenue_usd, policy_violations_detected, first_seen, last_seen)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(period, operator_key_id) DO UPDATE SET
-           requests_total = excluded.requests_total, requests_charged = excluded.requests_charged,
-           requests_free_tier = excluded.requests_free_tier, revenue_usd = excluded.revenue_usd,
-           policy_violations_detected = excluded.policy_violations_detected, last_seen = excluded.last_seen`
-      ).run(period, agent.operatorKeyId, agent.operatorNameClaimed ?? null, agent.requestsTotal,
+      stmt.run(period, agent.operatorKeyId, agent.operatorNameClaimed ?? null, agent.requestsTotal,
         agent.requestsCharged, agent.requestsFreeTier, agent.revenueUsd, agent.policyViolationsDetected,
-        agent.firstSeen, agent.lastSeen);
+        agent.firstSeen, agent.lastSeen, agent.readerDid ?? null);
     }
   }
 

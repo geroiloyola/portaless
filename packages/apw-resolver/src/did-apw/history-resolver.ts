@@ -17,6 +17,10 @@
 // JWS nuevos). Se exige que todos los keyId pertenezcan al DID del dominio.
 // Un documento anterior a E-3, sin esos campos, sigue verificando por `kid`.
 //
+// ERRATA E-9: con { includeEntries: true } devuelve tambien { seq, att, ts }
+// de cada entrada, leidos de la cadena YA verificada. Lo usa el cargador de
+// reader_conduct para exigir completitud contra apw-attestations.json.
+//
 // Vive en su propio archivo (no en index.ts) para evitar un import circular.
 
 import { resolveApwManifest } from '../index';
@@ -31,6 +35,13 @@ export type ApwHistoryReason =
   | 'did_mismatch'
   | 'ok';
 
+export interface ChainAttestationRef {
+  seq: number;
+  /** Hash del JWS del emisor anotado en esa entrada. */
+  att: string;
+  ts: string;
+}
+
 export interface ApwHistoryResult {
   verified: boolean;
   reason: ApwHistoryReason | string;
@@ -39,6 +50,12 @@ export interface ApwHistoryResult {
   head?: string | null;
   anchoredSeq?: number | null;
   unanchoredEntries?: number;
+  /** Solo con includeEntries y si la cadena verifico. */
+  attestations?: ChainAttestationRef[];
+}
+
+export interface ResolveHistoryOptions {
+  includeEntries?: boolean;
 }
 
 const PAGE_LIMIT = 500;
@@ -55,7 +72,18 @@ function toChainKey(raw: any): ChainKey {
   };
 }
 
-export async function resolveApwHistory(domain: string, fetchImpl: typeof fetch = fetch): Promise<ApwHistoryResult> {
+function decodePayload(jws: string): any {
+  const part = jws.split('.')[1];
+  const base64 = part.split('-').join('+').split('_').join('/');
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))));
+}
+
+export async function resolveApwHistory(
+  domain: string,
+  fetchImpl: typeof fetch = fetch,
+  options: ResolveHistoryOptions = {}
+): Promise<ApwHistoryResult> {
   const host = String(domain || '').trim().toLowerCase().replace(/[.]$/, '');
   const resolution = await resolveApwManifest(host, fetchImpl);
   if (!resolution.resolved || !resolution.manifest) {
@@ -98,7 +126,8 @@ export async function resolveApwHistory(domain: string, fetchImpl: typeof fetch 
   if (!result.valid) {
     return { verified: false, reason: result.reason as ChainFailure, domain: host, length: result.length };
   }
-  return {
+
+  const out: ApwHistoryResult = {
     verified: true,
     reason: 'ok',
     domain: host,
@@ -107,4 +136,13 @@ export async function resolveApwHistory(domain: string, fetchImpl: typeof fetch 
     anchoredSeq: result.anchoredSeq,
     unanchoredEntries: result.anchoredSeq === null ? result.length : result.length - result.anchoredSeq,
   };
+  if (options.includeEntries) {
+    out.attestations = [...entries]
+      .sort((a, b) => a.seq - b.seq)
+      .map((e) => {
+        const p = decodePayload(e.jws);
+        return { seq: p.seq, att: p.att, ts: p.ts };
+      });
+  }
+  return out;
 }

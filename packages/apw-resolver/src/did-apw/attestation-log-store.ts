@@ -12,6 +12,12 @@
 // cadena; la que pierde recibe LOG_SEQ_CONFLICT y appendAttestation reintenta.
 // El indice unico (site_id, att_hash) impide registrar dos veces la misma
 // atestacion.
+//
+// APW v1.2 (ERRATA E-9): att_jws guarda el JWS del emisor completo, para
+// publicarlo en /.well-known/apw-attestations.json. La entrada firmada solo
+// contiene su hash (att): cualquiera puede comprobar que el JWS publicado es
+// el anotado recalculando SHA-256. La columna se agrega sola (ALTER TABLE) a
+// las bases existentes; las entradas anteriores quedan con att_jws NULL.
 
 import { D1Adapter, SqliteAdapter, type SqlAdapter } from './sql-adapter';
 
@@ -25,6 +31,8 @@ export interface AttestationLogEntry {
   prevHash: string | null;
   /** base64url(SHA-256(JWS del emisor)). */
   attHash: string;
+  /** JWS del emisor (E-9). null en entradas anteriores a E-9. */
+  attJws?: string | null;
   /** Huella de la clave del sitio que firmo la entrada. */
   kid: string;
   ts: string;
@@ -41,8 +49,7 @@ export interface AttestationLogStore {
   list(siteId: string, fromSeq: number, limit: number): Promise<AttestationLogEntry[]>;
 }
 
-export const ATTESTATION_LOG_DDL = [
-  `CREATE TABLE IF NOT EXISTS site_attestation_log (
+const TABLE_DDL = `CREATE TABLE IF NOT EXISTS site_attestation_log (
     site_id TEXT NOT NULL,
     seq INTEGER NOT NULL,
     entry_jws TEXT NOT NULL,
@@ -51,12 +58,18 @@ export const ATTESTATION_LOG_DDL = [
     att_hash TEXT NOT NULL,
     kid TEXT NOT NULL,
     ts TEXT NOT NULL,
+    att_jws TEXT,
     PRIMARY KEY (site_id, seq)
-  )`,
-  'CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att ON site_attestation_log(site_id, att_hash)',
-];
+  )`;
 
-const COLUMNS = 'site_id, seq, entry_jws, entry_hash, prev_hash, att_hash, kid, ts';
+const INDEX_DDL = 'CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att ON site_attestation_log(site_id, att_hash)';
+
+/** Para bases creadas antes de E-9. En una base nueva falla con "duplicate column" y se ignora. */
+export const ATTESTATION_LOG_ADD_COLUMNS = ['ALTER TABLE site_attestation_log ADD COLUMN att_jws TEXT'];
+
+export const ATTESTATION_LOG_DDL = [TABLE_DDL, INDEX_DDL];
+
+const COLUMNS = 'site_id, seq, entry_jws, entry_hash, prev_hash, att_hash, kid, ts, att_jws';
 
 function rowToEntry(row: any): AttestationLogEntry {
   return {
@@ -66,6 +79,7 @@ function rowToEntry(row: any): AttestationLogEntry {
     entryHash: row.entry_hash,
     prevHash: row.prev_hash ?? null,
     attHash: row.att_hash,
+    attJws: row.att_jws ?? null,
     kid: row.kid,
     ts: row.ts,
   };
@@ -79,7 +93,15 @@ export class SqlAttestationLogStore implements AttestationLogStore {
   private ensureSchema(): Promise<void> {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
-        for (const ddl of ATTESTATION_LOG_DDL) await this.sql.run(ddl);
+        await this.sql.run(TABLE_DDL);
+        for (const alter of ATTESTATION_LOG_ADD_COLUMNS) {
+          try {
+            await this.sql.run(alter);
+          } catch (err) {
+            if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
+          }
+        }
+        await this.sql.run(INDEX_DDL);
       })();
       this.schemaReady.catch(() => {
         this.schemaReady = null;
@@ -99,7 +121,7 @@ export class SqlAttestationLogStore implements AttestationLogStore {
     const duplicate = await this.sql.first('SELECT seq FROM site_attestation_log WHERE site_id = ? AND att_hash = ?', [entry.siteId, entry.attHash]);
     if (duplicate) throw new Error(LOG_DUPLICATE_ATTESTATION);
     try {
-      await this.sql.run(`INSERT INTO site_attestation_log (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+      await this.sql.run(`INSERT INTO site_attestation_log (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
         entry.siteId,
         entry.seq,
         entry.entryJws,
@@ -108,6 +130,7 @@ export class SqlAttestationLogStore implements AttestationLogStore {
         entry.attHash,
         entry.kid,
         entry.ts,
+        entry.attJws ?? null,
       ]);
     } catch (err) {
       if (/unique|constraint/i.test(String((err as Error)?.message))) throw new Error(LOG_SEQ_CONFLICT);
@@ -146,7 +169,7 @@ export class InMemoryAttestationLogStore implements AttestationLogStore {
     const list = this.entries.get(entry.siteId) ?? [];
     if (list.some((e) => e.attHash === entry.attHash)) throw new Error(LOG_DUPLICATE_ATTESTATION);
     if (list.some((e) => e.seq === entry.seq)) throw new Error(LOG_SEQ_CONFLICT);
-    list.push({ ...entry });
+    list.push({ ...entry, attJws: entry.attJws ?? null });
     list.sort((a, b) => a.seq - b.seq);
     this.entries.set(entry.siteId, list);
   }
