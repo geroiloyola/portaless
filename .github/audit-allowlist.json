@@ -1,0 +1,10 @@
+{
+  "advisories": [
+    {
+      "id": "GHSA-ch52-4w7c-c8xp",
+      "package": "http-cache-semantics",
+      "reason": "Sin version parcheada (todas las versiones afectadas). Transitiva de astro; npm audit fix --force bajaria astro a 2.x. Las respuestas sensibles de Portaless (GET /trust/:siteId gobernado, /admin) usan cache-control private, no-store. Revisar si hay parche o si astro deja de depender de ella.",
+      "expires": "2026-11-02"
+    }
+  ]
+}
