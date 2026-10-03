@@ -30,18 +30,22 @@
 // cambia con cada atestacion nueva: entre una actualizacion del TXT y la
 // siguiente, las entradas nuevas todavia no estan ancladas en el DNS.
 //
+// APW v1.2 (B3): los campos salen de buildSiteManifest(), la misma funcion
+// que usa /.well-known/apw-manifest.jws, para que TXT y manifiesto firmado
+// no puedan divergir.
+//
 // Diseno deliberado: esto NUNCA bloquea nada. Si el DNS no propago todavia
 // (puede tardar minutos u horas), el sitio sigue funcionando exactamente
 // igual -- el checklist es informativo, no un gate.
 import {
   resolveApwManifest,
   resolveApwIdentity,
-  buildApwManifest,
   serializeApwManifest,
   jwkThumbprint,
   APW_TXT_PREFIX,
 } from "../../../packages/apw-resolver/src/index";
 import { createSiteIdentityStore, createAttestationLogStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { buildSiteManifest } from "../../../packages/apw-resolver/src/did-apw/site-manifest.ts";
 
 const TXT_PRACTICAL_LIMIT_BYTES = 512;
 const SITE_ID = "default";
@@ -58,9 +62,7 @@ function json(body, status = 200) {
 }
 
 function buildSuggestedTxtRecord(domain, k, h) {
-  const value = serializeApwManifest(
-    buildApwManifest({ siteId: domain, contentKinds: ["mixed"], ...(k ? { k } : {}), ...(k && h ? { h } : {}) })
-  );
+  const value = serializeApwManifest(buildSiteManifest(domain, k, h));
   const bytes = new TextEncoder().encode(value).length;
   return {
     name: `${APW_TXT_PREFIX}.${domain}`,
