@@ -5,27 +5,28 @@
 //   anonymous         sin firma Web Bot Auth valida            -> 401
 //   wba_only          firma valida, pero el origen no tiene TXT APW con `k`
 //   apw_unresolvable  dice tener APW pero no se pudo comprobar: la clave que
-//                     firmo no es `k`, el historial no verifica o fallo la
+//                     firmo no es `k`, el historial no verifica, su
+//                     reader_conduct no se puede cargar completa, o fallo la
 //                     resolucion                                 -> on_fail
-//   apw_verified      clave = `k` del TXT del lector e historial verificado
+//   apw_verified      clave = `k` del TXT del lector, historial verificado y
+//                     reputacion cargada
 //
 // La clave que firma la request debe tener la misma huella RFC 7638 que `k`
 // (6.3): asi identidad de agente e identidad APW son un solo par de claves.
-// En el MVP solo se acepta `k` (la clave activa); claves listadas en did.json
-// pero no activas quedan para un cambio posterior.
+// En el MVP solo se acepta `k` (la clave activa).
 //
-// Cache por TTL (6.9): exitos 5 min, fallos 60 s, para no resolver DNS y
-// historial en cada request ni permitir un DoS por resolucion. Nunca abre:
-// cualquier error termina en apw_unresolvable.
+// Cache por TTL (6.9): exitos 5 min, fallos 60 s. Nunca abre: cualquier error
+// termina en apw_unresolvable.
 //
-// loadScores: en este cambio el cargador por defecto devuelve un mapa vacio
-// (todo neutral 4.0), asi que una politica con umbrales rechaza a todos los
-// lectores. La carga de reader_conduct desde el historial del lector va en
-// el siguiente commit. Sin politica activa la lectura sigue siendo publica.
+// ERRATA E-9: loadScores carga las reader_conduct del historial publicado del
+// lector con completitud (reader-attestations.ts) y las puntua con
+// scoreSubject (Anexo A). Si la carga falla, el motivo queda en `reason`.
 
 import { jwkThumbprint } from "../did-apw/fingerprint";
 import { resolveApwManifest } from "../index";
 import { resolveApwHistory } from "../did-apw/history-resolver";
+import { loadReaderConduct } from "./reader-attestations";
+import { scoreSubject } from "./scoring";
 import type { ReaderState } from "./policy";
 import type { DimensionScore } from "./scoring";
 
@@ -41,7 +42,7 @@ export interface ReaderResolvers {
   resolveTxtKey(host: string): Promise<string | null>;
   /** true si el historial publicado del host verifica contra su TXT. */
   verifyHistory(host: string): Promise<boolean>;
-  /** Puntajes (Anexo A) del lector. */
+  /** Puntajes (Anexo A) del lector. Lanza Error("reader_conduct_...") si no se pueden cargar. */
   loadScores(did: string): Promise<ReadonlyMap<string, DimensionScore>>;
 }
 
@@ -109,8 +110,11 @@ export function defaultReaderResolvers(fetchImpl: typeof fetch = fetch): ReaderR
       const r = await resolveApwHistory(host, fetchImpl);
       return r.verified === true;
     },
-    async loadScores() {
-      return new Map<string, DimensionScore>();
+    async loadScores(did) {
+      const host = did.slice("did:apw:".length);
+      const loaded = await loadReaderConduct(host, { fetchImpl });
+      if (!loaded.ok) throw new Error(loaded.reason);
+      return scoreSubject(did, loaded.attestations);
     },
   };
 }
@@ -154,8 +158,9 @@ export async function resolveReaderState(
     } else {
       state = { kind: "apw_verified", did, scores: await resolvers.loadScores(did) };
     }
-  } catch {
-    state = { kind: "apw_unresolvable", did, reason: "resolution_error" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    state = { kind: "apw_unresolvable", did, reason: message.startsWith("reader_conduct_") ? message : "resolution_error" };
   }
 
   cache.set(cacheKey, state, state.kind === "apw_verified" ? READER_CACHE_OK_MS : READER_CACHE_FAIL_MS, nowMs);

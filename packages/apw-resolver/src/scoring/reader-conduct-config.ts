@@ -13,6 +13,7 @@
 //   - Exigir R-05: policyDimensions["R-05"] = true. La tabla
 //     site_trust_read_policies ya tiene min_r05 / min_r05_weight: sin migracion.
 //   - Endurecer historiales viejos: legacyEntriesWithoutJws = "reject".
+//   - Mover la fecha de corte: legacyCutoff (solo hacia atras; ver E-9).
 
 import { sha256B64Url } from "../did-apw/history-log";
 
@@ -27,14 +28,17 @@ export const READER_CONDUCT_CONFIG = Object.freeze({
    * calibrar evaluadores (A.4.3). Encender cuando haya indices o testigos.
    */
   policyDimensions: Object.freeze({ "R-01": true, "R-05": false }),
-  /** Maximo de atestaciones del lector que se verifican por resolucion. */
+  /** Maximo de reader_conduct del lector que se verifican por resolucion (las mas recientes). */
   maxAttestationsLoaded: 200,
   /**
-   * Entradas del historial anteriores a E-9 (sin JWS publicado). "ignore": no
-   * cuentan para la reputacion ni rompen la completitud. "reject": el lector
-   * queda apw_unresolvable.
+   * Entradas del historial sin JWS publicado y con ts anterior a legacyCutoff.
+   * "ignore": no cuentan para la reputacion ni rompen la completitud.
+   * "reject": el lector queda apw_unresolvable.
+   * Despues de legacyCutoff, una entrada sin JWS siempre rompe la completitud.
    */
   legacyEntriesWithoutJws: "ignore" as "ignore" | "reject",
+  /** Desde esta fecha (UTC) toda entrada debe publicar su JWS (E-9). */
+  legacyCutoff: "2026-10-04T00:00:00.000Z",
 });
 
 /** Lo que el ledger sabe de un lector en un periodo. */
