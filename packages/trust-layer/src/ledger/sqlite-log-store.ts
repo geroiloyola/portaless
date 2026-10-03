@@ -4,13 +4,14 @@
 //
 // ERRATA E-9: columna reader_did. Las bases anteriores se migran solas al
 // abrir (ALTER TABLE ADD COLUMN si falta); sus filas quedan con null. Un
-// reader_did ya guardado no se pisa (COALESCE).
+// reader_did ya guardado no se pisa (COALESCE). reader_did va AL FINAL de
+// los parametros: el orden de las 10 columnas originales no cambia.
 import type { UsageLogPeriod, AgentUsageEntry } from "./log-schema";
 import type { UsageLedgerStore } from "./log-writer";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 interface RowType {
-  period: string; operator_key_id: string; operator_name_claimed: string | null; reader_did: string | null;
+  period: string; operator_key_id: string; operator_name_claimed: string | null; reader_did?: string | null;
   requests_total: number; requests_charged: number; requests_free_tier: number;
   revenue_usd: number; policy_violations_detected: number; first_seen: string; last_seen: string;
 }
@@ -25,20 +26,14 @@ function rowToEntry(row: RowType): AgentUsageEntry {
   };
 }
 
-export const UPSERT_USAGE_SQL = `INSERT INTO usage_ledger (period, operator_key_id, operator_name_claimed, reader_did, requests_total, requests_charged,
-    requests_free_tier, revenue_usd, policy_violations_detected, first_seen, last_seen)
+const UPSERT_SQL = `INSERT INTO usage_ledger (period, operator_key_id, operator_name_claimed, requests_total, requests_charged,
+    requests_free_tier, revenue_usd, policy_violations_detected, first_seen, last_seen, reader_did)
    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    ON CONFLICT(period, operator_key_id) DO UPDATE SET
-     reader_did = COALESCE(usage_ledger.reader_did, excluded.reader_did),
      requests_total = excluded.requests_total, requests_charged = excluded.requests_charged,
      requests_free_tier = excluded.requests_free_tier, revenue_usd = excluded.revenue_usd,
-     policy_violations_detected = excluded.policy_violations_detected, last_seen = excluded.last_seen`;
-
-export function usageRowArgs(period: string, agent: AgentUsageEntry): unknown[] {
-  return [period, agent.operatorKeyId, agent.operatorNameClaimed ?? null, agent.readerDid ?? null, agent.requestsTotal,
-    agent.requestsCharged, agent.requestsFreeTier, agent.revenueUsd, agent.policyViolationsDetected,
-    agent.firstSeen, agent.lastSeen];
-}
+     policy_violations_detected = excluded.policy_violations_detected, last_seen = excluded.last_seen,
+     reader_did = COALESCE(usage_ledger.reader_did, excluded.reader_did)`;
 
 export class SqliteUsageLedgerStore implements UsageLedgerStore {
   private db: any;
@@ -74,8 +69,12 @@ export class SqliteUsageLedgerStore implements UsageLedgerStore {
   }
 
   async put(period: string, data: UsageLogPeriod): Promise<void> {
-    const stmt = this.db.prepare(UPSERT_USAGE_SQL);
-    for (const agent of data.agents) stmt.run(...usageRowArgs(period, agent));
+    const stmt = this.db.prepare(UPSERT_SQL);
+    for (const agent of data.agents) {
+      stmt.run(period, agent.operatorKeyId, agent.operatorNameClaimed ?? null, agent.requestsTotal,
+        agent.requestsCharged, agent.requestsFreeTier, agent.revenueUsd, agent.policyViolationsDetected,
+        agent.firstSeen, agent.lastSeen, agent.readerDid ?? null);
+    }
   }
 
   close(): void {
