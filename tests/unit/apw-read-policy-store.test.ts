@@ -19,12 +19,18 @@ describe("site_trust_read_policies", () => {
     expect(toReadPolicy(null)).toBeNull();
   });
 
-  it("SQLite: guarda, lee y con los valores por defecto equivale a la politica A.6", async () => {
+  it("SQLite: guarda y lee; con todas las dimensiones activas equivale a la politica A.6", async () => {
     const store = new SqlReadPolicyStore(new SqliteAdapter(new Database(":memory:")));
     await store.save(base);
     const rec = await store.get("default");
     expect(rec).toMatchObject({ enabled: true, requireApwIdentity: true, minR01: 5, minR05: 5, onFail: "403" });
-    expect(toReadPolicy(rec)).toEqual(DEFAULT_GOVERNED_POLICY);
+    expect(toReadPolicy(rec, { "R-01": true, "R-05": true })).toEqual(DEFAULT_GOVERNED_POLICY);
+  });
+
+  it("con la configuracion por defecto (E-9) exige R-01 y no R-05", async () => {
+    const store = new InMemoryReadPolicyStore();
+    const policy = toReadPolicy(await store.save(base));
+    expect(policy?.require).toEqual({ identity: "apw_verified", "R-01": { min: 5, min_weight: 2 } });
   });
 
   it("SQLite: upsert y desactivar vuelve a lectura publica", async () => {
