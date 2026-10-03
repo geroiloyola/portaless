@@ -28,6 +28,10 @@
 // context.data.webBotAuth para que los handlers (GET /trust/:siteId) no
 // vuelvan a verificar: una segunda verificacion consumiria el nonce otra vez
 // y responderia nonce_replayed.
+//
+// ERRATA E-9: con la firma verificada se guarda en el ledger el readerDid
+// CANDIDATO (did:apw:<host de Signature-Agent>). Sin llamadas de red: la
+// comprobacion contra el TXT del lector la hace el emisor de reader_conduct.
 
 import {
   verifyWebBotAuthRequest,
@@ -38,6 +42,7 @@ import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
+import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
@@ -75,14 +80,16 @@ export async function onRequest(context) {
   }
 
   const operatorKeyId = result.agentKeyId ?? result.keyRecord?.keyId ?? "unknown";
+  const readerHost = readerHostFromOperator(result.keyRecord?.operator);
+  const readerDid = readerHost ? `did:apw:${readerHost}` : undefined;
 
   if (rule.access === "block") {
-    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
     return new Response(JSON.stringify({ error: "ai_input_blocked_by_policy" }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
   if (rule.access === "charge") {
-    await recordAgentAccess(ledgerStore, { operatorKeyId, charged: false, amountUsd: 0 });
+    await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
     const activationStore = await createSettlementActivationStore(env);
     const settled = await resolvePayPerCrawl({ policy, rule, request, next, store: activationStore });
     if (settled) return settled.response;
