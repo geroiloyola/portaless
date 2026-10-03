@@ -14,8 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: npm audit
-        run: npm audit --audit-level=high
+      # npm audit sale con codigo != 0 si hay vulnerabilidades; la decision la toma
+      # check-npm-audit.mjs contra .github/audit-allowlist.json (excepciones con
+      # motivo y vencimiento). Cualquier high/critical no listada rompe el job.
+      - name: npm audit (high/critical, con allowlist)
+        run: |
+          npm audit --json > audit.json || true
+          node .github/scripts/check-npm-audit.mjs audit.json
       - name: Verificar version de isolated-vm (GHSA-864f-rcv7-6rh4)
         run: |
           echo "Verificando que isolated-vm, si esta instalado, no sea <=7.0.0..."
