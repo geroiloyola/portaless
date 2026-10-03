@@ -1,6 +1,7 @@
 // GET /trust/:siteId: metadatos aditivos de verificabilidad de las cuatro
 // fuentes (APW B7 MVP). community queda marcada local_only, sin identidad
 // criptografica ni prueba exportable; no se cambia el shape de los arrays.
+// Desde B3 (ERRATA E-5), self es verificable si la fila trae attestationJws.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ snapshot: null as any }));
@@ -35,12 +36,13 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(body.community).toEqual(state.snapshot.community);
     expect(body.escrowReports).toEqual(state.snapshot.escrowReports);
     expect(body.verification).toMatchObject({
-      self: { status: "pending_jcs", verifiable: false },
+      self: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
       agent: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
       community: { status: "local_only", verifiable: false },
       escrow_report: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
     });
     expect(body.verification.community.reason).toContain("localStorage");
+    expect(body.governance).toEqual({ enabled: false });
   });
 
   it("responde 400 sin siteId", async () => {

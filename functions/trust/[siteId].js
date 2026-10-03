@@ -1,34 +1,37 @@
 // Endpoint PUBLICO de lectura de SiteTrustScore -- v0.0.9.16.
 // GET /trust/:siteId devuelve el snapshot completo de las 4 fuentes para
-// un sitio. Sin auth: es exactamente el dato que Protocol APW
-// (packages/apw-resolver/, hoy stub) y cualquier agente externo necesitan
-// poder leer libremente al resolver un sitio via did:web -- igual que
-// list_installed_plugins (packages/mcp-server/src/tools/list-installed-
-// plugins.ts) no requiere capacidad porque es informativo, no una accion
-// sobre un subject puntual. Ver docs/architecture/site-trust-score.md.
+// un sitio. Ver docs/architecture/site-trust-score.md.
 //
-// v0.0.9.16: primera conexion HTTP real. Hasta ahora createSiteTrustScoreStore
-// (packages/trust-layer/src/site-trust/store-factory.ts) tenia D1/SQLite
-// completos pero ningun endpoint lo invocaba -- mismo hueco que
-// functions/admin/permissions/index.js cerro para el Centro de Permisos
-// en el PR #6, y que functions/admin/plugins/[pluginId]/vote.js cerro
-// para el voto de plugins.
+// APW v1.2, B7 (MVP): `verification` indica como interpretar cada fuente.
+// `community` es local_only. `agent`, `escrow_report` y `self` son
+// verificables solo en filas con attestationJws (ERRATA E-4 y E-5).
 //
-// APW v1.2, B7 (MVP): agrega `verification`, metadatos ADITIVOS que indican
-// como debe interpretar un consumidor cada fuente. No cambia ni elimina los
-// arrays existentes. `community` es explicitamente local_only: voterId nace
-// en localStorage e ipHash solo limita frecuencia; no hay identidad
-// criptografica ni prueba exportable. `agent` y `escrow_report` son
-// verificables solo en filas con attestationJws (ERRATA E-4). `self` queda
-// pendiente de JCS y del manifiesto firmado (B3).
+// APW v1.2, B9 (6.5, ERRATA E-8): si el sitio activo una politica de lectura
+// (tabla site_trust_read_policies), el snapshot solo se entrega a lectores
+// que la cumplen: Web Bot Auth + identidad APW (6.3) + umbrales del Anexo A.
+// Si no la cumple, responde 401 / 403 / 402 con lo que siempre es publico
+// (`verification`, cantidad de filas por fuente) y el motivo. Sin politica,
+// o con la politica desactivada, la respuesta es la misma de siempre: el
+// valor por defecto de un sitio es publicar (A.6). Nunca abre por error:
+// si la identidad del lector no se puede resolver, aplica on_fail.
+//
+// Pendiente: proyectar las dimensiones W publicas (W-01, W-04, W-06, W-07,
+// W-09) a partir del snapshot; hoy el nivel publico son los metadatos.
 
 import { createSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts";
+import { createReadPolicyStore, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
+import { evaluatePolicy } from "../../packages/apw-resolver/src/scoring/policy.ts";
+import { resolveReaderState, defaultReaderResolvers } from "../../packages/apw-resolver/src/scoring/reader-identity.ts";
+
+const SITE_ID = "default";
 
 const VERIFICATION = Object.freeze({
   self: {
-    status: "pending_jcs",
-    verifiable: false,
-    reason: "Las atestaciones self requieren JCS y la firma del sitio; se implementan con el manifiesto APW firmado.",
+    status: "verifiable_if_attested",
+    verifiable: true,
+    proofField: "attestationJws",
+    reason: "Firmada por el propio sitio (JCS + EdDSA, ERRATA E-5). Atribuible, no mas confiable: sigue siendo la senal mas debil.",
   },
   agent: {
     status: "verifiable_if_attested",
@@ -49,22 +52,80 @@ const VERIFICATION = Object.freeze({
   },
 });
 
+function json(body, status, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", ...extraHeaders },
+  });
+}
+
+async function loadPolicy(env) {
+  try {
+    const store = await createReadPolicyStore(env);
+    return { policy: toReadPolicy(await store.get(SITE_ID)), error: false };
+  } catch (err) {
+    console.warn(`[Portaless APW] No se pudo leer la politica de lectura: ${err?.message}`);
+    return { policy: null, error: true };
+  }
+}
+
 export async function onRequestGet(context) {
-  const { env, params } = context;
+  const { env, params, request, data } = context;
 
   const siteId = params?.siteId;
-  if (!siteId) {
-    return new Response(JSON.stringify({ error: "missing_site_id" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
+  if (!siteId) return json({ error: "missing_site_id" }, 400);
+
+  const { policy, error } = await loadPolicy(env);
+  // Si la tabla existe pero no se pudo leer, no se puede saber si hay politica: cerrar.
+  if (error) return json({ error: "read_policy_unavailable" }, 503);
 
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
 
-  return new Response(JSON.stringify({ ...snapshot, verification: VERIFICATION }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+  if (!policy) {
+    return json({ ...snapshot, verification: VERIFICATION, governance: { enabled: false } }, 200);
+  }
+
+  const governedHeaders = {
+    "cache-control": "private, no-store",
+    vary: "Signature, Signature-Input, Signature-Agent",
+  };
+
+  // El middleware ya verifico la firma (y consumio el nonce); si no corrio, se verifica aca.
+  let wba = data?.webBotAuth ?? null;
+  if (!wba && request.headers.get("Signature-Agent")) {
+    wba = await verifyWebBotAuthRequest(request);
+  }
+
+  const reader = await resolveReaderState(wba, defaultReaderResolvers());
+  const decision = evaluatePolicy(policy, reader);
+
+  if (decision.allow) {
+    return json(
+      { ...snapshot, verification: VERIFICATION, governance: { enabled: true, granted: true, reader: reader.kind === "apw_verified" ? reader.did : null } },
+      200,
+      governedHeaders
+    );
+  }
+
+  return json(
+    {
+      error: "read_governed",
+      reason: decision.reason,
+      failed: decision.failed,
+      governance: { enabled: true, granted: false },
+      public: {
+        siteId: snapshot.siteId,
+        verification: VERIFICATION,
+        counts: {
+          self: snapshot.self.length,
+          agent: snapshot.agent.length,
+          community: snapshot.community.length,
+          escrowReports: snapshot.escrowReports.length,
+        },
+      },
+    },
+    Number(decision.status),
+    governedHeaders
+  );
 }

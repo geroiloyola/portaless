@@ -23,6 +23,11 @@
 //
 // PR C: la politica sale del manifiesto publicado (env.ASSETS), no de
 // defaultContentPolicy(). Ver load-policy.ts.
+//
+// APW v1.2 (B9): el resultado de la verificacion queda en
+// context.data.webBotAuth para que los handlers (GET /trust/:siteId) no
+// vuelvan a verificar: una segunda verificacion consumiria el nonce otra vez
+// y responderia nonce_replayed.
 
 import {
   verifyWebBotAuthRequest,
@@ -59,6 +64,7 @@ export async function onRequest(context) {
   }
 
   const result = await verifyWebBotAuthRequest(request);
+  if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   const origin = new URL(request.url).origin;
   const policy = await loadContentPolicy(origin, env.ASSETS);
   const rule = policy.policies.ai_input;
