@@ -77,7 +77,7 @@ Es el mismo calculo que usa Web Bot Auth para el `keyid`, asi que la huella APW 
 
 **Transicion**: las entradas del historial creadas antes de E-3 se conservan sin cambios y siguen verificando por su huella. Las entradas nuevas firman con el `keyId`. Las claves existentes reciben `#key-1`, `#key-2`... segun su fecha de alta. La columna `kid` del log sigue guardando la huella de la clave que firmo.
 
-**No incluido**: el manifiesto extendido firmado (`/.well-known/apw-manifest.jws`, seccion 5.2) requiere JCS (RFC 8785) y se publica en un cambio aparte, con una dependencia auditada.
+**No incluido**: el manifiesto extendido firmado (`/.well-known/apw-manifest.jws`, seccion 5.2) requiere JCS (RFC 8785) y se publica en un cambio aparte, con una dependencia auditada. *(Cerrado por E-5.)*
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/key-id.ts` (`didKeyId()`, `parseDidKeyId()`), `site-identity-store.ts` y `history-log.ts`.
 
@@ -100,14 +100,14 @@ Es el mismo calculo que usa Web Bot Auth para el `keyid`, asi que la huella APW 
 - Clave Ed25519 (`kty: "OKP"`). Las claves ML-DSA no se aceptan para atestaciones.
 - Firma valida sobre los bytes recibidos. El receptor no canonicaliza el payload.
 - Payload: `typ` = `apw-attestation+jws`; `sub` = `did:apw:<siteId>`; `src` = la fuente del endpoint; `iss` como en la tabla (las URLs https se comparan por origen).
-- `iat` dentro de +-300 segundos del reloj del receptor.
+- `iat` dentro de +-300 segundos del reloj del receptor. *(E-9: no aplica al leer atestaciones del historial publicado de un tercero.)*
 - `jti` (1 a 128 caracteres ASCII visibles) unico por emisor. Un `jti` repetido responde `409 duplicate_attestation`.
 
 La autenticacion previa no cambia: `agent` sigue exigiendo Web Bot Auth y la allowlist `authorized_agents`; `escrow_report` sigue exigiendo la API key. Un proveedor sin `public_key_jwk` queda autorizado pero no puede reportar (`403 provider_without_public_key`).
 
 **Persistencia**: el JWS se guarda completo en la fila existente de SiteTrustScore (`attestation_jws`, `attestation_jti`), sin un store paralelo. Si `sub` es el DID del propio sitio, el JWS se anota ademas en el historial encadenado (5.4). Si el historial falla, el reporte igual queda guardado y la respuesta lo indica con `logged: false`. Las filas anteriores a E-4 quedan con `attestation_jws` vacio: no son verificables por terceros.
 
-**No incluido**: las atestaciones `self` las firma el propio sitio y requieren JCS (5.2); van junto con `/.well-known/apw-manifest.jws`. `community` queda fuera de la cadena en el MVP (B7).
+**No incluido**: las atestaciones `self` las firma el propio sitio y requieren JCS (5.2); van junto con `/.well-known/apw-manifest.jws`. *(Cerrado por E-5.)* `community` queda fuera de la cadena en el MVP (B7).
 
 **Implementacion**: `packages/trust-layer/src/site-trust/attestation.ts` (`verifyAttestation()`), `functions/trust/[siteId]/agent-verification.js`, `escrow-report.js` y `packages/apw-resolver/src/did-apw/record-attestation.ts`.
 
@@ -203,7 +203,9 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 
 **Aplicacion (6.9)**: el resultado se cachea por host y huella (5 minutos si verifica, 60 segundos si falla). Cualquier error de resolucion aplica `on_fail`; nunca se abre por defecto. Si la tabla de politicas no se puede leer, `GET /trust/:siteId` responde `503`. Al rechazar, la respuesta incluye lo que siempre es publico (`verification` y cantidad de filas por fuente); la proyeccion de las dimensiones W publicas queda pendiente.
 
-**Pendiente en el MVP**: la carga de `reader_conduct` desde el historial del lector. Hasta entonces todo lector verificado tiene R-01 y R-05 neutros (4.0, peso 0), asi que una politica activa con umbrales rechaza a todos los lectores.
+**Pendiente en el MVP**: la carga de `reader_conduct` desde el historial del lector. Hasta entonces todo lector verificado tiene R-01 y R-05 neutros (4.0, peso 0), asi que una politica activa con umbrales rechaza a todos los lectores. *(Cerrado por E-9: R-01 se carga desde `reader_conduct`; R-05 queda desactivado por configuracion y la politica por defecto exige solo R-01.)*
+
+**Siguen pendientes de E-8**: el grant `trust:read-governance-bypass`, aceptar claves no activas del lector y la proyeccion de las dimensiones W publicas al rechazar.
 
 **Implementacion**: `packages/apw-resolver/src/scoring/read-policy-store.ts`, `reader-identity.ts`, `policy.ts`, `functions/trust/[siteId].js` y `functions/_middleware.js` (`context.data.webBotAuth`).
 
@@ -222,7 +224,9 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
   - Las entradas con `ts` anterior a `legacyCutoff` (2026-10-04) pueden no tener JWS; segun `legacyEntriesWithoutJws` se ignoran o rompen la completitud.
 - Cada `reader_conduct` con `sub` igual al DID del lector, y cuyo emisor no sea el propio lector, se verifica con `verifyAttestation()` (E-4) contra las claves publicadas del emisor. La clave activa debe ser `k` de su TXT y el `iat` debe caer dentro de la ventana de la clave. La ventana de +-300 s sobre `iat` no aplica al leer del historial (`skipIatWindow`): el `ts` firmado de la cadena prueba cuando se anoto.
 - **Fail-closed**: si una `reader_conduct` no se puede verificar, el lector queda `apw_unresolvable` con motivo `reader_conduct_*`. Un lector no puede descartar sus negativas alegando que no verifican.
-- **Emision**: el sitio registra en el ledger el DID candidato del lector (`did:apw:<host de Signature-Agent>`, sin verificar). `POST /admin/api/reader-conduct/emit` (admin + step-up) emite por periodo solo si `operatorKeyId` es `k` del TXT del lector. Firma con la clave activa (E-3), usa un `jti` determinista (emisor, lector, periodo, categoria) y anota cada emision en el historial propio: el emisor publica lo que emitio.
+- **Emision**: el sitio registra en el ledger el DID candidato del lector (`did:apw:<host de Signature-Agent>`, sin verificar). `POST /admin/api/reader-conduct/emit` (admin + step-up) emite por periodo solo si `operatorKeyId` es `k` del TXT del lector. Firma con la clave activa (E-3), usa un `jti` determinista (emisor, lector, periodo, categoria) y anota cada emision en el historial propio: el emisor publica lo que emitio. Repetir la emision de un periodo no duplica: los `jti` ya anotados se informan como `already_emitted`.
+
+**Que prueba y que no prueba la completitud**: prueba que el lector no oculto ni altero atestaciones **que ya anoto** en una cadena anclada. No prueba que haya anotado todas las que recibio, ni que muestre la misma cadena a todos los visitantes.
 
 **Limitaciones**:
 

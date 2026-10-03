@@ -3,7 +3,7 @@
 **Autor**: Gerardo Loyola
 **Proyecto**: Portaless
 **Fecha**: Octubre 2026
-**Estado**: borrador aprobado para desarrollo. Las secciones 3 y 4 describen codigo real en `main`; la seccion 5 es el MVP de identidad e historial (v1.1); la seccion 6 es la Gobernanza de Lectura basada en Reputacion — Loyola Trust Protocol (v1.2); el Anexo A define la puntuacion por dimensiones; la seccion 7 es futuro.
+**Estado**: implementacion de referencia en `main` (Portaless). Las secciones 5 (identidad e historial, v1.1) y 6 (Gobernanza de Lectura basada en Reputacion — Loyola Trust Protocol, v1.2) y el Anexo A estan implementados. Las correcciones normativas viven en [`ERRATA.md`](./ERRATA.md) (E-1 a E-9): **cuando una errata contradice este texto, manda la errata**. La seccion 7 es futuro.
 
 **Historial de versiones**
 
@@ -12,6 +12,7 @@
 | [v1.0](./APW-SPEC-v1.0.md) | Septiembre 2026 | Diseno inicial, conservado sin cambios de fondo como anterioridad citable |
 | v1.1 | Octubre 2026 | Identidad publica, firmas, atestaciones por emisor e historial encadenado (secciones 5.1 a 5.6 de este documento) |
 | v1.2 | Octubre 2026 | Loyola Trust Protocol: autenticacion mutua y gobernanza de lectura (seccion 6), y puntuacion por dimensiones (Anexo A) |
+| v1.2 + E-1..E-9 | Octubre 2026 | Implementacion de referencia completa de las secciones 5, 6 y Anexo A. Esta revision del documento marca el estado real y remite a las erratas |
 
 [`apw-spec.md`](./apw-spec.md) queda reemplazado por este documento.
 
@@ -30,49 +31,63 @@ Protocol APW reduce la responsabilidad operativa de quien publica un sitio al mi
 5. **Portaless no es autoridad.** Cualquier implementacion que siga esta especificacion produce y verifica los mismos artefactos.
 6. **La confianza es bidireccional.** Quien lee tambien se identifica y tambien tiene reputacion. El sitio decide quien puede leer sus datos de confianza (seccion 6).
 
-## 3. Implementado hoy (en `main`)
+## 3. Implementado (en `main`)
+
+### 3.1 Base (anterior a v1.1)
 
 | Pieza | Codigo | Que hace |
 |---|---|---|
 | Lectura DNS | `packages/apw-resolver/src/dns-txt/dns-txt.ts` | Lee `_apw.<dominio>` via DNS-over-HTTPS (Cloudflare 1.1.1.1). Funciona igual en edge y en Node. |
-| Manifiesto | `packages/apw-resolver/src/manifest.ts` | Payload JSON compacto `{ v: 1, siteId, trustUrl: "/trust/<siteId>", contentKinds[] }`. `parseApwManifest()` nunca lanza. |
+| Manifiesto | `packages/apw-resolver/src/manifest.ts` | Payload JSON compacto. v1 sin identidad; v2 con `k`, `h` y `rg` (5.1). `parseApwManifest()` nunca lanza y acepta ambas versiones. |
 | Resolver | `packages/apw-resolver/src/index.ts` | `resolveApwManifest(domain)`: primer TXT que parsea como manifiesto valido. |
 | Publicacion | `packages/apw-resolver/src/dnslink/cli.mjs` y el checklist de `/admin` (`functions/admin/api/apw-verification-status.js`) | Generan el valor exacto del TXT, con aviso si supera ~512 bytes. |
-| Identidad | `packages/apw-resolver/src/did-apw/` | `generateApwDid()` (Ed25519 via WebCrypto), `buildDidDocument()` con forma compatible con `did:web` (`Ed25519VerificationKey2020`, `#key-1`, `assertionMethod`), `parseApwDidDocument()`. |
-| Custodia de la clave | `site-identity-store.ts` (D1/SQLite/memoria) | Clave privada cifrada con AES-GCM (`PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY`). Rotacion atomica con verificacion reforzada. |
-| Manifiesto + identidad | `manifest-with-identity.ts` | Compone el manifiesto con el `didDocument`. **No se usa todavia al publicar el TXT.** |
 | SiteTrustScore | `packages/trust-layer/src/site-trust/site-trust-score.ts` | 4 fuentes (`self`, `agent`, `community`, `escrow_report`) con categorias cerradas y semantica de ausencia; `SiteTrustSnapshot` sin promedio. |
-| Lectura publica | `GET /trust/:siteId` | Snapshot completo, sin autenticacion. |
-| Escritura por fuente | `PUT /admin/site-trust/:siteId/self`, `POST /trust/:siteId/vote`, `POST /trust/:siteId/agent-verification`, `POST /trust/:siteId/escrow-report` | Cuatro modelos de auth: sesion admin; anonimo con rate limit por `ipHash`; Web Bot Auth + allowlist `authorized_agents`; API key + allowlist `authorized_escrow_providers`. UI de alta y baja de agentes y proveedores en `/admin`. |
+| Escritura por fuente | `PUT /admin/site-trust/:siteId/self`, `POST /trust/:siteId/vote`, `POST /trust/:siteId/agent-verification`, `POST /trust/:siteId/escrow-report` | Sesion admin; anonimo con rate limit por `ipHash`; Web Bot Auth + allowlist `authorized_agents`; API key + allowlist `authorized_escrow_providers`. |
 | Identidad de agentes | `packages/trust-layer/src/webbotauth/` (draft-03, compartido por middleware y SiteTrustScore) | Verifica quien hace cada request: es la identidad del lector en la seccion 6. |
-| Ledger | Trust Layer (`usage_ledger`) | Registra accesos verificados y violaciones de politica por agente. |
+| Ledger | Trust Layer (`usage_ledger`) | Registra accesos verificados y violaciones de politica por agente, y desde E-9 el DID candidato del lector (`reader_did`). |
 
-## 4. Brechas confirmadas en el codigo actual
+### 3.2 Secciones 5 y 6 (v1.1 y v1.2)
 
-| # | Brecha | Evidencia |
+| Pieza | Codigo | Errata |
 |---|---|---|
-| B1 | El documento DID no es publico | Solo lo devuelve `functions/admin/api/site-identity.js`, con sesion admin. |
-| B2 | El TXT publicado no incluye identidad | El checklist genera el TXT con `buildApwManifest()` + `serializeApwManifest()`, sin `manifest-with-identity.ts`. |
-| B3 | La clave del sitio nunca firma nada | `getDecryptedPrivateKey()` solo se usa en el store y en tests. |
-| B4 | La verificacion de un agente no es re-verificable | `AgentTrustVerification` guarda `agentKeyId` y `verified`, no la firma. Ademas, la firma Web Bot Auth del request cubre `@authority` y `signature-agent`, **no el cuerpo**: el `verified` del body no esta autenticado criptograficamente. |
-| B5 | Los reportes de escrow no son verificables por terceros | La API key autentica ante el endpoint, pero no produce ninguna prueba exportable. |
-| B6 | El historial se puede editar sin rastro | Son filas en D1/SQLite. |
-| B7 | `community` no tiene identidad de votante | `voterId` sale de `localStorage`; la unica defensa es `ipHash`. |
-| B8 | El voto fallaba en self-host | `vote.js` exigia `CF-Connecting-IP`, que el runtime Node no tiene. **Corregido en el mismo PR que publica esta especificacion.** |
-| B9 | La reputacion es de lectura publica y unidireccional | `GET /trust/:siteId` no exige identidad; los lectores no tienen reputacion propia. Se resuelve en la seccion 6. |
+| Identidad `did:apw` con historial de claves (`keyId` `#key-<n>`, huella, ventanas `validFrom`/`validTo`) | `did-apw/generate.ts`, `site-identity-store.ts`, `key-id.ts`, `fingerprint.ts` | E-1, E-3 |
+| `GET /.well-known/did.json` y verificacion TXT contra `did.json` | `functions/.well-known/did.json.js`, `resolveApwIdentity()` | E-1 |
+| JWS del sitio con JCS y manifiesto extendido `GET /.well-known/apw-manifest.jws` | `did-apw/site-jws.ts`, `site-manifest.ts` | E-5 |
+| Atestaciones verificables `agent`, `escrow_report`, `self` | `trust-layer/src/site-trust/attestation.ts`, endpoints de `/trust/:siteId/*` | E-4, E-5 |
+| Historial encadenado firmado y `GET /.well-known/apw-log.json` | `did-apw/history-log.ts`, `history-resolver.ts`, `attestation-log-store.ts` | E-2, E-3 |
+| Paquete de atestaciones `GET /.well-known/apw-attestations.json` | historial con `att_jws` | E-9 |
+| Puntuacion por dimensiones y calibracion R-05 | `scoring/scoring.ts` | E-6, E-7 |
+| Politica de lectura, identidad del lector y enforcement fail-closed | `scoring/read-policy-store.ts`, `reader-identity.ts`, `policy.ts`, `functions/trust/[siteId].js` | E-8 |
+| Reputacion del lector (`reader_conduct`) con completitud, y emision desde el ledger | `scoring/reader-attestations.ts`, `reader-conduct-emitter.ts`, `reader-conduct-config.ts`, `functions/admin/api/reader-conduct/emit.js` | E-9 |
 
-## 5. MVP de identidad e historial (v1.1)
+## 4. Estado de las brechas
+
+Tabla original de v1.2 con su estado actual.
+
+| # | Brecha original | Estado | Como se cerro |
+|---|---|---|---|
+| B1 | El documento DID no es publico | Cerrada | `GET /.well-known/did.json` (5.1, E-1). |
+| B2 | El TXT publicado no incluye identidad | Cerrada | Manifiesto v2 con `k`, `h` y `rg` (5.1). |
+| B3 | La clave del sitio nunca firma nada | Cerrada | JWS del sitio, manifiesto extendido, entradas del historial y `self` (5.2, E-3, E-5). |
+| B4 | La verificacion de un agente no es re-verificable | Cerrada | Atestacion firmada con la clave del directorio Web Bot Auth del agente (5.3, E-4). |
+| B5 | Los reportes de escrow no son verificables por terceros | Cerrada | Atestacion firmada con la clave publica registrada del proveedor (5.3, E-4). |
+| B6 | El historial se puede editar sin rastro | Cerrada | Historial encadenado anclado con `h` en el DNS (5.4, E-2). No detecta omisiones (seccion 7). |
+| B7 | `community` no tiene identidad de votante | Abierta | Sigue fuera de la cadena (5.3); requiere identidad de votante (seccion 7). |
+| B8 | El voto fallaba en self-host | Cerrada | Corregido en el PR que publico esta especificacion. |
+| B9 | La reputacion es de lectura publica y unidireccional | Cerrada con limites | Politica de lectura (E-8) y reputacion del lector (E-9). Omision en el origen y *equivocation* requieren testigos (seccion 7). |
+
+## 5. Identidad e historial (v1.1)
 
 ### 5.1 Resolucion de `did:apw` (cierra B1 y B2)
 
 `did:apw:<dominio>` se resuelve por **dos canales que deben coincidir**:
 
-1. **DNS (raiz de confianza).** El manifiesto en `_apw.<dominio>` agrega el campo `k`: huella de la clave publica activa, `k = base64url(SHA-256(JCS(publicKeyJwk)))`, donde JCS es la canonicalizacion JSON de RFC 8785. Ocupa 43 caracteres y deja margen dentro de los ~512 bytes.
+1. **DNS (raiz de confianza).** El manifiesto en `_apw.<dominio>` agrega el campo `k`: huella de la clave publica activa. Ocupa 43 caracteres y deja margen dentro de los ~512 bytes. *(E-1: `k` es el JWK Thumbprint de RFC 7638, no `SHA-256(JCS(publicKeyJwk))`.)*
 2. **HTTPS (documento completo).** `GET https://<dominio>/.well-known/did.json` devuelve el `didDocument` publico (sin clave privada), con el mismo formato que `did:web`.
 
-Un resolver considera valida la identidad solo si la huella de `verificationMethod[0].publicKeyJwk` del `did.json` es igual a `k` del TXT. Si no coinciden, la identidad es invalida: el canal HTTPS no puede suplantar al DNS. Rotar la clave implica actualizar el TXT.
+Un resolver considera valida la identidad solo si la huella de la clave del `did.json` es igual a `k` del TXT. Si no coinciden, la identidad es invalida: el canal HTTPS no puede suplantar al DNS. Rotar la clave implica actualizar el TXT; las claves anteriores siguen publicadas con su ventana de validez (E-2, E-3).
 
-Manifiesto v2. `parseApwManifest()` hoy rechaza cualquier `v` distinto de 1, asi que la version sube y el resolver acepta ambas: un manifiesto v1 sigue siendo valido, pero sin identidad verificable. El campo `rg` se define en 6.5.
+Manifiesto v2. El resolver acepta v1 y v2: un manifiesto v1 sigue siendo valido, pero sin identidad verificable. El campo `rg` se define en 6.5.
 
 ```json
 {"v":2,"siteId":"ejemplo.com","trustUrl":"/trust/ejemplo.com","contentKinds":["mixed"],"k":"<huella>","h":"<cabeza>","rg":true}
@@ -80,7 +95,9 @@ Manifiesto v2. `parseApwManifest()` hoy rechaza cualquier `v` distinto de 1, asi
 
 ### 5.2 Firma de artefactos del sitio (cierra B3)
 
-Todo artefacto firmado por el sitio es un **JWS compacto** (RFC 7515) con `alg: "EdDSA"` y `kid: "did:apw:<dominio>#key-1"`, cuyo payload es JSON canonicalizado con JCS. El primer artefacto es el **manifiesto extendido**, servido en `/.well-known/apw-manifest.jws`, que repite los campos del TXT mas metadatos que no entran en el DNS.
+Todo artefacto firmado por el sitio es un **JWS compacto** (RFC 7515) con `alg: "EdDSA"`, cuyo payload es JSON canonicalizado con JCS. El primer artefacto es el **manifiesto extendido**, servido en `/.well-known/apw-manifest.jws`, que repite los campos del TXT mas metadatos que no entran en el DNS.
+
+*(E-3 y E-5: `kid` es el `keyId` de la clave activa, `did:apw:<dominio>#key-<n>`, no un `#key-1` fijo. E-5 fija el `typ`, el payload del manifiesto y la verificacion JCS estricta.)*
 
 ### 5.3 Atestaciones firmadas por el emisor (cierra B4 y B5)
 
@@ -99,13 +116,13 @@ Una atestacion es un JWS emitido por quien genera el dato, nunca por el sitio ev
 }
 ```
 
-- **`agent`**: `iss` es el origen `Signature-Agent` del agente y la firma usa **la misma clave Ed25519 que ya publica en su directorio Web Bot Auth**. El endpoint `/trust/:siteId/agent-verification` mantiene sus dos capas (identidad + allowlist) y ademas exige la atestacion en el cuerpo, verificada contra la clave del directorio. Esto autentica el `verified` que hoy viaja sin firma.
-- **`escrow_report`**: `iss` es el `provider_id`; `authorized_escrow_providers` agrega la clave publica del proveedor. La API key sigue autenticando el endpoint; la firma es la prueba exportable.
+- **`agent`**: `iss` es el origen `Signature-Agent` del agente y la firma usa **la misma clave Ed25519 que ya publica en su directorio Web Bot Auth**. El endpoint `/trust/:siteId/agent-verification` mantiene sus dos capas (identidad + allowlist) y ademas exige la atestacion en el cuerpo, verificada contra la clave del directorio.
+- **`escrow_report`**: `iss` es el `provider_id`; `authorized_escrow_providers` guarda la clave publica del proveedor. La API key sigue autenticando el endpoint; la firma es la prueba exportable.
 - **`self`**: la firma el sitio con su propia clave (5.2). Sigue siendo la senal mas debil, ahora atribuible.
-- **`community`**: queda **fuera de la cadena** en el MVP (B7). Se sigue mostrando como dato local, marcado como no verificable.
+- **`community`**: queda **fuera de la cadena** (B7). Se sigue mostrando como dato local, marcado como no verificable.
 - **`reader_conduct`**: ver 6.4.
 
-El servidor guarda el JWS completo junto a la fila existente del `SiteTrustScoreStore`; no se crea un store paralelo.
+El servidor guarda el JWS completo junto a la fila existente del `SiteTrustScoreStore`; no se crea un store paralelo. *(E-4 define la entrega en `body.attestation`, el orden de validaciones, la ventana de `iat` y la unicidad de `jti`.)*
 
 ### 5.4 Historial encadenado (cierra B6)
 
@@ -114,14 +131,16 @@ Cada atestacion aceptada se agrega a un log del sitio. Cada entrada es un JWS fi
 - Detecta alteracion o borrado de entradas ya publicadas: cambia la cadena y deja de coincidir con `h`.
 - **No detecta omisiones**: un sitio puede no aceptar una atestacion desde el inicio. La proteccion contra omisiones requiere testigos externos (seccion 7).
 
+*(E-2 fija hashes, primera entrada, `ts`, publicacion en `/.well-known/apw-log.json`, rotacion y anclaje. E-9 agrega el JWS completo de cada atestacion junto a la entrada.)*
+
 ### 5.5 Exportacion y verificacion
 
-- `GET /trust/:siteId/attestations` devuelve la cadena completa (entradas del sitio + JWS de cada emisor). Publico por defecto; gobernable segun la seccion 6 y el Anexo A.6.
-- `verifyApwHistory(domain)` en `apw-resolver` resuelve el TXT, verifica `k` contra `did.json`, recorre la cadena hasta `h` y verifica cada firma de emisor contra su clave publica. Devuelve un resultado por atestacion y nunca lanza.
+- La cadena se publica en `GET /.well-known/apw-log.json` (E-2) y los JWS de cada emisor en `GET /.well-known/apw-attestations.json` (E-9). *Reemplaza al `GET /trust/:siteId/attestations` previsto originalmente.*
+- `resolveApwHistory(domain)` en `apw-resolver` resuelve el TXT, verifica `k` contra la clave activa del log, recorre la cadena y comprueba el anclaje de `h`. Devuelve un resultado y nunca lanza. La verificacion de cada atestacion contra la clave de su emisor la hace `loadReaderConduct()` para `reader_conduct` (E-9). *(El nombre `verifyApwHistory()` de la version original corresponde a estas dos funciones.)*
 
 ### 5.6 Vectores de prueba
 
-La especificacion se publica con vectores fijos (claves, payloads, JWS, hashes y puntajes del Anexo A) para que otra implementacion pueda comprobar compatibilidad sin depender del codigo de Portaless.
+La especificacion se publica con vectores fijos (claves, payloads, JWS, hashes y puntajes del Anexo A) para que otra implementacion pueda comprobar compatibilidad sin depender del codigo de Portaless. Los vectores vigentes estan en E-1 (huellas) y E-6/E-7 (puntajes); los de JWS e historial viven en los tests de `apw-resolver`.
 
 ## 6. Gobernanza de Lectura basada en Reputacion — Loyola Trust Protocol (v1.2)
 
@@ -135,15 +154,15 @@ El **Loyola Trust Protocol** (Reputacion de Confianza Mutua) usa la identidad AP
 
 1. El sitio define politicas de lectura sobre sus recursos de confianza y, mas adelante, de contenido.
 2. Quien lee (agente de IA, indice, otro sitio) se autentica con Web Bot Auth y su origen `Signature-Agent` se resuelve a `did:apw:<dominio-del-lector>`.
-3. El sitio verifica el historial APW del lector (5.5), calcula sus dimensiones (Anexo A) y evalua la politica. Solo si se cumple, entrega el recurso; si no, responde 403 o 402.
+3. El sitio verifica el historial APW del lector (5.5), calcula sus dimensiones (Anexo A) y evalua la politica. Solo si se cumple, entrega el recurso; si no, responde segun `on_fail`.
 
 El resultado son **Trust Enclaves**: conjuntos de sitios y lectores que solo se exponen datos entre si cuando ambas partes prueban identidad y reputacion. Casos tipicos: indices que solo leen sitios que los aceptan, redes de medios independientes que comparten historial solo entre periodistas verificados, y sitios que no se dejan perfilar por rastreadores anonimos.
 
 ### 6.3 Identidad del lector
 
-- El lector se identifica con Web Bot Auth (draft-03), ya implementado en `webbotauth/verify.ts`.
+- El lector se identifica con Web Bot Auth (draft-03), implementado en `webbotauth/verify.ts`.
 - Su origen `Signature-Agent` (por ejemplo `https://indice.example`) se mapea a `did:apw:indice.example`, que se resuelve igual que el de un sitio (5.1).
-- La clave que firma la request Web Bot Auth debe tener la misma huella que `k` en el TXT del lector, o estar listada en su `did.json`. Asi la identidad del agente y la identidad APW quedan unificadas: un par de claves por dominio.
+- La clave que firma la request Web Bot Auth debe tener la misma huella que `k` en el TXT del lector. Asi la identidad del agente y la identidad APW quedan unificadas: un par de claves por dominio. *(E-8: por ahora solo se acepta la clave activa `k`; las claves no activas del `did.json` quedan fuera.)*
 - Un lector sin identidad APW puede autenticarse por Web Bot Auth, pero no tiene reputacion: cualquier politica que exija reputacion lo rechaza.
 
 ### 6.4 Reputacion del lector: atestaciones `reader_conduct`
@@ -164,8 +183,8 @@ Para que un lector tenga reputacion, alguien tiene que emitirla. v1.2 agrega la 
 ```
 
 - La firma el sitio emisor con su clave (5.2). Se agrega al historial del emisor (registro de lo emitido) y se entrega al lector, que la incorpora a su propio historial.
-- `policy_violation` y `redistribution` con `val: true` son senales negativas reales, con la misma semantica que `agent.verified: false`. Un lector no puede borrarlas de su historial sin romper la cadena; si no las acepta, el emisor las conserva y puede exponerlas a otros sitios de su enclave.
-- El ledger del Trust Layer, que ya registra accesos verificados y violaciones de politica por agente, es la fuente para emitir estas atestaciones de forma automatica.
+- `policy_violation` y `redistribution` con `val: true` son senales negativas reales, con la misma semantica que `agent.verified: false`. Un lector no puede borrarlas de su historial sin romper la cadena ni ocultarlas sin romper la completitud (E-9); si no las acepta, el emisor las conserva y puede exponerlas a otros sitios de su enclave.
+- El ledger del Trust Layer es la fuente para emitirlas. *(E-9: emision por periodo con `POST /admin/api/reader-conduct/emit`, admin + step-up, `jti` determinista, solo si la clave del lector es `k` de su TXT. Hoy se emiten `respected_policy` y `policy_violation`; `rate_respected`, `paid_as_agreed` y `redistribution` esperan datos del ledger.)*
 
 ### 6.5 Politicas de lectura
 
@@ -184,22 +203,24 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 }
 ```
 
-- Recursos gobernables en el MVP de v1.2: `GET /trust/:siteId` y `GET /trust/:siteId/attestations`. En una version posterior, cualquier ruta de contenido, combinandose con la politica `allow`/`charge`/`block` del Trust Layer.
-- `on_fail: "402"` se integra con el settlement de pay-per-crawl ya implementado: el dueno puede permitir compensar la confianza faltante con pago.
-- Las politicas viven en la base del sitio, como las activaciones de pay-per-crawl, y se administran desde el Centro de Permisos con la capacidad `trust:read-governance`, con el mismo bloqueo que `billing:*` en el PUT generico. El manifiesto solo anuncia `rg: true`; publicar la politica completa le diria a un atacante exactamente que fabricar.
+- Recursos gobernables: `GET /trust/:siteId`. En una version posterior, cualquier ruta de contenido, combinandose con la politica `allow`/`charge`/`block` del Trust Layer.
+- `on_fail: "402"` se integra con el settlement de pay-per-crawl: el dueno puede permitir compensar la confianza faltante con pago.
+- El manifiesto solo anuncia `rg: true`; publicar la politica completa le diria a un atacante exactamente que fabricar.
+
+*(E-8 reemplaza el almacenamiento: la politica vive en la tabla tipada `site_trust_read_policies`, no en el Centro de Permisos; este queda para excepciones por lector, `trust:read-governance-bypass`, todavia sin implementar. E-9: R-05 arranca desactivado en `reader-conduct-config.ts` hasta que haya evaluadores suficientes para calibrar.)*
 
 ### 6.6 Que sigue siendo publico
 
-- El TXT (`k`, `h`, `rg`) y `did.json` siempre son publicos: sin ellos nadie podria verificar nada.
+- El TXT (`k`, `h`, `rg`), `did.json`, el manifiesto extendido, el log y el paquete de atestaciones siempre son publicos: sin ellos nadie podria verificar nada.
 - `h` es un compromiso publico sobre el historial: revela que existe y que cambio, no su contenido. Un lector autorizado comprueba que lo recibido coincide con `h`.
-- Las dimensiones de nivel publico (Anexo A.6) y el puntaje, la cantidad y la suma de pesos de todas las dimensiones.
+- Las dimensiones de nivel publico (Anexo A.6) y el puntaje, la cantidad y la suma de pesos de todas las dimensiones. *(E-8: al rechazar, la proyeccion de las dimensiones W publicas sigue pendiente; hoy se devuelve `verification` y la cantidad de filas por fuente.)*
 
 ### 6.7 Arranque en frio e identidades falsas
 
 - **Arranque en frio**: un lector nuevo empieza con todas sus dimensiones en 4.0 y peso de evaluador 0.25 (Anexo A.4.2). Gana reputacion leyendo recursos de sitios con politicas laxas o publicas. Por eso el valor por defecto de un sitio es publicar el nivel publico completo.
 - **Identidades falsas (Sybil)**: un atacante puede registrar muchos dominios y emitirse atestaciones entre ellos. Defensas exigidas:
   - **Ponderacion por quien evalua** (Anexo A.4.2): un dominio nuevo pesa 0.25 y solo gana peso si sus evaluaciones coinciden con el consenso de emisores ya ponderados.
-  - Contar solo emisores **distintos** y exigir suma de pesos minima en cada predicado (`min_weight`).
+  - Contar solo emisores **distintos** y exigir suma de pesos minima en cada predicado (`min_weight`). Las atestaciones de un lector sobre si mismo no cuentan (E-9).
   - Antiguedad minima del historial del emisor (dimension W-07).
   - Ponderar `escrow_report` (terceros regulados) por encima de `reader_conduct` cuando la politica lo requiera.
 - Ninguna defensa es perfecta: un atacante con suficientes dominios antiguos y bien calibrados puede construir reputacion. El costo de hacerlo es la defensa, como en cualquier red de confianza.
@@ -208,10 +229,10 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 
 | Pieza | Reutiliza | Agrega |
 |---|---|---|
-| Autenticacion del lector | `webbotauth/verify.ts` (draft-03) | Mapeo `Signature-Agent` → `did:apw` y comprobacion de la clave contra `k` |
-| Reputacion del lector | `verifyApwHistory()` (5.5), con cache por TTL | Fuente `reader_conduct`, emision automatica desde el ledger y calculo de dimensiones R |
-| Politicas | Centro de Permisos (UI y store), mismo patron que `billing:*` | Capacidad `trust:read-governance` y store de politicas |
-| Enforcement | `functions/_middleware.js` y los handlers de `/trust/*` | Evaluador de predicados; respuestas 401, 403 o 402 |
+| Autenticacion del lector | `webbotauth/verify.ts` (draft-03) | Mapeo `Signature-Agent` -> `did:apw` y comprobacion de la clave contra `k` (`reader-identity.ts`) |
+| Reputacion del lector | `resolveApwHistory()` (5.5), con cache por TTL | `reader_conduct` con completitud (`reader-attestations.ts`), emision desde el ledger (`reader-conduct-emitter.ts`) y calculo de dimensiones R |
+| Politicas | Tabla tipada `site_trust_read_policies` (E-8) | Evaluador de predicados (`policy.ts`) |
+| Enforcement | `functions/_middleware.js` y `functions/trust/[siteId].js` | Respuestas 401, 403 o 402; nunca abre por defecto |
 | 402 | `billing/pay-per-crawl/` | `on_fail: "402"` |
 
 ### 6.9 Limites
@@ -219,21 +240,29 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 - La gobernanza protege lo que el sitio sirve gobernado. El contenido abierto (HTML publico, `llms.txt`) sigue siendo legible salvo que tambien se gobierne.
 - Un lector autorizado puede copiar y redistribuir lo que lee. El protocolo puede registrar esa conducta (`redistribution`) si se detecta; no puede impedirla.
 - Verificar reputacion en cada request agrega latencia: requiere cache, y si el historial del lector no se puede resolver se aplica `on_fail`. Nunca se abre por defecto.
+- La completitud de E-9 prueba que el lector no oculto atestaciones **ya anotadas**. No prueba que haya anotado todas las que recibio ni que muestre la misma cadena a todos (seccion 7).
 
-## 7. Futuro (fuera del MVP)
+## 7. Futuro (fuera de la implementacion actual)
 
-- **Testigos externos y Portaless Index**: terceros que guardan copias de `h` en el tiempo, para detectar omisiones y reescrituras del TXT. Index es tambien el primer lector natural de los enclaves.
-- **`community` portable**: requiere identidad de votante con resistencia a identidades falsas.
+- **Testigos externos y Portaless Index**: terceros que guardan copias de `h` en el tiempo, para detectar omisiones, reescrituras del TXT y *equivocation* (cadenas distintas para distintos visitantes). Index es tambien el primer lector natural de los enclaves.
+- **Automatizar el anclaje de `h`**: hoy el TXT se actualiza a mano y las entradas posteriores quedan sin anclar (E-2).
+- **`community` portable** (B7): requiere identidad de votante con resistencia a identidades falsas.
+- **Excepciones por lector**: grant `trust:read-governance-bypass` (E-8).
+- **Claves no activas del lector**: aceptar firmas con claves retiradas dentro de su ventana (E-8).
+- **R-05 en politicas**: activarlo cuando haya evaluadores suficientes (E-9).
+- **Nuevas senales de conducta**: `rate_respected`, `paid_as_agreed`, `redistribution` (6.4).
 - **Gobernanza de contenido**: extender 6.5 a cualquier ruta, no solo `/trust/*`.
-- **ML-DSA (FIPS 204)** en firmas del sitio y de emisores, usando `key_algorithm` ya presente en `authorized_agents`.
+- **ML-DSA (FIPS 204)** en las firmas APW del sitio y de los emisores. La verificacion ML-DSA ya existe para la identidad Web Bot Auth de la fuente `agent`, pero E-4 sigue exigiendo Ed25519 en las atestaciones.
 - **Portaless Cloud Images**: el mismo formato de atestacion aplicado a imagenes.
-- **Historial de claves**: hoy la rotacion descarta la clave anterior; para verificar firmas viejas hace falta publicar las claves retiradas con su intervalo de validez.
+
+*(El "historial de claves" listado aqui en la version original ya esta implementado: E-2 y E-3.)*
 
 ## 8. Limites generales
 
 - La identidad prueba control del DNS, no veracidad del contenido.
 - Un sitio puede omitir atestaciones que no le convienen hasta que existan testigos.
 - Si se compromete la clave del sitio, el atacante puede firmar entradas nuevas hasta que se rote y se actualice el TXT.
+- `ts` lo declara quien firma la entrada: con una clave comprometida se pueden fechar entradas dentro de la ventana de esa clave (E-2, E-9).
 - `community` sigue siendo inflable hasta que exista identidad de votante.
 - APW comparte primitivas con protocolos federados (identificadores DID, registros firmados, historial verificable), pero no define todavia una capa de sincronizacion entre nodos; esa capa corresponde a Portaless Index.
 
@@ -241,7 +270,7 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 
 ## Anexo A — Puntuacion por dimensiones
 
-Adaptado del Sistema de Scoring Universal de Veranet (Gerardo Loyola) al dominio de sitios web y agentes de IA. Las atestaciones firmadas (5.3) son la materia prima; las dimensiones son como se leen. Las cuatro fuentes no desaparecen: son la procedencia de cada atestacion.
+Adaptado del Sistema de Scoring Universal de Veranet (Gerardo Loyola) al dominio de sitios web y agentes de IA. Las atestaciones firmadas (5.3) son la materia prima; las dimensiones son como se leen. Las cuatro fuentes no desaparecen: son la procedencia de cada atestacion. Implementacion: `packages/apw-resolver/src/scoring/scoring.ts`.
 
 ### A.1 Principios
 
@@ -291,7 +320,7 @@ Cada atestacion aporta un valor `v` en 1.0 a 7.0 a una dimension. Las atestacion
 w = ((J - 1) / 6) ^ 2
 ```
 
-`J` es la dimension R-05 del emisor. Un emisor nuevo tiene J = 4.0 y w = 0.25. Un emisor con J = 6.7 tiene w = 0.90: su opinion pesa 3.6 veces mas. Un emisor con J = 1.0 tiene w = 0. La atestacion `self` tiene peso fijo 0.25 y nunca alimenta el R-05 propio.
+`J` es la dimension R-05 del emisor. Un emisor nuevo tiene J = 4.0 y w = 0.25. Un emisor con J = 6.7 tiene w = 0.9025: su opinion pesa 3.61 veces mas. Un emisor con J = 1.0 tiene w = 0. La atestacion `self` tiene peso fijo 0.25 y nunca alimenta el R-05 propio.
 
 #### A.4.3 Puntaje de una dimension
 
@@ -303,15 +332,15 @@ S = (P * 4.0 + suma(w_i * v_i)) / (P + suma(w_i))
 
 con `P = 3`. Con pocas atestaciones el puntaje queda cerca de 4.0: una sola resena no lleva a nadie a un extremo.
 
-R-05 se calcula comparando cada atestacion del emisor con el puntaje de la dimension evaluada sin contarla a ella: cuanto menor la desviacion media, mayor J. Un emisor que ataca sistematicamente pierde peso y sus ataques siguientes valen menos.
+R-05 mide la desviacion de cada atestacion del emisor respecto del consenso: cuanto menor la desviacion media, mayor J. Un emisor que ataca sistematicamente pierde peso y sus ataques siguientes valen menos. *(E-7 fija la regla: `J = max(1, 7 - 1.5 x d)`, desviacion contra el promedio ponderado de los demas emisores sin el previo P (leave-one-out), calculado por punto fijo.)*
 
-#### A.4.4 Ejemplo (calculado con las formulas anteriores)
+#### A.4.4 Ejemplo (calculado con las formulas anteriores; corregido por E-6)
 
-- El sitio A tiene 6.10 en W-10, con 10 atestaciones de emisores con J = 6.0 (w = 0.69). Un emisor con J = 4.0 lo ataca con un 1.0: A baja a **5.97** (-2%).
-- El sitio B tiene 4.00 en W-10, con 10 atestaciones de emisores con J = 5.0 (w = 0.44). Un emisor con J = 6.7 dice que merece un 3.0: B baja a **3.89**. Con un 1.0, baja a **3.68** (-8%).
-- Por cada punto de desviacion, la opinion del emisor de 6.7 mueve el puntaje unas 3.6 veces mas que la del emisor de 4.0.
+- El sitio A tiene **6.095** en W-10, con 10 atestaciones de 7.0 de emisores con J = 6.0 (w = 0.694). Un emisor con J = 4.0 lo ataca con un 1.0: A baja a **5.970** (-2.05%).
+- El sitio B tiene 4.00 en W-10, con 10 atestaciones de emisores con J = 5.0 (w = 0.44). Un emisor con J = 6.7 dice que merece un 3.0: B baja a **3.892**. Con un 1.0, baja a **3.676** (-8%).
+- Por cada punto de desviacion, la opinion del emisor de 6.7 mueve el puntaje 3.61 veces mas que la del emisor de 4.0.
 
-`P`, el exponente 2 y el peso de `self` son valores por defecto de esta version; se pueden ajustar en versiones futuras con nuevos vectores de prueba.
+`P`, el exponente 2, el peso de `self` y el factor de E-7 son valores por defecto de esta version; se pueden ajustar en versiones futuras con nuevos vectores de prueba.
 
 #### A.4.5 Confianza
 
@@ -334,4 +363,4 @@ Criterio: lo que cualquier rastreador puede comprobar por su cuenta no gana priv
 | **Publico (siempre)** | W-01, W-04, W-06, W-07, W-09, y de cada dimension: puntaje, cantidad y suma de pesos | Cualquiera |
 | **Gobernado (por defecto)** | W-02, W-03, W-05, W-08, W-10, todas las R, y las atestaciones individuales con sus comentarios | Lectores con identidad APW que cumplan la politica del sitio |
 
-Politica por defecto para el nivel gobernado: identidad APW verificada, R-01 >= 5.0 y R-05 >= 5.0, cada una con suma de pesos >= 2.0. El dueno puede endurecerla o volver publico cualquier dato gobernado, pero no puede ocultar el nivel publico: un sitio que esconde su seguridad tecnica no gana privacidad, pierde verificabilidad.
+Politica por defecto para el nivel gobernado: identidad APW verificada, R-01 >= 5.0 y R-05 >= 5.0, cada una con suma de pesos >= 2.0. El dueno puede endurecerla o volver publico cualquier dato gobernado, pero no puede ocultar el nivel publico: un sitio que esconde su seguridad tecnica no gana privacidad, pierde verificabilidad. *(E-9: mientras R-05 este desactivado, la politica por defecto exige solo R-01.)*
