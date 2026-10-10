@@ -32,6 +32,12 @@
 // ERRATA E-9: con la firma verificada se guarda en el ledger el readerDid
 // CANDIDATO (did:apw:<host de Signature-Agent>). Sin llamadas de red: la
 // comprobacion contra el TXT del lector la hace el emisor de reader_conduct.
+//
+// ERRATA E-10 (emision automatica): despues de registrar un acceso con
+// readerDid, el middleware dispara en background la emision idempotente de
+// reader_conduct del periodo actual (reader-conduct-auto.ts). Opt-out con
+// APW_AUTO_EMIT_CONDUCT=false. En Cloudflare Pages corre via context.waitUntil;
+// en self-host (sin waitUntil) se lanza sin esperar y sus errores se tragan.
 
 import {
   verifyWebBotAuthRequest,
@@ -43,10 +49,57 @@ import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-polic
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
+import { resolveApwManifest } from "../packages/apw-resolver/src/index.ts";
+import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { maybeAutoEmitReaderConduct } from "../packages/apw-resolver/src/scoring/reader-conduct-auto.ts";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
   return /bot|crawler|spider|gpt|claude|scrapy|python-requests/i.test(ua);
+}
+
+// Throttle en memoria por isolate: como maximo un intento de emision por
+// agente y periodo cada 6 horas. El jti determinista hace el resto: si algo
+// ya se emitio, el siguiente intento (en otro isolate o a mano) es un solo
+// SELECT y no duplica.
+const AUTO_EMIT_RETRY_MS = 6 * 60 * 60 * 1000;
+const autoEmitLastAttempt = new Map();
+
+function scheduleAutoEmit(context, env, operatorKeyId) {
+  if (env.APW_AUTO_EMIT_CONDUCT === "false") return;
+  if (!operatorKeyId || operatorKeyId === "unknown" || operatorKeyId === "unverified") return;
+  const now = Date.now();
+  const period = new Date(now).toISOString().slice(0, 7);
+  const key = `${operatorKeyId}|${period}`;
+  const last = autoEmitLastAttempt.get(key);
+  if (last !== undefined && now - last < AUTO_EMIT_RETRY_MS) return;
+  autoEmitLastAttempt.set(key, now);
+  if (autoEmitLastAttempt.size > 5000) {
+    const oldest = autoEmitLastAttempt.keys().next().value;
+    autoEmitLastAttempt.delete(oldest);
+  }
+
+  const task = (async () => {
+    try {
+      const deps = {
+        identity: await createSiteIdentityStore(env),
+        log: await createAttestationLogStore(env),
+        ledger: await createUsageLedgerStore(env),
+        jtiStore: await createReaderConductJtiStore(env),
+        resolveTxtKey: async (host) => {
+          const r = await resolveApwManifest(host);
+          return r.resolved && r.manifest?.k ? r.manifest.k : null;
+        },
+        nowMs: now,
+      };
+      await maybeAutoEmitReaderConduct(deps, operatorKeyId);
+    } catch (err) {
+      console.warn("[trust-layer] auto reader_conduct fallo:", err?.message ?? err);
+    }
+  })();
+
+  if (typeof context.waitUntil === "function") context.waitUntil(task);
+  // self-host: el runtime no expone waitUntil; el task sigue su curso solo.
 }
 
 export async function onRequest(context) {
@@ -85,11 +138,13 @@ export async function onRequest(context) {
 
   if (rule.access === "block") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
+    scheduleAutoEmit(context, env, operatorKeyId);
     return new Response(JSON.stringify({ error: "ai_input_blocked_by_policy" }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
   if (rule.access === "charge") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
+    scheduleAutoEmit(context, env, operatorKeyId);
     const activationStore = await createSettlementActivationStore(env);
     const settled = await resolvePayPerCrawl({ policy, rule, request, next, store: activationStore });
     if (settled) return settled.response;
@@ -103,5 +158,10 @@ export async function onRequest(context) {
     }), { status: 402, headers: { "content-type": "application/json" } });
   }
 
+  // allow: el trafico libre tambien alimenta el ledger publico y la
+  // emision automatica de reader_conduct (E-9/E-10). Sin esto el ledger
+  // solo veia accesos bloqueados o cobrados.
+  await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
+  scheduleAutoEmit(context, env, operatorKeyId);
   return next();
 }

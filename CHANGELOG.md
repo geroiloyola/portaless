@@ -5,6 +5,20 @@ Para el estado real y verificado de cada módulo, ver siempre `ROADMAP.md`
 y `AGENT.md` -- este changelog es el historial de qué se agregó en cada
 versión, no una garantía de que todo lo listado esté libre de TODOs.
 
+## v0.0.9.10 (sin publicar)
+
+### Agregado
+- **Testigos externos (ERRATA E-10, spec 5.7)**: `packages/apw-resolver/src/did-apw/witness.ts` (statement `apw-witness+jws` con `jti` determinista, verificacion contra la clave del testigo y evaluacion `head_mismatch` / `equivocation` / `backdated_entry` fail-closed), `POST /admin/api/witness/record` (rol admin; anota la observacion en el historial encadenado del propio testigo) y `GET /.well-known/apw-witnesses.json` (statements publicados, paginados). Vectores V-13 en `APW-VECTORS-v1.3.md`; E-10 integrada en `APW-SPEC-v1.3.md` (nueva seccion 5.7).
+- **Anclaje de `h` automatizado (E-10)**: modo `--anchor --domain <d>` en `dnslink/cli.mjs` (baja `did.json` + `apw-log.json` vivos y imprime el TXT v2 listo para pegar, con `buildSiteManifest`), y campo estructurado `anchor: { status, publishedH, localH, localSeq }` en `/admin/api/apw-verification-status` con linea en el checklist del dashboard. El paste del TXT sigue siendo manual (sin API de DNS estandarizada); el calculo, no.
+- **Emision automatica de `reader_conduct` (E-9/E-10)**: `scoring/reader-conduct-auto.ts` + indice `scoring/reader-conduct-jti-store.ts` (tabla `reader_conduct_jti`, siembra desde `att_jws` en bases migradas). El middleware del Trust Layer la dispara con `context.waitUntil` tras cada acceso verificado con `readerDid` candidato (throttle 6 h por agente/periodo; opt-out `APW_AUTO_EMIT_CONDUCT=false`). El endpoint admin con step-up queda para backfill y comparte el indice.
+- **Licencia y gobernanza de la especificacion (CC BY 4.0)**: seccion nueva `Licencia y gobernanza` en `APW-SPEC-v1.3.md` (licencia del estandar, autor y edicion, nombre, neutralidad y conformidad sin permiso de Portaless, proceso de cambios: errata -> version -> propuestas). Lineas de licencia en `ERRATA.md` y `APW-VECTORS-v1.3.md`, fila de la especificacion en `docs/architecture/licensing-boundaries.md`, y notas en `README.md` y `docs/protocol-apw/README.md`. La licencia del estandar no contamina al codigo AGPL-3.0 ni viceversa.
+- **Nombre neutral de la seccion 6**: ahora **Loyal Trust Protocol (LTP)**, antes "Loyola Trust Protocol" (mismo acronimo y misma especificacion, nota de continuidad en la seccion Licencia y gobernanza). Afecta a la spec v1.3 y a `docs/architecture/site-trust-score.md`; los documentos historicos (v1.0, v1.2, whitepaper) quedan con el nombre con que se publicaron, y el credito de autor se conserva en el encabezado y el Anexo A.
+
+### Corregido
+- `README.md` enlazaba `./LICENSE` (badge y seccion License) pero el archivo no existia en el repositorio. Agregado el texto oficial de AGPL-3.0.
+- `dnslink/cli.mjs` importaba `../manifest.js`, un archivo inexistente: el CLI no corría. Ahora importa `.ts` y se ejecuta con `tsx` como el resto de los scripts.
+- El middleware del Trust Layer no registraba en el ledger los accesos con politica `allow`: solo veia bloqueados y cobrados. Ahora el trafico libre tambien alimenta el ledger publico y la emision de `reader_conduct`.
+
 ## v0.0.9.9 (sin publicar oficialmente, PR #21 abierto)
 
 ### Agregado

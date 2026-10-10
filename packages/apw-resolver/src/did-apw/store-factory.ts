@@ -19,6 +19,12 @@ import {
   InMemoryAttestationLogStore,
   type AttestationLogStore,
 } from "./attestation-log-store";
+import {
+  D1ReaderConductJtiStore,
+  SqliteReaderConductJtiStore,
+  InMemoryReaderConductJtiStore,
+  type ReaderConductJtiStore,
+} from "../scoring/reader-conduct-jti-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export async function createSiteIdentityStore(env: Record<string, any>): Promise<SiteIdentityStore> {
@@ -47,4 +53,17 @@ export async function createAttestationLogStore(env: Record<string, any>): Promi
     "[attestation-log-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemoryAttestationLogStore. El historial encadenado NO persistira entre reinicios."
   );
   return new InMemoryAttestationLogStore();
+}
+
+// E-9/E-10: indice de jtis de reader_conduct ya emitidos. Mismo patron que
+// los stores anteriores; la tabla se crea al primer uso.
+export async function createReaderConductJtiStore(env: Record<string, any>): Promise<ReaderConductJtiStore> {
+  if (env.DB) {
+    return new D1ReaderConductJtiStore(env.DB);
+  }
+  if (env.PORTALESS_SQLITE_PATH) {
+    const db = await openSqlite(env.PORTALESS_SQLITE_PATH);
+    return new SqliteReaderConductJtiStore(db);
+  }
+  return new InMemoryReaderConductJtiStore();
 }

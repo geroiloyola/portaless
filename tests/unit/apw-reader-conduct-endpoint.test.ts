@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleEmit } from "../../functions/admin/api/reader-conduct/emit.js";
 import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
+import { InMemoryReaderConductJtiStore } from "../../packages/apw-resolver/src/scoring/reader-conduct-jti-store";
 import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
 import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
 
@@ -40,6 +41,7 @@ async function deps(opts: { stepUpOk?: boolean; withIdentity?: boolean } = {}) {
     identity,
     log,
     ledger,
+    jtiStore: new InMemoryReaderConductJtiStore(),
     resolveTxtKey: async (h: string) => (h === "reader.example" ? "thumb-reader" : null),
   };
   return { d, log, pub: { kty, crv, x } as JsonWebKey, keyId: key.keyId };

@@ -21,16 +21,16 @@
 
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
-import { createSiteIdentityStore, createAttestationLogStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
 import { signSiteJws, ATTESTATION_TYP } from "../../../../packages/apw-resolver/src/did-apw/site-jws.ts";
 import { resolveApwManifest } from "../../../../packages/apw-resolver/src/index.ts";
 import { emitReaderConduct } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-emitter.ts";
+import { collectEmittedJtis } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-jti-store.ts";
 import { createUsageLedgerStore } from "../../../../packages/trust-layer/src/ledger/store-factory.ts";
 
 const SITE_ID = "default";
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-const LOG_PAGE = 500;
 
 const STEP_UP_MESSAGES = {
   password_required: "Ingresa tu contrasena actual para emitir atestaciones.",
@@ -50,33 +50,6 @@ function currentPeriod() {
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function decodePayload(jws) {
-  try {
-    const part = jws.split(".")[1];
-    const base64 = part.split("-").join("+").split("_").join("/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))));
-  } catch {
-    return null;
-  }
-}
-
-async function emittedJtis(log, siteDid) {
-  const jtis = new Set();
-  let from = 1;
-  for (;;) {
-    const page = await log.list(SITE_ID, from, LOG_PAGE);
-    for (const entry of page) {
-      const jws = entry.attJws ?? null;
-      if (!jws) continue;
-      const p = decodePayload(jws);
-      if (p?.src === "reader_conduct" && p?.iss === siteDid && typeof p.jti === "string") jtis.add(p.jti);
-    }
-    if (page.length < LOG_PAGE) return jtis;
-    from = page[page.length - 1].seq + 1;
-  }
-}
-
 export async function defaultEmitDeps(env) {
   return {
     verifyStepUp: async (username, factors) => {
@@ -86,6 +59,7 @@ export async function defaultEmitDeps(env) {
     identity: await createSiteIdentityStore(env),
     log: await createAttestationLogStore(env),
     ledger: await createUsageLedgerStore(env),
+    jtiStore: await createReaderConductJtiStore(env),
     resolveTxtKey: async (host) => {
       const r = await resolveApwManifest(host);
       return r.resolved && r.manifest?.k ? r.manifest.k : null;
@@ -131,17 +105,28 @@ export async function handleEmit(context, makeDeps = defaultEmitDeps) {
   const periodData = await deps.ledger.get(period);
   if (!periodData) return json({ period, emitted: [], skipped: [] }, 200);
 
-  const already = await emittedJtis(deps.log, record.did);
+  // Semilla desde el historial (att_jws, E-9) mas el indice reader_conduct_jti
+  // que comparte la emision automatica: los dos caminos ven los mismos jti.
+  const already = await collectEmittedJtis(deps.log, SITE_ID, record.did);
+  const alreadyEmitted = async (jti) => (await deps.jtiStore.has(SITE_ID, jti)) || already.has(jti);
   const result = await emitReaderConduct(periodData, {
     signer: {
       did: record.did,
       sign: (payload) => signSiteJws(payload, { keyId: key.keyId, privateKeyJwk: key.privateKeyJwk }, ATTESTATION_TYP),
     },
     resolveTxtKey: deps.resolveTxtKey,
-    alreadyEmitted: async (jti) => already.has(jti),
-    record: async (jws, jti) => {
+    alreadyEmitted,
+    record: async (jws, jti, readerDid) => {
       await appendAttestation({ identity: deps.identity, log: deps.log, siteId: SITE_ID }, jws);
       already.add(jti);
+      await deps.jtiStore.add({
+        siteId: SITE_ID,
+        jti,
+        period,
+        cat: "manual",
+        readerDid: readerDid ?? "",
+        createdAt: new Date().toISOString(),
+      });
     },
   });
 

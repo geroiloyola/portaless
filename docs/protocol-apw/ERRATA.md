@@ -1,6 +1,8 @@
 # Protocol APW — Erratas
 
-Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente.
+> **INTEGRADAS (octubre 2026).** E-1 a E-10 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda v1.3.
+
+Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza)).
 
 ## E-1 — Calculo de la huella `k` (APW v1.2, seccion 5.1)
 
@@ -243,3 +245,17 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 - Emitir mas seguido que una vez por mes requiere un ledger con esa granularidad.
 
 **Implementacion**: `scoring/reader-attestations.ts` (`loadReaderConduct()`), `reader-conduct-emitter.ts`, `reader-conduct-config.ts`, `reader-identity.ts`, `did-apw/history-resolver.ts` (`includeEntries`), `trust-layer/site-trust/attestation.ts` (`skipIatWindow`), el ledger (`reader_did`), `functions/_middleware.js` y `functions/admin/api/reader-conduct/emit.js`.
+
+## E-10 — Testigos externos, anclaje de `h` y emision automatica (APW v1.3, 5.4, 5.7 y 6.4)
+
+**Fecha**: Octubre 2026
+
+**Problema**: el historial encadenado (5.4) detecta alteracion de entradas ya ancladas, pero no tres cosas que una sola entidad puede hacer sin que se note: (1) reescribir o truncar la cadena respecto de lo que observaron terceros (*equivocation*), (2) fechar entradas nuevas con `ts` viejos (backdating) dentro de la ventana de la clave, y (3) anclar `h` solo con el TXT, que se actualiza a mano y deja ventanas sin anclar. Ademas, la emision de `reader_conduct` (6.4) era manual con step-up: un sitio que queria reputacion para sus lectores tenia que recordar emitirla cada mes.
+
+**Texto vigente**:
+
+- **Testigos (nueva seccion 5.7)**: cualquier sitio con identidad `did:apw` observa la cadena de otro y publica un statement firmado `{ typ: "apw-witness+jws", iss, sub, seq, head, ts, jti }` en `/.well-known/apw-witnesses.json`. El statement se anota en el historial ENCADENADO DEL TESTIGO: su fecha creible es la de esa entrada, anclada por el `h` del testigo en el DNS. La verificacion normativa cruza observaciones ancladas contra la cadena actual del sujeto y detecta `head_mismatch`, `equivocation` y `backdated_entry` (margen 300 s), fail-closed. No detecta la omision inicial.
+- **Anclaje de `h`**: el DNS sigue sin API estandarizada, pero el **calculo** del TXT se automatiza (`dnslink/cli.mjs --anchor --domain`, checklist del panel, ambos con `buildSiteManifest`), y los testigos anclan la cabeza en el tiempo sin tocar el DNS. El checklist informa `anchor: { status, publishedH, localH, localSeq }`.
+- **Emision automatica de `reader_conduct` (6.4)**: el Trust Layer la dispara al registrar un acceso verificado con `readerDid` candidato, con los mismos requisitos que la manual (jti determinista, `k` del lector == `operatorKeyId`, solo lo que el ledger dice). Un indice `reader_conduct_jti` hace la comprobacion `already_emitted` en un solo SELECT; se siembra desde `att_jws` del historial en bases migradas. Opt-out: `APW_AUTO_EMIT_CONDUCT=false`. El endpoint admin con step-up queda para backfill.
+
+**Implementacion**: `did-apw/witness.ts`, `functions/admin/api/witness/record.js`, `functions/.well-known/apw-witnesses.json.js`, `dnslink/cli.mjs` (modo `--anchor`), `admin/api/apw-verification-status.js` (`anchor`), `scoring/reader-conduct-jti-store.ts`, `scoring/reader-conduct-auto.ts` y el hook de `functions/_middleware.js`.

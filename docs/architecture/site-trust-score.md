@@ -147,7 +147,7 @@ respondía siempre `400 missing_client_ip`.
 `/trust/:siteId`. APW v1.2 define cómo este score se vuelve portable y
 verificable por terceros: atestaciones firmadas por cada emisor,
 historial encadenado con su cabeza publicada en el TXT, puntuación por
-dimensiones y gobernanza de lectura (Loyola Trust Protocol).
+dimensiones y gobernanza de lectura (Loyal Trust Protocol).
 
 ## Arquitectura de "confianza irrelevante" — el rol real de este score
 

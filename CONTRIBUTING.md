@@ -16,7 +16,11 @@ realmente implementado y qué es todavía diseño.
    `tests/unit/` o `tests/e2e/`.
 4. Los plugins deben declarar sus capacidades en un manifiesto — nunca
    agregues acceso implícito a red, almacenamiento o datos de usuarios.
-5. El núcleo de Portaless se licencia bajo AGPL-3.0. El Plugin SDK
+5. El núcleo de Portaless se licencia bajo AGPL-3.0. La especificación
+   Protocol APW (`docs/protocol-apw/`) se publica bajo CC BY 4.0 — los
+   cambios a la spec se proponen como issue o PR y siguen el proceso de
+   "Licencia y gobernanza" de `APW-SPEC-v1.3.md` (erratas vs. versión
+   nueva). El Plugin SDK
    (`packages/plugin-sdk`) se licencia aparte bajo MIT, para no
    restringir a los plugins de terceros que lo consuman. Ver
    `docs/architecture/licensing-boundaries.md` para la frontera exacta

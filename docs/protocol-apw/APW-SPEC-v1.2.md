@@ -1,5 +1,7 @@
 # Protocol APW — Especificacion v1.2
 
+> **REEMPLAZADA (octubre 2026).** La especificacion normativa vigente es [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md), que integra las erratas E-1 a E-9 en el cuerpo del documento y mueve los vectores de prueba a [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). Se conserva este texto como version intermedia citable.
+
 **Autor**: Gerardo Loyola
 **Proyecto**: Portaless
 **Fecha**: Octubre 2026

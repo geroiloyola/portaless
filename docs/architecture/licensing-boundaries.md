@@ -10,6 +10,7 @@ cerrar el codigo de su plugin debe resolverse leyendo este documento primero.
 | Componente | Licencia | Repositorio |
 |---|---|---|
 | Portaless core (CMS, dashboard, auth, Trust Layer, Centro de Permisos, motor del sandbox) | AGPL-3.0 | Este repo (`geroiloyola/portaless`) |
+| Especificacion Protocol APW (`docs/protocol-apw/`: spec, errata, vectores) | CC BY 4.0 | Este repo, en el mismo arbol que el core |
 | Plugin SDK (tipos, interfaces, contratos del capability bridge) | MIT (cuando se publique) | Planificado -- `packages/plugin-sdk` aun no existe como codigo en este repositorio, solo diseno documentado (ver `AGENT.md`) |
 | AppPlace (tienda oficial curada) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | AppLibre (registro comunitario) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
@@ -110,7 +111,17 @@ licencia que elija, abierta o cerrada, siempre que:
   "el SDK" en otra documentacion debe entenderse como diseno planificado, no
   como superficie publicada -- ver `AGENT.md` para el estado real vigente.
 
-## 7. Preguntas frecuentes para desarrolladores de plugins
+## 7. La especificacion Protocol APW no esta bajo AGPL
+
+La especificacion (`docs/protocol-apw/`) es un documento normativo publicado
+bajo **CC BY 4.0**, distinto del core. Reimplementar el protocolo en cualquier
+lenguaje, traducirlo o citarlo comercialmente no crea ninguna obligacion
+AGPL: el texto del estandar no es obra derivada del codigo, ni el codigo es
+obra derivada del texto. El vinculo entre ambos es solo de atribucion y de
+verificacion (los vectores de `APW-VECTORS-v1.3.md`), nunca de licencia.
+Ver "Licencia y gobernanza" en `docs/protocol-apw/APW-SPEC-v1.3.md`.
+
+## 8. Preguntas frecuentes para desarrolladores de plugins
 
 **¿Puedo distribuir mi plugin cerrado?** Si, mientras corra en el sandbox y
 no incorpore codigo del core fuera de la superficie publica descrita en la

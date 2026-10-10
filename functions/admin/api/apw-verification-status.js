@@ -34,6 +34,15 @@
 // que usa /.well-known/apw-manifest.jws, para que TXT y manifiesto firmado
 // no puedan divergir.
 //
+// ERRATA E-10 (automatizacion de h): `anchor` informa el estado del anclaje
+// de la cabeza del historial en el DNS de forma estructurada:
+//   { status, publishedH, localH, localSeq }
+// status: no_identity | no_txt | no_history | txt_without_h | up_to_date | stale.
+// "stale" = el TXT publica un h distinto del actual: hay entradas sin anclar
+// (el valor sugerido txtRecord ya trae el h nuevo listo para pegar). Para
+// anclar sin tocar el DNS quedan los testigos (5.7) y el CLI
+// dnslink/cli.mjs --anchor --domain <d>.
+//
 // Diseno deliberado: esto NUNCA bloquea nada. Si el DNS no propago todavia
 // (puede tardar minutos u horas), el sitio sigue funcionando exactamente
 // igual -- el checklist es informativo, no un gate.
@@ -88,10 +97,23 @@ async function loadHistoryHead(env) {
   try {
     const log = await createAttestationLogStore(env);
     const head = await log.head(SITE_ID);
-    return head ? head.entryHash : null;
+    return head;
   } catch {
     return null;
   }
+}
+
+// E-10: estado del anclaje de `h` en el DNS, derivado de lo que ya cargo el
+// endpoint (TXT resuelto + cabeza local). Sin llamadas de red adicionales.
+function buildAnchorStatus(local, head, result) {
+  if (!local) return { status: "no_identity", publishedH: result.manifest?.h ?? null, localH: null, localSeq: null };
+  const localH = head?.entryHash ?? null;
+  const localSeq = head?.seq ?? null;
+  if (!result.resolved || !result.manifest) return { status: "no_txt", publishedH: null, localH, localSeq };
+  const publishedH = result.manifest.h ?? null;
+  if (!localH) return { status: "no_history", publishedH, localH: null, localSeq: null };
+  if (!publishedH) return { status: "txt_without_h", publishedH: null, localH, localSeq };
+  return { status: publishedH === localH ? "up_to_date" : "stale", publishedH, localH, localSeq };
 }
 
 export async function onRequestGet(context) {
@@ -101,7 +123,8 @@ export async function onRequestGet(context) {
   const domain = new URL(context.request.url).hostname;
   const result = await resolveApwManifest(domain);
   const local = await loadKeyThumbprint(context.env);
-  const h = local ? await loadHistoryHead(context.env) : null;
+  const head = local ? await loadHistoryHead(context.env) : null;
+  const h = head?.entryHash ?? null;
   const identity = local ? await resolveApwIdentity(domain) : null;
 
   return json({
@@ -110,6 +133,7 @@ export async function onRequestGet(context) {
     reason: result.reason,
     manifest: result.manifest ?? null,
     txtRecord: buildSuggestedTxtRecord(domain, local?.k, h),
+    anchor: buildAnchorStatus(local, head, result),
     identity: local
       ? {
           did: local.did,

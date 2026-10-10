@@ -10,7 +10,7 @@ A lightweight, open source, modular CMS — built to be published without paid h
 [![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-orange.svg)](./ROADMAP.md)
 [![Astro](https://img.shields.io/badge/built%20with-Astro-ff5a03.svg)](https://astro.build)
 
-[Roadmap](./ROADMAP.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Roadmap](./ROADMAP.md) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 
@@ -74,24 +74,12 @@ Portaless is a CMS built on [Astro](https://astro.build) that solves, by archite
 
 ## Recent updates
 
-A plain-language summary of what shipped across recent versions, for anyone who doesn't read `ROADMAP.md` line by line:
+The "what shipped in each release" narrative deliberately does not live in this README anymore. It is split, like the roadmap:
 
-- **Self-hosting without a terminal.** Portaless now ships its own Node runtime that runs the same `functions/` as Cloudflare Pages, a Docker image, and ready-made configs for Docker Compose, Railway, and Render. On first boot you create the admin from `/setup` with a one-time setup code printed in the logs — no `npm run setup` needed.
-- **AI agents can read your site the way they expect.** Every site now publishes `/llms.txt`, a markdown copy of each post, a single `robots.txt` with Content Signals generated from your AI policy, and a complete sitemap. Drafts no longer leak through direct URLs.
-- **Login is harder to attack.** MFA challenges are limited to 5 attempts and are stored in the database (they work across Cloudflare isolates and survive restarts), password reset requests are rate-limited per IP and per user, passwords need at least 12 characters, and the pages you need before logging in (2FA, password reset, OAuth) are no longer blocked by the admin middleware.
-- **AI agent verification now follows the current Web Bot Auth standard, on every platform.** Both verifiers (the site middleware and the `agent` source of `SiteTrustScore`) share the same draft-03 rules Cloudflare applies: `Signature-Agent` must be a quoted `https://` URL and must be covered by the signature. This also fixed a bug where no real-world signature could verify in the middleware, another where any fake payment proof let a bot through, and another where verified agents were logged as `"unknown"` in the ledger. Agents that send `Signature-Agent` without quotes are now rejected (Cloudflare already rejects them).
-- **Self-hosted sites now honor your published AI policy.** The Node runtime exposes the same `env.ASSETS` binding as Cloudflare Pages, so the Trust Layer reads your `/.well-known/portaless-content-policy.json` instead of falling back to the default policy.
-- **Pay-per-crawl through Cloudflare, with pluggable providers.** Behind Cloudflare with Pay Per Crawl enabled, Portaless tells Cloudflare the price of each page (`crawler-price`) and Cloudflare charges the crawler. It only activates after an admin enters a Cloudflare API token at `/admin/settlement` and Portaless verifies it against the site's zone — without valid credentials, neither the permission nor the provider is enabled. The provider interface is ready for other settlement providers in the future. Not yet tested against a live Cloudflare zone.
-- **Cross-site trust and discovery now exist.** Any Portaless site can publish a signed, publicly resolvable manifest (Protocol APW) and expose a `SiteTrustScore` built from four independent sources — its own claims, verified AI agents, community votes, and third-party escrow reports. An admin can grant or revoke authorized agents and escrow providers entirely from the dashboard.
-- **An AI agent can now run the whole site.** A native MCP server exposes real tools — creating and updating pages, querying the public usage ledger, listing installed plugins, granting or revoking permissions — so an agent like Claude can manage a Portaless site through conversation instead of a visual editor.
-- **Four new elements for link-in-bio pages.** `ProfileHeader`, `LinkList`, `SocialIcons`, and `StoreBlock` let you replicate what paid link-in-bio tools offer, at zero cost, with your own domain and no third-party branding.
-- **Plugins can now read and write site content for real.** Previously, granting a plugin permission to touch page content from the Permissions Center didn't actually do anything — only the "deny" path worked. Now the "allow" path works too, always inside the isolated sandbox.
-- **Your admin account is better protected.** Two-factor authentication (the standard 6-digit code from an authenticator app), a password recovery flow, and login via external providers (Google, GitHub, or anything else you configure) — no separate password required.
-- **Installing Portaless for the first time is one command.** Previously this meant applying 4 separate SQL files by hand and creating the admin user with a separate script. Now `npm run setup` does both in a single step (for self-hosted SQLite installs).
-- **The license changed from MIT to AGPL-3.0.** This protects Portaless from being forked into a closed commercial service: anyone can install and use it for free, but if someone takes the code, modifies it, and offers it as a service to others, they must share those changes back. Third-party plugins (including paid or closed-source ones) carry no such obligation, because they run isolated from the core — see [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) for the full breakdown.
-- **The AI agent activity log is now publicly queryable.** The Trust Layer had been recording which AI agents visit your site for a while, but that data had no public view. It's now available at a public URL (`/.well-known/portaless-usage-log.json`), the same way the content policy already was.
-- **The Permissions Center now actually saves changes.** Before, granting or revoking a permission from the panel was visual only and never persisted anywhere. Now it does, with the same "admin-only" protection as the rest of the panel.
-- **Cloudflare Workers and Deno Deploy have real integrations** (not just a sketch) for running plugins on those providers' infrastructure, though neither has been verified against a real account yet — that final practical verification step is still pending.
+- [`CHANGELOG.md`](./CHANGELOG.md) — what was added, fixed or pending in each version.
+- [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) — the immutable roadmap log (PRs #1–#75, refactor registers, closed entries with their full session context).
+
+For what is true **today**, read [Real status by module](#real-status-by-module) below and [`ROADMAP.md`](./ROADMAP.md) — both describe only the current state.
 
 ## Real status by module
 
@@ -106,8 +94,8 @@ This project explicitly documents what's implemented versus what's a pending ske
 | Pay-per-crawl (`cloudflare-pay-per-crawl`) | 🟡 Implemented: in-band `crawler-price` behind Cloudflare, activation only with a verified Cloudflare API token (Zone Read) + admin password/2FA + APW site identity. Pending: test against a live Cloudflare zone with Pay Per Crawl enabled (today only mocked tests), confirm the minimum price (assumed USD 0.01), and move the `settlement_provider_activations` table into the master `schema.sql`. Without an active provider, `charge` responds `402` with `settlement: "not_available"` and nothing is charged |
 | AI discovery (`llms.txt`, markdown per post, `robots.txt`, sitemap) | ✅ Generated at build time from your content and AI policy. Limitation: pages stored only in D1/SQLite are not included in `llms.txt` |
 | SiteTrustScore (4 sources: self, agent, community, escrow_report) | ✅ All 4 sources have a connected HTTP endpoint; `agent` and `escrow_report` have a full admin lifecycle (grant/revoke UI, no manual API calls needed). Pending: both allowlists are empty by default, and there's no automated onboarding flow for a second escrow provider yet |
-| Protocol APW (cross-site discovery via DNS TXT) | ✅ Real resolution via DNS-over-HTTPS (Cloudflare 1.1.1.1), manifest format, and a publishing CLI. Pending: `did:web`/`did:apw` and consumption from a future Portaless Index |
-| MCP server | ✅ 6 real tools connected end-to-end (`list_page_components`, `query_usage_log`, `list_installed_plugins`, `create_page`, `update_page`, `grant_capability`, `revoke_permission`). Known limitation: agent identity is resolved once per process, not per call — documented as an active security consideration in `AGENT.md` |
+| Protocol APW (cross-site identity, trust and discovery) | ✅ Full implementation of the normative spec v1.3 ([`APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md)): DNS-over-HTTPS resolution of the `_apw.` TXT record (manifest v2 with `k`/`h`/`rg`), `did:apw` identity with key rotation and public `did.json`, signed site artifacts (JWS + JCS), issuer-signed attestations (`agent`, `escrow_report`, `self`), a hash-chained, DNS-anchored attestation history (`/.well-known/apw-log.json` + `/.well-known/apw-attestations.json`), per-dimension scoring, and fail-closed read governance with reader reputation (`reader_conduct`). Test vectors are published separately in [`APW-VECTORS-v1.3.md`](./docs/protocol-apw/APW-VECTORS-v1.3.md), independent of this codebase. Pending: external witnesses / Portaless Index, automatic DNS anchoring of `h`, `did:web` |
+| MCP server | ✅ 7 real tools connected end-to-end (`create_page`, `update_page`, `list_page_components`, `query_usage_log`, `list_installed_plugins`, `grant_capability`, `revoke_permission`). Known limitation: agent identity is resolved once per process, not per call — documented as an active security consideration in `AGENT.md` |
 | Plugin sandboxing (4 adapters) | 🟡 `isolated-vm` (self-hosted) runs real code with an isolate pool and **12/12 plugin capabilities with a real bridge** (`billing:pay-per-crawl` is an admin-only capability for settlement providers, not a plugin capability, and has no sandbox bridge by design); Cloudflare Workers for Platforms and Deno Deploy make real calls to their APIs (not yet verified against a real account, only tested with mocked `fetch`); Fastly remains contract + detailed TODOs only, no real API call yet |
 | Web Bot Auth cryptographic verification | ✅ Validates Ed25519 signatures (RFC 9421) with key-directory caching and nonce-uniqueness checks. Both verifiers share draft-03 header rules (quoted `Signature-Agent`, signed `signature-agent`, `tag="web-bot-auth"`), with an end-to-end test and an interoperability test against the official `web-bot-auth` library. Known limitations: nonces are stored per process, so replay protection is partial across multiple instances; ML-DSA is only supported in the `SiteTrustScore` verifier, not in the middleware |
 | Installation / setup | ✅ Single command (`npm run setup`) for self-hosted SQLite, or first run from `/setup` with a one-time code in the Node runtime — Cloudflare D1 still uses `wrangler d1 execute` (or `npm run setup:d1`) separately |
@@ -273,7 +261,7 @@ portaless/
 ├── examples/               # Reference configurations (blog, landing page, store)
 ├── tests/                  # Unit and e2e tests
 ├── Dockerfile              # Multi-stage image (node:24-bookworm-slim); also docker-compose.yml, railway.json, render.yaml
-└── ROADMAP.md              # Prioritized project status
+└── ROADMAP.md              # Current state of the project (history in docs/roadmap/)
 ```
 
 See [`docs/architecture/REPO_STRUCTURE_MAP.md`](./docs/architecture/REPO_STRUCTURE_MAP.md) if you're looking for something and it's not where you'd expect.
@@ -327,19 +315,23 @@ See [`docs/architecture/authentication.md`](./docs/architecture/authentication.m
 
 Portaless (the core: CMS, dashboard, authentication, Trust Layer, Permissions Center, sandbox engine) is distributed under **AGPL-3.0**. In plain terms: you can install it, use it, and modify it freely, even inside your own business — the only obligation kicks in if you take a modified version of the core and offer it as an online service to third parties, in which case you must share those changes back.
 
+**The Protocol APW specification** (spec, errata, and test vectors under `docs/protocol-apw/`) is published under **CC BY 4.0** — reimplement it, translate it, and use it commercially with attribution to the author; no registration or certification from Portaless is required. The spec's license and the code's license do not contaminate each other. See [License and governance](./docs/protocol-apw/APW-SPEC-v1.3.md#licencia-y-gobernanza).
+
 **Third-party plugins** (paid, free, or closed-source) carry no such obligation, as long as they run inside the isolated sandbox and only use the documented public API — this is the same principle that allows selling closed-source WordPress plugins. See [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) for the full explanation, including FAQs for anyone building or selling plugins.
 
 ---
 
 ## Roadmap
 
-The prioritized, up-to-date status of the project lives in [`ROADMAP.md`](./ROADMAP.md), organized into three categories:
+[`ROADMAP.md`](./ROADMAP.md) is the source of truth for **what is true today**, organized into three categories by who owns each piece:
 
 - **Features in production** — already built, merged to `main`, and functional today.
 - **Internal features in development** — still pending, but exclusively Portaless's responsibility, with no third-party dependency.
 - **External features** — depend on a third party (payment companies, cloud providers, other open source projects) to be completed.
 
-Two notable items currently in active design/spec work: a **one-click onboarding** flow so non-technical users can deploy a site via an AI agent without opening a terminal, and **Portaless Cloud Images**, a native APW-integrated image hosting layer where every published image carries a cryptographic signature, an existence timestamp, and the publisher's site identity as verifiable metadata.
+History is deliberately kept elsewhere, so the roadmap stays readable: [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) preserves the full log (PRs #1–#75, refactor registers, closed entries with their session context) and [`CHANGELOG.md`](./CHANGELOG.md) records what shipped per version.
+
+The largest items still in design/spec work: **Portaless Index** (federated discovery between independent sites, built on top of Protocol APW) and **Portaless Cloud Images**, a native APW-integrated image hosting layer where every published image carries a cryptographic signature, an existence timestamp, and the publisher's site identity as verifiable metadata.
 
 ---
 
@@ -357,7 +349,7 @@ Read [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`AGENT.md`](./AGENT.md) (the la
 
 ## License
 
-[AGPL-3.0](./LICENSE) for the project's core — install it, modify it, and use it freely; if you offer a modified version as a service to third parties, share those changes back. Third-party plugins, including closed-source ones, are governed by [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md), not by this license.
+[AGPL-3.0](./LICENSE) for the project's core — install it, modify it, and use it freely; if you offer a modified version as a service to third parties, share those changes back. Third-party plugins, including closed-source ones, are governed by [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md), not by this license. The Protocol APW specification is under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ---
 

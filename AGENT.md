@@ -13,7 +13,11 @@ opcionales de comercio, identificación de agentes de IA, sandboxing de
 plugins y un dashboard modular — diseñado explícitamente para no repetir
 los problemas estructurales de WordPress (plugins con acceso irrestricto,
 theming complejo, sin control de scraping por IA). El core se licencia bajo
-AGPL-3.0; el Plugin SDK se licencia aparte bajo MIT para no restringir a
+AGPL-3.0 (texto oficial en `LICENSE`); la especificacion Protocol APW
+(`docs/protocol-apw/`) se publica aparte bajo CC BY 4.0 — reimplementarla
+no genera obligaciones AGPL, ver "Licencia y gobernanza" en
+`APW-SPEC-v1.3.md`; el Plugin SDK se licencia aparte bajo MIT para no
+restringir a
 los plugins de terceros (**nota:** `packages/plugin-sdk` todavia NO existe
 como carpeta real en el monorepo -- hoy es diseno documentado en
 `LICENSE-SDK` y `docs/architecture/licensing-boundaries.md`, sin codigo

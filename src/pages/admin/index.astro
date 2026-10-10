@@ -66,6 +66,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     <div class="ai-apw-identity" id="ai-apw-identity" hidden>
       <p class="ai-apw-identity-status" id="ai-apw-identity-status"></p>
+      <p class="ai-apw-txt-hint" id="ai-apw-anchor-status" hidden></p>
       <div class="ai-apw-txt-field">
         <span class="ai-apw-txt-label">Identidad (DID)</span>
         <code class="ai-apw-txt-code" id="ai-apw-identity-did"></code>
@@ -186,6 +187,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const apwIdentityK = document.getElementById("ai-apw-identity-k");
   const apwIdentityHRow = document.getElementById("ai-apw-identity-h-row");
   const apwIdentityH = document.getElementById("ai-apw-identity-h");
+  const apwAnchorStatus = document.getElementById("ai-apw-anchor-status");
 
   const REASON_LABELS = {
     no_valid_manifest_found: "Todavía no encontramos un manifiesto APW válido en tu DNS.",
@@ -265,6 +267,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     apwIdentity.hidden = false;
   }
 
+  // E-10: estado del anclaje de `h` en el DNS. Solo informativo -- para
+  // anclar se pega el TXT sugerido (o corre dnslink/cli.mjs --anchor); los
+  // testigos anclan sin tocar el DNS.
+  function renderAnchor(anchor) {
+    if (!anchor || anchor.status === "no_identity" || anchor.status === "no_history") {
+      apwAnchorStatus.hidden = true;
+      return;
+    }
+    const messages = {
+      no_txt: "Todavía no hay registro TXT _apw publicado: tu historial no está anclado en el DNS.",
+      txt_without_h: "Tu registro TXT existe pero no incluye `h`: el historial completo quedó sin anclar.",
+      up_to_date: `Anclaje al día: el \`h\` publicado en el DNS corresponde a la entrada ${anchor.localSeq} del historial.`,
+      stale: `Entradas nuevas sin anclar en el DNS: el TXT publica un \`h\` viejo (local actual: entrada ${anchor.localSeq}). Reemplazá el valor por el de abajo o corrí "dnslink/cli.mjs --anchor".`,
+    };
+    apwAnchorStatus.textContent = messages[anchor.status] ?? "";
+    apwAnchorStatus.hidden = !messages[anchor.status];
+  }
+
   async function checkApwStatus() {
     apwBtn.disabled = true;
     apwBtn.textContent = "Verificando…";
@@ -273,6 +293,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderIdentity(data.identity);
+      renderAnchor(data.anchor);
       if (data.verified) {
         const stale = staleTxtMessage(data);
         apwBadge.hidden = false;
