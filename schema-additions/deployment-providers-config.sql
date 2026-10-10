@@ -1,9 +1,11 @@
--- v0.0.9.27: configuracion dinamica de la GitHub App registrada via manifiesto.
--- Agregar al schema.sql maestro (mismo precedente que deployment-oauth.sql).
--- Secretos CIFRADOS con PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY (formato v1.iv.ct).
--- webhook_secret_enc es nullable: el manifiesto registra el webhook con
--- active=false (el endpoint receptor no existe todavia) y GitHub puede no
--- devolver webhook_secret en ese caso.
+-- -----------------------------------------------------------------------------
+-- v0.0.9.27 -- Configuracion dinamica de la GitHub App (registro via manifiesto)
+-- -----------------------------------------------------------------------------
+-- Identidad de la App (no tokens de usuario: esos van en deployment_credentials).
+-- client_secret, pem y webhook_secret CIFRADOS con PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY.
+-- webhook_secret_enc nullable: el webhook se registra con active=false hasta
+-- que exista el receptor que valide X-Hub-Signature-256.
+
 CREATE TABLE IF NOT EXISTS deployment_providers_config (
   provider_id TEXT PRIMARY KEY,
   app_id TEXT NOT NULL,

@@ -53,6 +53,7 @@ Categorías por **quién** debe resolver la pieza, no por prioridad:
 - [x] **Testigos externos (ERRATA E-10, spec 5.7)**: cualquier sitio con identidad observa la cadena de otro y publica un statement firmado (`apw-witness+jws`, `jti` determinista) en `/.well-known/apw-witnesses.json`, anotado en su propio historial encadenado (fecha creible = su `ts` en la cadena del testigo, anclada por su `h`). Evaluacion fail-closed: `head_mismatch`, `equivocation`, `backdated_entry`. `POST /admin/api/witness/record` para registrar observaciones. No cubre omision inicial (queda para Portaless Index).
 - [x] **Anclaje de `h` semi-automatico**: calculo del TXT v2 con `k`+`h` vivos en un comando (`dnslink/cli.mjs --anchor --domain`) y en el checklist del panel (`anchor: { status, publishedH, localH, localSeq }`); testigos anclan la cabeza sin tocar el DNS. El paso de pegar el TXT en el proveedor sigue manual (sin API de DNS estandarizada).
 - [x] **Emision automatica de `reader_conduct`**: el middleware del Trust Layer la dispara al registrar un acceso verificado (jti determinista, indice `reader_conduct_jti` con siembra desde el historial, throttle por isolate, opt-out `APW_AUTO_EMIT_CONDUCT=false`). El endpoint admin con step-up queda para backfill. El ledger ahora tambien registra accesos `allow` (antes solo bloqueados/cobrados).
+- [x] **`schema.sql` maestro regenerado (v0.0.9.31)** con `usage_ledger.reader_did` y la tabla `reader_conduct_jti`. El generador quedo reescrito con las 13 fuentes reales en orden (5 `schema.sql` de paquete + 8 secciones en `schema-additions/`, que es donde ahora viven las tablas sin paquete): antes solo conocia 4 fuentes y regenerar habria borrado 17 tablas. Regeneracion idempotente y verificada contra SQLite (25 tablas, doble aplicacion segura por `IF NOT EXISTS`); las bases existentes reciben ambos cambios al vuelo desde sus stores.
 
 ### Atomic Elements, Editor Visual y SEO
 
@@ -93,7 +94,6 @@ Responsabilidad exclusiva de Portaless: no depende de ningun tercero.
 ### Protocol APW (pendientes de la spec v1.3)
 
 - [ ] Portaless Index: agregador de testigos (5.7) — directorio de cadenas verificadas, ponderacion de testigos y sincronizacion entre nodos.
-- [ ] Regenerar `schema.sql` raiz con `scripts/generate-schema.mjs` para incluir `usage_ledger.reader_did` y la tabla nueva `reader_conduct_jti` (los stores ya migran solos).
 - [ ] Excepcion por lector: grant `trust:read-governance-bypass` (spec 6.5).
 - [ ] Aceptar claves no activas del lector dentro de su ventana (spec 6.3).
 - [ ] Proyectar las dimensiones W publicas al rechazar un lector (spec 6.6).

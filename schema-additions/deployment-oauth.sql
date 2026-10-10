@@ -1,4 +1,11 @@
--- v0.0.9.27: Motor de Despliegue (OAuth de infraestructura). Agregar al schema.sql maestro.
+-- -----------------------------------------------------------------------------
+-- v0.0.9.27 -- Motor de Despliegue: OAuth de infraestructura (GitHub App)
+-- -----------------------------------------------------------------------------
+-- deployment_oauth_states: state + code_verifier PKCE, un solo uso (se borra
+-- al consumirse), TTL 10 min, atado al admin que inicio el flujo.
+-- deployment_credentials: access/refresh token CIFRADOS con AES-GCM
+-- (clave en env var PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY, nunca aqui).
+
 CREATE TABLE IF NOT EXISTS deployment_oauth_states (
   state TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
@@ -6,6 +13,7 @@ CREATE TABLE IF NOT EXISTS deployment_oauth_states (
   user_id TEXT NOT NULL,
   expires_at TEXT NOT NULL
 );
+
 CREATE INDEX IF NOT EXISTS idx_deployment_oauth_states_expires ON deployment_oauth_states (expires_at);
 
 CREATE TABLE IF NOT EXISTS deployment_credentials (

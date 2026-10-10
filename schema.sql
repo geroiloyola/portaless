@@ -1,9 +1,10 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.27)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.31)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
--- Para cambiar una tabla, edita el schema.sql del paquete correspondiente y
--- corre: node scripts/generate-schema.mjs
+-- Para cambiar una tabla, edita su fuente (packages/*/schema.sql o
+-- schema-additions/*.sql -- ver la lista al inicio de generate-schema.mjs)
+-- y corre: node scripts/generate-schema.mjs
 --
 -- NOTA v0.0.9.24: la columna key_algorithm de authorized_agents (mas abajo)
 -- se agrego directamente a este archivo maestro. CONFIRMADO: packages/
@@ -20,8 +21,8 @@
 --
 -- NOTA v0.0.9.27: se agregan deployment_oauth_states y deployment_credentials
 -- (Motor de Despliegue, OAuth de infraestructura con GitHub App) directamente
--- a este archivo maestro, mismo precedente que v0.0.9.24. Fuente original:
--- schema-additions/deployment-oauth.sql (se conserva como referencia).
+-- a este archivo maestro, mismo precedente que v0.0.9.24. Fuente:
+-- schema-additions/deployment-oauth.sql (hoy fuente directa del generador).
 -- Ver packages/deploy-engine/src/oauth-store.ts.
 -- Tambien deployment_providers_config (GitHub App registrada via manifiesto,
 -- secretos cifrados). Fuente: schema-additions/deployment-providers-config.sql.
@@ -37,9 +38,28 @@
 --   - site_trust_agent_verifications y site_trust_escrow_reports agregan
 --     attestation_jws / attestation_jti y un indice unico por emisor (ERRATA
 --     E-4). authorized_escrow_providers agrega public_key_jwk. Estas tablas no
---     tienen schema.sql de paquete: se editan aca, mismo precedente que v0.0.9.24.
+--     tienen schema.sql de paquete: se editan en schema-additions/*.sql
+--     (desde v0.0.9.31; antes directamente aca).
 --   - Las bases anteriores NO necesitan reaplicar este archivo: los stores
 --     agregan estas columnas e indices solos (ALTER TABLE al primer uso).
+--
+-- NOTA v0.0.9.31 (fuentes):
+--   - usage_ledger gana reader_did (ERRATA E-9). Ya estaba en
+--     packages/trust-layer/src/ledger/schema.sql; el maestro estaba atrasado
+--     respecto de su propia fuente.
+--   - Tabla nueva reader_conduct_jti (spec APW 6.4): indice de los jti de
+--     reader_conduct que el sitio ya emitio (jti determinista por emisor,
+--     lector, periodo y categoria). DDL en packages/apw-resolver/schema.sql;
+--     los stores D1/SQLite la crean al vuelo en bases existentes.
+--   Ambas piezas solo completan instalaciones limpias: las bases anteriores
+--   las reciben de sus stores al vuelo, sin reaplicar este archivo.
+--
+-- NOTA v0.0.9.31 (estructura): las secciones sin schema.sql de paquete
+-- (password reset, plugins, site_trust_*, authorized_*, capability bridge,
+-- deployment) viven ahora en schema-additions/*.sql como fuentes directas
+-- del generador. schema-additions/settlement-activations.sql queda fuera a
+-- proposito: su incorporacion al maestro y a REQUIRED_TABLES sigue pendiente
+-- en ROADMAP.md.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
@@ -119,6 +139,9 @@ CREATE INDEX IF NOT EXISTS idx_grants_capability ON permission_grants(capability
 -- -----------------------------------------------------------------------------
 -- @portaless/trust-layer -- ledger de uso por agentes
 -- -----------------------------------------------------------------------------
+-- ERRATA E-9: reader_did (DID APW candidato del lector, sin verificar).
+-- Las bases existentes reciben la columna al vuelo desde los stores
+-- (SQLite: ALTER al abrir; D1: ALTER en la primera operacion).
 
 CREATE TABLE IF NOT EXISTS usage_ledger (
   period TEXT NOT NULL,
@@ -131,6 +154,7 @@ CREATE TABLE IF NOT EXISTS usage_ledger (
   policy_violations_detected INTEGER NOT NULL DEFAULT 0,
   first_seen TEXT NOT NULL,
   last_seen TEXT NOT NULL,
+  reader_did TEXT,
   PRIMARY KEY (period, operator_key_id)
 );
 
@@ -320,6 +344,10 @@ CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_
 -- La clave privada NUNCA se persiste en texto plano: private_key_jwk_encrypted
 -- guarda el JWK cifrado con AES-GCM. La clave de cifrado vive fuera de esta
 -- base de datos (env var PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY).
+--
+-- Fuente de seccion del schema.sql maestro: se concatena via
+-- scripts/generate-schema.mjs. No aplicar este archivo directamente a una
+-- base de datos; usar el maestro o node scripts/setup.mjs.
 
 CREATE TABLE IF NOT EXISTS site_identity (
   site_id TEXT PRIMARY KEY,
@@ -388,6 +416,23 @@ CREATE TABLE IF NOT EXISTS site_attestation_log (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att
   ON site_attestation_log(site_id, att_hash);
+
+-- Reputacion del lector (spec APW 6.4, ERRATA E-9): indice local de los jti
+-- de reader_conduct que este sitio ya emitio, para no repetir una emision
+-- del mismo periodo (jti determinista por emisor, lector, periodo y cat).
+-- La fuente historica sigue siendo att_jws del historial encadenado (E-9):
+-- en bases migradas el indice se siembra desde ahi (collectEmittedJtis) y
+-- los stores D1/SQLite crean esta tabla al vuelo (mismo DDL).
+
+CREATE TABLE IF NOT EXISTS reader_conduct_jti (
+  site_id TEXT NOT NULL,
+  jti TEXT NOT NULL,
+  period TEXT NOT NULL,
+  cat TEXT NOT NULL,
+  reader_did TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, jti)
+);
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.26 -- Tokens efimeros del Capability Bridge HTTP
