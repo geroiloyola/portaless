@@ -1,7 +1,8 @@
 // Lectura de headers Web Bot Auth, compartida por los dos verificadores:
-//   - webbotauth/verify.ts: control de acceso del middleware. Solo usa
-//     WebCrypto: corre igual en Cloudflare Pages, self-host Node y cualquier
-//     otra plataforma de paginas con Functions.
+//   - webbotauth/verify.ts: control de acceso del middleware (Ed25519
+//     via WebCrypto; ML-DSA-44/65/87 via @noble/post-quantum con carga
+//     perezosa desde v0.0.9.31). Corre igual en Cloudflare Pages, self-host
+//     Node y cualquier otra plataforma de paginas con Functions.
 //   - site-trust/web-bot-auth.ts: fuente "agent" de SiteTrustScore.
 // Un solo lugar para las reglas evita que los dos verificadores diverjan.
 //

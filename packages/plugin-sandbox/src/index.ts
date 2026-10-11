@@ -3,6 +3,8 @@ export * from "./capabilities/capability-registry";
 export * from "./manifest/manifest-schema";
 export * from "./manifest/manifest-loader";
 export * from "./runtime/sandbox-runtime";
+export * from "./runtime/sandbox-runtime-factory";
+export * from "./runtime/production-plugin-runner";
 export * from "./adapters/adapter-registry";
 export * from "./adapters/cloudflare-workers-for-platforms";
 export * from "./adapters/deno-deploy";

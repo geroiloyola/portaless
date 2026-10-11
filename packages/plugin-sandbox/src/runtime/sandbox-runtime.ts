@@ -42,7 +42,17 @@ export class SandboxRuntime {
     private tokenStore?: CapabilityTokenStore
   ) {}
 
-  async runPlugin(manifest: PluginManifest, code: string, payload: unknown): Promise<SandboxExecutionResult> {
+  // v0.0.9.31: options.bridgeUrl se propaga al adaptador (SandboxExecutionInput
+  // .bridgeUrl). Los adaptadores edge lo usan para que el codigo del plugin
+  // remoto vuelva al capability bridge HTTP de ESTE origen (por-request, en
+  // vez del global PORTALESS_CAPABILITY_BRIDGE_URL). Los adaptadores
+  // self-hosted lo ignoran.
+  async runPlugin(
+    manifest: PluginManifest,
+    code: string,
+    payload: unknown,
+    options?: { bridgeUrl?: string }
+  ): Promise<SandboxExecutionResult> {
     const validation = validateManifest(manifest);
     if (!validation.valid) {
       return {
@@ -75,6 +85,6 @@ export class SandboxRuntime {
         }
       : undefined;
 
-    return adapter.execute({ manifest, granted, code, payload, issueCapabilityToken });
+    return adapter.execute({ manifest, granted, code, payload, issueCapabilityToken, bridgeUrl: options?.bridgeUrl });
   }
 }

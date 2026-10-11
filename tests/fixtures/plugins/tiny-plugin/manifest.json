@@ -1,0 +1,7 @@
+{
+  "name": "tiny-plugin",
+  "version": "1.0.0",
+  "entry": "index.js",
+  "runtime": "javascript",
+  "requestedCapabilities": []
+}

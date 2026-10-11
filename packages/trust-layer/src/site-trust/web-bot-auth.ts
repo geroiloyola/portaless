@@ -18,6 +18,12 @@
 // publica en `pub`, se arma un verificador con @noble/post-quantum y se pasa
 // al MISMO verify() de web-bot-auth. El camino Ed25519 no cambia.
 //
+// v0.0.9.31 -- la implementacion ML-DSA (isMlDsaJwk, jwkKeyAlgorithm,
+// createMlDsaVerifier) vive ahora en webbotauth/ml-dsa.ts, compartida con
+// el verificador del middleware (webbotauth/verify.ts), que tambien
+// acepta ML-DSA desde esta version. Se reexporta desde aqui para no
+// romper imports existentes; @noble/post-quantum se carga perezoso.
+//
 // ORDEN DE ARGUMENTOS (PR #54): en @noble/post-quantum 0.5.x es
 // verify(firma, mensaje, clavePublica). Con el orden equivocado verify()
 // lanzaba y el try/catch lo convertia en false sin error visible. Si se
@@ -44,9 +50,11 @@
 
 import { verify } from "web-bot-auth";
 import { verifierFromJWK } from "web-bot-auth/crypto";
-import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
 import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "../webbotauth/headers";
+import { createMlDsaVerifier, isMlDsaJwk, jwkKeyAlgorithm } from "../webbotauth/ml-dsa";
 
+export { createMlDsaVerifier, isMlDsaJwk, jwkKeyAlgorithm };
+export type { MlDsaCapableJwk } from "../webbotauth/ml-dsa";
 export { parseSignatureAgent, parseWebBotAuthSignatureInput };
 export type { SignatureInputParse } from "../webbotauth/headers";
 
@@ -81,70 +89,6 @@ export type AgentDirectoryJwk = Jwk;
 
 interface Jwks {
   keys: Jwk[];
-}
-
-const ML_DSA_BY_ALG = {
-  "ML-DSA-44": ml_dsa44,
-  "ML-DSA-65": ml_dsa65,
-  "ML-DSA-87": ml_dsa87,
-} as const;
-
-type MlDsaAlg = keyof typeof ML_DSA_BY_ALG;
-
-export function isMlDsaJwk(jwk: { kty?: string; alg?: string }): boolean {
-  return jwk.kty === "AKP" && typeof jwk.alg === "string" && jwk.alg in ML_DSA_BY_ALG;
-}
-
-/** Mapea un JWK al valor que usa authorized_agents.key_algorithm. */
-export function jwkKeyAlgorithm(jwk: Jwk): string {
-  if (isMlDsaJwk(jwk)) return (jwk.alg as string).toLowerCase();
-  if (jwk.kty === "OKP" && jwk.crv === "Ed25519") return "ed25519";
-  return "unknown";
-}
-
-function base64UrlToBytes(value: string): Uint8Array {
-  const b64 = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
-  const bin = atob(padded);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
-function toBytes(data: string | Uint8Array): Uint8Array {
-  return typeof data === "string" ? new TextEncoder().encode(data) : data;
-}
-
-/**
- * Construye un verificador ML-DSA compatible con verify() de web-bot-auth.
- * Es a la vez una funcion (data, signature) que LANZA si la firma es
- * invalida (web-bot-auth 0.1.x) y un objeto { algorithm, keyid, verify }
- * que devuelve boolean (versiones posteriores).
- */
-export function createMlDsaVerifier(jwk: Jwk) {
-  if (!isMlDsaJwk(jwk)) throw new Error("unsupported_pq_algorithm");
-  if (!jwk.pub) throw new Error("missing_ml_dsa_public_key");
-  const impl = ML_DSA_BY_ALG[jwk.alg as MlDsaAlg];
-  const publicKey = base64UrlToBytes(jwk.pub);
-
-  const check = (data: string | Uint8Array, signature: Uint8Array): boolean => {
-    try {
-      // @noble/post-quantum 0.5.x: verify(firma, mensaje, clavePublica).
-      return impl.verify(signature, toBytes(data), publicKey);
-    } catch {
-      return false;
-    }
-  };
-
-  const fn = async (data: string | Uint8Array, signature: Uint8Array): Promise<void> => {
-    if (!check(data, signature)) throw new Error("invalid_ml_dsa_signature");
-  };
-
-  return Object.assign(fn, {
-    algorithm: (jwk.alg as string).toLowerCase(),
-    keyid: jwk.kid ?? "",
-    verify: async (data: string | Uint8Array, signature: Uint8Array): Promise<boolean> => check(data, signature),
-  });
 }
 
 async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLike): Promise<Jwks> {

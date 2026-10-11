@@ -1,6 +1,7 @@
-// Verificador Web Bot Auth del middleware. Solo usa WebCrypto, sin
-// dependencias: es el que corre en Cloudflare Pages, en self-host Node y en
-// cualquier otra plataforma con Functions.
+// Verificador Web Bot Auth del middleware. Usa WebCrypto para Ed25519 y
+// @noble/post-quantum (carga perezosa, solo si el directorio trae una
+// clave ML-DSA) para el camino post-cuantico -- corre igual en Cloudflare
+// Pages, en self-host Node y en cualquier otra plataforma con Functions.
 //
 // PR H: la lectura de Signature-Agent y Signature-Input sale de headers.ts,
 // compartido con site-trust/web-bot-auth.ts. Antes se hacia new URL() sobre
@@ -8,6 +9,20 @@
 // forma sin comillas (no estandar) pasaba. Tambien se exigen created y
 // expires (draft-03) y se devuelve agentKeyId, el mismo campo que el
 // verificador de site-trust, que es el que lee el middleware para el ledger.
+//
+// v0.0.9.31 -- ML-DSA (FIPS 204): hasta ahora este verificador (el del
+// middleware, el que protege TODA request) era Ed25519-only, y ML-DSA
+// vivia unicamente en la fuente "agent" de SiteTrustScore. Ahora el
+// directorio del operador puede publicar claves `kty: "AKP"`,
+// `alg: "ML-DSA-44|65|87"`, clave en `pub` (mismo formato que site-trust),
+// y el parametro alg de Signature-Input acepta ml-dsa-44/65/87 ademas de
+// ed25519 (draft-03 lo deja opcional; si viene, tiene que coincidir con
+// el tipo de clave del directorio -- `algorithm_key_mismatch`). La
+// verificacion ML-DSA reusa webbotauth/ml-dsa.ts, la MISMA implementacion
+// que la fuente "agent": un solo lugar para la critografia de los dos
+// verificadores. result.keyAlgorithm devuelve el algoritmo real usado
+// ("ed25519" o "ml-dsa-44/65/87", minusculas, igual que
+// authorized_agents.key_algorithm).
 
 import {
   parseSignatureInput,
@@ -17,11 +32,12 @@ import {
   base64UrlToBytes,
 } from "./rfc9421";
 import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "./headers";
+import { isMlDsaJwk, jwkKeyAlgorithm, normalizeAlgParam, verifyMlDsaSignature } from "./ml-dsa";
 
 export interface KeyRecord {
   keyId: string;
   operator: string;
-  publicKeyJwk?: { kty: string; crv?: string; x?: string; alg?: string };
+  publicKeyJwk?: { kty: string; crv?: string; x?: string; alg?: string; pub?: string };
 }
 
 export interface VerifyResult {
@@ -37,12 +53,12 @@ const MAX_SIGNATURE_AGE_SECONDS = 300;
 
 // v0.0.9: cache del directorio de claves con TTL, para no hacer un fetch()
 // nuevo en cada request del mismo operador. Ver ROADMAP.md "Cache del
-// directorio de claves Web Bot Auth". Shape propio (JWK OKP crudo), distinto
-// del de key-directory.ts.
+// directorio de claves Web Bot Auth". Shape propio (JWK crudo: OKP/Ed25519
+// con x, o AKP/ML-DSA-* con pub), distinto del de key-directory.ts.
 const DIRECTORY_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos.
 
 interface DirectoryResponse {
-  keys: Array<{ kid: string; kty: string; crv?: string; x?: string; alg?: string }>;
+  keys: Array<{ kid: string; kty: string; crv?: string; x?: string; alg?: string; pub?: string }>;
 }
 
 interface DirectoryCacheEntry {
@@ -119,7 +135,11 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
 
   const parsed = parseSignatureInput(signatureInputHeader);
   if (!parsed) return { verified: false, reason: "malformed_signature_input" };
-  if (parsed.algorithm && parsed.algorithm !== "ed25519") {
+  // draft-03 deja alg opcional; si viene, tiene que ser uno soportado.
+  // La coherencia alg <-> tipo de clave del directorio se chequea despues,
+  // cuando se conoce la clave (algorithm_key_mismatch).
+  const algParam = parsed.algorithm ? normalizeAlgParam(parsed.algorithm) : null;
+  if (parsed.algorithm && !algParam) {
     return { verified: false, reason: `unsupported_algorithm:${parsed.algorithm}` };
   }
 
@@ -133,8 +153,16 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
 
   const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);
   if (!keyEntry) return { verified: false, reason: "keyid_not_in_directory" };
-  if (keyEntry.kty !== "OKP" || keyEntry.crv !== "Ed25519" || !keyEntry.x) {
+  // Dos tipos de clave soportados: Ed25519 (OKP/crv Ed25519, x) y ML-DSA
+  // (AKP/alg ML-DSA-44|65|87, pub). Cualquier otro kty/crv, o una clave
+  // sin su material (x/pub), queda fuera.
+  const keyAlgorithm = jwkKeyAlgorithm(keyEntry);
+  const keyMaterialPresent = keyAlgorithm === "ed25519" ? Boolean(keyEntry.x) : Boolean(keyEntry.pub);
+  if (keyAlgorithm === "unknown" || !keyMaterialPresent) {
     return { verified: false, reason: "unsupported_key_type_in_directory" };
+  }
+  if (algParam && algParam !== keyAlgorithm) {
+    return { verified: false, reason: "algorithm_key_mismatch" };
   }
 
   const signatureBytes = parseSignatureHeader(signatureHeader, parsed.label);
@@ -142,9 +170,26 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
 
   const signatureBase = buildSignatureBase(request, parsed);
   if (!signatureBase) return { verified: false, reason: "covered_header_missing" };
-  const publicKeyRaw = base64UrlToBytes(keyEntry.x);
 
-  const cryptoOk = await verifyEd25519Signature(signatureBase, signatureBytes, publicKeyRaw);
+  let cryptoOk: boolean;
+  if (keyAlgorithm === "ed25519") {
+    cryptoOk = await verifyEd25519Signature(signatureBase, signatureBytes, base64UrlToBytes(keyEntry.x!));
+  } else {
+    // ML-DSA: misma base de firma RFC 9421, otro esquema de firma. Si
+    // @noble/post-quantum no se puede cargar, es un error de
+    // infraestructura explicito, no un rechazo silencioso de todas las
+    // firmas.
+    try {
+      cryptoOk = await verifyMlDsaSignature(
+        keyEntry.alg as "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87",
+        signatureBase,
+        signatureBytes,
+        base64UrlToBytes(keyEntry.pub!)
+      );
+    } catch (err) {
+      return { verified: false, reason: `ml_dsa_unavailable: ${(err as Error).message}` };
+    }
+  }
   if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
 
   // El nonce se consume DESPUES de validar la firma: si no, cualquiera sin la
@@ -157,7 +202,7 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
   return {
     verified: true,
     agentKeyId: parsed.keyId,
-    keyAlgorithm: "ed25519",
+    keyAlgorithm,
     keyRecord: { keyId: parsed.keyId, operator: operatorOrigin, publicKeyJwk: keyEntry },
   };
 }

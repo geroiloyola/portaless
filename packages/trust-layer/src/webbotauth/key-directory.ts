@@ -10,8 +10,10 @@
 // se define el modelo de datos que Portaless usa para resolver y cachear
 // esas claves, siendo explicitamente agnostico al algoritmo de firma para
 // permitir una migracion futura a esquemas post-cuanticos (ML-DSA, SLH-DSA)
-// sin rediseñar el protocolo — ver docs/TRUST_LAYER_SETUP.md, seccion
-// "Brecha post-cuantica".
+// sin rediseñar el protocolo -- ver docs/architecture/site-trust-score.md,
+// seccion "Crypto-agilidad" (ML-DSA ya se verifica desde v0.0.9.31 en
+// webbotauth/ml-dsa.ts; SLH-DSA sigue siendo solo una declaracion de
+// intencion en este tipo).
 
 export type SignatureAlgorithm =
   | "ed25519"       // Esquema usado hoy por la mayoria de implementaciones de Web Bot Auth.

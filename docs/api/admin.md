@@ -81,6 +81,7 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 | `/admin/pages` , `/admin/pages/[slug]` | `GET/PUT` | Page CRUD via the real `PageStore` (D1/SQLite); server-side `canWrite(role)` |
 | `/admin/permissions` | `GET/PUT` | Permissions Center: grant/revoke capabilities, including `trust:read-governance-bypass` for `reader` subjects (DID validated server-side) |
 | `/admin/plugins/[pluginId]/vote` | `POST` | Community `trustScore` vote (1–5) |
+| `/admin/api/plugins/run` | `POST` | Run a **registered + active** plugin through the production sandbox (`runPluginInProduction`): body `{ plugin, payload? }`; code is loaded server-side from `PORTALESS_PLUGIN_DIR` (default `packages/plugin-sandbox/examples`; Node/self-host only — on workerd it answers `503 plugin_source_backend_unavailable`); capabilities = Permissions Center ∩ manifest; `bridgeUrl` derived from the request origin. Edge execution requires `PORTALESS_CLOUDFLARE_*`/`PORTALESS_DENO_*` env credentials |
 | `/admin/settlement` | `GET/PUT` | Pay-per-crawl provider configuration |
 | `/admin/api/product-preview` | `GET` | Medusa/Mercur product preview for the visual editor |
 
