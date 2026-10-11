@@ -42,6 +42,7 @@ export const REQUIRED_TABLES = [
   "pages",
   "site_identity",
   "capability_bridge_tokens",
+  "webbotauth_nonces",
   "deployment_oauth_states",
   "deployment_credentials",
 ];

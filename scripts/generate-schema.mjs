@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Genera schema.sql (raiz) concatenando sus 13 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 8 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 9 addendums de schema-additions/*.sql.
 // schema-additions/settlement-activations.sql queda FUERA a proposito (su
 // incorporacion al maestro y a REQUIRED_TABLES sigue pendiente en
 // ROADMAP.md) -- agregarla ahi y aca cuando ese trabajo se haga.
@@ -40,6 +40,7 @@ const SOURCES = [
   { path: "schema-additions/authorized-escrow-providers.sql", selfBanner: true },
   { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/apw-resolver/schema.sql" },
   { path: "schema-additions/capability-tokens.sql", selfBanner: true },
+  { path: "schema-additions/webbotauth-nonces.sql", selfBanner: true },
   { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
   { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
 ];

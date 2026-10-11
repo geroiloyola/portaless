@@ -121,7 +121,7 @@ export async function onRequest(context) {
     }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
-  const result = await verifyWebBotAuthRequest(request);
+  const result = await verifyWebBotAuthRequest(request, { env });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   const origin = new URL(request.url).origin;
   const policy = await loadContentPolicy(origin, env.ASSETS);

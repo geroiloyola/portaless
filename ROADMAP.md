@@ -25,7 +25,7 @@ Categories are by **who** must resolve the piece, not by priority.
 
 ### Trust Layer, identity and Protocol APW
 
-- `[x]` Web Bot Auth (RFC 9421, Ed25519) with shared draft-03 rules, key-directory cache, nonce uniqueness (in-memory per process today — partial cross-instance replay protection).
+- `[x]` Web Bot Auth (RFC 9421, Ed25519) with shared draft-03 rules, key-directory cache, nonce uniqueness (shared across instances via D1/SQLite since v0.0.9.31 — in-memory fallback for single-process dev).
 - `[x]` Experimental ML-DSA (FIPS 204) in the SiteTrustScore `agent` source only; middleware remains Ed25519-only.
 - `[x]` SiteTrustScore with all 4 sources (`self`, `agent`, `community`, `escrow_report`) and full admin lifecycle for `authorized_agents` and escrow providers (Ed25519 public JWK loaded/rotated/removed without rotating the API key; signed reports rejected without it). Limits: empty allowlists by default; `community` is local, unverifiable voting (spec gap B7).
 - `[x]` Pay-per-crawl with swappable providers (`cloudflare-pay-per-crawl`): in-band `crawler-price`; activation requires verified Cloudflare token + step-up + APW identity. No active provider → `charge` responds 402 `settlement: "not_available"`.
@@ -64,7 +64,7 @@ Categories are by **who** must resolve the piece, not by priority.
 
 - `[x]` Production caller of `createSandboxRuntime()` for edge adapters — `runPluginInProduction()` (`packages/plugin-sandbox/src/runtime/production-plugin-runner.ts`) + `POST /admin/api/plugins/run` (admin role, registered+active plugins, code from `PORTALESS_PLUGIN_DIR`, granted ∩ requested, shared bridge token store, per-request `bridgeUrl`). Real edge execution still needs `PORTALESS_CLOUDFLARE_*`/`PORTALESS_DENO_*` credentials (External section); on workerd the endpoint's disk loader answers an explicit `503 plugin_source_backend_unavailable` (self-host/Node works out of the box).
 - `[x]` ML-DSA in the middleware (`webbotauth/verify.ts`), not only in the SiteTrustScore `agent` source — the middleware now verifies ML-DSA-44/65/87 directory keys (`kty: "AKP"`, `pub`) over the same RFC 9421 signature base, via the shared `webbotauth/ml-dsa.ts` module (one implementation for both verifiers; `@noble/post-quantum` lazy-loaded, explicit `ml_dsa_unavailable` if it can't load). The optional `alg` parameter accepts `ml-dsa-*` case-insensitively and must match the directory key (`algorithm_key_mismatch`). 13 real-signature tests in `webbotauth-verify-ml-dsa.test.ts` (per-algorithm, tampering, replay, cache). Still experimental: no independent audit of `@noble/post-quantum`, no verified run against a real external ML-DSA agent.
-- `[ ]` Web Bot Auth nonces shared across instances (D1/SQLite with TTL, `auth_mfa_challenges` pattern).
+- `[x]` Web Bot Auth nonces shared across instances (D1/SQLite with TTL, `auth_mfa_challenges` pattern).
 - `[ ]` Fold `settlement_provider_activations` into master `schema.sql` + `REQUIRED_TABLES`.
 - `[ ]` Trustworthy `X-Forwarded-For` proxy handling for self-host (reset rate limit).
 - `[ ]` Email-based step-up verification for sensitive actions (blocked on an `email:send` backend).

@@ -134,7 +134,7 @@ export async function onRequestGet(context) {
   // El middleware ya verifico la firma (y consumio el nonce); si no corrio, se verifica aca.
   let wba = data?.webBotAuth ?? null;
   if (!wba && request.headers.get("Signature-Agent")) {
-    wba = await verifyWebBotAuthRequest(request);
+    wba = await verifyWebBotAuthRequest(request, { env });
   }
 
   const reader = await resolveReaderState(wba, defaultReaderResolvers());

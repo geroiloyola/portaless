@@ -23,6 +23,14 @@
 // verificadores. result.keyAlgorithm devuelve el algoritmo real usado
 // ("ed25519" o "ml-dsa-44/65/87", minusculas, igual que
 // authorized_agents.key_algorithm).
+//
+// v0.0.9.31 (anti-replay distribuido): los nonces dejan de vivir solo en
+// un Map por proceso. verifyWebBotAuthRequest(request, { env }) registra
+// los nonces en webbotauth_nonces (D1/SQLite con TTL, patron
+// auth_mfa_challenges) cuando hay backend configurado, de modo que
+// multiples instancias comparten la misma ventana de 300 s. Sin env se
+// conserva el store en memoria (dev local y tests). Ver
+// webbotauth/nonce-store.ts.
 
 import {
   parseSignatureInput,
@@ -33,6 +41,11 @@ import {
 } from "./rfc9421";
 import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "./headers";
 import { isMlDsaJwk, jwkKeyAlgorithm, normalizeAlgParam, verifyMlDsaSignature } from "./ml-dsa";
+import {
+  createWebBotAuthNonceStore,
+  InMemoryWebBotAuthNonceStore,
+  type NonceStoreFactoryEnv,
+} from "./nonce-store";
 
 export interface KeyRecord {
   keyId: string;
@@ -92,32 +105,31 @@ async function fetchOperatorKeyDirectory(operatorOrigin: string): Promise<Direct
   }
 }
 
-// v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. En memoria por
-// proceso: con multiples workers sin estado compartido cada uno tiene su
-// propia ventana (limite conocido, documentado en README.md).
+// v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. v0.0.9.31:
+// ahora compartido entre instancias. Si el caller pasa options.env (con
+// env.DB / env.PORTALESS_SQLITE_PATH) el nonce se registra en
+// webbotauth_nonces (D1/SQLite con TTL, patron auth_mfa_challenges) -- asi
+// multiples workers de Cloudflare, dos instancias Docker, etc. comparten
+// la misma ventana y un replay contra OTRO proceso se detecta. Sin env
+// (dev local, tests, o un despliegue single-process sin estado) se cae al
+// store en memoria de siempre, que NO comparte estado entre procesos
+// (el factory avisa si no hay backend configurado).
 const NONCE_WINDOW_MS = MAX_SIGNATURE_AGE_SECONDS * 1000;
-const seenNonces = new Map<string, number>(); // nonce -> expiresAt (epoch ms)
+const memoryNonceStore = new InMemoryWebBotAuthNonceStore();
 
-function pruneExpiredNonces(now: number): void {
-  for (const [nonce, expiresAt] of seenNonces) {
-    if (expiresAt <= now) seenNonces.delete(nonce);
-  }
-}
-
-function registerNonceIfUnseen(nonce: string): boolean {
-  const now = Date.now();
-  pruneExpiredNonces(now);
-  if (seenNonces.has(nonce)) return false;
-  seenNonces.set(nonce, now + NONCE_WINDOW_MS);
-  return true;
-}
-
-/** Solo para tests: vacia el store de nonces entre casos. */
+/** Solo para tests: vacia el store de nonces en memoria entre casos. */
 export function __resetNonceStoreForTests(): void {
-  seenNonces.clear();
+  memoryNonceStore.clear();
 }
 
-export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyResult> {
+export interface VerifyWebBotAuthOptions {
+  env?: NonceStoreFactoryEnv;
+}
+
+export async function verifyWebBotAuthRequest(
+  request: Request,
+  options?: VerifyWebBotAuthOptions
+): Promise<VerifyResult> {
   const rawSignatureAgent = request.headers.get("Signature-Agent");
   if (!rawSignatureAgent) return { verified: false, reason: "missing_signature_agent_header" };
 
@@ -193,9 +205,12 @@ export async function verifyWebBotAuthRequest(request: Request): Promise<VerifyR
   if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
 
   // El nonce se consume DESPUES de validar la firma: si no, cualquiera sin la
-  // clave podria sondear que nonces ya se usaron.
+  // clave podria sondear que nonces ya se usaron. Con options.env se usa el
+  // store compartido (D1/SQLite); sin env, el store en memoria del proceso.
   if (parsed.nonce) {
-    const isFirstUse = registerNonceIfUnseen(parsed.nonce);
+    const nowMs = Date.now();
+    const store = options?.env ? await createWebBotAuthNonceStore(options.env) : memoryNonceStore;
+    const isFirstUse = await store.registerIfUnseen(parsed.nonce, nowMs, NONCE_WINDOW_MS);
     if (!isFirstUse) return { verified: false, reason: "nonce_replayed" };
   }
 

@@ -2,6 +2,7 @@
 // Functions, un Worker dedicado, o un servidor Node) importa desde aqui.
 
 export * from "./webbotauth/verify";
+export * from "./webbotauth/nonce-store";
 export * from "./webbotauth/key-directory";
 export * from "./policy/manifest-schema";
 export * from "./policy/robots-generator";
