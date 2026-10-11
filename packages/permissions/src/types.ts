@@ -5,7 +5,12 @@
 
 // PR H: "settlement-provider" = proveedor de pay-per-crawl (ej.
 // cloudflare-pay-per-crawl). Sus grants solo los escribe /admin/settlement.
-export type PermissionSubjectType = "plugin" | "agent" | "theme" | "settlement-provider";
+// APW 6.5: "reader" = DID de un lector (did:apw:<dominio>). Solo admite la
+// capacidad trust:read-governance-bypass (ver reader-bypass.ts); el subject
+// no se inventa: el DID del lector lo determina su propia politica de
+// lectura (Signature-Agent -> k del TXT), el admin solo decide si ese DID
+// queda exento de los umbrales.
+export type PermissionSubjectType = "plugin" | "agent" | "theme" | "settlement-provider" | "reader";
 
 export interface PermissionSubject {
   type: PermissionSubjectType;

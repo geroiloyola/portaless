@@ -18,8 +18,19 @@
 // POST /admin/settlement los escribe, despues de verificar las credenciales
 // del proveedor. El snapshot incluye una fila por proveedor pay-per-crawl
 // para que el Centro de Permisos la muestre.
+//
+// APW 6.5: los grants de subject "reader" (DID did:apw: de un lector) solo
+// admiten la capacidad trust:read-governance-bypass -- la excepcion por
+// lector de la politica de lectura. El DID se teclea (o se revoca) desde el
+// Centro de Permisos: no hay "solicitud" que el lector pueda iniciar. Un DID
+// mal formado o cualquier otra capacidad para un subject reader: 400.
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
+import {
+  READER_SUBJECT_TYPE,
+  isReaderDid,
+  validateReaderGrant,
+} from "../../../packages/permissions/src/reader-bypass.ts";
 import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
 import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import {
@@ -162,6 +173,18 @@ export async function onRequestPut(context) {
       }),
       { status: 409, headers: { "content-type": "application/json" } }
     );
+  }
+
+  if (subject.type === READER_SUBJECT_TYPE) {
+    const readerError = !isReaderDid(subject.id)
+      ? `Subject 'reader' invalido: se espera un DID did:apw:<dominio>, recibido '${subject.id}'.`
+      : validateReaderGrant(capabilityId);
+    if (readerError) {
+      return new Response(
+        JSON.stringify({ error: "invalid_reader_grant", message: readerError }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
   }
 
   const store = await createPermissionStore(env);

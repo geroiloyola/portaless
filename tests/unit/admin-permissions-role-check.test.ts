@@ -273,4 +273,64 @@ describe("functions/admin/permissions/index.js", () => {
     );
     expect(grant.granted).toBe(false);
   });
+
+  it("PUT concede y revoca el bypass de lectura por DID de lector (APW 6.5)", async () => {
+    const env = { DB: makeFakeD1() };
+    const user = { username: "admin1", role: "admin" };
+    const subject = { type: "reader", id: "did:apw:indice.example", displayName: "did:apw:indice.example" };
+    const body = { subject, capabilityId: "trust:read-governance-bypass", granted: true };
+
+    const grantRes = await onRequestPut({
+      request: { json: async () => body },
+      data: { user },
+      env,
+    } as any);
+    expect(grantRes.status).toBe(200);
+
+    const getBody = await (await onRequestGet({ data: { user }, env } as any)).json();
+    const grant = getBody.grants.find(
+      (g: any) => g.subject.type === "reader" && g.subject.id === subject.id && g.capabilityId === body.capabilityId
+    );
+    expect(grant).toMatchObject({ granted: true, grantedBy: "admin1" });
+
+    const revokeRes = await onRequestPut({
+      request: { json: async () => ({ ...body, granted: false }) },
+      data: { user },
+      env,
+    } as any);
+    expect(revokeRes.status).toBe(200);
+
+    const afterRevoke = await (await onRequestGet({ data: { user }, env } as any)).json();
+    expect(
+      afterRevoke.grants.find((g: any) => g.subject.id === subject.id && g.capabilityId === body.capabilityId).granted
+    ).toBe(false);
+  });
+
+  it("PUT rechaza con 400 un subject reader con DID mal formado", async () => {
+    const ctx = makeContext({
+      user: { username: "admin1", role: "admin" },
+      body: {
+        subject: { type: "reader", id: "indice.example", displayName: "indice.example" },
+        capabilityId: "trust:read-governance-bypass",
+        granted: true,
+      },
+    });
+    const res = await onRequestPut(ctx);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_reader_grant");
+  });
+
+  it("PUT rechaza con 400 una capacidad que no sea el bypass para un subject reader", async () => {
+    const ctx = makeContext({
+      user: { username: "admin1", role: "admin" },
+      body: {
+        subject: { type: "reader", id: "did:apw:indice.example", displayName: "did:apw:indice.example" },
+        capabilityId: "site:admin",
+        granted: true,
+      },
+    });
+    const res = await onRequestPut(ctx);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_reader_grant");
+  });
 });

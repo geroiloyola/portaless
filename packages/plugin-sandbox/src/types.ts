@@ -27,7 +27,12 @@ export type CapabilityId =
   // la tienen subjects "settlement-provider" y solo se concede via
   // POST /admin/settlement tras verificar credenciales (nunca por el PUT
   // generico de /admin/permissions).
-  | "billing:pay-per-crawl";
+  | "billing:pay-per-crawl"
+  // APW 6.5: excepcion de gobernanza de lectura por lector. NO es una
+  // capacidad de plugins: solo la tienen subjects "reader" (el DID
+  // did:apw: de un lector), y un grant con ella deja pasar a ese lector en
+  // GET /trust/:siteId aunque no cumpla los umbrales de reputacion.
+  | "trust:read-governance-bypass";
 
 export interface CapabilityRequest {
   id: CapabilityId;

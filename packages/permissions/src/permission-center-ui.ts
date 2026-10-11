@@ -17,9 +17,15 @@
 // PR H: subjects "settlement-provider" (proveedores pay-per-crawl) no
 // tienen switch: muestran su estado y un enlace a /admin/settlement, unico
 // lugar donde se activan, con credenciales verificadas.
+//
+// APW 6.5: el grant trust:read-governance-bypass tiene su propio formulario
+// de alta por DID (no hay "solicitud" del lector que aparezca sola): se
+// teclea el did:apw: del lector y el switch de la fila resultante lo
+// revoca igual que cualquier otro permiso.
 
 import type { PermissionGrant, PermissionSubject } from "./types";
 import { capabilityRegistry, listCapabilitiesByCategory } from "../../plugin-sandbox/src/capabilities/capability-registry";
+import { READ_GOVERNANCE_BYPASS_CAPABILITY, isReaderDid, readerSubject } from "./reader-bypass";
 
 export interface PermissionCenterOptions {
   container: HTMLElement;
@@ -38,6 +44,7 @@ function riskColor(risk: "bajo" | "medio" | "alto"): string {
 
 function subjectIcon(type: PermissionGrant["subject"]["type"]): string {
   if (type === "settlement-provider") return "💳";
+  if (type === "reader") return "🛰️";
   return type === "plugin" ? "🧩" : type === "agent" ? "🤖" : "🎨";
 }
 
@@ -253,6 +260,71 @@ function buildSettlementControl(grant: PermissionGrant): HTMLElement {
   return link;
 }
 
+// APW 6.5: alta de una excepcion de lectura por DID de lector. El lector no
+// "solicita" el permiso: el administrador teclea su did:apw: y decide.
+function buildReaderGrantForm(
+  capabilityId: string,
+  allGrants: PermissionGrant[],
+  onToggle: (grant: PermissionGrant) => Promise<void>,
+  onChange: () => void
+): HTMLElement {
+  const form = document.createElement("form");
+  form.className = "pc-reader-form";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "pc-reader-did";
+  input.placeholder = "did:apw:indice.example";
+  input.setAttribute("aria-label", "DID del lector (did:apw:<dominio>)");
+  input.autocomplete = "off";
+
+  const submitBtn = document.createElement("button");
+  submitBtn.type = "submit";
+  submitBtn.className = "pc-vote-submit";
+  submitBtn.textContent = "Conceder excepción";
+
+  const feedback = document.createElement("div");
+  feedback.className = "pc-vote-feedback";
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submitBtn.disabled) return;
+
+    const did = input.value.trim();
+    feedback.classList.remove("pc-status-error");
+
+    if (!isReaderDid(did)) {
+      feedback.textContent = "Escribí un DID con forma did:apw:<dominio>, por ejemplo did:apw:indice.example.";
+      feedback.classList.add("pc-status-error");
+      return;
+    }
+    if (allGrants.some((g) => g.subject.type === "reader" && g.subject.id === did && g.capabilityId === capabilityId)) {
+      feedback.textContent = "Ese lector ya tiene una fila de excepción (usa su switch para revocarla).";
+      feedback.classList.add("pc-status-error");
+      return;
+    }
+
+    const grant: PermissionGrant = { subject: readerSubject(did), capabilityId, granted: true };
+    submitBtn.disabled = true;
+    feedback.textContent = "Guardando…";
+    try {
+      await onToggle(grant);
+      allGrants.push(grant);
+      input.value = "";
+      onChange();
+    } catch (err) {
+      feedback.textContent = `Error al guardar: ${(err as Error).message ?? "desconocido"}`;
+      feedback.classList.add("pc-status-error");
+      submitBtn.disabled = false;
+    }
+  });
+
+  form.appendChild(input);
+  form.appendChild(submitBtn);
+  form.appendChild(feedback);
+  return form;
+}
+
 export function renderPermissionCenter(options: PermissionCenterOptions): void {
   const { container, allGrants, onToggle, onVote } = options;
   const grouped = listCapabilitiesByCategory();
@@ -317,7 +389,10 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
       if (subjectsForCap.length === 0) {
         const empty = document.createElement("div");
         empty.className = "pc-empty";
-        empty.textContent = "Ningún plugin o agente ha solicitado este permiso todavía.";
+        empty.textContent =
+          cap.id === READ_GOVERNANCE_BYPASS_CAPABILITY
+            ? "Ningún lector tiene una excepción todavía. Agregá su DID abajo."
+            : "Ningún plugin o agente ha solicitado este permiso todavía.";
         capBlock.appendChild(empty);
       } else {
         const subjectList = document.createElement("div");
@@ -396,6 +471,14 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
         }
 
         capBlock.appendChild(subjectList);
+      }
+
+      // APW 6.5: el bypass se teclea por DID; no viene de ninguna lista de
+      // subjects conocidos (no hay "solicitud" del lector).
+      if (cap.id === READ_GOVERNANCE_BYPASS_CAPABILITY) {
+        capBlock.appendChild(
+          buildReaderGrantForm(cap.id, allGrants, onToggle, () => renderPermissionCenter(options))
+        );
       }
 
       list.appendChild(capBlock);

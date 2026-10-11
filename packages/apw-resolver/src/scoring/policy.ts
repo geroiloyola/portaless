@@ -58,13 +58,30 @@ export function validatePolicy(p: ReadPolicy): string[] {
   return errors;
 }
 
-export function evaluatePolicy(policy: ReadPolicy, reader: ReaderState): PolicyDecision {
+export interface PolicyEvaluationOptions {
+  /**
+   * APW 6.5: grant `trust:read-governance-bypass` del Centro de Permisos
+   * sobre el DID del lector. Salta los umbrales de dimensiones; NO salta
+   * la identidad (require_apw_identity esta fijo en 1) ni valida una
+   * politica corrupta: un predicado invalido sigue siendo 403 policy_invalid.
+   */
+  bypass?: boolean;
+}
+
+export function evaluatePolicy(
+  policy: ReadPolicy,
+  reader: ReaderState,
+  options: PolicyEvaluationOptions = {},
+): PolicyDecision {
   const errors = validatePolicy(policy);
   if (errors.length) return { allow: false, status: '403', reason: 'policy_invalid', failed: errors };
 
   if (reader.kind === 'anonymous') return { allow: false, status: '401', reason: 'web_bot_auth_required', failed: ['identity'] };
   if (reader.kind === 'wba_only') return { allow: false, status: policy.on_fail, reason: 'apw_identity_required', failed: ['identity'] };
   if (reader.kind === 'apw_unresolvable') return { allow: false, status: policy.on_fail, reason: 'history_unresolvable', failed: ['identity'] };
+
+  // apw_verified: identidad comprobada. El bypass solo exime de los umbrales.
+  if (options.bypass) return { allow: true };
 
   const failed: string[] = [];
   for (const [k, v] of Object.entries(policy.require)) {

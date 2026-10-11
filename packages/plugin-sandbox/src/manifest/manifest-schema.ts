@@ -22,6 +22,12 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
       errors.push(`Capacidad desconocida solicitada: "${req.id}"`);
       continue;
     }
+    // APW 6.5: la excepcion de gobernanza de lectura no es de plugins: su
+    // subject es el DID de un lector, concedido desde el Centro de Permisos.
+    if (req.id === "trust:read-governance-bypass") {
+      errors.push('"trust:read-governance-bypass" no es una capacidad de plugins: se concede por DID de lector en el Centro de Permisos.');
+      continue;
+    }
     if (req.id === "network:fetch" && (!req.allowedHosts || req.allowedHosts.length === 0)) {
       errors.push('"network:fetch" requiere declarar al menos un host en "allowedHosts".');
     }

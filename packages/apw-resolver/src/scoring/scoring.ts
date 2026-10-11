@@ -82,10 +82,17 @@ export function bayesianScore(items: ReadonlyArray<{ weight: number; value: numb
   };
 }
 
-function weightOf(a: ScoredAttestation, judges: ReadonlyMap<string, number>): number {
+/**
+ * Peso de una atestacion dentro de su dimension (A.4.2): `self` pesa fijo
+ * SELF_WEIGHT; el resto depende de la calibracion R-05 del emisor, y sin
+ * emisor comparable el peso es el neutral (J = 4.0 -> w = 0.25).
+ */
+export function attestationWeight(a: ScoredAttestation, judges: ReadonlyMap<string, number>): number {
   if (a.src === 'self') return SELF_WEIGHT;
   return issuerWeight(judges.get(a.iss) ?? NEUTRAL);
 }
+
+const weightOf = attestationWeight;
 
 const key = (sub: string, dim: string) => `${sub}\u0000${dim}`;
 

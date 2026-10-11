@@ -37,7 +37,7 @@ Categorías por **quién** debe resolver la pieza, no por prioridad:
 ### Plugin sandbox, capacidades y Capability Bridge
 
 - [x] Adaptador `isolated-vm` con pool de isolates reutilizables — *Pool de isolates reutilizables* para el commerce-plugin, con aislamiento real de Context por ejecucion.
-- [x] 12/12 capacidades del catalogo con puente real al isolate.
+- [x] 12/12 capacidades de plugins del catalogo con puente real al isolate (las capacidades no-plugin del catalogo, `billing:pay-per-crawl` y `trust:read-governance-bypass`, no son del sandbox y no tienen puente).
 - [x] *Refactorizar capability-bridge.js para tokens efimeros*: el bridge valida `CapabilityTokenStore` (TTL 5 min, scope por `plugin_name`, snapshot inmutable de capacidades); `PORTALESS_INTERNAL_BRIDGE_TOKEN` quedo obsoleta.
 - [x] `createSandboxRuntime()`: factory de produccion que inyecta el mismo token store que valida el bridge.
 - [x] Commerce-plugin respeta el Centro de Permisos (interseccion concedido ∩ manifiesto, leida en cada llamada).
@@ -54,6 +54,9 @@ Categorías por **quién** debe resolver la pieza, no por prioridad:
 - [x] **Anclaje de `h` semi-automatico**: calculo del TXT v2 con `k`+`h` vivos en un comando (`dnslink/cli.mjs --anchor --domain`) y en el checklist del panel (`anchor: { status, publishedH, localH, localSeq }`); testigos anclan la cabeza sin tocar el DNS. El paso de pegar el TXT en el proveedor sigue manual (sin API de DNS estandarizada).
 - [x] **Emision automatica de `reader_conduct`**: el middleware del Trust Layer la dispara al registrar un acceso verificado (jti determinista, indice `reader_conduct_jti` con siembra desde el historial, throttle por isolate, opt-out `APW_AUTO_EMIT_CONDUCT=false`). El endpoint admin con step-up queda para backfill. El ledger ahora tambien registra accesos `allow` (antes solo bloqueados/cobrados).
 - [x] **`schema.sql` maestro regenerado (v0.0.9.31)** con `usage_ledger.reader_did` y la tabla `reader_conduct_jti`. El generador quedo reescrito con las 13 fuentes reales en orden (5 `schema.sql` de paquete + 8 secciones en `schema-additions/`, que es donde ahora viven las tablas sin paquete): antes solo conocia 4 fuentes y regenerar habria borrado 17 tablas. Regeneracion idempotente y verificada contra SQLite (25 tablas, doble aplicacion segura por `IF NOT EXISTS`); las bases existentes reciben ambos cambios al vuelo desde sus stores.
+- [x] **Excepcion por lector (spec 6.5, cierre de E-8)**: el Centro de Permisos concede `trust:read-governance-bypass` sobre el DID de un lector (subject `reader`); `GET /trust/:siteId` lo deja pasar aunque no cumpla los umbrales de reputacion. No salta la identidad APW (6.3) ni una politica corrupta, y si el store de grants no se puede leer no hay bypass. Alta y revocacion en `/admin/permissions` (PUT rechaza DID mal formado o capacidades que no sean el bypass para un subject `reader`).
+- [x] **Claves no activas del lector (spec 6.3)**: una firma cuya huella no es `k` se acepta si la clave esta en el historial verificado del lector, firmo al menos una entrada de la cadena y su ventana `[validFrom, validTo + 10 min de gracia]` cubre el momento de la request; si no, `apw_unresolvable: key_not_bound_to_apw` y el TTL del cache se acota al cierre de la ventana. La emision de `reader_conduct` sigue exigiendo `k`: en rollover se lee, no se puntua.
+- [x] **Proyeccion de las dimensiones W publicas (spec 6.6, cierra E-8)**: `GET /trust/:siteId` calcula las W del sitio desde su snapshot (`scoring/site-dimensions.ts`, A.2/A.4) y las publica siempre en `projection { dimensions, aggregates, governed }`. Al rechazar, `public.projection` trae solo el conjunto publico (W-01, W-04, W-06, W-07, W-09) mas los agregados de todas las dimensiones; al permitir (o sin politica), todas las dimensiones con `governed: "granted"`. W-09 es derivado (A.5); una dimension sin atestaciones no aparece. Sin modelo no puntua (`perceived_trustworthiness`, filas legacy).
 
 ### Atomic Elements, Editor Visual y SEO
 
@@ -94,10 +97,8 @@ Responsabilidad exclusiva de Portaless: no depende de ningun tercero.
 ### Protocol APW (pendientes de la spec v1.3)
 
 - [ ] Portaless Index: agregador de testigos (5.7) — directorio de cadenas verificadas, ponderacion de testigos y sincronizacion entre nodos.
-- [ ] Excepcion por lector: grant `trust:read-governance-bypass` (spec 6.5).
-- [ ] Aceptar claves no activas del lector dentro de su ventana (spec 6.3).
-- [ ] Proyectar las dimensiones W publicas al rechazar un lector (spec 6.6).
-- [ ] Activar R-05 en politicas cuando haya evaluadores suficientes (`reader-conduct-config.ts`).
+- [ ] **Activar R-05 en politicas** (`reader-conduct-config.ts`): bloqueado por datos, no por config. R-05 del lector es la calibracion de las atestaciones que **el** emite (A.4.4) y `loadReaderConduct` solo trae las que **recibio**, asi que hoy todo lector tiene R-05 = 4.0 con peso 0: encender `policyDimensions["R-05"]` rechazaria a TODOS los lectores (403), no a los malos. Faltan (1) un flujo en que el lector emita atestaciones sobre sujetos (hoy solo hay voto community anonimo por IP, sin DID) y (2) un corpus de otros emisores sobre el mismo (sujeto, dimension) para el consenso leave-one-out de A.4.4 — indices o testigos (spec seccion 7). El bloqueo esta anclado en `tests/unit/apw-reader-conduct-config.test.ts` y documentado en la spec 6.5 y en ERRATA E-9.
+- [ ] Override de visibilidad por dimension (A.6): `projectTrustView()` ya acepta los overrides, pero `site_trust_read_policies` no tiene la columna donde guardarlos.
 - [ ] Senales `rate_respected`, `paid_as_agreed` y `redistribution` cuando el ledger tenga el dato (spec 6.4).
 - [ ] Campo de clave publica en `/admin/authorized-escrow-providers` (hoy solo via API o CLI).
 

@@ -95,6 +95,16 @@ export const capabilityRegistry: Record<CapabilityId, CapabilityDefinition> = {
     description: "Un proveedor externo cobra a los crawlers por cada acceso. Portaless no toca el dinero. Requiere credenciales verificadas del proveedor.",
     risk: "alto",
   },
+  // APW 6.5 (ERRATA E-8): solo para subjects "reader" (DID did:apw: de un
+  // lector). Un grant con esta capacidad deja pasar a ese lector en
+  // GET /trust/:siteId aunque no cumpla los umbrales de reputacion; la
+  // identidad APW (6.3) sigue siendo obligatoria, el bypass no la salta.
+  "trust:read-governance-bypass": {
+    id: "trust:read-governance-bypass", category: "Administración",
+    label: "Excepción de lectura por lector (APW)",
+    description: "Permite a un lector con DID verificado leer aunque no cumpla los umbrales de reputación de la política de lectura. No exime de Web Bot Auth ni de identidad APW.",
+    risk: "alto",
+  },
 };
 
 export function listCapabilitiesByCategory(): Record<string, CapabilityDefinition[]> {

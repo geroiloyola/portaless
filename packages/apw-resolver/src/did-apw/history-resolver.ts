@@ -20,6 +20,11 @@
 // ERRATA E-9: con { includeEntries: true } devuelve tambien { seq, att, ts }
 // de cada entrada, leidos de la cadena YA verificada. Lo usa el cargador de
 // reader_conduct para exigir completitud contra apw-attestations.json.
+// Cada entrada trae ademas `kid` (el `kid` del header del JWS, con el que la
+// firmo): es lo que usa la identidad del lector (6.3) para atar una clave
+// no activa a entradas realmente ancladas. Con { includeKeys: true } expone
+// tambien `keys` (la lista de claves del log, ya validada contra `k` y contra
+// el DID por verifyChain) -- otra vez para 6.3.
 //
 // Vive en su propio archivo (no en index.ts) para evitar un import circular.
 
@@ -40,6 +45,8 @@ export interface ChainAttestationRef {
   /** Hash del JWS del emisor anotado en esa entrada. */
   att: string;
   ts: string;
+  /** `kid` del header de la entrada: la clave (huella o did:apw:...#key-n) que la firmo. */
+  kid?: string | null;
 }
 
 export interface ApwHistoryResult {
@@ -52,10 +59,14 @@ export interface ApwHistoryResult {
   unanchoredEntries?: number;
   /** Solo con includeEntries y si la cadena verifico. */
   attestations?: ChainAttestationRef[];
+  /** Solo con includeKeys y si la cadena verifico. Claves ya validadas por verifyChain. */
+  keys?: ChainKey[];
 }
 
 export interface ResolveHistoryOptions {
   includeEntries?: boolean;
+  /** Incluye la lista de claves del log (ventanas validFrom/validTo), ya verificada. */
+  includeKeys?: boolean;
 }
 
 const PAGE_LIMIT = 500;
@@ -72,11 +83,25 @@ function toChainKey(raw: any): ChainKey {
   };
 }
 
-function decodePayload(jws: string): any {
-  const part = jws.split('.')[1];
+function decodeJsonPart(jws: string, index: number): any {
+  const part = jws.split('.')[index];
   const base64 = part.split('-').join('+').split('_').join('/');
   const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))));
+}
+
+function decodePayload(jws: string): any {
+  return decodeJsonPart(jws, 1);
+}
+
+/** `kid` del header de un JWS compacto, o null si no se puede leer. */
+function decodeHeaderKid(jws: string): string | null {
+  try {
+    const header = decodeJsonPart(jws, 0);
+    return typeof header?.kid === 'string' ? header.kid : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveApwHistory(
@@ -141,8 +166,9 @@ export async function resolveApwHistory(
       .sort((a, b) => a.seq - b.seq)
       .map((e) => {
         const p = decodePayload(e.jws);
-        return { seq: p.seq, att: p.att, ts: p.ts };
+        return { seq: p.seq, att: p.att, ts: p.ts, kid: decodeHeaderKid(e.jws) };
       });
   }
+  if (options.includeKeys) out.keys = keys ?? [];
   return out;
 }

@@ -293,11 +293,12 @@ Politica por defecto (nivel gobernado): `require.identity = "apw_verified"`, R-0
 
 Mientras R-05 este desactivado (`policyDimensions`), la politica por efecto exige solo R-01: los mismos casos 4, 5 y 6 evaluados unicamente contra R-01.
 
-Proyeccion del `SiteTrustScore` (A.6):
+Proyeccion del `SiteTrustScore` (A.6): siempre como objeto `projection` = `{ dimensions, aggregates, governed }`.
 
 - Conjunto W publico siempre: `W-01, W-04, W-06, W-07, W-09`. Gobernado por defecto: `W-02, W-03, W-05, W-08, W-10` y todas las R.
-- Con lector no autorizado: `dimensions` = solo el conjunto publico (mas overrides explicitos del dueno); `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones; `governed: "withheld"`.
-- Con lector autorizado: `dimensions` = todas; `governed: "granted"`.
+- Con lector rechazado: `projection` va en `public` (`public.projection`), `dimensions` = solo el conjunto publico (los overrides explicitos del dueno se sumarian si estuvieran configurados); `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones con datos; `governed: "withheld"`.
+- Con lector autorizado, o sin politica activa: `projection` en el cuerpo, `dimensions` = todas; `governed: "granted"`.
+- Una dimension sin atestaciones no aparece en `dimensions` ni en `aggregates` (sin datos no es 4.0).
 - El nivel publico nunca se puede ocultar por politica.
 
 Caché y errores: resultado por (host, huella); 5 min si verifica, 60 s si falla. Tabla de politicas ilegible -> `503` en `GET /trust/:siteId`. Ningun error de resolucion abre el recurso.

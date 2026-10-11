@@ -12,6 +12,9 @@
 //     una regla en CONDUCT_RULES cuando el ledger registre el dato.
 //   - Exigir R-05: policyDimensions["R-05"] = true. La tabla
 //     site_trust_read_policies ya tiene min_r05 / min_r05_weight: sin migracion.
+//     ANTES: leer el comentario del campo policyDimensions. El cambio de config
+//     solo tiene sentido despues de los dos prerequisitos de datos; hoy
+//     encenderlo rechazaria a TODOS los lectores, no a los malos.
 //   - Endurecer historiales viejos: legacyEntriesWithoutJws = "reject".
 //   - Mover la fecha de corte: legacyCutoff (solo hacia atras; ver E-9).
 
@@ -23,9 +26,19 @@ export const READER_CONDUCT_CONFIG = Object.freeze({
   /** Una atestacion por lector, por categoria y por periodo. */
   emissionPeriod: "month" as EmissionPeriod,
   /**
-   * Dimensiones que exige la politica de lectura. R-05 arranca apagada: un sitio
-   * solo ve sus atestaciones y las del historial del lector, no alcanza para
-   * calibrar evaluadores (A.4.3). Encender cuando haya indices o testigos.
+   * Dimensiones que exige la politica de lectura. R-05 arranca apagada y no es
+   * un ajuste de apariencia: R-05 del sujeto es la calibracion de las atestaciones
+   * que EL EMITIO (A.4.4, scoreSubject), y loadReaderConduct solo carga
+   * reader_conduct que el lector RECIBIO (descarta iss === lector). Un lector
+   * que no emite queda con R-05 = 4.0 y peso 0, asi que con min_r05_weight = 2.0
+   * la politica rechazaria a TODOS los lectores (test anclado en
+   * tests/unit/apw-reader-conduct-config.test.ts).
+   *
+   * Para encenderlo hacen falta dos datos que hoy no existen:
+   *   1. un flujo en que el lector EMITA atestaciones sobre sujetos (hoy solo
+   *      existe el voto community anonimo por IP, sin DID);
+   *   2. un corpus de otros emisores sobre el mismo (sujeto, dimension) para el
+   *      consenso leave-one-out de A.4.4: indices o testigos (seccion 7).
    */
   policyDimensions: Object.freeze({ "R-01": true, "R-05": false }),
   /** Maximo de reader_conduct del lector que se verifican por resolucion (las mas recientes). */

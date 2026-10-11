@@ -382,3 +382,34 @@
 .pc-vote-feedback.pc-status-error {
   color: #ff8f8f;
 }
+
+/* APW 6.5: alta de excepcion de lectura por DID de lector. Fila simple
+ * (input + boton) dentro del bloque de la capacidad
+ * trust:read-governance-bypass. El boton reutiliza .pc-vote-submit. */
+.pc-reader-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--portaless-border);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.pc-reader-did {
+  flex: 1 1 220px;
+  min-width: 0;
+  border-radius: 6px;
+  border: 1px solid var(--portaless-border);
+  background: #0f1114;
+  color: var(--portaless-fg);
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+
+.pc-reader-form .pc-vote-feedback {
+  flex-basis: 100%;
+}

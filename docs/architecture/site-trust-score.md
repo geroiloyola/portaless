@@ -171,7 +171,11 @@ licencias financieras de una entidad regulada.
   por terceros ni portables. APW v1.2 (secciones 5.3 a 5.5) lo resuelve.
 - El rate-limit del voto community es deliberadamente simple.
 - `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado.
-- No se calcula ningún resumen sobre `agent`/`escrow_report`; el Anexo A
-  de APW v1.2 define cómo hacerlo por dimensiones.
+- El resumen por dimensiones sí existe hoy: `GET /trust/:siteId` deriva las
+  dimensiones W del snapshot (Anexo A.2 y A.4 de APW, en
+  `packages/apw-resolver/src/scoring/site-dimensions.ts`) y las devuelve en
+  `projection { dimensions, aggregates, governed }` — el nivel público
+  completo incluso cuando rechaza al lector (APW 6.6, ERRATA E-11). No es
+  un promedio único de las 4 fuentes: sigue sin haber un "score final".
 - `/admin/index.astro` no lista sitios existentes.
 - Los scripts de onboarding solo soportan SQLite (self-hosted).

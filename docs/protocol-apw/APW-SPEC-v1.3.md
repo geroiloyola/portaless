@@ -315,7 +315,14 @@ El resultado son **Trust Enclaves**: conjuntos de sitios y lectores que solo se 
 
 - El lector se identifica con Web Bot Auth (draft-03), implementado en `webbotauth/verify.ts`.
 - Su origen `Signature-Agent` (por ejemplo `https://indice.example`) se mapea a `did:apw:indice.example`, que se resuelve igual que el de un sitio (5.1).
-- La clave que firma la request Web Bot Auth debe tener la misma huella RFC 7638 que `k` en el TXT del lector, y su historial debe verificar. Asi la identidad del agente y la identidad APW quedan unificadas: un par de claves por dominio. En la implementacion actual solo se acepta la clave activa `k`; las claves no activas del `did.json` quedan fuera.
+- La clave que firma la request Web Bot Auth debe tener la misma huella RFC 7638 que `k` en el TXT del lector, y su historial debe verificar. Asi la identidad del agente y la identidad APW quedan unificadas: un par de claves por dominio.
+- **Claves no activas (normativo).** Despues de una rotacion (5.2), el lector tambien puede firmar con la clave retirada, pero solo dentro de su ventana efectiva `[validFrom, validTo + gracia]`, con `validTo` = instante de rotacion y gracia de rollover de 10 minutos **del lado de quien verifica**. La gracia no extiende nada publicado: la rotacion cierra la clave y borra su privada al rotar; existe para no cortar en seco los agentes que aun tenian la clave vieja en vuelo. Ademas de caer dentro de la ventana, la clave retirada debe cumplir todo lo siguiente (todo fail-closed):
+  - figurar en `keys` del historial del lector, y ese historial ya haber verificado contra `k` y `h` del TXT;
+  - haber firmado al menos una entrada de esa cadena: su huella o su `keyId` aparece como `kid` de una entrada anclada. Asi un compromiso **solo** del hosting del lector no alcanza para autorizarse una clave nueva, porque agregar una clave al arreglo `keys` no cambia ninguna entrada ni `h`;
+  - no ser `k` (la activa sigue por su propio camino) y tener ventana parseable con `validTo` distinto de null.
+
+  Si alguna condicion falla, o si el veredicto llega con la ventana ya cerrada, el lector queda `apw_unresolvable` con motivo `key_not_bound_to_apw`. La aceptacion se cachea como cualquier verificacion, pero el TTL se acota al cierre efectivo de la ventana: el cache nunca estira una clave retirada mas alla de `validTo + gracia`.
+- La emision de `reader_conduct` (6.4) sigue exigiendo `operatorKeyId` = `k`: un lector en pleno rollover lee, pero no acumula reputacion hasta firmar con la clave activa.
 - Estados del lector y respuestas: sin firma valida -> `401`; firma valida sin APW -> `on_fail`; APW que no se puede comprobar (o `reader_conduct` que no verifica, 6.4) -> `on_fail` con motivo `apw_unresolvable`; APW verificado -> se evaluan los umbrales.
 - Un lector sin identidad APW puede autenticarse por Web Bot Auth, pero no tiene reputacion: cualquier politica que exija reputacion lo rechaza.
 
@@ -370,19 +377,26 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 }
 ```
 
-**Almacenamiento (normativo).** La politica vive en su propia tabla tipada, `site_trust_read_policies`: `enabled`, `require_apw_identity` (fijo en 1), `min_r01`, `min_r01_weight`, `min_r05`, `min_r05_weight`, `on_fail` (`401`, `402` o `403`). Los valores por defecto son los de A.6. Sin fila, o con `enabled = 0`, la lectura es publica. El Centro de Permisos se reserva para **excepciones por lector**: un grant `trust:read-governance-bypass` sobre el DID de un lector le permite leer aunque no cumpla los umbrales (todavia sin implementar). El manifiesto solo anuncia `rg: true`; la politica completa nunca se publica: publicarla le diria a un atacante exactamente que fabricar.
+**Almacenamiento (normativo).** La politica vive en su propia tabla tipada, `site_trust_read_policies`: `enabled`, `require_apw_identity` (fijo en 1), `min_r01`, `min_r01_weight`, `min_r05`, `min_r05_weight`, `on_fail` (`401`, `402` o `403`). Los valores por defecto son los de A.6. Sin fila, o con `enabled = 0`, la lectura es publica. El Centro de Permisos se reserva para **excepciones por lector**: un grant `trust:read-governance-bypass` (subject `reader`, cuyo `id` es el `did:apw:` del lector) le permite leer aunque no cumpla los umbrales. El bypass **no salta la identidad**: exige un lector `apw_verified` (6.3), no salta `require_apw_identity` ni valida una politica corrupta (sigue siendo `403 policy_invalid`); un lector cuya identidad no se pudo comprobar queda en `on_fail` grant o no. El manifiesto solo anuncia `rg: true`; la politica completa nunca se publica: publicarla le diria a un atacante exactamente que fabricar.
 
 **Recursos gobernables**: `GET /trust/:siteId` (y sus equivalentes `/trust/*`). En una version posterior, cualquier ruta de contenido, combinandose con la politica `allow`/`charge`/`block` del Trust Layer.
 
 - `on_fail: "402"` se integra con el settlement de pay-per-crawl: el dueno puede permitir compensar la confianza faltante con pago.
 - Un predicado con dimension desconocida o valor invalido invalida la politica entera y la respuesta es `403 policy_invalid`.
-- R-05 arranca desactivado en la configuracion (`policyDimensions`): mientras un solo sitio no vea suficientes evaluadores para calibrar, la politica por defecto efectiva exige solo R-01. La tabla ya soporta `min_r05`: activarlo no requiere migracion.
+- R-05 arranca desactivado en la configuracion (`policyDimensions`) y no es un simple interruptor: R-05 del sujeto es la calibracion de las atestaciones que **el** emitio (A.4.4), y `loadReaderConduct` solo carga las que el lector **recibio** (descarta `iss` igual a su DID). Un lector que no emite queda con R-05 = 4.0 y peso 0, asi que con `min_r05_weight = 2.0` la politica rechazaria a **todos** los lectores, no a los malos: la politica por defecto efectiva exige solo R-01. La tabla ya soporta `min_r05`, activarlo no requiere migracion, pero solo tiene sentido con los dos datos que faltan (seccion 7). El bloqueo esta anclado en `tests/unit/apw-reader-conduct-config.test.ts`.
 
 ### 6.6 Que sigue siendo publico
 
 - El TXT (`k`, `h`, `rg`), `did.json`, el manifiesto extendido, el log y el paquete de atestaciones siempre son publicos: sin ellos nadie podria verificar nada.
 - `h` es un compromiso publico sobre el historial: revela que existe y que cambio, no su contenido. Un lector autorizado comprueba que lo recibido coincide con `h`.
-- Las dimensiones de nivel publico (A.6) y, de **todas** las dimensiones, el puntaje, la cantidad y la suma de pesos (agregados). Al rechazar, la respuesta incluye lo que siempre es publico (`verification` y cantidad de filas por fuente); la proyeccion de las dimensiones W publicas completa queda pendiente.
+- Las dimensiones de nivel publico (A.6) y, de **todas** las dimensiones, el puntaje, la cantidad y la suma de pesos (agregados).
+
+**Proyeccion en la respuesta (normativo).** `GET /trust/:siteId` calcula las dimensiones W del sitio a partir de su snapshot (A.2 y A.4) y las publica siempre en un objeto `projection` con `{ dimensions, aggregates, governed }`:
+
+- Con politica activa y lector **rechazado**, `projection` va dentro de `public`: `dimensions` contiene **solo** el conjunto publico (W-01, W-04, W-06, W-07, W-09), `aggregates` trae puntaje, cantidad y suma de pesos de **todas** las dimensiones del sitio y `governed` es `"withheld"`. El nivel publico nunca se oculta: una politica mas dura no saca W-01 de la respuesta. Los overrides del dueno sobre dimensiones gobernadas (A.6) todavia no tienen donde guardarse (seccion 7).
+- Con lector **autorizado** (grant o umbrales cumplidos), o con la lectura publica (sin politica), `projection` va en el cuerpo con **todas** las dimensiones y `governed` es `"granted"`.
+- Una dimension sin atestaciones no aparece en ninguno de los dos objetos: sin datos no es `4.0`, es *sin datos*. `aggregates` tampoco inventa filas para W-08.
+- Las categorias que A.2 no mapea (`community.perceived_trustworthiness`) no puntuan; sus filas siguen siendo publicas como dato crudo en el snapshot. La proyeccion es metadata: si su calculo fallara, la respuesta se emite sin ella y la decision de acceso no cambia.
 
 ### 6.7 Arranque en frio e identidades falsas
 
@@ -400,25 +414,26 @@ Una politica es un **conjunto de predicados sobre dimensiones** (Anexo A), evalu
 |---|---|---|
 | Autenticacion del lector | `webbotauth/verify.ts` (draft-03) | Mapeo `Signature-Agent` -> `did:apw` y comprobacion de la clave contra `k` (`reader-identity.ts`) |
 | Reputacion del lector | `resolveApwHistory()` (5.5), con cache por TTL | `reader_conduct` con completitud (`reader-attestations.ts`), emision desde el ledger (`reader-conduct-emitter.ts`) y calculo de dimensiones R |
-| Politicas | Tabla tipada `site_trust_read_policies` | Evaluador de predicados (`policy.ts`) |
-| Enforcement | `functions/_middleware.js` y `functions/trust/[siteId].js` | Respuestas 401, 403 o 402; nunca abre por defecto |
+| Politicas | Tabla tipada `site_trust_read_policies` | Evaluador de predicados (`policy.ts`) y proyeccion A.6 de las dimensiones W (`site-dimensions.ts`) |
+| Excepciones por lector | `PermissionStore` del Centro de Permisos (`packages/permissions`) | Capacidad `trust:read-governance-bypass` sobre el DID del lector (subject `reader`) |
+| Enforcement | `functions/_middleware.js` y `functions/trust/[siteId].js` | Respuestas 401, 403 o 402 con la proyeccion publica; nunca abre por defecto |
 | 402 | `billing/pay-per-crawl/` | `on_fail: "402"` |
 
 ### 6.9 Limites
 
 - La gobernanza protege lo que el sitio sirve gobernado. El contenido abierto (HTML publico, `llms.txt`) sigue siendo legible salvo que tambien se gobierne.
 - Un lector autorizado puede copiar y redistribuir lo que lee. El protocolo puede registrar esa conducta (`redistribution`) si se detecta; no puede impedirla.
-- Verificar reputacion en cada request agrega latencia: se cachea por host y huella (5 minutos si verifica, 60 segundos si falla). Si la politica o el historial del lector no se pueden resolver se aplica `on_fail` o `503`; nunca se abre por defecto.
+- Verificar reputacion en cada request agrega latencia: se cachea por host y huella (5 minutos si verifica, 60 segundos si falla), y en el caso de una clave retirada el TTL del exito se acota al cierre de su ventana (6.3). Si la politica o el historial del lector no se pueden resolver se aplica `on_fail` o `503`; nunca se abre por defecto.
 - La completitud prueba que el lector no oculto atestaciones **ya anotadas**. No prueba que haya anotado todas las que recibio; los testigos (5.7) acotan que no muestre cadenas distintas a distintos observadores, pero no la omision inicial.
 
 ## 7. Futuro (fuera de la implementacion actual)
 
 - **Portaless Index**: red de testigos y descubrimiento. Los testigos (5.7) ya son verificables de punta a punta; falta el agregador: un directorio de cadenas verificadas, la ponderacion de que testigos escuchar y la capa de sincronizacion entre nodos. Index es tambien el primer lector natural de los enclaves.
 - **`community` portable** (B7): requiere identidad de votante con resistencia a identidades falsas.
-- **Excepciones por lector**: grant `trust:read-governance-bypass` (6.5).
-- **Claves no activas del lector**: aceptar firmas con claves retiradas dentro de su ventana (6.3).
-- **R-05 en politicas**: activarlo cuando haya evaluadores suficientes (6.5).
-- **Proyeccion completa de dimensiones W publicas** al rechazar (6.6).
+- **R-05 en politicas**: no es un interruptor de config, faltan dos datos (6.5). (1) Un flujo en que el lector **emita** atestaciones sobre sujetos: hoy solo existe el voto community anonimo por IP, sin DID, y `loadReaderConduct` ni siquiera carga lo que el lector emite (descarta `iss` igual a su DID). (2) Un **corpus** de otros emisores sobre el mismo (sujeto, dimension) para el consenso leave-one-out de A.4.4: indices o testigos. Mientras ambas falten, R-05 de un lector es 4.0 con peso 0 y el umbral la rechazaria a todos.
+- **Senal de antiguedad del historial en W-07**: A.4.1 no define como llevar una antiguedad a la escala 1..7, asi que W-07 puntua hoy solo con `agent.content_freshness` (6.6).
+- **Senales intra-dimension de A.2** (60/40, 50/50...): A.4.3 puntua con el peso del emisor (A.4.2); el peso de la senal dentro de la dimension sigue sin estar en la formula.
+- **Override de visibilidad por dimension**: A.6 permite que el dueno vuelva publica una dimension gobernada; `projectTrustView()` ya acepta esos overrides, pero `site_trust_read_policies` no tiene la columna donde guardarlos.
 - **Nuevas senales de conducta**: `rate_respected`, `paid_as_agreed`, `redistribution` (6.4).
 - **Gobernanza de contenido**: extender 6.5 a cualquier ruta, no solo `/trust/*`.
 - **ML-DSA (FIPS 204)** en las firmas APW del sitio y de los emisores. La verificacion ML-DSA ya existe para la identidad Web Bot Auth de la fuente `agent`, pero las atestaciones exigen Ed25519 (5.3).
@@ -463,6 +478,8 @@ Adaptado del Sistema de Scoring Universal de Veranet (Gerardo Loyola) al dominio
 | W-09 | Coherencia | Divergencia entre lo declarado (`self`) y lo verificado por terceros (`agent`, `escrow_report`) | Derivada (A.5) |
 | W-10 | Integridad | Ausencia de spam o engano (100%) | `community`: `spam_or_deceptive` |
 
+Categorias sin dimension: `community.perceived_trustworthiness` no alimenta ninguna dimension (no figura en la tabla); sus votos siguen siendo publicos como fila cruda del snapshot. W-08 espera las categorias nuevas de `self` (origen declarado humano/IA) y todavia no tiene categorias.
+
 ### A.3 Dimensiones de un lector (R)
 
 | ID | Dimension | Senales | Equivalente Veranet |
@@ -490,8 +507,11 @@ Cada atestacion aporta un valor `v` en 1.0 a 7.0 a una dimension. Mapeo normativ
 | 3 | `community` | 4.0 |
 | 4 | `community` | 5.5 |
 | 5 | `community` | 7.0 |
+| `completed_as_promised` | `escrow_report` | 7.0 |
+| `refunded_no_delivery` | `escrow_report` | 2.5 |
+| `disputed` | `escrow_report` | 1.0 |
 
-Los votos `community` (1 a 5) se reescalan linealmente a 1.0 a 7.0; un voto fuera de 1..5 es error. Para `reader_conduct`: `respected_policy`/`rate_respected`/`paid_as_agreed` con `val: true` aportan 7.0 a su dimension R; `policy_violation` con `val: true` aporta 1.0 a R-01; `redistribution` con `val: true` aporta 1.0 a R-04.
+Los votos `community` (1 a 5) se reescalan linealmente a 1.0 a 7.0; un voto fuera de 1..5 es error. Los resultados de `escrow_report` van por la escala nativa (completada 7.0, reembolsada sin entrega 2.5, en disputa 1.0): en ese JWS `val` es siempre `true` y lo que puntua es el `cat` (5.3). Para `reader_conduct`: `respected_policy`/`rate_respected`/`paid_as_agreed` con `val: true` aportan 7.0 a su dimension R; `policy_violation` con `val: true` aporta 1.0 a R-01; `redistribution` con `val: true` aporta 1.0 a R-04.
 
 #### A.4.2 Peso del emisor
 

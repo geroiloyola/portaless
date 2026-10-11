@@ -12,7 +12,9 @@
 //
 // ERRATA E-9: que dimensiones se exigen lo decide
 // READER_CONDUCT_CONFIG.policyDimensions (hoy R-01 si, R-05 no). La tabla
-// guarda los umbrales de las dos, asi que encender R-05 no requiere migracion.
+// guarda los umbrales de las dos, asi que encender R-05 no requiere migracion:
+// pero encenderlo sin los prerequisitos de datos del comentario de ese campo
+// rechazaria a todos los lectores (R-05 con peso 0 nunca alcanza min_r05_weight).
 //
 // require_apw_identity queda fijo en 1 en el MVP (CHECK): una politica que
 // exige reputacion sin identidad no tiene sentido, la reputacion es del DID.
@@ -89,7 +91,9 @@ export function validateReadPolicyInput(input: ReadPolicyInput): void {
 
 /**
  * Politica efectiva para evaluatePolicy(), o null si la lectura es publica.
- * Incluye solo las dimensiones activas en READER_CONDUCT_CONFIG.policyDimensions.
+ * Incluye solo las dimensiones activas en READER_CONDUCT_CONFIG.policyDimensions:
+ * con R-05 apagada el umbral min_r05 de la fila se ignora (se guarda igual,
+ * por eso activarlo no requiere migracion).
  */
 export function toReadPolicy(
   record: ReadPolicyRecord | null,

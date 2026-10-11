@@ -356,6 +356,29 @@ describe("GET /.well-known/apw-log.json y resolveApwHistory", () => {
     expect(stale).toMatchObject({ verified: true, anchoredSeq: 2, unanchoredEntries: 1 });
   });
 
+  it("includeKeys publica las claves y cada entrada informa su kid (6.3)", async () => {
+    const { identity, log } = await seed(3);
+    const k = (await identity.getActiveSigningKey(SITE))!.kid;
+    const stored = await log.list(SITE, 1, 100);
+    const manifest = buildApwManifest({ siteId: DOMAIN, contentKinds: ["mixed"], k, h: stored[2].entryHash });
+
+    const full = await resolveApwHistory(DOMAIN, fetchFor(manifest) as unknown as typeof fetch, {
+      includeEntries: true,
+      includeKeys: true,
+    });
+    expect(full).toMatchObject({ verified: true });
+    // Sin rotar solo esta la clave activa: kid = huella, keyId = DID (E-3).
+    expect(full.keys).toHaveLength(1);
+    expect(full.keys![0]).toMatchObject({ kid: k, keyId: `did:apw:${DOMAIN}#key-1`, validTo: null });
+    expect(full.attestations).toHaveLength(3);
+    for (const entry of full.attestations!) expect(entry.kid).toBe(`did:apw:${DOMAIN}#key-1`);
+
+    const lean = await resolveApwHistory(DOMAIN, fetchFor(manifest) as unknown as typeof fetch);
+    expect(lean).toMatchObject({ verified: true });
+    expect(lean.keys).toBeUndefined();
+    expect(lean.attestations).toBeUndefined();
+  });
+
   it("resolveApwHistory detecta un h que no esta en la cadena y una k que no es la activa", async () => {
     const { identity } = await seed(2);
     const k = (await identity.getActiveSigningKey(SITE))!.kid;

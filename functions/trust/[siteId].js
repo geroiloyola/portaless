@@ -15,14 +15,28 @@
 // valor por defecto de un sitio es publicar (A.6). Nunca abre por error:
 // si la identidad del lector no se puede resolver, aplica on_fail.
 //
-// Pendiente: proyectar las dimensiones W publicas (W-01, W-04, W-06, W-07,
-// W-09) a partir del snapshot; hoy el nivel publico son los metadatos.
+// APW v1.3, 6.5: excepcion por lector. Un grant `trust:read-governance-bypass`
+// del Centro de Permisos sobre el DID del lector (subject "reader") deja
+// pasar ese lector aunque no cumpla los umbrales. No salta la identidad:
+// exige un lector apw_verified; si la tabla de grants no se puede leer, el
+// bypass simplemente no se aplica (el lector sigue contra la politica).
+//
+// APW v1.3, 6.6 (A.6): la respuesta trae `projection` con las dimensiones W
+// del sitio calculadas del snapshot (Anexo A.2/A.4). Al rechazar, la
+// proyeccion vive en `public.projection` y `dimensions` solo contiene el
+// conjunto publico (W-01, W-04, W-06, W-07, W-09); `aggregates` trae
+// puntaje, cantidad y suma de pesos de TODAS las dimensiones del sitio. Al
+// permitir, `projection` esta arriba con las dimensiones gobernadas
+// incluidas (`governed: "granted"`). El nivel publico nunca se oculta.
 
 import { createSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/store-factory.ts";
 import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts";
 import { createReadPolicyStore, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
-import { evaluatePolicy } from "../../packages/apw-resolver/src/scoring/policy.ts";
+import { evaluatePolicy, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy.ts";
+import { scoreSiteDimensions } from "../../packages/apw-resolver/src/scoring/site-dimensions.ts";
 import { resolveReaderState, defaultReaderResolvers } from "../../packages/apw-resolver/src/scoring/reader-identity.ts";
+import { createPermissionStore } from "../../packages/permissions/src/store-factory.ts";
+import { hasReadGovernanceBypass } from "../../packages/permissions/src/reader-bypass.ts";
 
 const SITE_ID = "default";
 
@@ -69,6 +83,18 @@ async function loadPolicy(env) {
   }
 }
 
+// Dimensiones W del sitio (A.2/A.4) -> A.6. La proyeccion es metadata de la
+// respuesta, nunca la decide: si algo falla se omite y la respuesta sigue
+// siendo la de siempre (403 con `public`, o 200 con el snapshot).
+function loadSiteScores(snapshot) {
+  try {
+    return scoreSiteDimensions(snapshot);
+  } catch (err) {
+    console.warn(`[Portaless APW] Sin proyeccion de dimensiones para ${snapshot?.siteId}: ${err?.message}`);
+    return null;
+  }
+}
+
 export async function onRequestGet(context) {
   const { env, params, request, data } = context;
 
@@ -81,9 +107,19 @@ export async function onRequestGet(context) {
 
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
+  const siteScores = loadSiteScores(snapshot);
+  const projection = (governedAllowed) => (siteScores ? projectTrustView(siteScores, governedAllowed) : undefined);
 
   if (!policy) {
-    return json({ ...snapshot, verification: VERIFICATION, governance: { enabled: false } }, 200);
+    return json(
+      {
+        ...snapshot,
+        verification: VERIFICATION,
+        governance: { enabled: false },
+        projection: projection(true),
+      },
+      200
+    );
   }
 
   const governedHeaders = {
@@ -98,11 +134,36 @@ export async function onRequestGet(context) {
   }
 
   const reader = await resolveReaderState(wba, defaultReaderResolvers());
-  const decision = evaluatePolicy(policy, reader);
+
+  // Excepcion por lector (6.5): un grant del Centro de Permisos sobre el DID
+  // del lector salta los umbrales. Solo aplica a un lector con identidad APW
+  // verificada; si el store de grants no se puede leer, no hay bypass (y el
+  // lector sigue evaluandose contra la politica de siempre).
+  let bypass = false;
+  if (reader.kind === "apw_verified") {
+    try {
+      bypass = await hasReadGovernanceBypass(await createPermissionStore(env), reader.did);
+    } catch (err) {
+      console.warn(`[Portaless APW] Centro de Permisos ilegible para el bypass de ${reader.did}: ${err?.message}`);
+      bypass = false;
+    }
+  }
+
+  const decision = evaluatePolicy(policy, reader, { bypass });
 
   if (decision.allow) {
     return json(
-      { ...snapshot, verification: VERIFICATION, governance: { enabled: true, granted: true, reader: reader.kind === "apw_verified" ? reader.did : null } },
+      {
+        ...snapshot,
+        verification: VERIFICATION,
+        governance: {
+          enabled: true,
+          granted: true,
+          ...(bypass ? { bypass: true } : {}),
+          reader: reader.kind === "apw_verified" ? reader.did : null,
+        },
+        projection: projection(true),
+      },
       200,
       governedHeaders
     );
@@ -123,6 +184,8 @@ export async function onRequestGet(context) {
           community: snapshot.community.length,
           escrowReports: snapshot.escrowReports.length,
         },
+        // 6.6: el nivel publico completo, no solo los metadatos.
+        projection: projection(false),
       },
     },
     Number(decision.status),

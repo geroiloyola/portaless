@@ -1,6 +1,6 @@
 # Protocol APW — Erratas
 
-> **INTEGRADAS (octubre 2026).** E-1 a E-10 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda v1.3.
+> **INTEGRADAS (octubre 2026).** E-1 a E-11 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7, E-11 en la 6.6 y en el Anexo A); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda v1.3.
 
 Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza)).
 
@@ -198,18 +198,35 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 
 - La politica vive en su propia tabla tipada, `site_trust_read_policies`: `enabled`, `require_apw_identity` (fijo en 1), `min_r01`, `min_r01_weight`, `min_r05`, `min_r05_weight`, `on_fail` (`401`, `402` o `403`). Los valores por defecto son los de A.6.
 - Sin fila, o con `enabled = 0`, la lectura es publica (A.6).
-- El Centro de Permisos se reserva para **excepciones por lector**: un grant `trust:read-governance-bypass` sobre el DID de un lector le permite leer aunque no cumpla los umbrales. Ese grant no se implementa en este cambio.
+- El Centro de Permisos se reserva para **excepciones por lector**: un grant `trust:read-governance-bypass` sobre el DID de un lector le permite leer aunque no cumpla los umbrales. *(Cerrado: ver el cierre al final de E-8.)*
 - El manifiesto solo anuncia `rg: true`; la politica completa nunca se publica.
 
-**Identidad del lector (6.3)**: se exige que la huella RFC 7638 de la clave que firmo la request Web Bot Auth sea `k` del TXT del origen `Signature-Agent`, y que su historial verifique. En el MVP solo se acepta la clave activa (`k`); las claves no activas listadas en `did.json` quedan fuera. Estados: sin firma valida -> `401`; firma valida sin APW -> `on_fail`; APW que no se puede comprobar -> `on_fail`; APW verificado -> se evaluan los umbrales.
+**Identidad del lector (6.3)**: se exige que la huella RFC 7638 de la clave que firmo la request Web Bot Auth sea `k` del TXT del origen `Signature-Agent`, o — dentro de su ventana efectiva — una clave retirada listada en el historial verificado del lector que haya firmado al menos una entrada de la cadena (cierre al final de E-8). Estados: sin firma valida -> `401`; firma valida sin APW -> `on_fail`; APW que no se puede comprobar -> `on_fail`; APW verificado -> se evaluan los umbrales.
 
-**Aplicacion (6.9)**: el resultado se cachea por host y huella (5 minutos si verifica, 60 segundos si falla). Cualquier error de resolucion aplica `on_fail`; nunca se abre por defecto. Si la tabla de politicas no se puede leer, `GET /trust/:siteId` responde `503`. Al rechazar, la respuesta incluye lo que siempre es publico (`verification` y cantidad de filas por fuente); la proyeccion de las dimensiones W publicas queda pendiente.
+**Aplicacion (6.9)**: el resultado se cachea por host y huella (5 minutos si verifica, 60 segundos si falla). Cualquier error de resolucion aplica `on_fail`; nunca se abre por defecto. Si la tabla de politicas no se puede leer, `GET /trust/:siteId` responde `503`. Al rechazar, la respuesta incluye lo que siempre es publico (`verification`, cantidad de filas por fuente y la proyeccion completa de dimensiones W, cierre en E-11).
 
 **Pendiente en el MVP**: la carga de `reader_conduct` desde el historial del lector. Hasta entonces todo lector verificado tiene R-01 y R-05 neutros (4.0, peso 0), asi que una politica activa con umbrales rechaza a todos los lectores. *(Cerrado por E-9: R-01 se carga desde `reader_conduct`; R-05 queda desactivado por configuracion y la politica por defecto exige solo R-01.)*
 
-**Siguen pendientes de E-8**: el grant `trust:read-governance-bypass`, aceptar claves no activas del lector y la proyeccion de las dimensiones W publicas al rechazar.
+**E-8 quedo sin pendientes.** *(Cerrados: el grant `trust:read-governance-bypass`, ver abajo; las claves no activas del lector, ver el cierre de 6.3 abajo; y la proyeccion de las dimensiones W publicas al rechazar, ver E-11.)*
 
 **Implementacion**: `packages/apw-resolver/src/scoring/read-policy-store.ts`, `reader-identity.ts`, `policy.ts`, `functions/trust/[siteId].js` y `functions/_middleware.js` (`context.data.webBotAuth`).
+
+**Cierre del grant `trust:read-governance-bypass` (v1.3, 6.5)**:
+
+- El Centro de Permisos admite el subject `reader` (su `id` es el `did:apw:` del lector) y la capacidad `trust:read-governance-bypass` en su catalogo (`packages/plugin-sandbox/src/capabilities/capability-registry.ts`). Un plugin no puede solicitarla en su manifiesto.
+- `GET /trust/:siteId`, con politica activa, consulta el `PermissionStore` del lector: si tiene el grant activo, `evaluatePolicy(..., { bypass: true })` salta los umbrales de dimensiones.
+- El bypass **no salta la identidad** (6.3): solo aplica a un lector `apw_verified`; `anonymous`, `wba_only` y `apw_unresolvable` siguen en `401`/`on_fail` grant o no, y una politica corrupta sigue siendo `403 policy_invalid`.
+- Si el Centro de Permisos no se puede leer, no hay bypass: el lector se evalua contra la politica de siempre (fail-closed del lado del bypass, sin penalizar al lector que si cumple los umbrales).
+- El DID se teclea (o se revoca) desde `/admin/permissions`; el PUT rechaza con `400 invalid_reader_grant` cualquier DID mal formado o cualquier otra capacidad para un subject `reader`.
+- Implementacion: `packages/permissions/src/reader-bypass.ts`, `functions/trust/[siteId].js`, `functions/admin/permissions/index.js` y `packages/permissions/src/permission-center-ui.ts`.
+
+**Cierre de claves no activas del lector (v1.3, 6.3)**:
+
+- `resolveReaderState()` acepta una clave que no es `k` si un veredicto tipado `{ usable, windowEndsAt }` lo permite. El veredicto exige: la clave en `keys` de un historial **ya verificado** contra `k` y `h` del TXT; `validTo` distinto de null y ventana parseable; que la clave haya firmado al menos una entrada de la cadena (su huella o `keyId` como `kid` de una entrada anclada) — de aca sale la resistencia a un compromiso **solo** del hosting: agregar una clave al arreglo `keys` no cambia ninguna entrada ni `h` —; y `now` dentro de `[validFrom, validTo + 10 min]` (`RETIRED_READER_KEY_GRACE_MS`, gracia del lado de quien verifica).
+- El veredicto negativo (o una ventana ya cerrada) queda `apw_unresolvable` con motivo `key_not_bound_to_apw`, y el TTL del cache del exito se acota a `windowEndsAt - now`: el cache nunca estira la aceptacion.
+- La regla pura `isRetiredReaderKeyUsable()` vive en `reader-identity.ts`; el resolutor por defecto la invoca bajando el historial con `includeEntries` + `includeKeys` (`history-resolver.ts` ahora publica `keys` y el `kid` de cada entrada). Sin `acceptRetiredKey` en los resolutores, el comportamiento es el anterior (solo `k`).
+- La emision de `reader_conduct` sigue exigiendo `operatorKeyId` = `k`: un lector en rollover lee, pero no acumula reputacion.
+- Implementacion: `packages/apw-resolver/src/scoring/reader-identity.ts` y `packages/apw-resolver/src/did-apw/history-resolver.ts`; tests `tests/unit/apw-reader-retired-keys.test.ts` y `tests/unit/apw-history-chain.test.ts`.
 
 ## E-9 — Reputacion del lector: reader_conduct publicado y completitud (LTP v1.2, 6.4; cierra el pendiente de E-8)
 
@@ -235,11 +252,11 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 - Omision en el origen: un lector puede no anotar desde el principio una atestacion que recibio. Que el emisor publique lo que emitio permite detectarlo comparando; automatizarlo requiere testigos (seccion 7).
 - Equivocation: un lector podria mostrar cadenas distintas a distintos visitantes. Lo acotan el anclaje de `h` en el DNS y los testigos externos.
 - `ts` lo declara el propio lector (E-2): uno nuevo podria fechar entradas antes de `legacyCutoff` para esquivar la completitud.
-- R-05 arranca apagado (`policyDimensions`): un sitio solo no ve suficientes evaluadores para calibrar (A.4.3).
+- R-05 arranca apagado (`policyDimensions`) y no es solo falta de evaluadores: R-05 del lector es la calibracion de las atestaciones que **el** emite (A.4.4), y la carga de E-9 solo trae las que **recibio**. Un lector sin atestaciones emitidas queda con R-05 = 4.0 y peso 0, de modo que `min_r05_weight = 2.0` lo rechazaria a el y a todos los demas (medido y anclado en `tests/unit/apw-reader-conduct-config.test.ts`).
 
 **Como actualizar** (`packages/apw-resolver/src/scoring/reader-conduct-config.ts`):
 
-- Exigir R-05: `policyDimensions["R-05"] = true`, sin migracion.
+- Exigir R-05: `policyDimensions["R-05"] = true`, sin migracion. **Solo despues** de los dos prerequisitos de datos: un flujo en que el lector emita atestaciones sobre sujetos, y un corpus de otros emisores sobre el mismo (sujeto, dimension) para calibrar (indices o testigos, seccion 7). Encenderlo antes rechaza a todos los lectores.
 - Nuevas categorias: agregar una regla en `CONDUCT_RULES` cuando el ledger tenga el dato.
 - Endurecer historiales viejos: `legacyEntriesWithoutJws = "reject"`.
 - Emitir mas seguido que una vez por mes requiere un ledger con esa granularidad.
@@ -259,3 +276,25 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 - **Emision automatica de `reader_conduct` (6.4)**: el Trust Layer la dispara al registrar un acceso verificado con `readerDid` candidato, con los mismos requisitos que la manual (jti determinista, `k` del lector == `operatorKeyId`, solo lo que el ledger dice). Un indice `reader_conduct_jti` hace la comprobacion `already_emitted` en un solo SELECT; se siembra desde `att_jws` del historial en bases migradas. Opt-out: `APW_AUTO_EMIT_CONDUCT=false`. El endpoint admin con step-up queda para backfill.
 
 **Implementacion**: `did-apw/witness.ts`, `functions/admin/api/witness/record.js`, `functions/.well-known/apw-witnesses.json.js`, `dnslink/cli.mjs` (modo `--anchor`), `admin/api/apw-verification-status.js` (`anchor`), `scoring/reader-conduct-jti-store.ts`, `scoring/reader-conduct-auto.ts` y el hook de `functions/_middleware.js`.
+
+## E-11 — Proyeccion de las dimensiones W publicas (LTP v1.3, 6.6 y Anexo A; cierra el ultimo pendiente de E-8)
+
+**Fecha**: Octubre 2026
+
+**Problema**: 6.6 exige que al rechazar un lector la respuesta traiga "lo que siempre es publico", pero la implementacion solo devolvia `verification` y la cantidad de filas por fuente. Nadie calculaba las dimensiones W del sitio desde su snapshot, asi que el nivel publico de A.6 (W-01, W-04, W-06, W-07, W-09 y los agregados de todas las dimensiones) no llegaba a ninguna respuesta: era un pendiente explicito de E-8.
+
+**Texto vigente**:
+
+- **Proyeccion siempre presente**: `GET /trust/:siteId` calcula las dimensiones W del sitio con `scoreSiteDimensions()` (A.2 y A.4 sobre las filas del snapshot) y las publica en `projection = { dimensions, aggregates, governed }` (`projectTrustView()`):
+  - rechazado (401/402/403): `public.projection`, con `dimensions` = solo el conjunto publico (W-01, W-04, W-06, W-07, W-09; el override del dueno no tiene aun donde guardarse), `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones del sitio y `governed: "withheld"`;
+  - lector autorizado, o sin politica activa: `projection` en el cuerpo de la respuesta, `dimensions` = todas y `governed: "granted"`.
+- **Mapeo de categorias (A.2)**: cada categoria cae en su dimension y el valor sale de A.4.1. `escrow_report` puntua por `cat` con escala nativa: `completed_as_promised` 7.0, `refunded_no_delivery` 2.5, `disputed` 1.0 (en ese JWS `val` es siempre `true`, 5.3).
+- **Sin modelo no puntua**: `community.perceived_trustworthiness` no figura en A.2 y las categorias `self` de W-08 todavia no existen; sus filas no entran a la puntuacion pero siguen publicas como dato crudo. Tampoco puntua una fila legacy sin campo de valor o fuera de escala: la proyeccion nunca tumba la respuesta.
+- **W-09 derivado (A.5)**: por cada dimension con `self` y con terceros, `7 - |media declarada - media verificada|`, evaluado con el mismo promedio bayesiano de A.4.3 y el peso total de la evidencia que lo sostiene. Hoy solo W-03 y W-05 comparan, porque ninguna categoria se repite entre fuentes.
+- **Sin datos no es 4.0**: una dimension sin atestaciones no aparece ni en `dimensions` ni en `aggregates`.
+- **Calibracion local (A.4.4)**: los emisores se calibran con las filas del propio sitio (no hay un store que liste todos los sitios); sin atestaciones comparables J = 4.0 y w = 0.25, que es la regla de A.4.4.
+- **Siguen fuera de esta errata** (seccion 7): la senal de antiguedad del historial en W-07 (A.4.1 no define como llevarla a 1..7) y los pesos intra-dimension de A.2 (60/40, 50/50), que A.4.3 no usa.
+
+**Limitacion**: la proyeccion es metadata. Si su calculo fallara, la respuesta se emite sin `projection` y la decision de acceso no cambia (el 403 sigue siendo 403).
+
+**Implementacion**: `packages/apw-resolver/src/scoring/site-dimensions.ts`, `scoring/policy.ts` (`projectTrustView`), `scoring/scoring.ts` (`attestationWeight`) y `functions/trust/[siteId].js`; tests `tests/unit/apw-site-dimensions.test.ts` y `tests/unit/trust-w-projection.test.ts`.
