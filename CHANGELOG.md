@@ -1,163 +1,166 @@
 # Changelog
 
-Todas las versiones notables de Portaless se documentan en este archivo.
-Para el estado real y verificado de cada módulo, ver siempre `ROADMAP.md`
-y `AGENT.md` -- este changelog es el historial de qué se agregó en cada
-versión, no una garantía de que todo lo listado esté libre de TODOs.
+All notable versions of Portaless are documented in this file.
+For the real, verified state of each module, always see [`ROADMAP.md`](./ROADMAP.md)
+and [`AGENT.md`](./AGENT.md) — this changelog is the history of what was added in
+each version, not a guarantee that everything listed is free of `TODO`s.
+(The Spanish archive through the October 2026 documentation restructuring is
+[`CHANGELOG_es.md`](./CHANGELOG_es.md); from that point on the changelog is
+maintained in English only.)
 
-## v0.0.9.10 (sin publicar)
+## v0.0.9.10 (unreleased)
 
-### Agregado
-- **Testigos externos (ERRATA E-10, spec 5.7)**: `packages/apw-resolver/src/did-apw/witness.ts` (statement `apw-witness+jws` con `jti` determinista, verificacion contra la clave del testigo y evaluacion `head_mismatch` / `equivocation` / `backdated_entry` fail-closed), `POST /admin/api/witness/record` (rol admin; anota la observacion en el historial encadenado del propio testigo) y `GET /.well-known/apw-witnesses.json` (statements publicados, paginados). Vectores V-13 en `APW-VECTORS-v1.3.md`; E-10 integrada en `APW-SPEC-v1.3.md` (nueva seccion 5.7).
-- **Anclaje de `h` automatizado (E-10)**: modo `--anchor --domain <d>` en `dnslink/cli.mjs` (baja `did.json` + `apw-log.json` vivos y imprime el TXT v2 listo para pegar, con `buildSiteManifest`), y campo estructurado `anchor: { status, publishedH, localH, localSeq }` en `/admin/api/apw-verification-status` con linea en el checklist del dashboard. El paste del TXT sigue siendo manual (sin API de DNS estandarizada); el calculo, no.
-- **Emision automatica de `reader_conduct` (E-9/E-10)**: `scoring/reader-conduct-auto.ts` + indice `scoring/reader-conduct-jti-store.ts` (tabla `reader_conduct_jti`, siembra desde `att_jws` en bases migradas). El middleware del Trust Layer la dispara con `context.waitUntil` tras cada acceso verificado con `readerDid` candidato (throttle 6 h por agente/periodo; opt-out `APW_AUTO_EMIT_CONDUCT=false`). El endpoint admin con step-up queda para backfill y comparte el indice.
-- **Licencia y gobernanza de la especificacion (CC BY 4.0)**: seccion nueva `Licencia y gobernanza` en `APW-SPEC-v1.3.md` (licencia del estandar, autor y edicion, nombre, neutralidad y conformidad sin permiso de Portaless, proceso de cambios: errata -> version -> propuestas). Lineas de licencia en `ERRATA.md` y `APW-VECTORS-v1.3.md`, fila de la especificacion en `docs/architecture/licensing-boundaries.md`, y notas en `README.md` y `docs/protocol-apw/README.md`. La licencia del estandar no contamina al codigo AGPL-3.0 ni viceversa.
-- **Nombre neutral de la seccion 6**: ahora **Loyal Trust Protocol (LTP)**, antes "Loyola Trust Protocol" (mismo acronimo y misma especificacion, nota de continuidad en la seccion Licencia y gobernanza). Afecta a la spec v1.3 y a `docs/architecture/site-trust-score.md`; los documentos historicos (v1.0, v1.2, whitepaper) quedan con el nombre con que se publicaron, y el credito de autor se conserva en el encabezado y el Anexo A.
-- **`schema.sql` maestro regenerado (v0.0.9.31)**: ahora incluye `usage_ledger.reader_did` (ERRATA E-9, ya estaba en su fuente de paquete; el maestro estaba atrasado) y la tabla nueva `reader_conduct_jti` (spec APW 6.4, indice de jti ya emitidos, DDL en `packages/apw-resolver/schema.sql`). Regeneracion idempotente, aplicada dos veces seguidas contra SQLite sin errores (25 tablas). Las bases existentes siguen recibiendo ambos cambios al vuelo desde sus stores, sin reaplicar el archivo.
-- **Excepcion por lector de la gobernanza de lectura (spec APW 6.5, cierra E-8)**: el Centro de Permisos admite el subject `reader` (el `did:apw:` de un lector) y la capacidad nueva `trust:read-governance-bypass` (`packages/permissions/src/reader-bypass.ts` + catalogo en `capability-registry.ts`; un plugin no puede solicitarla en su manifiesto). `GET /trust/:siteId` consulta el grant y, con politica activa, salta los umbrales de reputacion con `evaluatePolicy(..., { bypass: true })`. El bypass no salta la identidad APW (6.3) ni valida una politica corrupta, y si el store de grants no se puede leer no se aplica. Alta y revocacion desde `/admin/permissions` (el PUT responde `400 invalid_reader_grant` con un DID mal formado o con cualquier otra capacidad para un subject `reader`), con formulario de DID en el Centro de Permisos.
-- **Claves no activas del lector aceptadas dentro de su ventana (spec APW 6.3)**: `resolveReaderState()` admite una firma cuya huella no es `k` si `isRetiredReaderKeyUsable()` (`packages/apw-resolver/src/scoring/reader-identity.ts`) confirma que la clave esta en las `keys` de un historial ya verificado contra `k` y `h`, firmo al menos una entrada de la cadena (su huella o `keyId` como `kid`), y su ventana `[validFrom, validTo + RETIRED_READER_KEY_GRACE_MS]` (10 min de gracia del lado de quien verifica) cubre el momento de la request. Si no, sigue `apw_unresolvable: key_not_bound_to_apw`, y el TTL del cache del exito se acota al cierre de la ventana. Nuevo hook opcional `ReaderResolvers.acceptRetiredKey` (por defecto baja el historial con `includeEntries` + `includeKeys`); `resolveApwHistory()` ahora publica `keys` y el `kid` de cada entrada (`history-resolver.ts`). La emision de `reader_conduct` sigue exigiendo `k`: en rollover se lee, no se puntua.
-- **Proyeccion de las dimensiones W publicas (spec APW 6.6, cierra E-8 y E-11)**: `GET /trust/:siteId` calcula las dimensiones W del sitio a partir de su snapshot con `scoring/site-dimensions.ts` (mapeo A.2 de categorias a dimensiones, valores A.4.1 — con `escrow_report` 7/2.5/1 — y W-09 derivado de A.5) y las publica siempre en `projection { dimensions, aggregates, governed }` vía `projectTrustView()`. Al rechazar, la proyeccion vive en `public.projection`: `dimensions` solo con el conjunto publico (W-01, W-04, W-06, W-07, W-09) y `aggregates` con puntaje, cantidad y suma de pesos de todas las dimensiones del sitio (`governed: "withheld"`); al permitir, o sin politica activa, todas las dimensiones con `governed: "granted"`. Las filas fuera del modelo (`perceived_trustworthiness`, valores legacy) no puntuan y el fallo del calculo omite la proyeccion sin cambiar la decision de acceso.
-- **Override de visibilidad por dimension (spec APW A.6 / 6.6)**: `site_trust_read_policies` gana la columna `public_overrides` (JSON array de dimensiones **gobernadas**, `ALTER TABLE` automatico en bases existentes; un valor corrupto se ignora, que es la direccion segura). El dueno puede volver publica cualquier dimension gobernada sin tocar la politica: `GET /trust/:siteId` lo pasa a `projectTrustView()`, asi que al rechazar un lector `public.projection.dimensions` trae el conjunto publico **mas** el override y el resto del nivel gobernado sigue oculto. `normalizePublicOverrides()` solo acepta dimensiones gobernadas (el nivel publico no se puede "abrir" ni inventar), las ordena y las deduplica.
-- **Portaless Index: agregador de testigos local (spec APW 5.7 y seccion 7)**: `packages/apw-resolver/src/did-apw/witness-index.ts` + `witness-index-store.ts` (tablas `witness_observations`, `witness_weights` y `witness_index_subjects`; D1/SQLite/InMemory, creadas al vuelo en bases existentes). `POST /admin/api/index/sync` (rol admin, sin step-up: todo lo que baja y verifica es publico) consulta a un set de hasta 20 testigos configurados, baja sus `/.well-known/apw-witnesses.json` paginados y aplica a cada statement los cuatro verificadores de 5.7 de punta a punta (cadena del testigo verificada, `att === sha256(jws)` anclado en **esa** cadena, firma contra la clave del testigo, `jti` determinista; ademas `iss`/`sub` esperados y sin self-witness). Guarda la ultima observacion anclada por (sujeto, testigo, seq) — una ancla menor nunca pisa a la mayor — la evalua contra la cadena viva del sujeto (`head_mismatch` / `equivocation` / `backdated_entry`, margen 300 s) y cachea la entrada de directorio con su `status` y un `consensus` ponderado por peso estatico por testigo (default 1.0). El directorio se publica como documento plano re-verificable en `GET /.well-known/apw-index.json` (`{ typ: "apw-index", iss, generatedAt, subjects[] }`) y `GET /admin/api/index/subjects` lo lista para el admin. `resolveApwHistory()` ahora expone `entryHash` por entrada (el hash que observan los testigos). Fuera de alcance documentado en la spec 5.7 y 7: calibracion de pesos estilo A.4.4, gossip/sincronizacion entre nodos indice y agregacion de manifiestos/SiteTrustScore de otras instancias. Tests: `apw-witness-index.test.ts` (17, con claves y statements firmados reales), `apw-witness-index-store.test.ts` (10) y `apw-index-endpoints.test.ts` (10).
+### Added
 
-### Corregido
-- `scripts/generate-schema.mjs` estaba desactualizado respecto del propio `schema.sql` maestro (v0.0.9.4 vs v0.0.9.27): solo conocia 4 fuentes, regenerar habria borrado 17 de las 24 tablas existentes, y sus addendums ya no coincidian con el maestro. Reescrito con las 13 fuentes reales en orden; las secciones sin `schema.sql` de paquete (password reset, plugins, site trust, allowlists, capability bridge, deployment) ahora viven en `schema-additions/*.sql` como fuentes editables, asi el maestro vuelve a ser 100% generado. Regeneracion verificada por diff: solo cambian las notas del encabezado, `reader_did` y `reader_conduct_jti`.
-- `README.md` enlazaba `./LICENSE` (badge y seccion License) pero el archivo no existia en el repositorio. Agregado el texto oficial de AGPL-3.0.
-- `dnslink/cli.mjs` importaba `../manifest.js`, un archivo inexistente: el CLI no corría. Ahora importa `.ts` y se ejecuta con `tsx` como el resto de los scripts.
-- El middleware del Trust Layer no registraba en el ledger los accesos con politica `allow`: solo veia bloqueados y cobrados. Ahora el trafico libre tambien alimenta el ledger publico y la emision de `reader_conduct`.
-- Confirmado que el campo de clave publica en `/admin/authorized-escrow-providers` **ya esta implementado** (`a1e0a57`, PR del panel de escrow): el store tiene `public_key_jwk` + `setPublicKey()` (carga, reemplaza y quita sin rotar la API key, rechazando JWK con `d`), el endpoint acepta `publicKeyJwk` en el `POST` y tiene un `PUT` dedicado, la pagina lo ofrece en el alta y en un panel aparte con validacion en navegador y servidor, y `escrow-report.js` exige la clave para verificar el JWS. El ROADMAP lo seguia listando como pendiente ("hoy solo via API o CLI") por informacion desactualizada, no por un faltante.
-- **`scripts/generate-schema.mjs` destruia el schema.sql maestro si se lo corria**: el propio CHANGELOG documentaba un rewrite "con las 13 fuentes reales" que **nunca se commiteo** -- el script en HEAD seguia siendo el de v0.0.9.4 (solo 4 paquetes + addendum), asi que `npm run generate-schema` regeneraba un maestro con 8 tablas y borraba 20 de las 28 (authorization, plugins, site trust, apw-resolver, capability bridge, deployment). Reescrito con las 13 secciones reales en orden (5 `schema.sql` de paquete + 8 `schema-additions/*.sql`; `settlement-activations.sql` sigue fuera a proposito, como ya decia el header), el bloque de NOTAs del maestro ahora vive dentro del generador, y la regeneracion quedo verificada: 28/28 tablas identicas, SQLite aplicado limpio y diff contra el maestro committeado solo de comentarios. De paso se cerraron dos desincronizaciones reales que el rewrite tapaba: `reader_conduct_jti` existia en el maestro pero **nunca llego** a `packages/apw-resolver/schema.sql` pese a que el CHANGELOG afirmaba que si (agregada ahi, su fuente real), y la prosa de diseno de la seccion apw-resolver vivia solo en el maestro (movida al schema del paquete).
+- **External witnesses (ERRATA E-10, spec §5.7)**: `packages/apw-resolver/src/did-apw/witness.ts` (`apw-witness+jws` statements with deterministic `jti`, verification against the witness's key, and fail-closed `head_mismatch` / `equivocation` / `backdated_entry` evaluation), `POST /admin/api/witness/record` (admin role; logs the observation into the witness's own chained history), and `GET /.well-known/apw-witnesses.json` (published statements, paginated). Test vectors V-13 in `APW-VECTORS-v1.3.md`; E-10 integrated into `APW-SPEC-v1.3.md` (new section 5.7).
+- **Automated `h` anchoring (E-10)**: `--anchor --domain <d>` mode in `dnslink/cli.mjs` (fetches live `did.json` + `apw-log.json` and prints the ready-to-paste v2 TXT, via `buildSiteManifest`), and a structured `anchor: { status, publishedH, localH, localSeq }` field in `/admin/api/apw-verification-status` with a dashboard checklist line. Pasting the TXT stays manual (no standardized DNS API); the computation does not.
+- **Automatic `reader_conduct` emission (E-9/E-10)**: `scoring/reader-conduct-auto.ts` + `scoring/reader-conduct-jti-store.ts` index (table `reader_conduct_jti`, seeded from `att_jws` on migrated databases). The Trust Layer middleware fires it with `context.waitUntil` after each verified access with a candidate `readerDid` (6 h throttle per agent/period; opt-out `APW_AUTO_EMIT_CONDUCT=false`). The step-up admin endpoint remains for backfill and shares the index.
+- **Specification license and governance (CC BY 4.0)**: new `Licencia y gobernanza` section in `APW-SPEC-v1.3.md` (standard's license, author and edition, name, neutrality and conformance without Portaless permission, change process: errata → version → proposals). License lines in `ERRATA.md` and `APW-VECTORS-v1.3.md`, a specification row in `docs/architecture/licensing-boundaries.md`, and notes in `README.md` and `docs/protocol-apw/README.md`. The standard's license does not contaminate the AGPL-3.0 code, nor vice versa.
+- **Neutral name for section 6**: now **Loyal Trust Protocol (LTP)**, previously "Loyola Trust Protocol" (same acronym, same specification; continuity note in the License and governance section). Affects spec v1.3 and `docs/architecture/site-trust-score.md`; historical documents (v1.0, v1.2, whitepaper) keep the name they were published under, and author credit is preserved in the header and Annex A.
+- **Master `schema.sql` regenerated (v0.0.9.31)**: now includes `usage_ledger.reader_did` (ERRATA E-9, already in its package source; the master was behind) and the new `reader_conduct_jti` table (APW spec §6.4, index of already-emitted jtis, DDL in `packages/apw-resolver/schema.sql`). Idempotent regeneration, applied twice in a row against SQLite without errors (25 tables at the time). Existing databases keep receiving both changes on the fly from their stores, without re-applying the file.
+- **Per-reader governance bypass (APW spec §6.5, closes E-8)**: the Permissions Center accepts the `reader` subject (the `did:apw:` of a reader) and the new `trust:read-governance-bypass` capability (`packages/permissions/src/reader-bypass.ts` + catalog entry in `capability-registry.ts`; a plugin cannot request it in its manifest). `GET /trust/:siteId` queries the grant and, with an active policy, skips the reputation thresholds via `evaluatePolicy(..., { bypass: true })`. The bypass does not skip APW identity (§6.3) nor validate a corrupt policy, and if the grants store cannot be read, no bypass applies. Managed from `/admin/permissions` (the PUT responds `400 invalid_reader_grant` on a malformed DID or any other capability for a `reader` subject), with a DID form in the Permissions Center.
+- **Non-active reader keys accepted within their window (APW spec §6.3)**: `resolveReaderState()` accepts a signature whose fingerprint is not `k` when `isRetiredReaderKeyUsable()` (`packages/apw-resolver/src/scoring/reader-identity.ts`) confirms the key is in the `keys` of a history already verified against `k` and `h`, signed at least one chain entry (its fingerprint or `keyId` as `kid`), and its `[validFrom, validTo + RETIRED_READER_KEY_GRACE_MS]` window (10-minute grace on the verifier side) covers the request moment. Otherwise it stays `apw_unresolvable: key_not_bound_to_apw`, and the success cache TTL clamps to the window close. New optional hook `ReaderResolvers.acceptRetiredKey` (by default fetches the history with `includeEntries` + `includeKeys`); `resolveApwHistory()` now publishes `keys` and each entry's `kid` (`history-resolver.ts`). `reader_conduct` emission still requires `k`: during a rollover the site is read, not scored.
+- **Public W-dimension projection (APW spec §6.6, closes E-8 and E-11)**: `GET /trust/:siteId` computes the site's W dimensions from its snapshot with `scoring/site-dimensions.ts` (A.2 category-to-dimension mapping, A.4.1 values — with `escrow_report` 7/2.5/1 — and W-09 derived from A.5) and always publishes them in `projection { dimensions, aggregates, governed }` via `projectTrustView()`. On denial, the projection lives in `public.projection`: `dimensions` with only the public set (W-01, W-04, W-06, W-07, W-09) and `aggregates` with score, count and weight sum of all site dimensions (`governed: "withheld"`); on allow, or with no active policy, all dimensions with `governed: "granted"`. Rows outside the model (`perceived_trustworthiness`, legacy values) do not score, and a calculation failure omits the projection without changing the access decision.
+- **Per-dimension visibility override (APW spec A.6 / §6.6)**: `site_trust_read_policies` gains the `public_overrides` column (JSON array of **governed** dimensions; automatic `ALTER TABLE` on existing databases; a corrupt value is ignored, which is the safe direction). The owner can make any governed dimension public without touching the policy: `GET /trust/:siteId` passes it to `projectTrustView()`, so when denying a reader, `public.projection.dimensions` carries the public set **plus** the override while the rest of the governed level stays hidden. `normalizePublicOverrides()` only accepts governed dimensions (the public level cannot be "opened" or invented), sorts and deduplicates them.
+- **Portaless Index: local witness aggregator (APW spec §5.7 and section 7)**: `packages/apw-resolver/src/did-apw/witness-index.ts` + `witness-index-store.ts` (tables `witness_observations`, `witness_weights` and `witness_index_subjects`; D1/SQLite/InMemory, created on the fly in existing databases). `POST /admin/api/index/sync` (admin role, no step-up: everything it fetches and verifies is public) pulls from a configured set of up to 20 witnesses, fetches their paginated `/.well-known/apw-witnesses.json`, and applies all four §5.7 verifiers end-to-end to each statement (witness chain verified, `att === sha256(jws)` anchored in **that** chain, signature against the witness's key, deterministic `jti`; plus expected `iss`/`sub` and no self-witness). It stores the latest anchored observation per (subject, witness, seq) — a smaller anchor never overwrites a larger one — evaluates it against the subject's live chain (`head_mismatch` / `equivocation` / `backdated_entry`, 300 s margin), and caches the directory entry with its `status` and a `consensus` weighted by static per-witness weight (default 1.0). The directory is published as a plain, re-verifiable document at `GET /.well-known/apw-index.json` (`{ typ: "apw-index", iss, generatedAt, subjects[] }`) and `GET /admin/api/index/subjects` lists it for the admin. `resolveApwHistory()` now exposes per-entry `entryHash` (the hash witnesses observe). Out of scope, documented in spec §5.7 and §7: A.4.4-style weight calibration, gossip/sync between index nodes, and manifest/SiteTrustScore aggregation from other instances. Tests: `apw-witness-index.test.ts` (17, with real keys and signed statements), `apw-witness-index-store.test.ts` (10) and `apw-index-endpoints.test.ts` (10).
 
-### Documentado
-- **R-05 en politicas sigue apagada y el motivo es de datos, no de config (spec 6.5, ERRATA E-9)**: `policyDimensions["R-05"]` se dejo en `false` despues de medirlo, no por costumbre. R-05 del sujeto es la calibracion de las atestaciones que **el** emitio (A.4.4), pero `loadReaderConduct()` solo trae las que **recibio** (descarta `iss` igual al DID del lector), asi que hasta un lector con tres emisores calibrables y de acuerdo queda con `R-05 = { score: 4.0, count: 0, weightSum: 0 }`: con `min_r05_weight = 2.0` la politica lo rechazaria a el y a todos los demas. Faltan (1) un flujo en que el lector emita atestaciones sobre sujetos (hoy solo existe el voto community anonimo por IP, sin DID) y (2) un corpus de otros emisores sobre el mismo (sujeto, dimension) para el consenso leave-one-out de A.4.4 — indices o testigos (seccion 7). El bloqueo queda anclado como regresion en `tests/unit/apw-reader-conduct-config.test.ts` (nunca encender el flag sin resolver eso), y documentado en la spec 6.5 y 7 y en ERRATA E-9.
-- **Las tres categorias de `reader_conduct` de la spec 6.4 siguen sin regla y por dato, no por codigo**: `rate_respected` (R-02), `paid_as_agreed` (R-03) y `redistribution` (R-04) no se emiten porque el ledger no les aporta el dato. `LedgerConductInput` es literalmente lo que escribe `log-writer.ts` (`requestsTotal`, `policyViolationsDetected`) y el middleware registra `charged: false` en los cuatro caminos: `requests_charged` y `revenue_usd` no se mueven nunca, porque con Cloudflare Pay Per Crawl (in-band) el origen devuelve 200 + `crawler-price` y la cobranza se liquida fuera. Emitir `paid_as_agreed` de ahi seria inventar el pago. Cada una queda anclada con su prerequisito: una tasa en la politica de contenido con su contador, un settlement que informe el resultado, y testigos o denuncia para lo que el origen no observa. Regresion en `tests/unit/apw-reader-conduct-config.test.ts`, detalle en `CONDUCT_RULES`, spec 6.4/7 y ERRATA E-9.
+### Fixed
 
-## v0.0.9.9 (sin publicar oficialmente, PR #21 abierto)
+- `scripts/generate-schema.mjs` was behind the master `schema.sql` itself (v0.0.9.4 vs v0.0.9.27): it only knew 4 sources, regeneration would have deleted 17 of the 24 existing tables, and its addendums no longer matched the master. Rewritten with the real 13 sources in order; sections without a package `schema.sql` (password reset, plugins, site trust, allowlists, capability bridge, deployment) now live in `schema-additions/*.sql` as editable sources, so the master is 100% generated again. Regeneration verified by diff: only header notes, `reader_did` and `reader_conduct_jti` change.
+- `README.md` linked `./LICENSE` (badge and License section) but the file did not exist in the repository. The official AGPL-3.0 text was added.
+- `dnslink/cli.mjs` imported `../manifest.js`, a nonexistent file: the CLI did not run. It now imports `.ts` and runs with `tsx` like the rest of the scripts.
+- The Trust Layer middleware did not record `allow`-policy accesses in the ledger: it only saw blocked and charged ones. Free traffic now also feeds the public ledger and `reader_conduct` emission.
+- Confirmed that the public-key field in `/admin/authorized-escrow-providers` **was already implemented** (`a1e0a57`, escrow panel PR): the store has `public_key_jwk` + `setPublicKey()` (load, replace and remove without rotating the API key, rejecting JWKs with `d`), the endpoint accepts `publicKeyJwk` on `POST` and has a dedicated `PUT`, the page offers it at creation and in a separate panel with browser+server validation, and `escrow-report.js` requires the key to verify the JWS. The ROADMAP still listed it as pending ("today only via API or CLI") due to outdated information, not a missing feature.
+- **`scripts/generate-schema.mjs` destroyed the master schema.sql when run**: the CHANGELOG itself documented a rewrite "with the real 13 sources" that was **never committed** — the script at HEAD was still the v0.0.9.4 one (only 4 packages + addendum), so `npm run generate-schema` regenerated a master with 8 tables and deleted 20 of the 28 (authorization, plugins, site trust, apw-resolver, capability bridge, deployment). Rewritten with the real 13 sections in order (5 package `schema.sql` + 8 `schema-additions/*.sql`; `settlement-activations.sql` stays out on purpose, as the header already said), the master's NOTES block now lives inside the generator, and regeneration was verified: 28/28 identical tables, clean SQLite apply, and a diff against the committed master limited to comments. Two real desynchronizations the rewrite had been papering over were also closed: `reader_conduct_jti` existed in the master but had **never reached** `packages/apw-resolver/schema.sql` despite the CHANGELOG claiming otherwise (added there, its real source), and the apw-resolver design prose lived only in the master (moved to the package schema).
 
-### Agregado
-- **Ecosistema de plugins abierto+cerrado con `trustScore` comunitario** (avance parcial): `packages/plugin-sandbox/src/registry/plugin-registry.ts` con la interfaz `PluginRegistryStore` y `InMemoryPluginRegistryStore` de referencia. Tablas `plugin_registry` y `plugin_trust_votes` en `schema.sql`. Diseño inspirado en Shopify App Store / WooCommerce.org / Android Play Store: catálogo abierto por defecto, confianza regulada por voto comunitario (1-5), no por certificación de Portaless.
-- **Endpoint HTTP interno real del `CapabilityHostBridge`**: `functions/api/internal/capability-bridge.js` valida `Authorization: Bearer <PORTALESS_INTERNAL_BRIDGE_TOKEN>`, consulta `PermissionStore` real, y despacha `content:read`/`content:write` a `PageStore` real (las 9 capacidades restantes responden 501 explícito, mismo principio `NOT_CONFIGURED` que `node-isolated-vm.ts`).
-- `ROADMAP.md` reorganizado en 3 categorías por responsabilidad: Producción, Internas en Desarrollo, Externas.
+### Documented
 
-### Corregido
-- Confirmado que `layout.title`/`layout.description` en `src/pages/paginas/[slug].astro` ya no requieren cast defensivo (`PageLayout` los declara correctamente) -- este roadmap lo marcaba como pendiente por información desactualizada, no por un problema real.
-- Confirmado que `functions/admin/_middleware.js` sí expone `context.data.user` (con `session` como alias) para el guard de permisos server-side -- versiones anteriores del roadmap lo marcaban como "pendiente de verificar" por una limitación temporal de herramientas, no por un bug real.
-- Limpieza de tipos en `node-isolated-vm.ts`: se elimina el tipo local extendido `BaseCapabilityHostBridge & {contentRead, contentWrite}`, ahora importa `CapabilityHostBridge` directo desde `../types`. Cambio cosmético, sin impacto funcional.
+- **R-05 in policies remains off, and the reason is data, not config (spec §6.5, ERRATA E-9)**: `policyDimensions["R-05"]` was left `false` after measurement, not by habit. A subject's R-05 is the calibration of the attestations **it** emitted (A.4.4), but `loadReaderConduct()` only loads what it **received** (drops `iss` equal to the reader's DID), so even a reader with three calibratable, agreeing emitters ends with `R-05 = { score: 4.0, count: 0, weightSum: 0 }`: with `min_r05_weight = 2.0` the policy would reject it and everyone else. Missing: (1) a flow where the reader emits attestations over subjects (today only anonymous community voting by IP, no DID) and (2) a corpus of other emitters on the same (subject, dimension) for A.4.4's leave-one-out consensus — indexes or witnesses (section 7). The blocker is anchored as a regression in `tests/unit/apw-reader-conduct-config.test.ts` (never enable the flag without solving that) and documented in spec §6.5 and §7 and ERRATA E-9.
+- **The three `reader_conduct` categories of spec §6.4 still have no rule, blocked by data, not code**: `rate_respected` (R-02), `paid_as_agreed` (R-03) and `redistribution` (R-04) are not emitted because the ledger does not supply their datum. `LedgerConductInput` is literally what `log-writer.ts` writes (`requestsTotal`, `policyViolationsDetected`) and the middleware records `charged: false` on all four paths: `requests_charged` and `revenue_usd` never move, because with Cloudflare Pay Per Crawl (in-band) the origin returns 200 + `crawler-price` and settlement happens out-of-band. Emitting `paid_as_agreed` from there would be inventing the payment. Each one waits on its own prerequisite: a rate in the content policy with its counter, a settlement that reports the outcome, and witnesses or denunciation for what the origin cannot observe. Regression in `tests/unit/apw-reader-conduct-config.test.ts`, detail in `CONDUCT_RULES`, spec §6.4/§7 and ERRATA E-9.
 
-### Pendiente para cerrar esta línea
-- Implementar `D1PluginRegistryStore`/`SqlitePluginRegistryStore` (solo existe la versión en memoria).
-- Conectar `functions/admin/permissions/index.js` al registro real en vez del catálogo hardcodeado (`hello-plugin`, `commerce-plugin`).
-- UI de `trustScore` en el Centro de Permisos.
-- Agregar `PORTALESS_INTERNAL_BRIDGE_TOKEN` a `.env.example` y conectar `bridgeUrl` de los adaptadores edge al endpoint nuevo.
+### Changed
 
-## v0.0.9.7 (PR #19, mergeado a main)
+- **Documentation restructured for a global audience (October 2026)**: every canonical root and protocol document is now English (`README.md`, `ROADMAP.md`, `AGENT.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/protocol-apw/APW-SPEC-v1.3.md`, `APW-VECTORS-v1.3.md`, `docs/protocol-apw/README.md`); the Spanish originals are preserved intact as `*_es.md` archives (nothing deleted). New integrator guide under [`docs/api/`](./docs/api/) covering the public well-known endpoints (including `/.well-known/apw-index.json`), admin endpoints, and end-to-end verification recipes for third parties connecting to APW / Portaless / Index APIs; new documentation index at [`docs/README.md`](./docs/README.md). Stale accuracy fixes: `AGENT.md` and `REPO_STRUCTURE_MAP.md` no longer call `packages/apw-resolver` or `packages/mcp-server` stubs (both are implemented; only `identity-atproto` remains a stub), `packages/apw-resolver/README.md` was rewritten from "STUB — not implemented" to a real package README, and `docs/protocol-apw/apw-spec.md` now points to v1.3 (was v1.2).
 
-### Agregado
-- Persistencia real D1/SQLite para `PasswordResetStore`: `D1PasswordResetStore` y `SqlitePasswordResetStore`, mismo patrón que los stores de usuarios/sesiones, usando la tabla `password_reset_requests` (existente en `schema.sql` desde v0.0.9.4).
+## v0.0.9.9 (unreleased officially, PR #21 open)
 
-## v0.0.9.6 (PR #18, mergeado a main)
+### Added
 
-### Agregado
-- `contentRead`/`contentWrite` agregados a `CapabilityHostBridge` en `types.ts`, completando el patrón de puente real iniciado en v0.0.9.4 para las 12/12 capacidades del catálogo.
+- **Open+closed plugin ecosystem with community `trustScore`** (partial progress): `packages/plugin-sandbox/src/registry/plugin-registry.ts` with the `PluginRegistryStore` interface and the reference `InMemoryPluginRegistryStore`. Tables `plugin_registry` and `plugin_trust_votes` in `schema.sql`. Design inspired by Shopify App Store / WooCommerce.org / Android Play Store: open catalog by default, trust regulated by community vote (1–5), not by Portaless certification.
+- **Real internal HTTP endpoint for the `CapabilityHostBridge`**: `functions/api/internal/capability-bridge.js` validates `Authorization: Bearer <PORTALESS_INTERNAL_BRIDGE_TOKEN>`, queries the real `PermissionStore`, and dispatches `content:read`/`content:write` to the real `PageStore` (the remaining 9 capabilities respond with an explicit 501, same `NOT_CONFIGURED` principle as `node-isolated-vm.ts`).
+- `ROADMAP.md` reorganized into 3 responsibility categories: Production, Internal in Development, External.
 
-## v0.0.9.5 (PR #16, mergeado)
+### Fixed
 
-### Corregido
-- `functions/admin/login.js` ahora maneja el flujo de 2FA end-to-end: si `result.mfaRequired && result.mfaChallengeToken`, redirige a `/admin/login-mfa?challenge=<token>`. Sin cambios de comportamiento para usuarios sin 2FA activo.
-- `ROADMAP.md` actualizado y revisado en busca de código de terceros vendorizado a re-licenciar bajo AGPL-3.0 -- sin hallazgos en el árbol raíz (no sustituye una auditoría legal formal de dependencias npm).
+- Confirmed that `layout.title`/`layout.description` in `src/pages/paginas/[slug].astro` no longer need a defensive cast (`PageLayout` declares them correctly) — this roadmap marked it pending due to outdated information, not a real problem.
+- Confirmed that `functions/admin/_middleware.js` does expose `context.data.user` (with `session` as an alias) for the server-side permission guard — earlier roadmap versions marked it "pending verification" due to a temporary tooling limitation, not a real bug.
+- Type cleanup in `node-isolated-vm.ts`: the local extended type `BaseCapabilityHostBridge & {contentRead, contentWrite}` is removed, now importing `CapabilityHostBridge` directly from `../types`. Cosmetic change, no functional impact.
 
-## v0.0.9.4 (PR #13 y #15, mergeados a agentic y luego a main via PR #17)
+### Pending to close this line
 
-### Agregado
-- **Licenciamiento del proyecto**: `LICENSE` reemplazado por AGPL-3.0 con linking exception para el Plugin SDK; `LICENSE-SDK` (MIT) agregado; `docs/architecture/licensing-boundaries.md` documenta la frontera exacta entre el core AGPL-3.0, el SDK de plugins en MIT, y los proyectos AppPlace/AppLibre/terceros.
-- **Recuperación de contraseña, 2FA, OAuth/SSO**: `AuthService` gana `completeMfaLogin`, `beginTotpEnrollment`, `confirmTotpEnrollment`, `disableTotp`, `requestPasswordReset`, `completePasswordReset`, `loginWithOAuth`. 6 endpoints/páginas nuevos, 15 tests.
-- **Instalación en un comando**: `schema.sql` (raíz) generado a partir de los `schema.sql` de cada paquete más la tabla de password reset; `scripts/setup.mjs` aplica el schema y crea el admin inicial (`npm run setup`); `scripts/generate-schema.mjs` regenera el maestro si cambia algún paquete. Cloudflare D1 sigue usando `wrangler d1 execute` por separado (documentado, no automatizado).
-- **Bridge real de contenido para plugins**: `content:read`/`content:write` integrados al patrón de puente real vía `ivm.Reference`, completando 12/12 capacidades del catálogo con puente real (las 9 capacidades previas ya lo tenían desde v0.0.9).
-- `README.md` con nueva sección "Novedades recientes" y "Licenciamiento"; badge de licencia actualizado de MIT a AGPL-3.0; tabla "Estado real por módulo" actualizada.
-- `package.json` (raíz): versión 0.0.9.4 (antes 0.0.5, desactualizado desde hacía varias versiones); `license` AGPL-3.0-or-later (antes MIT); scripts `setup` y `generate-schema` invocables vía `npm run`.
-- `SECURITY.md` corrige 2 afirmaciones desactualizadas: Web Bot Auth sí valida la firma Ed25519 desde v0.0.9 (antes decía que no); Centro de Permisos y ledger del Trust Layer tienen persistencia real desde v0.0.9.2/v0.0.9.3 (antes decía que se perdían al reiniciar). Se agregan notas sobre `PasswordResetStore` solo en memoria (resuelto luego en v0.0.9.7), y el cambio de licencia como nota legal relevante.
-- `.env.example` agregado (no existía): documenta todas las variables de entorno, incluyendo el bloque de OAuth/SSO.
-- `docs/architecture/authentication.md` reescrito para reflejar 2FA/TOTP, recuperación de contraseña, y OAuth/SSO.
+- Implement `D1PluginRegistryStore`/`SqlitePluginRegistryStore` (only the in-memory version existed). *(Since implemented — see `packages/plugin-sandbox/src/registry/stores/`.)*
+- Connect `functions/admin/permissions/index.js` to the real registry instead of the hardcoded catalog (`hello-plugin`, `commerce-plugin`).
+- `trustScore` UI in the Permissions Center.
+- Add `PORTALESS_INTERNAL_BRIDGE_TOKEN` to `.env.example` and wire the edge adapters' `bridgeUrl` to the new endpoint.
 
-## v0.0.9.3 (PR #12, mergeado a main)
+## v0.0.9.7 (PR #19, merged to main)
 
-### Agregado
-- Ledger del Trust Layer expuesto vía `GET /.well-known/portaless-usage-log.json` (con `?period=YYYY-MM` opcional). Público, sin guard de sesión, mismo criterio de transparencia que `portaless-content-policy.json`. 5 tests nuevos en `tests/unit/usage-log-endpoint.test.ts`.
+### Added
 
-### Corregido
-- Diagnóstico impreciso de versiones anteriores: `functions/_middleware.js` ya llamaba a `recordAgentAccess()` con `createUsageLedgerStore(env)` desde v0.0.6 -- la escritura del ledger sí estaba conectada. Lo que faltaba era la lectura pública, resuelta en esta versión.
-- Bug de nombre de binding D1 inconsistente entre factories: `createPageStore` alineado a `env.DB` como las otras 3 factories. Nombres de path SQLite unificados (`PORTALESS_SQLITE_PATH`).
+- Real D1/SQLite persistence for `PasswordResetStore`: `D1PasswordResetStore` and `SqlitePasswordResetStore`, same pattern as the user/session stores, using the `password_reset_requests` table (present in `schema.sql` since v0.0.9.4).
 
-## v0.0.9.2 (PR #11, mergeado a main)
+## v0.0.9.6 (PR #18, merged to main)
 
-### Agregado
-- Centro de Permisos conectado a persistencia real end-to-end: endpoint `functions/admin/permissions/index.js` (GET snapshot con seed de subjects conocidos + defaults no concedidos, PUT otorga/revoca con guard server-side `canWrite(role)==="admin"`). UI (`permission-center-ui.ts`) reescrita para que el único camino de escritura sea `onToggle`. Nueva página `src/pages/admin/permissions.astro`. 9 tests nuevos en `tests/unit/admin-permissions-role-check.test.ts`.
+### Added
 
-### Corregido
-- Se documenta que la línea "Persistencia real Permisos + Trust Layer" marcada `[x]` en v0.0.6 era imprecisa: solo se habían creado los stores D1/SQLite, sin que ningún endpoint los invocara.
+- `contentRead`/`contentWrite` added to `CapabilityHostBridge` in `types.ts`, completing the real-bridge pattern started in v0.0.9.4 for all 12/12 catalog capabilities.
 
-## v0.0.9.1 (PR #10, mergeado a main junto con v0.0.9.2)
+## v0.0.9.5 (PR #16, merged)
 
-### Agregado
-- Integración real con las APIs REST públicas de Cloudflare Workers for Platforms y Deno Deploy (subida/creación + invocación). **No verificado end-to-end contra una cuenta real** -- cubierto por tests con `fetch` mockeado. Deno Deploy mapea `network:fetch` a allowlist de host; Cloudflare sube/actualiza scripts vía PUT con nombre determinístico por `name@version`.
+### Fixed
 
-## v0.0.9 (PR #8 y #9, mergeados a agentic y luego a main)
+- `functions/admin/login.js` now handles the 2FA flow end-to-end: if `result.mfaRequired && result.mfaChallengeToken`, it redirects to `/admin/login-mfa?challenge=<token>`. No behavior change for users without 2FA enabled.
+- `ROADMAP.md` updated and reviewed for vendored third-party code to re-license under AGPL-3.0 — no findings in the root tree (does not replace a formal legal audit of npm dependencies).
 
-### Agregado
-- Puentes de capacidades reales en `isolated-vm`: 9 capacidades nuevas (`storage:read/write`, `email:send`, `commerce:read/checkout`, `media:read/write`, `agent:identify`, `site:admin`) cruzan al isolate vía `ivm.Reference.apply({result:{promise:true}})`, sumadas a `network:fetch` (ya existía) = 10/12 con puente real.
-- Cache del directorio de claves Web Bot Auth y verificación de unicidad de nonce contra replay (`tests/unit/webbotauth-verify.test.ts`).
-- Pool de isolates reutilizables para `commerce-plugin`: `poolMaxIsolates` en `NodeIsolatedVmAdapter`, con aislamiento real de Context por ejecución aunque el isolate subyacente se reutilice.
-- Reordenamiento por arrastre dentro de un mismo slot de columnas en Atomic Elements: lógica extraída a `packages/atomic-elements/src/editor/tree-ops.ts` (funciones puras, testeadas sin DOM).
-- Verificación criptográfica real de Web Bot Auth (RFC 9421, Ed25519).
+## v0.0.9.4 (PRs #13 and #15, merged to agentic and then to main via PR #17)
 
-## v0.0.8 (PR #6 y #7, mergeados a agentic y luego a main)
+### Added
 
-### Agregado
-- SEO/GEO nativo: imports de `JsonLd` + `SeoHead` conectados en `src/pages/paginas/[slug].astro`, usando los helpers de `src/lib/seo.ts` (`getSiteUrl`, `buildCanonicalUrl`).
-- Persistencia real de páginas: `D1PageStore` y `SqlitePageStore` en `packages/atomic-elements/src/persistence/stores/`, más `store-factory.ts`, cumpliendo la interfaz `PageStore` ya existente (`load`/`save`/`list`) para mantener compatibilidad con `LocalStoragePageStore` del editor cliente. `GET`/`PUT` en `functions/admin/pages/[slug].js` usan `createPageStore(env)` en vez de placeholders.
-- `canWrite(role)` aplicado a todo el dashboard: guard DOM-level + validación server-side en `functions/admin/pages/[slug].js` y `functions/admin/permissions/index.js`.
+- **Project licensing**: `LICENSE` replaced with AGPL-3.0 plus a linking exception for the Plugin SDK; `LICENSE-SDK` (MIT) added; `docs/architecture/licensing-boundaries.md` documents the exact boundary between the AGPL-3.0 core, the MIT plugin SDK, and the AppPlace/AppLibre/third-party projects.
+- **Password recovery, 2FA, OAuth/SSO**: `AuthService` gains `completeMfaLogin`, `beginTotpEnrollment`, `confirmTotpEnrollment`, `disableTotp`, `requestPasswordReset`, `completePasswordReset`, `loginWithOAuth`. 6 new endpoints/pages, 15 tests.
+- **One-command install**: root `schema.sql` generated from each package's `schema.sql` plus the password-reset table; `scripts/setup.mjs` applies the schema and creates the initial admin (`npm run setup`); `scripts/generate-schema.mjs` regenerates the master when a package changes. Cloudflare D1 still uses `wrangler d1 execute` separately (documented, not automated).
+- **Real content bridge for plugins**: `content:read`/`content:write` wired into the real-bridge pattern via `ivm.Reference`, completing 12/12 catalog capabilities with real bridges (the prior 9 already had them since v0.0.9).
+- `README.md` with new "Recent updates" and "Licensing" sections; license badge updated from MIT to AGPL-3.0; "Real status by module" table updated.
+- Root `package.json`: version 0.0.9.4 (was 0.0.5, outdated for several releases); `license` AGPL-3.0-or-later (was MIT); `setup` and `generate-schema` scripts invokable via `npm run`.
+- `SECURITY.md` corrects 2 outdated claims: Web Bot Auth has validated Ed25519 signatures since v0.0.9 (it previously said it did not); the Permissions Center and Trust Layer ledger have real persistence since v0.0.9.2/v0.0.9.3 (they previously said data was lost on restart). Notes added about `PasswordResetStore` being in-memory only (fixed in v0.0.9.7) and the license change as a relevant legal note.
+- `.env.example` added (did not exist): documents every environment variable, including the OAuth/SSO block.
+- `docs/architecture/authentication.md` rewritten to reflect 2FA/TOTP, password recovery, and OAuth/SSO.
+
+## v0.0.9.3 (PR #12, merged to main)
+
+### Added
+
+- Trust Layer ledger exposed via `GET /.well-known/portaless-usage-log.json` (with optional `?period=YYYY-MM`). Public, no session guard, same transparency criterion as `portaless-content-policy.json`. 5 new tests in `tests/unit/usage-log-endpoint.test.ts`.
+
+### Fixed
+
+- Imprecise diagnosis from earlier versions: `functions/_middleware.js` had been calling `recordAgentAccess()` with `createUsageLedgerStore(env)` since v0.0.6 — ledger writes were already connected. What was missing was the public read, solved in this version.
+- Inconsistent D1 binding name across factories: `createPageStore` aligned to `env.DB` like the other 3 factories. SQLite path names unified (`PORTALESS_SQLITE_PATH`).
+
+## v0.0.9.2 (PR #11, merged to main)
+
+### Added
+
+- Permissions Center connected to real persistence end-to-end: endpoint `functions/admin/permissions/index.js` (GET snapshot with known-subject seeding + ungranted defaults, PUT grant/revoke with server-side `canWrite(role)==="admin"` guard). UI (`permission-center-ui.ts`) rewritten so the only write path is `onToggle`. New page `src/pages/admin/permissions.astro`. 9 new tests in `tests/unit/admin-permissions-role-check.test.ts`.
+
+### Fixed
+
+- Documents that the "Real Permissions + Trust Layer persistence" line marked `[x]` in v0.0.6 was imprecise: only the D1/SQLite stores had been created, with no endpoint invoking them yet.
+
+## v0.0.9.1 (PR #10, merged to main together with v0.0.9.2)
+
+### Added
+
+- Real integration with the public REST APIs of Cloudflare Workers for Platforms and Deno Deploy (upload/create + invocation). **Not verified end-to-end against a real account** — covered by tests with mocked `fetch`. Deno Deploy maps `network:fetch` to a host allowlist; Cloudflare uploads/updates scripts via PUT with a deterministic `name@version` name.
+
+## v0.0.9 (PRs #8 and #9, merged to agentic and then to main)
+
+### Added
+
+- Real capability bridges in `isolated-vm`: 9 new capabilities (`storage:read/write`, `email:send`, `commerce:read/checkout`, `media:read/write`, `agent:identify`, `site:admin`) cross into the isolate via `ivm.Reference.apply({result:{promise:true}})`, added to the existing `network:fetch` = 10/12 with real bridges.
+- Web Bot Auth key-directory cache and nonce-uniqueness verification against replay (`tests/unit/webbotauth-verify.test.ts`).
+- Reusable isolate pool for `commerce-plugin`: `poolMaxIsolates` in `NodeIsolatedVmAdapter`, with real Context isolation per execution even when the underlying isolate is reused.
+- Drag-and-drop reordering within the same column slot in Atomic Elements: logic extracted to `packages/atomic-elements/src/editor/tree-ops.ts` (pure functions, tested without DOM).
+- Real cryptographic verification of Web Bot Auth (RFC 9421, Ed25519).
+
+## v0.0.8 (PRs #6 and #7, merged to agentic and then to main)
+
+### Added
+
+- Native SEO/GEO: `JsonLd` + `SeoHead` imports wired in `src/pages/paginas/[slug].astro`, using the helpers in `src/lib/seo.ts` (`getSiteUrl`, `buildCanonicalUrl`).
+- Real page persistence: `D1PageStore` and `SqlitePageStore` in `packages/atomic-elements/src/persistence/stores/`, plus `store-factory.ts`, fulfilling the existing `PageStore` interface (`load`/`save`/`list`) to stay compatible with the client editor's `LocalStoragePageStore`. `GET`/`PUT` in `functions/admin/pages/[slug].js` use `createPageStore(env)` instead of placeholders.
+- `canWrite(role)` applied across the dashboard: DOM-level guard + server-side validation in `functions/admin/pages/[slug].js` and `functions/admin/permissions/index.js`.
 
 ---
 
 ## v0.0.5
 
-### Agregado
-- **`packages/plugin-sandbox/`**: sandboxing de plugins multi-proveedor.
-  - `types.ts`: contrato `SandboxAdapter`, capacidades atómicas
-    (`CapabilityId`), manifiesto de plugin.
-  - `capabilities/capability-registry.ts`: catálogo de 12 capacidades
-    atómicas agrupadas por categoría (Contenido, Red, Comercio,
-    Almacenamiento, Agentes IA, Administración).
-  - `adapters/`: `CloudflareWorkersForPlatformsAdapter`,
-    `DenoDeployAdapter`, `FastlyComputeAdapter`, `NodeIsolatedVmAdapter`
-    (self-hosted) + `AdapterRegistry` para resolver el primero disponible.
-  - `manifest/`: validación y carga de manifiestos de plugin.
-  - `runtime/sandbox-runtime.ts`: motor central — siempre usa lo
-    **concedido** por el administrador, nunca lo **solicitado** por el
-    plugin.
-  - Advertencia de seguridad documentada sobre CVE real de `isolated-vm`
-    (GHSA-864f-rcv7-6rh4), con verificación de versión segura en el
-    constructor del adaptador self-hosted.
-- **`packages/permissions/`**: Centro de Permisos atómico estilo
-  iOS/Android.
-  - `permission-catalog` (vía `capability-registry` compartido),
-    `permission-store.ts`, `permission-center-ui.ts`.
-  - `public/permissions/index.html`: demo standalone abrible directo en
-    el navegador.
-- **Actualizado**: `packages/dashboard/src/organisms/registry.ts` — nuevo
-  organismo `PermissionsCenterPanel` que resume permisos de alto riesgo
-  directamente en el dashboard.
+### Added
 
-### Notas de esta versión
-- Los cuatro adaptadores de sandboxing son esqueletos con arquitectura
-  completa, pero sin integración real contra la API de cada proveedor
-  (`TODO` explícito) — no usar como sandboxing activo en producción todavía.
-  Nota histórica (corregida en v0.0.6): el adaptador `isolated-vm`
-  self-hosted pasó a ejecutar código real en la versión siguiente.
-- `InMemoryPermissionStore` no persiste entre despliegues; para producción
-  usar un backend real (Git, KV, SQLite). Nota histórica (corregida en
-  v0.0.9.2): el Centro de Permisos tiene persistencia real end-to-end
-  desde esta versión.
-- El sistema es deliberadamente multi-proveedor: un sitio puede correr
-  100% self-hosted (isolated-vm) sin depender de Cloudflare, Deno Deploy
-  ni Fastly.
+- **`packages/plugin-sandbox/`**: multi-provider plugin sandboxing.
+  - `types.ts`: `SandboxAdapter` contract, atomic capabilities (`CapabilityId`), plugin manifest.
+  - `capabilities/capability-registry.ts`: catalog of 12 atomic capabilities grouped by category (Content, Network, Commerce, Storage, AI Agents, Administration).
+  - `adapters/`: `CloudflareWorkersForPlatformsAdapter`, `DenoDeployAdapter`, `FastlyComputeAdapter`, `NodeIsolatedVmAdapter` (self-hosted) + `AdapterRegistry` to resolve the first available one.
+  - `manifest/`: plugin manifest validation and loading.
+  - `runtime/sandbox-runtime.ts`: core engine — always uses what the administrator **granted**, never what the plugin **requested**.
+  - Documented security warning about the real `isolated-vm` CVE (GHSA-864f-rcv7-6rh4), with a safe-version check in the self-hosted adapter's constructor.
+- **`packages/permissions/`**: atomic, iOS/Android-style Permissions Center.
+  - `permission-catalog` (via the shared `capability-registry`), `permission-store.ts`, `permission-center-ui.ts`.
+  - `public/permissions/index.html`: standalone demo openable directly in the browser.
+- **Updated**: `packages/dashboard/src/organisms/registry.ts` — new `PermissionsCenterPanel` organism summarizing high-risk permissions right on the dashboard.
+
+### Notes for this version
+
+- The four sandboxing adapters are skeletons with complete architecture, but without real integration against each provider's API (explicit `TODO`) — do not use as active sandboxing in production yet. Historical note (fixed in v0.0.6): the self-hosted `isolated-vm` adapter started running real code in the next version.
+- `InMemoryPermissionStore` does not persist across deployments; for production use a real backend (Git, KV, SQLite). Historical note (fixed in v0.0.9.2): the Permissions Center has real end-to-end persistence since that version.
+- The system is deliberately multi-provider: a site can run 100% self-hosted (isolated-vm) without depending on Cloudflare, Deno Deploy, or Fastly.

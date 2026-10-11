@@ -15,11 +15,14 @@ técnicas concretas.
 
 ## Paquetes que sí siguen la estructura propuesta, sin cambios
 
-- `packages/mcp-server/`, `packages/identity-atproto/`,
-  `packages/apw-resolver/`: existen ahora como stubs con la estructura de
-  carpetas exacta propuesta originalmente, pero sin lógica implementada
-  — ver los documentos correspondientes en `docs/architecture/` para el
-  estado real de cada uno.
+- `packages/mcp-server/` y `packages/apw-resolver/`: existen ahora con la
+  estructura de carpetas exacta propuesta originalmente y **ambos están
+  implementados** (mcp-server: 7 tools sobre stores reales, ver su fila en
+  `AGENT.md`; apw-resolver: implementación de referencia completa de
+  Protocol APW v1.3 — esta fila decía "stubs sin lógica", era falsa).
+- `packages/identity-atproto/`: sí sigue siendo un stub real (solo
+  `README.md` + `package.json`, sin `src/`) — ver
+  `docs/architecture/identity-atproto.md`.
 - `plugins-registry/`, `examples/`, `infra/`, `.github/`, `tests/`: se
   agregaron en esta adenda siguiendo exactamente la estructura original.
 

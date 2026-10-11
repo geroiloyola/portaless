@@ -1,51 +1,25 @@
-# Contribuir a Portaless
+# Contributing to Portaless
 
-Gracias por tu interés en contribuir. Portaless es un proyecto joven
-(v0.0.x, en fase de MVP) — la mayoría de los módulos son esqueletos
-funcionales con puntos de integración marcados explícitamente como `TODO`.
-Antes de contribuir, lee el `CHANGELOG.md` para entender qué está
-realmente implementado y qué es todavía diseño.
+> Canonical English version. The Spanish archive is [`CONTRIBUTING_es.md`](./CONTRIBUTING_es.md).
 
-## Cómo contribuir
+Thanks for your interest in contributing. Portaless is a young project (v0.0.x, MVP phase) — most modules are functional; check the real status table in [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) before assuming anything. Before contributing, read [`CHANGELOG.md`](./CHANGELOG.md) to understand what is really implemented and what is still design.
 
-1. Abre un Issue antes de un PR grande, para alinear el enfoque.
-2. Todo módulo nuevo debe seguir el principio de "opcional, no
-   obligatorio" — activar un módulo (comercio, Trust Layer, sandboxing)
-   nunca debe romper el comportamiento del sitio si está desactivado.
-3. Cualquier `TODO` que resuelvas debe venir acompañado de un test en
-   `tests/unit/` o `tests/e2e/`.
-4. Los plugins deben declarar sus capacidades en un manifiesto — nunca
-   agregues acceso implícito a red, almacenamiento o datos de usuarios.
-5. El núcleo de Portaless se licencia bajo AGPL-3.0. La especificación
-   Protocol APW (`docs/protocol-apw/`) se publica bajo CC BY 4.0 — los
-   cambios a la spec se proponen como issue o PR y siguen el proceso de
-   "Licencia y gobernanza" de `APW-SPEC-v1.3.md` (erratas vs. versión
-   nueva). El Plugin SDK
-   (`packages/plugin-sdk`) se licencia aparte bajo MIT, para no
-   restringir a los plugins de terceros que lo consuman. Ver
-   `docs/architecture/licensing-boundaries.md` para la frontera exacta
-   antes de contribuir código nuevo a cualquiera de los dos.
+## How to contribute
 
-## Áreas donde más se necesita ayuda hoy
+1. Open an Issue before a large PR, to align on the approach.
+2. Every new module must follow the "optional, not mandatory" principle — enabling a module (commerce, Trust Layer, sandboxing) must never break the site's behavior when it is disabled.
+3. Any `TODO` you resolve must come with a test in `tests/unit/` or `tests/e2e/`.
+4. Plugins must declare their capabilities in a manifest — never add implicit access to network, storage, or user data.
+5. The Portaless core is licensed AGPL-3.0. The Protocol APW specification (`docs/protocol-apw/`) is published under CC BY 4.0 — spec changes are proposed as an issue or PR and follow the "Licencia y gobernanza" process of `APW-SPEC-v1.3.md` (errata vs. new version). The Plugin SDK (`packages/plugin-sdk`) will be licensed separately under MIT, so third-party plugins consuming it are not restricted. See `docs/architecture/licensing-boundaries.md` for the exact boundary before contributing new code to either.
 
-- Completar la integración real de los adaptadores de sandboxing edge
-  (`packages/plugin-sandbox/src/adapters/deno-deploy.ts` y
-  `cloudflare-workers-for-platforms.ts`) contra cuentas reales de
-  prueba -- hoy solo verificados con `fetch` mockeado. El adaptador
-  `isolated-vm` self-hosted ya ejecuta código real desde v0.0.6.
-- Implementar `D1PluginRegistryStore` y `SqlitePluginRegistryStore`
-  para el registro de plugins con `trustScore` comunitario (v0.0.9.9
-  solo agregó la interfaz y la versión en memoria).
-- MCP server, identidad AT Protocol y Protocol APW resolver: estos
-  paquetes son stubs — ver `docs/architecture/` para el estado real de
-  cada uno antes de empezar a implementar.
-- Probar `npm run setup` localmente contra un archivo SQLite real antes
-  de confiar en el flujo de instalación documentado en
-  `scripts/SETUP.md`.
+## Areas where help is most needed today
 
-## Código de conducta
+- Completing real integration of the edge sandboxing adapters (`packages/plugin-sandbox/src/adapters/deno-deploy.ts` and `cloudflare-workers-for-platforms.ts`) against real test accounts — today they are only verified with mocked `fetch`. The self-hosted `isolated-vm` adapter has run real code since v0.0.6.
+- Testing `npm run setup` locally against a real SQLite file before trusting the install flow documented in `scripts/SETUP.md`.
+- MCP server per-invocation agent identity (today it is per-process — see the known limitation in `AGENT.md`).
+- AT Protocol identity (`packages/identity-atproto/` is still an empty stub — the only such package left).
+- Documentation: English is now canonical; `*_es.md` archives stay frozen. If you touch a module, update the English docs first.
 
-Sé respetuoso, específico en tus reportes de bugs, y honesto sobre
-limitaciones cuando propongas una feature — este proyecto prioriza
-documentar claramente lo que no funciona todavía sobre aparentar que
-todo está resuelto.
+## Code of conduct
+
+Be respectful, specific in your bug reports, and honest about limitations when proposing a feature — this project prioritizes clearly documenting what does not work yet over pretending everything is solved.

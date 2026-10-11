@@ -2,7 +2,7 @@
 
 ## Estado real
 
-**PARCIALMENTE IMPLEMENTADO.** Este documento describe un flujo de 4 piezas. Las piezas 1 (elementos de Atomic Elements) y la declaración `content_kinds` de la pieza 2 ya son código real, mergeado en la rama `atomic-elements-design`. El resto (la tool MCP `create_creator_page` y el archivo `PROJECT_SKILL.md` generado por un agente) sigue siendo especificación de diseño, en el mismo espíritu que `docs/architecture/mcp-agents.md`, porque dependen de un servidor MCP que todavía es un stub sin lógica real.
+**PARCIALMENTE IMPLEMENTADO.** Este documento describe un flujo de 4 piezas. Las piezas 1 (elementos de Atomic Elements) y la declaración `content_kinds` de la pieza 2 ya son código real, mergeado en la rama `atomic-elements-design`. El resto (la tool MCP `create_creator_page` y el archivo `PROJECT_SKILL.md` generado por un agente) sigue siendo especificación de diseño, en el mismo espíritu que `docs/architecture/mcp-agents.md`. **Corrección (oct. 2026)**: el texto original decía que esto dependía de "un servidor MCP que todavía es un stub" — falso desde entonces: `packages/mcp-server/` está implementado con 7 tools reales (ver `AGENT.md`); el gap real restante es la identidad de agente por invocación (Opción B), no la base del servidor.
 
 ## Problema que resuelve
 
@@ -56,7 +56,7 @@ Bloqueo actual: requiere que exista lógica de agente real generandolo, lo cual 
 
 Especialización de la tool `create_page` ya prevista en `mcp-agents.md`. Tomaría un prompt corto del creador (ej. "vendo cursos de fitness, mis redes son X, Y, Z") y generaría un `PageLayout` completo usando los elementos de la Pieza 1 (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`), guardando además el `PROJECT_SKILL.md` de la Pieza 3 y declarando `contentKinds` en `SiteInfo` (Pieza 2).
 
-Bloqueo actual: no existe servidor MCP real donde definir esta tool — `packages/mcp-server/` sigue siendo un stub (`README.md` + `package.json`), confirmado en `AGENT.md` y en `mcp-agents.md`. Esta pieza no puede pasar de diseño a código hasta que exista esa base.
+Bloqueo actual: la tool `create_creator_page` no está implementada aún — pero la base ya existe: `packages/mcp-server/` tiene servidor, permisos, auditoría y 7 tools reales (la afirmación original de que "sigue siendo un stub (`README.md` + `package.json`), confirmado en `AGENT.md`" quedó falsa; `AGENT.md` ya fue corregido). Esta pieza es trabajo futuro sobre una base existente, no un stub esperando servidor.
 
 ## Flujo end-to-end propuesto (mezcla de código real y diseño pendiente)
 

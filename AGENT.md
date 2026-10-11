@@ -1,94 +1,74 @@
-# AGENT.md — Contexto para agentes de IA trabajando en Portaless
+# AGENT.md — Context for AI agents working on Portaless
 
-Este archivo existe para que cualquier agente de IA (Claude, GPT, Cursor,
-o el que sea) tenga contexto inmediato del proyecto sin necesitar leer
-todo el historial de commits, el whitepaper completo, o adivinar el
-estado real de cada módulo. Léelo primero, siempre.
+> Canonical, always-current version. The Spanish archive with the same content is [`AGENT_es.md`](./AGENT_es.md) (kept intact; English wins on any discrepancy).
 
-## Qué es Portaless en una frase
+This file exists so any AI agent (Claude, GPT, Cursor, whatever) has immediate project context without reading the whole commit history, the full whitepaper, or guessing each module's real state. Read it first, always.
 
-CMS ligero, open source, basado en Astro, pensado para desplegarse
-sin hosting pagado (GitHub Pages / Cloudflare Pages), con módulos
-opcionales de comercio, identificación de agentes de IA, sandboxing de
-plugins y un dashboard modular — diseñado explícitamente para no repetir
-los problemas estructurales de WordPress (plugins con acceso irrestricto,
-theming complejo, sin control de scraping por IA). El core se licencia bajo
-AGPL-3.0 (texto oficial en `LICENSE`); la especificacion Protocol APW
-(`docs/protocol-apw/`) se publica aparte bajo CC BY 4.0 — reimplementarla
-no genera obligaciones AGPL, ver "Licencia y gobernanza" en
-`APW-SPEC-v1.3.md`; el Plugin SDK se licencia aparte bajo MIT para no
-restringir a
-los plugins de terceros (**nota:** `packages/plugin-sdk` todavia NO existe
-como carpeta real en el monorepo -- hoy es diseno documentado en
-`LICENSE-SDK` y `docs/architecture/licensing-boundaries.md`, sin codigo
-construido) — ver ese documento para la frontera exacta prevista.
+## What Portaless is, in one sentence
 
-## Regla de oro antes de tocar cualquier código
+A lightweight, open-source, Astro-based CMS designed to deploy without paid hosting (GitHub Pages / Cloudflare Pages), with optional modules for commerce, AI-agent identification, plugin sandboxing, and a modular dashboard — explicitly designed not to repeat WordPress's structural problems (unrestricted plugins, complex theming, no AI-scraping control). The core is licensed AGPL-3.0 (`LICENSE`); the Protocol APW specification (`docs/protocol-apw/`) is published separately under CC BY 4.0 — reimplementation creates no AGPL obligations, see "Licencia y gobernanza" in `APW-SPEC-v1.3.md`; the Plugin SDK will be licensed separately under MIT so third-party plugins are not restricted (**note:** `packages/plugin-sdk` does **not** exist as a real folder yet — today it is documented design in `LICENSE-SDK` and `docs/architecture/licensing-boundaries.md`, with no code built) — see that document for the exact planned boundary.
 
-**No asumas que algo funciona porque existe el archivo.** Este proyecto
-documenta explícitamente, en el código y en `ROADMAP.md`, qué está
-implementado de verdad y qué es un esqueleto con `TODO`. Antes de construir
-sobre un módulo, verifica su estado real en la tabla de abajo.
+## Golden rule before touching any code
 
-## Mapa de estado real por módulo (ver ROADMAP.md para el detalle vivo)
+**Never assume something works because the file exists.** This project explicitly documents, in the code and in `ROADMAP.md`, what is truly implemented and what is a skeleton with `TODO`s. Before building on a module, verify its real state in the table below.
 
-| Módulo | Ubicación | Estado real |
+## Real state map per module (see `ROADMAP.md` for the living detail)
+
+| Module | Location | Real state |
 |---|---|---|
-| Motor de contenido (Astro) | `src/`, raíz del repo (NO `packages/core/` — ver `docs/architecture/REPO_STRUCTURE_MAP.md`) | ✅ Funcional |
-| Comercio (Medusa/Mercur) | `src/commerce/` | ✅ Funcional (solo lectura de catálogo, sin checkout propio) |
-| Atomic Elements (editor visual) | `packages/atomic-elements/` | ✅ Funcional, con undo/redo y anidamiento visual en columnas. `ElementType` incluye los 8 tipos originales + 4 nuevos para paginas "link en bio" (`LinkList`, `SocialIcons`, `ProfileHeader`, `StoreBlock`), con `ElementDefinition` real en `elementRegistry`/`elementPalette` |
-| Dashboard + Skin System | `packages/dashboard/` | ✅ Funcional |
-| Autenticación / roles de usuario | `packages/auth/` | ✅ Funcional: usuario/contraseña, roles admin/viewer, MFA/TOTP, recuperación de contraseña, OAuth/SSO (`AuthService`). Guard server-side confirmado en el dashboard. |
-| Centro de Permisos | `packages/permissions/` | ✅ UI funcional con persistencia real (D1PermissionStore/SqlitePermissionStore), endpoints conectados |
-| Trust Layer (Web Bot Auth) | `packages/trust-layer/` | ✅ Resuelve directorio de claves Y valida firma criptográfica (RFC 9421, Ed25519), con cache de directorio y verificación de unicidad de nonce contra replay |
-| Sandboxing de plugins | `packages/plugin-sandbox/` | ✅ Adaptador `isolated-vm` self-hosted ejecuta código real, con las 12/12 capacidades de plugins del catálogo con puente real vía `ivm.Reference` y pool de isolates reutilizables (las capacidades no-plugin del catálogo — `billing:pay-per-crawl`, `trust:read-governance-bypass` — no son del sandbox). Protección activa contra CVE conocida (GHSA-864f-rcv7-6rh4) |
-| Comercio como plugin sandboxeado | `packages/commerce-plugin/` | ✅ Migrado a plugin real ejecutado dentro del sandbox (`isolated-vm` self-hosted), ya no solo manifiesto de referencia |
-| Ledger público de trazabilidad | `packages/trust-layer/src/ledger` | ✅ Persistencia real, lado de escritura y lectura pública conectados |
-| MCP server | `packages/mcp-server/` | ✅ Conectado end-to-end: `createPortalessMcpServer()` (`src/server.ts`) ya registra las 6 tools reales (`create_page`, `update_page`, `grant_capability`, `revoke_permission`, `list_page_components`, `list_installed_plugins`, `query_usage_log`), y `src/index.ts` construye los stores reales (`PageStore`, `PermissionStore` via sus store-factory, `InMemoryPluginRegistryStore`) antes de arrancar el `StdioServerTransport`. **Limitación conocida y deliberada (Opción A, NO resuelta como Opción B):** `AgentIdentity` se resuelve UNA SOLA VEZ por proceso, desde las variables de entorno `MCP_AGENT_KEY` (obligatoria) / `MCP_AGENT_DISPLAY_NAME`, no por invocación — el SDK de MCP no expone hoy sesión por llamada sobre `StdioServerTransport`. Esto significa que todo el proceso stdio actúa como un único agente fijo, sin verificación criptográfica real (a diferencia de Web Bot Auth, que sí verifica firma Ed25519 por request HTTP). Una identidad de agente real y verificada para stdio (Opción B) es trabajo futuro, no implementado todavía. Ver `docs/architecture/mcp-agents.md` para el diseño original. |
-| Identidad AT Protocol | `packages/identity-atproto/` | ❌ Stub vacío, sin lógica |
-| Protocol APW resolver | `packages/apw-resolver/` | ❌ Stub vacío, solo documentado en `docs/protocol-apw/apw-spec.md` |
-| Plugin SDK | `packages/plugin-sdk/` (no existe todavia) | ❌ Solo diseño/licencia (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) -- ningun codigo construido todavia |
+| Content engine (Astro) | `src/`, repo root (NOT `packages/core/` — see `docs/architecture/REPO_STRUCTURE_MAP.md`) | ✅ Functional |
+| Commerce (Medusa/Mercur) | `src/commerce/` | ✅ Functional (catalog read-only, no own checkout) |
+| Atomic Elements (visual editor) | `packages/atomic-elements/` | ✅ Functional, with undo/redo and visual column nesting. `ElementType` includes the original 8 types + 4 more for "link in bio" pages (`LinkList`, `SocialIcons`, `ProfileHeader`, `StoreBlock`), with real `ElementDefinition` in `elementRegistry`/`elementPalette` |
+| Dashboard + Skin System | `packages/dashboard/` | ✅ Functional |
+| Authentication / user roles | `packages/auth/` | ✅ Functional: user/password, admin/viewer roles, MFA/TOTP, password recovery, OAuth/SSO (`AuthService`). Server-side guard confirmed in the dashboard. |
+| Permissions Center | `packages/permissions/` | ✅ Functional UI with real persistence (D1PermissionStore/SqlitePermissionStore), endpoints wired |
+| Trust Layer (Web Bot Auth) | `packages/trust-layer/` | ✅ Resolves key directories AND validates cryptographic signatures (RFC 9421, Ed25519), with directory cache and nonce-uniqueness replay protection |
+| Plugin sandboxing | `packages/plugin-sandbox/` | ✅ Self-hosted `isolated-vm` adapter runs real code, with all 12/12 plugin catalog capabilities bridged via real `ivm.Reference` and a reusable isolate pool (non-plugin catalog capabilities — `billing:pay-per-crawl`, `trust:read-governance-bypass` — are not sandbox capabilities). Active protection against known CVE (GHSA-864f-rcv7-6rh4) |
+| Commerce as a sandboxed plugin | `packages/commerce-plugin/` | ✅ Migrated to a real plugin running inside the sandbox; no longer a reference-only manifest |
+| Public traceability ledger | `packages/trust-layer/src/ledger` | ✅ Real persistence; both write and public read paths wired |
+| MCP server | `packages/mcp-server/` | ✅ Connected end-to-end: `createPortalessMcpServer()` (`src/server.ts`) registers the 7 real tools (`create_page`, `update_page`, `list_page_components`, `query_usage_log`, `list_installed_plugins`, `grant_capability`, `revoke_permission`) over real stores; `src/index.ts` builds the real stores before starting `StdioServerTransport`. **Known, deliberate limitation (Option A, NOT resolved as Option B):** `AgentIdentity` is resolved ONCE per process from env vars (`MCP_AGENT_KEY` required / `MCP_AGENT_DISPLAY_NAME`), not per invocation — the MCP SDK does not currently expose per-call sessions over `StdioServerTransport`. The whole stdio process acts as one fixed agent, with no real cryptographic verification (unlike Web Bot Auth, which does verify Ed25519 signatures per HTTP request). Real per-invocation agent identity (Option B) is future work. See `docs/architecture/mcp-agents.md` for the original design. |
+| AT Protocol identity | `packages/identity-atproto/` | ❌ Empty stub, no logic (`README.md` + `package.json` only) |
+| Protocol APW resolver | `packages/apw-resolver/` | ✅ Fully implemented end-to-end (DNS-over-HTTPS resolution, `did:apw` with rotation, DNS-anchored chained history, external witnesses §5.7, Portaless Index local witness aggregator). This row previously said "empty stub" — that was false. |
+| Plugin SDK | `packages/plugin-sdk/` (does not exist yet) | ❌ Design/licensing only (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) — no code built |
 
-## Dónde está cada documento importante
+## Where every important document lives
 
-- `ROADMAP.md` — checklist priorizado (alto/medio/bajo) de qué falta. **Lee esto antes de proponer una feature nueva.**
-- `CHANGELOG.md` — historial real, versión por versión, de qué se implementó.
-- `SECURITY.md` — vulnerabilidades conocidas y activas (incluye la CVE real de `isolated-vm`, GHSA-864f-rcv7-6rh4).
-- `docs/architecture/REPO_STRUCTURE_MAP.md` — por qué la estructura real del repo difiere de la propuesta original, y dónde está cada cosa de verdad.
-- `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT (diseño, aun no implementado), y los proyectos/plugins de terceros.
-- `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las 6 tools ya estan conectadas a `server.ts` (ver tabla de arriba) -- el gap real que queda es la identidad de agente real por invocacion (Opcion B), no conectar las tools (ya resuelto).
-- `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
-- `docs/protocol-apw/apw-spec.md` — diseño del Protocol APW (no implementado).
-- `CONTRIBUTING.md` — cómo proponer cambios.
+- [`ROADMAP.md`](./ROADMAP.md) — prioritized checklist of what is missing. **Read this before proposing a new feature.** (Spanish long-form archive: `ROADMAP_es.md`.)
+- [`CHANGELOG.md`](./CHANGELOG.md) — real history, version by version. (Spanish archive through the doc restructuring: `CHANGELOG_es.md`.)
+- [`SECURITY.md`](./SECURITY.md) — known and active vulnerabilities (includes the real `isolated-vm` CVE, GHSA-864f-rcv7-6rh4).
+- [`docs/README.md`](./docs/README.md) — index of the whole documentation tree.
+- [`docs/api/`](./docs/api/) — integrator guide for Portaless HTTP APIs (public well-known endpoints, admin endpoints, verification recipes).
+- `docs/architecture/REPO_STRUCTURE_MAP.md` — why the real repo structure differs from the original proposal, and where each thing actually is.
+- `docs/architecture/licensing-boundaries.md` — exact boundary between the AGPL-3.0 core, the future MIT Plugin SDK, and third-party projects/plugins.
+- `docs/architecture/mcp-agents.md` — original MCP server design. The 7 tools are wired; the remaining real gap is per-invocation agent identity (Option B).
+- `docs/whitepaper/portaless-whitepaper.md` — full product vision (Spanish; much of it is design, not built code — always cross-check with the status table above).
+- `docs/protocol-apw/` — normative APW specification v1.3 (`APW-SPEC-v1.3.md`, English canonical; `APW-SPEC-v1.3_es.md` Spanish archive) + test vectors. `apw-spec.md` there is a historical conceptual summary, not the code's state.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to propose changes.
 
-## Convenciones de código que este proyecto sigue estrictamente
+## Code conventions this project follows strictly
 
-1. **Todo módulo nuevo es opcional por defecto.** Activar comercio, Trust Layer, o sandboxing nunca debe romper el sitio si el módulo está desactivado. Ver el patrón `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER` en `functions/_middleware.js` y `astro.config.mjs`.
-2. **Ningún plugin recibe más capacidades de las concedidas explícitamente.** La regla vive en `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: siempre se usa lo *concedido* por el Centro de Permisos, nunca lo *solicitado* en el manifiesto del plugin. El mismo principio ya esta aplicado en el mcp-server via `requireCapability()` (`packages/mcp-server/src/permissions/require-capability.ts`) dentro de cada tool registrada en `server.ts` (ver tabla de arriba) -- pero recorda que `AgentIdentity` es fija por proceso (Opcion A), no verificada por invocacion.
-3. **Todo manifiesto de plugin declara capacidades atómicas con una razón legible.** Ver el catálogo completo en `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
-4. **Nunca declarar algo como "implementado" si tiene un TODO de integración real pendiente.** Este proyecto prioriza documentar honestamente las limitaciones sobre aparentar funcionalidad — mantén ese estándar en cualquier código o documentación que agregues.
-5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto. (Excepcion aplicada con instruccion explicita: la consolidacion de `mcp-server-sync` y `atomic-elements-design` a `main` se hizo via la rama intermedia `fixes-main`, para poder revisar conflictos antes de tocar `main` directamente.)
-6. **La única superficie que un plugin de terceros podra importar es el futuro `packages/plugin-sdk`** (aun no existe como codigo -- ver nota en la seccion anterior). Mientras tanto, ningun plugin debe importar directamente modulos internos del core — toda comunicacion pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
+1. **Every new module is optional by default.** Enabling commerce, Trust Layer, or sandboxing must never break the site when the module is off. See the `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER` pattern in `functions/_middleware.js` and `astro.config.mjs`.
+2. **No plugin ever receives more capabilities than explicitly granted.** The rule lives in `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: always use what the Permissions Center *granted*, never what the plugin *requested* in its manifest. The same principle applies to the MCP server via `requireCapability()` (`packages/mcp-server/src/permissions/require-capability.ts`) inside each tool — but remember `AgentIdentity` is per-process (Option A), not verified per invocation.
+3. **Every plugin manifest declares atomic capabilities with a human-readable reason.** Full catalog: `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
+4. **Never declare something "implemented" if it has a real integration `TODO` pending.** This project documents limitations honestly over pretending functionality — keep that standard in any code or documentation you add.
+5. **All changes go on the single `agentic` branch; never commit directly to `main`.** One working branch for agentic changes; do not create feature branches unless the project owner explicitly instructs it. (Applied exception with explicit instruction: the `mcp-server-sync` and `atomic-elements-design` consolidations went to `main` via the intermediate `fixes-main` branch to review conflicts first.)
+6. **The only surface third-party plugins will be able to import is the future `packages/plugin-sdk`** (still no code — see note above). Until then, no plugin may import core internals directly — all communication goes through the capability bridge (`ivm.Reference` + `hostBridge`).
 
-## Flujo de trabajo esperado de un agente en este repo
+## Expected agent workflow in this repo
 
-1. Lee `ROADMAP.md` para saber qué prioridad atacar.
-2. Verifica el estado real del módulo afectado en la tabla de este archivo — no confíes solo en el nombre de la carpeta.
-3. Sube los cambios a la rama única `agentic` (no crear ramas nuevas, salvo instrucción explícita del dueño del proyecto -- ver convención #5).
-4. Implementa el cambio, incluyendo un test en `tests/unit/` o `tests/e2e/` si resuelve un `TODO`.
-5. Actualiza `CHANGELOG.md` y marca el checkbox correspondiente en `ROADMAP.md` si aplica.
-6. Abre o actualiza el Pull Request desde `agentic` hacia `main` — nunca mergees directo, incluso si tienes permisos técnicos para hacerlo. El dueño del proyecto aprueba manualmente.
+1. Read `ROADMAP.md` to know which priority to attack.
+2. Verify the affected module's real state in this file's table — do not trust the folder name.
+3. Push changes to the single `agentic` branch (no new branches; convention #5).
+4. Implement the change, including a test in `tests/unit/` or `tests/e2e/` if it resolves a `TODO`.
+5. Update `CHANGELOG.md` and tick the matching `ROADMAP.md` checkbox if applicable.
+6. Open or update the Pull Request from `agentic` to `main` — never merge directly, even with technical permission. The project owner approves manually.
 
-## Riesgos de seguridad activos que cualquier agente debe conocer antes de tocar estos módulos
+## Active security risks any agent must know before touching these modules
 
-- `isolated-vm` (adaptador self-hosted de sandboxing): versiones ≤7.0.0 son vulnerables a RCE (GHSA-864f-rcv7-6rh4). El código ya rechaza versiones vulnerables al instanciar — no elimines esa verificación.
-- El Centro de Permisos y el ledger de trazabilidad ya tienen persistencia real conectada — no trates sus datos como descartables entre despliegues.
-- El mcp-server corre con una identidad de agente FIJA por proceso (Opcion A, ver tabla de arriba) -- no asumas que hay verificacion criptografica de quien invoca cada tool via stdio. Si se implementa Opcion B en el futuro, actualizar esta seccion y la tabla de estado.
+- `isolated-vm` (self-hosted sandboxing adapter): versions ≤7.0.0 are vulnerable to RCE (GHSA-864f-rcv7-6rh4). The code already rejects vulnerable versions at instantiation — do not remove that check.
+- The Permissions Center and the traceability ledger have real persistence connected — do not treat their data as disposable across deployments.
+- The MCP server runs with a FIXED agent identity per process (Option A, see table) — do not assume cryptographic verification of who invokes each tool over stdio. If Option B is ever implemented, update this section and the status table.
 
-## Stack técnico de referencia
+## Reference tech stack
 
-Astro 4.x + TypeScript, sin framework de UI pesado (los organismos del
-dashboard y los elementos de Atomic Elements se renderizan a DOM/HTML
-directo, sin React/Vue). Monorepo con npm workspaces (`packages/*`).
-Despliegue objetivo: GitHub Pages o Cloudflare Pages, sin servidor propio
-para el caso de uso base.
+Astro 4.x + TypeScript, no heavy UI framework (dashboard organisms and Atomic Elements render directly to DOM/HTML, no React/Vue). npm-workspaces monorepo (`packages/*`). Target deployment: GitHub Pages or Cloudflare Pages, no own server for the base use case.

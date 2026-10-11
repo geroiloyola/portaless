@@ -1,67 +1,69 @@
-# Política de seguridad de Portaless
+# Portaless Security Policy
 
-## Reportar una vulnerabilidad
+> Canonical English version. The Spanish archive is [`SECURITY_es.md`](./SECURITY_es.md).
 
-No abras un issue público para reportar una vulnerabilidad. Contacta de forma privada con los mantenedores mediante el canal de contacto configurado para el proyecto e incluye:
+## Reporting a vulnerability
 
-- descripción e impacto potencial;
-- versión y componente afectados;
-- pasos para reproducirla;
-- prueba de concepto, si existe;
-- propuesta de mitigación, si la tienes.
+Do not open a public issue to report a vulnerability. Contact the maintainers privately through the project's configured contact channel and include:
 
-No publiques detalles de explotación hasta que exista una evaluación y una coordinación de divulgación.
+- description and potential impact;
+- affected version and component;
+- steps to reproduce;
+- proof of concept, if available;
+- proposed mitigation, if you have one.
 
-## Estado de seguridad
+Do not publish exploitation details until an assessment and coordinated disclosure have happened.
 
-Portaless es un alpha / MVP en desarrollo activo. No debe considerarse listo para producción ni utilizarse con datos sensibles sin una revisión independiente y una validación del entorno de despliegue.
+## Security status
 
-Las áreas que requieren especial atención son:
+Portaless is an alpha / MVP under active development. It must not be considered production-ready, nor used with sensitive data, without an independent review and validation of the deployment environment.
 
-- autenticación, MFA/TOTP, sesiones y OAuth/SSO;
-- recuperación de contraseñas y persistencia de sus tokens;
-- aislamiento y límites del sandbox de plugins;
-- permisos, especialmente `content:write`;
-- adaptadores de ejecución self-hosted y edge;
-- dependencias npm y vulnerabilidades de la cadena de suministro;
-- configuración de Cloudflare, SQLite y secretos de despliegue.
+Areas that require special attention:
 
-## Requisitos operativos mínimos
+- authentication, MFA/TOTP, sessions and OAuth/SSO;
+- password recovery and persistence of its tokens;
+- plugin sandbox isolation and limits;
+- permissions, especially `content:write`;
+- self-hosted and edge execution adapters;
+- npm dependencies and supply-chain vulnerabilities;
+- Cloudflare, SQLite, and deployment secret configuration.
 
-Antes de un despliegue público:
+## Minimum operational requirements
 
-- almacena secretos en variables de entorno o un gestor de secretos;
-- nunca confirmes archivos `.env`, bases de datos, claves privadas o certificados;
-- usa `npm ci` y conserva actualizado `package-lock.json`;
-- ejecuta el build, las pruebas y la auditoría de dependencias;
-- aplica rate limiting a login, MFA y recuperación de contraseña;
-- configura cookies `Secure`, `HttpOnly` y `SameSite` cuando corresponda;
-- valida `state`, PKCE y las URL de redirección en OAuth;
-- usa persistencia compartida para sesiones y recuperación en despliegues distribuidos;
-- valida manifiestos y concede capacidades con política deny-by-default;
-- limita memoria, CPU, tiempo de ejecución y salida de red de cada plugin;
-- revisa cada plugin de terceros como código no confiable.
+Before a public deployment:
 
-## Secretos y datos sensibles
+- store secrets in environment variables or a secret manager;
+- never commit `.env` files, databases, private keys, or certificates;
+- use `npm ci` and keep `package-lock.json` up to date;
+- run the build, the tests, and the dependency audit;
+- apply rate limiting to login, MFA, and password recovery;
+- set `Secure`, `HttpOnly`, and `SameSite` cookies where applicable;
+- validate `state`, PKCE, and redirect URLs in OAuth;
+- use shared persistence for sessions and recovery in distributed deployments;
+- validate manifests and grant capabilities with a deny-by-default policy;
+- limit memory, CPU, execution time, and network output for each plugin;
+- review every third-party plugin as untrusted code.
 
-El repositorio incluye archivos de ejemplo, no secretos de producción. Antes de publicar o desplegar ejecuta un escáner de secretos sobre el árbol y, cuando corresponda, sobre el historial. Si se encuentra una credencial, revócala y rótala antes de intentar limpiar el historial.
+## Secrets and sensitive data
 
-Nunca habilites `PORTALESS_DEV_MODE` en producción: esa opción puede devolver tokens de recuperación en la respuesta HTTP.
+The repository contains example files, not production secrets. Before publishing or deploying, run a secret scanner over the tree and, where applicable, over the history. If a credential is found, revoke and rotate it before attempting to clean the history.
 
-## Controles de CI
+Never enable `PORTALESS_DEV_MODE` in production: that option can return recovery tokens in the HTTP response.
 
-La integración continua debe bloquear cambios cuando fallen:
+## CI controls
 
-- instalación reproducible con `npm ci`;
-- build de producción;
-- pruebas automatizadas;
+Continuous integration must block changes when these fail:
+
+- reproducible install with `npm ci`;
+- production build;
+- automated tests;
 - `npm audit --audit-level=high`;
-- validación de manifiestos y análisis de secretos.
+- manifest validation and secret scanning.
 
-Un resultado de auditoría no debe ignorarse mediante `|| true` salvo que exista una excepción documentada, acotada y revisada con fecha de expiración.
+An audit result must not be silenced with `|| true` unless there is a documented, scoped, reviewed exception with an expiration date.
 
-## Alcance y limitaciones
+## Scope and limitations
 
-Esta política describe el proceso y las expectativas de seguridad del proyecto; no constituye una garantía de seguridad ni una certificación. La seguridad final depende también de la configuración, el proveedor de infraestructura, las dependencias, los plugins instalados y los controles operativos del despliegue.
+This policy describes the project's process and security expectations; it is not a security guarantee nor a certification. Final security also depends on configuration, the infrastructure provider, dependencies, installed plugins, and the deployment's operational controls.
 
-La documentación de arquitectura y el roadmap pueden contener funcionalidades experimentales o pendientes. No asumas que una función está lista para producción solo porque existe su archivo o interfaz.
+Architecture documentation and the roadmap may contain experimental or pending functionality. Do not assume a feature is production-ready just because its file or interface exists.

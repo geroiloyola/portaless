@@ -10,7 +10,7 @@ A lightweight, open source, modular CMS — built to be published without paid h
 [![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-orange.svg)](./ROADMAP.md)
 [![Astro](https://img.shields.io/badge/built%20with-Astro-ff5a03.svg)](https://astro.build)
 
-[Roadmap](./ROADMAP.md) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Roadmap](./ROADMAP.md) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 

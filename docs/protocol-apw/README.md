@@ -1,26 +1,30 @@
-## Protocolo APW y Veranet
+# Protocol APW and Veranet
 
-Portaless es la implementación de referencia de **Protocol APW (Air Portal Website)**: un protocolo abierto de identidad criptográfica y confianza verificable para sitios web independientes, publicado formalmente en septiembre de 2026.
+> Canonical English version. The Spanish archive is [`README_es.md`](./README_es.md).
 
-**Documentación del protocolo**
+Portaless is the reference implementation of **Protocol APW (Air Portal Website)**: an open protocol for cryptographic identity and verifiable trust for independent websites, formally published in September 2026.
 
-| Documento | Estado |
+**Protocol documentation**
+
+| Document | Status |
 |---|---|
-| [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) | **Vigente — especificación normativa consolidada** (v1.0 + v1.1 + v1.2 + erratas E-1..E-10 integradas; testigos en 5.7) |
-| [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) | **Vigente — vectores de prueba**, en un archivo independiente del código |
-| [`ERRATA.md`](./ERRATA.md) | Histórico de correcciones E-1 a E-10; integradas en v1.3 |
-| [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md) | Reemplazada por v1.3 |
-| [`APW-SPEC-v1.0.md`](./APW-SPEC-v1.0.md) | Anterioridad citable del diseño |
-| [`apw-spec.md`](./apw-spec.md) | Resumen conceptual reemplazado |
+| [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) | **Current — consolidated normative specification** (v1.0 + v1.1 + v1.2 + errata E-1..E-10 integrated; witnesses in §5.7). English canonical. |
+| [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) | **Current — test vectors**, in a file independent of the code |
+| [`ERRATA.md`](./ERRATA.md) | Historical record of corrections E-1 to E-10 (Spanish); integrated into v1.3 |
+| [`APW-SPEC-v1.3_es.md`](./APW-SPEC-v1.3_es.md), [`APW-VECTORS-v1.3_es.md`](./APW-VECTORS-v1.3_es.md) | Spanish archival copies of the current specification and vectors |
+| [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md), [`APW-SPEC-v1.0.md`](./APW-SPEC-v1.0.md) | Superseded versions / citable prior art (Spanish) |
+| [`apw-spec.md`](./apw-spec.md) | Historical conceptual summary, superseded |
 
-**Licencia y gobernanza**: la especificación, su errata y sus vectores se publican bajo **CC BY 4.0** — reimplementar, traducir y usar comercialmente está permitido con atribución al autor (Gerardo Loyola), sin registro ni certificación de Portaless; ver la sección [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza) de la spec. El código de implementación de referencia es AGPL-3.0 (`LICENSE`). La sección 6 se llama **Loyal Trust Protocol (LTP)**; en versiones anteriores del documento apareció como "Loyola Trust Protocol" (mismo acrónimo, misma especificación).
+**Integrator guide**: third parties connecting to APW / Portaless / Index APIs should start at [`docs/api/`](../api/) (public well-known endpoints, verification recipes, admin endpoints).
 
-**El problema que resuelve**: hoy no existe ningún mecanismo técnico completo, descentralizado y gratuito que permita a un agente de IA (o a un humano) verificar si un sitio es confiable sin depender de un dominio de alta reputación, sin una autoridad central certificadora, y sin señales proxy circunvenibles.
+**License and governance**: the specification, its errata, and its vectors are published under **CC BY 4.0** — reimplementation, translation, and commercial use are permitted with attribution to the author (Gerardo Loyola), with no registration or certification by Portaless; see the [License and governance](./APW-SPEC-v1.3.md#license-and-governance) section of the spec. The reference implementation code is AGPL-3.0 (`LICENSE`). Section 6 is called **Loyal Trust Protocol (LTP)**; in earlier versions of the document it appeared as "Loyola Trust Protocol" (same acronym, same specification).
 
-**Cómo lo resuelve**: cada sitio publica su identidad criptográfica (Ed25519, RFC 9421) y un `SiteTrustScore` público calculado de 4 fuentes independientes y auditables — autodeclaración, verificación de agentes de IA, voto comunitario, y reportes de custodia externos. Todo el diseño está preparado para crypto-agilidad post-cuántica desde el esquema de base de datos (columna `key_algorithm`, migración futura a ML-DSA / FIPS 204 sin perder la cadena de custodia).
+**The problem it solves**: today no complete, decentralized, free technical mechanism exists that lets an AI agent (or a human) verify whether a site is trustworthy without depending on a high-reputation domain, a central certifying authority, or circumventable proxy signals.
 
-**Veranet**: es el nombre del resultado final hacia el que converge Protocol APW — una red de sitios verificablemente confiables, con identidad criptográfica inmutable y post-cuántica, donde ningún humano, máquina, agente o IA puede falsificar la procedencia de un sitio o de su contenido sin que quede una señal auditable públicamente. Veranet no es una plataforma centralizada: es el estado de la red cuando suficientes sitios independientes adoptan Protocol APW y se descubren entre sí a través del **Portaless Index** — una capa de descubrimiento federado, con identidad verificable, score de confianza previo a la agregación, y capacidad de cobro por acceso incorporados desde el diseño.
+**How it solves it**: each site publishes its cryptographic identity (Ed25519, RFC 9421) and a public `SiteTrustScore` computed from 4 independent, auditable sources — self-declaration, AI-agent verification, community voting, and external custody reports. The whole design is crypto-agile and post-quantum-ready from the database schema up (the `key_algorithm` column allows a future migration to ML-DSA / FIPS 204 without losing the chain of custody).
 
-**Estado real de implementación** (verificable por commit, no por promesa): la especificación v1.3 está implementada de punta a punta en este repositorio — resolución DNS-over-HTTPS, identidad `did:apw` con rotación, artefactos firmados (JWS + JCS), historial de atestaciones anclado en el DNS, puntuación por dimensiones y gobernanza de lectura. `packages/apw-resolver/` es la implementación de referencia; ver [`ROADMAP.md`](../../ROADMAP.md) para el estado exacto y actualizado de cada pieza.
+**Veranet**: the end state toward which Protocol APW converges — a verifiably trustworthy network of sites, with immutable, post-quantum cryptographic identity, where no human, machine, agent, or AI can falsify the provenance of a site or its content without leaving a publicly auditable signal. Veranet is not a centralized platform: it is the state of the network when enough independent sites adopt Protocol APW and discover each other through the **Portaless Index** — a federated discovery layer with verifiable identity, pre-aggregation trust scoring, and built-in pay-for-access from the design.
 
-Fecha de publicación de esta especificación: **septiembre de 2026**.
+**Real implementation status** (verifiable by commit, not by promise): specification v1.3 is implemented end to end in this repository — DNS-over-HTTPS resolution, `did:apw` identity with rotation, signed artifacts (JWS + JCS), DNS-anchored chained attestation history, dimension scoring, and read governance — including external witnesses (§5.7) and the Portaless Index local witness aggregator (`/.well-known/apw-index.json`). `packages/apw-resolver/` is the reference implementation; see [`ROADMAP.md`](../../ROADMAP.md) for the exact, current status of every piece.
+
+Publication date of this specification: **September 2026**.

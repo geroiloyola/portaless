@@ -1,190 +1,112 @@
-# Roadmap de Portaless
+# Portaless Roadmap
 
-> **Fuente de verdad del estado ACTUAL** (octubre 2026, post reconciliación con la spec APW v1.3). Solo lo que es cierto hoy: qué está en producción, qué falta y de quién depende. El historial —tabla de PRs #1 a #75, registros de refactor, entradas cerradas con narrativa de sesión— está en [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md). El historial por release está en [`CHANGELOG.md`](./CHANGELOG.md). Ante cualquier discrepancia, manda este archivo.
+> **Source of truth for CURRENT status** (October 2026, post-reconciliation with APW spec v1.3): only what is true today — what is in production, what is missing, and what depends on third parties. The long-form Spanish version with full narrative context is archived in [`ROADMAP_es.md`](./ROADMAP_es.md) (kept intact; English wins on any discrepancy). Release history: [`CHANGELOG.md`](./CHANGELOG.md). PR-by-PR history: [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) (Spanish).
 
-## Leyenda
+**Legend**: `[x]` shipped (merged to `main`, verifiable by commit) · `[~]` implemented, awaiting a real-world external step · `[ ]` pending.
 
-- [x] En producción: mergeado a `main`, funcional y verificable por commit.
-- [~] Implementado, con un paso externo pendiente de verificación real.
-- [ ] Pendiente.
-
-## Estructura
-
-Categorías por **quién** debe resolver la pieza, no por prioridad:
-
-- **Funcionalidades en Produccion** — hecho y mergeado.
-- **Funcionalidades Internas en Desarrollo** — depende solo de Portaless.
-- **Funciones Externas** — depende de un tercero (proveedor de nube, procesador de pagos, otro proyecto).
-- **Vision y decisiones de alcance** — secciones cortas que fijan qué Portaless **no** hará.
+Categories are by **who** must resolve the piece, not by priority.
 
 ---
 
-## Funcionalidades en Produccion
+## In production
 
-### Base del proyecto, autenticacion y licencias
+### Foundation, auth and licensing
 
-- [x] Proteccion de `main`, autenticacion basica, roles `admin`/`viewer` con `canWrite(role)` en guard DOM y validacion server-side en todo el dashboard.
-- [x] Licencias: core AGPL-3.0, especificacion Protocol APW CC BY 4.0 (`APW-SPEC-v1.3.md`, seccion Licencia y gobernanza) + Plugin SDK MIT (`docs/architecture/licensing-boundaries.md`).
-- [x] Recuperacion de contrasena, 2FA (TOTP) y OAuth/SSO; step-up reforzado (contrasena + TOTP) para acciones sensibles.
-- [x] Rutas publicas de `/admin/*` previas al login (allowlist exacta: 2FA, reset, OAuth), con tests de bypass.
-- [x] Seguridad de cuenta: limite de intentos MFA, rate limit de password reset (IP + usuario, buckets hasheados), historial en `password_change_events`, cierre de todas las sesiones al cambiar o resetear la contrasena.
+- `[x]` `main` branch protection; `admin`/`viewer` roles with `canWrite(role)` DOM guard + server-side validation across the dashboard.
+- `[x]` Licensing: core AGPL-3.0; APW specification CC BY 4.0; Plugin SDK planned MIT ([`licensing boundaries`](./docs/architecture/licensing-boundaries.md)).
+- `[x]` Password recovery, 2FA (TOTP), OAuth/SSO; step-up (password + TOTP) for sensitive actions.
+- `[x]` Exact pre-login allowlist for `/admin/*`; MFA attempt limits; hashed-bucket reset rate limits; `password_change_events` history; all sessions invalidated on password change/reset.
 
-### Persistencia, instalacion y datos
+### Persistence, install, plugins
 
-- [x] Persistencia real D1/SQLite en todos los stores (paginas, permisos, ledger, usuarios, sesiones, challenges MFA, rate limits, identidad APW), con factories que fallan explicito en vez de degradar a memoria.
-- [x] `schema.sql` maestro + `npm run setup` (esquema + admin inicial en un comando); equivalente D1 via `npm run setup:d1`.
+- `[x]` Real D1/SQLite persistence in every store (pages, permissions, ledger, users, sessions, MFA challenges, rate limits, APW identity) with explicit-fail factories (no silent in-memory fallback).
+- `[x]` Master `schema.sql` + `npm run setup` (schema + initial admin in one command; `npm run setup:d1` for D1). Regenerated with all 13 real sources (5 package schemas + 8 `schema-additions/`), idempotent, SQLite-verified.
+- `[x]` `isolated-vm` sandbox with reusable isolate pool; 12/12 plugin capabilities bridged via ephemeral `CapabilityTokenStore` (TTL 5 min, per-plugin scope); production `createSandboxRuntime()` factory; permission-center enforcement (granted ∩ manifest, read per call); dynamic plugin registry with community `trustScore`.
 
-### Plugin sandbox, capacidades y Capability Bridge
+### Trust Layer, identity and Protocol APW
 
-- [x] Adaptador `isolated-vm` con pool de isolates reutilizables — *Pool de isolates reutilizables* para el commerce-plugin, con aislamiento real de Context por ejecucion.
-- [x] 12/12 capacidades de plugins del catalogo con puente real al isolate (las capacidades no-plugin del catalogo, `billing:pay-per-crawl` y `trust:read-governance-bypass`, no son del sandbox y no tienen puente).
-- [x] *Refactorizar capability-bridge.js para tokens efimeros*: el bridge valida `CapabilityTokenStore` (TTL 5 min, scope por `plugin_name`, snapshot inmutable de capacidades); `PORTALESS_INTERNAL_BRIDGE_TOKEN` quedo obsoleta.
-- [x] `createSandboxRuntime()`: factory de produccion que inyecta el mismo token store que valida el bridge.
-- [x] Commerce-plugin respeta el Centro de Permisos (interseccion concedido ∩ manifiesto, leida en cada llamada).
-- [x] Registro dinamico de plugins con `trustScore` comunitario, persistido y con UI de insignia en el Centro de Permisos.
+- `[x]` Web Bot Auth (RFC 9421, Ed25519) with shared draft-03 rules, key-directory cache, nonce uniqueness (in-memory per process today — partial cross-instance replay protection).
+- `[x]` Experimental ML-DSA (FIPS 204) in the SiteTrustScore `agent` source only; middleware remains Ed25519-only.
+- `[x]` SiteTrustScore with all 4 sources (`self`, `agent`, `community`, `escrow_report`) and full admin lifecycle for `authorized_agents` and escrow providers (Ed25519 public JWK loaded/rotated/removed without rotating the API key; signed reports rejected without it). Limits: empty allowlists by default; `community` is local, unverifiable voting (spec gap B7).
+- `[x]` Pay-per-crawl with swappable providers (`cloudflare-pay-per-crawl`): in-band `crawler-price`; activation requires verified Cloudflare token + step-up + APW identity. No active provider → `charge` responds 402 `settlement: "not_available"`.
+- `[x]` **Protocol APW v1.3 complete** ([spec](./docs/protocol-apw/APW-SPEC-v1.3.md) · [vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md)): DNS-over-HTTPS TXT `_apw.` resolution, manifest v1/v2 (`k`, `h`), `did:apw` with key history + rotation, `/.well-known/did.json`, site JWS with JCS (`/.well-known/apw-manifest.jws`), signed attestations (`agent`, `escrow_report`, `self`), DNS-anchored chained history (`/.well-known/apw-log.json`), attestation bundle (`/.well-known/apw-attestations.json`), dimension scoring (Annex A) with R-05 calibration, fail-closed read policies, and `reader_conduct` reputation with completeness and ledger-backed emission. Closes spec gaps B1–B6 and B9; B7 (portable `community`) stays open.
+- `[x]` **Per-dimension public override (A.6)**: owner can publish any *governed* dimension via `public_overrides` on `site_trust_read_policies`; surfaced by `GET /trust/:siteId` in `projectTrustView()`. Public level cannot be hidden; unknown dimensions rejected.
+- `[x]` **External witnesses (ERRATA E-10, spec §5.7)**: a site with identity observes another's chain and publishes a signed statement (`apw-witness+jws`, deterministic `jti`) at `/.well-known/apw-witnesses.json`, logged in its own chained history. Fail-closed evaluation: `head_mismatch`, `equivocation`, `backdated_entry`. Recorded via `POST /admin/api/witness/record`.
+- `[x]` **Semi-automatic `h` anchoring**: TXT v2 computation with live `k`+`h` via `dnslink/cli.mjs --anchor --domain` and the dashboard checklist; witnesses anchor heads without touching DNS. Pasting the TXT into the DNS provider stays manual (no standardized DNS API).
+- `[x]` **Automatic `reader_conduct` emission**: Trust Layer middleware emits on verified access (deterministic `jti`, `reader_conduct_jti` index with history seeding, per-isolate throttle, `APW_AUTO_EMIT_CONDUCT=false` opt-out). Ledger now records `allow` accesses too.
+- `[x]` **Per-reader bypass (spec §6.5, closes E-8)**: Permissions Center grants `trust:read-governance-bypass` over a reader DID; `GET /trust/:siteId` passes them without thresholds. Does not skip APW identity (§6.3) or a corrupt policy; no store → no bypass.
+- `[x]` **Non-active reader keys (spec §6.3)**: a signature whose fingerprint is not `k` is accepted if the key is in the reader's verified history, signed ≥1 chain entry, and its `[validFrom, validTo + 10 min grace]` window covers the request; otherwise `apw_unresolvable: key_not_bound_to_apw` and the cache TTL clamps to window close.
+- `[x]` **Public W-dimension projection (spec §6.6, closes E-8)**: `GET /trust/:siteId` computes site dimensions from its snapshot and always publishes `projection { dimensions, aggregates, governed }`; on denial, only the public set (W-01, W-04, W-06, W-07, W-09) plus all aggregates.
 
-### Trust Layer, identidad y Protocol APW
+### Portaless Index — local witness aggregator (spec §5.7)
 
-- [x] Web Bot Auth (RFC 9421, Ed25519) con reglas draft-03 compartidas por middleware y SiteTrustScore, cache de directorio de claves y unicidad de nonce — *Cache del directorio de claves Web Bot Auth + verificacion de unicidad de nonce*. Limite vigente: nonces en memoria por proceso (proteccion anti-replay parcial entre multiples isolates/instancias).
-- [x] ML-DSA (FIPS 204) experimental en la fuente `agent` de SiteTrustScore. El middleware sigue solo Ed25519.
-- [x] SiteTrustScore con las 4 fuentes (`self`, `agent`, `community`, `escrow_report`) y ciclo completo de alta/revocacion de `authorized_agents` y escrow providers desde el panel. La clave publica Ed25519 (JWK) del proveedor se carga, cambia, copia o quita desde `/admin/authorized-escrow-providers` sin rotar su API key (`setPublicKey()` en el store, `PUT` en el endpoint, validacion doble navegador+servidor, rechazo de claves con `d`); sin ella el proveedor queda autorizado pero sus reportes firmados se rechazan (`escrow-report.js` exige la clave). Limite vigente: allowlists vacias por defecto, sin datos de produccion; `community` es senal local no verificable (B7).
-- [x] Pay-per-crawl con proveedores intercambiables (`cloudflare-pay-per-crawl`): `crawler-price` in-band y activacion solo con token de Cloudflare verificado + step-up + identidad APW. Sin proveedor activo, `charge` responde 402 `settlement: "not_available"`. Pendiente externo: prueba contra zona real (ver Funciones Externas).
-- [x] **Protocol APW v1.3 completo** (spec normativa: [`docs/protocol-apw/APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md); vectores: [`APW-VECTORS-v1.3.md`](./docs/protocol-apw/APW-VECTORS-v1.3.md)): resolucion DNS-over-HTTPS del TXT `_apw.`, manifiesto v1/v2 (`k`, `h`, `rg`), identidad `did:apw` con historial de claves y rotacion, `/.well-known/did.json`, JWS del sitio con JCS (`/.well-known/apw-manifest.jws`), atestaciones firmadas de `agent`, `escrow_report` y `self`, historial encadenado anclado en el DNS (`/.well-known/apw-log.json`), paquete de atestaciones (`/.well-known/apw-attestations.json`), puntuacion por dimensiones (Anexo A) con calibracion R-05, politica de lectura fail-closed (`site_trust_read_policies`) y reputacion del lector `reader_conduct` con completitud y emision desde el ledger. Cierra B1-B6 y B9 de la spec; B7 (`community` portable) queda abierta.
-- [x] **Override de visibilidad por dimension (A.6)**: el dueno puede volver publica una dimension **gobernada** con un override explicito, guardado en la columna nueva `public_overrides` de `site_trust_read_policies` (JSON array, ordenado y sin duplicados, se agrega sola con `ALTER TABLE` a bases existentes). `GET /trust/:siteId` lo pasa a `projectTrustView()`: al rechazar, `public.projection.dimensions` trae el conjunto publico **mas** las dimensiones del override, y el resto del nivel gobernado sigue oculto. No cambia la politica ni el acceso, y no se puede ocultar el nivel publico. Solo dimensiones gobernadas: `W-01` o una desconocida rechazan el guardado.
-- [x] **Testigos externos (ERRATA E-10, spec 5.7)**: cualquier sitio con identidad observa la cadena de otro y publica un statement firmado (`apw-witness+jws`, `jti` determinista) en `/.well-known/apw-witnesses.json`, anotado en su propio historial encadenado (fecha creible = su `ts` en la cadena del testigo, anclada por su `h`). Evaluacion fail-closed: `head_mismatch`, `equivocation`, `backdated_entry`. `POST /admin/api/witness/record` para registrar observaciones. No cubre omision inicial (queda para Portaless Index).
-- [x] **Anclaje de `h` semi-automatico**: calculo del TXT v2 con `k`+`h` vivos en un comando (`dnslink/cli.mjs --anchor --domain`) y en el checklist del panel (`anchor: { status, publishedH, localH, localSeq }`); testigos anclan la cabeza sin tocar el DNS. El paso de pegar el TXT en el proveedor sigue manual (sin API de DNS estandarizada).
-- [x] **Emision automatica de `reader_conduct`**: el middleware del Trust Layer la dispara al registrar un acceso verificado (jti determinista, indice `reader_conduct_jti` con siembra desde el historial, throttle por isolate, opt-out `APW_AUTO_EMIT_CONDUCT=false`). El endpoint admin con step-up queda para backfill. El ledger ahora tambien registra accesos `allow` (antes solo bloqueados/cobrados).
-- [x] **`schema.sql` maestro regenerado (v0.0.9.31)** con `usage_ledger.reader_did` y la tabla `reader_conduct_jti`. El generador quedo reescrito con las 13 fuentes reales en orden (5 `schema.sql` de paquete + 8 secciones en `schema-additions/`, que es donde ahora viven las tablas sin paquete): antes solo conocia 4 fuentes y regenerar habria borrado 17 tablas. Regeneracion idempotente y verificada contra SQLite (25 tablas, doble aplicacion segura por `IF NOT EXISTS`); las bases existentes reciben ambos cambios al vuelo desde sus stores.
-- [x] **Excepcion por lector (spec 6.5, cierre de E-8)**: el Centro de Permisos concede `trust:read-governance-bypass` sobre el DID de un lector (subject `reader`); `GET /trust/:siteId` lo deja pasar aunque no cumpla los umbrales de reputacion. No salta la identidad APW (6.3) ni una politica corrupta, y si el store de grants no se puede leer no hay bypass. Alta y revocacion en `/admin/permissions` (PUT rechaza DID mal formado o capacidades que no sean el bypass para un subject `reader`).
-- [x] **Claves no activas del lector (spec 6.3)**: una firma cuya huella no es `k` se acepta si la clave esta en el historial verificado del lector, firmo al menos una entrada de la cadena y su ventana `[validFrom, validTo + 10 min de gracia]` cubre el momento de la request; si no, `apw_unresolvable: key_not_bound_to_apw` y el TTL del cache se acota al cierre de la ventana. La emision de `reader_conduct` sigue exigiendo `k`: en rollover se lee, no se puntua.
-- [x] **Proyeccion de las dimensiones W publicas (spec 6.6, cierra E-8)**: `GET /trust/:siteId` calcula las W del sitio desde su snapshot (`scoring/site-dimensions.ts`, A.2/A.4) y las publica siempre en `projection { dimensions, aggregates, governed }`. Al rechazar, `public.projection` trae solo el conjunto publico (W-01, W-04, W-06, W-07, W-09) mas los agregados de todas las dimensiones; al permitir (o sin politica), todas las dimensiones con `governed: "granted"`. W-09 es derivado (A.5); una dimension sin atestaciones no aparece. Sin modelo no puntua (`perceived_trustworthiness`, filas legacy).
+- `[x]` `witness-index.ts` + `witness-index-store.ts` (tables `witness_observations`, `witness_weights`, `witness_index_subjects`; D1/SQLite/InMemory). `POST /admin/api/index/sync` and `GET /admin/api/index/subjects` (admin role); public directory at `GET /.well-known/apw-index.json` (plain, re-verifiable document). End-to-end fail-closed pull of configured witnesses (chain verified, `att` anchored, signature, deterministic `jti`), head evaluation, weighted consensus by static per-witness weight (default 1.0). Out of scope, documented in spec §5.7/§7: A.4.4-style weight calibration, gossip between index nodes, manifest/SiteTrustScore discovery. Integrator guide: [`docs/api/well-known.md`](./docs/api/well-known.md).
 
-### Atomic Elements, Editor Visual y SEO
+### Editor, MCP, onboarding, CI, self-host
 
-- [x] Editor Visual integrado en el panel (`/admin/editor`) con render real de bloques en el canvas, vista previa de ProductGrid via Medusa/Mercur y listado de paginas (`GET /admin/pages`).
-- [x] 4 elementos link-en-bio (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) aceptados por editor, palette y MCP server.
-- [x] Reordenamiento por arrastre y anidamiento en columnas.
-- [x] SEO/GEO nativo (JsonLd, SeoHead, canonical).
-- [x] IA discovery: `/llms.txt` (llmstxt.org v2), markdown por post (`/blog/<id>.md`), `robots.txt` unico generado por el Trust Layer con Content Signals, sitemap completo; borradores no publicados dan 404.
-
-### MCP server
-
-- [x] 7 tools reales conectadas (`create_page`, `update_page`, `list_page_components`, `query_usage_log`, `list_installed_plugins`, `grant_capability`, `revoke_permission`) sobre stores reales (D1/SQLite). Limite vigente: la identidad del agente se resuelve una vez por proceso (`MCP_AGENT_KEY`), no por invocacion — ver Internas.
-
-### Onboarding
-
-- [x] Wizard de 5 pasos end-to-end: intencion del sitio (plantillas deterministas), OAuth de infraestructura (GitHub App, PKCE, refresh automatico), generacion y exportacion una sola vez de la identidad `did:apw`, credenciales de admin.
-- [x] Checklist diferido en el dashboard: banner de verificacion APW con el TXT exacto para copiar, aviso de propagacion DNS, nunca bloqueante.
-- [x] First-run `/setup` sin terminal (setup code de un solo uso) en el runtime Node.
-
-### Calidad continua (CI/CD)
-
-- [x] CI real en Node 24 (`npm test` bloquea), validacion de manifiestos con el mismo `validateManifest()` de produccion.
-- [x] Full Tests con cobertura (linea de base 47.43% lineas; minimos 45/44/46/40) y smoke de `npm run setup`.
-- [x] Job `docker-smoke` (arranque, setup, reinicio, bloqueo del segundo setup).
-
-### Self-host (Ready)
-
-- [x] Runtime Node para Pages Functions (routing, middleware por prefijo, `env.ASSETS`, `/healthz`, paridad de metodo y 404), sin fallback silencioso a memoria.
-- [x] `better-sqlite3` en todos los stores; `engines.node >= 24`.
-- [x] Contenedor Docker multi-stage + `docker-compose.yml`, `railway.json` y `render.yaml` con volumen `/data`.
+- `[x]` Visual editor (`/admin/editor`) with real block rendering, ProductGrid preview, drag-and-drop reorder, column nesting; 4 link-in-bio elements.
+- `[x]` Native SEO/GEO (JsonLd, SeoHead, canonical); AI discovery: `/llms.txt` (llmstxt.org v2), per-post markdown, single Trust-Layer-generated `robots.txt` with Content Signals, full sitemap; drafts 404.
+- `[x]` MCP server: 7 real tools over real D1/SQLite stores. Known limit: agent identity resolved once per process (`MCP_AGENT_KEY`), not per invocation.
+- `[x]` Onboarding: 5-step wizard (intent templates, GitHub App OAuth with PKCE, one-time `did:apw` + admin-credentials export), deferred dashboard checklist (APW verification banner with exact TXT), terminal-less first-run `/setup` on the Node runtime.
+- `[x]` CI on Node 24 (`npm test` blocks), production `validateManifest()` on every manifest, coverage suite (baseline 47.43% lines; floors 45/44/46/40), setup smoke, `docker-smoke` job.
+- `[x]` Self-host ready: Node runtime for Pages Functions (routing, prefixed middleware, `env.ASSETS`, `/healthz`, no silent memory fallback), `better-sqlite3` everywhere, `engines.node >= 24`, Docker multi-stage + `docker-compose.yml` + `railway.json` + `render.yaml` (`/data` volume).
 
 ---
 
-## Funcionalidades Internas en Desarrollo
+## In development (internal — depends only on Portaless)
 
-Responsabilidad exclusiva de Portaless: no depende de ningun tercero.
+### Protocol APW (remaining spec v1.3 items)
 
-### Protocol APW (pendientes de la spec v1.3)
+- `[ ]` **Enable R-05 in policies** — blocked by *data*, not config: R-05 is the calibration of attestations the reader *emits* (A.4.4), and `loadReaderConduct` only loads what it *received*; every reader today is R-05 = 4.0 with weight 0, so enabling `policyDimensions["R-05"]` would 403 everyone. Needs (1) a flow where readers emit attestations over subjects (today only anonymous community voting by IP, no DID) and (2) a corpus of other emitters on the same (subject, dimension) for leave-one-out consensus — indexes or witnesses (spec §7). Anchored in `tests/unit/apw-reader-conduct-config.test.ts`; documented in spec §6.5 and ERRATA E-9.
+- `[ ]` **Signals `rate_respected`, `paid_as_agreed`, `redistribution`** (spec §6.4) — blocked by data: the ledger only records `requests_total` and `policy_violations_detected`; the middleware passes `charged: false` on all four paths. Each waits for its own input: a rate in the content policy plus rejection counters; a settlement that tells the origin whether the crawler actually paid (current Cloudflare PPC settles out-of-band); and witnesses or denunciations for redistribution, which the origin cannot observe.
 
-- [x] **Portaless Index: agregador de testigos (5.7, slice local)**: `witness-index.ts` + `witness-index-store.ts` (tablas `witness_observations`, `witness_weights`, `witness_index_subjects`; D1/SQLite/InMemory), `POST /admin/api/index/sync` y `GET /admin/api/index/subjects` (rol admin) y `GET /.well-known/apw-index.json` (documento plano re-verificable). Pull de los testigos configurados con verificacion fail-closed de punta a punta (cadena del testigo verificada, `att` anclado, firma, `jti` determinista), evaluacion `head_mismatch`/`equivocation`/`backdated_entry` y consenso ponderado por peso estatico (default 1.0). Fuera de alcance, documentado en la spec 5.7/7: calibracion de pesos estilo A.4.4, gossip entre nodos indice y agregacion de manifiestos/SiteTrustScore (descubrimiento).
-- [ ] **Activar R-05 en politicas** (`reader-conduct-config.ts`): bloqueado por datos, no por config. R-05 del lector es la calibracion de las atestaciones que **el** emite (A.4.4) y `loadReaderConduct` solo trae las que **recibio**, asi que hoy todo lector tiene R-05 = 4.0 con peso 0: encender `policyDimensions["R-05"]` rechazaria a TODOS los lectores (403), no a los malos. Faltan (1) un flujo en que el lector emita atestaciones sobre sujetos (hoy solo hay voto community anonimo por IP, sin DID) y (2) un corpus de otros emisores sobre el mismo (sujeto, dimension) para el consenso leave-one-out de A.4.4 — indices o testigos (spec seccion 7). El bloqueo esta anclado en `tests/unit/apw-reader-conduct-config.test.ts` y documentado en la spec 6.5 y en ERRATA E-9.
-- [ ] **Senales `rate_respected`, `paid_as_agreed`, `redistribution`** (`CONDUCT_RULES` en `reader-conduct-config.ts`, spec 6.4): bloqueadas por dato, no por codigo. El ledger solo registra `requests_total` y `policy_violations_detected` (`log-writer.ts`) y el middleware pasa `charged: false` en los cuatro caminos (`_middleware.js:131,140,146,164`). Cada una espera lo suyo: `rate_respected` una tasa en la politica de contenido (hoy `PolicyRule` solo tiene `access`/`price_usd`/`unit`) con su enforcement y contador de rechazos; `paid_as_agreed` un settlement que le informe al origen si el crawler pago (el unico actual, Cloudflare PPC in-band, liquida fuera: "el origen no sabe si el crawler pago", `cloudflare.ts`), y `redistribution` testigos o denuncia porque el origen no la observa. Anclado en `tests/unit/apw-reader-conduct-config.test.ts`.
+### Security, sandbox, agent identity, misc
 
-### Seguridad, sandbox e identidad de agentes
-
-- [ ] Caller de produccion de `createSandboxRuntime()` para adaptadores edge (el unico plugin en produccion corre en isolated-vm, que no usa tokens HTTP).
-- [ ] ML-DSA en el middleware (`webbotauth/verify.ts`), no solo en la fuente `agent`.
-- [ ] Nonces de Web Bot Auth compartidos entre instancias (D1/SQLite con TTL, patron `auth_mfa_challenges`).
-- [ ] Incorporar `settlement_provider_activations` al `schema.sql` maestro y a `REQUIRED_TABLES`.
-- [ ] Proxy confiable para `X-Forwarded-For` en self-host (rate limit de reset).
-- [ ] Verificacion reforzada por email para acciones sensibles (bloqueado por falta de backend `email:send`).
-- [ ] Tests de navegador (Playwright) para `/admin/security`, `/admin/wizard/rotate-identity` y el Paso 4 del wizard.
-- [ ] Subir los minimos de cobertura de Full Tests de 45/44/46/40 hacia 60-70%, sin bajarlos nunca.
-- [ ] MCP server: identidad de agente por invocacion (hoy es por proceso; riesgo de seguridad activo documentado en `AGENT.md`).
-- [ ] Identidad AT Protocol (`packages/identity-atproto/` sigue siendo stub).
-
-### Cloud Images
-
-- [ ] Portaless Cloud Images — ver [Portaless Cloud Images y APW como SSOT criptografico](#portaless-cloud-images-y-apw-como-ssot-criptografico).
+- `[ ]` Production caller of `createSandboxRuntime()` for edge adapters.
+- `[ ]` ML-DSA in the middleware (`webbotauth/verify.ts`), not only in the SiteTrustScore `agent` source.
+- `[ ]` Web Bot Auth nonces shared across instances (D1/SQLite with TTL, `auth_mfa_challenges` pattern).
+- `[ ]` Fold `settlement_provider_activations` into master `schema.sql` + `REQUIRED_TABLES`.
+- `[ ]` Trustworthy `X-Forwarded-For` proxy handling for self-host (reset rate limit).
+- `[ ]` Email-based step-up verification for sensitive actions (blocked on an `email:send` backend).
+- `[ ]` Browser tests (Playwright) for `/admin/security`, `/admin/wizard/rotate-identity`, wizard step 4.
+- `[ ]` Raise Full Tests coverage floors from 45/44/46/40 toward 60–70%, never lowering them.
+- `[ ]` MCP server: per-invocation agent identity (today per-process; active security risk documented in `AGENT.md`).
+- `[ ]` AT Protocol identity (`packages/identity-atproto/` is still an empty stub).
+- `[ ]` Portaless Cloud Images — see scope section below.
 
 ---
 
-## Funciones Externas
+## External (depends on a third party)
 
-Depende de un tercero para completarse. Portaless expone el protocolo o el contrato tecnico; la pieza se construye y mantiene fuera.
-
-- [~] Pay-per-crawl real: probar contra una zona de Cloudflare con Pay Per Crawl habilitado y dynamic pricing; confirmar el precio minimo (asumido USD 0.01). Hoy solo tests con mocks.
-- [~] Deno Deploy y Cloudflare Workers for Platforms: llamadas reales a las APIs implementadas y testeadas con `fetch` mockeado; faltan credenciales de cuenta real. En Cloudflare se requiere ademas el Worker "dispatcher" fijo por namespace (infraestructura fuera del repo). Fastly sigue en estado de contrato + TODOs.
-- [ ] Segundo proveedor real de `escrow_report` (la UI de alta ya incluye el campo de clave publica Ed25519; falta el alta real de un segundo proveedor y su onboarding).
-- [ ] Integracion de almacenamiento externo (Cloudflare R2 es el candidato) para Portaless Cloud Images.
-- [ ] Agente raiz de lenguaje natural y lenguaje de intencion humana (Nuvid): via SDK externo, ver seccion de alcance.
-- [ ] AppPlace y AppLibre: proyectos aparte, ver seccion de alcance.
+- `[~]` Real pay-per-crawl: test against a Cloudflare zone with Pay Per Crawl + dynamic pricing; confirm minimum price (assumed USD 0.01). Mocks only today.
+- `[~]` Deno Deploy and Cloudflare Workers for Platforms: real API calls (tested with mocked `fetch`); need real account credentials. Cloudflare additionally needs the per-namespace "dispatcher" Worker (infrastructure outside this repo). Fastly still contract + TODOs.
+- `[ ]` Second real `escrow_report` provider (UI already supports the public-key field).
+- `[ ]` External storage integration (Cloudflare R2 candidate) for Cloud Images.
+- `[ ]` Natural-language root agent (Nuvid) via external SDK.
+- `[ ]` AppPlace and AppLibre: separate projects, official associates (see scope).
 
 ---
 
-## Vision y decisiones de alcance
+## Vision and scope decisions (what Portaless will NOT do)
 
-### Ecosistema de plugins: abierto por defecto, regulado por la comunidad
-
-Catalogo abierto (`sourceType: "open" | "closed"`): Portaless no certifica ni audita plugins. Aporta un `trustScore` comunitario publico y auditable (votos 1-5 en `plugin_trust_votes`, insignia en el Centro de Permisos) y `auditedBy` como dato informativo. El sandbox limita lo que un plugin **puede** hacer; no certifica que haga lo que dice.
-
-### Trust Layer y Pay per Crawl: protocolo abierto, no asegurador
-
-Portaless define y expone el protocolo (identificacion criptografica de agentes, politicas `allow`/`charge`/`block`, ledger publico). **No asegura cobros ni procesa dinero**: eso requiere licencias y cumplimiento regulatorio de una entidad financiera. Terceros construyen su capa de cobro sobre el protocolo; son candidatos a AppPlace como proyectos independientes, nunca parte del core.
-
-### Agente generador de sitios: via SDK externo, no interno
-
-El agente raiz de lenguaje natural y el lenguaje de intencion humana (Nuvid) se conectan via SDK con un proyecto aparte, al igual que el Plugin SDK (MIT). Portaless (AGPL-3.0) no depende en su nucleo de un proyecto mas experimental, y no mezcla licencias ni ciclos de release.
-
-### AppPlace y AppLibre: proyectos aparte, asociados oficiales
-
-Marketplace cerrado (AppPlace) y registro comunitario (AppLibre) seran proyectos aparte con estatus de asociado oficial. Ninguno de los dos — ni Portaless — garantiza la calidad de plugins de terceros: el sandbox es contencion tecnica, no certificacion.
-
-### Portaless Index: descubrimiento entre sitios
-
-Capa futura que agrega manifiestos y SiteTrustScore de multiples instancias sin custodiar contenido. El **agregador de testigos** de APW ya existe (ver el pendiente de APW resuelto mas arriba: `witness-index.ts` + `/.well-known/apw-index.json`); del descubrimiento entre sitios siguen faltando: formato de indexabilidad (reutilizando el TXT APW), permiso de consulta de terceros (publico / con atribucion / via settlement), mecanismo de agregacion de manifiestos y capa de procedencia antes de tratar el voto comunitario como suficiente.
-
-### Onboarding de un click: Wizard + Checklist diferido
-
-Principio rector vigente: lo que depende de un tercero (propagacion DNS, infraestructura ajena) vive en el checklist diferido del dashboard, nunca en un wizard bloqueante. La estructura (wizard de 5 pasos + checklist) esta implementada; ver Onboarding en Produccion. Pendientes internos: verificacion visual del borrador del Paso 1, textos genericos fuera del campo de intencion, y OAuth de Cloudflare Pages (hoy solo GitHub).
-
-### Portaless Cloud Images y APW como SSOT criptografico
-
-Extension futura: hosting de imagenes donde cada imagen publica firma Ed25519 del sitio, timestamp criptografico de existencia, referencia al SiteTrustScore del momento y flag de origen declarado (`human` | `ai` | `mixed`) — C2PA sin autoridad central, verificable contra el registro APW. La columna `key_algorithm` ya prepara la migracion a ML-DSA sin perder la cadena de custodia. No existe ni como stub; las piezas del core que lo habilitan (Web Bot Auth, SiteTrustScore, settlement, crypto-agilidad) ya estan.
-
-**Tareas para iniciarla:**
-
-- [ ] Especificar el formato de metadatos de imagen APW (`docs/protocol-apw/image-metadata-spec.md`).
-- [ ] Definir el embebido en formatos comunes (EXIF, chunk PNG, sidecar).
-- [ ] Evaluar Cloudflare R2 como backend inicial.
-- [ ] Endpoint de subida con firma automatica (`functions/api/images/upload.js`).
-- [ ] Endpoint publico de verificacion (`functions/api/images/verify/[imageId].js`).
-- [ ] Modelo de moderacion de imagenes mal declaradas, sin centralizar la decision.
+- **Plugin ecosystem**: open catalog, community-regulated. Portaless does not certify plugins; it exposes a public, auditable community `trustScore` and `auditedBy` as informational data. The sandbox limits what a plugin *can* do; it does not certify what it *does*.
+- **Trust Layer / Pay per Crawl**: an open protocol, not an insurer. Portaless defines and exposes the protocol (cryptographic agent identification, `allow`/`charge`/`block` policies, public ledger); it never collects money — third parties build settlement layers on top (AppPlace candidates, never core).
+- **Site-generation agent**: via an external SDK project, never in the AGPL core (no license mixing, no coupled release cycles).
+- **Portaless Index — site discovery**: the local witness aggregator already exists (see production section); the cross-site discovery layer (indexability format reusing the APW TXT, third-party query permission — public / attributed / via settlement, manifest aggregation, provenance layer before treating community votes as sufficient) remains future work. Index is also the first natural reader of the enclaves.
+- **One-click onboarding**: third-party-dependent steps (DNS propagation, foreign infrastructure) live in the deferred dashboard checklist, never in a blocking wizard. Remaining internal gaps: visual draft preview of step 1, generic text outside the intent field, Cloudflare Pages OAuth (GitHub only today).
+- **Cloud Images + APW as cryptographic SSOT**: future extension — image hosting where each image carries the site's Ed25519 signature, a cryptographic existence timestamp, the contemporaneous SiteTrustScore, and a declared-origin flag (`human` | `ai` | `mixed`) — C2PA without a central authority, verifiable against the APW registry. The `key_algorithm` column already prepares the ML-DSA migration without breaking the chain of custody. Not even a stub today; the core pieces that enable it (Web Bot Auth, SiteTrustScore, settlement, crypto-agility) exist. Tasks to start it: specify the APW image-metadata format, define embedding (EXIF / PNG chunk / sidecar), evaluate R2, upload endpoint with automatic signing, public verification endpoint, moderation model for mis-declared images.
 
 ---
 
-## Tareas manuales pendientes
+## Open manual tasks
 
-Solo las que siguen abiertas (el historial de tareas cerradas/obsoletas esta en el archivo).
-
-1. Verificar en GitHub Settings que `main` tenga *Require status checks to pass before merging* con los checks `build` y "Todos los tests + cobertura (Node 24)" requeridos.
-1. Conceder `network:fetch` a `commerce-plugin` en `/admin/permissions` tras actualizar: sin eso la tienda muestra el catalogo vacio (comportamiento correcto desde el PR #55).
-1. Volver a conectar la GitHub App del Paso 2 del wizard: credenciales guardadas antes del PR #61 tienen dueno `"undefined"` y quedan huerfanas.
-1. Probar el flujo de onboarding completo contra una cuenta real de GitHub y un dominio real con TXT `_apw.` publicado (TXT v2 con `k` y `h`, `did.json`, `apw-log.json`, `resolveApwHistory`).
-1. Dar de alta un proveedor de escrow con clave publica y enviar un reporte firmado.
-1. Probar Pay Per Crawl contra una zona real de Cloudflare (activar en `/admin/settlement`, manifiesto con `settlement_provider` y `price_usd >= 0.01`, comprobar el cobro con `crawler-price`).
-1. Desplegar en Railway y Render reales siguiendo `docs/self-hosting-verification.md`.
-1. Probar a mano `/admin/security`, `/admin/wizard/rotate-identity` y el link de rotacion del Paso 4.
-1. Revisar el log del job `build` del PR #56 (tardo 19s vs 1.5-3 min) y confirmar que corrio todo.
-1. Al regenerar `package-lock.json` en Windows, usar npm reciente (`npx npm@11 install --package-lock-only`): npm 11.6 omitio dependencias opcionales y `npm ci` fallo en Linux.
+1. GitHub Settings: `main` with required status checks (`build`, full test suite) before merging.
+2. Grant `network:fetch` to `commerce-plugin` in `/admin/permissions` after updates (catalog shows empty without it — correct behavior since PR #55).
+3. Reconnect the wizard step-2 GitHub App: credentials saved before PR #61 have owner `"undefined"`.
+4. Run the full onboarding flow against a real GitHub account and a real domain with the `_apw.` TXT published (v2 TXT with `k` and `h`, `did.json`, `apw-log.json`, `resolveApwHistory`).
+5. Register an escrow provider with a public key and send a signed report.
+6. Test Pay Per Crawl against a real Cloudflare zone.
+7. Deploy to real Railway and Render following `docs/self-hosting-verification.md`.
+8. Manually test `/admin/security`, `/admin/wizard/rotate-identity`, and the step-4 rotation link.
+9. Review PR #56's `build` job log (19s vs 1.5–3 min) and confirm it ran everything.
+10. When regenerating `package-lock.json` on Windows, use recent npm (`npx npm@11 install --package-lock-only`): npm 11.6 skipped optional deps and broke `npm ci` on Linux.
