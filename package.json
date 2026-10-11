@@ -19,6 +19,7 @@
     "preview": "astro preview",
     "setup": "tsx scripts/setup.mjs",
     "setup:d1": "tsx scripts/setup-d1.mjs",
+    "test:browser": "playwright test",
     "generate-schema": "node scripts/generate-schema.mjs",
     "publish": "tsx scripts/publish-site.mjs",
     "test": "vitest run"
@@ -32,6 +33,7 @@
     "web-bot-auth": "^0.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "vitest": "^5.0.1"
   }
 }

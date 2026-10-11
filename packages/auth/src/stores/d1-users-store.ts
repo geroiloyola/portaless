@@ -66,4 +66,15 @@ export class D1UsersStore implements UsersStore {
       createdAt: row.created_at,
     }));
   }
+
+  // Cambio de contrasena (AuthService.changePassword) y completar el
+  // reset (AuthService.completePasswordReset). Sin esto el flujo revienta
+  // con "setPasswordByUsername is not a function" en Cloudflare.
+  async setPasswordByUsername(username: string, plainPassword: string): Promise<void> {
+    const result = await this.db
+      .prepare("UPDATE users SET password_hash = ? WHERE username = ?")
+      .bind(hashPassword(plainPassword), username)
+      .run() as { success?: boolean; meta?: { changes?: number } };
+    if (result?.meta?.changes === 0) throw new Error(`El usuario "${username}" no existe.`);
+  }
 }

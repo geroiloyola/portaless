@@ -63,6 +63,14 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 5. Update `CHANGELOG.md` and tick the matching `ROADMAP.md` checkbox if applicable.
 6. Open or update the Pull Request from `agentic` to `main` — never merge directly, even with technical permission. The project owner approves manually.
 
+How to verify (the `npx`/`node_modules/.bin` shims are broken under Node 24 in this environment — invoke the real CLIs):
+
+- Unit/e2e: `node node_modules/vitest/vitest.mjs run` (all `*.test.ts` in the repo; `vitest.config.ts` excludes Playwright's `*.spec.ts`).
+- Build: `node node_modules/astro/bin/astro.mjs build` (22 pages).
+- Manifests: `node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts`.
+- Browser (Playwright, real self-host runtime against `dist/`): `npx playwright test` (or `npm run test:browser`). The webServer boots `scripts/browser-test-server.mjs` (auto-builds if `dist/` is missing, seeds an admin + a `did:apw` identity in a temp SQLite under `test-results/browser-e2e/`). Runs serially on purpose (`workers: 1`): the flows mutate shared state.
+- There is no typecheck (no tsconfig) — bugs surface through tests, not the compiler. Missing interface methods on store classes are exactly the kind of bug that only a runtime test catches.
+
 ## Active security risks any agent must know before touching these modules
 
 - `isolated-vm` (self-hosted sandboxing adapter): versions ≤7.0.0 are vulnerable to RCE (GHSA-864f-rcv7-6rh4). The code already rejects vulnerable versions at instantiation — do not remove that check.

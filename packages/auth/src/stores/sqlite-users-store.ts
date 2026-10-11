@@ -83,6 +83,16 @@ export class SqliteUsersStore implements UsersStore {
     }));
   }
 
+  // Cambio de contrasena ( AuthService.changePassword ) y completar el
+  // reset ( AuthService.completePasswordReset ). Sin esto el flujo
+  // revienta con "setPasswordByUsername is not a function" en self-host.
+  async setPasswordByUsername(username: string, plainPassword: string): Promise<void> {
+    const result = this.db
+      .prepare("UPDATE users SET password_hash = ? WHERE username = ?")
+      .run(hashPassword(plainPassword), username) as { changes: number };
+    if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
+  }
+
   close(): void {
     this.db.close();
   }
