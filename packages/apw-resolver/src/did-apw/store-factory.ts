@@ -25,6 +25,12 @@ import {
   InMemoryReaderConductJtiStore,
   type ReaderConductJtiStore,
 } from "../scoring/reader-conduct-jti-store";
+import {
+  D1WitnessIndexStore,
+  SqliteWitnessIndexStore,
+  InMemoryWitnessIndexStore,
+  type WitnessIndexStore,
+} from "./witness-index-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export async function createSiteIdentityStore(env: Record<string, any>): Promise<SiteIdentityStore> {
@@ -36,9 +42,25 @@ export async function createSiteIdentityStore(env: Record<string, any>): Promise
     return new SqliteSiteIdentityStore(db, env);
   }
   console.warn(
-    "[site-identity-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemorySiteIdentityStore. La identidad did:apw generada NO persistira entre reinicios."
+    "[reader-conduct-jti-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemoryReaderConductJtiStore. Los jtis emitidos NO persistiran entre reinicios."
   );
-  return new InMemorySiteIdentityStore(env);
+  return new InMemoryReaderConductJtiStore();
+}
+
+// Portaless Index (APW 5.7, seccion 7): observaciones de testigos,
+// ponderacion y entradas de directorio. Mismo patron D1 -> SQLite -> InMemory.
+export async function createWitnessIndexStore(env: Record<string, any>): Promise<WitnessIndexStore> {
+  if (env.DB) {
+    return new D1WitnessIndexStore(env.DB);
+  }
+  if (env.PORTALESS_SQLITE_PATH) {
+    const db = await openSqlite(env.PORTALESS_SQLITE_PATH);
+    return new SqliteWitnessIndexStore(db);
+  }
+  console.warn(
+    "[witness-index-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemoryWitnessIndexStore. El directorio de testigos NO persistira entre reinicios."
+  );
+  return new InMemoryWitnessIndexStore();
 }
 
 export async function createAttestationLogStore(env: Record<string, any>): Promise<AttestationLogStore> {

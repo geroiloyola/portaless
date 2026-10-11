@@ -296,7 +296,8 @@ Mientras R-05 este desactivado (`policyDimensions`), la politica por efecto exig
 Proyeccion del `SiteTrustScore` (A.6): siempre como objeto `projection` = `{ dimensions, aggregates, governed }`.
 
 - Conjunto W publico siempre: `W-01, W-04, W-06, W-07, W-09`. Gobernado por defecto: `W-02, W-03, W-05, W-08, W-10` y todas las R.
-- Con lector rechazado: `projection` va en `public` (`public.projection`), `dimensions` = solo el conjunto publico (los overrides explicitos del dueno se sumarian si estuvieran configurados); `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones con datos; `governed: "withheld"`.
+- Con lector rechazado: `projection` va en `public` (`public.projection`), `dimensions` = solo el conjunto publico mas el override explicito del dueno si lo hay; `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones con datos; `governed: "withheld"`.
+- **Override del dueno** (`public_overrides`, A.6): con `["W-10"]` guardado y un lector rechazado, `public.projection.dimensions` trae el conjunto publico **mas** W-10 con su score, y sigue oculto el resto del nivel gobernado (W-02, W-05...). El override no cambia la politica: el lector sigue rechazado. Solo dimensiones gobernadas: `["W-01"]` (ya es publica) o una desconocida rechaza el guardado; la fila se guarda ordenada y sin duplicados, y un valor corrupto en la base se ignora.
 - Con lector autorizado, o sin politica activa: `projection` en el cuerpo, `dimensions` = todas; `governed: "granted"`.
 - Una dimension sin atestaciones no aparece en `dimensions` ni en `aggregates` (sin datos no es 4.0).
 - El nivel publico nunca se puede ocultar por politica.

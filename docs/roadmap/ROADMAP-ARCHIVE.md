@@ -152,7 +152,7 @@ Lo que falta, pero es responsabilidad exclusiva de Portaless resolver – no dep
 
 - [ ] APW B3: firma de artefactos del sitio (5.2). JCS (RFC 8785) con una dependencia auditada, `/.well-known/apw-manifest.jws` y atestaciones `self`. Se posterga para no usar un canonicalizador propio.
 - [ ] APW B9: gobernanza de lectura y `reader_conduct` (sección 6).
-- [ ] Campo de clave pública en `/admin/authorized-escrow-providers`. Hoy se carga solo por API o con `scripts/onboard-escrow-provider.mjs`.
+- [x] Campo de clave pública en `/admin/authorized-escrow-providers` — cerrado en `a1e0a57` (figura arriba como mergeado). El pendiente de abajo quedó desactualizado: la UI ya la carga, cambia, copia y quita sin rotar la API key.
 - [ ] Anclaje de `h` en el DNS: cambia con cada atestación y el TXT se actualiza a mano.
 - [ ] APW: testigos externos / Portaless Index para detectar omisiones y *equivocation* (spec seccion 7, E-2, E-9).
 - [ ] APW: automatizar la actualizacion de `h` en el TXT (hoy manual; las entradas nuevas quedan sin anclar).

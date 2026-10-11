@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   reader: null as any,
   permissionGrants: [] as any[],
   policyEnabled: true,
+  publicOverrides: [] as string[],
 }));
 
 vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
@@ -19,7 +20,12 @@ vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
 
 vi.mock("../../packages/apw-resolver/src/scoring/read-policy-store.ts", () => ({
   createReadPolicyStore: async () => ({
-    get: async () => ({ siteId: "default", enabled: state.policyEnabled, onFail: "403" }),
+    get: async () => ({
+      siteId: "default",
+      enabled: state.policyEnabled,
+      onFail: "403",
+      publicOverrides: state.publicOverrides,
+    }),
   }),
   toReadPolicy: (record: any) =>
     record && record.enabled
@@ -72,6 +78,7 @@ beforeEach(() => {
   state.reader = { kind: "apw_verified", did: DID, scores: new Map() };
   state.permissionGrants = [];
   state.policyEnabled = true;
+  state.publicOverrides = [];
 });
 
 async function get() {
@@ -132,5 +139,21 @@ describe("GET /trust/:siteId: proyeccion de dimensiones W (6.6)", () => {
     expect(Object.keys(body.projection.dimensions).sort()).toEqual(Object.keys(body.projection.aggregates).sort());
     expect(body.governance).toEqual({ enabled: false });
     expect(body.self).toEqual(state.snapshot.self);
+  });
+
+  it("el override del dueno (A.6) abre la dimension elegida incluso al rechazar", async () => {
+    state.publicOverrides = ["W-10"];
+    const res = await get();
+    expect(res.status).toBe(403);
+    const { projection } = (await res.json()).public;
+
+    expect(projection.governed).toBe("withheld");
+    // W-10 (spam) es gobernada y el dueno la volvio publica: entra con su score.
+    expect(projection.dimensions["W-10"]).toMatchObject({ dimension: "W-10", score: expect.any(Number) });
+    // El resto del nivel gobernado sigue oculto.
+    expect(projection.dimensions["W-02"]).toBeUndefined();
+    expect(projection.dimensions["W-05"]).toBeUndefined();
+    // El nivel publico no cambia.
+    for (const d of PUBLIC_DIMENSIONS) expect(projection.dimensions[d]).toBeDefined();
   });
 });

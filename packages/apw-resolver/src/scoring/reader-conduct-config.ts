@@ -9,7 +9,8 @@
 //   - Emitir mas seguido: emissionPeriod = "week" o "day". El jti se deriva
 //     del periodo, asi que la emision sigue siendo idempotente.
 //   - Nueva categoria (rate_respected, paid_as_agreed, redistribution): agregar
-//     una regla en CONDUCT_RULES cuando el ledger registre el dato.
+//     una regla en CONDUCT_RULES cuando el ledger registre el dato. Ver el
+//     comentario de CONDUCT_RULES: hoy el ledger no registra ninguno de los tres.
 //   - Exigir R-05: policyDimensions["R-05"] = true. La tabla
 //     site_trust_read_policies ya tiene min_r05 / min_r05_weight: sin migracion.
 //     ANTES: leer el comentario del campo policyDimensions. El cambio de config
@@ -54,7 +55,8 @@ export const READER_CONDUCT_CONFIG = Object.freeze({
   legacyCutoff: "2026-10-04T00:00:00.000Z",
 });
 
-/** Lo que el ledger sabe de un lector en un periodo. */
+/** Lo que el ledger sabe de un lector en un periodo.
+ *  Es literalmente lo que registra log-writer.ts: nada mas. */
 export interface LedgerConductInput {
   requestsTotal: number;
   policyViolationsDetected: number;
@@ -66,7 +68,34 @@ export interface ConductRule {
   when: (e: LedgerConductInput) => boolean;
 }
 
-/** Una regla por categoria. Agregar aqui las nuevas cuando el ledger tenga el dato. */
+/**
+ * Una regla por categoria. Agregar aqui las nuevas cuando el ledger tenga el dato.
+ *
+ * Las tres pendientes (spec 6.4) y por que el ledger no las tiene hoy:
+ *
+ *   - rate_respected (R-02): no hay tasa que respetar. PolicyRule solo declara
+ *     access / price_usd / unit (policy/manifest-schema.ts); no existe un limite
+ *     de peticiones en la politica, ni enforcement (429), ni contador de
+ *     rechazos por tasa en el middleware. El unico rate limit del sistema es el
+ *     del voto community, que es del visitante, no del lector.
+ *
+ *   - paid_as_agreed (R-03): el origen no sabe si el crawler pago. Con el unico
+ *     proveedor de settlement (Cloudflare Pay Per Crawl, pricing in-band) el
+ *     origen devuelve 200 + `crawler-price` y Cloudflare cobra al crawler o le
+ *     responde 402 sin volver a pasar por el origen (billing/pay-per-crawl/
+ *     cloudflare.ts, "el origen nunca responde el 402 ni sabe si el crawler
+ *     pago"). Por eso recordAgentAccess() recibe charged:false en los cuatro
+ *     caminos del middleware y requests_charged / revenue_usd no se mueven:
+ *     emitir paid_as_agreed de esos campos seria inventar el dato. Haria falta
+ *     un proveedor de settlement que informe al origen el resultado.
+ *
+ *   - redistribution (R-04): no es observable por el origen. El lector puede
+ *     copiar y redistribuir lo que leyo (spec: "el protocolo puede registrar
+ *     esa conducta si se detecta; no puede impedirla"); detectarlo requiere
+ *     testigos o una denuncia de un tercero, no el ledger de accesos.
+ *
+ * Anclado en tests/unit/apw-reader-conduct-config.test.ts.
+ */
 export const CONDUCT_RULES: ReadonlyArray<ConductRule> = Object.freeze([
   { cat: "policy_violation", val: true, when: (e) => e.policyViolationsDetected > 0 },
   { cat: "respected_policy", val: true, when: (e) => e.requestsTotal > 0 && e.policyViolationsDetected === 0 },

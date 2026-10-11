@@ -16,8 +16,13 @@ export interface AgentUsageEntry {
   operatorNameClaimed?: string;
   readerDid?: string;             // E-9: candidato, sin verificar
   requestsTotal: number;
+  /** Requests con cobro liquidado POR EL ORIGEN. Hoy siempre 0: con
+   *  Cloudflare Pay Per Crawl (in-band) la cobranza se liquida fuera y el
+   *  origen no sabe si el crawler pago (billing/pay-per-crawl/cloudflare.ts),
+   *  asi que el middleware registra charged:false en todos los caminos. */
   requestsCharged: number;
   requestsFreeTier: number;
+  /** Lo mismo que requestsCharged: no es "ingreso previsto", es cobro confirmado. */
   revenueUsd: number;
   policyViolationsDetected: number;
   firstSeen: string;              // ISO 8601

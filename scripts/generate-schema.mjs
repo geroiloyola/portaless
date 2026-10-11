@@ -1,21 +1,22 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando los 4 archivos schema.sql
-// individuales de cada paquete, en el orden documentado dentro del propio
-// schema.sql resultante. Los 4 archivos originales siguen siendo la fuente
-// de verdad -- este script existe para que nunca queden desincronizados si
-// alguno de los 4 cambia en el futuro: en vez de editar el archivo maestro
-// a mano, se edita el schema.sql del paquete correspondiente y se corre
-// este generador de nuevo.
+// Genera schema.sql (raiz) concatenando sus 13 fuentes reales en orden:
+//   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
+//   atomic-elements, apw-resolver) + 8 addendums de schema-additions/*.sql.
+// schema-additions/settlement-activations.sql queda FUERA a proposito (su
+// incorporacion al maestro y a REQUIRED_TABLES sigue pendiente en
+// ROADMAP.md) -- agregarla ahi y aca cuando ese trabajo se haga.
 //
-//   node scripts/generate-schema.mjs
+//   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
-// La unica seccion que NO viene de un archivo de paquete existente es la
-// tabla password_reset_requests (v0.0.9.4) -- password-reset-store.ts
-// todavia no tiene una implementacion D1/SQLite real (solo memoria, ver
-// ROADMAP.md), asi que no existe un packages/auth/src/stores/schema.sql
-// actualizado con esa tabla todavia. Se agrega aqui directamente, con una
-// nota explicita, hasta que ese trabajo de persistencia real se haga y esta
-// tabla pueda moverse al schema.sql de @portaless/auth.
+// Correrlo debe ser idempotente: regenerar contra el maestro committeado no
+// deberia producir ningun diff de SQL. Si `git diff schema.sql` muestra mas
+// que comentarios, una fuente y el maestro se desincronizaron -- arreglar la
+// FUENTE (o este script), nunca el maestro a mano.
+//
+// Historial: hasta v0.0.9.31 el script conocia solo 4 fuentes y el resto del
+// maestro era edicion manual (regenerar borraba 17 de las 24 tablas). Este
+// rewrite cubre las 13 secciones reales; el header del maestro (bloque de
+// NOTAs) vive a partir de ahora aqui, dentro del generador.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -24,65 +25,123 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "..");
 
+// Paquetes: el generador agrega el banner de seccion (@portaless/...).
+// Addendums: cada archivo trae su propio banner v0.0.9.x identico al del
+// maestro historico, asi que se concatena tal cual (selfBanner).
 const SOURCES = [
   { label: "@portaless/auth -- usuarios y sesiones", path: "packages/auth/src/stores/schema.sql" },
   { label: "@portaless/permissions -- Centro de Permisos", path: "packages/permissions/src/stores/schema.sql" },
   { label: "@portaless/trust-layer -- ledger de uso por agentes", path: "packages/trust-layer/src/ledger/schema.sql" },
   { label: "@portaless/atomic-elements -- paginas persistidas", path: "packages/atomic-elements/src/persistence/stores/schema.sql" },
+  { path: "schema-additions/password-reset.sql", selfBanner: true },
+  { path: "schema-additions/plugin-registry.sql", selfBanner: true },
+  { path: "schema-additions/site-trust-score.sql", selfBanner: true },
+  { path: "schema-additions/authorized-agents.sql", selfBanner: true },
+  { path: "schema-additions/authorized-escrow-providers.sql", selfBanner: true },
+  { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/apw-resolver/schema.sql" },
+  { path: "schema-additions/capability-tokens.sql", selfBanner: true },
+  { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
+  { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
 ];
 
-const PASSWORD_RESET_ADDENDUM = `
--- -----------------------------------------------------------------------------
--- v0.0.9.4 -- Recuperacion de contrasena (packages/auth/src/password-reset-store.ts)
--- -----------------------------------------------------------------------------
--- NOTA: hoy password-reset-store.ts SOLO tiene implementacion en memoria
--- (InMemoryPasswordResetStore) -- D1/SQLite reales quedan fuera de alcance
--- de v0.0.9.4 (ver ROADMAP.md). Esta tabla se agrega ya preparada para no
--- requerir otra migracion cuando se implemente esa persistencia real.
-
-CREATE TABLE IF NOT EXISTS password_reset_requests (
-  token TEXT PRIMARY KEY,
-  username TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  used_at TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_password_reset_username ON password_reset_requests(username);
-`;
+const BANNER_LINE = "-- -----------------------------------------------------------------------------";
 
 const HEADER = `-- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.4)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.31)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
--- Para cambiar una tabla, edita el schema.sql del paquete correspondiente
--- (ver la lista de fuentes al inicio de generate-schema.mjs) y corre:
---   node scripts/generate-schema.mjs
+-- Para cambiar una tabla, edita su fuente (packages/*/schema.sql o
+-- schema-additions/*.sql -- ver la lista al inicio de generate-schema.mjs)
+-- y corre: node scripts/generate-schema.mjs
+--
+-- NOTA v0.0.9.24: la columna key_algorithm de authorized_agents (mas abajo)
+-- se agrego directamente a este archivo maestro. CONFIRMADO: packages/
+-- trust-layer/src/site-trust/ no tiene un schema.sql de paquete individual.
+--
+-- NOTA v0.0.9.25: se agrega site_identity (packages/apw-resolver/schema.sql,
+-- fuente propia nueva) -- identidad did:apw del sitio mismo, generada por el
+-- Wizard de onboarding (Paso 3-4). Ver packages/apw-resolver/src/did-apw/.
+--
+-- NOTA v0.0.9.26: se agrega capability_bridge_tokens -- tokens efimeros del
+-- Capability Bridge HTTP (functions/api/internal/capability-bridge.js),
+-- reemplazando el secreto estatico PORTALESS_INTERNAL_BRIDGE_TOKEN. Ver
+-- packages/plugin-sandbox/src/registry/stores/capability-token-store.ts.
+--
+-- NOTA v0.0.9.27: se agregan deployment_oauth_states y deployment_credentials
+-- (Motor de Despliegue, OAuth de infraestructura con GitHub App) directamente
+-- a este archivo maestro, mismo precedente que v0.0.9.24. Fuente:
+-- schema-additions/deployment-oauth.sql (hoy fuente directa del generador).
+-- Ver packages/deploy-engine/src/oauth-store.ts.
+-- Tambien deployment_providers_config (GitHub App registrada via manifiesto,
+-- secretos cifrados). Fuente: schema-additions/deployment-providers-config.sql.
+-- Ver packages/deploy-engine/src/providers-config-store.ts.
+--
+-- NOTA PR #62: se agregan auth_mfa_challenges y auth_rate_limits a la seccion
+-- @portaless/auth. Fuente: packages/auth/src/stores/schema.sql (editado ahi y
+-- copiado aca en la misma posicion que produce generate-schema.mjs).
+--
+-- NOTA APW v1.2 (PRs #71, #73, #74):
+--   - La seccion de apw-resolver (site_identity, site_identity_keys,
+--     site_attestation_log) es copia de packages/apw-resolver/schema.sql.
+--   - site_trust_agent_verifications y site_trust_escrow_reports agregan
+--     attestation_jws / attestation_jti y un indice unico por emisor (ERRATA
+--     E-4). authorized_escrow_providers agrega public_key_jwk. Estas tablas no
+--     tienen schema.sql de paquete: se editan en schema-additions/*.sql
+--     (desde v0.0.9.31; antes directamente aca).
+--   - Las bases anteriores NO necesitan reaplicar este archivo: los stores
+--     agregan estas columnas e indices solos (ALTER TABLE al primer uso).
+--
+-- NOTA v0.0.9.31 (fuentes):
+--   - usage_ledger gana reader_did (ERRATA E-9). Ya estaba en
+--     packages/trust-layer/src/ledger/schema.sql; el maestro estaba atrasado
+--     respecto de su propia fuente.
+--   - Tabla nueva reader_conduct_jti (spec APW 6.4): indice de los jti de
+--     reader_conduct que el sitio ya emitio (jti determinista por emisor,
+--     lector, periodo y categoria). DDL en packages/apw-resolver/schema.sql;
+--     los stores D1/SQLite la crean al vuelo en bases existentes.
+--   Ambas piezas solo completan instalaciones limpias: las bases anteriores
+--   las reciben de sus stores al vuelo, sin reaplicar este archivo.
+--
+-- NOTA v0.0.9.31 (estructura): las secciones sin schema.sql de paquete
+-- (password reset, plugins, site_trust_*, authorized_*, capability bridge,
+-- deployment) viven ahora en schema-additions/*.sql como fuentes directas
+-- del generador. schema-additions/settlement-activations.sql queda fuera a
+-- proposito: su incorporacion al maestro y a REQUIRED_TABLES sigue pendiente
+-- en ROADMAP.md.
+--
+-- NOTA Portaless Index (APW 5.7, seccion 7): witness_observations,
+-- witness_weights y witness_index_subjects -- agregador de testigos
+-- (observaciones verificadas por sujeto, ponderacion estatica por testigo y
+-- entrada de directorio cacheada que publica /.well-known/apw-index.json).
+-- DDL en packages/apw-resolver/schema.sql; los stores D1/SQLite las crean
+-- al vuelo en bases existentes.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
---   O usa el instalador completo (schema + admin inicial en un comando):
---   node scripts/setup.mjs
+--   O usa el instalador completo: npm run setup
 --
 -- Todas las sentencias son CREATE TABLE/INDEX IF NOT EXISTS -- correr este
--- archivo repetidas veces sobre una base de datos existente es seguro.
+-- archivo repetidas veces sobre una base de datos que ya tiene las tablas
+-- es seguro y no destruye datos existentes.
 `;
 
 function main() {
-  const parts = [HEADER];
+  const parts = [`${HEADER}\n`];
 
   for (const source of SOURCES) {
     const fullPath = join(rootDir, source.path);
     const content = readFileSync(fullPath, "utf-8").trim();
-    parts.push(`\n-- -----------------------------------------------------------------------------\n-- ${source.label} (${source.path})\n-- -----------------------------------------------------------------------------\n\n${content}\n`);
+    if (source.selfBanner) {
+      parts.push(`\n${content}\n`);
+    } else {
+      parts.push(`\n${BANNER_LINE}\n-- ${source.label}\n${BANNER_LINE}\n\n${content}\n`);
+    }
   }
-
-  parts.push(PASSWORD_RESET_ADDENDUM);
 
   const outputPath = join(rootDir, "schema.sql");
   writeFileSync(outputPath, parts.join(""), "utf-8");
-  console.log(`schema.sql regenerado en ${outputPath} a partir de ${SOURCES.length} fuentes + addendum de password reset.`);
+  console.log(`schema.sql regenerado en ${outputPath} a partir de ${SOURCES.length} fuentes.`);
 }
 
 main();

@@ -89,9 +89,12 @@ proveedores de escrow. `authorized_escrow_providers` usa una API key por
 proveedor (hasheada con SHA-256 antes de persistir, nunca la clave
 cruda). La key se genera desde `/admin/authorized-escrow-providers` (se
 muestra una sola vez) o con `scripts/onboard-escrow-provider.mjs`, y se
-entrega al proveedor fuera de banda. Es deliberadamente la barrera de
-entrada más alta de las 4 fuentes: `escrow_report` es la señal más
-objetiva del diseño (ground truth, no predicción).
+entrega al proveedor fuera de banda. La **clave publica** Ed25519 del
+proveedor es otro dato, independiente de la key: se carga, cambia o
+quita desde la misma pagina (`setPublicKey()`, sin rotar la API key) y
+sin ella sus reportes firmados se rechazan. Es deliberadamente la
+barrera de entrada más alta de las 4 fuentes: `escrow_report` es la
+señal más objetiva del diseño (ground truth, no predicción).
 
 ## Crypto-agilidad: por qué `authorized_agents` guarda el algoritmo
 
@@ -112,7 +115,8 @@ también firmas ML-DSA-44/65/87 (experimental, con
 Dos caminos equivalentes:
 
 - **UI**: `/admin/authorized-agents` y `/admin/authorized-escrow-providers`
-  (listar, dar de alta, revocar con soft-delete).
+  (listar, dar de alta, revocar con soft-delete; en escrow, cargar,
+  cambiar o quitar la clave publica del proveedor).
 - **CLI self-hosted**: `scripts/onboard-agent.mjs` y
   `scripts/onboard-escrow-provider.mjs`, idempotentes. Solo SQLite.
 

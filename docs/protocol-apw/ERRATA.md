@@ -257,7 +257,7 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 **Como actualizar** (`packages/apw-resolver/src/scoring/reader-conduct-config.ts`):
 
 - Exigir R-05: `policyDimensions["R-05"] = true`, sin migracion. **Solo despues** de los dos prerequisitos de datos: un flujo en que el lector emita atestaciones sobre sujetos, y un corpus de otros emisores sobre el mismo (sujeto, dimension) para calibrar (indices o testigos, seccion 7). Encenderlo antes rechaza a todos los lectores.
-- Nuevas categorias: agregar una regla en `CONDUCT_RULES` cuando el ledger tenga el dato.
+- Nuevas categorias: agregar una regla en `CONDUCT_RULES` cuando el ledger tenga el dato. `rate_respected` y `paid_as_agreed` esperan al Trust Layer (una tasa en la politica con su contador, y un settlement que informe el pago: el actual liquida fuera y el ledger registra siempre `charged: false`); `redistribution` no la observa el origen y requiere testigos o denuncia. Anclado en `tests/unit/apw-reader-conduct-config.test.ts`.
 - Endurecer historiales viejos: `legacyEntriesWithoutJws = "reject"`.
 - Emitir mas seguido que una vez por mes requiere un ledger con esa granularidad.
 
@@ -286,7 +286,7 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 **Texto vigente**:
 
 - **Proyeccion siempre presente**: `GET /trust/:siteId` calcula las dimensiones W del sitio con `scoreSiteDimensions()` (A.2 y A.4 sobre las filas del snapshot) y las publica en `projection = { dimensions, aggregates, governed }` (`projectTrustView()`):
-  - rechazado (401/402/403): `public.projection`, con `dimensions` = solo el conjunto publico (W-01, W-04, W-06, W-07, W-09; el override del dueno no tiene aun donde guardarse), `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones del sitio y `governed: "withheld"`;
+  - rechazado (401/402/403): `public.projection`, con `dimensions` = solo el conjunto publico (W-01, W-04, W-06, W-07, W-09) mas las dimensiones gobernadas que el dueno volvio publicas con su override explicito (`public_overrides`, A.6: solo dimensiones gobernadas, ordenado y sin duplicados; un valor corrupto en la fila se ignora), `aggregates` = puntaje, cantidad y suma de pesos de **todas** las dimensiones del sitio y `governed: "withheld"`;
   - lector autorizado, o sin politica activa: `projection` en el cuerpo de la respuesta, `dimensions` = todas y `governed: "granted"`.
 - **Mapeo de categorias (A.2)**: cada categoria cae en su dimension y el valor sale de A.4.1. `escrow_report` puntua por `cat` con escala nativa: `completed_as_promised` 7.0, `refunded_no_delivery` 2.5, `disputed` 1.0 (en ese JWS `val` es siempre `true`, 5.3).
 - **Sin modelo no puntua**: `community.perceived_trustworthiness` no figura en A.2 y las categorias `self` de W-08 todavia no existen; sus filas no entran a la puntuacion pero siguen publicas como dato crudo. Tampoco puntua una fila legacy sin campo de valor o fuera de escala: la proyeccion nunca tumba la respuesta.

@@ -66,6 +66,7 @@ describe("por que R-05 sigue apagada en la politica (E-9)", () => {
     minR01Weight: 2.0,
     minR05: 5.0,
     minR05Weight: 2.0,
+    publicOverrides: [],
     onFail: "403",
     updatedAt: "2026-10-04T00:00:00.000Z",
     updatedBy: "did:apw:sitio.example",
@@ -86,5 +87,23 @@ describe("por que R-05 sigue apagada en la politica (E-9)", () => {
     const effective = toReadPolicy(enabledRecord); // R-01 si, R-05 no
     expect(effective).not.toBeNull();
     expect(evaluatePolicy(effective!, { kind: "apw_verified", did: reader, scores })).toEqual({ allow: true });
+  });
+});
+
+// Por que rate_respected, paid_as_agreed y redistribution (spec 6.4) siguen sin
+// regla: el ledger no les aporta el dato (ver CONDUCT_RULES). Si alguien agrega
+// una regla sin que el dato exista, esta prueba avisa.
+describe("las tres categorias de 6.4 esperan datos del ledger", () => {
+  it("con lo que el ledger hoy registra solo salen respected_policy y policy_violation", () => {
+    // LedgerConductInput es exactamente lo que escribe log-writer.ts por request.
+    const limpio = conductFor({ requestsTotal: 1000, policyViolationsDetected: 0 });
+    expect(limpio).toEqual([{ cat: "respected_policy", val: true }]);
+    const conViolacion = conductFor({ requestsTotal: 5, policyViolationsDetected: 2 });
+    expect(conViolacion).toEqual([{ cat: "policy_violation", val: true }]);
+
+    const categorias = new Set([...limpio, ...conViolacion].map((r) => r.cat));
+    expect(categorias.has("rate_respected")).toBe(false);
+    expect(categorias.has("paid_as_agreed")).toBe(false);
+    expect(categorias.has("redistribution")).toBe(false);
   });
 });

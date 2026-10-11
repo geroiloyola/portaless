@@ -76,10 +76,13 @@ function json(body, status, extraHeaders = {}) {
 async function loadPolicy(env) {
   try {
     const store = await createReadPolicyStore(env);
-    return { policy: toReadPolicy(await store.get(SITE_ID)), error: false };
+    const record = await store.get(SITE_ID);
+    // publicOverrides (A.6): dimensiones gobernadas que el dueno volvio
+    // publicas. No cambia la politica: cambia lo que se proyecta al rechazar.
+    return { policy: toReadPolicy(record), publicOverrides: record?.publicOverrides ?? [], error: false };
   } catch (err) {
     console.warn(`[Portaless APW] No se pudo leer la politica de lectura: ${err?.message}`);
-    return { policy: null, error: true };
+    return { policy: null, publicOverrides: [], error: true };
   }
 }
 
@@ -101,14 +104,15 @@ export async function onRequestGet(context) {
   const siteId = params?.siteId;
   if (!siteId) return json({ error: "missing_site_id" }, 400);
 
-  const { policy, error } = await loadPolicy(env);
+  const { policy, publicOverrides, error } = await loadPolicy(env);
   // Si la tabla existe pero no se pudo leer, no se puede saber si hay politica: cerrar.
   if (error) return json({ error: "read_policy_unavailable" }, 503);
 
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
   const siteScores = loadSiteScores(snapshot);
-  const projection = (governedAllowed) => (siteScores ? projectTrustView(siteScores, governedAllowed) : undefined);
+  const projection = (governedAllowed) =>
+    siteScores ? projectTrustView(siteScores, governedAllowed, publicOverrides) : undefined;
 
   if (!policy) {
     return json(

@@ -16,6 +16,12 @@
 // pero encenderlo sin los prerequisitos de datos del comentario de ese campo
 // rechazaria a todos los lectores (R-05 con peso 0 nunca alcanza min_r05_weight).
 //
+// A.6 / ERRATA E-11: public_overrides guarda el override explicito del dueno
+// sobre dimensiones GOBERNADAS (el dueno puede volver publico cualquier dato
+// gobernado; nunca puede ocultar el nivel publico). Viaja a projectTrustView()
+// en GET /trust/:siteId. Es la unica columna nueva despues del DDL original y
+// se agrega sola en bases existentes (ALTER TABLE + duplicate column).
+//
 // require_apw_identity queda fijo en 1 en el MVP (CHECK): una politica que
 // exige reputacion sin identidad no tiene sentido, la reputacion es del DID.
 //
@@ -23,7 +29,7 @@
 // SQLite, memoria para dev sin DB). La tabla se crea al primer uso.
 
 import { D1Adapter, SqliteAdapter, type SqlAdapter } from "../did-apw/sql-adapter";
-import type { OnFail, ReadPolicy } from "./policy";
+import { GOVERNED_DIMENSIONS, type OnFail, type ReadPolicy } from "./policy";
 import { READER_CONDUCT_CONFIG } from "./reader-conduct-config";
 
 export interface ReadPolicyRecord {
@@ -34,12 +40,16 @@ export interface ReadPolicyRecord {
   minR01Weight: number;
   minR05: number;
   minR05Weight: number;
+  /** Dimensiones gobernadas que el dueno volvio publicas (A.6), orden ascendente. */
+  publicOverrides: string[];
   onFail: OnFail;
   updatedAt: string;
   updatedBy: string;
 }
 
-export type ReadPolicyInput = Omit<ReadPolicyRecord, "updatedAt" | "requireApwIdentity">;
+export type ReadPolicyInput = Omit<ReadPolicyRecord, "updatedAt" | "requireApwIdentity" | "publicOverrides"> & {
+  publicOverrides?: string[] | null;
+};
 
 export const READ_POLICY_DEFAULTS = Object.freeze({
   minR01: 5.0,
@@ -62,7 +72,41 @@ export const READ_POLICIES_DDL = `CREATE TABLE IF NOT EXISTS site_trust_read_pol
     updated_by TEXT NOT NULL
   )`;
 
+/** A.6: el override solo puede abrir una dimension GOBERNADA; el publico ya es publico. */
+const GOVERNED_SET: ReadonlySet<string> = new Set<string>(GOVERNED_DIMENSIONS);
+
 export const INVALID_READ_POLICY = "invalid_read_policy";
+
+/** Valida y normaliza el override del dueno: orden ascendente y sin duplicados. */
+export function normalizePublicOverrides(input: unknown): string[] {
+  if (input === undefined || input === null || input === "") return [];
+  if (!Array.isArray(input)) throw new Error(INVALID_READ_POLICY);
+  const out = new Set<string>();
+  for (const d of input) {
+    if (typeof d !== "string" || !GOVERNED_SET.has(d)) throw new Error(INVALID_READ_POLICY);
+    out.add(d);
+  }
+  return [...out].sort();
+}
+
+/**
+ * Lo que hay guardado en la fila. Fail-soft a proposito: un valor corrupto se
+ * ignora y el dueno queda sin override, que es la direccion segura (menos
+ * publico, nunca mas). El orden se normaliza igual que al escribir.
+ */
+export function parseStoredOverrides(raw: unknown): string[] {
+  if (typeof raw !== "string" || raw === "") return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out = new Set<string>();
+  for (const d of parsed) if (typeof d === "string" && GOVERNED_SET.has(d)) out.add(d);
+  return [...out].sort();
+}
 
 export interface ReadPolicyStore {
   get(siteId: string): Promise<ReadPolicyRecord | null>;
@@ -87,6 +131,7 @@ export function validateReadPolicyInput(input: ReadPolicyInput): void {
     typeof input.updatedBy === "string" &&
     input.updatedBy.length > 0;
   if (!ok) throw new Error(INVALID_READ_POLICY);
+  normalizePublicOverrides(input.publicOverrides); // lanza INVALID_READ_POLICY si no es gobernado
 }
 
 /**
@@ -115,6 +160,7 @@ function rowToRecord(row: any): ReadPolicyRecord {
     minR01Weight: Number(row.min_r01_weight),
     minR05: Number(row.min_r05),
     minR05Weight: Number(row.min_r05_weight),
+    publicOverrides: parseStoredOverrides(row.public_overrides),
     onFail: String(row.on_fail) as OnFail,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
@@ -122,17 +168,25 @@ function rowToRecord(row: any): ReadPolicyRecord {
 }
 
 const UPSERT_SQL = `INSERT INTO site_trust_read_policies
-    (site_id, enabled, require_apw_identity, min_r01, min_r01_weight, min_r05, min_r05_weight, on_fail, updated_at, updated_by)
-  VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+    (site_id, enabled, require_apw_identity, min_r01, min_r01_weight, min_r05, min_r05_weight, public_overrides, on_fail, updated_at, updated_by)
+  VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(site_id) DO UPDATE SET
     enabled = excluded.enabled,
     min_r01 = excluded.min_r01,
     min_r01_weight = excluded.min_r01_weight,
     min_r05 = excluded.min_r05,
     min_r05_weight = excluded.min_r05_weight,
+    public_overrides = excluded.public_overrides,
     on_fail = excluded.on_fail,
     updated_at = excluded.updated_at,
     updated_by = excluded.updated_by`;
+
+/** A.6: la columna del override se agrega sola a bases creadas antes de existir. */
+const ADD_PUBLIC_OVERRIDES_COLUMN_SQL = "ALTER TABLE site_trust_read_policies ADD COLUMN public_overrides TEXT";
+
+function isDuplicateColumnError(err: unknown): boolean {
+  return /duplicate column/i.test(String((err as Error)?.message));
+}
 
 export class SqlReadPolicyStore implements ReadPolicyStore {
   private schemaReady: Promise<void> | null = null;
@@ -141,7 +195,14 @@ export class SqlReadPolicyStore implements ReadPolicyStore {
 
   private ensureSchema(): Promise<void> {
     if (!this.schemaReady) {
-      this.schemaReady = Promise.resolve(this.sql.run(READ_POLICIES_DDL)).then(() => undefined);
+      this.schemaReady = (async () => {
+        await this.sql.run(READ_POLICIES_DDL);
+        try {
+          await this.sql.run(ADD_PUBLIC_OVERRIDES_COLUMN_SQL);
+        } catch (err) {
+          if (!isDuplicateColumnError(err)) throw err;
+        }
+      })();
       this.schemaReady.catch(() => {
         this.schemaReady = null;
       });
@@ -157,6 +218,7 @@ export class SqlReadPolicyStore implements ReadPolicyStore {
 
   async save(input: ReadPolicyInput): Promise<ReadPolicyRecord> {
     validateReadPolicyInput(input);
+    const publicOverrides = normalizePublicOverrides(input.publicOverrides);
     await this.ensureSchema();
     const updatedAt = new Date().toISOString();
     await this.sql.run(UPSERT_SQL, [
@@ -166,11 +228,12 @@ export class SqlReadPolicyStore implements ReadPolicyStore {
       input.minR01Weight,
       input.minR05,
       input.minR05Weight,
+      publicOverrides.length ? JSON.stringify(publicOverrides) : null,
       input.onFail,
       updatedAt,
       input.updatedBy,
     ]);
-    return { ...input, requireApwIdentity: true, updatedAt };
+    return { ...input, publicOverrides, requireApwIdentity: true, updatedAt };
   }
 }
 
@@ -179,14 +242,19 @@ export class InMemoryReadPolicyStore implements ReadPolicyStore {
 
   async get(siteId: string): Promise<ReadPolicyRecord | null> {
     const row = this.rows.get(siteId);
-    return row ? { ...row } : null;
+    return row ? { ...row, publicOverrides: [...(row.publicOverrides ?? [])] } : null;
   }
 
   async save(input: ReadPolicyInput): Promise<ReadPolicyRecord> {
     validateReadPolicyInput(input);
-    const record: ReadPolicyRecord = { ...input, requireApwIdentity: true, updatedAt: new Date().toISOString() };
+    const record: ReadPolicyRecord = {
+      ...input,
+      publicOverrides: normalizePublicOverrides(input.publicOverrides),
+      requireApwIdentity: true,
+      updatedAt: new Date().toISOString(),
+    };
     this.rows.set(input.siteId, record);
-    return { ...record };
+    return { ...record, publicOverrides: [...record.publicOverrides] };
   }
 }
 

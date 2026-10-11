@@ -29,7 +29,7 @@
 // Vive en su propio archivo (no en index.ts) para evitar un import circular.
 
 import { resolveApwManifest } from '../index';
-import { verifyChain, type ChainEntry, type ChainFailure, type ChainKey } from './history-log';
+import { sha256B64Url, verifyChain, type ChainEntry, type ChainFailure, type ChainKey } from './history-log';
 
 export type ApwHistoryReason =
   | ChainFailure
@@ -47,6 +47,8 @@ export interface ChainAttestationRef {
   ts: string;
   /** `kid` del header de la entrada: la clave (huella o did:apw:...#key-n) que la firmo. */
   kid?: string | null;
+  /** Hash de la entrada de cadena misma (sha256 del entry JWS): es el `head` que observan los testigos (5.7). */
+  entryHash: string;
 }
 
 export interface ApwHistoryResult {
@@ -162,12 +164,12 @@ export async function resolveApwHistory(
     unanchoredEntries: result.anchoredSeq === null ? result.length : result.length - result.anchoredSeq,
   };
   if (options.includeEntries) {
-    out.attestations = [...entries]
-      .sort((a, b) => a.seq - b.seq)
-      .map((e) => {
-        const p = decodePayload(e.jws);
-        return { seq: p.seq, att: p.att, ts: p.ts, kid: decodeHeaderKid(e.jws) };
-      });
+    const refs: ChainAttestationRef[] = [];
+    for (const e of [...entries].sort((a, b) => a.seq - b.seq)) {
+      const p = decodePayload(e.jws);
+      refs.push({ seq: p.seq, att: p.att, ts: p.ts, kid: decodeHeaderKid(e.jws), entryHash: await sha256B64Url(e.jws) });
+    }
+    out.attestations = refs;
   }
   if (options.includeKeys) out.keys = keys ?? [];
   return out;

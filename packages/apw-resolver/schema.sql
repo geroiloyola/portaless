@@ -1,8 +1,16 @@
 -- packages/apw-resolver/schema.sql
 --
 -- Fuente de verdad de site_identity -- ver packages/apw-resolver/src/did-apw/
--- site-identity-store.ts para la logica de cifrado/descifrado, y el
--- schema.sql maestro (raiz del repo) para el comentario completo de diseño.
+-- site-identity-store.ts para la logica de cifrado/descifrado.
+--
+-- Identidad criptografica que ESTE sitio usa para firmarse a si mismo ante
+-- terceros via Protocol APW (Wizard de onboarding, Paso 3-4). NO confundir
+-- con authorized_agents (agentes EXTERNOS que Portaless autoriza a ACCEDER
+-- a este sitio) ni con authorized_escrow_providers.
+--
+-- La clave privada NUNCA se persiste en texto plano: private_key_jwk_encrypted
+-- guarda el JWK cifrado con AES-GCM. La clave de cifrado vive fuera de esta
+-- base de datos (env var PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY).
 --
 -- Este archivo se concatena al maestro via scripts/generate-schema.mjs.
 -- No aplicar directamente contra una base de datos en produccion -- usar
@@ -75,3 +83,58 @@ CREATE TABLE IF NOT EXISTS site_attestation_log (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att
   ON site_attestation_log(site_id, att_hash);
+
+-- Reputacion del lector (spec APW 6.4, ERRATA E-9): indice local de los jti
+-- de reader_conduct que este sitio ya emitio, para no repetir una emision
+-- del mismo periodo (jti determinista por emisor, lector, periodo y cat).
+-- La fuente historica sigue siendo att_jws del historial encadenado (E-9):
+-- en bases migradas el indice se siembra desde ahi (collectEmittedJtis) y
+-- los stores D1/SQLite crean esta tabla al vuelo (mismo DDL).
+
+CREATE TABLE IF NOT EXISTS reader_conduct_jti (
+  site_id TEXT NOT NULL,
+  jti TEXT NOT NULL,
+  period TEXT NOT NULL,
+  cat TEXT NOT NULL,
+  reader_did TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, jti)
+);
+
+-- Portaless Index, agregador de testigos (APW v1.3, 5.7 y seccion 7):
+-- observaciones VERIFICADAS recopiladas de los testigos configurados por
+-- sujeto (la ultima observacion anclada de cada testigo por seq, con su
+-- fecha creible = ts de la entrada del historial DEL TESTIGO), la
+-- ponderacion estatica por testigo (default 1.0; la calibracion estilo
+-- A.4.4 queda pendiente) y la ultima entrada de directorio cacheada, que
+-- publica /.well-known/apw-index.json sin re-bajar cadenas por request.
+-- Los stores D1/SQLite crean estas tablas al vuelo (mismo DDL).
+
+CREATE TABLE IF NOT EXISTS witness_observations (
+  site_id TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  witness_did TEXT NOT NULL,
+  observed_seq INTEGER NOT NULL,
+  observed_head TEXT,
+  anchored_ts TEXT NOT NULL,
+  statement_jti TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, subject_did, witness_did, observed_seq)
+);
+
+CREATE TABLE IF NOT EXISTS witness_weights (
+  site_id TEXT NOT NULL,
+  witness_did TEXT NOT NULL,
+  weight REAL NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, witness_did)
+);
+
+CREATE TABLE IF NOT EXISTS witness_index_subjects (
+  site_id TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  entry_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, subject_did)
+);

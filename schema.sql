@@ -61,6 +61,13 @@
 -- proposito: su incorporacion al maestro y a REQUIRED_TABLES sigue pendiente
 -- en ROADMAP.md.
 --
+-- NOTA Portaless Index (APW 5.7, seccion 7): witness_observations,
+-- witness_weights y witness_index_subjects -- agregador de testigos
+-- (observaciones verificadas por sujeto, ponderacion estatica por testigo y
+-- entrada de directorio cacheada que publica /.well-known/apw-index.json).
+-- DDL en packages/apw-resolver/schema.sql; los stores D1/SQLite las crean
+-- al vuelo en bases existentes.
+--
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
@@ -70,9 +77,14 @@
 -- archivo repetidas veces sobre una base de datos que ya tiene las tablas
 -- es seguro y no destruye datos existentes.
 
+
 -- -----------------------------------------------------------------------------
 -- @portaless/auth -- usuarios y sesiones
 -- -----------------------------------------------------------------------------
+
+-- Esquema de persistencia real para @portaless/auth.
+-- Aplica esto vía Cloudflare D1 (wrangler d1 execute --file=schema.sql)
+-- o contra un archivo SQLite local para despliegues self-hosted.
 
 CREATE TABLE IF NOT EXISTS users (
   username TEXT PRIMARY KEY,
@@ -123,6 +135,10 @@ CREATE INDEX IF NOT EXISTS idx_auth_rate_limits_window ON auth_rate_limits(windo
 -- @portaless/permissions -- Centro de Permisos
 -- -----------------------------------------------------------------------------
 
+-- Esquema de persistencia real para @portaless/permissions.
+-- Aplicar via Cloudflare D1 (wrangler d1 execute --file=schema.sql)
+-- o contra un archivo SQLite local para despliegues self-hosted.
+
 CREATE TABLE IF NOT EXISTS permission_grants (
   subject_type TEXT NOT NULL,
   subject_id TEXT NOT NULL,
@@ -139,10 +155,10 @@ CREATE INDEX IF NOT EXISTS idx_grants_capability ON permission_grants(capability
 -- -----------------------------------------------------------------------------
 -- @portaless/trust-layer -- ledger de uso por agentes
 -- -----------------------------------------------------------------------------
+
 -- ERRATA E-9: reader_did (DID APW candidato del lector, sin verificar).
 -- Las bases existentes reciben la columna al vuelo desde los stores
 -- (SQLite: ALTER al abrir; D1: ALTER en la primera operacion).
-
 CREATE TABLE IF NOT EXISTS usage_ledger (
   period TEXT NOT NULL,
   operator_key_id TEXT NOT NULL,
@@ -161,6 +177,10 @@ CREATE TABLE IF NOT EXISTS usage_ledger (
 -- -----------------------------------------------------------------------------
 -- @portaless/atomic-elements -- paginas persistidas
 -- -----------------------------------------------------------------------------
+
+-- Esquema de persistencia real de paginas (Atomic Elements), server-side.
+-- Espejo del patron usado en packages/permissions/src/stores/schema.sql y
+-- packages/trust-layer/src/ledger/schema.sql.
 
 CREATE TABLE IF NOT EXISTS pages (
   slug TEXT PRIMARY KEY,
@@ -334,8 +354,14 @@ CREATE TABLE IF NOT EXISTS authorized_escrow_providers (
 CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_escrow_providers(active);
 
 -- -----------------------------------------------------------------------------
--- v0.0.9.25 -- Identidad did:apw del sitio (packages/apw-resolver/schema.sql)
+-- @portaless/apw-resolver -- identidad did:apw e historial encadenado
 -- -----------------------------------------------------------------------------
+
+-- packages/apw-resolver/schema.sql
+--
+-- Fuente de verdad de site_identity -- ver packages/apw-resolver/src/did-apw/
+-- site-identity-store.ts para la logica de cifrado/descifrado.
+--
 -- Identidad criptografica que ESTE sitio usa para firmarse a si mismo ante
 -- terceros via Protocol APW (Wizard de onboarding, Paso 3-4). NO confundir
 -- con authorized_agents (agentes EXTERNOS que Portaless autoriza a ACCEDER
@@ -345,9 +371,9 @@ CREATE INDEX IF NOT EXISTS idx_authorized_escrow_providers_active ON authorized_
 -- guarda el JWK cifrado con AES-GCM. La clave de cifrado vive fuera de esta
 -- base de datos (env var PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY).
 --
--- Fuente de seccion del schema.sql maestro: se concatena via
--- scripts/generate-schema.mjs. No aplicar este archivo directamente a una
--- base de datos; usar el maestro o node scripts/setup.mjs.
+-- Este archivo se concatena al maestro via scripts/generate-schema.mjs.
+-- No aplicar directamente contra una base de datos en produccion -- usar
+-- siempre el schema.sql maestro o node scripts/setup.mjs.
 
 CREATE TABLE IF NOT EXISTS site_identity (
   site_id TEXT PRIMARY KEY,
@@ -432,6 +458,44 @@ CREATE TABLE IF NOT EXISTS reader_conduct_jti (
   reader_did TEXT NOT NULL,
   created_at TEXT NOT NULL,
   PRIMARY KEY (site_id, jti)
+);
+
+-- Portaless Index, agregador de testigos (APW v1.3, 5.7 y seccion 7):
+-- observaciones VERIFICADAS recopiladas de los testigos configurados por
+-- sujeto (la ultima observacion anclada de cada testigo por seq, con su
+-- fecha creible = ts de la entrada del historial DEL TESTIGO), la
+-- ponderacion estatica por testigo (default 1.0; la calibracion estilo
+-- A.4.4 queda pendiente) y la ultima entrada de directorio cacheada, que
+-- publica /.well-known/apw-index.json sin re-bajar cadenas por request.
+-- Los stores D1/SQLite crean estas tablas al vuelo (mismo DDL).
+
+CREATE TABLE IF NOT EXISTS witness_observations (
+  site_id TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  witness_did TEXT NOT NULL,
+  observed_seq INTEGER NOT NULL,
+  observed_head TEXT,
+  anchored_ts TEXT NOT NULL,
+  statement_jti TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, subject_did, witness_did, observed_seq)
+);
+
+CREATE TABLE IF NOT EXISTS witness_weights (
+  site_id TEXT NOT NULL,
+  witness_did TEXT NOT NULL,
+  weight REAL NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, witness_did)
+);
+
+CREATE TABLE IF NOT EXISTS witness_index_subjects (
+  site_id TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  entry_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, subject_did)
 );
 
 -- -----------------------------------------------------------------------------
