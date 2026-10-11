@@ -86,12 +86,23 @@
 -- Aplica esto vía Cloudflare D1 (wrangler d1 execute --file=schema.sql)
 -- o contra un archivo SQLite local para despliegues self-hosted.
 
+-- v0.0.9.10: columnas de email, 2FA (TOTP) y OAuth -- antes solo existian
+-- en InMemoryUsersStore; los stores reales (SQLite/D1) las agregan solas
+-- con ALTER TABLE en bases viejas (mismo patron que site_identity_keys).
 CREATE TABLE IF NOT EXISTS users (
   username TEXT PRIMARY KEY,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  email TEXT,
+  provider TEXT,
+  totp_secret TEXT,
+  totp_enabled_at TEXT,
+  oauth_provider TEXT,
+  oauth_subject TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject);
 
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,

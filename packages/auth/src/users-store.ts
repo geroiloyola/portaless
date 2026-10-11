@@ -98,7 +98,7 @@ export class InMemoryUsersStore implements UsersStore {
     }
     const record: UserRecord = {
       username,
-      passwordHash: hashPassword(randomFallbackPassword()),
+      passwordHash: oauthFallbackPasswordHash(),
       role,
       createdAt: new Date().toISOString(),
       email,
@@ -112,8 +112,8 @@ export class InMemoryUsersStore implements UsersStore {
 }
 
 /** Usuarios OAuth no usan password propio -- se genera un hash aleatorio inutilizable como fallback defensivo. */
-function randomFallbackPassword(): string {
-  return `oauth-managed:${Math.random().toString(36)}:${Date.now()}`;
+export function oauthFallbackPasswordHash(): string {
+  return hashPassword(`oauth-managed:${Math.random().toString(36)}:${Date.now()}`);
 }
 
 /**

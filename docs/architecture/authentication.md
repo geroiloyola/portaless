@@ -49,10 +49,19 @@ inicio de sesión con proveedores externos (OAuth/SSO).
   persistencia real via `store-factory.ts`.
 - **Persistencia real, multi-proveedor** (`packages/auth/src/stores/`):
   `D1UsersStore`/`D1SessionStore` (Cloudflare D1) y
-  `SqliteUsersStore`/`SqliteSessionStore` (self-hosted, `node:sqlite`).
+  `SqliteUsersStore`/`SqliteSessionStore` (self-hosted, `better-sqlite3`
+  via `openSqlite()` desde v0.0.9.27; `node:sqlite` quedo prohibido).
   `store-factory.ts` decide el backend segun variables de entorno, con
-  fallback a memoria y advertencia explicita. Desde v0.0.9.4 agrega
-  `createPasswordResetStore()` (siempre en memoria, ver nota arriba).
+  fallback a memoria y advertencia explicita. `createPasswordResetStore()`
+  tambien resuelve D1/SQLite reales desde v0.0.9.6 (ya no es "siempre en
+  memoria"). Desde v0.0.9.10 los dos `UsersStore` reales implementan la
+  superficie completa de la interfaz -- email, `setPasswordByUsername`,
+  TOTP (`setTotpSecret`/`clearTotpSecret`) y OAuth
+  (`findByOAuthSubject`/`linkOAuthAccount`/`createOAuthUser`); las
+  columnas nuevas de la tabla `users` se agregan solas con `ALTER TABLE`
+  en bases creadas antes de esa version. Antes de v0.0.9.10 esos metodos
+  existian solo en `InMemoryUsersStore`, asi que 2FA y login-OAuth en
+  produccion reventaban con `not a function`.
 - `src/pages/admin/login-mfa.astro` y `password-reset.astro` (v0.0.9.4,
   nuevos) — páginas del segundo paso de login y del flujo de
   recuperación de contraseña.

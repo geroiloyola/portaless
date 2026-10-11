@@ -4,14 +4,95 @@
 // paquete ESM, donde require no existe -- el constructor lanzaba SIEMPRE y
 // createUsersStore() caia a InMemoryUsersStore en silencio (admin perdido).
 //
+// v0.0.9.10: superficie completa de UsersStore. Antes faltaban
+// setTotpSecret/clearTotpSecret/findByOAuthSubject/linkOAuthAccount/
+// createOAuthUser (solo existian en InMemoryUsersStore), asi que habilitar
+// 2FA o login con OAuth en self-host reventaba con "not a function". Las
+// columnas nuevas (email, provider, totp_*, oauth_*) se agregan solas con
+// ALTER TABLE a bases viejas (mismo patron que site_identity_keys); en una
+// base nueva el CREATE TABLE ya las trae y el ALTER falla con "duplicate
+// column", que se ignora.
+//
 // Uso: const store = await SqliteUsersStore.open(path);
 // El constructor recibe una conexion ya abierta; pasarle un string lanza
 // un error explicito en vez de fallar de forma ambigua.
 
 import type { UserRecord, Role } from "../types";
 import type { UsersStore } from "../users-store";
+import { oauthFallbackPasswordHash } from "../users-store";
 import { hashPassword } from "../password";
 import { openSqlite } from "../../../sqlite-driver/src/open";
+
+const USERS_COLUMNS = [
+  "username",
+  "password_hash",
+  "role",
+  "created_at",
+  "email",
+  "provider",
+  "totp_secret",
+  "totp_enabled_at",
+  "oauth_provider",
+  "oauth_subject",
+] as const;
+
+const USERS_DDL = `
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    email TEXT,
+    provider TEXT,
+    totp_secret TEXT,
+    totp_enabled_at TEXT,
+    oauth_provider TEXT,
+    oauth_subject TEXT
+  );
+`;
+
+// Para bases creadas antes de v0.0.9.10 (solo 4 columnas). En una base
+// nueva el CREATE TABLE ya las trae y el ALTER falla con "duplicate
+// column", que se ignora.
+const USERS_ADD_COLUMNS_DDL = [
+  "ALTER TABLE users ADD COLUMN email TEXT",
+  "ALTER TABLE users ADD COLUMN provider TEXT",
+  "ALTER TABLE users ADD COLUMN totp_secret TEXT",
+  "ALTER TABLE users ADD COLUMN totp_enabled_at TEXT",
+  "ALTER TABLE users ADD COLUMN oauth_provider TEXT",
+  "ALTER TABLE users ADD COLUMN oauth_subject TEXT",
+];
+
+const USERS_OAUTH_INDEX_DDL =
+  "CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject)";
+
+type UsersRow = {
+  username: string;
+  password_hash: string;
+  role: Role;
+  created_at: string;
+  email: string | null;
+  provider: string | null;
+  totp_secret: string | null;
+  totp_enabled_at: string | null;
+  oauth_provider: string | null;
+  oauth_subject: string | null;
+};
+
+function rowToRecord(row: UsersRow): UserRecord {
+  return {
+    username: row.username,
+    passwordHash: row.password_hash,
+    role: row.role,
+    createdAt: row.created_at,
+    email: row.email ?? undefined,
+    provider: (row.provider as UserRecord["provider"]) ?? undefined,
+    totpSecret: row.totp_secret ?? undefined,
+    totpEnabledAt: row.totp_enabled_at ?? undefined,
+    oauthProvider: row.oauth_provider ?? undefined,
+    oauthSubject: row.oauth_subject ?? undefined,
+  };
+}
 
 export class SqliteUsersStore implements UsersStore {
   private db: any;
@@ -28,31 +109,32 @@ export class SqliteUsersStore implements UsersStore {
       );
     }
     this.db = db;
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        username TEXT PRIMARY KEY,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
-    `);
+    this.db.exec(USERS_DDL);
+    for (const alter of USERS_ADD_COLUMNS_DDL) {
+      try {
+        this.db.exec(alter);
+      } catch (err) {
+        if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
+      }
+    }
+    this.db.exec(USERS_OAUTH_INDEX_DDL);
   }
 
   async findByUsername(username: string): Promise<UserRecord | null> {
     const row = this.db
-      .prepare("SELECT username, password_hash, role, created_at FROM users WHERE username = ?")
-      .get(username) as { username: string; password_hash: string; role: Role; created_at: string } | undefined;
+      .prepare(`SELECT ${USERS_COLUMNS.join(", ")} FROM users WHERE username = ?`)
+      .get(username) as UsersRow | undefined;
 
     if (!row) return null;
-    return {
-      username: row.username,
-      passwordHash: row.password_hash,
-      role: row.role,
-      createdAt: row.created_at,
-    };
+    return rowToRecord(row);
   }
 
-  async createUser(username: string, plainPassword: string, role: Role): Promise<UserRecord> {
+  async createUser(
+    username: string,
+    plainPassword: string,
+    role: Role,
+    email?: string
+  ): Promise<UserRecord> {
     const existing = await this.findByUsername(username);
     if (existing) throw new Error(`El usuario "${username}" ya existe.`);
 
@@ -61,26 +143,25 @@ export class SqliteUsersStore implements UsersStore {
       passwordHash: hashPassword(plainPassword),
       role,
       createdAt: new Date().toISOString(),
+      email,
+      provider: "password",
     };
 
     this.db
-      .prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-      .run(record.username, record.passwordHash, record.role, record.createdAt);
+      .prepare(
+        "INSERT INTO users (username, password_hash, role, created_at, email, provider) VALUES (?, ?, ?, ?, ?, ?)"
+      )
+      .run(record.username, record.passwordHash, record.role, record.createdAt, email ?? null, "password");
 
     return record;
   }
 
   async listUsers(): Promise<UserRecord[]> {
     const rows = this.db
-      .prepare("SELECT username, password_hash, role, created_at FROM users")
-      .all() as Array<{ username: string; password_hash: string; role: Role; created_at: string }>;
+      .prepare(`SELECT ${USERS_COLUMNS.join(", ")} FROM users`)
+      .all() as UsersRow[];
 
-    return rows.map((row) => ({
-      username: row.username,
-      passwordHash: row.password_hash,
-      role: row.role,
-      createdAt: row.created_at,
-    }));
+    return rows.map(rowToRecord);
   }
 
   // Cambio de contrasena ( AuthService.changePassword ) y completar el
@@ -91,6 +172,77 @@ export class SqliteUsersStore implements UsersStore {
       .prepare("UPDATE users SET password_hash = ? WHERE username = ?")
       .run(hashPassword(plainPassword), username) as { changes: number };
     if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
+  }
+
+  async setTotpSecret(username: string, secret: string): Promise<void> {
+    const result = this.db
+      .prepare("UPDATE users SET totp_secret = ?, totp_enabled_at = ? WHERE username = ?")
+      .run(secret, new Date().toISOString(), username) as { changes: number };
+    if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
+  }
+
+  async clearTotpSecret(username: string): Promise<void> {
+    const result = this.db
+      .prepare("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL WHERE username = ?")
+      .run(username) as { changes: number };
+    if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
+  }
+
+  async findByOAuthSubject(provider: string, subject: string): Promise<UserRecord | null> {
+    const row = this.db
+      .prepare(
+        `SELECT ${USERS_COLUMNS.join(", ")} FROM users WHERE oauth_provider = ? AND oauth_subject = ?`
+      )
+      .get(provider, subject) as UsersRow | undefined;
+
+    if (!row) return null;
+    return rowToRecord(row);
+  }
+
+  async linkOAuthAccount(username: string, provider: string, subject: string): Promise<void> {
+    const result = this.db
+      .prepare("UPDATE users SET oauth_provider = ?, oauth_subject = ? WHERE username = ?")
+      .run(provider, subject, username) as { changes: number };
+    if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
+  }
+
+  async createOAuthUser(
+    username: string,
+    provider: string,
+    subject: string,
+    role: Role,
+    email?: string
+  ): Promise<UserRecord> {
+    const existing = await this.findByUsername(username);
+    if (existing) throw new Error(`El usuario "${username}" ya existe.`);
+
+    const record: UserRecord = {
+      username,
+      passwordHash: oauthFallbackPasswordHash(),
+      role,
+      createdAt: new Date().toISOString(),
+      email,
+      provider: "oauth",
+      oauthProvider: provider,
+      oauthSubject: subject,
+    };
+
+    this.db
+      .prepare(
+        "INSERT INTO users (username, password_hash, role, created_at, email, provider, oauth_provider, oauth_subject) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .run(
+        record.username,
+        record.passwordHash,
+        record.role,
+        record.createdAt,
+        email ?? null,
+        "oauth",
+        provider,
+        subject
+      );
+
+    return record;
   }
 
   close(): void {
