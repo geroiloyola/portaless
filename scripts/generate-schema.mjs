@@ -1,10 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 13 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 15 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 9 addendums de schema-additions/*.sql.
-// schema-additions/settlement-activations.sql queda FUERA a proposito (su
-// incorporacion al maestro y a REQUIRED_TABLES sigue pendiente en
-// ROADMAP.md) -- agregarla ahi y aca cuando ese trabajo se haga.
+//   atomic-elements, apw-resolver) + 10 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -43,6 +40,7 @@ const SOURCES = [
   { path: "schema-additions/webbotauth-nonces.sql", selfBanner: true },
   { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
   { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
+  { path: "schema-additions/settlement-activations.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
@@ -105,10 +103,10 @@ const HEADER = `-- =============================================================
 --
 -- NOTA v0.0.9.31 (estructura): las secciones sin schema.sql de paquete
 -- (password reset, plugins, site_trust_*, authorized_*, capability bridge,
--- deployment) viven ahora en schema-additions/*.sql como fuentes directas
--- del generador. schema-additions/settlement-activations.sql queda fuera a
--- proposito: su incorporacion al maestro y a REQUIRED_TABLES sigue pendiente
--- en ROADMAP.md.
+-- settlement activations, deployment) viven ahora en schema-additions/*.sql
+-- como fuentes directas del generador. settlement_provider_activations se
+-- incorporo al maestro y a REQUIRED_TABLES en v0.0.9.10 (antes solo la
+-- creaba su store al vuelo; ver ROADMAP.md).
 --
 -- NOTA Portaless Index (APW 5.7, seccion 7): witness_observations,
 -- witness_weights y witness_index_subjects -- agregador de testigos

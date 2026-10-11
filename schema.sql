@@ -56,10 +56,10 @@
 --
 -- NOTA v0.0.9.31 (estructura): las secciones sin schema.sql de paquete
 -- (password reset, plugins, site_trust_*, authorized_*, capability bridge,
--- deployment) viven ahora en schema-additions/*.sql como fuentes directas
--- del generador. schema-additions/settlement-activations.sql queda fuera a
--- proposito: su incorporacion al maestro y a REQUIRED_TABLES sigue pendiente
--- en ROADMAP.md.
+-- settlement activations, deployment) viven ahora en schema-additions/*.sql
+-- como fuentes directas del generador. settlement_provider_activations se
+-- incorporo al maestro y a REQUIRED_TABLES en v0.0.9.10 (antes solo la
+-- creaba su store al vuelo; ver ROADMAP.md).
 --
 -- NOTA Portaless Index (APW 5.7, seccion 7): witness_observations,
 -- witness_weights y witness_index_subjects -- agregador de testigos
@@ -589,4 +589,21 @@ CREATE TABLE IF NOT EXISTS deployment_providers_config (
   created_by TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
+);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.10 -- Activaciones de proveedores pay-per-crawl (PR H)
+-- -----------------------------------------------------------------------------
+-- credential_enc: credencial CIFRADA con AES-GCM (PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY).
+-- La tabla la crea el propio store con IF NOT EXISTS al primer uso
+-- (packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts),
+-- asi que las bases existentes la reciben al vuelo; desde v0.0.9.10 tambien
+-- vive en el schema maestro y en REQUIRED_TABLES para instalaciones limpias.
+
+CREATE TABLE IF NOT EXISTS settlement_provider_activations (
+  provider_id TEXT PRIMARY KEY,
+  credential_enc TEXT NOT NULL,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  verified_at TEXT NOT NULL,
+  activated_by TEXT NOT NULL
 );

@@ -7,9 +7,10 @@
 // descifra: solo lee si hay activacion; el token se usa al activar y al
 // re-verificar.
 //
-// La tabla se crea con IF NOT EXISTS al primer uso de cada store, para no
-// depender de regenerar schema.sql en este PR. Referencia:
-// schema-additions/settlement-activations.sql.
+// La tabla se crea con IF NOT EXISTS al primer uso de cada store: las bases
+// existentes la reciben al vuelo sin reaplicar schema.sql. Desde v0.0.9.10
+// tambien vive en el schema maestro y en REQUIRED_TABLES (instalaciones
+// limpias). Referencia: schema-additions/settlement-activations.sql.
 
 import { openSqlite } from "../../../../sqlite-driver/src/open";
 
