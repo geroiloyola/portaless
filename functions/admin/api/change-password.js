@@ -47,7 +47,7 @@ export async function onRequestPost(context) {
     currentPassword,
     newPassword,
     typeof totpCode === "string" ? totpCode : undefined,
-    passwordEventContextFromRequest(request)
+    passwordEventContextFromRequest(request, env)
   );
   return json(result, result.success ? 200 : 400);
 }

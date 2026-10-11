@@ -131,6 +131,21 @@ CREATE TABLE IF NOT EXISTS auth_rate_limits (
 
 CREATE INDEX IF NOT EXISTS idx_auth_rate_limits_window ON auth_rate_limits(window_start);
 
+-- Challenges de step-up por email (codigo OTP de un solo uso, SHA-256 del
+-- codigo, TTL 10 min, maximo 5 fallos). Base primitiva: los endpoints
+-- todavia no la usan. Ver packages/auth/src/email-stepup-store.ts. Los
+-- stores D1/SQLite tambien la crean al vuelo para bases anteriores.
+
+CREATE TABLE IF NOT EXISTS auth_email_stepup_codes (
+  token TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  failed_attempts INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_email_stepup_expires ON auth_email_stepup_codes(expires_at);
+
 -- -----------------------------------------------------------------------------
 -- @portaless/permissions -- Centro de Permisos
 -- -----------------------------------------------------------------------------

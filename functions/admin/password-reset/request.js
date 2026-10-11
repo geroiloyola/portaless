@@ -77,7 +77,7 @@ export async function onRequestPost(context) {
   }
 
   const rateLimits = await createRateLimitStore(env);
-  const allowed = await allowPasswordResetRequest(rateLimits, clientIpFromHeaders(request.headers), username);
+  const allowed = await allowPasswordResetRequest(rateLimits, clientIpFromHeaders(request.headers, env), username);
   if (!allowed) {
     return okResponse(undefined);
   }

@@ -53,7 +53,7 @@ export async function onRequestPost(context) {
   const passwordEventStore = await createPasswordEventStore(env);
   const authService = new AuthService(usersStore, sessionStore, passwordResetStore, passwordEventStore);
 
-  const result = await authService.completePasswordReset(token, newPassword, passwordEventContextFromRequest(request));
+  const result = await authService.completePasswordReset(token, newPassword, passwordEventContextFromRequest(request, env));
 
   return new Response(JSON.stringify(result), {
     status: result.success ? 200 : 400,

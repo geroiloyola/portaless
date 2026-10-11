@@ -12,6 +12,7 @@
 // una purga por antiguedad sobre occurred_at.
 
 import { openSqlite } from "../../sqlite-driver/src/open";
+import { clientIpFromHeaders } from "./password-reset-rate-limit";
 
 export type PasswordEventKind = "reset" | "change";
 
@@ -115,12 +116,19 @@ export class InMemoryPasswordEventStore implements PasswordEventStore {
 }
 
 /** Extrae IP, user agent y ubicacion aproximada (solo la que da Cloudflare) de un Request. */
-export function passwordEventContextFromRequest(request: Request): PasswordEventContext {
+export function passwordEventContextFromRequest(
+  request: Request,
+  env?: { __PORTALESS_RUNTIME?: string } | null
+): PasswordEventContext {
   const h = request.headers;
-  const forwarded = h.get("X-Forwarded-For")?.split(",")[0]?.trim() || null;
+  // Misma regla que el rate limit de password reset: en self-host Node la IP
+  // confiable es la que calculo el runtime (x-portaless-client-ip); leer
+  // X-Forwarded-For crudo dejaba que el usuario envenenara su propio
+  // historial de auditoria con una IP inventada.
+  const rawIp = clientIpFromHeaders(h, env);
   const cf = (request as unknown as { cf?: { country?: string; city?: string } }).cf;
   return {
-    ip: h.get("CF-Connecting-IP") || forwarded,
+    ip: rawIp === "unknown" ? null : rawIp,
     userAgent: h.get("User-Agent")?.slice(0, 256) ?? null,
     country: cf?.country ?? h.get("CF-IPCountry") ?? null,
     city: cf?.city ?? null,

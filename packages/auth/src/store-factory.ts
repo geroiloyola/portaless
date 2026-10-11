@@ -19,10 +19,12 @@ import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
 import type { PasswordResetStore } from "./password-reset-store";
 import type { MfaChallengeStore, RateLimitStore } from "./ephemeral-auth-store";
+import type { EmailStepUpStore } from "./email-stepup-store";
 import { InMemoryUsersStore } from "./users-store";
 import { InMemorySessionStore } from "./session-store";
 import { InMemoryPasswordResetStore } from "./password-reset-store";
 import { InMemoryRateLimitStore, sharedInMemoryMfaChallengeStore } from "./ephemeral-auth-store";
+import { InMemoryEmailStepUpStore } from "./email-stepup-store";
 
 export interface StoreFactoryEnv {
   DB?: unknown;
@@ -107,4 +109,20 @@ export async function createRateLimitStore(env: StoreFactoryEnv): Promise<RateLi
   }
 
   return fallbackRateLimitStore;
+}
+
+const sharedInMemoryEmailStepUpStore = new InMemoryEmailStepUpStore();
+
+export async function createEmailStepUpStore(env: StoreFactoryEnv): Promise<EmailStepUpStore> {
+  if (env.DB) {
+    const { D1EmailStepUpStore } = await import("./stores/d1-email-stepup-store");
+    return new D1EmailStepUpStore(env.DB as any);
+  }
+
+  if (env.PORTALESS_SQLITE_PATH) {
+    const { SqliteEmailStepUpStore } = await import("./stores/sqlite-email-stepup-store");
+    return SqliteEmailStepUpStore.open(env.PORTALESS_SQLITE_PATH);
+  }
+
+  return sharedInMemoryEmailStepUpStore;
 }

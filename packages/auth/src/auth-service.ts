@@ -19,8 +19,15 @@
 //   - verifyStepUp(): verificacion reforzada para acciones sensibles
 //     (rotar did:apw, cambiar contrasena). Exige la contrasena actual y,
 //     si el usuario tiene 2FA, ademas el codigo TOTP. Usuarios solo-OAuth
-//     (sin contrasena) necesitan 2FA activo para pasarla. Un codigo por
-//     email queda pendiente: no hay backend de email:send todavia.
+//     (sin contrasena) necesitan 2FA activo para pasarla.
+//   - Step-up por email (v0.0.9.10): requestEmailStepUpCode() genera un
+//     codigo OTP de un solo uso (8 digitos, TTL 10 min, maximo 5 fallos),
+//     lo hashea (nunca se guarda en claro) en un EmailStepUpStore y lo
+//     envia por un EmailSender (webhook transaccional del operador o
+//     captura en dev; ver email-sender.ts). verifyEmailStepUpCode()
+//     valida y consume el codigo. PRIMITIVA BASE: los endpoints todavia
+//     no la usan (siguen con contrasena + TOTP); cablearla en las
+//     acciones sensibles queda pendiente de revision en ROADMAP.md.
 //   - Cambiar o resetear la contrasena cierra TODAS las sesiones del
 //     usuario (incluida la actual): si alguien tenia una sesion robada,
 //     la pierde. Requiere SessionStore.destroyAllForUser(); si el backend
@@ -37,14 +44,18 @@
 // self-host un reinicio la borra). Si no se pasa, se usa un store en memoria
 // compartido por el proceso: mismo comportamiento que el Map de antes.
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { LoginResult, Role, OAuthProfile } from "./types";
 import type { UsersStore } from "./users-store";
 import type { SessionStore } from "./session-store";
 import type { PasswordResetStore } from "./password-reset-store";
 import type { PasswordEventContext, PasswordEventKind, PasswordEventStore } from "./password-event-store";
 import type { MfaChallengeStore } from "./ephemeral-auth-store";
+import type { EmailStepUpStore } from "./email-stepup-store";
+import type { EmailSender } from "./email-sender";
 import { sharedInMemoryMfaChallengeStore } from "./ephemeral-auth-store";
+import { EMAIL_STEPUP_MAX_ATTEMPTS, EMAIL_STEPUP_TTL_MS } from "./email-stepup-store";
+import { EmailBackendUnavailableError } from "./email-sender";
 import { verifyPassword } from "./password";
 import { verifyTotpCode, generateTotpSecret, buildTotpUri } from "./totp";
 
@@ -61,6 +72,37 @@ export interface StepUpCredentials {
 export type StepUpResult =
   | { ok: true }
   | { ok: false; reason: "user_not_found" | "password_required" | "invalid_password" | "totp_required" | "invalid_totp" | "no_step_up_factor" };
+
+export type EmailStepUpIssueResult =
+  | { sent: true; token: string; expiresAt: number }
+  | { sent: false; reason: "user_not_found" | "user_has_no_email" | "no_email_backend" | "email_send_failed" };
+
+export type EmailStepUpVerifyResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid_or_expired" | "invalid_code" | "max_attempts_exhausted" };
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function codeHashMatches(hash: string, code: string): boolean {
+  const expected = Buffer.from(hash, "hex");
+  const actual = createHash("sha256").update(code).digest();
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+// Codigo OTP de 8 digitos sin sesgo: rechazo sobre randomBytes(4)
+// (los valores >= 2^32 - (2^32 % 1e8) se descartan). No es un secreto de
+// larga vida: TTL 10 min + maximo 5 intentos.
+function randomEmailOtpCode(): string {
+  const LIMIT = 100_000_000;
+  const RANGE = 0x1_0000_0000; // 2^32
+  let value: number;
+  do {
+    value = randomBytes(4).readUInt32BE(0);
+  } while (value >= RANGE - (RANGE % LIMIT));
+  return String(value % LIMIT).padStart(8, "0");
+}
 
 export class AuthService {
   constructor(
@@ -167,6 +209,65 @@ export class AuthService {
       if (!creds.totpCode) return { ok: false, reason: "totp_required" };
       if (!verifyTotpCode(user.totpSecret as string, creds.totpCode)) return { ok: false, reason: "invalid_totp" };
     }
+    return { ok: true };
+  }
+
+  /** Step-up por email: emite un codigo OTP de un solo uso al email del usuario. Ver comentario del modulo. */
+  async requestEmailStepUpCode(
+    username: string,
+    store: EmailStepUpStore,
+    sender: EmailSender
+  ): Promise<EmailStepUpIssueResult> {
+    const user = await this.users.findByUsername(username);
+    if (!user) return { sent: false, reason: "user_not_found" };
+    if (!user.email) return { sent: false, reason: "user_has_no_email" };
+
+    const code = randomEmailOtpCode();
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = Date.now() + EMAIL_STEPUP_TTL_MS;
+    await store.create(token, { username, codeHash: sha256Hex(code), expiresAt });
+
+    try {
+      await sender.send({
+        to: user.email,
+        subject: "Portaless - codigo de verificacion",
+        text:
+          `Tu codigo de verificacion es: ${code}\n` +
+          `Vence en ${Math.round(EMAIL_STEPUP_TTL_MS / 60000)} minutos y solo puede usarse una vez. ` +
+          `Si no pediste este codigo, ignora este mensaje.`,
+      });
+    } catch (err) {
+      // El codigo nunca salio: no dejar un challenge huerfano que nadie
+      // podra usar, y reportar el motivo real (nunca un exito silencioso).
+      await store.delete(token);
+      if (err instanceof EmailBackendUnavailableError) return { sent: false, reason: "no_email_backend" };
+      return { sent: false, reason: "email_send_failed" };
+    }
+
+    return { sent: true, token, expiresAt };
+  }
+
+  /** Step-up por email: valida y consume el codigo enviado. Un solo uso, maximo EMAIL_STEPUP_MAX_ATTEMPTS fallos. */
+  async verifyEmailStepUpCode(
+    token: string,
+    code: string,
+    store: EmailStepUpStore,
+    now: number = Date.now()
+  ): Promise<EmailStepUpVerifyResult> {
+    const challenge = await store.get(token, now);
+    if (!challenge) return { ok: false, reason: "invalid_or_expired" };
+
+    if (!codeHashMatches(challenge.codeHash, code)) {
+      const failures = await store.recordFailure(token, now);
+      if (failures !== null && failures >= EMAIL_STEPUP_MAX_ATTEMPTS) {
+        await store.consume(token, now, EMAIL_STEPUP_MAX_ATTEMPTS); // quema el challenge
+        return { ok: false, reason: "max_attempts_exhausted" };
+      }
+      return { ok: false, reason: "invalid_code" };
+    }
+
+    const consumed = await store.consume(token, now, EMAIL_STEPUP_MAX_ATTEMPTS);
+    if (!consumed) return { ok: false, reason: "invalid_or_expired" };
     return { ok: true };
   }
 
