@@ -107,7 +107,7 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
 </main>
 <footer class="site-footer">
   <div class="container">
-    Hecho con <a href="https://github.com/" target="_blank">Portaless</a> — open source, licencia MIT.
+    Hecho con <a href="https://github.com/geroiloyola/portaless" target="_blank">Portaless</a> — open source, licencia AGPL-3.0.
     Sin hosting pagado. Sin base de datos que administrar.
   </div>
 </footer>
