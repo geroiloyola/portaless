@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 15 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 17 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 10 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 12 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -42,12 +42,13 @@ const SOURCES = [
   { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
   { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
   { path: "schema-additions/settlement-activations.sql", selfBanner: true },
+  { path: "schema-additions/atproto-links.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
 
 const HEADER = `-- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.31)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.32)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita su fuente (packages/*/schema.sql o
@@ -115,6 +116,11 @@ const HEADER = `-- =============================================================
 -- entrada de directorio cacheada que publica /.well-known/apw-index.json).
 -- DDL en packages/apw-resolver/schema.sql; los stores D1/SQLite las crean
 -- al vuelo en bases existentes.
+--
+-- NOTA v0.0.9.32: tabla nueva site_atproto_links -- vinculos opcionales
+-- APW <-> AT Protocol (handles que el sitio reclama en su did:apw via
+-- alsoKnownAs). Fuente schema-additions/atproto-links.sql; el store la
+-- crea al vuelo en bases existentes. Sin filas el did.json no cambia.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql

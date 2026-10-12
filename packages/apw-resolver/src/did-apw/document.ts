@@ -11,7 +11,17 @@
 
 import type { ApwDidDocument, ApwVerificationMethod } from "./types";
 
-export function buildDidDocument(did: string, publicKeyJwk: JsonWebKey): ApwDidDocument {
+export interface BuildDidDocumentOptions {
+  /**
+   * Puente opcional con AT Protocol: handles `at://<handle>` que el
+   * sitio reclama (tabla site_atproto_links). El campo es el mismo
+   * `alsoKnownAs` W3C que lee el ecosistema AT -- un documento sin
+   * vinculos sale EXACTAMENTE igual que antes (retrocompatible).
+   */
+  alsoKnownAs?: readonly string[];
+}
+
+export function buildDidDocument(did: string, publicKeyJwk: JsonWebKey, options: BuildDidDocumentOptions = {}): ApwDidDocument {
   const keyId = `${did}#key-1`;
 
   const verificationMethod: ApwVerificationMethod = {
@@ -21,11 +31,14 @@ export function buildDidDocument(did: string, publicKeyJwk: JsonWebKey): ApwDidD
     publicKeyJwk,
   };
 
+  const alsoKnownAs = options.alsoKnownAs?.filter((uri) => typeof uri === "string" && uri.length > 0) ?? [];
+
   return {
     "@context": ["https://www.w3.org/ns/did/v1"],
     id: did,
     verificationMethod: [verificationMethod],
     assertionMethod: [keyId],
+    ...(alsoKnownAs.length > 0 ? { alsoKnownAs: [...alsoKnownAs] } : {}),
   };
 }
 
@@ -52,6 +65,14 @@ export function parseApwDidDocument(value: unknown): ApwDidDocument | null {
     !firstMethod?.publicKeyJwk
   ) {
     return null;
+  }
+
+  // alsoKnownAs es opcional, pero si esta tiene que ser string[] puro
+  // (un shape corrupto invalida el documento entero, no solo el campo).
+  if (candidate.alsoKnownAs !== undefined) {
+    if (!Array.isArray(candidate.alsoKnownAs) || candidate.alsoKnownAs.some((entry) => typeof entry !== "string")) {
+      return null;
+    }
   }
 
   return candidate as unknown as ApwDidDocument;

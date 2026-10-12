@@ -12,13 +12,31 @@
 // packages/apw-resolver/src/index.ts): servir este archivo desde otro host
 // no suplanta la identidad, porque el DNS es la raiz de confianza.
 //
+// Puente opcional con AT Protocol (v0.0.9.32): si el sitio publica
+// vinculos en site_atproto_links (/admin/api/apw-atproto-links), el
+// documento incluye `alsoKnownAs: ["at://<handle>", ...]` -- el mismo
+// campo W3C que lee el ecosistema AT. Sin vinculos el documento sale
+// IDENTICO al de siempre. Si la tabla no se puede leer, se sirve el
+// documento sin el campo (nunca se rompe la identidad por el puente).
+//
 // Ruta publica: /.well-known/* ya pasa sin firma por isPublicBotRoute().
 
-import { createSiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createSiteAtprotoLinksStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document.ts";
 import { publicJwkMembers } from "../../packages/apw-resolver/src/did-apw/fingerprint.ts";
 
 const SITE_ID = "default";
+
+async function loadAlsoKnownAs(env) {
+  try {
+    const store = await createSiteAtprotoLinksStore(env);
+    const links = await store.list(SITE_ID);
+    return links.map((link) => `at://${link.handle}`);
+  } catch (err) {
+    console.warn(`[Portaless APW] Vinculos AT ilegibles, did.json sin alsoKnownAs: ${err?.message}`);
+    return [];
+  }
+}
 
 export async function onRequestGet(context) {
   const { env } = context;
@@ -42,7 +60,8 @@ export async function onRequestGet(context) {
     });
   }
 
-  const didDocument = buildDidDocument(identity.did, publicKeyJwk);
+  const alsoKnownAs = await loadAlsoKnownAs(env);
+  const didDocument = buildDidDocument(identity.did, publicKeyJwk, { alsoKnownAs });
   return new Response(JSON.stringify(didDocument), {
     status: 200,
     headers: {

@@ -31,6 +31,12 @@ import {
   InMemoryWitnessIndexStore,
   type WitnessIndexStore,
 } from "./witness-index-store";
+import {
+  D1SiteAtprotoLinksStore,
+  SqliteSiteAtprotoLinksStore,
+  InMemorySiteAtprotoLinksStore,
+  type SiteAtprotoLinksStore,
+} from "./atproto-links-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 export async function createSiteIdentityStore(env: Record<string, any>): Promise<SiteIdentityStore> {
@@ -88,4 +94,21 @@ export async function createReaderConductJtiStore(env: Record<string, any>): Pro
     return new SqliteReaderConductJtiStore(db);
   }
   return new InMemoryReaderConductJtiStore();
+}
+
+// Puente opcional APW <-> AT Protocol: handles que el sitio reclama en
+// su did:apw via alsoKnownAs (packages/identity-atproto/). Mismo patron
+// D1 -> SQLite -> InMemory; la tabla se crea al primer uso.
+export async function createSiteAtprotoLinksStore(env: Record<string, any>): Promise<SiteAtprotoLinksStore> {
+  if (env.DB) {
+    return new D1SiteAtprotoLinksStore(env.DB);
+  }
+  if (env.PORTALESS_SQLITE_PATH) {
+    const db = await openSqlite(env.PORTALESS_SQLITE_PATH);
+    return new SqliteSiteAtprotoLinksStore(db);
+  }
+  console.warn(
+    "[atproto-links-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemorySiteAtprotoLinksStore. Los vinculos AT no persistiran entre reinicios."
+  );
+  return new InMemorySiteAtprotoLinksStore();
 }

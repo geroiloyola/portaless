@@ -62,6 +62,16 @@ APW verification checklist state for the dashboard, including the structured `an
 
 Read/update the site's APW identity (key history, rotation state). Rotation is a step-up action; the private key of a retired key is deleted at rotation.
 
+### `GET|POST|DELETE /admin/api/apw-atproto-links`
+
+Manage the AT Protocol handles this site claims in its `did:apw` document (the optional APW ↔ AT bridge; see `docs/architecture/identity-atproto.md`).
+
+- Auth: admin session, role `admin` (server-side `canWrite`; no step-up).
+- `GET` → `{ links: [{ siteId, handle, addedAt }] }`.
+- `POST` body `{ handle }` → alta, validated with `resolvableHandle()` (official AT syntax **and** non-reserved TLD — a handle that can never resolve is not stored), normalized to lowercase, idempotent (repeating does not duplicate).
+- `DELETE` body `{ handle }` → `{ removed: boolean }`.
+- The stored links are published in `GET /.well-known/did.json` as `alsoKnownAs: ["at://<handle>"]`; with no links the document is unchanged. Public join of the result: `GET /trust/atproto/:handle`.
+
 ---
 
 ## SiteTrustScore management

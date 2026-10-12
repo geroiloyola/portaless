@@ -23,6 +23,11 @@ export interface ApwDidDocument {
   id: string; // "did:apw:tudominio.com"
   verificationMethod: ApwVerificationMethod[];
   assertionMethod: string[]; // referencias a verificationMethod[].id
+  /** Opcional (puente AT Protocol): handles `at://...` que el sitio
+   * reclama -- mismo campo W3C que lee el ecosistema AT en sus propios
+   * DID docs (ver packages/identity-atproto/). Solo se incluye si el
+   * sitio publica vinculos (tabla site_atproto_links). */
+  alsoKnownAs?: string[];
 }
 
 export interface ApwVerificationMethod {

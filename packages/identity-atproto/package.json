@@ -1,7 +1,10 @@
 {
   "name": "@portaless/identity-atproto",
-  "version": "0.0.0",
-  "description": "STUB -- Identidad y comunidad portable via AT Protocol. No implementado todavia. Ver docs/architecture/identity-atproto.md.",
+  "version": "0.0.1",
+  "description": "Identidad AT Protocol (handles did:plc/did:web, tambien known as, resolucion TXT+HTTPS) y puente opcional de reputacion con APW (did:apw). Ver docs/architecture/identity-atproto.md.",
   "private": true,
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {}
 }

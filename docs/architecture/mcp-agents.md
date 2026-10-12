@@ -80,7 +80,7 @@ El cliente stdio local (Claude Desktop, Cursor) no envía headers por invocació
 | Auditoría doble (local + ledger público) | Conectada vía `recordToolInvocation()` en las 7 tools. |
 | Auditoría local (`AuditLogStore`) con factory D1/SQLite propia | **Pendiente** — hoy solo `InMemoryAuditLogStore`, se resetea entre procesos. |
 | Identidad de agente por invocación (Opción B) | **Implementada para transporte HTTP**: bearer token verificado por invocación (`mcp_agent_tokens`, emitido/revocado desde `/admin/api/mcp-agents`). Sobre stdio se mantiene Opción A (identidad fija por proceso) — limitación del SDK, no de este repo. |
-| `identity-atproto` para DIDs de agentes | Stub, sin implementar — no bloquea las 7 tools ya activas. |
+| `identity-atproto` para DIDs de agentes | El paquete ya no es stub (v0.0.9.10: resolucion de handles AT + puente de reputacion APW), pero los DIDs de agentes MCP **no** se resuelven via AT: la identidad de agente sigue siendo token/entorno — no bloquea las 7 tools ya activas. |
 | `packages/mcp-server/src/permissions/` | Lógica real: guard central `requireCapability()`/`withCapability()`, resolvers de identidad (`agent-identity.ts`) y store de tokens de agentes (`agent-token-store.ts`, D1/SQLite/memoria). No existe lógica de cuota de tokens (nunca la hubo — la fila previa lo decía como "pendiente de verificación"). |
 
 ## Próximo paso recomendado

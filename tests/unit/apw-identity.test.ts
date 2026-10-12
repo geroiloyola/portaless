@@ -6,9 +6,22 @@ import { buildApwManifest, parseApwManifest, serializeApwManifest } from "../../
 import { resolveApwIdentity } from "../../packages/apw-resolver/src/index";
 import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
 
-const state = vi.hoisted(() => ({ identity: null as unknown }));
+const state = vi.hoisted(() => ({
+  identity: null as unknown,
+  links: [] as Array<{ siteId: string; handle: string; addedAt: string }>,
+}));
 vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identity }),
+  // Puente AT: did.json lista los vinculos como alsoKnownAs (opcional).
+  createSiteAtprotoLinksStore: async () => ({
+    list: async () => state.links,
+    add: async (_siteId: string, handle: string) => {
+      const link = { siteId: "default", handle, addedAt: new Date().toISOString() };
+      state.links.push(link);
+      return link;
+    },
+    remove: async () => false,
+  }),
 }));
 
 const RFC8037_X = "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo";
@@ -19,6 +32,7 @@ const RFC9421_THUMB = "poqkLGiymh_W0uP6PZFw-dvez3QJT5SolqXBCW38r0U";
 afterEach(() => {
   vi.restoreAllMocks();
   state.identity = null;
+  state.links = [];
 });
 
 describe("jwkThumbprint (RFC 7638)", () => {
@@ -124,5 +138,25 @@ describe("GET /.well-known/did.json", () => {
     const { onRequestGet } = await import("../../functions/.well-known/did.json.js");
     const res = await onRequestGet({ env: {} });
     expect(res.status).toBe(404);
+  });
+
+  it("incluye tambienKnownAs con los vinculos AT del sitio (puente opcional)", async () => {
+    state.identity = {
+      did: "did:apw:ejemplo.com",
+      domain: "ejemplo.com",
+      publicKeyJwk: { kty: "OKP", crv: "Ed25519", x: RFC8037_X, key_ops: ["verify"], ext: true, d: "NUNCA" },
+    };
+    state.links = [
+      { siteId: "default", handle: "username.wikipedia.org", addedAt: "2026-10-12T00:00:00.000Z" },
+      { siteId: "default", handle: "jay.bsky.social", addedAt: "2026-10-12T00:00:01.000Z" },
+    ];
+    const { onRequestGet } = await import("../../functions/.well-known/did.json.js");
+    const doc = JSON.parse(await (await onRequestGet({ env: {} })).text());
+    expect(doc.alsoKnownAs).toEqual(["at://username.wikipedia.org", "at://jay.bsky.social"]);
+
+    // sin vinculos el campo desaparece por completo (retrocompatible)
+    state.links = [];
+    const sinVinculos = JSON.parse(await (await onRequestGet({ env: {} })).text());
+    expect("alsoKnownAs" in sinVinculos).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Portaless -- Esquema de base de datos maestro (v0.0.9.31)
+-- Portaless -- Esquema de base de datos maestro (v0.0.9.32)
 -- =============================================================================
 -- GENERADO AUTOMATICAMENTE por scripts/generate-schema.mjs -- NO EDITAR A MANO.
 -- Para cambiar una tabla, edita su fuente (packages/*/schema.sql o
@@ -67,6 +67,11 @@
 -- entrada de directorio cacheada que publica /.well-known/apw-index.json).
 -- DDL en packages/apw-resolver/schema.sql; los stores D1/SQLite las crean
 -- al vuelo en bases existentes.
+--
+-- NOTA v0.0.9.32: tabla nueva site_atproto_links -- vinculos opcionales
+-- APW <-> AT Protocol (handles que el sitio reclama en su did:apw via
+-- alsoKnownAs). Fuente schema-additions/atproto-links.sql; el store la
+-- crea al vuelo en bases existentes. Sin filas el did.json no cambia.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
@@ -654,4 +659,22 @@ CREATE TABLE IF NOT EXISTS settlement_provider_activations (
   metadata_json TEXT NOT NULL DEFAULT '{}',
   verified_at TEXT NOT NULL,
   activated_by TEXT NOT NULL
+);
+
+-- -----------------------------------------------------------------------------
+-- v0.0.9.32 -- Vinculos opcionales APW <-> AT Protocol (alsoKnownAs)
+-- -----------------------------------------------------------------------------
+-- Handles AT que el sitio reclama en su propio documento did:apw
+-- (campo estandar W3C `alsoKnownAs`, el mismo que lee el ecosistema AT
+-- Protocol). Publicados en /.well-known/did.json.js; gestionados desde
+-- /admin/api/apw-atproto-links. Sin filas = sin campo = documento
+-- identico al de antes (el puente es 100% opcional). El lado de
+-- resolucion/join vive en packages/identity-atproto/. Ver
+-- docs/architecture/identity-atproto.md.
+
+CREATE TABLE IF NOT EXISTS site_atproto_links (
+  site_id TEXT NOT NULL,
+  handle TEXT NOT NULL,
+  added_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, handle)
 );

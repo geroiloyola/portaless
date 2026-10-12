@@ -38,7 +38,10 @@ mayor debilidad de la plataforma.
   de publicar. **Estado real: no implementado, ver
   `docs/architecture/mcp-agents.md`.**
 - **Capa de Identidad/Comunidad**: AT Protocol para comentarios y
-  reputación portables entre sitios. **Estado real: no implementado, ver
+  reputación portables entre sitios. **Estado real: el puente opcional
+  APW <-> AT esta implementado (resolucion de handles, join de
+  reputacion, `alsoKnownAs` en `did:apw`); los comentarios sobre un PDS
+  propio siguen sin implementar — ver
   `docs/architecture/identity-atproto.md`.**
 - **Capa de Comercio**: plugin sandboxeado que consume la Storefront API
   de Medusa/Mercur sin reimplementar checkout ni pagos. **Estado real:

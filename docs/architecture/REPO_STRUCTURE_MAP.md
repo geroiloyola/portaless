@@ -20,9 +20,12 @@ técnicas concretas.
   implementados** (mcp-server: 7 tools sobre stores reales, ver su fila en
   `AGENT.md`; apw-resolver: implementación de referencia completa de
   Protocol APW v1.3 — esta fila decía "stubs sin lógica", era falsa).
-- `packages/identity-atproto/`: sí sigue siendo un stub real (solo
-  `README.md` + `package.json`, sin `src/`) — ver
-  `docs/architecture/identity-atproto.md`.
+- `packages/identity-atproto/`: dejo de ser stub en v0.0.9.10 — ahora
+  tiene `src/` real (handle, resolve, link, reputation) con el puente
+  opcional APW <-> AT Protocol; ver
+  `docs/architecture/identity-atproto.md`. La vision del whitepaper
+  (PDS propio, Lexicons de comentarios, App View) sigue sin
+  implementar.
 - `plugins-registry/`, `examples/`, `infra/`, `.github/`, `tests/`: se
   agregaron en esta adenda siguiendo exactamente la estructura original.
 

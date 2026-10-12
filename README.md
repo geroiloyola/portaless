@@ -253,7 +253,7 @@ portaless/
 │   ├── mcp-server/         # Native MCP server (6 real tools connected)
 │   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, persistence)
 │   ├── commerce-plugin/    # Reference manifest for the commerce module
-│   └── identity-atproto/   # Stub — not implemented
+│   └── identity-atproto/   # AT Protocol identity + optional APW bridge
 ├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints, settlement, first-run setup)
 ├── server/                 # Self-hosted Node runtime and first-run service (runs functions/ with Pages-compatible bindings)
 ├── scripts/                # Setup (schema.sql + initial admin in one command), Docker entrypoint

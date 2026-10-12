@@ -151,3 +151,17 @@ A site's trust data — the endpoint every reader of reputation hits. Subject to
   - verified and thresholds met (or an explicit `trust:read-governance-bypass` grant) → all dimensions, `governed: "granted"`.
 - Dimension semantics and scoring: Annex A of the spec; vectors V-08 to V-11.
 - The full policy is **never** published (the manifest only announces `rg: true`); publishing it would tell an attacker exactly what to fabricate.
+
+## `GET /trust/atproto/:handle`
+
+The public join for an AT Protocol handle — identity per the official AT spec plus Portaless reputation when a site claims the handle (the optional APW ↔ AT bridge; design and honest limits in [`docs/architecture/identity-atproto.md`](../architecture/identity-atproto.md)).
+
+- **Auth**: none. `access-control-allow-origin: *`, `cache-control: public, max-age=300` on success (`max-age=60` on errors).
+- **Path**: `:handle` with or without the leading `@` (case-insensitive).
+- **200** body:
+  - `identity`: `{ did, didMethod: "plc"|"web", resolvedBy: "txt"|"https", claimedHandles, hasSigningKey, pds }`;
+  - `apw`: `null`, or `{ siteId, confidence: "also_known_as"|"self"|"subdomain", did, trust }` where `trust` is `null` or the site's **public-only** view (`{ siteId, counts, projection, trustUrl }` — local store when this deployment *is* the site, else `https://<siteId>/trust/<siteId>`);
+  - `user`: `null`, `{ status: "ok", subjectDid: "did:apw:<handle>", dimensions }` when `reader_conduct` history exists, or `{ status: "no_data", reason }` otherwise (honest absence, never an invented zero);
+  - `limitations`: always-present structural caveats (third-party resolution, suffix-only discovery, host-scoped R, best-effort remote trust).
+- **Errors**: `400 invalid_handle | reserved_tld` (syntax or reserved TLD — `.test`, `.onion`, ...), `404` when the handle or DID does not resolve (or the handle↔DID link does not close), `502` when the upstream resolver is down (`upstream_error`, `did_unreachable`, ...). The endpoint never answers `500`: join failures (remote trust unreadable, no conduct history) degrade inside the 200 instead.
+- **Caching**: the join is cached per handle for 5 min (success) / 1 min (failure) in process.
