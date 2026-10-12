@@ -72,6 +72,17 @@ Manage the AT Protocol handles this site claims in its `did:apw` document (the o
 - `DELETE` body `{ handle }` → `{ removed: boolean }`.
 - The stored links are published in `GET /.well-known/did.json` as `alsoKnownAs: ["at://<handle>"]`; with no links the document is unchanged. Public join of the result: `GET /trust/atproto/:handle`.
 
+### `GET|POST|DELETE /admin/api/cloud-images`
+
+Manage this site's **Cloud Images** — every upload is signed server-side with the site's active key (the "C2PA without a central authority" base; design and limits in [`docs/architecture/cloud-images.md`](../architecture/cloud-images.md)).
+
+- Auth: admin session, role `admin` (server-side `canWrite`; no step-up). `GET` only requires a session.
+- `POST` body `{ imageBase64, declaredOrigin }` → `201 { ok, deduplicated: false, image }`: the server hashes the bytes (`sha256`, sidecar-free), captures the contemporaneous **public** SiteTrustScore, builds the Cloud Image v1 payload, signs it with the active `did:apw` key (`typ: apw-image+jws`), embeds the sidecar in a private `pAPW` PNG chunk and stores bytes + metadata. `declaredOrigin` is **mandatory** (`human` | `ai` | `mixed`) — the declaration is inside the signed payload. PNG only, ≤ 4 MiB.
+- Repeating the **same bytes** → `200 { ok: true, deduplicated: true, image }` (unique `content_hash`; the existing record wins, `declaredOrigin` is not re-declared).
+- `GET` → `{ images: [record…] }` (metadata + sidecar, no bytes).
+- `DELETE` body `{ imageId }` → `{ removed: boolean }`.
+- Errors: `400 invalid_json_body | invalid_declared_origin | invalid_image | image_too_large | unsupported_content_type`, `404 site_identity_not_found` (no active identity to sign with). Follow-up public surfaces: `GET /images/:imageId` (bytes), `GET /trust/images/:imageId` (local verification), `POST /trust/images/verify` (standalone).
+
 ---
 
 ## SiteTrustScore management

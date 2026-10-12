@@ -165,3 +165,37 @@ The public join for an AT Protocol handle — identity per the official AT spec 
   - `limitations`: always-present structural caveats (third-party resolution, suffix-only discovery, host-scoped R, best-effort remote trust).
 - **Errors**: `400 invalid_handle | reserved_tld` (syntax or reserved TLD — `.test`, `.onion`, ...), `404` when the handle or DID does not resolve (or the handle↔DID link does not close), `502` when the upstream resolver is down (`upstream_error`, `did_unreachable`, ...). The endpoint never answers `500`: join failures (remote trust unreadable, no conduct history) degrade inside the 200 instead.
 - **Caching**: the join is cached per handle for 5 min (success) / 1 min (failure) in process.
+
+## `POST /trust/images/verify`
+
+Standalone verification of a **Cloud Image** sidecar against the APW registry — "C2PA without a central authority": anyone with the sidecar (and optionally the image) verifies it without asking anyone's permission (design and honest limits in [`docs/architecture/cloud-images.md`](../architecture/cloud-images.md)).
+
+- **Auth**: none. `access-control-allow-origin: *`, `cache-control: no-store`.
+- **Body**: `{ sidecar: { payload, jws }, imageBase64?: string }` — the Cloud Image v1 sidecar (as embedded in the PNG's private `pAPW` chunk, or shipped as a separate `.json`).
+- **200** body (the verification **never throws**; failures come back as structured data):
+  - `valid`: final verdict;
+  - `reason`: root cause when invalid (`invalid_sidecar`, `header_invalid`, `kid_did_mismatch`, `site_keys_unresolvable`, `key_not_found`, `bad_signature`, `payload_mismatch`, `invalid_typ`, `content_hash_mismatch`);
+  - `signature`: `{ valid, reason? }`, `contentHash`: `{ status: "match" | "mismatch" | "not_checked" }` (checked only when `imageBase64` is sent; the hash is over the sidecar-free bytes — an image with the `pAPW` chunk already embedded is accepted, the chunk is stripped before hashing);
+  - `keySource`: `"history"` (chained APW registry, retired keys included — images signed months ago stay verifiable across key rotations), `"did.json"` (site without a verified history yet), or `"none"`;
+  - `payload`: the canonical payload when valid.
+- **Errors**: `400 invalid_json_body | invalid_sidecar` only — everything else is a 200 with `valid: false`.
+
+## `GET /images/:imageId`
+
+Public bytes of a registered Cloud Image, with the signed sidecar already embedded in the private `pAPW` PNG chunk — the image travels with its own metadata.
+
+- **Auth**: none. `content-type: image/png`, CORS `*`.
+- **Caching**: `cache-control: public, max-age=31536000, immutable` with `ETag = "<contentHash>"` (a registered image never changes; a new version is a new `imageId`). `304` on `If-None-Match`.
+- **404** `image_not_found` for unknown ids.
+
+## `GET /trust/images/:imageId`
+
+Local verification of a registered image against **this site's own key registry** (for registry-independent verification of an arbitrary sidecar use `POST /trust/images/verify` above).
+
+- **Auth**: none. `cache-control: public, max-age=60`, CORS `*`.
+- **200** body: `image` (metadata incl. `trust` and the full `sidecar`) + `verification`:
+  - `signature`: Ed25519 against `site_identity` `listKeys` — retired keys included, so the record stays valid across key rotations;
+  - `embedded`: `{ status: "match" | "mismatch" | "missing" }` — the `pAPW` chunk extracted from the served bytes vs the stored sidecar;
+  - `contentHash`: `sha256(stripPng(bytes))` vs the registered hash;
+  - `valid`: all three checks pass; `keySource: "local_store"`.
+- **404** `image_not_found` for unknown ids.

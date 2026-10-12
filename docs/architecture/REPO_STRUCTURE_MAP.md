@@ -26,6 +26,11 @@ técnicas concretas.
   `docs/architecture/identity-atproto.md`. La vision del whitepaper
   (PDS propio, Lexicons de comentarios, App View) sigue sin
   implementar.
+- `packages/cloud-images/`: nuevo en v0.0.9.10 — base criptografica de
+  Cloud Images (payload v1 + sidecar JWS Ed25519, embedding `pAPW` en
+  PNG, store `cloud_images`, verificacion local y standalone contra el
+  registro APW); ver `docs/architecture/cloud-images.md`. Quedan
+  externos R2, moderacion de `declaredOrigin`, EXIF y UI.
 - `plugins-registry/`, `examples/`, `infra/`, `.github/`, `tests/`: se
   agregaron en esta adenda siguiendo exactamente la estructura original.
 

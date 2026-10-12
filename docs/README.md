@@ -40,7 +40,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status table — some predate the module implementations.
 
 - `REPO_STRUCTURE_MAP.md` (ES) — why the real repo structure differs from the original proposal (stub claims corrected).
-- `site-trust-score.md`, `authentication.md`, `licensing-boundaries.md`, `content-layer.md`, `persistence.md`, `deployment-engine.md`, `identity-atproto.md`, `mcp-agents.md`, `commerce-plugin.md`, `creator-sites-agentic-workflow.md`, `server-side-role-checks.md`, `seo-geo.md` (ES) — per-area design docs.
+- `site-trust-score.md`, `authentication.md`, `licensing-boundaries.md`, `content-layer.md`, `persistence.md`, `deployment-engine.md`, `identity-atproto.md`, `cloud-images.md`, `mcp-agents.md`, `commerce-plugin.md`, `creator-sites-agentic-workflow.md`, `server-side-role-checks.md`, `seo-geo.md` (ES) — per-area design docs.
 
 ## Operations and history
 

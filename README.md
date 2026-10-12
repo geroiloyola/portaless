@@ -100,7 +100,9 @@ This project explicitly documents what's implemented versus what's a pending ske
 | Web Bot Auth cryptographic verification | ✅ Validates Ed25519 signatures (RFC 9421) with key-directory caching and nonce-uniqueness checks. Both verifiers share draft-03 header rules (quoted `Signature-Agent`, signed `signature-agent`, `tag="web-bot-auth"`), with an end-to-end test and an interoperability test against the official `web-bot-auth` library. Since v0.0.9.31 nonces are stored in D1/SQLite (`webbotauth_nonces`, TTL 300 s) when a backend is configured, so replay protection is shared across instances (in-memory fallback for single-process dev). ML-DSA-44/65/87 is supported in both the middleware verifier and the `SiteTrustScore` verifier (shared implementation, `@noble/post-quantum`, still awaiting an independent audit) |
 | Installation / setup | ✅ Single command (`npm run setup`) for self-hosted SQLite, or first run from `/setup` with a one-time code in the Node runtime — Cloudflare D1 still uses `wrangler d1 execute` (or `npm run setup:d1`) separately |
 | Self-hosting (Node runtime, Docker, Railway, Render) | 🟡 Node runtime with Pages-compatible routing, middleware and `env.ASSETS`; Docker image built and exercised in CI (`docker-smoke`). Pending: real deployments on Railway and Render (checklist in `docs/self-hosting-verification.md`) |
-| Native AT Protocol identity, Portaless Cloud Images, Portaless Index | ❌ Design/spec stage only, or not started |
+| Native AT Protocol identity | ✅ Optional symbiotic bridge with APW since v0.0.9.10: spec handle<->DID resolution, the three link confidences, `buildAtprotoReputation()` behind public `GET /trust/atproto/:handle`, and admin-managed `alsoKnownAs` links in `/.well-known/did.json`. Limitation: resolution depends on third parties (DNS, plc.directory); the whitepaper's own PDS/Lexicons vision remains unimplemented — `docs/architecture/identity-atproto.md` |
+| Portaless Cloud Images (APW-signed image hosting) | 🟡 Cryptographic base implemented in v0.0.9.10: Cloud Image v1 payload + server-side Ed25519 sidecar (`typ: apw-image+jws`), PNG `pAPW` chunk embedding, upload with automatic signing, immutable serve, local verification and standalone verification against the APW registry (C2PA without a central authority). Pending: R2 storage for large images, moderation of declared origin, sidecar transport for non-PNG formats, management UI — `docs/architecture/cloud-images.md` |
+| Portaless Index | ❌ Design/spec stage only |
 
 ---
 
@@ -253,7 +255,8 @@ portaless/
 │   ├── mcp-server/         # Native MCP server (6 real tools connected)
 │   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, persistence)
 │   ├── commerce-plugin/    # Reference manifest for the commerce module
-│   └── identity-atproto/   # AT Protocol identity + optional APW bridge
+│   ├── identity-atproto/   # AT Protocol identity + optional APW bridge
+│   └── cloud-images/       # Cloud Images: APW-signed image sidecars (C2PA without a central authority)
 ├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints, settlement, first-run setup)
 ├── server/                 # Self-hosted Node runtime and first-run service (runs functions/ with Pages-compatible bindings)
 ├── scripts/                # Setup (schema.sql + initial admin in one command), Docker entrypoint
@@ -331,7 +334,7 @@ Portaless (the core: CMS, dashboard, authentication, Trust Layer, Permissions Ce
 
 History is deliberately kept elsewhere, so the roadmap stays readable: [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) preserves the full log (PRs #1–#75, refactor registers, closed entries with their session context) and [`CHANGELOG.md`](./CHANGELOG.md) records what shipped per version.
 
-The largest items still in design/spec work: **Portaless Index** (federated discovery between independent sites, built on top of Protocol APW) and **Portaless Cloud Images**, a native APW-integrated image hosting layer where every published image carries a cryptographic signature, an existence timestamp, and the publisher's site identity as verifiable metadata.
+The largest item still in design/spec work is **Portaless Index** (federated discovery between independent sites, built on top of Protocol APW). **Portaless Cloud Images** had its cryptographic base implemented in v0.0.9.10 (signed sidecars, PNG embedding, upload/serve/verification endpoints — `docs/architecture/cloud-images.md`); what remains external is large-image storage (R2) and moderation.
 
 ---
 

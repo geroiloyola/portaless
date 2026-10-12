@@ -1,0 +1,10 @@
+{
+  "name": "@portaless/cloud-images",
+  "version": "0.0.1",
+  "description": "Cloud Images + APW como SSOT criptografico: metadata de imagen firmada con la clave del sitio (JWS Ed25519), timestamp de existencia, SiteTrustScore contemporanea y declaredOrigin. Ver docs/architecture/cloud-images.md.",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {}
+}
