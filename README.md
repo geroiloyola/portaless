@@ -6,9 +6,10 @@
 
 A lightweight, open source, modular CMS — built to be published without paid hosting, without plugins that break your site, and with real control over which AI agents can access your content.
 
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
-[![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-orange.svg)](./ROADMAP.md)
-[![Astro](https://img.shields.io/badge/built%20with-Astro-ff5a03.svg)](https://astro.build)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-5A6B24?style=flat&labelColor=261C15)](./LICENSE)
+[![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-F05D23?style=flat&labelColor=261C15)](./ROADMAP.md)
+[![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
+[![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](./docs/protocol-apw/APW-SPEC-v1.3.md)
 
 [Roadmap](./ROADMAP.md) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
@@ -32,8 +33,27 @@ Portaless is a CMS built on [Astro](https://astro.build) that solves, by archite
 
 ---
 
+## See Portaless in action
+
+Real screenshots of the running product — captured from the live app, not mockups. Regenerate them anytime with `npm run build && node node_modules/tsx/dist/cli.mjs scripts/capture-screenshots.mjs` (output in [`docs/screenshots/`](./docs/screenshots)).
+
+| The public site: a link-in-bio page built by dragging Atomic Elements | The visual editor: palette, live canvas, properties |
+|---|---|
+| [![Link-in-bio page built with Atomic Elements](docs/screenshots/public-link-in-bio.png)](docs/screenshots/public-link-in-bio.png) | [![Visual editor with the page loaded](docs/screenshots/editor-atomic-elements.png)](docs/screenshots/editor-atomic-elements.png) |
+
+| The admin dashboard | SiteTrustScore — public, per site, 4 sources |
+|---|---|
+| [![Admin dashboard with the APW identity panel](docs/screenshots/admin-dashboard.png)](docs/screenshots/admin-dashboard.png) | [![SiteTrustScore page for the site](docs/screenshots/trust-score.png)](docs/screenshots/trust-score.png) |
+
+**The whole edit → publish cycle in one take**: drag an element into the canvas, click *Publicar*, open the public URL — no terminal, no rebuild (self-host / Cloudflare Pages):
+
+![Dragging a button in the editor, publishing, and seeing it on the public page](docs/screenshots/editor-publish.gif)
+
+---
+
 ## Table of contents
 
+- [See Portaless in action](#see-portaless-in-action)
 - [Features](#features)
 - [Recent updates](#recent-updates)
 - [Real status by module](#real-status-by-module)
@@ -275,7 +295,7 @@ See [`docs/architecture/REPO_STRUCTURE_MAP.md`](./docs/architecture/REPO_STRUCTU
 
 ### GitHub Pages (free)
 
-Full guide: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md). The workflow in `.github/workflows/ci.yml` builds the site automatically on every push to `main`.
+Full guide: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md). Pushes to `main` build the site in CI (`.github/workflows/ci.yml`) and, when the repo has **Settings → Pages → Source: GitHub Actions** enabled, `.github/workflows/deploy-pages.yml` also publishes the static demo to `https://<owner>.github.io/portaless/`. GitHub Pages runs no `functions/`, so the demo shows the public site only (home, blog, example pages); admin, login, and dynamic `/trust/:siteId` need Cloudflare Pages or self-hosting.
 
 ### Cloudflare Pages (free, recommended if using Trust Layer or D1 authentication)
 

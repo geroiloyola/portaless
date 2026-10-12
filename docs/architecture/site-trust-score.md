@@ -124,9 +124,11 @@ Un humano decide a quién autorizar: no hay flujo de autoservicio.
 
 ## UI conectada y navegación
 
-`src/pages/trust/[siteId].astro` (pública) y `src/pages/admin/
-site-trust/[siteId]/self.astro` (sesión + rol admin) cubren `self` y
-`community`. Las páginas de allowlists cubren quién puede reportar
+`src/pages/trust/index.astro` (pública; un único shell servido por la
+Function `GET /trust/:siteId` para cualquier `siteId` vía content
+negotiation — el `siteId` se lee del `pathname` en el navegador) y
+`src/pages/admin/site-trust/[siteId]/self.astro` (sesión + rol admin)
+cubren `self` y `community`. Las páginas de allowlists cubren quién puede reportar
 `agent` y `escrow_report`. Todas se enlazan desde `src/pages/admin/index.astro`.
 
 ## Rate-limiting del voto community

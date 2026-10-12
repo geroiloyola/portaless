@@ -365,11 +365,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
     background: #14161b;
+    /* Chrome oscuro deliberado (es el panel de identidad, no el sitio
+       publicado): sin este color propio heredaba la tinta del tema
+       claro (--text #261C15 desde Phase 0) y el texto quedaba oscuro
+       sobre oscuro. */
+    color: #e7e9ee;
   }
   .ai-apw-checklist-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .ai-apw-checklist-text { flex: 1; min-width: 220px; }
   .ai-apw-checklist-title { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
-  .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.5; }
+  .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: #9aa1b2; line-height: 1.5; }
   .ai-apw-checklist-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
   .ai-apw-badge {
     padding: 4px 10px;
@@ -399,7 +404,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-apw-txt { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
   .ai-apw-txt-intro { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.5; }
   .ai-apw-txt-field { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-  .ai-apw-txt-label { width: 130px; flex-shrink: 0; font-size: 0.78rem; color: var(--portaless-muted); }
+  .ai-apw-txt-label { width: 130px; flex-shrink: 0; font-size: 0.78rem; color: #9aa1b2; }
   .ai-apw-txt-code {
     flex: 1;
     min-width: 0;
@@ -412,9 +417,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
   .ai-apw-txt-value { user-select: all; }
   .ai-apw-copy-btn {
-    border: 1px solid var(--portaless-border);
+    border: 1px solid #3a3f4b;
     background: transparent;
-    color: var(--portaless-fg);
+    color: #cfd3dd;
     border-radius: 6px;
     padding: 5px 10px;
     font-size: 0.78rem;
@@ -422,7 +427,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     white-space: nowrap;
   }
   .ai-apw-copy-btn:hover { border-color: var(--portaless-accent); color: var(--portaless-accent); }
-  .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.5; }
+  .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: #9aa1b2; line-height: 1.5; }
   .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: #f5a623; }
   #ai-apw-txt-stale { margin: 0 0 10px; }
 

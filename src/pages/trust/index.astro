@@ -8,29 +8,20 @@
 // FIX (import): a 2 niveles de profundidad desde src/ (pages/trust/) --
 // el import de BaseLayout sube ../../ , no ../../../.
 //
-// FIX (build sin adaptador): el proyecto usa output: "static" SIN ningun
-// adaptador de servidor instalado (@astrojs/cloudflare, etc.) -- confirmado
-// por el error NoAdapterInstalled tras intentar prerender = false. Ese
-// fix requeria un adaptador que el repo no tiene configurado, y agregarlo
-// es un cambio de infraestructura mas grande que esta pagina puntual.
-//
-// En vez de eso: getStaticPaths() devuelve un array vacio a proposito.
-// Esto compila una plantilla "cascaron" sin generar ninguna pagina en
-// build-time (cero rutas conocidas) -- coherente con que no existe (ni
-// deberia existir) un registro de "sitios conocidos". El siteId real NO
-// se lee de Astro.params (eso solo funciona para rutas generadas en
-// build-time) -- se lee del lado del cliente via window.location.pathname,
-// ya que toda esta pagina de todos modos depende de fetch() al navegador
-// para el contenido real (GET /trust/:siteId). Cloudflare Pages sirve
-// site estatico + esta plantilla + Pages Functions resuelve /trust/:siteId
-// como ruta dinamica real del lado del servidor (functions/trust/[siteId].js),
-// asi que el usuario que visita /trust/cualquier-dominio.com de todos
-// modos golpea la Function, no un 404 -- lo unico que hace este archivo
-// .astro es servir el HTML/JS que arma la UI en el navegador.
-export function getStaticPaths() {
-  return [];
-}
-
+// FIX (Phase 1, build sin adaptador): el proyecto usa output: "static"
+// SIN adaptador de servidor, y getStaticPaths() devolvia [] -- cero
+// paginas generadas. La pagina nunca llegaba al navegador: en self-host
+// y Cloudflare Pages la Function /trust/:siteId (JSON para agentes)
+// ganaba al estatico y un humano veia JSON crudo; el shell que "sirve
+// este archivo" no existia en dist/. El arreglo: un UNICO shell
+// estatico en /trust/ (dist/trust/index.html, este archivo, sin
+// getStaticPaths) que la Function sirve para cualquier :siteId cuando
+// el navegador pide text/html (content negotiation en
+// functions/trust/[siteId].js via env.ASSETS). El siteId real NO se lee
+// de Astro.params -- se lee del lado del cliente via
+// window.location.pathname (la URL del navegador sigue siendo
+// /trust/<siteId>), y todo el contenido viene del fetch() a
+// GET /trust/:siteId.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Site Trust Score">
@@ -53,12 +44,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
-  // siteId se lee de la URL real en el navegador -- esta pagina no tiene
-  // ningun siteId conocido en build-time (getStaticPaths() esta vacio a
-  // proposito, ver comentario arriba). La ruta real es /trust/:siteId,
-  // asi que el segmento despues de "/trust/" es el siteId.
+  // siteId se lee de la URL real en el navegador: la Function sirve este
+  // shell para /trust/<siteId> (Accept text/html), asi que el ultimo
+  // segmento del pathname es el siteId. Si alguien abre /trust/ a
+  // secas no hay siteId -- se muestra el estado de error en vez de
+  // pedir GET /trust/ (que devolveria este mismo HTML).
   const pathParts = window.location.pathname.split("/").filter(Boolean);
-  const siteId = decodeURIComponent(pathParts[pathParts.length - 1] ?? "");
+  const lastSegment = decodeURIComponent(pathParts[pathParts.length - 1] ?? "");
+  const siteId = lastSegment && lastSegment !== "trust" ? lastSegment : "";
 
   document.getElementById("st-site-id").textContent = siteId;
   document.title = `Site Trust Score — ${siteId}`;
@@ -452,7 +445,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   init();
 </script>
 
-<style>
+<!-- is:global: el contenido real de la pagina lo crean funciones JS
+     (document.createElement) con clases st-*; el <style> scoped de Astro
+     solo matchea elementos estaticos con el atributo de scope, asi que
+     las filas "Sin declarar" salian sin estilo (texto pegado, sin
+     badges). La pagina nunca fue visible antes de Phase 1 (ver comentario
+     del frontmatter), por eso el bug nunca se vio. -->
+<style is:global>
   .st-page-header { margin-bottom: 24px; }
   .st-page-title { margin: 0 0 4px; font-size: 1.4rem; }
   .st-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
@@ -460,40 +459,43 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .st-loading, .st-load-error { padding: 24px 0; color: var(--portaless-muted); font-size: 0.9rem; }
   .st-load-error { color: #ff8f8f; }
 
-  .st-source-section { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; background: #14161b; }
+  /* Panel oscuro deliberado (secciones de fuentes, como el banner de
+     identidad del admin): sin color propio heredaba la tinta del tema
+     claro y el texto quedaba oscuro sobre oscuro. */
+  .st-source-section { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; background: #14161b; color: #e7e9ee; }
   .st-source-title { margin: 0 0 6px; font-size: 1.02rem; }
-  .st-source-note { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
-  .st-empty { font-size: 0.85rem; color: var(--portaless-muted); font-style: italic; }
+  .st-source-note { margin: 0 0 14px; font-size: 0.8rem; color: #9aa1b2; line-height: 1.5; }
+  .st-empty { font-size: 0.85rem; color: #9aa1b2; font-style: italic; }
 
   .st-self-grid { display: flex; flex-direction: column; gap: 2px; }
   .st-self-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--portaless-border); flex-wrap: wrap; }
   .st-self-row:last-child { border-bottom: none; }
   .st-self-label { flex: 1; font-size: 0.88rem; min-width: 200px; }
-  .st-history-note { font-size: 0.75rem; color: var(--portaless-muted); }
+  .st-history-note { font-size: 0.75rem; color: #9aa1b2; }
   .st-evidence-link { font-size: 0.78rem; color: var(--portaless-accent); }
 
   .st-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
   .st-badge-good { background: #2e9e4422; color: #6ee7b7; }
   .st-badge-warn { background: #f2994a22; color: #ffb86b; }
   .st-badge-bad { background: #e5484d22; color: #ff8f8f; }
-  .st-badge-neutral { background: #3a3f4722; color: var(--portaless-muted); }
+  .st-badge-neutral { background: #3a3f4722; color: #9aa1b2; }
 
   .st-escrow-list { display: flex; flex-direction: column; gap: 8px; }
   .st-escrow-row { display: flex; align-items: center; gap: 12px; }
-  .st-escrow-meta { font-size: 0.78rem; color: var(--portaless-muted); }
+  .st-escrow-meta { font-size: 0.78rem; color: #9aa1b2; }
   .st-outcome-good { background: #2e9e4422; color: #6ee7b7; }
   .st-outcome-warn { background: #f2994a22; color: #ffb86b; }
   .st-outcome-bad { background: #e5484d22; color: #ff8f8f; }
 
   .st-vote-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--portaless-border); display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
   .st-vote-form-title { margin: 0; font-size: 0.92rem; }
-  .st-vote-select, .st-vote-comment { border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: var(--portaless-fg); font-size: 0.85rem; padding: 8px; font-family: inherit; }
+  .st-vote-select, .st-vote-comment { border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: #e7e9ee; font-size: 0.85rem; padding: 8px; font-family: inherit; }
   .st-vote-stars-row { display: flex; gap: 4px; }
   .st-vote-star { background: none; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 2px; color: var(--portaless-border); }
   .st-vote-star.st-vote-star-filled { color: #f2c94c; }
   .st-vote-submit { align-self: flex-start; border: 1px solid var(--portaless-accent); background: transparent; color: var(--portaless-accent); border-radius: 6px; padding: 6px 16px; font-size: 0.85rem; cursor: pointer; }
   .st-vote-submit:hover:not(:disabled) { background: var(--portaless-accent); color: #0f1114; }
   .st-vote-submit:disabled { cursor: wait; opacity: 0.6; }
-  .st-vote-feedback { font-size: 0.78rem; color: var(--portaless-muted); min-height: 1em; }
+  .st-vote-feedback { font-size: 0.78rem; color: #9aa1b2; min-height: 1em; }
   .st-vote-feedback.st-status-error { color: #ff8f8f; }
 </style>

@@ -1,0 +1,67 @@
+# Despliega el SITIO ESTATICO de ejemplo a GitHub Pages en cada push a
+# main (Phase 1 del ROADMAP: una instancia publica navegable sin
+# instalar nada). Solo se publica el build Astro de dist/ -- sin
+# functions/ (GitHub Pages no ejecuta Functions), asi que el demo
+# muestra el sitio publico (home, blog, /paginas/<slug> de
+# src/content) y NO el dashboard ni /trust/:siteId dinamico; esos viven
+# en self-host y Cloudflare Pages, documentado en README > Deployment.
+#
+# Requiere una configuracion unica del repo (Settings > Pages >
+# Source: "GitHub Actions"). La URL resultante es
+# https://geroiloyola.github.io/portaless/ (PORTALESS_BASE_PATH).
+
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    # Solo cuando cambia contenido que afecta al sitio publicado -- los
+    # cambios puros de functions/ o tests no justifican un redeploy.
+    paths:
+      - "src/**"
+      - "packages/**"
+      - "public/**"
+      - "astro.config.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Build del sitio estatico
+        run: node node_modules/astro/bin/astro.mjs build
+        env:
+          PORTALESS_SITE_URL: https://geroiloyola.github.io
+          PORTALESS_BASE_PATH: /portaless/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

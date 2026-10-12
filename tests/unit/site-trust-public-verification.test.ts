@@ -51,3 +51,88 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(await res.json()).toEqual({ error: "missing_site_id" });
   });
 });
+
+// Phase 1 (content negotiation): la Function tapaba la UI de
+// SiteTrustScore en self-host y Cloudflare Pages (funciones antes que
+// assets) y un humano veia JSON crudo. Con Accept: text/html la function
+// sirve el shell estatico /trust/ via env.ASSETS (binding existente en
+// ambas plataformas); la URL del navegador sigue siendo /trust/<siteId>
+// y el shell lee el siteId del pathname.
+describe("GET /trust/:siteId: negociacion HTML vs JSON", () => {
+  function htmlRequest() {
+    return new Request("http://x.test/trust/ejemplo.com", {
+      headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+    });
+  }
+
+  it("Accept text/html + env.ASSETS: sirve el shell /trust/ como HTML", async () => {
+    const { onRequestGet } = await import("../../functions/trust/[siteId].js");
+    const asked: string[] = [];
+    const res = await onRequestGet({
+      env: {
+        ASSETS: {
+          fetch: async (input: any) => {
+            asked.push(String(input instanceof Request ? input.url : input));
+            return new Response("<html><body>trust shell</body></html>", {
+              status: 200,
+              headers: { "content-type": "text/html; charset=utf-8" },
+            });
+          },
+        },
+      },
+      params: { siteId: "ejemplo.com" },
+      request: htmlRequest(),
+      data: {},
+    });
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("trust shell");
+    // Pide el shell generico /trust/, no el asset por siteId (no existe).
+    expect(asked.some((u) => u.endsWith("/trust/"))).toBe(true);
+  });
+
+  it("Accept text/html pero el shell no existe (ASSETS 404): responde JSON", async () => {
+    const { onRequestGet } = await import("../../functions/trust/[siteId].js");
+    const res = await onRequestGet({
+      env: {
+        ASSETS: { fetch: async () => new Response("Not Found", { status: 404 }) },
+      },
+      params: { siteId: "ejemplo.com" },
+      request: htmlRequest(),
+      data: {},
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("Accept text/html SIN env.ASSETS: responde JSON como antes (deploy sin binding)", async () => {
+    const { onRequestGet } = await import("../../functions/trust/[siteId].js");
+    const res = await onRequestGet({
+      env: {},
+      params: { siteId: "ejemplo.com" },
+      request: htmlRequest(),
+      data: {},
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("Accept application/json (agentes): sigue siendo el JSON del snapshot", async () => {
+    const { onRequestGet } = await import("../../functions/trust/[siteId].js");
+    const res = await onRequestGet({
+      env: {
+        ASSETS: {
+          fetch: async () => {
+            throw new Error("no debe delegar para clientes JSON");
+          },
+        },
+      },
+      params: { siteId: "ejemplo.com" },
+      request: new Request("http://x.test/trust/ejemplo.com", { headers: { accept: "application/json" } }),
+      data: {},
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.siteId).toBe("ejemplo.com");
+    expect(body.verification).toBeTruthy();
+  });
+});

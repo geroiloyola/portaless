@@ -39,3 +39,58 @@
   text-align: center;
   padding: 12px;
 }
+
+/* Chrome del editor: shell de 3 columnas (paleta / canvas / propiedades).
+   El fondo oscuro es deliberado -- es la herramienta, no el sitio
+   publicado; los acentos responden al skin via var(--accent). Estas
+   reglas vivian solo inline en la demo standalone public/editor/index.html
+   y /admin/editor (el editor real, con persistencia) se renderizaba sin
+   layout: paleta y canvas apilados en flujo de documento. Extraidas aca
+   para que ambos editores se vean identicos. */
+.ae-shell {
+  display: grid;
+  grid-template-columns: 200px 1fr 280px;
+  min-height: 640px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #1e2129;
+  background: #0d0e12;
+  color: #e7e9ee;
+}
+.ae-palette { background: #12141a; border-right: 1px solid #1e2129; padding: 16px; overflow-y: auto; }
+.ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6c7386; margin-bottom: 10px; }
+.ae-palette-item {
+  background: #1a1d26; border: 1px solid #262b38; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; cursor: grab;
+  transition: border-color .15s;
+}
+.ae-palette-item:hover { border-color: var(--accent, #C5D86D); }
+.ae-canvas-wrap { background: #0d0e12; padding: 24px; overflow-y: auto; }
+.ae-canvas {
+  max-width: 720px; margin: 0 auto; min-height: 400px;
+  background: #101218; border: 1px dashed #262b38; border-radius: 16px;
+  padding: 20px; display: flex; flex-direction: column; gap: 14px;
+}
+.ae-canvas.ae-drop-active { border-color: var(--accent, #C5D86D); }
+.ae-canvas:empty::before {
+  content: "Arrastra elementos de la izquierda aqui";
+  color: #565c6c; font-size: 13px; display: block; text-align: center; padding: 60px 0;
+}
+.ae-block { position: relative; border: 1px solid transparent; border-radius: 12px; padding: 6px; }
+.ae-block:hover { border-color: #262b38; }
+.ae-block.ae-selected { border-color: var(--accent, #C5D86D); }
+.ae-block-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10.5px; color: #6c7386; padding: 2px 4px 6px;
+}
+.ae-block-toolbar button { background: none; border: none; color: #ff6e6e; cursor: pointer; font-size: 12px; }
+.ae-property-panel { background: #12141a; border-left: 1px solid #1e2129; padding: 18px; overflow-y: auto; }
+.ae-property-panel h3 { font-size: 13px; margin-bottom: 14px; color: #e7e9ee; }
+.ae-empty { font-size: 12.5px; color: #6c7386; }
+.ae-field { display: block; margin-bottom: 14px; }
+.ae-field span { display: block; font-size: 11px; color: #9aa1b2; margin-bottom: 5px; }
+.ae-field input, .ae-field textarea, .ae-field select {
+  width: 100%; background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
+  color: #e7e9ee; padding: 7px 10px; font-size: 12.5px; font-family: inherit;
+}
+.ae-field textarea { min-height: 60px; resize: vertical; }

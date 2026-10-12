@@ -104,6 +104,33 @@ export async function onRequestGet(context) {
   const siteId = params?.siteId;
   if (!siteId) return json({ error: "missing_site_id" }, 400);
 
+  // Content negotiation (Phase 1): un navegador (Accept: text/html) quiere
+  // la UI de SiteTrustScore; agentes y fetchers de API quieren el JSON del
+  // snapshot. Sin esto la Function ganaba al estatico en self-host y
+  // Cloudflare Pages (las funciones corren antes que los assets) y una
+  // persona que abria /trust/<siteId> veia JSON crudo. La UI vive en un
+  // UNICO shell estatico /trust/ (src/pages/trust/index.astro, que lee el
+  // siteId del pathname en el navegador: la URL sigue siendo
+  // /trust/<siteId> porque esta Function es la que responde esa ruta) y se
+  // sirve via env.ASSETS (binding existente en Cloudflare Pages y en el
+  // runtime Node self-host). fetch() de la propia UI usa Accept */* ->
+  // sigue cayendo al JSON de abajo. Si no hay ASSETS binding, o el shell
+  // no existe, se responde JSON como antes.
+  const accept = request?.headers?.get?.("accept") || "";
+  if (accept.includes("text/html") && env?.ASSETS) {
+    const shellUrl = new URL(request.url);
+    shellUrl.pathname = "/trust/";
+    shellUrl.search = "";
+    const shell = await env.ASSETS.fetch(shellUrl);
+    if (shell.ok) {
+      const html = await shell.text();
+      return new Response(html, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+  }
+
   const { policy, publicOverrides, error } = await loadPolicy(env);
   // Si la tabla existe pero no se pudo leer, no se puede saber si hay politica: cerrar.
   if (error) return json({ error: "read_policy_unavailable" }, 503);

@@ -143,6 +143,8 @@ Categories are by **who** must resolve the piece, not by priority.
 3. A short GIF (10–15 s) of the editor in action: dragging an element, seeing it published.
 4. Update the README with the official palette applied to the repository's own badges/shields, as the first public demonstration of the brand.
 
+**Status: shipped, pending one repo setting.** New example content `src/content/pages/link-in-bio.json` (all 4 link-in-bio elements: `ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) plus the existing blog post give the demo real pages. New `scripts/capture-screenshots.mjs` boots the real product (browser-test server: real `functions/`, real `dist/`, SQLite) and captures six real screenshots into `docs/screenshots/` — public home, link-in-bio, blog, admin dashboard, the visual editor with the page loaded, and `/trust/default` — plus a 10.8 s GIF of the whole cycle (drag a Button into the canvas → *Publicar* → open the public URL and see it live). The README now opens with a "See Portaless in action" gallery above the Features table and its badges carry the official palette (`#261C15` ink labels with `#5A6B24`/`#F05D23`/`#6E6653` messages). `.github/workflows/deploy-pages.yml` builds the static demo (`PORTALESS_BASE_PATH=/portaless/`, verified) and deploys it on every push to `main` — **the only remaining step is enabling Settings → Pages → Source: "GitHub Actions" on the repo**; the live-demo link goes into the README the moment it exists. Honest limits: GitHub Pages runs no `functions/`, so the public demo shows the static site only (home, blog, example pages); admin, login, and the dynamic `/trust/:siteId` need self-host or Cloudflare Pages — the screenshots are of the real self-host runtime. Capturing the screenshots surfaced and fixed four real product bugs (all verified by tests or re-capture): (a) `/admin/editor` rendered without its editor chrome — the 3-column shell CSS lived only inline in the standalone demo; (b) the APW identity banner and the SiteTrustScore source panels were dark-on-dark after Phase 0 (they kept dark backgrounds but inherited the light theme's ink text); (c) `/trust/:siteId` returned raw JSON to browsers — the Function shadowed the UI and `getStaticPaths()=[]` meant no HTML existed at all; fixed with a single static shell at `/trust/` served by the Function via `env.ASSETS` content negotiation (`Accept: text/html` → UI, otherwise JSON), covered by 4 new unit tests; (d) the trust page's styles were Astro-scoped but its content is built with `document.createElement`, so rows and badges were unstyled.
+
 **Exit criterion**: the README can be understood visually without reading a single line of text, scrolling only through the images.
 
 ### Phase 2 — Competitive visual catalog
@@ -207,7 +209,7 @@ One list, so progress does not depend on re-reading the six phases:
 - [x] One token system governs dashboard and public site alike
 - [x] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
 - [x] Editing a page and seeing it published works from the UI, no terminal
-- [ ] The README shows real screenshots of the product, not only text
+- [x] The README shows real screenshots of the product, not only text
 - [ ] A public demo instance is browsable without installing anything
 - [ ] The element catalog covers basic content-site use cases (video, FAQ, contact form, gallery)
 - [ ] CI green in a sustained way, coverage floors held in the range the ROADMAP set for itself
