@@ -46,7 +46,12 @@ jobs:
           node-version: "24"
           cache: npm
       - name: Instalar dependencias
-        run: npm ci
+        # npm install (como ci.yml) y no npm ci: package.json se edita a
+        # veces via API sin regenerar el lockfile en main (por eso existe
+        # regen-lockfile.yml, que deliberadamente no corre en main) y
+        # npm ci romperia el deploy del demo por una deriva que no afecta
+        # al build estatico.
+        run: npm install
       - name: Build del sitio estatico
         run: node node_modules/astro/bin/astro.mjs build
         env:
