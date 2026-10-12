@@ -48,4 +48,9 @@ export class D1PageStore implements PageStore {
     const { results } = await this.db.prepare("SELECT slug FROM pages").all<{ slug: string }>();
     return (results ?? []).map((r) => r.slug);
   }
+
+  async remove(slug: string): Promise<boolean> {
+    const result = await this.db.prepare("DELETE FROM pages WHERE slug = ?").bind(slug).run();
+    return (result?.meta?.changes ?? 0) > 0;
+  }
 }

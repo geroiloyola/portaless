@@ -1,12 +1,17 @@
-// functions/admin/pages/index.js
+// functions/admin/api/pages.js
 //
-// Endpoint de listado GET /admin/pages (sin slug), companero de
-// functions/admin/pages/[slug].js. Mismo guard de sesion server-side que
+// Endpoint de listado GET /admin/api/pages (sin slug), companero de
+// functions/admin/pages/[slug].js. Vive bajo /admin/api/ y no en
+// /admin/pages porque esa URL es la pagina HTML del page manager
+// (src/pages/admin/pages.astro -> dist/admin/pages/index.html): en
+// Cloudflare Pages y en el runtime self-host, la Function gana sobre el
+// estatico y /admin/pages/index.js habria respondido JSON en vez del
+// manager. Mismo guard de sesion server-side que
 // el resto del dashboard: requiere context.data.user (expuesto por
 // functions/admin/_middleware.js), 401 si no hay sesion. No exige
 // canWrite(role) porque es de solo lectura -- igual que el GET de
 // [slug].js, cualquier usuario autenticado (admin o viewer) puede listar,
-// solo las escrituras (PUT) exigen rol admin.
+// solo las escrituras (PUT/DELETE) exigen rol admin.
 //
 // PageStore.list() ya estaba implementado end-to-end en D1PageStore y
 // SqlitePageStore (packages/atomic-elements/src/persistence/stores/)
@@ -33,5 +38,19 @@ export async function onRequestGet(context) {
   const pageStore = await createPageStore(env);
   const slugs = await pageStore.list();
 
-  return json({ slugs });
+  // Phase 0.5 (page manager): ademas de los slugs, el titulo de cada
+  // pagina, cargado via load() por slug (N+1 deliberado -- es un panel de
+  // admin con pocas filas, no una vista publica; mantiene la interfaz
+  // PageStore sin tocar).
+  const pages = [];
+  for (const slug of slugs) {
+    try {
+      const layout = await pageStore.load(slug);
+      pages.push({ slug, title: layout?.title || slug });
+    } catch {
+      pages.push({ slug, title: slug });
+    }
+  }
+
+  return json({ slugs, pages });
 }

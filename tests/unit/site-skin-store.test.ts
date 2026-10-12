@@ -1,6 +1,6 @@
 // packages/dashboard/src/skin-engine/site-skin-store.ts: skin activo del
 // sitio. Tres backends con el mismo contrato (D1 fake sobre
-// better-sqlite3 + applySchema, SQLite real en archivo temporal,
+// better-sqlite3, SQLite real en archivo temporal,
 // InMemory), upsert por site, sanitizacion de tokens (barrera de CSS
 // injection), emision de la hoja CSS publica (bloques claro/oscuro) y
 // resolucion del skin activo con overrides de marca aplicados a ambos
@@ -11,7 +11,6 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
-import { applySchema } from "../../scripts/setup.mjs";
 import {
   D1SiteSkinStore,
   SqliteSiteSkinStore,
@@ -87,16 +86,17 @@ describe("SiteSkinStore: tres backends, mismo contrato", () => {
     store.close();
   });
 
-  it("D1 (fake sobre better-sqlite3 + applySchema): round-trip + upsert", async () => {
+  it("D1 (fake sobre better-sqlite3): round-trip + upsert", async () => {
+    // Sin applySchema: las stores crean su propia tabla via
+    // SITE_SKIN_TABLE_DDL (applySchema(db) con una instancia Database no
+    // hacia nada y dejaba una promesa rechazada sin manejar).
     const db = new Database(":memory:");
-    applySchema(db);
     await roundTrip(new D1SiteSkinStore(fakeD1(db)));
     db.close();
   });
 
   it("factory: DB -> D1, PORTALESS_SQLITE_PATH -> SQLite, si no InMemory", async () => {
     const db = new Database(":memory:");
-    applySchema(db);
     const d1 = await createSiteSkinStore({ DB: fakeD1(db) });
     expect(d1).toBeInstanceOf(D1SiteSkinStore);
 

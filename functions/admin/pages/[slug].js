@@ -121,3 +121,45 @@ export async function onRequestGet(context) {
     headers: { "content-type": "application/json" },
   });
 }
+
+// Phase 0.5 (close the edit->publish cycle): DELETE /admin/pages/:slug
+// habilita el page manager minimo (borrar una pagina existente). Mismo
+// guard que el PUT: sesion (context.data.user) + canWrite(role)
+// server-side. 404 con { removed: false } si no habia nada que borrar
+// -- el manager lo trata como "ya no esta", no como error de red.
+export async function onRequestDelete(context) {
+  const { data, params, env } = context;
+
+  const user = data?.user;
+  if (!user) {
+    return new Response(JSON.stringify({ error: "unauthenticated" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  if (!canWrite(user.role)) {
+    return new Response(
+      JSON.stringify({
+        error: "forbidden",
+        message: `El rol '${user.role}' no tiene permiso de escritura. Se requiere rol 'admin'.`,
+      }),
+      { status: 403, headers: { "content-type": "application/json" } }
+    );
+  }
+
+  const pageStore = await createPageStore(env);
+  const removed = await pageStore.remove(params.slug);
+
+  if (!removed) {
+    return new Response(JSON.stringify({ error: "not_found", removed: false, slug: params.slug }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ removed: true, slug: params.slug }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+}

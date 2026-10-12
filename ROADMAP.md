@@ -128,6 +128,8 @@ Categories are by **who** must resolve the piece, not by priority.
 2. A "Publish" button in the editor that runs the dump+build through the runtime (or, minimally, marks the page served-directly so the UI cycle closes without a rebuild).
 3. Page manager minimum in the admin UI: list existing pages (`HttpPageStore.list()` already exists, it is just never called), open one by clicking, delete one (`onRequestDelete` does not exist yet in `functions/admin/pages/[slug].js`).
 
+**Status: shipped (self-host + Cloudflare Pages).** `/paginas/[slug]` is now served dynamically from the `pages` table by a new public function (`functions/paginas/[slug].js`): when the slug exists in the DB it renders the stored layout through the atomic-elements engine inside the standard page shell, and when the slug is absent (or the stored layout is corrupt) it calls `context.next()` so the static build in `dist/` keeps working — on GitHub Pages nothing changes, and there the edited page still requires `npm run publish` (the honest static-hosting limit, documented in the CHANGELOG). The editor's save button is now **Publicar** and, after a successful save, shows a "Ver página pública ↗" link straight to `/paginas/<slug>` — closing the edit→publish cycle in the UI. A minimum page manager landed at `/admin/pages`: it lists every page with its title (from the extended `GET /admin/api/pages`), opens one in the editor on click, and deletes it via a new `DELETE /admin/pages/:slug` (session + `canWrite`, `404 {removed:false}` when nothing was there). The list endpoint lives under `/admin/api/` rather than `/admin/pages/` because a Cloudflare Pages Function shadows the static HTML at the same path. Verified by unit tests (route hit/miss/corrupt/traversal, delete 401/403/200/404, title listing), a self-host e2e test proving the DB wins over the static build and that deleting a row re-exposes the static page, and a Playwright spec walking the full cycle (publish → public URL → edit → public URL updates without rebuild → manager delete → public URL 404s).
+
 **Exit criterion**: a person edits a page in `/admin/editor`, clicks save/publish, opens the public URL in a new tab, and sees the change — on self-host, with no terminal open.
 
 ### Phase 1 — Visual evidence of the product (cheapest, highest impact)
@@ -204,7 +206,7 @@ One list, so progress does not depend on re-reading the six phases:
 
 - [x] One token system governs dashboard and public site alike
 - [x] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
-- [ ] Editing a page and seeing it published works from the UI, no terminal
+- [x] Editing a page and seeing it published works from the UI, no terminal
 - [ ] The README shows real screenshots of the product, not only text
 - [ ] A public demo instance is browsable without installing anything
 - [ ] The element catalog covers basic content-site use cases (video, FAQ, contact form, gallery)

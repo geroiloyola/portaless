@@ -66,6 +66,11 @@ export class SqlitePageStore implements PageStore {
     return rows.map((r) => r.slug);
   }
 
+  async remove(slug: string): Promise<boolean> {
+    const result = this.db.prepare("DELETE FROM pages WHERE slug = ?").run(slug);
+    return (result?.changes ?? 0) > 0;
+  }
+
   close(): void {
     this.db.close();
   }

@@ -11,6 +11,8 @@ export interface PageStore {
   load(slug: string): Promise<PageLayout | null>;
   save(layout: PageLayout): Promise<void>;
   list(): Promise<string[]>;
+  /** Elimina la pagina. true si habia algo que borrar (Phase 0.5). */
+  remove(slug: string): Promise<boolean>;
 }
 
 const STORAGE_PREFIX = "portaless.atomic-elements.page.";
@@ -36,5 +38,12 @@ export class LocalStoragePageStore implements PageStore {
       if (key?.startsWith(STORAGE_PREFIX)) slugs.push(key.slice(STORAGE_PREFIX.length));
     }
     return slugs;
+  }
+
+  async remove(slug: string): Promise<boolean> {
+    const key = STORAGE_PREFIX + slug;
+    const existed = localStorage.getItem(key) !== null;
+    localStorage.removeItem(key);
+    return existed;
   }
 }

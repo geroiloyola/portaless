@@ -9,7 +9,6 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import Database from "better-sqlite3";
 import { applySchema } from "../../scripts/setup.mjs";
 import * as adminSkin from "../../functions/admin/api/skin";
 import * as publicSkin from "../../functions/api/site-skin";
@@ -20,10 +19,12 @@ const DB = join(tmp, "portaless.db");
 
 let env: Record<string, unknown>;
 
-beforeAll(() => {
-  const db = new Database(DB);
-  applySchema(db);
-  db.close();
+beforeAll(async () => {
+  // applySchema recibe el PATH (abre y cierra su propia conexion); pasar
+  // la instancia Database hacia atras dejaba una promesa rechazada sin
+  // manejar ("Expected first argument to be a string") y la base quedaba
+  // sin schema -- los stores creaban su tabla via DDL propio.
+  await applySchema(DB, { quiet: true });
   env = { PORTALESS_SQLITE_PATH: DB };
 });
 

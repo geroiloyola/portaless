@@ -28,9 +28,9 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
   <div class="pc-page-header">
     <h1 class="pc-page-title">Editor Visual</h1>
     <p class="pc-page-subtitle">
-      Arrastra elementos desde la paleta para armar la pagina. Los cambios
-      se guardan explicitamente con "Guardar pagina" -- nada se publica
-      hasta que lo confirmes.
+      Arrastra elementos desde la paleta para armar la pagina. "Publicar"
+      guarda la pagina en la base del sitio: en self-host se sirve en
+      <code>/paginas/&lt;slug&gt;</code> al instante, sin rebuild.
     </p>
   </div>
 
@@ -38,7 +38,7 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     <span id="editor-slug-label" class="editor-slug-label"></span>
     <div class="editor-toolbar-actions">
       <button id="btn-export" class="btn">Exportar JSON</button>
-      <button id="btn-save" class="btn primary">Guardar página</button>
+      <button id="btn-save" class="btn primary">Publicar</button>
     </div>
   </div>
 
@@ -70,14 +70,19 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     margin-bottom: 12px;
   }
   .editor-save-status.ok {
-    background: rgba(110, 231, 183, 0.12);
-    color: #6ee7b7;
-    border: 1px solid rgba(110, 231, 183, 0.3);
+    background: var(--success-bg, #EAF3D4);
+    color: var(--success-fg, #4A6B1F);
+    border: 1px solid var(--panel-border, #E4E6C3);
   }
   .editor-save-status.error {
-    background: rgba(255, 110, 110, 0.12);
-    color: #ff6e6e;
-    border: 1px solid rgba(255, 110, 110, 0.3);
+    background: var(--danger-bg, #FBE5E3);
+    color: var(--danger-fg, #B3372C);
+    border: 1px solid var(--panel-border, #E4E6C3);
+  }
+  .editor-save-status a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
   }
 </style>
 
@@ -99,12 +104,9 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug") || "nueva-pagina";
 
-  // Implementa la interfaz PageStore real (load/save/list) contra el
-  // endpoint ya existente functions/admin/pages/[slug].js -- NO contra
-  // una ruta /api/ nueva que no existe en el backend. list() no tiene
-  // endpoint real todavia (no hay GET /admin/pages sin slug), asi que
-  // lanza un error explicito en vez de inventar un contrato -- mismo
-  // principio de honestidad que los 501 de node-isolated-vm.ts.
+  // Implementa la interfaz PageStore real (load/save/list/remove) contra
+  // los endpoints existentes functions/admin/pages/[slug].js e index.js
+  // -- NO contra una ruta /api/ nueva.
   class HttpPageStore implements PageStore {
     async load(pageSlug: string): Promise<PageLayout | null> {
       const res = await fetch(`/admin/pages/${encodeURIComponent(pageSlug)}`);
@@ -143,13 +145,23 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
         throw new Error(message);
       }
     }
-        async list(): Promise<string[]> {
-      const res = await fetch("/admin/pages", { credentials: "same-origin" });
-      if (!res.ok) {
-        throw new Error(`No se pudo listar las páginas (HTTP ${res.status}).`);
+
+    async list(): Promise<string[]> {
+      const res = await fetch("/admin/api/pages", { credentials: "same-origin" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.slugs)) return data.slugs;
       }
-      const data = await res.json();
-      return Array.isArray(data.slugs) ? data.slugs : [];
+      // El listado es opcional para el editor (no hay UI de selector de
+      // paginas dentro del editor); el page manager vive en /admin/pages.
+      return [];
+    }
+
+    async remove(pageSlug: string): Promise<boolean> {
+      const res = await fetch(`/admin/pages/${encodeURIComponent(pageSlug)}`, { method: "DELETE" });
+      if (res.status === 404) return false;
+      if (!res.ok) throw new Error(`No se pudo eliminar la página (HTTP ${res.status}).`);
+      return true;
     }
   }
 
@@ -222,7 +234,22 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     saveBtn.addEventListener("click", async () => {
       try {
         await editor.save();
-        showSaveStatus("ok", "Página guardada.");
+        // Phase 0.5: guardar YA publica (self-host sirve /paginas/<slug>
+        // desde la base al instante). El link cierra el ciclo visible:
+        // guardar -> abrir la URL publica -> ver el cambio.
+        saveStatusEl.style.display = "";
+        saveStatusEl.className = "editor-save-status ok";
+        saveStatusEl.textContent = "Página guardada y publicada. ";
+        const viewLink = document.createElement("a");
+        viewLink.id = "editor-view-public";
+        viewLink.href = `/paginas/${encodeURIComponent(slug)}`;
+        viewLink.target = "_blank";
+        viewLink.rel = "noopener";
+        viewLink.textContent = "Ver página pública ↗";
+        saveStatusEl.appendChild(viewLink);
+        window.setTimeout(() => {
+          saveStatusEl.style.display = "none";
+        }, 12000);
       } catch (err) {
         showSaveStatus("error", `Error al guardar: ${(err as Error).message}`);
       }

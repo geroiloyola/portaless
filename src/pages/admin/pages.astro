@@ -1,0 +1,196 @@
+---
+// Page manager minimo (Phase 0.5 — close the edit->publish cycle):
+// listar las paginas existentes, abrir una en el editor con un click y
+// borrarla. Antes no existia forma de ver que paginas vivian en la base
+// ni de eliminarlas (el editor solo cargaba por ?slug= a mano y
+// functions/admin/pages/[slug].js no tenia DELETE).
+//
+// Datos de GET /admin/api/pages (slugs + titulos, N+1 server-side; el
+// listado vive bajo /admin/api/ porque /admin/pages es ESTA pagina y la
+// Function ganaria al estatico). Borrado via DELETE /admin/pages/:slug
+// (sesion + canWrite server-side, igual que el PUT; /admin/pages/<slug>
+// no colisiona con la pagina HTML del manager, que es /admin/pages a
+// secas). Mismo patron client-side de authorized-agents.astro:
+// fetch desde el <script>, estados display, redirect a login en 401.
+//
+// "Ver" apunta a /paginas/<slug>: en self-host esa URL la sirve la base
+// al instante; en hosting estatico (GitHub Pages) la pagina aparece
+// despues de `npm run publish` -- el link no distingue, el ROADMAP lo
+// documenta como limite honesto.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Páginas — Portaless Admin">
+  <div class="pm-page-header">
+    <h1 class="pm-page-title">Páginas</h1>
+    <p class="pm-page-subtitle">
+      Paginas publicadas con Atomic Elements. Editar y "Publicar" en el
+      editoractualiza la pagina publica al instante en self-host.
+    </p>
+  </div>
+
+  <form id="pm-open-form" class="pm-open-form">
+    <input type="text" id="pm-open-slug" placeholder="slug-de-pagina" autocomplete="off" required />
+    <button type="submit" class="pm-primary-btn">Abrir en el editor</button>
+    <a class="pm-secondary-btn" href="/admin/editor">+ Nueva página</a>
+  </form>
+
+  <div id="pm-loading" class="pm-loading">Cargando páginas…</div>
+  <div id="pm-load-error" class="pm-load-error" style="display:none;"></div>
+  <p id="pm-empty" class="pm-empty" style="display:none;">
+    Aún no hay páginas. Crea una en el Editor Visual y publicala.
+  </p>
+
+  <table id="pm-table" class="pm-table" style="display:none;">
+    <thead>
+      <tr><th>Título</th><th>Slug</th><th class="pm-actions-col">Acciones</th></tr>
+    </thead>
+    <tbody id="pm-tbody"></tbody>
+  </table>
+
+  <style>
+    .pm-page-header { margin-bottom: 24px; }
+    .pm-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+    .pm-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
+    .pm-open-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+    .pm-open-form input {
+      padding: 8px 10px; border: 1px solid var(--portaless-border); border-radius: 8px;
+      background: var(--portaless-bg); color: var(--portaless-fg); font-size: 0.9rem; font-family: inherit;
+      min-width: 200px;
+    }
+    .pm-primary-btn {
+      border: none; background: var(--portaless-accent); color: #261C15;
+      padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;
+    }
+    .pm-secondary-btn {
+      padding: 8px 16px; border: 1px solid var(--portaless-border); border-radius: 8px;
+      color: var(--portaless-fg); font-size: 0.9rem; text-decoration: none;
+    }
+    .pm-loading, .pm-empty { color: var(--portaless-muted); font-size: 0.9rem; }
+    .pm-load-error { color: var(--danger-fg, #B3372C); font-size: 0.9rem; }
+    .pm-table {
+      width: 100%; max-width: 760px; border-collapse: collapse;
+      border: 1px solid var(--portaless-border); border-radius: 12px; overflow: hidden;
+    }
+    .pm-table th, .pm-table td {
+      text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--portaless-border); font-size: 0.9rem;
+    }
+    .pm-table th { color: var(--portaless-muted); font-weight: 600; font-size: 0.8rem; }
+    .pm-table tr:last-child td { border-bottom: none; }
+    .pm-actions-col { text-align: right; }
+    .pm-table td:last-child { text-align: right; white-space: nowrap; }
+    .pm-table a { margin-right: 10px; }
+    .pm-del-btn {
+      border: 1px solid var(--portaless-border); background: transparent;
+      color: var(--danger-fg, #B3372C); padding: 4px 10px; border-radius: 6px;
+      cursor: pointer; font-size: 0.8rem;
+    }
+    .pm-msg { margin-top: 12px; font-size: 0.85rem; }
+    .pm-msg.pm-err { color: var(--danger-fg, #B3372C); }
+  </style>
+</BaseLayout>
+
+<script>
+  const loadingEl = document.getElementById("pm-loading")!;
+  const errorEl = document.getElementById("pm-load-error")!;
+  const emptyEl = document.getElementById("pm-empty")!;
+  const tableEl = document.getElementById("pm-table")!;
+  const tbodyEl = document.getElementById("pm-tbody")!;
+
+  const msgEl = document.createElement("p");
+  msgEl.className = "pm-msg";
+  msgEl.style.display = "none";
+  tableEl.insertAdjacentElement("afterend", msgEl);
+
+  function showMsg(text: string) {
+    msgEl.textContent = text;
+    msgEl.className = "pm-msg pm-err";
+    msgEl.style.display = "block";
+    window.setTimeout(() => { msgEl.style.display = "none"; }, 5000);
+  }
+
+  function row(page: { slug: string; title: string }): HTMLTableRowElement {
+    const tr = document.createElement("tr");
+
+    const tdTitle = document.createElement("td");
+    tdTitle.textContent = page.title;
+    tr.appendChild(tdTitle);
+
+    const tdSlug = document.createElement("td");
+    const code = document.createElement("code");
+    code.textContent = page.slug;
+    tdSlug.appendChild(code);
+    tr.appendChild(tdSlug);
+
+    const tdActions = document.createElement("td");
+
+    const edit = document.createElement("a");
+    edit.href = `/admin/editor?slug=${encodeURIComponent(page.slug)}`;
+    edit.textContent = "Editar";
+    tdActions.appendChild(edit);
+
+    const view = document.createElement("a");
+    view.href = `/paginas/${encodeURIComponent(page.slug)}`;
+    view.target = "_blank";
+    view.rel = "noopener";
+    view.textContent = "Ver ↗";
+    tdActions.appendChild(view);
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "pm-del-btn";
+    del.textContent = "Borrar";
+    del.addEventListener("click", () => {
+      if (!window.confirm(`¿Borrar la página "${page.title}"? Esta acción no se puede deshacer.`)) return;
+      del.disabled = true;
+      (async () => {
+        const res = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, { method: "DELETE" });
+        if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+        if (res.status === 404 || res.ok) {
+          tr.remove();
+          if (!tbodyEl.children.length) {
+            tableEl.style.display = "none";
+            emptyEl.style.display = "";
+          }
+          return;
+        }
+        del.disabled = false;
+        showMsg(`No se pudo borrar (HTTP ${res.status}).`);
+      })().catch(() => { del.disabled = false; showMsg("Error de red al borrar."); });
+    });
+    tdActions.appendChild(del);
+
+    tr.appendChild(tdActions);
+    return tr;
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/admin/api/pages", { credentials: "same-origin" });
+      if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const pages: Array<{ slug: string; title: string }> = Array.isArray(data.pages)
+        ? data.pages
+        : (data.slugs ?? []).map((slug: string) => ({ slug, title: slug }));
+      loadingEl.style.display = "none";
+      if (pages.length === 0) {
+        emptyEl.style.display = "";
+        return;
+      }
+      for (const page of pages) tbodyEl.appendChild(row(page));
+      tableEl.style.display = "";
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.textContent = `No se pudieron cargar las páginas: ${(err as Error).message}`;
+      errorEl.style.display = "block";
+    }
+  }
+
+  document.getElementById("pm-open-form")!.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const value = (document.getElementById("pm-open-slug") as HTMLInputElement).value.trim();
+    if (value) window.location.href = `/admin/editor?slug=${encodeURIComponent(value)}`;
+  });
+
+  load();
+</script>
