@@ -1,8 +1,14 @@
 {
   "skin": "base",
   "tokens": {
-    "accent": "#34c759",
-    "accent2": "#30d5c8",
+    "accent": "#C5D86D",
+    "accentText": "#5A6B24",
+    "accent2": "#F05D23",
+    "bg": "#F7F7F2",
+    "panelBg": "#FFFFFF",
+    "panelBorder": "#E4E6C3",
+    "text": "#261C15",
+    "muted": "#6E6653",
     "radius": "22px",
     "density": "comfortable"
   },

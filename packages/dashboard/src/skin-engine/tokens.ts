@@ -9,14 +9,21 @@
 // concepto bueno/medio/malo (una en AgentLedgerPanel/PolicyPanel, otra en
 // PermissionsCenterPanel) -- sin ningun punto unico de verdad, y sin forma
 // de que un admin los personalizara via skin.json como ya podia hacer con
-// accent/bg/text. Los valores default elegidos abajo son los que ya usaban
-// AgentLedgerPanel/PolicyPanel antes de este cambio (el set mas repetido de
-// los 2 que existian).
+// accent/bg/text.
+//
+// Phase 0 (visual identity foundation): DEFAULT_TOKENS pasa a ser la
+// PALETA OFICIAL de Portaless (lima #C5D86D / tinta #261C15 / hueso
+// #F7F7F2 / salvia #E4E6C3 / naranja #F05D23) y agrega accentText, la
+// variante del accent legible como texto sobre fondos claros (el lima
+// puro #C5D86D no alcanza contraste AA sobre #F7F7F2). global.css
+// aliasa --portaless-* a estas mismas variables, de modo que dashboard,
+// editor y sitio publico comparten UN solo punto de verdad.
 
 import type { DesignTokens } from "../types";
 
-const TOKEN_TO_CSS_VAR: Record<keyof DesignTokens, string> = {
+export const TOKEN_TO_CSS_VAR: Record<keyof DesignTokens, string> = {
   accent: "--accent",
+  accentText: "--accent-text",
   accent2: "--accent-2",
   radius: "--radius",
   density: "--density",
@@ -43,20 +50,47 @@ export function applyDesignTokens(tokens: DesignTokens, root: HTMLElement = docu
   }
 }
 
+/** Paleta oficial de Portaless, tema CLARO (default de instalaciones nuevas). */
 export const DEFAULT_TOKENS: DesignTokens = {
-  accent: "#34c759",
-  accent2: "#30d5c8",
+  accent: "#C5D86D",
+  accentText: "#5A6B24",
+  accent2: "#F05D23",
   radius: "22px",
   density: "comfortable",
-  bg: "#f0f1f6",
-  panelBg: "#ffffff",
-  panelBorder: "#eceef5",
-  text: "#1b1d26",
-  muted: "#8b8ea0",
-  successBg: "#eafaf0",
-  successFg: "#1e8e3e",
-  warningBg: "#fff4e6",
-  warningFg: "#b56d00",
-  dangerBg: "#ffecec",
-  dangerFg: "#d3383f",
+  bg: "#F7F7F2",
+  panelBg: "#FFFFFF",
+  panelBorder: "#E4E6C3",
+  text: "#261C15",
+  muted: "#6E6653",
+  successBg: "#EAF3D4",
+  successFg: "#4A6B1F",
+  warningBg: "#FCEBDD",
+  warningFg: "#A0521B",
+  dangerBg: "#FBE5E3",
+  dangerFg: "#B3372C",
+};
+
+/**
+ * Paleta oficial, tema OSCURO. No es el fallback de resolveSkin (que sigue
+ * siendo DEFAULT_TOKENS, el claro): lo usan el bloque @media de
+ * global.css y el emisor CSS de /api/site-skin para emitir la contraparte
+ * oscura del skin activo.
+ */
+export const DEFAULT_DARK_TOKENS: DesignTokens = {
+  accent: "#C5D86D",
+  accentText: "#C5D86D",
+  accent2: "#F05D23",
+  radius: "22px",
+  density: "comfortable",
+  bg: "#261C15",
+  panelBg: "#2F241B",
+  panelBorder: "#4A3B2E",
+  text: "#F7F7F2",
+  muted: "#B7AC9B",
+  successBg: "#2A3318",
+  successFg: "#A8CC6B",
+  warningBg: "#3A2A16",
+  warningFg: "#E0A86B",
+  dangerBg: "#3A1E1A",
+  dangerFg: "#E8968C",
 };

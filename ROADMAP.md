@@ -116,6 +116,8 @@ Categories are by **who** must resolve the piece, not by priority.
 
 **Exit criterion**: change `accent` in one place (`skin.json`) and see it reflected in dashboard, editor, and public site without touching CSS by hand, confirmed by a simple before/after visual regression test.
 
+**Status: shipped.** `global.css` now reads the token variables (`--bg`, `--text`, `--accent`, …) with the official palette as default and aliases the historical `--portaless-*` names to them; the `atomic-elements` `renderHTML` was refactored from hardcoded hex to `var(--token, fallback)` (the honest cost note above); `DEFAULT_TOKENS`/`base.json` carry the official light palette plus a new `accentText` token (the readable-as-text variant of the lime accent — contrast rule enforced); a real dark mode (`#261C15`/`#F7F7F2`) ships via `prefers-color-scheme` + `data-theme`; the active skin persists in a new `site_skin` table served to every page (public site, dashboard, editor) as a stylesheet from `GET /api/site-skin`; and `/admin/appearance` writes it (skin picker + color overrides + per-viewer light/dark toggle). Verified by unit tests plus a Playwright before/after test (`tests/browser/appearance-theme.spec.ts`).
+
 ### Phase 0.5 — Close the edit→publish cycle
 
 **Goal**: saving a page in the editor makes it visible to visitors without a terminal.
@@ -200,8 +202,8 @@ Categories are by **who** must resolve the piece, not by priority.
 
 One list, so progress does not depend on re-reading the six phases:
 
-- [ ] One token system governs dashboard and public site alike
-- [ ] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
+- [x] One token system governs dashboard and public site alike
+- [x] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
 - [ ] Editing a page and seeing it published works from the UI, no terminal
 - [ ] The README shows real screenshots of the product, not only text
 - [ ] A public demo instance is browsable without installing anything

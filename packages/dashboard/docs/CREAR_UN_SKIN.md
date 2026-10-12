@@ -20,11 +20,15 @@ raíz del proyecto para el diseño completo detrás de este sistema.
    - `priority: "high"`: sugiere al renderer destacar visualmente ese
      organismo (uso reservado para futuras versiones con más de un tamaño
      de énfasis).
-4. Ajusta `tokens.accent` / `tokens.accent2` para el color de identidad de
-   tu skin. El resto de los átomos los heredan automáticamente.
-5. Registra tu skin en el `StaticSkinSource` (o en el loader de archivos
-   estáticos, según cómo lo integres) y ya puedes seleccionarlo desde el
-   selector de skins del panel.
+4. Ajusta `tokens.accent` / `tokens.accent2` / `tokens.accentText` para el
+   color de identidad de tu skin. El resto de los átomos los heredan
+   automáticamente. `accentText` es la variante del accent legible COMO
+   TEXTO sobre fondos claros (el lima oficial `#C5D86D` no alcanza
+   contraste AA como texto sobre `#F7F7F2`).
+5. Registra tu skin en el `StaticSkinSource` del loader y ya aparece en
+   el selector de `/admin/appearance` (el panel escribe la fila
+   `site_skin` y el sitio público, el dashboard y el editor lo leen vía
+   la hoja `GET /api/site-skin`).
 
 ## Qué NO se puede hacer en un skin (por diseño, no por limitación técnica)
 

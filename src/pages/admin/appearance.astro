@@ -1,0 +1,264 @@
+---
+// UI de administracion del skin activo (Phase 0 — visual identity
+// foundation). Requiere sesion valida -- protegido por
+// functions/admin/_middleware.js.
+//
+// El selector escribe la fila site_skin via PUT /admin/api/skin (mismo
+// patron client-side de authorized-agents.astro: fetch desde el
+// <script>, estados display, redirect a login en 401). El sitio publico
+// y el dashboard leen lo mismo via el <link> a /api/site-skin que
+// inyecta BaseLayout -- cambiar "accent" aqui se refleja en las tres
+// superficies sin tocar CSS a mano.
+//
+// El toggle Claro/Oscuro es una preferencia del VISITANTE (localStorage
+// + data-theme en <html>), no una fila del sitio: cada quien ve su
+// tema; el skin define la paleta de ambos.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Apariencia — Portaless Admin">
+  <div class="ap-page-header">
+    <h1 class="ap-page-title">Apariencia</h1>
+    <p class="ap-page-subtitle">
+      Skin activo del sitio y paleta por defecto. Los cambios aplican al
+      panel, al editor y al sitio publicado — un solo punto de verdad.
+    </p>
+  </div>
+
+  <div id="ap-loading" class="ap-loading">Cargando apariencia…</div>
+  <div id="ap-load-error" class="ap-load-error" style="display:none;"></div>
+
+  <div id="ap-root" style="display:none;">
+    <form id="ap-form" class="ap-form">
+      <h2 class="ap-form-title">Skin</h2>
+      <label class="ap-field">
+        <span>Skin activo</span>
+        <select id="ap-skin"></select>
+      </label>
+      <p class="ap-hint" id="ap-skin-hint"></p>
+
+      <h2 class="ap-form-title">Colores (opcional)</h2>
+      <p class="ap-hint">
+        Vacío = valor del skin. El lima <code>#C5D86D</code> es el accent
+        de marca; sobre fondos claros el texto usa "Accent (texto)" para
+        mantener contraste legible.
+      </p>
+      <div class="ap-color-grid">
+        <label class="ap-field"><span>Accent</span><input type="color" id="ap-accent" /></label>
+        <label class="ap-field"><span>Accent (texto)</span><input type="color" id="ap-accent-text" /></label>
+        <label class="ap-field"><span>Accent 2</span><input type="color" id="ap-accent2" /></label>
+        <label class="ap-field"><span>Fondo</span><input type="color" id="ap-bg" /></label>
+        <label class="ap-field"><span>Texto</span><input type="color" id="ap-text" /></label>
+        <label class="ap-field"><span>Texto apagado</span><input type="color" id="ap-muted" /></label>
+        <label class="ap-field"><span>Fondo de paneles</span><input type="color" id="ap-panel-bg" /></label>
+        <label class="ap-field"><span>Bordes de paneles</span><input type="color" id="ap-panel-border" /></label>
+      </div>
+      <label class="ap-field">
+        <span>Radio de esquinas (px)</span>
+        <input type="text" id="ap-radius" placeholder="22px" maxlength="10" />
+      </label>
+
+      <div class="ap-actions">
+        <button type="submit" class="ap-save-btn">Guardar y aplicar</button>
+        <button type="button" id="ap-reset-btn" class="ap-reset-btn">Restaurar valores por defecto</button>
+      </div>
+      <p id="ap-msg" class="ap-msg" style="display:none;"></p>
+    </form>
+
+    <form id="ap-theme-form" class="ap-form">
+      <h2 class="ap-form-title">Tema de esta vista</h2>
+      <p class="ap-hint">
+        Claro/Oscuro/Auto es tu preferencia personal (este navegador);
+        no cambia lo que ven los visitantes.
+      </p>
+      <label class="ap-field">
+        <span>Tema</span>
+        <select id="ap-theme">
+          <option value="auto">Auto (según el sistema)</option>
+          <option value="light">Claro</option>
+          <option value="dark">Oscuro</option>
+        </select>
+      </label>
+    </form>
+  </div>
+
+  <style>
+    .ap-page-header { margin-bottom: 28px; }
+    .ap-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+    .ap-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
+    .ap-loading, .ap-load-error { color: var(--portaless-muted); font-size: 0.9rem; }
+    .ap-load-error { color: var(--danger-fg, #B3372C); }
+    .ap-form {
+      max-width: 640px; margin-bottom: 24px; padding: 20px 24px;
+      border: 1px solid var(--portaless-border); border-radius: 12px;
+      background: var(--panel-bg, #fff);
+    }
+    .ap-form-title { margin: 0 0 12px; font-size: 1.05rem; }
+    .ap-form-title:not(:first-child) { margin-top: 24px; }
+    .ap-field { display: block; margin-bottom: 14px; }
+    .ap-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
+    .ap-field select, .ap-field input[type="text"] {
+      width: 100%; max-width: 320px; padding: 8px 10px;
+      border: 1px solid var(--portaless-border); border-radius: 8px;
+      background: var(--portaless-bg); color: var(--portaless-fg);
+      font-size: 0.9rem; font-family: inherit;
+    }
+    .ap-field input[type="color"] {
+      width: 48px; height: 32px; padding: 2px; border: 1px solid var(--portaless-border);
+      border-radius: 6px; background: var(--portaless-bg); cursor: pointer;
+    }
+    .ap-color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; margin-bottom: 8px; }
+    .ap-hint { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
+    .ap-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .ap-save-btn {
+      border: none; background: var(--portaless-accent); color: #261C15;
+      padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;
+    }
+    .ap-reset-btn {
+      border: 1px solid var(--portaless-border); background: transparent;
+      color: var(--portaless-fg); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    }
+    .ap-msg { margin: 12px 0 0; font-size: 0.85rem; }
+    .ap-msg.ap-ok { color: var(--success-fg, #4A6B1F); }
+    .ap-msg.ap-err { color: var(--danger-fg, #B3372C); }
+  </style>
+</BaseLayout>
+
+<script>
+  const loading = document.getElementById("ap-loading")!;
+  const loadError = document.getElementById("ap-load-error")!;
+  const root = document.getElementById("ap-root")!;
+  const skinSelect = document.getElementById("ap-skin") as HTMLSelectElement;
+  const skinHint = document.getElementById("ap-skin-hint")!;
+  const msg = document.getElementById("ap-msg")!;
+  const themeSelect = document.getElementById("ap-theme") as HTMLSelectElement;
+
+  const COLOR_FIELDS: Record<string, string> = {
+    accent: "ap-accent",
+    accentText: "ap-accent-text",
+    accent2: "ap-accent2",
+    bg: "ap-bg",
+    text: "ap-text",
+    muted: "ap-muted",
+    panelBg: "ap-panel-bg",
+    panelBorder: "ap-panel-border",
+  };
+
+  const SKIN_HINTS: Record<string, string> = {
+    base: "Paleta oficial de Portaless: lima #C5D86D, tinta #261C15, hueso #F7F7F2.",
+    blog: "Enfocado en contenido: el panel de contenido va primero en el dashboard.",
+    tienda: "Enfocado en comercio: paneles de ordenes e ingresos arriba.",
+    "trust-crm": "Enfocado en confianza: agentes y politicas primero.",
+  };
+
+  function showMsg(text: string, ok: boolean) {
+    msg.textContent = text;
+    msg.className = `ap-msg ${ok ? "ap-ok" : "ap-err"}`;
+    msg.style.display = "block";
+  }
+
+  function currentTheme(): string {
+    return localStorage.getItem("portaless-theme") || "auto";
+  }
+
+  function applyTheme(value: string) {
+    if (value === "dark" || value === "light") {
+      localStorage.setItem("portaless-theme", value);
+      document.documentElement.setAttribute("data-theme", value);
+    } else {
+      localStorage.removeItem("portaless-theme");
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }
+
+  let resolved: Record<string, string> = {};
+
+  function fillForm(data: { skin: string; tokens: Record<string, string>; resolved: Record<string, string>; available: string[] }) {
+    resolved = data.resolved ?? {};
+    skinSelect.innerHTML = "";
+    for (const name of data.available) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      skinSelect.appendChild(opt);
+    }
+    skinSelect.value = data.skin;
+    skinHint.textContent = SKIN_HINTS[data.skin] ?? "";
+    for (const [key, id] of Object.entries(COLOR_FIELDS)) {
+      const input = document.getElementById(id) as HTMLInputElement;
+      // input[type=color] nunca puede estar vacio (default #000000):
+      // se pinta con el valor EFECTIVO (override si existe, si no el del
+      // skin resuelto) y al guardar solo se envia lo que cambio.
+      const value = data.tokens[key] ?? resolved[key] ?? "";
+      input.value = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000";
+    }
+    (document.getElementById("ap-radius") as HTMLInputElement).value = data.tokens.radius ?? "";
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/admin/api/skin");
+      if (res.status === 401) { location.href = "/admin/login?error=1"; return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      fillForm(await res.json());
+      loading.style.display = "none";
+      root.style.display = "block";
+    } catch (err) {
+      loading.style.display = "none";
+      loadError.textContent = `No se pudo cargar la apariencia: ${(err as Error).message}`;
+      loadError.style.display = "block";
+    }
+  }
+
+  document.getElementById("ap-form")!.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const tokens: Record<string, string> = {};
+    for (const [key, id] of Object.entries(COLOR_FIELDS)) {
+      const value = (document.getElementById(id) as HTMLInputElement).value.trim().toLowerCase();
+      // Solo lo que cambio respecto al valor efectivo del skin: vacio =
+      // que el skin mande, no un override fijo.
+      if (value && value !== (resolved[key] ?? "").toLowerCase()) tokens[key] = value;
+    }
+    const radius = (document.getElementById("ap-radius") as HTMLInputElement).value.trim();
+    if (radius) tokens.radius = radius;
+    try {
+      const res = await fetch("/admin/api/skin", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ skin: skinSelect.value, tokens }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showMsg(body.message || body.error || `Error HTTP ${res.status}`, false);
+        return;
+      }
+      showMsg("Guardado. Recargando para aplicar…", true);
+      setTimeout(() => location.reload(), 400);
+    } catch (err) {
+      showMsg(`No se pudo guardar: ${(err as Error).message}`, false);
+    }
+  });
+
+  document.getElementById("ap-reset-btn")!.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/admin/api/skin", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ skin: "base", tokens: {} }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        showMsg(body.message || body.error || `Error HTTP ${res.status}`, false);
+        return;
+      }
+      showMsg("Valores por defecto restaurados. Recargando…", true);
+      setTimeout(() => location.reload(), 400);
+    } catch (err) {
+      showMsg(`No se pudo restaurar: ${(err as Error).message}`, false);
+    }
+  });
+
+  themeSelect.value = currentTheme();
+  themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
+
+  load();
+</script>

@@ -1,5 +1,15 @@
 import type { ElementDefinition, ElementType } from "../types";
 
+// Phase 0 (visual identity foundation): los colores de SISTEMA del
+// renderHTML usan var(--token, fallback) con los fallbacks de la paleta
+// oficial (#C5D86D / #261C15 / #F7F7F2 / #E4E6C3), asi el HTML emitido
+// responde al skin activo (global.css / api/site-skin) en vez de traer
+// hex pegados. Los colores EDITABLES por el usuario (bgColor del Hero o
+// del Perfil) siguen siendo literales: son datos del contenido, no del
+// tema. Regla de contraste: el lima puro #C5D86D no se usa COMO TEXTO
+// sobre fondo claro -- ahi va --accent-text (o tinta #261C15 sobre el
+// fondo lima de los botones solidos).
+
 function esc(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
@@ -9,7 +19,7 @@ function esc(value: unknown): string {
 interface HeroProps { title: string; subtitle: string; bgColor: string; }
 const Hero: ElementDefinition<HeroProps> = {
   type: "Hero", displayName: "Hero / Portada", icon: "🏔️",
-  defaultProps: { title: "Titulo principal", subtitle: "Subtitulo de apoyo", bgColor: "#111827" },
+  defaultProps: { title: "Titulo principal", subtitle: "Subtitulo de apoyo", bgColor: "#261C15" },
   editableProps: [
     { key: "title", label: "Titulo", kind: "text" },
     { key: "subtitle", label: "Subtitulo", kind: "textarea" },
@@ -60,9 +70,9 @@ const ButtonEl: ElementDefinition<ButtonProps> = {
     { key: "style", label: "Estilo", kind: "select", options: ["primary", "secondary"] },
   ],
   renderHTML: (p) => {
-    const bg = p.style === "primary" ? "#6ee7b7" : "transparent";
-    const color = p.style === "primary" ? "#0a0b0f" : "#6ee7b7";
-    const border = p.style === "primary" ? "none" : "1px solid #6ee7b7";
+    const bg = p.style === "primary" ? "var(--accent, #C5D86D)" : "transparent";
+    const color = p.style === "primary" ? "#261C15" : "var(--accent-text, #5A6B24)";
+    const border = p.style === "primary" ? "none" : "1px solid var(--accent, #C5D86D)";
     return `<a href="${esc(p.href)}" style="display:inline-block;padding:10px 22px;border-radius:999px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
   },
 };
@@ -87,25 +97,25 @@ const ProductGrid: ElementDefinition<ProductGridProps> = {
     { key: "columns", label: "Columnas", kind: "number" },
     { key: "limit", label: "Maximo de productos", kind: "number" },
   ],
-  renderHTML: (p) => `<div class="ae-product-grid" data-source="${esc(p.source)}" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed #444;border-radius:12px;padding:20px;text-align:center;color:#888;grid-column:1/-1;">Vista previa del editor - el catalogo real de ${esc(p.source)} se carga en el build de produccion</div></div>`,
+  renderHTML: (p) => `<div class="ae-product-grid" data-source="${esc(p.source)}" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:12px;padding:20px;text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Vista previa del editor - el catalogo real de ${esc(p.source)} se carga en el build de produccion</div></div>`,
   renderHTMLAsync: async (p) => {
     if (p.source !== "medusa") {
-      return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed #444;border-radius:12px;padding:20px;text-align:center;color:#888;grid-column:1/-1;">Origen "manual" seleccionado - agrega tus productos editando el JSON de la pagina.</div></div>`;
+      return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:12px;padding:20px;text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Origen "manual" seleccionado - agrega tus productos editando el JSON de la pagina.</div></div>`;
     }
     try {
       const { isCommerceEnabled, fetchProducts, formatPrice } = await import(/* @vite-ignore */ "../../../../src/commerce/medusa-client");
       const enabled = await isCommerceEnabled();
       if (!enabled) {
-        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed #444;border-radius:12px;padding:20px;text-align:center;color:#888;grid-column:1/-1;">Modulo de comercio desactivado. Define ENABLE_COMMERCE=true y src/commerce/config.ts para mostrar productos reales aqui.</div></div>`;
+        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:12px;padding:20px;text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Modulo de comercio desactivado. Define ENABLE_COMMERCE=true y src/commerce/config.ts para mostrar productos reales aqui.</div></div>`;
       }
       const products = (await fetchProducts()).slice(0, p.limit);
       if (products.length === 0) {
-        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed #444;border-radius:12px;padding:20px;text-align:center;color:#888;grid-column:1/-1;">Tu tienda Medusa/Mercur no tiene productos publicados todavia.</div></div>`;
+        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:12px;padding:20px;text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Tu tienda Medusa/Mercur no tiene productos publicados todavia.</div></div>`;
       }
-      const cards = products.map((product: any) => `<a href="/tienda/${esc(product.handle)}" style="display:block;border:1px solid #262b38;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;">${product.thumbnail ? `<img src="${esc(product.thumbnail)}" alt="${esc(product.title)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" />` : ""}<div style="padding:12px;"><h4 style="margin:0 0 4px;font-size:14px;">${esc(product.title)}</h4><p style="margin:0;font-weight:700;color:#6ee7b7;">${esc(formatPrice(product))}</p></div></a>`).join("");
+      const cards = products.map((product: any) => `<a href="/tienda/${esc(product.handle)}" style="display:block;border:1px solid var(--panel-border, #E4E6C3);border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;">${product.thumbnail ? `<img src="${esc(product.thumbnail)}" alt="${esc(product.title)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" />` : ""}<div style="padding:12px;"><h4 style="margin:0 0 4px;font-size:14px;">${esc(product.title)}</h4><p style="margin:0;font-weight:700;color:var(--accent-text, #5A6B24);">${esc(formatPrice(product))}</p></div></a>`).join("");
       return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:16px;">${cards}</div>`;
     } catch (err) {
-      return `<div class="ae-product-grid" style="border:1px dashed #ff6e6e;border-radius:12px;padding:20px;text-align:center;color:#ff8f8f;">Error cargando productos: ${esc((err as Error).message)}</div>`;
+      return `<div class="ae-product-grid" style="border:1px dashed var(--danger-fg, #B3372C);border-radius:12px;padding:20px;text-align:center;color:var(--danger-fg, #B3372C);">Error cargando productos: ${esc((err as Error).message)}</div>`;
     }
   },
 };
@@ -138,9 +148,9 @@ const LinkList: ElementDefinition<LinkListProps> = {
     const visible = p.links.filter((l) => l.enabled);
     const items = visible
       .map((l) => {
-        const bg = p.buttonStyle === "solid" ? "#6ee7b7" : "transparent";
-        const color = p.buttonStyle === "solid" ? "#0a0b0f" : "#6ee7b7";
-        const border = p.buttonStyle === "solid" ? "none" : "1px solid #6ee7b7";
+        const bg = p.buttonStyle === "solid" ? "var(--accent, #C5D86D)" : "transparent";
+        const color = p.buttonStyle === "solid" ? "#261C15" : "var(--accent-text, #5A6B24)";
+        const border = p.buttonStyle === "solid" ? "none" : "1px solid var(--accent, #C5D86D)";
         return `<a href="${esc(l.url)}" style="display:block;padding:14px 20px;border-radius:14px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;text-align:center;margin-bottom:10px;">${esc(l.label)}</a>`;
       })
       .join("");
@@ -166,7 +176,7 @@ const SocialIcons: ElementDefinition<SocialIconsProps> = {
     const icons = p.links
       .map(
         (l) =>
-          `<a href="${esc(l.url)}" aria-label="${esc(l.platform)}" style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:#1c2029;color:#fff;text-decoration:none;margin:0 6px;font-size:0.75rem;">${esc(l.platform.slice(0, 2).toUpperCase())}</a>`
+          `<a href="${esc(l.url)}" aria-label="${esc(l.platform)}" style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--panel-bg, #FFFFFF);color:var(--text, #261C15);border:1px solid var(--panel-border, #E4E6C3);text-decoration:none;margin:0 6px;font-size:0.75rem;">${esc(l.platform.slice(0, 2).toUpperCase())}</a>`
       )
       .join("");
     return `<div class="ae-social-icons" style="text-align:${p.align};">${icons}</div>`;
@@ -180,7 +190,7 @@ const ProfileHeader: ElementDefinition<ProfileHeaderProps> = {
     avatarUrl: "https://placehold.co/160x160",
     name: "Tu nombre",
     bio: "Una linea corta sobre ti o tu marca.",
-    bgColor: "#111827",
+    bgColor: "#261C15",
   },
   editableProps: [
     { key: "avatarUrl", label: "URL del avatar", kind: "url" },

@@ -3,6 +3,7 @@
   "extends": "base",
   "tokens": {
     "accent": "#4facfe",
+    "accentText": "#1F6FB8",
     "accent2": "#2a6df4"
   },
   "layout": [

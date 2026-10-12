@@ -44,6 +44,7 @@ const SOURCES = [
   { path: "schema-additions/settlement-activations.sql", selfBanner: true },
   { path: "schema-additions/atproto-links.sql", selfBanner: true },
   { path: "schema-additions/cloud-images.sql", selfBanner: true },
+  { path: "schema-additions/site-skin.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";

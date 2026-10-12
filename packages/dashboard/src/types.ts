@@ -10,11 +10,19 @@
 // que el resto de la interfaz -- un skin.json existente que no los declare
 // sigue funcionando exactamente igual (fallback a DEFAULT_TOKENS via
 // mergeTokens en loader.ts).
+//
+// Phase 0 (visual identity foundation): agrega accentText -- la variante
+// del accent legible como texto sobre fondos claros. La paleta oficial
+// (#C5D86D lima) no alcanza contraste AA como color de texto sobre
+// #F7F7F2; accentText resuelve eso sin dejar de responder al accent.
 
 export type AccessMode = "allow" | "charge" | "block";
 
 export interface DesignTokens {
   accent?: string;
+  /** Variante del accent legible COMO TEXTO sobre fondos claros (evita
+   *  texto puro #C5D86D sobre blanco, que no alcanza contraste AA). */
+  accentText?: string;
   accent2?: string;
   radius?: string;
   density?: "compact" | "comfortable" | "spacious";

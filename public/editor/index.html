@@ -6,6 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Phase 0: tokens del skin activo del sitio (--accent, --panel-bg, ...).
+     El chrome oscuro del editor es deliberado (es una herramienta); los
+     acentos de marca y los previews de elementos si responden al skin. -->
+<link rel="stylesheet" href="/api/site-skin">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', sans-serif; background: #0d0e12; color: #e7e9ee; height: 100vh; overflow: hidden; }
@@ -14,10 +18,10 @@
     padding: 0 18px; background: #12141a; border-bottom: 1px solid #1e2129;
   }
   .brand { font-weight: 800; font-size: 14px; display:flex; align-items:center; gap:8px; }
-  .brand .mark { width: 26px; height: 26px; border-radius: 8px; background: #6ee7b7; color:#0a0b0f; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+  .brand .mark { width: 26px; height: 26px; border-radius: 8px; background: var(--accent, #C5D86D); color:#261C15; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
   .top-actions { display: flex; gap: 8px; }
   .btn { background: #1c1f28; border: 1px solid #262b38; color: #cfd3dd; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
-  .btn.primary { background: #6ee7b7; color: #0a0b0f; border: none; font-weight: 700; }
+  .btn.primary { background: var(--accent, #C5D86D); color: #261C15; border: none; font-weight: 700; }
 
   .ae-shell { display: grid; grid-template-columns: 200px 1fr 280px; height: calc(100vh - 52px); }
 
@@ -28,7 +32,7 @@
     padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; cursor: grab;
     transition: border-color .15s;
   }
-  .ae-palette-item:hover { border-color: #6ee7b7; }
+  .ae-palette-item:hover { border-color: var(--accent, #C5D86D); }
 
   .ae-canvas-wrap { background: #0d0e12; padding: 24px; overflow-y: auto; }
   .ae-canvas {
@@ -36,7 +40,7 @@
     background: #101218; border: 1px dashed #262b38; border-radius: 16px;
     padding: 20px; display: flex; flex-direction: column; gap: 14px;
   }
-  .ae-canvas.ae-drop-active { border-color: #6ee7b7; }
+  .ae-canvas.ae-drop-active { border-color: var(--accent, #C5D86D); }
   .ae-canvas:empty::before {
     content: "Arrastra elementos de la izquierda aquí";
     color: #565c6c; font-size: 13px; display:block; text-align:center; padding: 60px 0;
@@ -45,7 +49,7 @@
     position: relative; border: 1px solid transparent; border-radius: 12px; padding: 6px;
   }
   .ae-block:hover { border-color: #262b38; }
-  .ae-block.ae-selected { border-color: #6ee7b7; }
+  .ae-block.ae-selected { border-color: var(--accent, #C5D86D); }
   .ae-block-toolbar {
     display: flex; justify-content: space-between; align-items: center;
     font-size: 10.5px; color: #6c7386; padding: 2px 4px 6px;
@@ -86,7 +90,7 @@
 const elementRegistry = {
   Hero: {
     displayName: "Hero / Portada", icon: "🏔️",
-    defaultProps: { title: "Título principal", subtitle: "Subtítulo de apoyo", bgColor: "#1f2937" },
+    defaultProps: { title: "Título principal", subtitle: "Subtítulo de apoyo", bgColor: "#261C15" },
     editableProps: [
       { key: "title", label: "Título", kind: "text" },
       { key: "subtitle", label: "Subtítulo", kind: "textarea" },
@@ -131,9 +135,9 @@ const elementRegistry = {
       { key: "style", label: "Estilo", kind: "select", options: ["primary","secondary"] },
     ],
     renderHTML: (p) => {
-      const bg = p.style === "primary" ? "#6ee7b7" : "transparent";
-      const color = p.style === "primary" ? "#0a0b0f" : "#6ee7b7";
-      const border = p.style === "primary" ? "none" : "1px solid #6ee7b7";
+      const bg = p.style === "primary" ? "var(--accent, #C5D86D)" : "transparent";
+      const color = p.style === "primary" ? "#261C15" : "var(--accent-text, #5A6B24)";
+      const border = p.style === "primary" ? "none" : "1px solid var(--accent, #C5D86D)";
       return `<a href="${p.href}" style="display:inline-block;padding:9px 20px;border-radius:999px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${p.label}</a>`;
     },
   },

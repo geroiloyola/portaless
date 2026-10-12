@@ -30,6 +30,20 @@ import Footer from "../components/Footer.astro";
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="describedby" type="text/plain" href={llmsTxtUrl} />
     {markdownUrl && <link rel="alternate" type="text/markdown" href={markdownUrl} />}
+    <!-- Phase 0: hoja del skin activo del sitio. Va despues de global.css
+         (que trae la paleta oficial como default) para sobreescribirla.
+         En hosting estatico sin functions el 404 lo ignora el navegador
+         y manda el default -- nunca rompe la pagina. -->
+    <link rel="stylesheet" href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/site-skin`} />
+    <script is:inline>
+      // Toggle explicito de tema: localStorage("portaless-theme") =
+      // "dark" | "light" fuerza el tema; ausente = auto (SO). Va antes
+      // del primer paint para no parpadear.
+      try {
+        var t = localStorage.getItem("portaless-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) { /* sin storage: auto */ }
+    </script>
     <slot name="head">
       <meta name="description" content={description} />
       <title>{title}</title>

@@ -30,8 +30,8 @@
   gap: 8px;
 }
 .ae-column-slot-editable.ae-dropzone-active {
-  border-color: #6ee7b7;
-  background: rgba(110, 231, 183, 0.06);
+  border-color: var(--accent, #C5D86D);
+  background: color-mix(in oklab, var(--accent, #C5D86D) 8%, transparent);
 }
 .ae-empty-slot {
   color: #6b7280;

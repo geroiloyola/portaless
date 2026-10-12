@@ -46,6 +46,7 @@ export const REQUIRED_TABLES = [
   "mcp_agent_tokens",
   "site_atproto_links",
   "cloud_images",
+  "site_skin",
   "settlement_provider_activations",
   "deployment_oauth_states",
   "deployment_credentials",
