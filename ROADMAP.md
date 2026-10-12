@@ -99,6 +99,122 @@ Categories are by **who** must resolve the piece, not by priority.
 
 ---
 
+## Roadmap to the official Beta (six phases)
+
+> No dates: this is a single-maintainer project, and putting dates would be a false promise. Each phase carries a **verifiable exit criterion** — advancing to the next depends on a fact, not a feeling, the same standard this ROADMAP already uses with its PRs.
+
+### Phase 0 — Visual identity foundation (precondition for everything else)
+
+**Goal**: one source of truth for color, applied to dashboard and public site alike, with the official palette as the default for new installs.
+
+**Why first**: no later UI phase makes sense if it is built on two color systems that do not talk to each other. Doing it now avoids rework.
+
+1. Extend `DesignTokens` (`skin-engine/tokens.ts`) so `src/styles/global.css` reads the same CSS variables (`--bg`, `--text`, `--accent`, …) instead of its current hardcoded values: the public site becomes governed by the same `skin.json` that today only governs the dashboard. **Honest cost note**: the 12 editor elements render with hardcoded inline `style="..."` (`registry.ts`), not variables — making the public site respond to the skin requires refactoring that `renderHTML` to variables, not just wiring `global.css`.
+2. Set `base.json` with the official palette as the default for new installs, with the contrast fix already resolved (text never on pure `#C5D86D` over a light background).
+3. Add a real dark mode using `#261C15` as `--bg` and `#F7F7F2` as `--text`.
+4. A theme selector in `/admin` that writes the active skin, so "edit later" is a form field, not hand-editing JSON.
+
+**Exit criterion**: change `accent` in one place (`skin.json`) and see it reflected in dashboard, editor, and public site without touching CSS by hand, confirmed by a simple before/after visual regression test.
+
+### Phase 0.5 — Close the edit→publish cycle
+
+**Goal**: saving a page in the editor makes it visible to visitors without a terminal.
+
+**Why it exists**: today `PUT /admin/pages/:slug` writes to D1/SQLite, but `/paginas/[slug]` is built only from `src/content/pages/*.json` at build time — nothing serves the DB at runtime, so an edited page is invisible to every visitor until someone runs `npm run publish` (a CLI that only supports self-hosted SQLite and has never been run against a real GitHub account). This gap breaks Phase 1's GIF ("drag an element, see it published") and Phase 5's exit criterion ("a person without the author's help installs Portaless and publishes a site").
+
+1. In the self-host Node runtime (which already serves `dist/` + `functions/`), serve `/paginas/[slug]` dynamically from the `pages` table when the slug exists in the DB — static JSON files keep working as fallback, so nothing breaks for GitHub Pages.
+2. A "Publish" button in the editor that runs the dump+build through the runtime (or, minimally, marks the page served-directly so the UI cycle closes without a rebuild).
+3. Page manager minimum in the admin UI: list existing pages (`HttpPageStore.list()` already exists, it is just never called), open one by clicking, delete one (`onRequestDelete` does not exist yet in `functions/admin/pages/[slug].js`).
+
+**Exit criterion**: a person edits a page in `/admin/editor`, clicks save/publish, opens the public URL in a new tab, and sees the change — on self-host, with no terminal open.
+
+### Phase 1 — Visual evidence of the product (cheapest, highest impact)
+
+**Goal**: someone arriving at the repository for the first time can see, in 10 seconds and without cloning or running anything, what Portaless is.
+
+**Why it matters this much**: with ~170 commits and serious architecture, the repo has zero screenshots. This is the lowest-cost, highest-return gap in the whole audit — it requires no new code, only showing what already exists.
+
+1. A public demo instance (GitHub Pages or Cloudflare Pages, both already supported) with real example content: a blog, a link-in-bio page using the 4 existing elements (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`), and a visible `/trust/:siteId`.
+2. Real screenshots (not mockups) of the dashboard, the editor with drag-and-drop, and `/trust/:siteId` showing the SiteTrustScore, inserted in the README above the Features table.
+3. A short GIF (10–15 s) of the editor in action: dragging an element, seeing it published.
+4. Update the README with the official palette applied to the repository's own badges/shields, as the first public demonstration of the brand.
+
+**Exit criterion**: the README can be understood visually without reading a single line of text, scrolling only through the images.
+
+### Phase 2 — Competitive visual catalog
+
+**Goal**: go from an MVP catalog (12 elements, 4 skins) to one that sustains real comparisons with site-building tools — not with all of WordPress yet.
+
+**Why in this position**: before this phase it makes no sense to invest in more elements — they would be built on a fragmented token system (Phase 0) and nobody would see them (Phase 1).
+
+1. Elements missing from any basic visual builder: Video (embed), FAQ/Accordion, Testimonial, Form (simple contact), Gallery. Takes the catalog from 12 to ~17, covering the use cases that today force hand-editing HTML. **The contact form matters double**: the wizard's own templates generate "Contáctanus" buttons pointing at a `#contacto` anchor that exists nowhere.
+2. At least 2 new skins aimed at the use cases the ROADMAP already identifies as "where Portaless shines today": professional portfolio and launch microsite. Reuses the existing skin-engine, no new architecture work.
+3. Starting templates (not just empty skins): 3–4 complete, editable example sites on first `npm run dev`, so "starting from scratch" is not a blank page.
+4. Editor polish: hover states, visual feedback while dragging, alignment guides — the mechanism (`drag-drop.ts`) works, but the experience has not been documented as tested by a real non-technical user. **This includes the page manager from Phase 0.5**: the exit criterion below is unreachable if the user cannot open a second page without typing its URL.
+
+**Exit criterion**: a person with no coding knowledge builds a page in a single session (under 30 minutes), unaided, using only the visual editor — proven with a real recorded session, not an assumption.
+
+### Phase 3 — Hardening for real production
+
+**Goal**: close the security and reliability gaps the ROADMAP itself lists as pending, before inviting the first real external users.
+
+**Why in this position, and not earlier**: they are necessary fixes, but investing here before having visual evidence (Phase 1) would repeat the pattern that produced the current imbalance: more technical depth, zero users to benefit from it.
+
+1. Real verification of the Cloudflare Workers for Platforms and Deno Deploy adapters against a real account (today unverified, per this ROADMAP's External section).
+2. Deployment of the Cloudflare "dispatcher" Worker, the pending external infrastructure blocking production sandboxing end to end.
+3. Sustain the test coverage floors (`68 lines / 67 statements / 66 functions / 65 branches`, measured baseline already above them) and raise coverage toward ~80% in newly added areas, never lowering the floors. *(The original "raise from 40–46% to 60–70%" item is already closed: the project currently runs 1115+ tests at ~74/71/74/75 measured.)*
+4. Resolve the documented bus-factor risk — not technically (code cannot fix it), but with an explicit decision: define whether a second maintainer with real merge permissions is sought **before** opening the Beta to the external public. A project with a single human point of failure should not invite third-party production data without that minimal safeguard, in honesty with whoever trusts it.
+5. A minimal external security review (it can be informal: a second pair of eyes outside the author) of the authentication flow and the plugin sandbox — the two highest-damage surfaces if they fail.
+
+**Exit criterion**: CI green in a sustained way (not a snapshot), coverage floors held, and at least one person other than the author with real capacity to review or merge code.
+
+### Phase 4 — A second real implementer of APW
+
+**Goal**: APW stops being a protocol with a single implementation — the minimal condition to aspire to the reference level.
+
+**Why the hardest and most important phase**: no amount of additional code in this repo solves this. It is solved by getting someone external, without close coordination with the author, to read only `APW-SPEC-v1.3.md` and `APW-VECTORS-v1.3.md` and build an independent implementation that verifies against the same vectors.
+
+1. A minimal starter kit for external implementers: the test vectors already exist (`APW-VECTORS-v1.3.md`); what's missing is a "how to implement APW in your stack" README aimed at someone who never saw Portaless's code, with pseudocode or a non-TypeScript language, to prove the spec is portable and not a description of the existing code.
+2. Publish the simplest possible use case (resolving `did:apw` and verifying a manifest) as a standalone library, separate from Portaless's monorepo, in its own npm package (`apw-resolver` already lives as a package; the step is publishing it independently, documented as "does not require the rest of Portaless").
+3. Actively seek 1–2 kindred projects or communities (independent media, thematic wiki networks — the exact use cases spec v1.0 already identified in its section 11) and propose they implement APW on their own stack, with direct support from the author.
+4. Document publicly the change-proposal process for the spec (already present in v1.3's License and governance section: errata → version → proposals) with a real, visible channel to receive them — today that governance is described but there is no active external input channel.
+5. **Optional did:web-compatible publication (Path A, recommended)**: keep the `_apw.<domain>` DNS TXT record as the root of the trust chain — a stronger root than an HTTPS file because it requires DNS control, not just hosting — and additionally publish an optional `/.well-known/did.json` in **did:web** format whose `service` entry points at the already DNS-anchored log. Any existing did:web resolver reads the identity unchanged; a client that does not know APW ignores the service it does not understand; a client that does know APW follows the service and fetches the trust chain. **One erratum is required before this ships**: define the subject mapping — attestations and history reference `did:apw:<domain>` subjects, so the erratum must state that `did:web:<domain>` publishing the same key and declaring the `did:apw:<domain>` log via `service` is recognized as the same subject for verification. Without that rule, "compatible" is half-true.
+
+**Exit criterion**: at least one domain that is not the author's publishes a valid `_apw.*` record, verifiable with `resolveApwManifest()`, built with implementation code the author did not write.
+
+### Phase 5 — Index as a real aggregator, public Beta
+
+**Goal**: Index starts behaving like a real network, not a single-operator script, and the project opens its first official Beta with onboarding proven by real non-technical people.
+
+**Why last**: Index aggregating witnesses of a single operator is not a network, it is a database. It needs Phase 4 to have produced more than one real instance first — aggregating witnesses of a single author would simulate a network, not build one.
+
+1. Witness weight calibration (A.4.4-style, already designed mathematically in the spec but not implemented for Index, per the code's own comments in `witness-index.ts`).
+2. Minimal inter-node synchronization between Index instances (gossip or periodic pull between two or more Index deployments, currently nonexistent per the code).
+3. The one-click onboarding wizard (already designed in this ROADMAP) tested with at least 3–5 people without a technical profile, with adjustments based on those sessions, not on design assumptions.
+4. Documentation for a non-technical audience: not another 114 KB `ROADMAP.md`, but a short "install your site in 10 minutes" guide with screenshots (reusing Phase 1 material).
+5. Public Beta announcement with the official palette applied end to end, the Phase 1 public demo as the first impression, and an explicit honesty note about what is ready and what is not — the same transparency standard the project already uses in its "Real status by module", now applied to whoever discovers it for the first time, not only to whoever reads the code.
+
+**Exit criterion (and close of this roadmap)**: a person outside the project, without the author's direct help, installs Portaless, publishes a site with APW identity, and that site appears correctly in at least one Index node that is not the author's.
+
+### Beta readiness checklist
+
+One list, so progress does not depend on re-reading the six phases:
+
+- [ ] One token system governs dashboard and public site alike
+- [ ] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
+- [ ] Editing a page and seeing it published works from the UI, no terminal
+- [ ] The README shows real screenshots of the product, not only text
+- [ ] A public demo instance is browsable without installing anything
+- [ ] The element catalog covers basic content-site use cases (video, FAQ, contact form, gallery)
+- [ ] CI green in a sustained way, coverage floors held in the range the ROADMAP set for itself
+- [ ] At least one person other than the author with real capacity to review or merge code
+- [ ] At least one external domain (not the author's) publishes valid APW identity
+- [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights
+- [ ] The onboarding wizard was tested with real non-technical people
+- [ ] "First steps" documentation exists for someone who does not read TypeScript
+
+---
+
 ## Open manual tasks
 
 1. GitHub Settings: `main` with required status checks (`build`, full test suite) before merging.

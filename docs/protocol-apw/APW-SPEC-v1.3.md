@@ -28,6 +28,10 @@
 
 **License of the standard.** This document, [`ERRATA.md`](./ERRATA.md) and [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) are published under **CC BY 4.0**: copying, translating, reimplementing, and commercial use of this specification are permitted, with attribution to the author. The reference implementation (Portaless code in this repository) is **AGPL-3.0** (see [`LICENSE`](../../LICENSE) and [`docs/architecture/licensing-boundaries.md`](../architecture/licensing-boundaries.md)): the standard's license does not infect the code, nor the code's license the standard.
 
+**Patent non-aggression pledge.** In addition to the CC BY 4.0 license above, contributors to this specification covenant not to assert any patent they own or control against any party for implementing, distributing, or using Protocol APW as described herein, provided that party does not assert patent claims against other implementers of Protocol APW. This pledge is a commitment not to sue — not a patent license grant — and binds only its covenantee. Precedent: AT Protocol pairs a permissive code license with a public patent non-aggression pledge; APW keeps CC BY 4.0 for the specification text (no license change) and adds this pledge beside it.
+
+**What this license does not cover.** The CC BY 4.0 grant applies to this specification text only. The Portaless reference implementation is licensed separately under AGPL-3.0: implementing Protocol APW requires no license over that code, and grants none. No trademark, name, or conformance mark is granted: conformance may be declared without Portaless's permission (Neutrality below), but not under the "APW" name as an endorsement.
+
 **Authorship and edition.** Author: Gerardo Loyola. The Portaless project edits and publishes versions of this document. Annex A adapts the Veranet Universal Scoring System, by the same author; that does not restrict reimplementing Annex A.
 
 **Name.** Section 6 is called **Loyal Trust Protocol (LTP)**. Earlier versions of the document published it as "Loyola Trust Protocol": same specification, same LTP acronym. When citing, use the name the cited version was published under.
