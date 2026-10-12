@@ -12,7 +12,7 @@ import type { PermissionSubjectType } from "../../../permissions/src/types";
 import type { CapabilityId } from "../../../plugin-sandbox/src/types";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
-import type { AgentIdentity } from "../permissions/types";
+import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 
@@ -30,7 +30,8 @@ export interface RegisterRevokePermissionToolDeps {
   permissionStore: PermissionStore;
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
-  agent: AgentIdentity;
+  /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
+  resolveAgent: AgentIdentityResolver;
 }
 
 export function registerRevokePermissionTool(server: McpServer, deps: RegisterRevokePermissionToolDeps): void {
@@ -43,11 +44,12 @@ export function registerRevokePermissionTool(server: McpServer, deps: RegisterRe
         "real. Requiere 'site:admin' concedida al agente que invoca esta tool.",
       inputSchema,
     },
-    async ({ subjectType, subjectId, subjectDisplayName, capabilityId }) => {
-      await requireCapability(deps.permissionStore, deps.agent, REQUIRED_CAPABILITY);
+    async ({ subjectType, subjectId, subjectDisplayName, capabilityId }, extra?: AgentInvocationContext) => {
+      const agent = await deps.resolveAgent(extra);
+      await requireCapability(deps.permissionStore, agent, REQUIRED_CAPABILITY);
 
       await recordToolInvocation(deps.auditLog, deps.usageLedger, {
-        agentKeyId: deps.agent.key,
+        agentKeyId: agent.key,
         toolName: TOOL_NAME,
         capabilityId: REQUIRED_CAPABILITY,
         run: () =>
@@ -55,7 +57,7 @@ export function registerRevokePermissionTool(server: McpServer, deps: RegisterRe
             subject: { type: subjectType as PermissionSubjectType, id: subjectId, displayName: subjectDisplayName },
             capabilityId,
             granted: false,
-            grantedBy: `mcp-agent:${deps.agent.key}`,
+            grantedBy: `mcp-agent:${agent.key}`,
           }),
       });
 

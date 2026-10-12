@@ -7,18 +7,13 @@
 // Y conecta las tools -- ver createPortalessMcpServerDeps para lo que
 // index.ts debe resolver antes de llamar a createPortalessMcpServer().
 //
-// LIMITACION CONOCIDA (Opcion A, ver AGENT.md y docs/architecture/
-// mcp-agents.md): el SDK de MCP no expone hoy un mecanismo de sesion
-// por invocacion sobre StdioServerTransport, asi que AgentIdentity se
-// resuelve UNA SOLA VEZ al arrancar el proceso (variables de entorno
-// MCP_AGENT_KEY / MCP_AGENT_DISPLAY_NAME, ver index.ts), no por cada
-// llamada. Esto significa que todo el proceso stdio actua como un unico
-// agente fijo, sin verificacion criptografica real -- a diferencia de
-// Web Bot Auth (packages/trust-layer), que si verifica firma Ed25519
-// por request HTTP. Una identidad de agente real y verificada para el
-// transporte stdio (Opcion B) queda fuera de alcance de este commit;
-// ver "Proximo paso recomendado" en AGENT.md para no repetir el error
-// de declarar esto como resuelto antes de que lo este de verdad.
+// Identidad por invocacion (Opcion B, AGENT.md): deps.resolveAgent se
+// ejecuta en CADA invocacion de tool -- sobre transporte HTTP resuelve
+// el bearer token de esa peticion contra McpAgentTokenStore (dos tokens
+// distintos = dos identidades con permisos y auditoria separados); sobre
+// stdio el resolver de env devuelve la identidad fija del proceso
+// (Opcion A, limitacion del SDK que no expone authInfo en stdio). Este
+// archivo no distingue el transporte: solo propaga el resolver.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PageStore } from "../../atomic-elements/src/persistence/page-store";
@@ -26,7 +21,7 @@ import type { PermissionStore } from "../../permissions/src/permission-store";
 import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
 import type { UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
-import type { AgentIdentity } from "./permissions/types";
+import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";
 import { registerUpdatePageTool } from "./tools/update-page";
 import { registerGrantCapabilityTool } from "./tools/grant-capability";
@@ -52,8 +47,12 @@ export interface CreatePortalessMcpServerDeps {
   pluginRegistry: PluginRegistryStore;
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
-  agent: AgentIdentity;
+  /** Resolver de identidad del agente invocante, ejecutado POR INVOCACION en cada tool. */
+  resolveAgent: AgentIdentityResolver;
 }
+
+/** Solo stores (sin resolver) -- lo que el servidor HTTP comparte entre peticiones. */
+export type McpStoreDeps = Omit<CreatePortalessMcpServerDeps, "resolveAgent">;
 
 export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): McpServer {
   const server = new McpServer({
@@ -67,13 +66,13 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
   registerQueryUsageLogTool(server, {
     usageLedger: deps.usageLedger,
     auditLog: deps.auditLog,
-    agentKeyId: deps.agent.key,
+    resolveAgent: deps.resolveAgent,
   });
   registerListInstalledPluginsTool(server, {
     pluginRegistry: deps.pluginRegistry,
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
-    agentKeyId: deps.agent.key,
+    resolveAgent: deps.resolveAgent,
   });
 
   // Tools de contenido (requieren content:write / content:read, ver
@@ -83,14 +82,14 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     permissionStore: deps.permissionStore,
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
-    agent: deps.agent,
+    resolveAgent: deps.resolveAgent,
   });
   registerUpdatePageTool(server, {
     pageStore: deps.pageStore,
     permissionStore: deps.permissionStore,
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
-    agent: deps.agent,
+    resolveAgent: deps.resolveAgent,
   });
 
   // Tools de administracion (requieren site:admin -- ver la nota de
@@ -100,13 +99,13 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     permissionStore: deps.permissionStore,
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
-    agent: deps.agent,
+    resolveAgent: deps.resolveAgent,
   });
   registerRevokePermissionTool(server, {
     permissionStore: deps.permissionStore,
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
-    agent: deps.agent,
+    resolveAgent: deps.resolveAgent,
   });
 
   return server;

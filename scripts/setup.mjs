@@ -43,6 +43,7 @@ export const REQUIRED_TABLES = [
   "site_identity",
   "capability_bridge_tokens",
   "webbotauth_nonces",
+  "mcp_agent_tokens",
   "settlement_provider_activations",
   "deployment_oauth_states",
   "deployment_credentials",

@@ -38,6 +38,7 @@ const SOURCES = [
   { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/apw-resolver/schema.sql" },
   { path: "schema-additions/capability-tokens.sql", selfBanner: true },
   { path: "schema-additions/webbotauth-nonces.sql", selfBanner: true },
+  { path: "schema-additions/mcp-agent-tokens.sql", selfBanner: true },
   { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
   { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
   { path: "schema-additions/settlement-activations.sql", selfBanner: true },

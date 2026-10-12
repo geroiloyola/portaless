@@ -14,11 +14,12 @@
 # package.json ni package-lock.json. La version DEBE coincidir con la de
 # vitest (hoy 5.0.2); si se actualiza vitest, actualizar COVERAGE_VERSION.
 #
-# Umbrales (v0.0.9.30): linea de base medida en el merge del PR #55 =
-# lineas 47.43 / sentencias 46.67 / funciones 49.17 / ramas 42.51.
-# Los minimos quedan ~2-3 puntos por debajo (45/44/46/40) para absorber
-# variaciones del reporte sin volver fragil el pipeline. Subirlos de a poco
-# a medida que se agreguen tests; nunca bajarlos para hacer pasar un PR.
+# Umbrales (v0.0.9.31): linea de base re-medida tras el item de identidad
+# MCP por invocacion ~ lineas 72.9 / sentencias 71.6 / funciones 71.6 /
+# ramas 69.0 (varia +-0.05 entre corridas por rutas dinamicos). Los minimos
+# quedan ~3-4 puntos por debajo (68/67/66/65) para absorber variaciones
+# del reporte sin volver fragil el pipeline. Subirlos de a poco a medida
+# que se agreguen tests; nunca bajarlos para hacer pasar un PR.
 #
 # *.sql se excluye: coverage-v8 intentaba parsear los schema.sql como
 # JavaScript y llenaba el log de PARSE_ERROR.
@@ -77,10 +78,10 @@ jobs:
           --coverage.exclude='**/*.test.ts'
           --coverage.exclude='**/tests/**'
           --coverage.exclude='**/*.sql'
-          --coverage.thresholds.lines=45
-          --coverage.thresholds.statements=44
-          --coverage.thresholds.functions=46
-          --coverage.thresholds.branches=40
+          --coverage.thresholds.lines=68
+          --coverage.thresholds.statements=67
+          --coverage.thresholds.functions=66
+          --coverage.thresholds.branches=65
 
       - name: Resumen de cobertura en la pagina del run
         if: always()
@@ -90,7 +91,7 @@ jobs:
             const p = 'coverage/coverage-summary.json';
             if (!fs.existsSync(p)) { console.log('Sin reporte de cobertura.'); process.exit(0); }
             const t = JSON.parse(fs.readFileSync(p, 'utf8')).total;
-            const min = { lines: 45, statements: 44, functions: 46, branches: 40 };
+            const min = { lines: 68, statements: 67, functions: 66, branches: 65 };
             const row = (k, label) => '| ' + label + ' | ' + t[k].pct + '% | ' + min[k] + '% | ' + t[k].covered + ' / ' + t[k].total + ' |';
             const md = [
               '## Cobertura de tests',

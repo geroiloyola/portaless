@@ -54,11 +54,19 @@ Esto significa que el uso de las 7 tools por parte de cualquier agente ya queda 
 
 No tiene una vía de acceso al filesystem, base de datos, o APIs de Cloudflare/Deno/Fastly distinta o más privilegiada que la de un plugin sandboxeado normal. Confirmado: cada store que usa el mcp-server (`PageStore`, `PermissionStore`, `PluginRegistryStore`, `UsageLedgerStore`) es la misma factory D1/SQLite/memoria que usan los endpoints HTTP del panel admin — no hay una vía paralela.
 
-## Limitación real y activa: identidad de agente fija por proceso (Opción A)
+## Identidad de agente: por invocación sobre HTTP (Opción B), fija por proceso sobre stdio (Opción A)
 
-El SDK de MCP no expone hoy un mecanismo de sesión por invocación sobre `StdioServerTransport`. `AgentIdentity` se resuelve **una sola vez** al arrancar el proceso (`MCP_AGENT_KEY`/`MCP_AGENT_DISPLAY_NAME`), no por cada llamada — todo el proceso stdio actúa como un único agente fijo, sin verificación criptográfica real por invocación, a diferencia de Web Bot Auth (que sí verifica firma Ed25519 por request HTTP).
+El servidor soporta dos transportes (elegidos por `PORTALESS_MCP_TRANSPORT`), y con ellos dos modos de identidad. Ambos resuelven la identidad mediante `resolveAgent()` ejecutado en **cada** invocación de tool (`packages/mcp-server/src/permissions/agent-identity.ts`) y verifican capacidades contra el mismo `PermissionStore` real.
 
-Esto es una limitación de seguridad activa, documentada en `AGENT.md` y en el propio comentario inline de `server.ts` y `index.ts` — no un detalle menor. Una identidad de agente real y verificada por invocación sobre stdio (Opción B) queda fuera de alcance hasta que el SDK de MCP lo soporte, o hasta que se evalúe un transporte alternativo.
+### Opción B (implementada): identidad por invocación sobre HTTP
+
+`PORTALESS_MCP_TRANSPORT=http` levanta un servidor self-host con `StreamableHTTPServerTransport` stateless en `/mcp` (default `127.0.0.1:8788`, configurable con `PORTALESS_MCP_HTTP_PORT`/`PORTALESS_MCP_HTTP_HOST`). Cada petición porta el header `Authorization: Bearer <token>`; el token crudo viaja como `authInfo` hasta el handler de cada tool, que lo verifica contra `McpAgentTokenStore` **por invocación** (`createBearerTokenAgentIdentityResolver`). Solo el hash sha256 del token se persiste (tabla `mcp_agent_tokens`, patrón idéntico a `authorized_escrow_providers.api_key_hash`); el plaintext se emite **una sola vez** desde `POST /admin/api/mcp-agents` (rol admin; `GET` lista, `PATCH` revoca) y la emisión rota — un solo token activo por `agentKeyId`. Dos tokens distintos son dos identidades con permisos y auditoría separados; revocar un token corta ese acceso sin reiniciar nada.
+
+Honestidad sobre el mecanismo: es un bearer token (secreto simétrico), **no** una verificación criptográfica tipo Web Bot Auth (firma Ed25519 por request) — esa diferencia se mantiene documentada.
+
+### Opción A (única posible sobre stdio): identidad fija por proceso
+
+El cliente stdio local (Claude Desktop, Cursor) no envía headers por invocación — el SDK de MCP no expone `authInfo` sobre `StdioServerTransport`. Sobre stdio, `MCP_AGENT_KEY` (obligatoria) / `MCP_AGENT_DISPLAY_NAME` definen una identidad fija por proceso (`createEnvAgentIdentityResolver`, fail-fast al arrancar). El riesgo conocido de siempre se mantiene: todo el proceso stdio actúa como un único agente, sin verificación por llamada. Para identidad real por invocación, usar el transporte HTTP.
 
 ## Estado actual y dependencias (verificado en el código real, esta sesión)
 
@@ -71,10 +79,10 @@ Esto es una limitación de seguridad activa, documentada en `AGENT.md` y en el p
 | `UsageLedgerStore` con factory real | Conectado. `index.ts` usa `createUsageLedgerStore(env)`, no un stub get/increment. |
 | Auditoría doble (local + ledger público) | Conectada vía `recordToolInvocation()` en las 7 tools. |
 | Auditoría local (`AuditLogStore`) con factory D1/SQLite propia | **Pendiente** — hoy solo `InMemoryAuditLogStore`, se resetea entre procesos. |
-| Identidad de agente por invocación (Opción B) | **Pendiente**, bloqueada por el SDK de MCP (ver limitación arriba). |
+| Identidad de agente por invocación (Opción B) | **Implementada para transporte HTTP**: bearer token verificado por invocación (`mcp_agent_tokens`, emitido/revocado desde `/admin/api/mcp-agents`). Sobre stdio se mantiene Opción A (identidad fija por proceso) — limitación del SDK, no de este repo. |
 | `identity-atproto` para DIDs de agentes | Stub, sin implementar — no bloquea las 7 tools ya activas. |
-| Cuota de tokens por sitio (`packages/mcp-server/src/permissions/`) | Directorio existe; confirmar si tiene lógica real o solo la estructura prevista — pendiente de verificación en una sesión futura. |
+| `packages/mcp-server/src/permissions/` | Lógica real: guard central `requireCapability()`/`withCapability()`, resolvers de identidad (`agent-identity.ts`) y store de tokens de agentes (`agent-token-store.ts`, D1/SQLite/memoria). No existe lógica de cuota de tokens (nunca la hubo — la fila previa lo decía como "pendiente de verificación"). |
 
 ## Próximo paso recomendado
 
-Con las 7 tools ya conectadas a stores reales, el trabajo pendiente de mayor impacto es una factory D1/SQLite propia para `AuditLogStore` (hoy en memoria, se resetea entre procesos) — mismo patrón ya aplicado a los otros 4 stores del mcp-server. La Opción B de identidad por invocación queda bloqueada por el SDK externo, no por trabajo pendiente de este repositorio.
+El trabajo pendiente de mayor impacto es una factory D1/SQLite propia para `AuditLogStore` (hoy en memoria, se resetea entre procesos) — mismo patrón ya aplicado a los otros 4 stores del mcp-server. Sobre identidad, los caminos naturales de evolución son: una UI en el Centro de Permisos para emitir/rotar/revocar tokens de agentes (hoy solo endpoint admin), y reemplazar el bearer token simétrico por verificación criptográfica por request estilo Web Bot Auth (firma Ed25519), cuando el ecosistema MCP cliente permita firmar cada llamada.

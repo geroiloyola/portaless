@@ -18,7 +18,7 @@ import type { ElementNode } from "../../../atomic-elements/src/types";
 import type { PermissionStore } from "../../../permissions/src/permission-store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
-import type { AgentIdentity } from "../permissions/types";
+import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 
@@ -51,7 +51,8 @@ export interface RegisterUpdatePageToolDeps {
   permissionStore: PermissionStore;
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
-  agent: AgentIdentity;
+  /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
+  resolveAgent: AgentIdentityResolver;
 }
 
 export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePageToolDeps): void {
@@ -65,8 +66,9 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
         "para leer y 'content:write' para guardar, ambas concedidas en el Centro de Permisos.",
       inputSchema,
     },
-    async ({ slug, title, description, root }) => {
-      await requireCapability(deps.permissionStore, deps.agent, READ_CAPABILITY_ID);
+    async ({ slug, title, description, root }, extra?: AgentInvocationContext) => {
+      const agent = await deps.resolveAgent(extra);
+      await requireCapability(deps.permissionStore, agent, READ_CAPABILITY_ID);
       const existing = await deps.pageStore.load(slug);
       if (!existing) {
         return {
@@ -75,7 +77,7 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
         };
       }
 
-      await requireCapability(deps.permissionStore, deps.agent, WRITE_CAPABILITY_ID);
+      await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
       const updated = {
         ...existing,
         title: title ?? existing.title,
@@ -84,7 +86,7 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
       };
 
       await recordToolInvocation(deps.auditLog, deps.usageLedger, {
-        agentKeyId: deps.agent.key,
+        agentKeyId: agent.key,
         toolName: TOOL_NAME,
         capabilityId: WRITE_CAPABILITY_ID,
         run: () => deps.pageStore.save(updated),

@@ -31,7 +31,7 @@ import type { PageLayout, ElementNode } from "../../../atomic-elements/src/types
 import type { PermissionStore } from "../../../permissions/src/permission-store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
-import type { AgentIdentity } from "../permissions/types";
+import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 
@@ -64,7 +64,8 @@ export interface RegisterCreatePageToolDeps {
   permissionStore: PermissionStore;
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
-  agent: AgentIdentity;
+  /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
+  resolveAgent: AgentIdentityResolver;
 }
 
 export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePageToolDeps): void {
@@ -78,8 +79,9 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
         "el slug final. Requiere la capacidad 'content:write' concedida en el Centro de Permisos.",
       inputSchema,
     },
-    async ({ slug, title, description, root, draftMode }) => {
-      await requireCapability(deps.permissionStore, deps.agent, CAPABILITY_ID);
+    async ({ slug, title, description, root, draftMode }, extra?: AgentInvocationContext) => {
+      const agent = await deps.resolveAgent(extra);
+      await requireCapability(deps.permissionStore, agent, CAPABILITY_ID);
 
       const finalSlug = draftMode ? `${slug}-draft` : slug;
       const layout: PageLayout = {
@@ -91,7 +93,7 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
       };
 
       await recordToolInvocation(deps.auditLog, deps.usageLedger, {
-        agentKeyId: deps.agent.key,
+        agentKeyId: agent.key,
         toolName: TOOL_NAME,
         capabilityId: CAPABILITY_ID,
         run: () => deps.pageStore.save(layout),

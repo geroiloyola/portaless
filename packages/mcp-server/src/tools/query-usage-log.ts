@@ -12,6 +12,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
 import type { AuditLogStore } from "../audit/types";
+import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 
 const TOOL_NAME = "query_usage_log";
@@ -33,16 +34,16 @@ function currentPeriod(): string {
 export interface RegisterQueryUsageLogToolDeps {
   usageLedger: UsageLedgerStore;
   auditLog: AuditLogStore;
-  agentKeyId: string;
+  /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
+  resolveAgent: AgentIdentityResolver;
 }
 
 /**
- * Registra query_usage_log sobre el servidor MCP. deps.agentKeyId debe
- * resolverse antes de esta llamada (ver packages/mcp-server/src/permissions,
- * AgentIdentity) -- en este commit se recibe ya resuelto porque el SDK de
- * MCP no expone todavia, en este paquete, un mecanismo propio de sesion
- * por llamada; los commits de tools con escritura (5-6) deben revisar si
- * el transporte usado permite identificar al agente por invocacion.
+ * Registra query_usage_log sobre el servidor MCP. La identidad se
+ * resuelve por invocacion (ver packages/mcp-server/src/permissions/
+ * agent-identity.ts): sobre transporte HTTP cada peticion aporta su
+ * propio bearer token; sobre stdio el resolver de env devuelve la
+ * identidad fija del proceso (Opcion A).
  */
 export function registerQueryUsageLogTool(server: McpServer, deps: RegisterQueryUsageLogToolDeps): void {
   server.registerTool(
@@ -56,11 +57,12 @@ export function registerQueryUsageLogTool(server: McpServer, deps: RegisterQuery
         "violaciones de politica detectadas?'.",
       inputSchema,
     },
-    async ({ period }) => {
+    async ({ period }, extra?: AgentInvocationContext) => {
+      const agent = await deps.resolveAgent(extra);
       const resolvedPeriod = period ?? currentPeriod();
 
       const result = await recordToolInvocation(deps.auditLog, deps.usageLedger, {
-        agentKeyId: deps.agentKeyId,
+        agentKeyId: agent.key,
         toolName: TOOL_NAME,
         capabilityId: null,
         run: async () => {

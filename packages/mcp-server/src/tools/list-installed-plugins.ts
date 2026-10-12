@@ -15,6 +15,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PluginRegistryStore } from "../../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 
 const TOOL_NAME = "list_installed_plugins";
@@ -27,7 +28,8 @@ export interface RegisterListInstalledPluginsToolDeps {
   pluginRegistry: PluginRegistryStore;
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
-  agentKeyId: string;
+  /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
+  resolveAgent: AgentIdentityResolver;
 }
 
 export function registerListInstalledPluginsTool(server: McpServer, deps: RegisterListInstalledPluginsToolDeps): void {
@@ -41,9 +43,10 @@ export function registerListInstalledPluginsTool(server: McpServer, deps: Regist
         "El trustScore es un promedio de votos 1-5 de la comunidad, no una certificacion de Portaless.",
       inputSchema,
     },
-    async ({ activeOnly }) => {
+    async ({ activeOnly }, extra?: AgentInvocationContext) => {
+      const agent = await deps.resolveAgent(extra);
       const result = await recordToolInvocation(deps.auditLog, deps.usageLedger, {
-        agentKeyId: deps.agentKeyId,
+        agentKeyId: agent.key,
         toolName: TOOL_NAME,
         capabilityId: null,
         run: () => deps.pluginRegistry.list(activeOnly),
