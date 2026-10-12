@@ -11,7 +11,7 @@ A lightweight, open source, modular CMS — built to be published without paid h
 [![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
 [![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](./docs/protocol-apw/APW-SPEC-v1.3.md)
 
-[Roadmap](./ROADMAP.md) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless/) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 
@@ -34,6 +34,8 @@ Portaless is a CMS built on [Astro](https://astro.build) that solves, by archite
 ---
 
 ## See Portaless in action
+
+**Live demo (no install needed): [geroiloyola.github.io/portaless](https://geroiloyola.github.io/portaless/)** — the public site deployed from this repo on every push to `main`. GitHub Pages runs no `functions/`, so the demo shows the static site only (home, blog, example pages); admin, login, and the dynamic `/trust/:siteId` need [self-host or Cloudflare Pages](#deployment).
 
 Real screenshots of the running product — captured from the live app, not mockups. Regenerate them anytime with `npm run build && node node_modules/tsx/dist/cli.mjs scripts/capture-screenshots.mjs` (output in [`docs/screenshots/`](./docs/screenshots)).
 
