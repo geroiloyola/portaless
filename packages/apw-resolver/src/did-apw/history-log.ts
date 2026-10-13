@@ -29,10 +29,12 @@
 // para publicarlo en /.well-known/apw-attestations.json. La entrada firmada no
 // cambia: sigue conteniendo solo el hash.
 
-import { LOG_SEQ_CONFLICT, type AttestationLogEntry, type AttestationLogStore } from './attestation-log-store';
+import type { AttestationLogEntry, AttestationLogStore } from './attestation-log-store';
 import type { SiteIdentityStore, ActiveSigningKey } from './site-identity-store';
 import { jwkThumbprint, publicJwkMembers } from './fingerprint';
 import { parseDidKeyId } from './key-id';
+
+export const LOG_SEQ_CONFLICT = 'attestation_log_seq_conflict';
 
 const HASH_RE = /^[A-Za-z0-9_-]{43}$/;
 const COMPACT_JWS_RE = /^[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$/;

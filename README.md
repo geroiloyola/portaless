@@ -273,7 +273,7 @@ portaless/
 │   ├── permissions/        # Permissions Center
 │   ├── plugin-sandbox/     # Multi-provider sandboxing
 │   ├── trust-layer/        # AI agent identification + SiteTrustScore + pay-per-crawl providers
-│   ├── apw-resolver/       # Protocol APW: DNS-over-HTTPS resolver + manifest + publishing CLI
+│   ├── apw-resolver/       # Protocol APW: DNS-over-HTTPS resolver + manifest + publishing CLI; `.` export = standalone client (see its README + docs/protocol-apw/STARTER-KIT.md)
 │   ├── mcp-server/         # Native MCP server (6 real tools connected)
 │   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, persistence)
 │   ├── commerce-plugin/    # Reference manifest for the commerce module

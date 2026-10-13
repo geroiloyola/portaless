@@ -1,7 +1,34 @@
 {
   "name": "@portaless/apw-resolver",
-  "version": "0.0.0",
-  "description": "STUB -- Cliente/resolver del Protocol APW (DNSLink, did:web/did:apw). No implementado todavia. Ver docs/protocol-apw/apw-spec.md.",
-  "private": true,
-  "license": "AGPL-3.0-or-later"
+  "version": "0.1.0",
+  "description": "Standalone client/resolver for Protocol APW: resolve did:apw identities, verify site manifests (DNS TXT), chained history, and JWS signatures. Zero Portaless dependencies — only Web APIs + canonicalize (JCS).",
+  "license": "AGPL-3.0-or-later",
+  "keywords": ["apw", "did", "dnslink", "jws", "jcs", "ed25519", "protocol"],
+  "type": "module",
+  "main": "./dist/standalone.js",
+  "types": "./dist/standalone.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/standalone.d.ts",
+      "import": "./dist/standalone.js"
+    },
+    "./full": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "npx --no-install tsc -p tsconfig.build.json && npx --no-install esbuild src/standalone.ts src/index.ts --bundle --format=esm --platform=neutral --external:canonicalize --outdir=dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "canonicalize": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

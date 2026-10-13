@@ -38,7 +38,12 @@ export interface AttestationLogEntry {
   ts: string;
 }
 
-export const LOG_SEQ_CONFLICT = 'attestation_log_seq_conflict';
+// La constante vive en history-log.ts (es un concepto de la cadena); aqui se
+// importa y re-exporta para no romper imports existentes. Importarla desde
+// history-log mantiene el grafo del cliente standalone sin stores de DB en
+// runtime (history-log solo importa tipos de este archivo).
+import { LOG_SEQ_CONFLICT } from './history-log';
+export { LOG_SEQ_CONFLICT };
 export const LOG_DUPLICATE_ATTESTATION = 'duplicate_attestation';
 
 export interface AttestationLogStore {

@@ -15,6 +15,38 @@ Normative specification: [`docs/protocol-apw/APW-SPEC-v1.3.md`](../../docs/proto
 
 Public: `/.well-known/did.json`, `/.well-known/apw-log.json`, `/.well-known/apw-witnesses.json`, `/.well-known/apw-manifest.jws`, `/.well-known/apw-index.json`, `/.well-known/apw-attestations.json`. Integrator guide: [`docs/api/`](../../docs/api/).
 
+## Standalone client (does not require the rest of Portaless)
+
+The `.` export (`src/standalone.ts`) is the **minimal verifier surface** for external projects: resolve a `did:apw` identity, fetch and verify the site manifest (DNS TXT), verify the chained history, and verify site JWS signatures (JCS RFC 8785 + Ed25519). Its dependency graph touches **no other Portaless package, no database, no Node built-ins** — only Web APIs (`fetch`, `crypto.subtle`) and [`canonicalize`](https://www.npmjs.com/package/canonicalize) (JCS).
+
+```bash
+npm install @portaless/apw-resolver
+```
+
+```ts
+import { resolveApwIdentity, resolveApwHistory, verifySiteJws } from "@portaless/apw-resolver";
+
+const identity = await resolveApwIdentity("example.com");
+if (!identity.resolved) throw new Error(`APW: ${identity.reason}`);
+// identity.didDocument, identity.manifest
+
+const history = await resolveApwHistory("example.com");
+if (!history.verified) throw new Error(`APW history: ${history.reason}`);
+```
+
+Conformance target: the minimal vectors of [`APW-VECTORS-v1.3.md`](../../docs/protocol-apw/APW-VECTORS-v1.3.md) — **V-01, V-03, V-05, V-06, V-08, V-09** — with the normative spec at [`APW-SPEC-v1.3.md`](../../docs/protocol-apw/APW-SPEC-v1.3.md). New implementers should start at [`docs/protocol-apw/STARTER-KIT.md`](../../docs/protocol-apw/STARTER-KIT.md) (language-agnostic guide with pseudocode); this package is the TypeScript reference, not a prerequisite for implementing the protocol.
+
+The `./full` export (`src/index.ts`) adds the DNSLink helpers on top of the standalone surface. Trust scoring, reader conduct, and the server-side identity store are **not** part of the published client surface — they belong to the Portaless server, not to an external verifier.
+
+## Building and publishing (maintainers)
+
+```bash
+npm run build          # tsc (d.ts) + esbuild (ESM bundle) -> dist/
+npm publish            # prepublishOnly rebuilds; requires npm login
+```
+
+The package is prepared for independent publication (version, `files`, `exports`, sole runtime dependency `canonicalize`); the publish itself is an operator step with npm credentials. Note: `dist/` is gitignored — publish from a clean `npm run build`.
+
 ## License
 
 Implementation code: AGPL-3.0. The APW specification itself: CC BY 4.0 (reimplementation does not create AGPL obligations) — see "Licencia y gobernanza" in the spec.
