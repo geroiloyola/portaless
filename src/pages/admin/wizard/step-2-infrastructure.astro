@@ -146,7 +146,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     padding: 18px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
     text-align: left;
     cursor: not-allowed;
     opacity: 0.7;
@@ -170,9 +170,9 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     align-self: flex-start;
     margin-top: 8px;
     padding: 7px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-button, 8px);
     background: var(--portaless-accent);
-    color: #0b0c0f;
+    color: #261C15;
     font-size: 0.82rem;
     font-weight: 600;
     text-decoration: none;
@@ -184,22 +184,22 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     padding: 10px 12px;
     border: 1px solid var(--portaless-border);
     border-radius: 8px;
-    background: #0f1115;
+    background: var(--bg);
   }
   .wiz-publish-note-title { margin: 0 0 6px; font-size: 0.78rem; color: var(--portaless-muted); }
   .wiz-publish-cmd {
     display: block;
     padding: 6px 10px;
-    border-radius: 6px;
-    background: #1c1f26;
-    color: var(--portaless-accent);
+    border-radius: var(--radius-input, 6px);
+    background: var(--panel-bg);
+    color: var(--accent-text);
     font-size: 0.85rem;
-    font-family: "SFMono-Regular", Consolas, monospace;
+    font-family: var(--font-mono);
   }
   .wiz-publish-note-detail { margin: 6px 0 0; font-size: 0.76rem; color: var(--portaless-muted); line-height: 1.4; }
 
   .wiz-not-ready-note { max-width: 560px; font-size: 0.85rem; color: var(--portaless-muted); margin-bottom: 8px; }
-  .wiz-manual-link { display: inline-block; font-size: 0.85rem; color: var(--portaless-accent); margin-bottom: 24px; }
+  .wiz-manual-link { display: inline-block; font-size: 0.85rem; color: var(--accent-text); margin-bottom: 24px; }
 
   .wiz-nav-row { margin-top: 12px; }
   .wiz-back-link { font-size: 0.85rem; color: var(--portaless-muted); text-decoration: none; }

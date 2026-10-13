@@ -7,6 +7,7 @@
 // Pagina autocontenida a proposito (sin layout compartido) para no
 // depender de componentes que puedan cambiar; protegida por el mismo
 // middleware de /admin/*.
+import "../../../styles/global.css";
 ---
 <!doctype html>
 <html lang="es">
@@ -15,16 +16,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Rotar identidad did:apw | Portaless</title>
     <style>
-      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-      .warn { background: #fff4e5; border: 1px solid #f0b35b; border-radius: 8px; padding: 1rem; }
+      body { max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+      .warn { background: var(--warning-bg); border: 1px solid var(--warning-fg); border-radius: var(--radius-button); padding: 1rem; }
       label { display: block; margin-top: 1rem; font-weight: 600; }
-      input { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; }
-      button { margin-top: 1.25rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: 6px; cursor: pointer; }
-      #rotate-btn { background: #c0392b; color: #fff; }
-      #rotate-btn:disabled { background: #ccc; cursor: not-allowed; }
-      #download-btn { background: #1f6feb; color: #fff; }
-      .error { color: #c0392b; margin-top: 1rem; }
-      code { word-break: break-all; }
+      input { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; border: 1px solid var(--panel-border); border-radius: var(--radius-input); background: var(--panel-bg); color: var(--text); font-family: var(--font-sans); }
+      button { margin-top: 1.25rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: var(--radius-button); cursor: pointer; font-family: var(--font-sans); font-weight: 600; }
+      #rotate-btn { background: var(--danger-fg); color: var(--bg); }
+      #rotate-btn:disabled { background: var(--panel-border); color: var(--muted); cursor: not-allowed; }
+      #download-btn { background: var(--accent); color: #261C15; }
+      .error { color: var(--danger-fg); margin-top: 1rem; }
+      code { word-break: break-all; font-family: var(--font-mono); }
       [hidden] { display: none; }
     </style>
   </head>

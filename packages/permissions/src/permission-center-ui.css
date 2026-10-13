@@ -37,7 +37,7 @@
   border: 1px solid var(--portaless-border);
   border-radius: 12px;
   padding: 16px 18px;
-  background: #14161b;
+  background: var(--panel-bg);
 }
 
 .pc-capability-header {
@@ -106,6 +106,17 @@
   white-space: nowrap;
 }
 
+/* Icono del tipo de subject: SVG inline con stroke="currentColor", asi que
+   toma el color del label sin ninguna regla de color -- el contraste ya
+   esta resuelto en .pc-subject-label. flex-shrink: 0 para que el ellipsis
+   del nombre nunca colapse el icono. */
+.pc-subject-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.pc-subject-icon svg { display: block; }
+
 .pc-subject-status {
   flex: 1;
   text-align: right;
@@ -135,14 +146,14 @@
   height: 26px;
   border-radius: 999px;
   border: none;
-  background: #3a3f47;
+  background: var(--panel-border);
   cursor: pointer;
   padding: 0;
   transition: background-color 0.15s ease;
 }
 
 .pc-switch:focus-visible {
-  outline: 2px solid var(--portaless-accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 
@@ -269,6 +280,11 @@
 }
 
 .pc-trust-votes-text {
+  /* .pc-trust-summary es inline-flex, asi que cada hijo es un flex item y
+   * su anonymous line box recorta el espacio inicial del textContent
+   * (" (0 comentarios)") -- sin esto se pegaba al puntaje: "0.0(0
+   * comentarios)". */
+  margin-left: 4px;
   color: var(--portaless-muted);
   font-weight: 400;
 }
@@ -342,9 +358,9 @@
 .pc-vote-comment {
   resize: vertical;
   min-height: 44px;
-  border-radius: 6px;
+  border-radius: var(--radius-input, 6px);
   border: 1px solid var(--portaless-border);
-  background: #0f1114;
+  background: var(--bg);
   color: var(--portaless-fg);
   font-size: 0.82rem;
   padding: 6px 8px;
@@ -353,10 +369,10 @@
 
 .pc-vote-submit {
   align-self: flex-start;
-  border: 1px solid var(--portaless-accent);
+  border: 1px solid var(--accent-text);
   background: transparent;
-  color: var(--portaless-accent);
-  border-radius: 6px;
+  color: var(--accent-text);
+  border-radius: var(--radius-button, 8px);
   padding: 5px 14px;
   font-size: 0.8rem;
   cursor: pointer;
@@ -365,7 +381,7 @@
 
 .pc-vote-submit:hover:not(:disabled) {
   background: var(--portaless-accent);
-  color: #0f1114;
+  color: #261C15;
 }
 
 .pc-vote-submit:disabled {
@@ -401,13 +417,14 @@
 .pc-reader-did {
   flex: 1 1 220px;
   min-width: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-input, 6px);
   border: 1px solid var(--portaless-border);
-  background: #0f1114;
+  background: var(--bg);
   color: var(--portaless-fg);
   font-size: 0.82rem;
   padding: 6px 8px;
-  font-family: inherit;
+  /* es un DID: el valor se compara caracter a caracter, va en mono */
+  font-family: var(--font-mono);
 }
 
 .pc-reader-form .pc-vote-feedback {

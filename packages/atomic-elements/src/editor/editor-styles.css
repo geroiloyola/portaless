@@ -1,15 +1,20 @@
 .ae-history-toolbar {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   padding: 8px 0;
   margin-bottom: 8px;
 }
 .ae-history-toolbar button {
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: #1b1e27;
-  color: #e5e7eb;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-button, 8px);
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text);
   cursor: pointer;
   font-size: 13px;
 }
@@ -21,11 +26,22 @@
    derecha del toolbar; el spacer empuja. */
 .ae-toolbar-spacer { flex: 1; }
 .ae-toolbar-link {
-  align-self: center; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #333; color: #e5e7eb; text-decoration: none;
+  flex-shrink: 0;
+  align-self: center; padding: 4px 10px; border-radius: var(--radius-button, 8px);
+  border: 1px solid var(--panel-border); color: var(--text); text-decoration: none;
   font-size: 13px; transition: border-color .15s;
 }
 .ae-toolbar-link:hover { border-color: var(--accent, #C5D86D); }
+/* Iconos de linea (icons.ts): el label del palette y del block toolbar es
+   icono SVG + nombre; centrado vertical para que 16px conviva con texto
+   de 12.5px sin desbordar la linea. */
+.ae-icon-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-width: 0; max-width: 100%;
+  white-space: nowrap; overflow: hidden;
+}
+.ae-icon-label svg { flex-shrink: 0; }
+
 /* Phase 2 (editor polish): linea de insercion mientras se arrastra --
    muestra exactamente donde caera el elemento; la posicion la calcula
    drag-drop.ts (makeDropZone). */
@@ -33,6 +49,14 @@
   height: 3px; border-radius: 2px; flex-shrink: 0;
   background: var(--accent, #C5D86D);
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent, #C5D86D) 40%, transparent);
+  /* Step 6 (una sola momento de movimiento): la linea "aparece" en su
+     lugar en vez de materializarse de golpe -- 140ms, y se desactiva con
+     prefers-reduced-motion abajo. */
+  animation: ae-drop-in 140ms ease both;
+}
+@keyframes ae-drop-in {
+  from { opacity: 0; transform: scaleX(0.6); }
+  to { opacity: 1; transform: scaleX(1); }
 }
 /* El elemento que se arrastra queda semi-transparente mientras dura el
    drag (el navegador aplica opacity al source automaticamente en la
@@ -42,7 +66,7 @@
   min-height: 60px;
 }
 .ae-column-slot-editable {
-  border: 1px dashed #333;
+  border: 1px dashed var(--panel-border);
   border-radius: 8px;
   padding: 8px;
   min-height: 48px;
@@ -55,7 +79,7 @@
   background: color-mix(in oklab, var(--accent, #C5D86D) 8%, transparent);
 }
 .ae-empty-slot {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 12px;
   text-align: center;
   padding: 12px;
@@ -74,44 +98,52 @@
   min-height: 640px;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid #1e2129;
-  background: #0d0e12;
-  color: #e7e9ee;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  color: var(--text);
 }
-.ae-palette { background: #12141a; border-right: 1px solid #1e2129; padding: 16px; overflow-y: auto; }
-.ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6c7386; margin-bottom: 10px; }
+.ae-palette { background: var(--panel-bg); border-right: 1px solid var(--panel-border); padding: 16px; overflow-y: auto; }
+.ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
 .ae-palette-item {
-  background: #1a1d26; border: 1px solid #262b38; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--panel-border); border-radius: 10px;
   padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; cursor: grab;
   transition: border-color .15s;
 }
 .ae-palette-item:hover { border-color: var(--accent, #C5D86D); }
-.ae-canvas-wrap { background: #0d0e12; padding: 24px; overflow-y: auto; }
+.ae-canvas-wrap { background: var(--bg); padding: 16px; overflow-y: auto; }
 .ae-canvas {
   max-width: 720px; margin: 0 auto; min-height: 400px;
-  background: #101218; border: 1px dashed #262b38; border-radius: 16px;
+  background: var(--panel-bg); border: 1px dashed var(--panel-border); border-radius: 16px;
   padding: 20px; display: flex; flex-direction: column; gap: 14px;
 }
 .ae-canvas.ae-drop-active { border-color: var(--accent, #C5D86D); }
 .ae-canvas:empty::before {
   content: "Arrastra elementos de la izquierda aqui";
-  color: #565c6c; font-size: 13px; display: block; text-align: center; padding: 60px 0;
+  color: var(--muted); font-size: 13px; display: block; text-align: center; padding: 60px 0;
 }
 .ae-block { position: relative; border: 1px solid transparent; border-radius: 12px; padding: 6px; }
-.ae-block:hover { border-color: #262b38; }
+.ae-block:hover { border-color: var(--panel-border); }
 .ae-block.ae-selected { border-color: var(--accent, #C5D86D); }
 .ae-block-toolbar {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 10.5px; color: #6c7386; padding: 2px 4px 6px;
+  font-size: 10.5px; color: var(--muted); padding: 2px 4px 6px;
 }
-.ae-block-toolbar button { background: none; border: none; color: #ff6e6e; cursor: pointer; font-size: 12px; }
-.ae-property-panel { background: #12141a; border-left: 1px solid #1e2129; padding: 18px; overflow-y: auto; }
-.ae-property-panel h3 { font-size: 13px; margin-bottom: 14px; color: #e7e9ee; }
-.ae-empty { font-size: 12.5px; color: #6c7386; }
+.ae-block-toolbar button { background: none; border: none; color: var(--danger-fg); cursor: pointer; font-size: 12px; }
+.ae-property-panel { background: var(--panel-bg); border-left: 1px solid var(--panel-border); padding: 18px; overflow-y: auto; }
+.ae-property-panel h3 { font-size: 13px; margin-bottom: 14px; color: var(--text); }
+.ae-empty { font-size: 12.5px; color: var(--muted); }
 .ae-field { display: block; margin-bottom: 14px; }
-.ae-field span { display: block; font-size: 11px; color: #9aa1b2; margin-bottom: 5px; }
+.ae-field span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
 .ae-field input, .ae-field textarea, .ae-field select {
-  width: 100%; background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
-  color: #e7e9ee; padding: 7px 10px; font-size: 12.5px; font-family: inherit;
+  width: 100%; background: var(--bg); border: 1px solid var(--panel-border); border-radius: var(--radius-input, 6px);
+  color: var(--text); padding: 7px 10px; font-size: 12.5px; font-family: inherit;
 }
 .ae-field textarea { min-height: 60px; resize: vertical; }
+
+/* Step 6: un solo punto de movimiento en toda la herramienta; con
+   prefers-reduced-motion se apaga y todo queda estatico (sin
+   transformaciones ni fades). */
+@media (prefers-reduced-motion: reduce) {
+  .ae-drop-indicator { animation: none; }
+  .ae-palette-item, .ae-toolbar-link { transition: none; }
+}

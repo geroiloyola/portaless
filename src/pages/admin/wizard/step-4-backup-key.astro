@@ -163,7 +163,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   .wiz-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
 
   .wiz-loading, .wiz-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
-  .wiz-load-error { color: #ff6e6e; }
+  .wiz-load-error { color: var(--danger-fg); }
 
   .wiz-did-panel {
     max-width: 560px;
@@ -171,7 +171,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     padding: 14px 18px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
   }
   .wiz-did-label { margin: 0 0 8px; font-size: 0.8rem; color: var(--portaless-muted); }
   .wiz-did-value { font-size: 0.85rem; color: var(--portaless-fg); word-break: break-all; }
@@ -180,18 +180,18 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     max-width: 560px;
     margin-bottom: 24px;
     padding: 18px 20px;
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     border-radius: 12px;
-    background: #14201b;
+    background: var(--panel-bg);
   }
-  .wiz-key-label { margin: 0 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--portaless-accent); }
+  .wiz-key-label { margin: 0 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--accent-text); }
   .wiz-key-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
   .wiz-key-value {
     flex: 1;
     padding: 8px 10px;
-    background: #0f1114;
+    background: var(--bg);
     border: 1px solid var(--portaless-border);
-    border-radius: 6px;
+    border-radius: var(--radius-input, 6px);
     font-size: 0.78rem;
     word-break: break-all;
     color: var(--portaless-fg);
@@ -199,10 +199,10 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     overflow-y: auto;
   }
   .wiz-key-copy {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
-    color: #0f1114;
-    border-radius: 6px;
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
     padding: 8px 14px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -220,13 +220,13 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   }
   .wiz-confirm-checkbox input { margin-top: 2px; }
   .wiz-rotate-hint { margin: 14px 0 0; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
-  .wiz-rotate-hint a { color: var(--portaless-accent); }
+  .wiz-rotate-hint a { color: var(--accent-text); }
 
   .wiz-continue-btn {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
-    color: #0f1114;
-    border-radius: 6px;
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
     padding: 10px 22px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -238,5 +238,5 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     border-color: var(--portaless-border);
     cursor: not-allowed;
   }
-  .wiz-continue-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 10px; }
+  .wiz-continue-error { color: var(--danger-fg); font-size: 0.8rem; margin-top: 10px; }
 </style>

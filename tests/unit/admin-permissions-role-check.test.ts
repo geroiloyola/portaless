@@ -334,3 +334,93 @@ describe("functions/admin/permissions/index.js", () => {
     expect((await res.json()).error).toBe("invalid_reader_grant");
   });
 });
+
+// Content negotiation (mismo patron que functions/trust/[siteId].js): la
+// Function respondia JSON a TODO GET, asi que tapaba la UI del Centro de
+// Permisos en self-host y en Cloudflare Pages (las funciones corren antes
+// que los assets) -- dist/admin/permissions/index.html existia pero era
+// inalcanzable para una persona. Con Accept: text/html se sirve el shell
+// via env.ASSETS; el fetch() de la propia UI (Accept */*) sigue recibiendo
+// el JSON.
+describe("GET /admin/permissions: negociacion HTML vs JSON", () => {
+  const USER = { username: "admin1", role: "admin" };
+  const BROWSER_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+
+  function browserContext(assets: unknown) {
+    return {
+      request: new Request("http://x.test/admin/permissions", { headers: { accept: BROWSER_ACCEPT } }),
+      data: { user: USER },
+      env: { DB: makeFakeD1(), ASSETS: assets },
+    } as any;
+  }
+
+  it("Accept text/html + env.ASSETS: sirve el shell HTML de la pagina", async () => {
+    const asked: string[] = [];
+    const res = await onRequestGet(
+      browserContext({
+        fetch: async (input: any) => {
+          asked.push(String(input instanceof Request ? input.url : input));
+          return new Response("<html><body>Centro de Permisos</body></html>", {
+            status: 200,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          });
+        },
+      })
+    );
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("Centro de Permisos");
+    // Pide el directorio (index.html), no un asset arbitrario.
+    expect(asked.some((u) => u.endsWith("/admin/permissions/"))).toBe(true);
+  });
+
+  it("Accept text/html pero el shell no existe (ASSETS 404): responde el JSON del snapshot", async () => {
+    const res = await onRequestGet(
+      browserContext({ fetch: async () => new Response("Not Found", { status: 404 }) })
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(Array.isArray((await res.json()).grants)).toBe(true);
+  });
+
+  it("Accept text/html SIN env.ASSETS: responde JSON como antes (deploy sin binding)", async () => {
+    const ctx = browserContext(undefined);
+    delete (ctx.env as any).ASSETS;
+    const res = await onRequestGet(ctx);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("el fetch() de la propia UI (Accept */*): sigue siendo JSON y no delega al shell", async () => {
+    const res = await onRequestGet({
+      request: new Request("http://x.test/admin/permissions", { headers: { accept: "*/*" } }),
+      data: { user: USER },
+      env: {
+        DB: makeFakeD1(),
+        ASSETS: {
+          fetch: async () => {
+            throw new Error("no debe delegar para clientes JSON");
+          },
+        },
+      },
+    } as any);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(Array.isArray((await res.json()).grants)).toBe(true);
+  });
+
+  it("sin sesion: 401 aunque pida HTML (la autenticacion va antes de negociar)", async () => {
+    const res = await onRequestGet({
+      request: new Request("http://x.test/admin/permissions", { headers: { accept: BROWSER_ACCEPT } }),
+      data: { user: null },
+      env: {
+        DB: makeFakeD1(),
+        ASSETS: {
+          fetch: async () => {
+            throw new Error("no debe servir el shell sin sesion");
+          },
+        },
+      },
+    } as any);
+    expect(res.status).toBe(401);
+  });
+});

@@ -1,0 +1,41 @@
+/* Tipografia self-hosted — sin dependencias de terceros en runtime
+   (misma regla que el resto de Portaless: sin hosting pago ni fallback
+   silencioso a un CDN ajeno). Tres familias, cada una con un rol:
+
+   - Fraunces (variable, serif humanista calida)  -> display/titulos.
+     Es la cara editorial de la interfaz: titulos que parecen "puestos",
+     no el default del navegador.
+   - Inter (variable, grotesca de alta legibilidad) -> cuerpo y UI.
+   - IBM Plex Mono -> datos tecnicos que ya se leen monoespaciados
+     (DIDs, hashes, TXT, claves) en el dashboard admin.
+
+   Los woff2 estan en public/fonts/ y se sirven desde el mismo origen.
+   El formato variable se declara con una entrada woff2-variations y una
+   woff2 de respaldo: si el browser no entiende el descriptor -variations,
+   aun asi carga la misma archivo. */
+
+@font-face {
+  font-family: "Fraunces Variable";
+  src: url("/fonts/Fraunces-Variable.woff2") format("woff2-variations"),
+       url("/fonts/Fraunces-Variable.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter Variable";
+  src: url("/fonts/Inter-Variable.woff2") format("woff2-variations"),
+       url("/fonts/Inter-Variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

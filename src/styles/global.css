@@ -35,7 +35,92 @@
   --portaless-muted: var(--muted);
   --portaless-border: var(--panel-border);
 
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Step 1 — tipografia por rol (fonts.css, self-hosted):
+     display serif para titulos, sans para cuerpo/UI, mono para datos
+     tecnicos (DIDs, hashes, TXT). */
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Step 2 — sombra y transicion estructurales. El color de la sombra es
+     la TINTA oficial (38,28,21 = #261C15 en RGB), no un gris de SaaS:
+     por eso la sombra parece pertenecer a esta paleta. No varian por skin,
+     por eso viven aca y no en DesignTokens. */
+  --shadow-sm: 0 1px 2px rgba(38, 28, 21, 0.06), 0 1px 1px rgba(38, 28, 21, 0.04);
+  --shadow-md: 0 4px 12px rgba(38, 28, 21, 0.08), 0 2px 4px rgba(38, 28, 21, 0.05);
+  --transition-fast: 150ms ease;
+
+  /* Step 5 — radio por ROL, no un unico valor para todo:
+     botones 8px (rectangulares, nunca pill), inputs 6px; --radius (22px)
+     sigue siendo el radio de tarjetas/paneles. */
+  --radius-button: 8px;
+  --radius-input: 6px;
+
+  font-family: var(--font-sans);
+}
+
+/* Escala tipografica editorial: display serif con tracking ligeramente
+   negativo en titulos, sans en cuerpo. Ancho de lectura limitado por
+   .container (860px ~ 80ch a 1rem). */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem); }
+h2 { font-size: clamp(1.45rem, 1.2rem + 0.9vw, 1.9rem); }
+h3 { font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem); }
+
+/* Chrome de herramienta — SIEMPRE la paleta oscura oficial, aunque el tema
+   de la pagina sea claro. Es deliberado (el panel de identidad, los
+   formularios del admin y el editor son la herramienta, no el sitio
+   publicado): ademas es lo que hace que el lima de los acentos tenga
+   contraste -- sobre hueso el lima daria 1.4:1. Mismos valores que el
+   bloque dark de abajo, solo que scoping por elemento en vez de por tema.
+   Si sumas un panel oscuro al admin, anotalo aca. */
+:is(
+  .ai-apw-checklist,
+  .ai-nav-card,
+  .sec-panel,
+  .aa-form,
+  .ep-form,
+  .ep-key-panel,
+  .ep-new-key-panel,
+  .ss-row,
+  .wiz-form,
+  .wiz-provider-card,
+  .wiz-publish-note,
+  .wiz-did-panel,
+  .wiz-key-panel,
+  .wiz-case-panel,
+  .st-source-section,
+  .pc-capability,
+  .ae-shell
+) {
+  --bg: #261C15;
+  --panel-bg: #2F241B;
+  --panel-border: #4A3B2E;
+  --text: #F7F7F2;
+  --muted: #B7AC9B;
+  --accent-text: #C5D86D;
+  --success-bg: #2A3318;
+  --success-fg: #A8CC6B;
+  --warning-bg: #3A2A16;
+  --warning-fg: #E0A86B;
+  --danger-bg: #3A1E1A;
+  --danger-fg: #E8968C;
+  color: var(--text);
+
+  /* Los alias historicos se declaran en :root, asi que var() se resuelve
+     ahi y hereda el valor YA calculado (claro). Re-declararlos aca es lo
+     que los hace re-resolver contra los tokens de arriba dentro del panel.
+     --portaless-border no: en el diseno original el hairline de un panel
+     oscuro era el salvia claro, y es justamente el unico par que pasa 3:1. */
+  --portaless-bg: var(--bg);
+  --portaless-fg: var(--text);
+  --portaless-accent: var(--accent);
+  --portaless-muted: var(--muted);
 }
 
 /* Tema oscuro oficial. Se activa por preferencia del SO (auto) o por
@@ -122,11 +207,23 @@ footer.site-footer {
   font-size: 0.85rem;
 }
 
+/* Tarjetas: radio de tarjeta (--radius, 22px) + escalera de sombra de la
+   paleta. El hover eleva 1px UNA sola vez aqui (los productos del sitio
+   son literalmente tarjetas que el usuario elige con el mouse); el resto
+   de la interfaz no gana hover-lifts dispersos. */
 .card {
+  display: block;
   border: 1px solid var(--panel-border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 1.25rem;
   margin-bottom: 1rem;
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .badge {
@@ -159,4 +256,17 @@ footer.site-footer {
 .empty-state {
   color: var(--muted);
   font-style: italic;
+}
+
+/* Datos tecnicos (DIDs, hashes, TXT, claves) siempre en la mono de
+   marca: es el rol de --font-mono, no el default del navegador. */
+code, kbd, samp, pre { font-family: var(--font-mono); }
+
+/* Respeta la preferencia del SO de reducir movimiento: el unico hover
+   con transform (.card) y cualquier transicion estructural quedan quietos.
+   Los estados de color/ sombra siguen funcionando -- lo que se apaga es
+   el desplazamiento, no la informacion. */
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover { transform: none; }
 }

@@ -191,27 +191,27 @@ import BaseLayout from "../../../../layouts/BaseLayout.astro";
 
 <style>
   .ss-breadcrumb { margin: 0 0 18px; font-size: 0.8rem; }
-  .ss-breadcrumb a { color: var(--portaless-accent); text-decoration: none; }
+  .ss-breadcrumb a { color: var(--accent-text); text-decoration: none; }
   .ss-breadcrumb a:hover { text-decoration: underline; }
   .ss-breadcrumb-sep { margin: 0 8px; color: var(--portaless-muted); }
 
   .ss-page-header { margin-bottom: 24px; }
   .ss-page-title { margin: 0 0 4px; font-size: 1.4rem; }
-  .ss-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
+  .ss-page-site { margin: 0 0 12px; font-family: var(--font-mono); color: var(--accent-text); font-size: 0.95rem; }
   .ss-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.88rem; max-width: 640px; line-height: 1.55; }
   .ss-loading, .ss-load-error { padding: 24px 0; color: var(--portaless-muted); font-size: 0.9rem; }
   .ss-load-error { color: #ff8f8f; }
 
   .ss-form { display: flex; flex-direction: column; gap: 14px; max-width: 620px; }
-  .ss-row { border: 1px solid var(--portaless-border); border-radius: 10px; padding: 14px 16px; background: #14161b; }
+  .ss-row { border: 1px solid var(--portaless-border); border-radius: 10px; padding: 14px 16px; background: var(--panel-bg); }
   .ss-row-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .ss-row-label { display: flex; align-items: center; font-size: 0.92rem; font-weight: 600; cursor: pointer; }
-  .ss-checkbox { width: 16px; height: 16px; accent-color: var(--portaless-accent); }
+  .ss-checkbox { width: 16px; height: 16px; accent-color: var(--accent-text); }
   .ss-row-status { font-size: 0.78rem; color: var(--portaless-muted); white-space: nowrap; }
   .ss-row-status.ss-status-error { color: #ff8f8f; }
   .ss-row-hint { margin: 6px 0 10px; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.45; }
-  .ss-evidence-input { width: 100%; border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: var(--portaless-fg); font-size: 0.82rem; padding: 6px 8px; margin-bottom: 8px; box-sizing: border-box; }
-  .ss-save-btn { border: 1px solid var(--portaless-accent); background: transparent; color: var(--portaless-accent); border-radius: 6px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; }
-  .ss-save-btn:hover:not(:disabled) { background: var(--portaless-accent); color: #0f1114; }
+  .ss-evidence-input { width: 100%; border-radius: var(--radius-input, 6px); border: 1px solid var(--portaless-border); background: var(--bg); color: var(--portaless-fg); font-size: 0.82rem; padding: 6px 8px; margin-bottom: 8px; box-sizing: border-box; }
+  .ss-save-btn { border: 1px solid var(--accent-text); background: transparent; color: var(--accent-text); border-radius: var(--radius-button, 8px); padding: 5px 14px; font-size: 0.8rem; cursor: pointer; }
+  .ss-save-btn:hover:not(:disabled) { background: var(--portaless-accent); color: #261C15; }
   .ss-save-btn:disabled { cursor: wait; opacity: 0.6; }
 </style>

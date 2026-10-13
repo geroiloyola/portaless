@@ -4,66 +4,111 @@
 <meta charset="UTF-8" />
 <title>Atomic Elements — Editor Visual de Portaless</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Phase 0: tokens del skin activo del sitio (--accent, --panel-bg, ...).
-     El chrome oscuro del editor es deliberado (es una herramienta); los
-     acentos de marca y los previews de elementos si responden al skin. -->
+<!-- Tipografia self-hosted (mismo criterio que el sitio: sin CDN de terceros
+     en runtime). -->
+<style>
+  @font-face {
+    font-family: "Inter Variable";
+    src: url("/fonts/Inter-Variable.woff2") format("woff2-variations"),
+         url("/fonts/Inter-Variable.woff2") format("woff2");
+    font-weight: 400 700;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Fraunces Variable";
+    src: url("/fonts/Fraunces-Variable.woff2") format("woff2-variations"),
+         url("/fonts/Fraunces-Variable.woff2") format("woff2");
+    font-weight: 300 700;
+    font-display: swap;
+  }
+</style>
+<!-- Fallback de tokens: si /api/site-skin no existe (demo estatica abierta
+     sin servidor) el editor aun asi se ve con la paleta oficial oscura.
+     El link del skin va DESPUES de este bloque, asi cuando existe pisa el
+     fallback y el editor sigue el tema activo del sitio. -->
+<style>
+  :root {
+    --bg: #261C15;
+    --panel-bg: #2F241B;
+    --panel-border: #4A3B2E;
+    --text: #F7F7F2;
+    --muted: #B7AC9B;
+    --accent: #C5D86D;
+    --danger-fg: #E8968C;
+    --radius-button: 8px;
+    --radius-input: 6px;
+    --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display: "Fraunces Variable", Georgia, serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+</style>
 <link rel="stylesheet" href="/api/site-skin">
+<!-- Chrome de herramienta: la paleta oscura oficial gana siempre que
+     /api/site-skin traiga un tema claro. Mismo scope que el bloque
+     :is(.ae-shell, ...) de src/styles/global.css. -->
+<style>
+  .topbar, .ae-shell {
+    --bg: #261C15; --panel-bg: #2F241B; --panel-border: #4A3B2E;
+    --text: #F7F7F2; --muted: #B7AC9B; --accent-text: #C5D86D;
+    --success-fg: #A8CC6B; --warning-fg: #E0A86B; --danger-fg: #E8968C;
+    color: var(--text);
+  }
+</style>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #0d0e12; color: #e7e9ee; height: 100vh; overflow: hidden; }
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
   .topbar {
     height: 52px; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 18px; background: #12141a; border-bottom: 1px solid #1e2129;
+    padding: 0 18px; background: var(--panel-bg); border-bottom: 1px solid var(--panel-border);
   }
   .brand { font-weight: 800; font-size: 14px; display:flex; align-items:center; gap:8px; }
   .brand .mark { width: 26px; height: 26px; border-radius: 8px; background: var(--accent, #C5D86D); color:#261C15; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
   .top-actions { display: flex; gap: 8px; }
-  .btn { background: #1c1f28; border: 1px solid #262b38; color: #cfd3dd; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
+  .btn { background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text); padding: 7px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
   .btn.primary { background: var(--accent, #C5D86D); color: #261C15; border: none; font-weight: 700; }
 
   .ae-shell { display: grid; grid-template-columns: 200px 1fr 280px; height: calc(100vh - 52px); }
 
-  .ae-palette { background: #12141a; border-right: 1px solid #1e2129; padding: 16px; overflow-y: auto; }
-  .ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6c7386; margin-bottom: 10px; }
+  .ae-palette { background: var(--panel-bg); border-right: 1px solid var(--panel-border); padding: 16px; overflow-y: auto; }
+  .ae-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
   .ae-palette-item {
-    background: #1a1d26; border: 1px solid #262b38; border-radius: 10px;
+    background: var(--bg); border: 1px solid var(--panel-border); border-radius: 10px;
     padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; cursor: grab;
     transition: border-color .15s;
   }
   .ae-palette-item:hover { border-color: var(--accent, #C5D86D); }
+  .ae-palette-item svg, .ae-property-panel h3 svg { vertical-align: -3px; }
 
-  .ae-canvas-wrap { background: #0d0e12; padding: 24px; overflow-y: auto; }
+  .ae-canvas-wrap { background: var(--bg); padding: 24px; overflow-y: auto; }
   .ae-canvas {
     max-width: 720px; margin: 0 auto; min-height: 400px;
-    background: #101218; border: 1px dashed #262b38; border-radius: 16px;
+    background: var(--panel-bg); border: 1px dashed var(--panel-border); border-radius: 16px;
     padding: 20px; display: flex; flex-direction: column; gap: 14px;
   }
   .ae-canvas.ae-drop-active { border-color: var(--accent, #C5D86D); }
   .ae-canvas:empty::before {
     content: "Arrastra elementos de la izquierda aquí";
-    color: #565c6c; font-size: 13px; display:block; text-align:center; padding: 60px 0;
+    color: var(--muted); font-size: 13px; display:block; text-align:center; padding: 60px 0;
   }
   .ae-block {
     position: relative; border: 1px solid transparent; border-radius: 12px; padding: 6px;
   }
-  .ae-block:hover { border-color: #262b38; }
+  .ae-block:hover { border-color: var(--panel-border); }
   .ae-block.ae-selected { border-color: var(--accent, #C5D86D); }
   .ae-block-toolbar {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 10.5px; color: #6c7386; padding: 2px 4px 6px;
+    font-size: 10.5px; color: var(--muted); padding: 2px 4px 6px;
   }
-  .ae-block-toolbar button { background: none; border: none; color: #ff6e6e; cursor: pointer; font-size: 12px; }
+  .ae-block-toolbar button { background: none; border: none; color: var(--danger-fg); cursor: pointer; font-size: 12px; }
 
-  .ae-property-panel { background: #12141a; border-left: 1px solid #1e2129; padding: 18px; overflow-y: auto; }
+  .ae-property-panel { background: var(--panel-bg); border-left: 1px solid var(--panel-border); padding: 18px; overflow-y: auto; }
   .ae-property-panel h3 { font-size: 13px; margin-bottom: 14px; }
-  .ae-empty { font-size: 12.5px; color: #6c7386; }
+  .ae-empty { font-size: 12.5px; color: var(--muted); }
   .ae-field { display: block; margin-bottom: 14px; }
-  .ae-field span { display: block; font-size: 11px; color: #9aa1b2; margin-bottom: 5px; }
+  .ae-field span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
   .ae-field input, .ae-field textarea, .ae-field select {
-    width: 100%; background: #1a1d26; border: 1px solid #262b38; border-radius: 8px;
-    color: #e7e9ee; padding: 7px 10px; font-size: 12.5px; font-family: inherit;
+    width: 100%; background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px;
+    color: var(--text); padding: 7px 10px; font-size: 12.5px; font-family: inherit;
   }
   .ae-field textarea { min-height: 60px; resize: vertical; }
 </style>
@@ -87,9 +132,23 @@
   probar el editor sin instalar nada.
 */
 
+/* Iconos de linea (Lucide, ISC) -- mismas constantes que usa el paquete
+   real en packages/atomic-elements/src/elements/icons.ts. Inline, sin
+   dependencia de runtime; reemplazan a los emojis del palette (el emoji
+   como icono es la senal mas rapida de interfaz desactualizada y el SO lo
+   pinta con su propio color, rompiendo el contraste). El SVG se monta con
+   innerHTML y el nombre del elemento queda como text node. */
+const SVG_OPEN = "<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">";
+const ICON_LAYOUT_TEMPLATE = `${SVG_OPEN}<rect width="18" height="7" x="3" y="3" rx="1" /> <rect width="9" height="7" x="3" y="14" rx="1" /> <rect width="5" height="7" x="16" y="14" rx="1" /></svg>`;
+const ICON_HEADING = `${SVG_OPEN}<path d="M6 12h12" /> <path d="M6 20V4" /> <path d="M18 20V4" /></svg>`;
+const ICON_PILCROW = `${SVG_OPEN}<path d="M13 4v16" /> <path d="M17 4v16" /> <path d="M19 4H9.5a4.5 4.5 0 0 0 0 9H13" /></svg>`;
+const ICON_IMAGE = `${SVG_OPEN}<rect width="18" height="18" x="3" y="3" rx="2" ry="2" /> <circle cx="9" cy="9" r="2" /> <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>`;
+const ICON_MOUSE_POINTER_CLICK = `${SVG_OPEN}<path d="M14 4.1 12 6" /> <path d="m5.1 8-2.9-.8" /> <path d="m6 12-1.9 2" /> <path d="M7.2 2.2 8 5.1" /> <path d="M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z" /></svg>`;
+const ICON_MOVE_VERTICAL = `${SVG_OPEN}<path d="M12 2v20" /> <path d="m8 18 4 4 4-4" /> <path d="m8 6 4-4 4 4" /></svg>`;
+
 const elementRegistry = {
   Hero: {
-    displayName: "Hero / Portada", icon: "🏔️",
+    displayName: "Hero / Portada", icon: ICON_LAYOUT_TEMPLATE,
     defaultProps: { title: "Título principal", subtitle: "Subtítulo de apoyo", bgColor: "#261C15" },
     editableProps: [
       { key: "title", label: "Título", kind: "text" },
@@ -101,23 +160,23 @@ const elementRegistry = {
       <p style="opacity:.85;margin:0;">${p.subtitle}</p></section>`,
   },
   Heading: {
-    displayName: "Encabezado", icon: "🔠",
+    displayName: "Encabezado", icon: ICON_HEADING,
     defaultProps: { text: "Encabezado de sección", level: "h2", align: "left" },
     editableProps: [
       { key: "text", label: "Texto", kind: "text" },
       { key: "level", label: "Nivel", kind: "select", options: ["h1","h2","h3"] },
       { key: "align", label: "Alineación", kind: "select", options: ["left","center","right"] },
     ],
-    renderHTML: (p) => `<${p.level} style="text-align:${p.align};margin:0;color:#e7e9ee;">${p.text}</${p.level}>`,
+    renderHTML: (p) => `<${p.level} style="text-align:${p.align};margin:0;color:var(--text);">${p.text}</${p.level}>`,
   },
   Paragraph: {
-    displayName: "Párrafo", icon: "📝",
+    displayName: "Párrafo", icon: ICON_PILCROW,
     defaultProps: { text: "Escribe aquí el contenido de este párrafo." },
     editableProps: [{ key: "text", label: "Texto", kind: "textarea" }],
-    renderHTML: (p) => `<p style="line-height:1.6;margin:0;color:#cfd3dd;">${p.text}</p>`,
+    renderHTML: (p) => `<p style="line-height:1.6;margin:0;color:var(--text);">${p.text}</p>`,
   },
   Image: {
-    displayName: "Imagen", icon: "🖼️",
+    displayName: "Imagen", icon: ICON_IMAGE,
     defaultProps: { src: "https://placehold.co/700x300", alt: "Descripción", radius: 12 },
     editableProps: [
       { key: "src", label: "URL de la imagen", kind: "url" },
@@ -127,7 +186,7 @@ const elementRegistry = {
     renderHTML: (p) => `<img src="${p.src}" alt="${p.alt}" style="width:100%;border-radius:${p.radius}px;display:block;" />`,
   },
   Button: {
-    displayName: "Botón", icon: "🔘",
+    displayName: "Botón", icon: ICON_MOUSE_POINTER_CLICK,
     defaultProps: { label: "Llamado a la acción", href: "#", style: "primary" },
     editableProps: [
       { key: "label", label: "Texto", kind: "text" },
@@ -138,11 +197,11 @@ const elementRegistry = {
       const bg = p.style === "primary" ? "var(--accent, #C5D86D)" : "transparent";
       const color = p.style === "primary" ? "#261C15" : "var(--accent-text, #5A6B24)";
       const border = p.style === "primary" ? "none" : "1px solid var(--accent, #C5D86D)";
-      return `<a href="${p.href}" style="display:inline-block;padding:9px 20px;border-radius:999px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${p.label}</a>`;
+      return `<a href="${p.href}" style="display:inline-block;padding:9px 20px;border-radius:var(--radius-button, 8px);background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${p.label}</a>`;
     },
   },
   Spacer: {
-    displayName: "Espaciador", icon: "↕️",
+    displayName: "Espaciador", icon: ICON_MOVE_VERTICAL,
     defaultProps: { height: 24 },
     editableProps: [{ key: "height", label: "Altura (px)", kind: "number" }],
     renderHTML: (p) => `<div style="height:${p.height}px;"></div>`,
@@ -192,7 +251,10 @@ function renderPropertyPanel(container) {
   const props = { ...def.defaultProps, ...node.props };
 
   const title = document.createElement("h3");
-  title.textContent = `${def.icon} ${def.displayName}`;
+  const titleHost = document.createElement("span");
+  titleHost.innerHTML = def.icon; // constante interna, nunca input de usuario
+  if (titleHost.firstElementChild) title.appendChild(titleHost.firstElementChild);
+  title.appendChild(document.createTextNode(` ${def.displayName}`));
   container.appendChild(title);
 
   def.editableProps.forEach((field) => {
@@ -239,7 +301,10 @@ function renderApp() {
     const def = elementRegistry[type];
     const item = document.createElement("div");
     item.className = "ae-palette-item";
-    item.textContent = `${def.icon} ${def.displayName}`;
+    const iconHost = document.createElement("span");
+    iconHost.innerHTML = def.icon; // constante interna, nunca input de usuario
+    if (iconHost.firstElementChild) item.appendChild(iconHost.firstElementChild);
+    item.appendChild(document.createTextNode(` ${def.displayName}`));
     item.draggable = true;
     item.addEventListener("dragstart", (e) => {
       e.dataTransfer.setData("text/plain", type);

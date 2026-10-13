@@ -63,11 +63,20 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     display: flex;
     gap: 8px;
   }
+  /* Step 6 (una sola momento de movimiento): publicar es el unico estado
+     del sistema que el usuario esta ESPERANDO ver confirmado, asi que
+     ese recibe la entrada; nada mas en la pagina se anima. 200ms fade +
+     scale sutil, y se apaga con prefers-reduced-motion. */
+  @keyframes editor-status-in {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
   .editor-save-status {
     font-size: 12.5px;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-button, 8px);
     margin-bottom: 12px;
+    animation: editor-status-in 200ms ease both;
   }
   .editor-save-status.ok {
     background: var(--success-bg, #EAF3D4);
@@ -83,6 +92,9 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     color: inherit;
     font-weight: 700;
     text-decoration: underline;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .editor-save-status { animation: none; }
   }
 </style>
 

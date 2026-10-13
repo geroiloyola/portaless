@@ -104,7 +104,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
     .ap-field input[type="color"] {
       width: 48px; height: 32px; padding: 2px; border: 1px solid var(--portaless-border);
-      border-radius: 6px; background: var(--portaless-bg); cursor: pointer;
+      border-radius: var(--radius-input, 6px); background: var(--portaless-bg); cursor: pointer;
     }
     .ap-color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; margin-bottom: 8px; }
     .ap-hint { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }

@@ -23,15 +23,15 @@ const error = Astro.url.searchParams.get("error");
       <label style="display:block;margin-bottom:14px;">
         <span style="display:block;font-size:12px;color:var(--portaless-muted);margin-bottom:4px;">Usuario</span>
         <input name="username" type="text" required
-          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--portaless-border);background:#12141a;color:#fff;" />
+          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--portaless-border);background:var(--panel-bg);color:var(--text);" />
       </label>
       <label style="display:block;margin-bottom:18px;">
         <span style="display:block;font-size:12px;color:var(--portaless-muted);margin-bottom:4px;">Contraseña</span>
         <input name="password" type="password" required
-          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--portaless-border);background:#12141a;color:#fff;" />
+          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--portaless-border);background:var(--panel-bg);color:var(--text);" />
       </label>
       <button type="submit"
-        style="width:100%;padding:10px;border-radius:999px;background:#6ee7b7;color:#0a0b0f;font-weight:700;border:none;cursor:pointer;">
+        style="width:100%;padding:10px;border-radius:var(--radius-button, 8px);background:var(--accent);color:#261C15;font-weight:700;border:none;cursor:pointer;">
         Entrar
       </button>
     </form>

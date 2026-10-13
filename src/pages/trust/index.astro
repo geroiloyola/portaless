@@ -454,7 +454,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <style is:global>
   .st-page-header { margin-bottom: 24px; }
   .st-page-title { margin: 0 0 4px; font-size: 1.4rem; }
-  .st-page-site { margin: 0 0 12px; font-family: monospace; color: var(--portaless-accent); font-size: 0.95rem; }
+  .st-page-site { margin: 0 0 12px; font-family: var(--font-mono); color: var(--accent-text); font-size: 0.95rem; }
   .st-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.88rem; max-width: 680px; line-height: 1.55; }
   .st-loading, .st-load-error { padding: 24px 0; color: var(--portaless-muted); font-size: 0.9rem; }
   .st-load-error { color: #ff8f8f; }
@@ -462,40 +462,40 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   /* Panel oscuro deliberado (secciones de fuentes, como el banner de
      identidad del admin): sin color propio heredaba la tinta del tema
      claro y el texto quedaba oscuro sobre oscuro. */
-  .st-source-section { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; background: #14161b; color: #e7e9ee; }
+  .st-source-section { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; background: var(--panel-bg); color: var(--text); }
   .st-source-title { margin: 0 0 6px; font-size: 1.02rem; }
-  .st-source-note { margin: 0 0 14px; font-size: 0.8rem; color: #9aa1b2; line-height: 1.5; }
-  .st-empty { font-size: 0.85rem; color: #9aa1b2; font-style: italic; }
+  .st-source-note { margin: 0 0 14px; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .st-empty { font-size: 0.85rem; color: var(--muted); font-style: italic; }
 
   .st-self-grid { display: flex; flex-direction: column; gap: 2px; }
   .st-self-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--portaless-border); flex-wrap: wrap; }
   .st-self-row:last-child { border-bottom: none; }
   .st-self-label { flex: 1; font-size: 0.88rem; min-width: 200px; }
-  .st-history-note { font-size: 0.75rem; color: #9aa1b2; }
-  .st-evidence-link { font-size: 0.78rem; color: var(--portaless-accent); }
+  .st-history-note { font-size: 0.75rem; color: var(--muted); }
+  .st-evidence-link { font-size: 0.78rem; color: var(--accent-text); }
 
   .st-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-  .st-badge-good { background: #2e9e4422; color: #6ee7b7; }
-  .st-badge-warn { background: #f2994a22; color: #ffb86b; }
+  .st-badge-good { background: var(--success-bg); color: var(--success-fg); }
+  .st-badge-warn { background: #f2994a22; color: var(--warning-fg); }
   .st-badge-bad { background: #e5484d22; color: #ff8f8f; }
-  .st-badge-neutral { background: #3a3f4722; color: #9aa1b2; }
+  .st-badge-neutral { background: var(--panel-border)22; color: var(--muted); }
 
   .st-escrow-list { display: flex; flex-direction: column; gap: 8px; }
   .st-escrow-row { display: flex; align-items: center; gap: 12px; }
-  .st-escrow-meta { font-size: 0.78rem; color: #9aa1b2; }
-  .st-outcome-good { background: #2e9e4422; color: #6ee7b7; }
-  .st-outcome-warn { background: #f2994a22; color: #ffb86b; }
+  .st-escrow-meta { font-size: 0.78rem; color: var(--muted); }
+  .st-outcome-good { background: var(--success-bg); color: var(--success-fg); }
+  .st-outcome-warn { background: #f2994a22; color: var(--warning-fg); }
   .st-outcome-bad { background: #e5484d22; color: #ff8f8f; }
 
   .st-vote-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--portaless-border); display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
   .st-vote-form-title { margin: 0; font-size: 0.92rem; }
-  .st-vote-select, .st-vote-comment { border-radius: 6px; border: 1px solid var(--portaless-border); background: #0f1114; color: #e7e9ee; font-size: 0.85rem; padding: 8px; font-family: inherit; }
+  .st-vote-select, .st-vote-comment { border-radius: var(--radius-input, 6px); border: 1px solid var(--portaless-border); background: var(--bg); color: var(--text); font-size: 0.85rem; padding: 8px; font-family: inherit; }
   .st-vote-stars-row { display: flex; gap: 4px; }
   .st-vote-star { background: none; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 2px; color: var(--portaless-border); }
   .st-vote-star.st-vote-star-filled { color: #f2c94c; }
-  .st-vote-submit { align-self: flex-start; border: 1px solid var(--portaless-accent); background: transparent; color: var(--portaless-accent); border-radius: 6px; padding: 6px 16px; font-size: 0.85rem; cursor: pointer; }
-  .st-vote-submit:hover:not(:disabled) { background: var(--portaless-accent); color: #0f1114; }
+  .st-vote-submit { align-self: flex-start; border: 1px solid var(--accent-text); background: transparent; color: var(--accent-text); border-radius: var(--radius-button, 8px); padding: 6px 16px; font-size: 0.85rem; cursor: pointer; }
+  .st-vote-submit:hover:not(:disabled) { background: var(--portaless-accent); color: #261C15; }
   .st-vote-submit:disabled { cursor: wait; opacity: 0.6; }
-  .st-vote-feedback { font-size: 0.78rem; color: #9aa1b2; min-height: 1em; }
+  .st-vote-feedback { font-size: 0.78rem; color: var(--muted); min-height: 1em; }
   .st-vote-feedback.st-status-error { color: #ff8f8f; }
 </style>

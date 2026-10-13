@@ -369,38 +369,38 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     padding: 16px 20px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
     /* Chrome oscuro deliberado (es el panel de identidad, no el sitio
        publicado): sin este color propio heredaba la tinta del tema
        claro (--text #261C15 desde Phase 0) y el texto quedaba oscuro
        sobre oscuro. */
-    color: #e7e9ee;
+    color: var(--text);
   }
   .ai-apw-checklist-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .ai-apw-checklist-text { flex: 1; min-width: 220px; }
   .ai-apw-checklist-title { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
-  .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: #9aa1b2; line-height: 1.5; }
+  .ai-apw-checklist-desc { margin: 0; font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
   .ai-apw-checklist-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
   .ai-apw-badge {
     padding: 4px 10px;
     border-radius: 999px;
     background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
+    color: var(--success-fg);
     font-size: 0.78rem;
     font-weight: 600;
     white-space: nowrap;
   }
   .ai-apw-verify-btn {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: transparent;
-    color: var(--portaless-accent);
-    border-radius: 6px;
+    color: var(--accent-text);
+    border-radius: var(--radius-button, 8px);
     padding: 6px 14px;
     font-size: 0.82rem;
     cursor: pointer;
     white-space: nowrap;
   }
-  .ai-apw-verify-btn:hover { background: var(--portaless-accent); color: #0f1114; }
+  .ai-apw-verify-btn:hover { background: var(--portaless-accent); color: #261C15; }
   .ai-apw-verify-btn:disabled { opacity: 0.6; cursor: default; }
 
   .ai-apw-identity { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
@@ -409,31 +409,31 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-apw-txt { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--portaless-border); }
   .ai-apw-txt-intro { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.5; }
   .ai-apw-txt-field { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-  .ai-apw-txt-label { width: 130px; flex-shrink: 0; font-size: 0.78rem; color: #9aa1b2; }
+  .ai-apw-txt-label { width: 130px; flex-shrink: 0; font-size: 0.78rem; color: var(--muted); }
   .ai-apw-txt-code {
     flex: 1;
     min-width: 0;
     padding: 6px 10px;
     border: 1px solid var(--portaless-border);
-    border-radius: 6px;
-    background: #0f1114;
+    border-radius: var(--radius-input, 6px);
+    background: var(--bg);
     font-size: 0.8rem;
     overflow-wrap: anywhere;
   }
   .ai-apw-txt-value { user-select: all; }
   .ai-apw-copy-btn {
-    border: 1px solid #3a3f4b;
+    border: 1px solid var(--panel-border);
     background: transparent;
-    color: #cfd3dd;
-    border-radius: 6px;
+    color: var(--text);
+    border-radius: var(--radius-button, 8px);
     padding: 5px 10px;
     font-size: 0.78rem;
     cursor: pointer;
     white-space: nowrap;
   }
-  .ai-apw-copy-btn:hover { border-color: var(--portaless-accent); color: var(--portaless-accent); }
-  .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: #9aa1b2; line-height: 1.5; }
-  .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: #f5a623; }
+  .ai-apw-copy-btn:hover { border-color: var(--accent-text); color: var(--accent-text); }
+  .ai-apw-txt-hint { margin: 8px 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+  .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: var(--warning-fg); }
   #ai-apw-txt-stale { margin: 0 0 10px; }
 
   .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
@@ -445,13 +445,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     padding: 18px 20px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
     text-decoration: none;
     color: var(--portaless-fg);
     transition: border-color 0.15s ease;
   }
 
-  a.ai-nav-card:hover { border-color: var(--portaless-accent); }
+  a.ai-nav-card:hover { border-color: var(--accent-text); }
 
   .ai-nav-card-title { font-weight: 600; font-size: 0.98rem; }
   .ai-nav-card-desc { font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.45; }
@@ -460,21 +460,21 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-site-id-input {
     flex: 1;
     min-width: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-input, 6px);
     border: 1px solid var(--portaless-border);
-    background: #0f1114;
+    background: var(--bg);
     color: var(--portaless-fg);
     font-size: 0.85rem;
     padding: 7px 10px;
   }
   .ai-site-id-submit {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: transparent;
-    color: var(--portaless-accent);
-    border-radius: 6px;
+    color: var(--accent-text);
+    border-radius: var(--radius-button, 8px);
     padding: 6px 14px;
     font-size: 0.85rem;
     cursor: pointer;
   }
-  .ai-site-id-submit:hover { background: var(--portaless-accent); color: #0f1114; }
+  .ai-site-id-submit:hover { background: var(--portaless-accent); color: #261C15; }
 </style>

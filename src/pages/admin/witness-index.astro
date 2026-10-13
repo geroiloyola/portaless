@@ -84,8 +84,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ix-badge-bad { border-color: #b3401a; color: #b3401a; }
   .ix-form { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: end; margin-bottom: 0.5rem; }
   .ix-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: var(--portaless-muted); flex: 1 1 14rem; }
-  .ix-form input { padding: 0.45rem 0.6rem; border: 1px solid var(--portaless-border, #d8d4c8); border-radius: 6px; font-size: 0.86rem; background: var(--portaless-bg, #fff); color: var(--portaless-text, #261c15); }
-  button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--portaless-accent, #5a6b24); background: var(--portaless-accent, #5a6b24); color: var(--portaless-accent-text, #261c15); font-weight: 600; cursor: pointer; font-size: 0.84rem; }
+  .ix-form input { padding: 0.45rem 0.6rem; border: 1px solid var(--portaless-border, #d8d4c8); border-radius: var(--radius-input, 6px); font-size: 0.86rem; background: var(--portaless-bg, #fff); color: var(--portaless-text, #261c15); }
+  button { padding: 0.45rem 0.9rem; border-radius: var(--radius-button, 8px); border: 1px solid var(--portaless-accent, #5a6b24); background: var(--portaless-accent, #5a6b24); color: var(--portaless-accent-text, #261c15); font-weight: 600; cursor: pointer; font-size: 0.84rem; }
   button:hover { filter: brightness(1.05); }
   .ix-peers { list-style: none; padding: 0; margin: 0 0 0.6rem; font-size: 0.84rem; }
   .ix-peers li { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; border-bottom: 1px solid var(--portaless-border, #e4e0d4); }

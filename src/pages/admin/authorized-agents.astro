@@ -230,7 +230,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .aa-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 640px; line-height: 1.5; }
 
   .aa-loading, .aa-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
-  .aa-load-error { color: #ff6e6e; }
+  .aa-load-error { color: var(--danger-fg); }
 
   .aa-form {
     max-width: 480px;
@@ -238,48 +238,48 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     padding: 20px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
   }
   .aa-form-title { margin: 0 0 16px; font-size: 1rem; }
   .aa-field { display: block; margin-bottom: 14px; }
   .aa-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
   .aa-field input {
     width: 100%;
-    background: #0f1114;
+    background: var(--bg);
     border: 1px solid var(--portaless-border);
-    border-radius: 6px;
+    border-radius: var(--radius-input, 6px);
     color: var(--portaless-fg);
     padding: 8px 10px;
     font-size: 0.85rem;
   }
   .aa-submit {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
-    color: #0f1114;
-    border-radius: 6px;
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
     padding: 8px 18px;
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
   }
-  .aa-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 10px; }
+  .aa-form-error { color: var(--danger-fg); font-size: 0.8rem; margin-top: 10px; }
 
   .aa-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .aa-table th, .aa-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--portaless-border); }
   .aa-table th { color: var(--portaless-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .aa-empty-row { text-align: center; color: var(--portaless-muted); padding: 24px; }
 
-  .aa-status-active { color: #6ee7b7; }
+  .aa-status-active { color: var(--success-fg); }
   .aa-status-revoked { color: var(--portaless-muted); }
 
   .aa-revoke-btn {
-    border: 1px solid #ff6e6e;
+    border: 1px solid var(--danger-fg);
     background: transparent;
-    color: #ff6e6e;
-    border-radius: 6px;
+    color: var(--danger-fg);
+    border-radius: var(--radius-button, 8px);
     padding: 4px 12px;
     font-size: 0.78rem;
     cursor: pointer;
   }
-  .aa-revoke-btn:hover { background: #ff6e6e; color: #0f1114; }
+  .aa-revoke-btn:hover { background: var(--danger-fg); color: var(--bg); }
 </style>

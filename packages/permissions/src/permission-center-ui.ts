@@ -39,13 +39,29 @@ export interface PermissionCenterOptions {
 const SETTLEMENT_CONFIG_URL = "/admin/settlement";
 
 function riskColor(risk: "bajo" | "medio" | "alto"): string {
-  return risk === "alto" ? "#ff6e6e" : risk === "medio" ? "#ffb86b" : "#6ee7b7";
+  return risk === "alto" ? "var(--danger-fg)" : risk === "medio" ? "var(--warning-fg)" : "var(--success-fg)";
 }
 
-function subjectIcon(type: PermissionGrant["subject"]["type"]): string {
-  if (type === "settlement-provider") return "💳";
-  if (type === "reader") return "🛰️";
-  return type === "plugin" ? "🧩" : type === "agent" ? "🤖" : "🎨";
+// Iconos de tipo de subject -- SVG inline (Lucide, ISC) en vez de emoji.
+// El emoji lo pinta el sistema operativo con su propio color, asi que
+// rompe el contraste del panel oscuro; con stroke="currentColor" hereda
+// --text/--muted por CSS y pasa WCAG en cualquier tema.
+const PC_SVG_OPEN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+
+const SUBJECT_ICONS: Record<string, string> = {
+  plugin: `${PC_SVG_OPEN}<path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L4.39 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 4.39a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68L6.927 1.39a2.414 2.414 0 0 1 3.414 0z"/></svg>`,
+  agent: `${PC_SVG_OPEN}<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>`,
+  theme: `${PC_SVG_OPEN}<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></svg>`,
+  "settlement-provider": `${PC_SVG_OPEN}<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
+  reader: `${PC_SVG_OPEN}<path d="M4 10a8 8 0 0 1 8 8"/><path d="M4 14a4 4 0 0 1 4 4"/><circle cx="9" cy="9" r="2"/><path d="m2 22 3.086-3.086a2 2 0 0 1 2.828 0L22 22"/></svg>`,
+};
+
+function subjectIcon(type: PermissionGrant["subject"]["type"]): HTMLElement {
+  const wrap = document.createElement("span");
+  wrap.className = "pc-subject-icon";
+  wrap.setAttribute("aria-hidden", "true");
+  wrap.innerHTML = SUBJECT_ICONS[type] ?? SUBJECT_ICONS.theme; // constantes internas, nunca input de usuario
+  return wrap;
 }
 
 // Escala de color estilo Trakt sobre la escala 0-10 ya reescalada.
@@ -407,7 +423,8 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
 
           const label = document.createElement("span");
           label.className = "pc-subject-label";
-          label.textContent = `${subjectIcon(grant.subject.type)} ${grant.subject.displayName}`;
+          label.appendChild(subjectIcon(grant.subject.type));
+          label.appendChild(document.createTextNode(` ${grant.subject.displayName}`));
           labelWrap.appendChild(label);
 
           const trustBadge = buildTrustBadge(grant.subject, onVote);

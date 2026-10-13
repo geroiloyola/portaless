@@ -105,15 +105,15 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     padding: 20px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
   }
   .wiz-field { display: block; margin-bottom: 18px; }
   .wiz-field span:first-child { display: block; font-size: 0.85rem; color: var(--portaless-fg); margin-bottom: 6px; font-weight: 600; }
   .wiz-field input, .wiz-field textarea {
     width: 100%;
-    background: #0f1114;
+    background: var(--bg);
     border: 1px solid var(--portaless-border);
-    border-radius: 6px;
+    border-radius: var(--radius-input, 6px);
     color: var(--portaless-fg);
     padding: 9px 11px;
     font-size: 0.88rem;
@@ -123,15 +123,15 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   .wiz-field-hint { display: block; font-size: 0.75rem; color: var(--portaless-muted); margin-top: 5px; }
 
   .wiz-submit-btn {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
-    color: #0f1114;
-    border-radius: 6px;
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
     padding: 10px 22px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
   }
   .wiz-submit-btn:disabled { opacity: 0.6; cursor: wait; }
-  .wiz-form-error { color: #ff6e6e; font-size: 0.8rem; margin-top: 12px; }
+  .wiz-form-error { color: var(--danger-fg); font-size: 0.8rem; margin-top: 12px; }
 </style>

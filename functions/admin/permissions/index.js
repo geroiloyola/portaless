@@ -96,13 +96,38 @@ async function buildSnapshot(permissionStore, pluginRegistryStore) {
 }
 
 export async function onRequestGet(context) {
-  const { data, env } = context;
+  const { data, env, request } = context;
 
   if (!data?.user) {
     return new Response(JSON.stringify({ error: "unauthenticated" }), {
       status: 401,
       headers: { "content-type": "application/json" },
     });
+  }
+
+  // Content negotiation (mismo patron que functions/trust/[siteId].js):
+  // un navegador (Accept: text/html) quiere la UI del Centro de Permisos,
+  // y el fetch() de esa propia UI (Accept */*) sigue recibiendo el JSON de
+  // abajo. Sin esto la Function ganaba al estatico en self-host y en
+  // Cloudflare Pages (las funciones corren antes que los assets), asi que
+  // /admin/permissions respondia JSON crudo y la pagina
+  // src/pages/admin/permissions.astro -- que existe en dist/ -- era
+  // inalcanzable para una persona. El shell se sirve via env.ASSETS
+  // (binding existente en ambas plataformas). Si no hay binding, o el
+  // shell no existe, se responde JSON como antes.
+  const accept = request?.headers?.get?.("accept") || "";
+  if (accept.includes("text/html") && env?.ASSETS) {
+    const shellUrl = new URL(request.url);
+    shellUrl.pathname = "/admin/permissions/";
+    shellUrl.search = "";
+    const shell = await env.ASSETS.fetch(shellUrl);
+    if (shell.ok) {
+      const html = await shell.text();
+      return new Response(html, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
   }
 
   const permissionStore = await createPermissionStore(env);

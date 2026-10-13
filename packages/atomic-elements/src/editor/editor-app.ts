@@ -1,5 +1,6 @@
 import type { ElementNode, PageLayout, ElementType } from "../types";
 import { elementRegistry, elementPalette } from "../elements/registry";
+import { iconLabel, iconOnly, ICON_FOLDER, ICON_UNDO_2, ICON_REDO_2 } from "../elements/icons";
 import { makeDraggable, makeDropZone } from "./drag-drop";
 import { renderPropertyPanel } from "./property-panel";
 import type { PageStore } from "../persistence/page-store";
@@ -176,12 +177,18 @@ export class AtomicElementsEditor {
     toolbar.className = "ae-history-toolbar";
 
     const undoBtn = document.createElement("button");
-    undoBtn.textContent = "\u21b6 Deshacer";
+    const undoIcon = iconOnly(ICON_UNDO_2);
+    if (undoIcon) undoBtn.appendChild(undoIcon);
+    undoBtn.setAttribute("aria-label", "Deshacer");
+    undoBtn.title = "Deshacer";
     undoBtn.disabled = !this.history.canUndo;
     undoBtn.onclick = () => this.undo();
 
     const redoBtn = document.createElement("button");
-    redoBtn.textContent = "\u21b7 Rehacer";
+    const redoIcon = iconOnly(ICON_REDO_2);
+    if (redoIcon) redoBtn.appendChild(redoIcon);
+    redoBtn.setAttribute("aria-label", "Rehacer");
+    redoBtn.title = "Rehacer";
     redoBtn.disabled = !this.history.canRedo;
     redoBtn.onclick = () => this.redo();
 
@@ -199,7 +206,7 @@ export class AtomicElementsEditor {
     const pagesLink = document.createElement("a");
     pagesLink.className = "ae-toolbar-link";
     pagesLink.href = "/admin/pages";
-    pagesLink.textContent = "\ud83d\udcc1 Mis p\u00e1ginas";
+    pagesLink.appendChild(iconLabel(ICON_FOLDER, "Mis páginas"));
     toolbar.appendChild(pagesLink);
 
     return toolbar;
@@ -264,7 +271,8 @@ export class AtomicElementsEditor {
 
     const toolbar = document.createElement("div");
     toolbar.className = "ae-block-toolbar";
-    toolbar.innerHTML = `<span>${elementRegistry[node.type].icon} ${elementRegistry[node.type].displayName}</span>`;
+    const blockDef = elementRegistry[node.type];
+    toolbar.appendChild(iconLabel(blockDef.icon, blockDef.displayName));
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "\u2715";
     deleteBtn.onclick = (e) => { e.stopPropagation(); this.removeNode(node.id); };
@@ -338,7 +346,7 @@ export class AtomicElementsEditor {
       const def = elementRegistry[type];
       const item = document.createElement("div");
       item.className = "ae-palette-item";
-      item.textContent = `${def.icon} ${def.displayName}`;
+      item.appendChild(iconLabel(def.icon, def.displayName));
       makeDraggable(item, { kind: "new-element", elementType: type });
       palette.appendChild(item);
     });

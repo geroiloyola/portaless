@@ -3,6 +3,7 @@
 // Protegida por functions/admin/_middleware.js como todo /admin/*.
 // Llama a GET/POST /admin/settlement (functions/admin/settlement/index.js).
 // Pagina autocontenida, mismo criterio que rotate-identity.astro.
+import "../../styles/global.css";
 ---
 <!doctype html>
 <html lang="es">
@@ -11,17 +12,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cobros por acceso de agentes | Portaless</title>
     <style>
-      body { font-family: system-ui, sans-serif; max-width: 680px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-      .warn { background: #fff4e5; border: 1px solid #f0b35b; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
-      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+      body { max-width: 680px; margin: 2rem auto; padding: 0 1rem; }
+      .warn { background: var(--warning-bg); border: 1px solid var(--warning-fg); border-radius: var(--radius-button); padding: 1rem; margin: 1rem 0; }
+      .card { border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; background: var(--panel-bg); box-shadow: var(--shadow-sm); }
       label { display: block; margin-top: .9rem; font-weight: 600; }
-      input[type=text], input[type=password] { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; }
+      input[type=text], input[type=password] { width: 100%; padding: .5rem; margin-top: .25rem; font-size: 1rem; box-sizing: border-box; border: 1px solid var(--panel-border); border-radius: var(--radius-input); background: var(--panel-bg); color: var(--text); font-family: var(--font-sans); }
       .check { font-weight: 400; display: flex; gap: .5rem; align-items: flex-start; }
-      button { margin-top: 1rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: 6px; cursor: pointer; background: #1f6feb; color: #fff; }
-      button.danger { background: #c0392b; }
-      .error { color: #c0392b; margin-top: .75rem; }
-      .ok { color: #1e7e34; margin-top: .75rem; }
-      small { color: #555; }
+      button { margin-top: 1rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: var(--radius-button); cursor: pointer; background: var(--accent); color: #261C15; font-family: var(--font-sans); font-weight: 600; }
+      button.danger { background: var(--danger-fg); color: var(--bg); }
+      .error { color: var(--danger-fg); margin-top: .75rem; }
+      .ok { color: var(--success-fg); margin-top: .75rem; }
+      small { color: var(--muted); }
+      code { font-family: var(--font-mono); }
     </style>
   </head>
   <body>

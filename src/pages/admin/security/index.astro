@@ -172,7 +172,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     padding: 18px 20px;
     border: 1px solid var(--portaless-border);
     border-radius: 12px;
-    background: #14161b;
+    background: var(--panel-bg);
   }
   .sec-h2 { margin: 0 0 12px; font-size: 1rem; }
   .sec-label { display: block; margin-bottom: 12px; font-size: 0.85rem; color: var(--portaless-fg); }
@@ -182,18 +182,18 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     max-width: 360px;
     margin-top: 4px;
     padding: 8px 10px;
-    background: #0f1114;
+    background: var(--bg);
     border: 1px solid var(--portaless-border);
-    border-radius: 6px;
+    border-radius: var(--radius-input, 6px);
     color: var(--portaless-fg);
     font-size: 0.9rem;
     box-sizing: border-box;
   }
   .sec-btn {
-    border: 1px solid var(--portaless-accent);
+    border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
-    color: #0f1114;
-    border-radius: 6px;
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
     padding: 9px 18px;
     font-size: 0.85rem;
     font-weight: 600;
@@ -201,10 +201,10 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   }
   .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .sec-msg { margin: 10px 0 0; font-size: 0.85rem; }
-  .sec-ok { color: var(--portaless-accent); }
-  .sec-error { color: #ff6e6e; font-size: 0.85rem; }
+  .sec-ok { color: var(--accent-text); }
+  .sec-error { color: var(--danger-fg); font-size: 0.85rem; }
   .sec-muted { color: var(--portaless-muted); font-size: 0.85rem; }
-  .sec-muted a { color: var(--portaless-accent); }
+  .sec-muted a { color: var(--accent-text); }
   .sec-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
   .sec-table th, .sec-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--portaless-border); vertical-align: top; }
   .sec-table th { color: var(--portaless-muted); font-weight: 600; }

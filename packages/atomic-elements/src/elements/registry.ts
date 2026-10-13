@@ -1,4 +1,23 @@
 import type { ElementDefinition, ElementType } from "../types";
+import {
+  ICON_CIRCLE_QUESTION_MARK,
+  ICON_CIRCLE_USER_ROUND,
+  ICON_COLUMNS_2,
+  ICON_HEADING,
+  ICON_IMAGE,
+  ICON_IMAGES,
+  ICON_LAYOUT_TEMPLATE,
+  ICON_LINK,
+  ICON_MAIL,
+  ICON_MESSAGE_SQUARE_QUOTE,
+  ICON_MOUSE_POINTER_CLICK,
+  ICON_MOVE_VERTICAL,
+  ICON_PILCROW,
+  ICON_SHARE_2,
+  ICON_SHOPPING_CART,
+  ICON_STORE,
+  ICON_VIDEO,
+} from "./icons";
 
 // Phase 0 (visual identity foundation): los colores de SISTEMA del
 // renderHTML usan var(--token, fallback) con los fallbacks de la paleta
@@ -18,7 +37,7 @@ function esc(value: unknown): string {
 
 interface HeroProps { title: string; subtitle: string; bgColor: string; }
 const Hero: ElementDefinition<HeroProps> = {
-  type: "Hero", displayName: "Hero / Portada", icon: "🏔️",
+  type: "Hero", displayName: "Hero / Portada", icon: ICON_LAYOUT_TEMPLATE,
   defaultProps: { title: "Titulo principal", subtitle: "Subtitulo de apoyo", bgColor: "#261C15" },
   editableProps: [
     { key: "title", label: "Titulo", kind: "text" },
@@ -30,7 +49,7 @@ const Hero: ElementDefinition<HeroProps> = {
 
 interface HeadingProps { text: string; level: "h1" | "h2" | "h3"; align: "left" | "center" | "right"; }
 const Heading: ElementDefinition<HeadingProps> = {
-  type: "Heading", displayName: "Encabezado", icon: "🔠",
+  type: "Heading", displayName: "Encabezado", icon: ICON_HEADING,
   defaultProps: { text: "Encabezado de seccion", level: "h2", align: "left" },
   editableProps: [
     { key: "text", label: "Texto", kind: "text" },
@@ -42,7 +61,7 @@ const Heading: ElementDefinition<HeadingProps> = {
 
 interface ParagraphProps { text: string; }
 const Paragraph: ElementDefinition<ParagraphProps> = {
-  type: "Paragraph", displayName: "Parrafo", icon: "📝",
+  type: "Paragraph", displayName: "Parrafo", icon: ICON_PILCROW,
   defaultProps: { text: "Escribe aqui el contenido de este parrafo." },
   editableProps: [{ key: "text", label: "Texto", kind: "textarea" }],
   renderHTML: (p) => `<p style="line-height:1.6;margin:0;">${esc(p.text)}</p>`,
@@ -50,7 +69,7 @@ const Paragraph: ElementDefinition<ParagraphProps> = {
 
 interface ImageProps { src: string; alt: string; radius: number; }
 const ImageEl: ElementDefinition<ImageProps> = {
-  type: "Image", displayName: "Imagen", icon: "🖼️",
+  type: "Image", displayName: "Imagen", icon: ICON_IMAGE,
   defaultProps: { src: "https://placehold.co/800x400", alt: "Descripcion de la imagen", radius: 16 },
   editableProps: [
     { key: "src", label: "URL de la imagen", kind: "url" },
@@ -62,7 +81,7 @@ const ImageEl: ElementDefinition<ImageProps> = {
 
 interface ButtonProps { label: string; href: string; style: "primary" | "secondary"; }
 const ButtonEl: ElementDefinition<ButtonProps> = {
-  type: "Button", displayName: "Boton", icon: "🔘",
+  type: "Button", displayName: "Boton", icon: ICON_MOUSE_POINTER_CLICK,
   defaultProps: { label: "Llamado a la accion", href: "#", style: "primary" },
   editableProps: [
     { key: "label", label: "Texto", kind: "text" },
@@ -73,13 +92,13 @@ const ButtonEl: ElementDefinition<ButtonProps> = {
     const bg = p.style === "primary" ? "var(--accent, #C5D86D)" : "transparent";
     const color = p.style === "primary" ? "#261C15" : "var(--accent-text, #5A6B24)";
     const border = p.style === "primary" ? "none" : "1px solid var(--accent, #C5D86D)";
-    return `<a href="${esc(p.href)}" style="display:inline-block;padding:10px 22px;border-radius:999px;background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
+    return `<a href="${esc(p.href)}" style="display:inline-block;padding:10px 22px;border-radius:var(--radius-button, 8px);background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
   },
 };
 
 interface ColumnsProps { count: 2 | 3; gap: number; }
 const Columns: ElementDefinition<ColumnsProps> = {
-  type: "Columns", displayName: "Columnas", icon: "▥",
+  type: "Columns", displayName: "Columnas", icon: ICON_COLUMNS_2,
   defaultProps: { count: 2, gap: 16 },
   editableProps: [
     { key: "count", label: "Numero de columnas", kind: "select", options: ["2", "3"] },
@@ -90,7 +109,7 @@ const Columns: ElementDefinition<ColumnsProps> = {
 
 interface ProductGridProps { source: "medusa" | "manual"; columns: number; limit: number; }
 const ProductGrid: ElementDefinition<ProductGridProps> = {
-  type: "ProductGrid", displayName: "Grilla de productos", icon: "🛒",
+  type: "ProductGrid", displayName: "Grilla de productos", icon: ICON_SHOPPING_CART,
   defaultProps: { source: "medusa", columns: 3, limit: 6 },
   editableProps: [
     { key: "source", label: "Origen de datos", kind: "select", options: ["medusa", "manual"] },
@@ -122,7 +141,7 @@ const ProductGrid: ElementDefinition<ProductGridProps> = {
 
 interface SpacerProps { height: number; }
 const Spacer: ElementDefinition<SpacerProps> = {
-  type: "Spacer", displayName: "Espaciador", icon: "↕️",
+  type: "Spacer", displayName: "Espaciador", icon: ICON_MOVE_VERTICAL,
   defaultProps: { height: 32 },
   editableProps: [{ key: "height", label: "Altura (px)", kind: "number" }],
   renderHTML: (p) => `<div style="height:${esc(p.height)}px;"></div>`,
@@ -131,7 +150,7 @@ const Spacer: ElementDefinition<SpacerProps> = {
 interface LinkItem { label: string; url: string; icon?: string; enabled: boolean; }
 interface LinkListProps { title: string; links: LinkItem[]; buttonStyle: "solid" | "outline"; }
 const LinkList: ElementDefinition<LinkListProps> = {
-  type: "LinkList", displayName: "Lista de enlaces", icon: "🔗",
+  type: "LinkList", displayName: "Lista de enlaces", icon: ICON_LINK,
   defaultProps: {
     title: "Mis enlaces",
     links: [
@@ -161,7 +180,7 @@ const LinkList: ElementDefinition<LinkListProps> = {
 
 interface SocialIconsProps { links: Array<{ platform: string; url: string }>; align: "left" | "center" | "right"; }
 const SocialIcons: ElementDefinition<SocialIconsProps> = {
-  type: "SocialIcons", displayName: "Iconos sociales", icon: "🌐",
+  type: "SocialIcons", displayName: "Iconos sociales", icon: ICON_SHARE_2,
   defaultProps: {
     links: [
       { platform: "instagram", url: "https://instagram.com/" },
@@ -185,7 +204,7 @@ const SocialIcons: ElementDefinition<SocialIconsProps> = {
 
 interface ProfileHeaderProps { avatarUrl: string; name: string; bio: string; bgColor: string; }
 const ProfileHeader: ElementDefinition<ProfileHeaderProps> = {
-  type: "ProfileHeader", displayName: "Perfil / Bio", icon: "🧑",
+  type: "ProfileHeader", displayName: "Perfil / Bio", icon: ICON_CIRCLE_USER_ROUND,
   defaultProps: {
     avatarUrl: "https://placehold.co/160x160",
     name: "Tu nombre",
@@ -203,7 +222,7 @@ const ProfileHeader: ElementDefinition<ProfileHeaderProps> = {
 
 interface StoreBlockProps { columns: number; limit: number; }
 const StoreBlock: ElementDefinition<StoreBlockProps> = {
-  type: "StoreBlock", displayName: "Tienda de afiliados", icon: "🛍️",
+  type: "StoreBlock", displayName: "Tienda de afiliados", icon: ICON_STORE,
   defaultProps: { columns: 2, limit: 6 },
   editableProps: [
     { key: "columns", label: "Columnas", kind: "number" },
@@ -215,7 +234,7 @@ const StoreBlock: ElementDefinition<StoreBlockProps> = {
 
 interface VideoProps { url: string; title: string; radius: number; }
 const Video: ElementDefinition<VideoProps> = {
-  type: "Video", displayName: "Video (embed)", icon: "🎬",
+  type: "Video", displayName: "Video (embed)", icon: ICON_VIDEO,
   defaultProps: { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Video embebido", radius: 16 },
   editableProps: [
     { key: "url", label: "URL de YouTube o Vimeo", kind: "url" },
@@ -239,7 +258,7 @@ const Video: ElementDefinition<VideoProps> = {
 
 interface FAQProps { title: string; items: string; }
 const FAQ: ElementDefinition<FAQProps> = {
-  type: "FAQ", displayName: "Preguntas frecuentes", icon: "❓",
+  type: "FAQ", displayName: "Preguntas frecuentes", icon: ICON_CIRCLE_QUESTION_MARK,
   defaultProps: {
     title: "Preguntas frecuentes",
     items: "¿Cuanto tarda el envio? :: Entre 2 y 5 dias habiles.\n¿Puedo devolver el producto? :: Si, tenes 30 dias.",
@@ -265,7 +284,7 @@ const FAQ: ElementDefinition<FAQProps> = {
 
 interface TestimonialProps { quote: string; author: string; role: string; avatarUrl: string; align: "left" | "center"; }
 const Testimonial: ElementDefinition<TestimonialProps> = {
-  type: "Testimonial", displayName: "Testimonio", icon: "💬",
+  type: "Testimonial", displayName: "Testimonio", icon: ICON_MESSAGE_SQUARE_QUOTE,
   defaultProps: {
     quote: "Trabajar con este equipo cambio la manera en que publicamos. Recomendado.",
     author: "Nombre del cliente",
@@ -293,7 +312,7 @@ const Testimonial: ElementDefinition<TestimonialProps> = {
 
 interface FormProps { action: string; submitLabel: string; anchorId: string; }
 const FormEl: ElementDefinition<FormProps> = {
-  type: "Form", displayName: "Formulario de contacto", icon: "📮",
+  type: "Form", displayName: "Formulario de contacto", icon: ICON_MAIL,
   defaultProps: { action: "", submitLabel: "Enviar mensaje", anchorId: "contacto" },
   editableProps: [
     { key: "action", label: "Endpoint (URL de Formspree, Basin, etc.)", kind: "url" },
@@ -302,18 +321,18 @@ const FormEl: ElementDefinition<FormProps> = {
   ],
   renderHTML: (p) => {
     const anchor = p.anchorId ? ` id="${esc(p.anchorId)}"` : "";
-    const fieldStyle = "width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid var(--panel-border, #E4E6C3);border-radius:12px;font:inherit;background:var(--panel-bg, #FFFFFF);color:var(--text, #261C15);margin-bottom:10px;";
+    const fieldStyle = "width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid var(--panel-border, #E4E6C3);border-radius:var(--radius-input, 6px);font:inherit;background:var(--panel-bg, #FFFFFF);color:var(--text, #261C15);margin-bottom:10px;";
     const label = (text: string, inner: string) => `<label style="display:block;font-weight:700;font-size:.85rem;margin-bottom:4px;">${text}${inner}</label>`;
     if (!String(p.action ?? "").trim()) {
       return `<div${anchor} style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;text-align:center;color:var(--muted, #6E6653);">Este formulario todavia no entrega a ningun destino. Configura un endpoint (por ejemplo Formspree o Basin, ambos con plan gratuito) en la propiedad \"Endpoint\" y el formulario empezara a enviar mensajes reales.</div>`;
     }
-    return `<form${anchor} method="post" action="${esc(p.action)}" style="display:flex;flex-direction:column;border:1px solid var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;background:var(--panel-bg, #FFFFFF);">${label("Nombre", `<input type="text" name="nombre" required style="${fieldStyle}" />`)}${label("Email", `<input type="email" name="email" required style="${fieldStyle}" />`)}${label("Mensaje", `<textarea name="mensaje" rows="5" required style="${fieldStyle}resize:vertical;"></textarea>`)}<button type="submit" style="align-self:flex-start;padding:10px 22px;border-radius:999px;border:none;background:var(--accent, #C5D86D);color:#261C15;font-weight:700;cursor:pointer;">${esc(p.submitLabel)}</button></form>`;
+    return `<form${anchor} method="post" action="${esc(p.action)}" style="display:flex;flex-direction:column;border:1px solid var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;background:var(--panel-bg, #FFFFFF);">${label("Nombre", `<input type="text" name="nombre" required style="${fieldStyle}" />`)}${label("Email", `<input type="email" name="email" required style="${fieldStyle}" />`)}${label("Mensaje", `<textarea name="mensaje" rows="5" required style="${fieldStyle}resize:vertical;"></textarea>`)}<button type="submit" style="align-self:flex-start;padding:10px 22px;border-radius:var(--radius-button, 8px);border:none;background:var(--accent, #C5D86D);color:#261C15;font-weight:700;cursor:pointer;">${esc(p.submitLabel)}</button></form>`;
   },
 };
 
 interface GalleryProps { images: string; columns: 2 | 3 | 4; radius: number; }
 const Gallery: ElementDefinition<GalleryProps> = {
-  type: "Gallery", displayName: "Galeria", icon: "🖼️",
+  type: "Gallery", displayName: "Galeria", icon: ICON_IMAGES,
   defaultProps: {
     images: "https://placehold.co/600x600\nhttps://placehold.co/600x600/C5D86D\nhttps://placehold.co/600x600/261C15",
     columns: 3,

@@ -5,6 +5,7 @@
 
 import type { ElementNode } from "../types";
 import { elementRegistry } from "../elements/registry";
+import { iconLabel } from "../elements/icons";
 
 export function renderPropertyPanel(
   node: ElementNode | null,
@@ -22,7 +23,7 @@ export function renderPropertyPanel(
   const props = { ...definition.defaultProps, ...node.props };
 
   const title = document.createElement("h3");
-  title.textContent = `${definition.icon} ${definition.displayName}`;
+  title.appendChild(iconLabel(definition.icon, definition.displayName));
   panel.appendChild(title);
 
   for (const field of definition.editableProps) {
