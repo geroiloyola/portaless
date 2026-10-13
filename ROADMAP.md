@@ -196,15 +196,17 @@ Categories are by **who** must resolve the piece, not by priority.
 
 ### Phase 5 — Index as a real aggregator, public Beta
 
+**Status**: items 1, 2, 4 and 5 shipped in this repository (A.4.4-style calibration, inter-node peer sync, the non-technical 10-minute install guide, and the public Beta announcement with its honesty note — see the annotated items below). Item 3 (onboarding tested with 3–5 people without a technical profile) requires real people and recorded sessions; it cannot be advanced by code alone. The exit criterion — an outside person installing Portaless unaided, publishing an APW site that appears in an Index node that is not the author's — stays open until that happens.
+
 **Goal**: Index starts behaving like a real network, not a single-operator script, and the project opens its first official Beta with onboarding proven by real non-technical people.
 
 **Why last**: Index aggregating witnesses of a single operator is not a network, it is a database. It needs Phase 4 to have produced more than one real instance first — aggregating witnesses of a single author would simulate a network, not build one.
 
-1. Witness weight calibration (A.4.4-style, already designed mathematically in the spec but not implemented for Index, per the code's own comments in `witness-index.ts`).
-2. Minimal inter-node synchronization between Index instances (gossip or periodic pull between two or more Index deployments, currently nonexistent per the code).
-3. The one-click onboarding wizard (already designed in this ROADMAP) tested with at least 3–5 people without a technical profile, with adjustments based on those sessions, not on design assumptions.
-4. Documentation for a non-technical audience: not another 114 KB `ROADMAP.md`, but a short "install your site in 10 minutes" guide with screenshots (reusing Phase 1 material).
-5. Public Beta announcement with the official palette applied end to end, the Phase 1 public demo as the first impression, and an explicit honesty note about what is ready and what is not — the same transparency standard the project already uses in its "Real status by module", now applied to whoever discovers it for the first time, not only to whoever reads the code.
+1. **[shipped]** Witness weight calibration (A.4.4-style): each witness gains/loses a calibration factor by agreeing/disagreeing with the weighted consensus at every sync (`witnessCalibrationFactor`: Laplace-smoothed agreement rate mapped to ~0.1–~1.9, effective weight = base × factor, clamped; witnesses without an observation at the consensus seq are never counted; both components published per observation so any reader can recompute). Erratum E-12 documents it.
+2. **[shipped]** Minimal inter-node synchronization: peer Index nodes are configured per node (`witness_index_peers`); `POST /admin/api/index/sync-peers` pulls each peer's `apw-index.json` and uses its entries as **discovery** of (subject, witnesses), re-running the full fail-closed verification pipeline locally — a peer never injects unverified observations (capped at 50 subjects / 20 witnesses per peer per sync). Erratum E-12 documents it.
+3. **[requires real people]** The one-click onboarding wizard (already designed in this ROADMAP) tested with at least 3–5 people without a technical profile, with adjustments based on those sessions, not on design assumptions. **Current limit**: this requires recruiting and recording real sessions; the code path exists end to end (setup → wizard → identity → publish) and the non-technical guide (item 4) is the artifact those sessions should start from.
+4. **[shipped]** Documentation for a non-technical audience: [`docs/primos-pasos.md`](./docs/primos-pasos.md) — “install your site in 10 minutes” in Spanish (voseo), Docker + browser only, reusing the Phase 1 screenshots/GIF, with an explicit honest-limits section (terminal step on GitHub Pages publish, single maintainer, exit criterion not met).
+5. **[shipped]** Public Beta announcement: [`/beta`](./src/pages/beta.astro) (static, palette via the official tokens, live on the demo) plus the README “Public Beta” section — demo as first impression, what's ready vs not, links to the guide/ROADMAP/SECURITY; the README's stale “Index: design/spec stage only” claims were corrected to the real shipped status.
 
 **Exit criterion (and close of this roadmap)**: a person outside the project, without the author's direct help, installs Portaless, publishes a site with APW identity, and that site appears correctly in at least one Index node that is not the author's.
 
@@ -221,9 +223,9 @@ One list, so progress does not depend on re-reading the six phases:
 - [ ] CI green in a sustained way, coverage floors held in the range the ROADMAP set for itself
 - [ ] At least one person other than the author with real capacity to review or merge code
 - [ ] At least one external domain (not the author's) publishes valid APW identity
-- [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights
-- [ ] The onboarding wizard was tested with real non-technical people
-- [ ] "First steps" documentation exists for someone who does not read TypeScript
+- [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights — *(code ready: calibration + inter-node sync shipped; the box needs the external reality — more than one real operator — not more code)*
+- [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/primos-pasos.md` is the starting artifact)*
+- [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/primos-pasos.md` shipped; keep it honest and updated as the product changes)*
 
 ---
 

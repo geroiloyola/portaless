@@ -1,0 +1,247 @@
+---
+// Portaless Index -- panel del operador (Phase 5).
+// Muestra el directorio de sujetos cacheado (lo que publica
+// GET /.well-known/apw-index.json), permite sincronizar un sujeto contra
+// un set de testigos (POST /admin/api/index/sync) y administrar los pares
+// nodo-indice con su sincronizacion (GET/POST /admin/api/index/peers,
+// POST /admin/api/index/sync-peers). Protegido por
+// functions/admin/_middleware.js (sesion bajo /admin/*).
+//
+// Todo lo que el indice publica es JSON plano re-verificable: esta pantalla
+// es solo comodidad del operador; la fuente de verdad son las cadenas del
+// sujeto y de sus testigos.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Portaless Index — Portaless Admin">
+  <header class="ix-header">
+    <h1>Portaless Index</h1>
+    <p>
+      Agregador de testigos (Protocol APW §5.7): este nodo consulta testigos,
+      verifica cada observación de punta a punta y publica el directorio en
+      <a href="/.well-known/apw-index.json"><code>/.well-known/apw-index.json</code></a>
+      (JSON plano, cada entrada re-verificable contra las cadenas). Los pesos se
+      calibran solos: un testigo gana peso acordando con el consenso y lo pierde
+      disintiendo (estilo A.4.4); el peso base que pongas acá es un multiplicador
+      sobre ese factor.
+    </p>
+  </header>
+
+  <section class="ix-card">
+    <h2>Sujetos indexados</h2>
+    <p class="ix-hint" id="ix-subjects-hint">Cargando…</p>
+    <div class="ix-table-wrap">
+      <table class="ix-table" id="ix-subjects" hidden>
+        <thead>
+          <tr><th>Sujeto</th><th>Estado</th><th>Seq</th><th>Consenso (peso)</th><th>Testigos OK / omitidos</th><th>Sincronizado</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ix-card">
+    <h2>Sincronizar un sujeto</h2>
+    <form id="ix-sync-form" class="ix-form">
+      <label> Dominio del sujeto <input name="domain" required placeholder="ejemplo.com" autocomplete="off" /> </label>
+      <label> Testigos (1–20, coma o espacio) <input name="witnesses" required placeholder="testigo1.com, testigo2.com" autocomplete="off" /> </label>
+      <button type="submit">Sincronizar</button>
+    </form>
+    <p class="ix-result" id="ix-sync-result" hidden></p>
+  </section>
+
+  <section class="ix-card">
+    <h2>Pares (sincronización entre nodos)</h2>
+    <p class="ix-hint">
+      Otros despliegues de Portaless: su <code>apw-index.json</code> se usa como
+      <em>descubrimiento</em> de sujetos/testigos — todo se re-verifica localmente
+      con el mismo pipeline fail-closed; un par nunca inyecta observaciones sin verificar.
+      Documento público en <a href="/.well-known/apw-index.json">/.well-known/apw-index.json</a>.
+    </p>
+    <ul class="ix-peers" id="ix-peers"></ul>
+    <form id="ix-peer-form" class="ix-form">
+      <input name="domain" required placeholder="otro-indice.ejemplo" autocomplete="off" />
+      <button type="submit">Agregar par</button>
+    </form>
+    <button type="button" id="ix-sync-peers">Sincronizar pares ahora</button>
+    <p class="ix-result" id="ix-peers-result" hidden></p>
+  </section>
+</BaseLayout>
+
+<style>
+  .ix-header { margin-bottom: 1.25rem; }
+  .ix-header h1 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .ix-header p { font-size: 0.88rem; color: var(--portaless-muted); line-height: 1.5; max-width: 62rem; }
+  .ix-card { border: 1px solid var(--portaless-border, #d8d4c8); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1.1rem; background: var(--portaless-surface, #fff); }
+  .ix-card h2 { font-size: 1.02rem; margin-bottom: 0.5rem; }
+  .ix-hint { font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; margin-bottom: 0.6rem; }
+  .ix-table-wrap { overflow-x: auto; }
+  .ix-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .ix-table th, .ix-table td { text-align: left; padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--portaless-border, #e4e0d4); }
+  .ix-table th { font-weight: 600; color: var(--portaless-muted); }
+  .ix-badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.74rem; border: 1px solid var(--portaless-border, #d8d4c8); }
+  .ix-badge-ok { border-color: var(--portaless-accent, #5a6b24); color: var(--portaless-accent, #5a6b24); }
+  .ix-badge-bad { border-color: #b3401a; color: #b3401a; }
+  .ix-form { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: end; margin-bottom: 0.5rem; }
+  .ix-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: var(--portaless-muted); flex: 1 1 14rem; }
+  .ix-form input { padding: 0.45rem 0.6rem; border: 1px solid var(--portaless-border, #d8d4c8); border-radius: 6px; font-size: 0.86rem; background: var(--portaless-bg, #fff); color: var(--portaless-text, #261c15); }
+  button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--portaless-accent, #5a6b24); background: var(--portaless-accent, #5a6b24); color: var(--portaless-accent-text, #261c15); font-weight: 600; cursor: pointer; font-size: 0.84rem; }
+  button:hover { filter: brightness(1.05); }
+  .ix-peers { list-style: none; padding: 0; margin: 0 0 0.6rem; font-size: 0.84rem; }
+  .ix-peers li { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; border-bottom: 1px solid var(--portaless-border, #e4e0d4); }
+  .ix-peers .ix-peer-meta { color: var(--portaless-muted); font-size: 0.76rem; }
+  .ix-peers button { padding: 0.2rem 0.55rem; font-size: 0.74rem; background: transparent; color: #b3401a; border-color: #b3401a; }
+  .ix-result { font-size: 0.8rem; margin-top: 0.5rem; white-space: pre-wrap; }
+  .ix-error { color: #b3401a; }
+</style>
+
+<script>
+  type SubjectRow = {
+    subjectDid: string;
+    domain: string;
+    status: string;
+    length: number | null;
+    consensus: { seq: number; head: string | null; weight: number } | null;
+    witnessesUsed: string[];
+    witnessesSkipped: unknown[];
+    syncedAt: string;
+  };
+  type PeerRow = {
+    peerDomain: string;
+    peerDid: string | null;
+    lastSyncAt: string | null;
+    lastStatus: string;
+    lastSubjectsCount: number;
+  };
+
+  const subjectsHint = document.getElementById("ix-subjects-hint")!;
+  const subjectsTable = document.getElementById("ix-subjects") as HTMLTableElement;
+  const subjectsBody = subjectsTable.querySelector("tbody")!;
+  const syncResult = document.getElementById("ix-sync-result")!;
+  const peersList = document.getElementById("ix-peers")!;
+  const peersResult = document.getElementById("ix-peers-result")!;
+
+  function esc(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  }
+
+  function statusBadge(status: string): string {
+    const good = status === "consistent";
+    return `<span class="ix-badge ${good ? "ix-badge-ok" : "ix-badge-bad"}">${esc(status)}</span>`;
+  }
+
+  async function api(path: string, init?: RequestInit): Promise<Response> {
+    return fetch(path, init);
+  }
+
+  async function loadSubjects(): Promise<void> {
+    const res = await api("/admin/api/index/subjects");
+    if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    if (!res.ok) { subjectsHint.textContent = `No se pudo cargar el directorio (HTTP ${res.status}).`; subjectsHint.classList.add("ix-error"); return; }
+    const data = await res.json();
+    const subjects: SubjectRow[] = data.subjects ?? [];
+    if (subjects.length === 0) { subjectsHint.textContent = "Todavía no hay sujetos sincronizados. Sincronizá uno con el formulario de acá abajo."; return; }
+    subjectsHint.textContent = `${subjects.length} sujeto(s) cacheado(s). El documento público se sirve desde /.well-known/apw-index.json.`;
+    subjectsBody.innerHTML = subjects
+      .map((s) => {
+        const consensus = s.consensus ? `${s.consensus.seq} · peso ${s.consensus.weight.toFixed(2)}` : "—";
+        return `<tr>
+          <td><code>${esc(s.domain)}</code></td>
+          <td>${statusBadge(s.status)}</td>
+          <td>${s.length ?? "—"}</td>
+          <td>${consensus}</td>
+          <td>${s.witnessesUsed.length} / ${s.witnessesSkipped.length}</td>
+          <td>${esc(s.syncedAt)}</td>
+        </tr>`;
+      })
+      .join("");
+    subjectsTable.hidden = false;
+  }
+
+  async function loadPeers(): Promise<void> {
+    const res = await api("/admin/api/index/peers");
+    if (!res.ok) { peersList.innerHTML = `<li class="ix-error">No se pudieron cargar los pares (HTTP ${res.status}).</li>`; return; }
+    const data = await res.json();
+    const peers: PeerRow[] = data.peers ?? [];
+    if (peers.length === 0) { peersList.innerHTML = `<li class="ix-peer-meta">Sin pares configurados. Agregá el dominio de otro nodo Portaless que publique apw-index.json.</li>`; return; }
+    peersList.innerHTML = peers
+      .map(
+        (p) => `<li>
+          <code>${esc(p.peerDomain)}</code>
+          <span class="ix-badge ${p.lastStatus === "ok" ? "ix-badge-ok" : p.lastStatus === "never_synced" ? "" : "ix-badge-bad"}">${esc(p.lastStatus)}</span>
+          <span class="ix-peer-meta">${p.lastSubjectsCount} sujeto(s)${p.lastSyncAt ? ` · ${esc(p.lastSyncAt)}` : ""}</span>
+          <button type="button" data-remove="${esc(p.peerDomain)}">Quitar</button>
+        </li>`
+      )
+      .join("");
+    peersList.querySelectorAll<HTMLButtonElement>("button[data-remove]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const domain = btn.dataset.remove!;
+        const res2 = await api("/admin/api/index/peers", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ domain, action: "remove" }),
+        });
+        if (!res2.ok) { peersResult.hidden = false; peersResult.classList.add("ix-error"); peersResult.textContent = `No se pudo quitar ${domain} (HTTP ${res2.status}).`; return; }
+        await loadPeers();
+      });
+    });
+  }
+
+  (document.getElementById("ix-sync-form") as HTMLFormElement).addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const form = ev.target as HTMLFormElement;
+    const domain = String(new FormData(form).get("domain") ?? "").trim();
+    const witnesses = String(new FormData(form).get("witnesses") ?? "")
+      .split(/[\s,]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+    syncResult.hidden = false;
+    syncResult.classList.remove("ix-error");
+    syncResult.textContent = "Sincronizando… (verifica cadenas de testigos en vivo; puede tardar)";
+    const res = await api("/admin/api/index/sync", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ domain, witnesses }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { syncResult.classList.add("ix-error"); syncResult.textContent = `Error: ${body.error ?? res.status}${body.message ? ` — ${body.message}` : ""}`; return; }
+    const entry = body.synced;
+    syncResult.textContent = `Listo: ${entry.domain} → ${entry.status} (seq observada ${entry.consensus?.seq ?? "—"}, testigos OK ${entry.witnessesUsed.length}, omitidos ${entry.witnessesSkipped.length}).`;
+    await loadSubjects();
+  });
+
+  (document.getElementById("ix-peer-form") as HTMLFormElement).addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const form = ev.target as HTMLFormElement;
+    const domain = String(new FormData(form).get("domain") ?? "").trim();
+    peersResult.hidden = false;
+    peersResult.classList.remove("ix-error");
+    const res = await api("/admin/api/index/peers", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ domain }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { peersResult.classList.add("ix-error"); peersResult.textContent = `Error: ${body.error ?? res.status}${body.message ? ` — ${body.message}` : ""}`; return; }
+    form.reset();
+    peersResult.textContent = `Par ${domain} agregado.`;
+    await loadPeers();
+  });
+
+  document.getElementById("ix-sync-peers")!.addEventListener("click", async () => {
+    peersResult.hidden = false;
+    peersResult.classList.remove("ix-error");
+    peersResult.textContent = "Sincronizando pares… (baja cada apw-index.json y re-verifica localmente; puede tardar)";
+    const res = await api("/admin/api/index/sync-peers", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { peersResult.classList.add("ix-error"); peersResult.textContent = `Error: ${body.error ?? res.status}`; return; }
+    const lines = (body.peers ?? []).map((p: { peerDomain: string; outcome: string; subjectsSynced: number; subjectsSkipped: number }) => `• ${p.peerDomain}: ${p.outcome} — ${p.subjectsSynced} sincronizado(s), ${p.subjectsSkipped} omitido(s)`);
+    peersResult.textContent = `Listo. Total ${body.subjectsSynced} sujeto(s) sincronizado(s).\n${lines.join("\n")}`;
+    await loadPeers();
+    await loadSubjects();
+  });
+
+  loadSubjects();
+  loadPeers();
+</script>

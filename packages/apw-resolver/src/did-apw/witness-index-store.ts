@@ -1,25 +1,36 @@
 // packages/apw-resolver/src/did-apw/witness-index-store.ts
 //
 // Estado del Portaless Index -- agregador de testigos (APW v1.3, 5.7 y
-// seccion 7). Tres tablas, un solo store:
+// seccion 7). Cinco tablas, un solo store:
 //
-//   witness_observations  observaciones ancladas que este nodo recopilo de
-//                         los testigos configurados, por sujeto. PK
-//                         (site_id, subject_did, witness_did, observed_seq):
-//                         la ultima observacion anclada de cada testigo para
-//                         cada seq del sujeto; una re-observacion con un
-//                         anchored_ts menor no pisa la mayor (un testigo no
-//                         puede "olvidar" lo que ya anclo).
-//   witness_weights       ponderacion estatica por testigo (default 1.0 en
-//                         quien evalua). La calibracion estilo A.4.4 (que un
-//                         testigo gane peso por acertar con el consenso) NO
-//                         esta implementada: es el proximo paso documentado.
+//   witness_observations   observaciones ancladas que este nodo recopilo de
+//                          los testigos configurados, por sujeto. PK
+//                          (site_id, subject_did, witness_did, observed_seq):
+//                          la ultima observacion anclada de cada testigo para
+//                          cada seq del sujeto; una re-observacion con un
+//                          anchored_ts menor no pisa la mayor (un testigo no
+//                          puede "olvidar" lo que ya anclo).
+//   witness_weights        ponderacion BASE por testigo (default 1.0 en
+//                          quien evalua), editable por el operador. Es un
+//                          multiplicador sobre el factor de calibracion.
+//   witness_calibration    contadores acuerdo/desacuerdo de cada testigo con
+//                          el consenso (calibracion estilo A.4.4 para el
+//                          Index, ver witness-index.ts: un testigo gana
+//                          peso acertando con el consenso y lo pierde
+//                          disintiendo; los efectivos se recomputan en cada
+//                          sync, no al publicar).
 //   witness_index_subjects ultima entrada de directorio computada por
-//                         syncWitnessIndex, cacheada ahi para publicar
-//                         /.well-known/apw-index.json sin re-bajar cadenas
-//                         en cada request. El directorio refleja la ultima
-//                         sincronizacion; los pesos se recomputan en cada
-//                         sync, no al publicar.
+//                          syncWitnessIndex, cacheada ahi para publicar
+//                          /.well-known/apw-index.json sin re-bajar cadenas
+//                          en cada request. El directorio refleja la ultima
+//                          sincronizacion; los pesos se recomputan en cada
+//                          sync, no al publicar.
+//   witness_index_peers    otros nodos indice configurados por el operador
+//                          (sincronizacion entre nodos: syncIndexPeers baja
+//                          su apw-index.json y usa sus entradas como
+//                          DESCUBRIMIENTO de sujetos/testigos, re-verificando
+//                          todo localmente -- un par nunca inyecta
+//                          observaciones sin verificar).
 //
 // Los stores crean sus tablas al vuelo (mismo DDL que schema.sql).
 
@@ -57,6 +68,31 @@ export interface WitnessSubjectEntryRecord {
 
 export type UpsertObservationOutcome = 'inserted' | 'updated' | 'kept';
 
+export interface WitnessCalibrationRecord {
+  siteId: string;
+  /** did:apw:<dominio del testigo> */
+  witnessDid: string;
+  /** Sincronizaciones en las que el testigo coincidio con el consenso. */
+  agree: number;
+  /** Sincronizaciones en las que el testigo disintio del consenso (tuvo observacion en su seq). */
+  disagree: number;
+  updatedAt: string;
+}
+
+export type PeerSyncStatus = 'ok' | 'peer_unreachable' | 'peer_invalid' | 'never_synced';
+
+export interface IndexPeerRecord {
+  siteId: string;
+  /** hostname del nodo par (sin esquema). */
+  peerDomain: string;
+  /** did:apw:<dominio> declarado en el apw-index.json del par (null si nunca se pudo leer). */
+  peerDid: string | null;
+  addedAt: string;
+  lastSyncAt: string | null;
+  lastStatus: PeerSyncStatus;
+  lastSubjectsCount: number;
+}
+
 export interface WitnessIndexStore {
   setWeight(siteId: string, witnessDid: string, weight: number): Promise<void>;
   getWeights(siteId: string): Promise<Record<string, number>>;
@@ -66,6 +102,13 @@ export interface WitnessIndexStore {
   saveSubjectEntry(rec: WitnessSubjectEntryRecord): Promise<void>;
   getSubjectEntry(siteId: string, subjectDid: string): Promise<WitnessSubjectEntryRecord | null>;
   listSubjectEntries(siteId: string): Promise<WitnessSubjectEntryRecord[]>;
+  /** Suma 1 al contador acuerdo/desacuerdo del testigo (calibracion A.4.4). */
+  recordCalibration(siteId: string, witnessDid: string, agreed: boolean): Promise<void>;
+  getCalibration(siteId: string): Promise<Record<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>>>;
+  addPeer(rec: Omit<IndexPeerRecord, 'lastSyncAt' | 'lastStatus' | 'lastSubjectsCount'>): Promise<void>;
+  removePeer(siteId: string, peerDomain: string): Promise<boolean>;
+  listPeers(siteId: string): Promise<IndexPeerRecord[]>;
+  updatePeerStatus(siteId: string, peerDomain: string, status: PeerSyncStatus, subjectsCount: number, peerDid: string | null): Promise<void>;
 }
 
 export function assertWitnessWeight(weight: number): void {
@@ -103,6 +146,26 @@ const SUBJECTS_DDL = `CREATE TABLE IF NOT EXISTS witness_index_subjects (
     PRIMARY KEY (site_id, subject_did)
   )`;
 
+const CALIBRATION_DDL = `CREATE TABLE IF NOT EXISTS witness_calibration (
+    site_id TEXT NOT NULL,
+    witness_did TEXT NOT NULL,
+    agree INTEGER NOT NULL DEFAULT 0,
+    disagree INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (site_id, witness_did)
+  )`;
+
+const PEERS_DDL = `CREATE TABLE IF NOT EXISTS witness_index_peers (
+    site_id TEXT NOT NULL,
+    peer_domain TEXT NOT NULL,
+    peer_did TEXT,
+    added_at TEXT NOT NULL,
+    last_sync_at TEXT,
+    last_status TEXT NOT NULL DEFAULT 'never_synced',
+    last_subjects_count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (site_id, peer_domain)
+  )`;
+
 interface ObservationRow {
   subject_did: string;
   witness_did: string;
@@ -133,7 +196,7 @@ export class SqlWitnessIndexStore implements WitnessIndexStore {
 
   private ensureSchema(): Promise<void> {
     if (!this.schemaReady) {
-      this.schemaReady = Promise.all([this.sql.run(OBSERVATIONS_DDL), this.sql.run(WEIGHTS_DDL), this.sql.run(SUBJECTS_DDL)])
+      this.schemaReady = Promise.all([this.sql.run(OBSERVATIONS_DDL), this.sql.run(WEIGHTS_DDL), this.sql.run(SUBJECTS_DDL), this.sql.run(CALIBRATION_DDL), this.sql.run(PEERS_DDL)])
         .then(() => undefined)
         .catch((err) => {
           this.schemaReady = null;
@@ -234,6 +297,81 @@ export class SqlWitnessIndexStore implements WitnessIndexStore {
     );
     return rows.map((row) => ({ siteId, subjectDid: row.subject_did, domain: row.domain, entryJson: row.entry_json, updatedAt: row.updated_at }));
   }
+
+  async recordCalibration(siteId: string, witnessDid: string, agreed: boolean): Promise<void> {
+    await this.ensureSchema();
+    await this.sql.run(
+      `INSERT INTO witness_calibration (site_id, witness_did, agree, disagree, updated_at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(site_id, witness_did) DO UPDATE SET
+         agree = witness_calibration.agree + excluded.agree,
+         disagree = witness_calibration.disagree + excluded.disagree,
+         updated_at = excluded.updated_at`,
+      [siteId, witnessDid, agreed ? 1 : 0, agreed ? 0 : 1, new Date().toISOString()]
+    );
+  }
+
+  async getCalibration(siteId: string): Promise<Record<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>>> {
+    await this.ensureSchema();
+    const rows = await this.sql.all<{ witness_did: string; agree: number; disagree: number }>(
+      `SELECT witness_did, agree, disagree FROM witness_calibration WHERE site_id = ?`,
+      [siteId]
+    );
+    const out: Record<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>> = {};
+    for (const row of rows) out[row.witness_did] = { agree: row.agree, disagree: row.disagree };
+    return out;
+  }
+
+  async addPeer(rec: Omit<IndexPeerRecord, 'lastSyncAt' | 'lastStatus' | 'lastSubjectsCount'>): Promise<void> {
+    await this.ensureSchema();
+    await this.sql.run(
+      `INSERT INTO witness_index_peers (site_id, peer_domain, peer_did, added_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(site_id, peer_domain) DO UPDATE SET peer_did = excluded.peer_did`,
+      [rec.siteId, rec.peerDomain, rec.peerDid, rec.addedAt]
+    );
+  }
+
+  async removePeer(siteId: string, peerDomain: string): Promise<boolean> {
+    await this.ensureSchema();
+    const existing = await this.sql.first<{ peer_domain: string }>(
+      `SELECT peer_domain FROM witness_index_peers WHERE site_id = ? AND peer_domain = ?`,
+      [siteId, peerDomain]
+    );
+    if (!existing) return false;
+    await this.sql.run(`DELETE FROM witness_index_peers WHERE site_id = ? AND peer_domain = ?`, [siteId, peerDomain]);
+    return true;
+  }
+
+  async listPeers(siteId: string): Promise<IndexPeerRecord[]> {
+    await this.ensureSchema();
+    const rows = await this.sql.all<{
+      peer_domain: string;
+      peer_did: string | null;
+      added_at: string;
+      last_sync_at: string | null;
+      last_status: string;
+      last_subjects_count: number;
+    }>(
+      `SELECT peer_domain, peer_did, added_at, last_sync_at, last_status, last_subjects_count FROM witness_index_peers WHERE site_id = ? ORDER BY peer_domain`,
+      [siteId]
+    );
+    return rows.map((row) => ({
+      siteId,
+      peerDomain: row.peer_domain,
+      peerDid: row.peer_did,
+      addedAt: row.added_at,
+      lastSyncAt: row.last_sync_at,
+      lastStatus: (row.last_status as PeerSyncStatus) ?? 'never_synced',
+      lastSubjectsCount: row.last_subjects_count,
+    }));
+  }
+
+  async updatePeerStatus(siteId: string, peerDomain: string, status: PeerSyncStatus, subjectsCount: number, peerDid: string | null): Promise<void> {
+    await this.ensureSchema();
+    await this.sql.run(
+      `UPDATE witness_index_peers SET last_sync_at = ?, last_status = ?, last_subjects_count = ?, peer_did = ? WHERE site_id = ? AND peer_domain = ?`,
+      [new Date().toISOString(), status, subjectsCount, peerDid, siteId, peerDomain]
+    );
+  }
 }
 
 export class D1WitnessIndexStore extends SqlWitnessIndexStore {
@@ -252,6 +390,8 @@ export class InMemoryWitnessIndexStore implements WitnessIndexStore {
   private weights = new Map<string, number>();
   private observations = new Map<string, WitnessObservationRecord>();
   private subjects = new Map<string, WitnessSubjectEntryRecord>();
+  private calibration = new Map<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>>();
+  private peers = new Map<string, IndexPeerRecord>();
 
   private obsKey(siteId: string, subjectDid: string, witnessDid: string, seq: number): string {
     return `${siteId}|${subjectDid}|${witnessDid}|${seq}`;
@@ -295,5 +435,51 @@ export class InMemoryWitnessIndexStore implements WitnessIndexStore {
 
   async listSubjectEntries(siteId: string): Promise<WitnessSubjectEntryRecord[]> {
     return [...this.subjects.values()].filter((r) => r.siteId === siteId).sort((a, b) => (a.subjectDid < b.subjectDid ? -1 : 1));
+  }
+
+  async recordCalibration(siteId: string, witnessDid: string, agreed: boolean): Promise<void> {
+    const key = `${siteId}|${witnessDid}`;
+    const cur = this.calibration.get(key) ?? { agree: 0, disagree: 0 };
+    if (agreed) cur.agree += 1;
+    else cur.disagree += 1;
+    this.calibration.set(key, cur);
+  }
+
+  async getCalibration(siteId: string): Promise<Record<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>>> {
+    const out: Record<string, Pick<WitnessCalibrationRecord, 'agree' | 'disagree'>> = {};
+    for (const [key, counts] of this.calibration) {
+      const [sid, did] = key.split('|');
+      if (sid === siteId) out[did] = { ...counts };
+    }
+    return out;
+  }
+
+  async addPeer(rec: Omit<IndexPeerRecord, 'lastSyncAt' | 'lastStatus' | 'lastSubjectsCount'>): Promise<void> {
+    const existing = this.peers.get(`${rec.siteId}|${rec.peerDomain}`);
+    this.peers.set(`${rec.siteId}|${rec.peerDomain}`, {
+      ...rec,
+      peerDid: rec.peerDid ?? existing?.peerDid ?? null,
+      addedAt: existing?.addedAt ?? rec.addedAt,
+      lastSyncAt: existing?.lastSyncAt ?? null,
+      lastStatus: existing?.lastStatus ?? 'never_synced',
+      lastSubjectsCount: existing?.lastSubjectsCount ?? 0,
+    });
+  }
+
+  async removePeer(siteId: string, peerDomain: string): Promise<boolean> {
+    return this.peers.delete(`${siteId}|${peerDomain}`);
+  }
+
+  async listPeers(siteId: string): Promise<IndexPeerRecord[]> {
+    return [...this.peers.values()].filter((r) => r.siteId === siteId).sort((a, b) => (a.peerDomain < b.peerDomain ? -1 : 1));
+  }
+
+  async updatePeerStatus(siteId: string, peerDomain: string, status: PeerSyncStatus, subjectsCount: number, peerDid: string | null): Promise<void> {
+    const peer = this.peers.get(`${siteId}|${peerDomain}`);
+    if (!peer) return;
+    peer.lastSyncAt = new Date().toISOString();
+    peer.lastStatus = status;
+    peer.lastSubjectsCount = subjectsCount;
+    peer.peerDid = peerDid ?? peer.peerDid;
   }
 }

@@ -495,10 +495,12 @@ CREATE TABLE IF NOT EXISTS reader_conduct_jti (
 -- observaciones VERIFICADAS recopiladas de los testigos configurados por
 -- sujeto (la ultima observacion anclada de cada testigo por seq, con su
 -- fecha creible = ts de la entrada del historial DEL TESTIGO), la
--- ponderacion estatica por testigo (default 1.0; la calibracion estilo
--- A.4.4 queda pendiente) y la ultima entrada de directorio cacheada, que
--- publica /.well-known/apw-index.json sin re-bajar cadenas por request.
--- Los stores D1/SQLite crean estas tablas al vuelo (mismo DDL).
+-- ponderacion BASE por testigo (default 1.0) + la calibracion estilo
+-- A.4.4 (contadores acuerdo/desacuerdo con el consenso), la ultima
+-- entrada de directorio cacheada (publica /.well-known/apw-index.json
+-- sin re-bajar cadenas por request) y los pares nodo-indice configurados
+-- para la sincronizacion entre nodos (syncIndexPeers). Los stores
+-- D1/SQLite crean estas tablas al vuelo (mismo DDL).
 
 CREATE TABLE IF NOT EXISTS witness_observations (
   site_id TEXT NOT NULL,
@@ -520,6 +522,15 @@ CREATE TABLE IF NOT EXISTS witness_weights (
   PRIMARY KEY (site_id, witness_did)
 );
 
+CREATE TABLE IF NOT EXISTS witness_calibration (
+  site_id TEXT NOT NULL,
+  witness_did TEXT NOT NULL,
+  agree INTEGER NOT NULL DEFAULT 0,
+  disagree INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (site_id, witness_did)
+);
+
 CREATE TABLE IF NOT EXISTS witness_index_subjects (
   site_id TEXT NOT NULL,
   subject_did TEXT NOT NULL,
@@ -527,6 +538,17 @@ CREATE TABLE IF NOT EXISTS witness_index_subjects (
   entry_json TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   PRIMARY KEY (site_id, subject_did)
+);
+
+CREATE TABLE IF NOT EXISTS witness_index_peers (
+  site_id TEXT NOT NULL,
+  peer_domain TEXT NOT NULL,
+  peer_did TEXT,
+  added_at TEXT NOT NULL,
+  last_sync_at TEXT,
+  last_status TEXT NOT NULL DEFAULT 'never_synced',
+  last_subjects_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (site_id, peer_domain)
 );
 
 -- -----------------------------------------------------------------------------

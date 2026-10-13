@@ -31,9 +31,30 @@ Record an external-witness observation of another site (spec §5.7).
 Synchronize the local Portaless Index directory from a configured set of witnesses (spec §5.7 "Aggregator").
 
 - Auth: admin session, role `admin`. No step-up.
-- Body: `{ "domain": "<subject domain>", "witnesses": ["<witness domain>", ...], "weights"?: { "did:apw:<domain>": <number 0..1000> } }` — 1–20 witnesses; weights optional (default 1.0, persisted before sync).
+- Body: `{ "domain": "<subject domain>", "witnesses": ["<witness domain>", ...], "weights"?: { "did:apw:<domain>": <number 0..1000> } }` — 1–20 witnesses; weights optional (default 1.0, persisted before sync; the base weight is a **multiplier over the calibration factor**, see below).
 - Behavior: fetches each witness's `/.well-known/apw-witnesses.json` (paginated, 10 pages × 500 max, 10 s timeout, 2 MB cap), applies all four §5.7 verifiers to every statement, stores the latest anchored observation per `(subject, witness, seq)` (a smaller anchor never overwrites a larger one), evaluates against the subject's live chain, and caches the directory entry with weighted consensus.
-- Response: `{ synced: { subjectDid, status, observations, findings, witnessesUsed, witnessesSkipped, consensus, ... } }`. Skipped witnesses carry a reason (`witness_chain_unverified`, `witness_endpoint_unreachable`, `statement_not_anchored`, `statement_invalid:*`, `self_witness`, …). One bad witness never aborts the sync.
+- **Calibration (A.4.4-style, Phase 5)**: after each sync, every witness with an observation at the consensus `seq` gains one *agree* (matched the consensus head) or one *disagree* counter; the effective weight used in the consensus is `base × (0.1 + 1.8 × (agree+1)/(agree+disagree+2))`, clamped to 1000. The factor starts at 1.0 with no data (~1.9 ceiling, ~0.1 floor); witnesses without an observation at the consensus `seq` are never counted (no data, no punishment).
+- Response: `{ synced: { subjectDid, status, observations, findings, witnessesUsed, witnessesSkipped, consensus, ... } }`. Each observation carries `weight` (effective), `baseWeight`, and `calibrationFactor`. Skipped witnesses carry a reason (`witness_chain_unverified`, `witness_endpoint_unreachable`, `statement_not_anchored`, `statement_invalid:*`, `self_witness`, …). One bad witness never aborts the sync.
+
+### `GET /admin/api/index/peers` / `POST /admin/api/index/peers`
+
+Peer Index nodes configured on this node (inter-node synchronization, Phase 5).
+
+- Auth: admin session, role `admin`. No step-up (only public hostnames are stored).
+- `GET`: lists configured peers with their last sync state (`{ peers: [{ peerDomain, peerDid, addedAt, lastSyncAt, lastStatus, lastSubjectsCount }] }`).
+- `POST` body: `{ "domain": "<peer hostname>", "action"?: "add" | "remove" }` (default `add`, idempotent, max 20 peers). `400 self_peer` when the domain is this node's own; `404` when removing a peer that does not exist.
+
+### `POST /admin/api/index/sync-peers`
+
+Pull each configured peer's `/.well-known/apw-index.json` and use its entries as **discovery** of (subject, witnesses): every discovered subject is re-synchronized with the exact same fail-closed pipeline as `/admin/api/index/sync` (witness chain → anchored statements → signature → deterministic `jti`). A peer never injects unverified observations — a malicious peer can only cause this node to verify real chains.
+
+- Auth: admin session, role `admin`. No step-up.
+- Body (optional): `{ "peers"?: ["<hostname>", ...] }` (default: all configured peers; max 50 subjects and 20 witnesses taken per peer entry).
+- Response: `{ peers: [{ peerDomain, outcome: "ok" | "peer_unreachable" | "peer_invalid" | "self_peer", peerDid, subjectsSynced, subjectsSkipped, subjects: [{ domain, result, status? }] }], subjectsSynced }`. Peer last-sync state is persisted (`witness_index_peers`).
+
+### Operator UI
+
+All of the above is also available from the dashboard at **`/admin/witness-index`** (subjects table, sync-subject form, peer management) — the UI is convenience only; the public document stays `/.well-known/apw-index.json`.
 
 ### `GET /admin/api/index/subjects`
 

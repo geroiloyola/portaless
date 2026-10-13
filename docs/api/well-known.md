@@ -108,10 +108,10 @@ The **Portaless Index** directory: pre-computed, re-verifiable observations of s
       "length": 14,
       "head": "<43-char hash>",
       "observations": [
-        { "witnessDid": "did:apw:witness.example", "seq": 3, "head": "<43-char hash>", "anchoredTs": "2026-10-09T12:00:00.000Z", "jti": "wt-…", "weight": 1 }
+        { "witnessDid": "did:apw:witness.example", "seq": 3, "head": "<43-char hash>", "anchoredTs": "2026-10-09T12:00:00.000Z", "jti": "wt-…", "weight": 1.3, "baseWeight": 1, "calibrationFactor": 1.3 }
       ],
       "findings": [],
-      "consensus": { "seq": 3, "head": "<43-char hash>", "weight": 1 },
+      "consensus": { "seq": 3, "head": "<43-char hash>", "weight": 1.3 },
       "witnessesUsed": ["did:apw:witness.example"],
       "witnessesSkipped": [],
       "syncedAt": "2026-10-11T13:00:00.000Z"
@@ -121,8 +121,8 @@ The **Portaless Index** directory: pre-computed, re-verifiable observations of s
 ```
 
 - `status`: `consistent` | `head_mismatch` | `equivocation` | `backdated_entry` | `subject_chain_unverified` | `no_observations`.
-- `consensus`: the head with the most **static** per-witness weight sum at the last observed `seq` (default weight 1.0; editable by whoever syncs).
-- **The document is plain and unsigned on purpose**: every entry is re-verifiable against the subject's and its witnesses' raw chains. Treat it as a cache/hint, not as authority. Out of scope today: A.4.4-style weight calibration and gossip between index nodes (spec §7).
+- `consensus`: the head with the most **effective** per-witness weight sum at the last observed `seq`. Effective weight = `baseWeight × calibrationFactor`: the base is the operator's static weight (default 1.0); the factor comes from A.4.4-style **calibration** — a witness that agrees with the consensus gains factor (~1.9 ceiling), one that disagrees loses it (~0.1 floor), witnesses with no observation at the consensus `seq` are not counted. Both components are published per observation so any reader can recompute.
+- **The document is plain and unsigned on purpose**: every entry is re-verifiable against the subject's and its witnesses' raw chains. Treat it as a cache/hint, not as authority. Other Portaless Index nodes may use this document as **discovery** (subject + `witnessesUsed`); they re-verify everything locally and never import observations unverified (spec §7; inter-node sync shipped in the reference implementation, Phase 5). Still out of scope: manifest/SiteTrustScore aggregation across instances.
 - Response headers: `access-control-allow-origin: *`, `cache-control: max-age=60`.
 
 ## `GET /.well-known/portaless-usage-log.json`

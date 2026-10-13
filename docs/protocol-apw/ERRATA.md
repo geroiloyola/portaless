@@ -1,6 +1,6 @@
 # Protocol APW — Erratas
 
-> **INTEGRADAS (octubre 2026).** E-1 a E-11 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7, E-11 en la 6.6 y en el Anexo A); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda v1.3.
+> **INTEGRADAS (octubre 2026).** E-1 a E-11 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7, E-11 en la 6.6 y en el Anexo A); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). **E-12 es informativa** (agregador del Index): no cambia ningun requisito normativo de v1.3 y no requiere consolidacion; documenta que dos puntos marcados "fuera del alcance de esta version" en 5.7/7 ya existen en la implementacion de referencia. Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda v1.3.
 
 Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza)).
 
@@ -298,3 +298,17 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 **Limitacion**: la proyeccion es metadata. Si su calculo fallara, la respuesta se emite sin `projection` y la decision de acceso no cambia (el 403 sigue siendo 403).
 
 **Implementacion**: `packages/apw-resolver/src/scoring/site-dimensions.ts`, `scoring/policy.ts` (`projectTrustView`), `scoring/scoring.ts` (`attestationWeight`) y `functions/trust/[siteId].js`; tests `tests/unit/apw-site-dimensions.test.ts` y `tests/unit/trust-w-projection.test.ts`.
+
+## E-12 — Calibracion de pesos y sincronizacion entre nodos del Index (APW v1.3, 5.7 "Aggregator" y seccion 7; informativa)
+
+**Fecha**: Octubre 2026
+
+**Problema**: 5.7 (parrafo informativo "Aggregator") y la seccion 7 ("Future") marcaban como "fuera del alcance de esta version" dos puntos del Portaless Index: la calibracion de pesos estilo A.4.4 (un testigo gana peso acertando con el consenso) y la sincronizacion push/gossip entre nodos indice (cada nodo solo hacia pull de sus propios testigos). La implementacion de referencia ya cubre ambos; la frase "out of scope for this version" queda superada SOLO en esos dos puntos, sin cambiar ningun requisito normative de v1.3 (el agregador sigue siendo informativo; el documento publico sigue siendo plano y sin firma; la verificacion fail-closed de los cuatro verificadores de 5.7 no cambia).
+
+**Texto vigente**:
+
+- **Calibracion de pesos (A.4.4 adaptada al Index)**: ademas del peso base del operador (default 1.0, multiplicador), cada testigo tiene contadores acuerdo/desacuerdo con el consenso. Despues de cada sync, cada testigo CON observacion en el `seq` del consenso suma un acuerdo o un desacuerdo (sin observacion ahi: sin datos, sin castigo). El peso efectivo usado en el consenso es `base × (0.1 + 1.8 × (acuerdos+1)/(acuerdos+desacuerdos+2))`, clampado al maximo 1000: arranca en 1.0, techo ~1.9, piso ~0.1. El directorio publica `weight`, `baseWeight` y `calibrationFactor` por observacion: cualquier lector puede recomputarlo.
+- **Sincronizacion entre nodos (pull de descubrimiento)**: el operador configura pares (otros despliegues que publican `/.well-known/apw-index.json`). El sync de pares baja el documento de cada par y usa sus entradas como DESCUBRIMIENTO de (sujeto, testigos); cada sujeto descubierto se re-sincroniza con el MISMO pipeline fail-closed que un sync manual (cadena del testigo -> statements anclados -> firma -> jti determinista). Un par jamas inyecta observaciones sin verificar: un par malicioso solo puede lograr que este nodo verifique cadenas reales. Limites del descubrimiento: maximo 50 sujetos y 20 testigos por par por sync; el `witnessesUsed` publicado como DIDs se convierte a hostnames.
+- **Sigue fuera de alcance** (seccion 7): la agregacion de manifiestos/SiteTrustScore de otras instancias (formato de indexability, permiso de consulta de terceros y capa de procedencia).
+
+**Implementacion**: `packages/apw-resolver/src/did-apw/witness-index.ts` (`witnessCalibrationFactor`, calibracion en `syncWitnessIndex`, `syncIndexPeers`), `witness-index-store.ts` (tablas `witness_calibration` y `witness_index_peers`), `functions/admin/api/index/peers.js`, `functions/admin/api/index/sync-peers.js` y el panel `/admin/witness-index`; tests `tests/unit/apw-witness-index-phase5.test.ts`, `tests/unit/apw-index-peers-endpoints.test.ts` y los casos nuevos de `apw-witness-index-store.test.ts`.

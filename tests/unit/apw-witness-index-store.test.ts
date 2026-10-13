@@ -106,3 +106,42 @@ describe.each(backends)("witness_index ($name)", ({ make }) => {
     expect(await store.listSubjectEntries(SITE)).toHaveLength(1);
   });
 });
+
+describe.each(backends)("witness_index Phase 5 ($name)", ({ make }) => {
+  it("calibracion: acumula acuerdos/desacuerdos por testigo y se queda sin datos en otros", async () => {
+    const store = make();
+    expect(await store.getCalibration(SITE)).toEqual({});
+
+    await store.recordCalibration(SITE, W1, true);
+    await store.recordCalibration(SITE, W1, true);
+    await store.recordCalibration(SITE, W1, false);
+    await store.recordCalibration(SITE, W2, false);
+
+    expect(await store.getCalibration(SITE)).toEqual({
+      [W1]: { agree: 2, disagree: 1 },
+      [W2]: { agree: 0, disagree: 1 },
+    });
+    // Aislado por site: otro site no ve los contadores.
+    expect(await store.getCalibration("otro-site")).toEqual({});
+  });
+
+  it("pares: alta idempotente, estado de sync, listado y baja", async () => {
+    const store = make();
+    expect(await store.listPeers(SITE)).toEqual([]);
+
+    await store.addPeer({ siteId: SITE, peerDomain: "par.example", peerDid: null, addedAt: "t1" });
+    await store.addPeer({ siteId: SITE, peerDomain: "par.example", peerDid: "did:apw:par.example", addedAt: "t2" });
+    let peers = await store.listPeers(SITE);
+    expect(peers).toHaveLength(1);
+    expect(peers[0]).toMatchObject({ peerDomain: "par.example", lastStatus: "never_synced", lastSubjectsCount: 0 });
+
+    await store.updatePeerStatus(SITE, "par.example", "ok", 3, "did:apw:par.example");
+    peers = await store.listPeers(SITE);
+    expect(peers[0]).toMatchObject({ lastStatus: "ok", lastSubjectsCount: 3, peerDid: "did:apw:par.example" });
+    expect(peers[0].lastSyncAt).toBeTruthy();
+
+    expect(await store.removePeer(SITE, "par.example")).toBe(true);
+    expect(await store.removePeer(SITE, "par.example")).toBe(false);
+    expect(await store.listPeers(SITE)).toEqual([]);
+  });
+});
