@@ -92,7 +92,9 @@ describe("D1SiteTrustScoreStore", () => {
       score: 4,
       voterId: "v1",
       ipHash: "hash-ip-1",
-      votedAt: "2026-10-11T00:00:00.000Z",
+      // Relativo al reloj: una fecha dura ("hoy") salia de la ventana de
+      // 48h con el paso de los dias y el test pasaba a fallar solo.
+      votedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     });
     // Ventana amplia: la votacion de hoy cuenta.
     expect(await store.isRateLimited("s2", "content_accuracy", "hash-ip-1", 48 * 60 * 60 * 1000)).toBe(true);

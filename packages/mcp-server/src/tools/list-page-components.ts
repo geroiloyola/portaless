@@ -25,6 +25,7 @@ const TOOL_NAME = "list_page_components";
 const ELEMENT_TYPES = [
   "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
   "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
+  "Video", "FAQ", "Testimonial", "Form", "Gallery",
 ] as const;
 
 export function registerListPageComponentsTool(server: McpServer): void {

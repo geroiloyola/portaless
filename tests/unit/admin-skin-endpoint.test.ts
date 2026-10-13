@@ -73,7 +73,7 @@ describe("GET /admin/api/skin", () => {
     const body = await res.json();
     expect(body.skin).toBe("base");
     expect(body.tokens).toEqual({});
-    expect(body.available).toEqual(["base", "blog", "tienda", "trust-crm"]);
+    expect(body.available).toEqual(["base", "blog", "tienda", "trust-crm", "portafolio", "lanzamiento"]);
     expect(body.defaults.accent).toBe(DEFAULT_TOKENS.accent);
   });
 });

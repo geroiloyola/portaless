@@ -1,6 +1,7 @@
 export type ElementType =
   | "Hero" | "Heading" | "Paragraph" | "Image" | "Button" | "Columns" | "ProductGrid" | "Spacer"
-  | "LinkList" | "SocialIcons" | "ProfileHeader" | "StoreBlock";
+  | "LinkList" | "SocialIcons" | "ProfileHeader" | "StoreBlock"
+  | "Video" | "FAQ" | "Testimonial" | "Form" | "Gallery";
 
 export interface ElementNode {
   id: string;

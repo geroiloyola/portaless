@@ -17,6 +17,27 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* Phase 2 (editor polish): el enlace de vuelta al page manager vive a la
+   derecha del toolbar; el spacer empuja. */
+.ae-toolbar-spacer { flex: 1; }
+.ae-toolbar-link {
+  align-self: center; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #333; color: #e5e7eb; text-decoration: none;
+  font-size: 13px; transition: border-color .15s;
+}
+.ae-toolbar-link:hover { border-color: var(--accent, #C5D86D); }
+/* Phase 2 (editor polish): linea de insercion mientras se arrastra --
+   muestra exactamente donde caera el elemento; la posicion la calcula
+   drag-drop.ts (makeDropZone). */
+.ae-drop-indicator {
+  height: 3px; border-radius: 2px; flex-shrink: 0;
+  background: var(--accent, #C5D86D);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent, #C5D86D) 40%, transparent);
+}
+/* El elemento que se arrastra queda semi-transparente mientras dura el
+   drag (el navegador aplica opacity al source automaticamente en la
+   mayoria de los browsers; esto lo refuerza en el palette). */
+.ae-palette-item:active { cursor: grabbing; }
 .ae-columns-editable {
   min-height: 60px;
 }

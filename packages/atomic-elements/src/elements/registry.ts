@@ -213,12 +213,143 @@ const StoreBlock: ElementDefinition<StoreBlockProps> = {
     ProductGrid.renderHTML({ source: "manual", columns: p.columns, limit: p.limit }),
 };
 
+interface VideoProps { url: string; title: string; radius: number; }
+const Video: ElementDefinition<VideoProps> = {
+  type: "Video", displayName: "Video (embed)", icon: "🎬",
+  defaultProps: { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Video embebido", radius: 16 },
+  editableProps: [
+    { key: "url", label: "URL de YouTube o Vimeo", kind: "url" },
+    { key: "title", label: "Titulo (accesibilidad)", kind: "text" },
+    { key: "radius", label: "Radio de borde", kind: "number" },
+  ],
+  renderHTML: (p) => {
+    const url = String(p.url ?? "").trim();
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/);
+    const vimeo = url.match(/vimeo\.com\/(\d+)/);
+    const radius = esc(p.radius);
+    if (yt) {
+      return `<figure style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://www.youtube-nocookie.com/embed/${esc(yt[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
+    }
+    if (vimeo) {
+      return `<figure style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://player.vimeo.com/video/${esc(vimeo[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
+    }
+    return `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radius}px;padding:32px;text-align:center;color:var(--muted, #6E6653);">URL no reconocida - pega un enlace de YouTube (youtube.com/watch, youtu.be o shorts) o Vimeo (vimeo.com).</div>`;
+  },
+};
+
+interface FAQProps { title: string; items: string; }
+const FAQ: ElementDefinition<FAQProps> = {
+  type: "FAQ", displayName: "Preguntas frecuentes", icon: "❓",
+  defaultProps: {
+    title: "Preguntas frecuentes",
+    items: "¿Cuanto tarda el envio? :: Entre 2 y 5 dias habiles.\n¿Puedo devolver el producto? :: Si, tenes 30 dias.",
+  },
+  editableProps: [
+    { key: "title", label: "Titulo de la seccion", kind: "text" },
+    { key: "items", label: "Preguntas (una por linea: Pregunta :: Respuesta)", kind: "textarea" },
+  ],
+  renderHTML: (p) => {
+    const items = String(p.items ?? "")
+      .split("\n")
+      .map((line) => line.split("::"))
+      .filter((parts) => (parts[0] ?? "").trim())
+      .map(
+        ([q, ...rest]) =>
+          `<details style="border:1px solid var(--panel-border, #E4E6C3);border-radius:12px;margin-bottom:10px;background:var(--panel-bg, #FFFFFF);"><summary style="padding:14px 18px;cursor:pointer;font-weight:700;">${esc(q.trim())}</summary><div style="padding:0 18px 14px;line-height:1.6;color:var(--muted, #6E6653);">${esc(rest.join("::").trim())}</div></details>`
+      )
+      .join("");
+    const heading = p.title ? `<h3 style="margin:0 0 16px;">${esc(p.title)}</h3>` : "";
+    return `<section style="margin:0;">${heading}${items || `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:12px;padding:24px;text-align:center;color:var(--muted, #6E6653);">Agrega preguntas en el panel: una por linea con el formato \"Pregunta :: Respuesta\".</div>`}</section>`;
+  },
+};
+
+interface TestimonialProps { quote: string; author: string; role: string; avatarUrl: string; align: "left" | "center"; }
+const Testimonial: ElementDefinition<TestimonialProps> = {
+  type: "Testimonial", displayName: "Testimonio", icon: "💬",
+  defaultProps: {
+    quote: "Trabajar con este equipo cambio la manera en que publicamos. Recomendado.",
+    author: "Nombre del cliente",
+    role: "Rol o empresa",
+    avatarUrl: "https://placehold.co/96x96",
+    align: "center",
+  },
+  editableProps: [
+    { key: "quote", label: "Cita", kind: "textarea" },
+    { key: "author", label: "Autor", kind: "text" },
+    { key: "role", label: "Rol o empresa", kind: "text" },
+    { key: "avatarUrl", label: "URL del avatar", kind: "url" },
+    { key: "align", label: "Alineacion", kind: "select", options: ["left", "center"] },
+  ],
+  renderHTML: (p) => {
+    const avatar = p.avatarUrl
+      ? `<img src="${esc(p.avatarUrl)}" alt="${esc(p.author)}" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:12px;display:block;${p.align === "center" ? "margin-left:auto;margin-right:auto;" : ""}" loading="lazy" />`
+      : "";
+    const authorLine = p.author
+      ? `<figcaption style="font-weight:700;">${esc(p.author)}${p.role ? `<span style="display:block;font-weight:400;color:var(--muted, #6E6653);font-size:.85rem;">${esc(p.role)}</span>` : ""}</figcaption>`
+      : "";
+    return `<figure style="margin:0;text-align:${esc(p.align)};border:1px solid var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;background:var(--panel-bg, #FFFFFF);">${avatar}<blockquote style="margin:0 0 14px;line-height:1.6;">${esc(p.quote)}</blockquote>${authorLine}</figure>`;
+  },
+};
+
+interface FormProps { action: string; submitLabel: string; anchorId: string; }
+const FormEl: ElementDefinition<FormProps> = {
+  type: "Form", displayName: "Formulario de contacto", icon: "📮",
+  defaultProps: { action: "", submitLabel: "Enviar mensaje", anchorId: "contacto" },
+  editableProps: [
+    { key: "action", label: "Endpoint (URL de Formspree, Basin, etc.)", kind: "url" },
+    { key: "submitLabel", label: "Texto del boton", kind: "text" },
+    { key: "anchorId", label: "Ancla (para botones #...)", kind: "text" },
+  ],
+  renderHTML: (p) => {
+    const anchor = p.anchorId ? ` id="${esc(p.anchorId)}"` : "";
+    const fieldStyle = "width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid var(--panel-border, #E4E6C3);border-radius:12px;font:inherit;background:var(--panel-bg, #FFFFFF);color:var(--text, #261C15);margin-bottom:10px;";
+    const label = (text: string, inner: string) => `<label style="display:block;font-weight:700;font-size:.85rem;margin-bottom:4px;">${text}${inner}</label>`;
+    if (!String(p.action ?? "").trim()) {
+      return `<div${anchor} style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;text-align:center;color:var(--muted, #6E6653);">Este formulario todavia no entrega a ningun destino. Configura un endpoint (por ejemplo Formspree o Basin, ambos con plan gratuito) en la propiedad \"Endpoint\" y el formulario empezara a enviar mensajes reales.</div>`;
+    }
+    return `<form${anchor} method="post" action="${esc(p.action)}" style="display:flex;flex-direction:column;border:1px solid var(--panel-border, #E4E6C3);border-radius:16px;padding:24px;background:var(--panel-bg, #FFFFFF);">${label("Nombre", `<input type="text" name="nombre" required style="${fieldStyle}" />`)}${label("Email", `<input type="email" name="email" required style="${fieldStyle}" />`)}${label("Mensaje", `<textarea name="mensaje" rows="5" required style="${fieldStyle}resize:vertical;"></textarea>`)}<button type="submit" style="align-self:flex-start;padding:10px 22px;border-radius:999px;border:none;background:var(--accent, #C5D86D);color:#261C15;font-weight:700;cursor:pointer;">${esc(p.submitLabel)}</button></form>`;
+  },
+};
+
+interface GalleryProps { images: string; columns: 2 | 3 | 4; radius: number; }
+const Gallery: ElementDefinition<GalleryProps> = {
+  type: "Gallery", displayName: "Galeria", icon: "🖼️",
+  defaultProps: {
+    images: "https://placehold.co/600x600\nhttps://placehold.co/600x600/C5D86D\nhttps://placehold.co/600x600/261C15",
+    columns: 3,
+    radius: 12,
+  },
+  editableProps: [
+    { key: "images", label: "Imagenes (una URL por linea)", kind: "textarea" },
+    { key: "columns", label: "Columnas", kind: "select", options: ["2", "3", "4"] },
+    { key: "radius", label: "Radio de borde", kind: "number" },
+  ],
+  renderHTML: (p) => {
+    const urls = String(p.images ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => /^https?:\/\//.test(line) || line.startsWith("/"));
+    if (urls.length === 0) {
+      return `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${esc(p.radius)}px;padding:24px;text-align:center;color:var(--muted, #6E6653);">Agrega imagenes en el panel: una URL por linea.</div>`;
+    }
+    const cells = urls
+      .map((url) => {
+        const alt = decodeURIComponent(url.split("/").pop() ?? "").replace(/\.\w+$/, "").replace(/[-_+]/g, " ") || "Imagen de la galeria";
+        return `<a href="${esc(url)}" target="_blank" rel="noopener" style="display:block;border-radius:${esc(p.radius)}px;overflow:hidden;"><img src="${esc(url)}" alt="${esc(alt)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" /></a>`;
+      })
+      .join("");
+    return `<div class="ae-gallery" style="display:grid;grid-template-columns:repeat(${esc(p.columns)},1fr);gap:12px;">${cells}</div>`;
+  },
+};
+
 export const elementRegistry: Record<ElementType, ElementDefinition<any>> = {
   Hero, Heading, Paragraph, Image: ImageEl, Button: ButtonEl, Columns, ProductGrid, Spacer,
   LinkList, SocialIcons, ProfileHeader, StoreBlock,
+  Video, FAQ, Testimonial, Form: FormEl, Gallery,
 };
 
 export const elementPalette: ElementType[] = [
   "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
   "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
+  "Video", "FAQ", "Testimonial", "Form", "Gallery",
 ];

@@ -86,6 +86,10 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
         n("Columns", { count: 2, gap: 16 }, { columnSlots: [[img("Trabajo destacado")], [img("Otro trabajo")]] }),
         n("Paragraph", { text: "Disponible para encargos y colaboraciones. Escribime y conversemos." }),
         n("Button", { label: "Contacto", href: "#contacto", style: "primary" }),
+        // Phase 2: el boton #contacto apunta a algo real -- el Form con
+        // anchorId "contacto" (sin action todavia: el usuario configura su
+        // endpoint de Formspree/Basin y empieza a recibir mensajes).
+        n("Form", { action: "", submitLabel: "Escribime", anchorId: "contacto" }),
       ];
     }
     case "store":
@@ -120,6 +124,8 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
         n("Hero", { title: name, subtitle: intent, bgColor: "#111827" }),
         n("Paragraph", { text: intent }),
         n("Button", { label: "Contactanos", href: "#contacto", style: "primary" }),
+        // Phase 2: destino real del ancla #contacto (ver comentario en portfolio).
+        n("Form", { action: "", submitLabel: "Enviar mensaje", anchorId: "contacto" }),
       ];
   }
 }

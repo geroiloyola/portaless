@@ -1,0 +1,54 @@
+{
+  "version": "0.1",
+  "slug": "portafolio",
+  "title": "Valentina Soto — Fotógrafa",
+  "description": "Portafolio profesional: galería de trabajos, testimonios de clientes y contacto directo.",
+  "root": [
+    {
+      "id": "p1",
+      "type": "ProfileHeader",
+      "props": {
+        "avatarUrl": "https://placehold.co/160x160",
+        "name": "Valentina Soto",
+        "bio": "Fotógrafa de producto y retrato. Santiago de Chile.",
+        "bgColor": "#261C15"
+      }
+    },
+    { "id": "p2", "type": "Spacer", "props": { "height": 24 } },
+    { "id": "p3", "type": "Heading", "props": { "text": "Trabajos recientes", "level": "h2", "align": "center" } },
+    {
+      "id": "p4",
+      "type": "Gallery",
+      "props": {
+        "images": "https://placehold.co/600x600\nhttps://placehold.co/600x600/C5D86D\nhttps://placehold.co/600x600/261C15",
+        "columns": 3,
+        "radius": 12
+      }
+    },
+    { "id": "p5", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "p6",
+      "type": "Testimonial",
+      "props": {
+        "quote": "Valentina capturó la esencia de nuestra marca como nadie. Las fotos venden solas.",
+        "author": "Camila Rojas",
+        "role": "Directora de Arte, Estudio Norte",
+        "avatarUrl": "https://placehold.co/96x96",
+        "align": "center"
+      }
+    },
+    { "id": "p7", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "p8",
+      "type": "Paragraph",
+      "props": { "text": "Disponible para sesiones de producto, retrato corporativo y campañas. Escribime y armamos una propuesta a tu medida." }
+    },
+    { "id": "p9", "type": "Button", "props": { "label": "Contacto", "href": "#contacto", "style": "primary" } },
+    { "id": "p10", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "p11",
+      "type": "Form",
+      "props": { "action": "", "submitLabel": "Escribime", "anchorId": "contacto" }
+    }
+  ]
+}

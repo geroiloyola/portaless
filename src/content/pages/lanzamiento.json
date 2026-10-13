@@ -1,0 +1,58 @@
+{
+  "version": "0.1",
+  "slug": "lanzamiento",
+  "title": "Lanzamiento — Curso de Ilustración Digital",
+  "description": "Micrositio de lanzamiento: video de presentación, preguntas frecuentes, prueba social y formulario de inscripción.",
+  "root": [
+    {
+      "id": "l1",
+      "type": "Hero",
+      "props": {
+        "title": "Curso de Ilustración Digital",
+        "subtitle": "De cero a tu primer portafolio profesional en 6 semanas. Cupos limitados.",
+        "bgColor": "#261C15"
+      }
+    },
+    { "id": "l2", "type": "Spacer", "props": { "height": 24 } },
+    { "id": "l3", "type": "Heading", "props": { "text": "Mira el temario", "level": "h2", "align": "center" } },
+    {
+      "id": "l4",
+      "type": "Video",
+      "props": { "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "title": "Presentación del curso", "radius": 16 }
+    },
+    { "id": "l5", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "l6",
+      "type": "FAQ",
+      "props": {
+        "title": "Preguntas frecuentes",
+        "items": "¿Necesito experiencia previa? :: No. El curso arranca desde los fundamentos de dibujo digital.\n¿Cuánto dura? :: 6 semanas, con clases en vivo los martes y jueves.\n¿Hay certificado? :: Si, al completar el proyecto final.\n¿Puedo pagar en cuotas? :: Si, hasta 3 cuotas sin interés."
+      }
+    },
+    { "id": "l7", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "l8",
+      "type": "Testimonial",
+      "props": {
+        "quote": "En 6 semanas pasé de no saber usar una tableta a tener clientes pagando por mis ilustraciones.",
+        "author": "Diego Fernández",
+        "role": "Alumno, turma 2024",
+        "avatarUrl": "https://placehold.co/96x96",
+        "align": "center"
+      }
+    },
+    { "id": "l9", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "l10",
+      "type": "Paragraph",
+      "props": { "text": "Inscripciones abiertas hasta el 30 de noviembre. Dejanos tus datos y te contactamos con el detalle del curso." }
+    },
+    { "id": "l11", "type": "Button", "props": { "label": "Inscribirme", "href": "#contacto", "style": "primary" } },
+    { "id": "l12", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "l13",
+      "type": "Form",
+      "props": { "action": "", "submitLabel": "Reservar mi lugar", "anchorId": "contacto" }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "skin": "lanzamiento",
+  "extends": "base",
+  "tokens": {
+    "accent": "#F05D23",
+    "accentText": "#C2410C",
+    "accent2": "#C5D86D",
+    "bg": "#FFF7F2",
+    "panelBorder": "#FADDCB",
+    "radius": "18px",
+    "density": "compact"
+  },
+  "layout": [
+    {
+      "organism": "TrafficChartPanel",
+      "w": 2,
+      "h": 1,
+      "order": 1,
+      "priority": "high"
+    },
+    {
+      "organism": "CommerceOrdersPanel",
+      "w": 1,
+      "h": 1,
+      "order": 2
+    },
+    {
+      "organism": "CommerceRevenuePanel",
+      "w": 1,
+      "h": 1,
+      "order": 3
+    },
+    {
+      "organism": "ContentListPanel",
+      "w": 2,
+      "h": 1,
+      "order": 4
+    },
+    {
+      "organism": "AgentLedgerPanel",
+      "w": 2,
+      "h": 1,
+      "order": 5
+    },
+    {
+      "organism": "PolicyPanel",
+      "w": 2,
+      "h": 1,
+      "order": 6
+    }
+  ]
+}

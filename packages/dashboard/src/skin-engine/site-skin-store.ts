@@ -25,9 +25,11 @@ import baseManifest from "../skins/base.json";
 import blogManifest from "../skins/blog.json";
 import tiendaManifest from "../skins/tienda.json";
 import trustCrmManifest from "../skins/trust-crm.json";
+import portafolioManifest from "../skins/portafolio.json";
+import lanzamientoManifest from "../skins/lanzamiento.json";
 
 export const SITE_ID = "default";
-export const SKIN_NAMES = ["base", "blog", "tienda", "trust-crm"] as const;
+export const SKIN_NAMES = ["base", "blog", "tienda", "trust-crm", "portafolio", "lanzamiento"] as const;
 export type SkinName = (typeof SKIN_NAMES)[number];
 
 export function isSkinName(value: unknown): value is SkinName {
@@ -39,6 +41,8 @@ const SKIN_MANIFESTS: Record<string, SkinManifest> = {
   blog: blogManifest as SkinManifest,
   tienda: tiendaManifest as SkinManifest,
   "trust-crm": trustCrmManifest as SkinManifest,
+  portafolio: portafolioManifest as SkinManifest,
+  lanzamiento: lanzamientoManifest as SkinManifest,
 };
 
 export interface SiteSkinRecord {

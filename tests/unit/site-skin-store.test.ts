@@ -190,6 +190,22 @@ describe("resolveActiveSkin: cadena del skin + overrides de marca", () => {
     expect(light.accent).toBe("#a06bff");
     expect(light.bg).toBe("#F7F7F2");
   });
+
+  it("herencia (Phase 2): portafolio y lanzamiento resuelven sus acentos y heredan el resto del base", async () => {
+    const port = await resolveActiveSkin("portafolio", {});
+    expect(port.light.accent).toBe("#9BB56A");
+    expect(port.light.accentText).toBe("#4A5A1E");
+    expect(port.light.radius).toBe("14px");
+    // Hereda del base los tokens que no overridea.
+    expect(port.light.panelBg).toBe(DEFAULT_TOKENS.panelBg);
+    expect(port.light.muted).toBe(DEFAULT_TOKENS.muted);
+
+    const lanz = await resolveActiveSkin("lanzamiento", {});
+    expect(lanz.light.accent).toBe("#F05D23");
+    expect(lanz.light.accent2).toBe("#C5D86D");
+    expect(lanz.light.density).toBe("compact");
+    expect(lanz.light.panelBg).toBe(DEFAULT_TOKENS.panelBg);
+  });
 });
 
 describe("emitSiteSkinCss: hoja publica", () => {
@@ -216,8 +232,8 @@ describe("emitSiteSkinCss: hoja publica", () => {
 });
 
 describe("isSkinName / SKIN_NAMES", () => {
-  it("acepta los 4 skins y rechaza cualquier otra cosa", () => {
-    expect(SKIN_NAMES).toEqual(["base", "blog", "tienda", "trust-crm"]);
+  it("acepta los 6 skins y rechaza cualquier otra cosa", () => {
+    expect(SKIN_NAMES).toEqual(["base", "blog", "tienda", "trust-crm", "portafolio", "lanzamiento"]);
     for (const name of SKIN_NAMES) expect(isSkinName(name)).toBe(true);
     expect(isSkinName("hacker")).toBe(false);
     expect(isSkinName(undefined)).toBe(false);

@@ -187,6 +187,21 @@ export class AtomicElementsEditor {
 
     toolbar.appendChild(undoBtn);
     toolbar.appendChild(redoBtn);
+
+    // Phase 2 (exit criterion): sin esta vuelta el usuario no podia abrir
+    // una segunda pagina sin teclear la URL a mano. /admin/pages lista y
+    // crea; el editor enlaza de vuelta. El hueco entre rehacer y el
+    // titulo empuja el enlace a la derecha.
+    const spacer = document.createElement("span");
+    spacer.className = "ae-toolbar-spacer";
+    toolbar.appendChild(spacer);
+
+    const pagesLink = document.createElement("a");
+    pagesLink.className = "ae-toolbar-link";
+    pagesLink.href = "/admin/pages";
+    pagesLink.textContent = "\ud83d\udcc1 Mis p\u00e1ginas";
+    toolbar.appendChild(pagesLink);
+
     return toolbar;
   }
 

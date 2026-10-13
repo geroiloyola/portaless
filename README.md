@@ -81,7 +81,7 @@ Real screenshots of the running product — captured from the live app, not mock
 | Module | What it does |
 |---|---|
 | **Content engine** | Astro + Markdown, 100% static site, no mandatory server runtime |
-| **Atomic Elements** | Drag-and-drop visual page editor, without Elementor's DOM depth or page weight — includes 4 elements for sovereign link-in-bio pages (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) |
+| **Atomic Elements** | Drag-and-drop visual page editor, without Elementor's DOM depth or page weight — 17 elements (Hero, columns, media, Video, FAQ, Testimonial, contact Form, Gallery…) including 4 for sovereign link-in-bio pages (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) |
 | **Dashboard + Skin System** | Modular admin panel: each "skin" rearranges the same components via a JSON file, no code required |
 | **Commerce (Medusa/Mercur)** | Optional module that consumes an external store's catalog — never reimplements checkout or payments |
 | **Trust Layer** | AI agent identification (Web Bot Auth, RFC 9421/Ed25519, same draft-03 header rules as Cloudflare), access policies (`allow`/`charge`/`block`), a publicly queryable traceability ledger, and pay-per-crawl through pluggable settlement providers (`cloudflare-pay-per-crawl` today) — Portaless never touches the money |

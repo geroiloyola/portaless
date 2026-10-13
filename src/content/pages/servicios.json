@@ -1,0 +1,57 @@
+{
+  "version": "0.1",
+  "slug": "servicios",
+  "title": "Consultoría — María Paz Contreras",
+  "description": "Sitio de servicios: propuesta de valor, preguntas frecuentes, testimonio y formulario de contacto.",
+  "root": [
+    {
+      "id": "s1",
+      "type": "Hero",
+      "props": {
+        "title": "Consultoría para equipos de producto",
+        "subtitle": "Ayudo a startups y equipos internos a ordenar su proceso de discovery y entregar valor más rápido.",
+        "bgColor": "#261C15"
+      }
+    },
+    { "id": "s2", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "s3",
+      "type": "Paragraph",
+      "props": { "text": "Trabajo con equipos que sienten que están corriendo pero no avanzando. En 4 semanas ordenamos tu discovery, priorizamos tu roadmap con criterio y dejamos un playbook que el equipo puede sostener sin mí." }
+    },
+    { "id": "s4", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s5",
+      "type": "FAQ",
+      "props": {
+        "title": "Cómo trabajamos",
+        "items": "¿Cómo es el proceso? :: Una diagnosis inicial, 2 workshops con tu equipo y un playbook final.\n¿Trabajas remoto? :: Si, con equipos en toda Latinoamérica. Presencial solo para workshops clave.\n¿Cuánto cuesta? :: Depende del alcance. Agendamos una llamada de 30 min sin costo para dimensionarlo."
+      }
+    },
+    { "id": "s6", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s7",
+      "type": "Testimonial",
+      "props": {
+        "quote": "María Paz ordenó en un mes lo que veníamos arrastrando medio año. El playbook sigue vivo en el equipo.",
+        "author": "Rodrigo Alarcón",
+        "role": "CTO, Fintech Andina",
+        "avatarUrl": "https://placehold.co/96x96",
+        "align": "left"
+      }
+    },
+    { "id": "s8", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "s9",
+      "type": "Paragraph",
+      "props": { "text": "Si quieres que tu equipo deje de improvisar con discovery, escribime. Respondo en menos de 24 horas." }
+    },
+    { "id": "s10", "type": "Button", "props": { "label": "Agendar llamada", "href": "#contacto", "style": "primary" } },
+    { "id": "s11", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s12",
+      "type": "Form",
+      "props": { "action": "", "submitLabel": "Enviar mensaje", "anchorId": "contacto" }
+    }
+  ]
+}
