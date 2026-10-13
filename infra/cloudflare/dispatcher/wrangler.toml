@@ -1,0 +1,18 @@
+# Portaless dispatcher Worker — Workers for Platforms.
+# Se despliega UNA VEZ por dispatch namespace (no por plugin); ver README.md.
+name = "portaless-dispatcher"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# El dispatch namespace donde el adaptador de Portaless sube los scripts
+# dinamicos de los plugins (mismo nombre que PORTALESS_CLOUDFLARE_DISPATCH_NAMESPACE).
+[[dispatch_namespaces]]
+binding = "DISPATCH_NAMESPACE"
+namespace = "portaless-plugins"
+
+# Secreto compartido: el adaptador lo envia en el header
+# x-portaless-dispatch-token. Generalo con: openssl rand -hex 32
+# y configuralo como secret del Worker:
+#   npx wrangler secret put DISPATCH_TOKEN
+[vars]
+# DISPATCH_TOKEN no va aca (es secreto) -- se pone con `wrangler secret put`.

@@ -28,6 +28,38 @@ Areas that require special attention:
 - npm dependencies and supply-chain vulnerabilities;
 - Cloudflare, SQLite, and deployment secret configuration.
 
+## Bus factor (single-maintainer risk)
+
+Portaless has **one human point of failure**: a single author with merge
+permissions and the only deep knowledge of the codebase. This is a
+documented risk, not a hidden one — Phase 3 of the
+[Beta roadmap](./ROADMAP.md) requires an **explicit decision** before the
+public Beta invites third-party production data:
+
+> A project with a single human point of failure should not invite
+> third-party production data without that minimal safeguard, in honesty
+> with whoever trusts it.
+
+The decision to make (and record here when made): **is a second
+maintainer with real merge permissions sought before opening the Beta, or
+is the Beta deferred until one exists?** Options the author may weigh:
+
+1. **Seek a second maintainer first** — slowest, strongest; the Beta
+   waits until someone outside the author can review and merge.
+2. **Open the Beta with a documented single-maintainer notice** — every
+   operator is told plainly that there is no second reviewer; acceptable
+   only if the operator audience accepts that risk consciously (e.g.
+   hobby/self-hosted use, not third-party production data).
+3. **Hybrid** — Beta opens to trusted/known operators only (invite),
+   public signups wait for a second maintainer.
+
+Status: **pending decision.** When decided, this section is updated with
+the choice, the date, and (for option 1) the process used to find the
+second person. The companion review item — a minimal external security
+review of the auth flow and plugin sandbox — is mapped in
+[`docs/security-review-guide.md`](./docs/security-review-guide.md) so a
+second pair of eyes has a concrete starting point.
+
 ## Minimum operational requirements
 
 Before a public deployment:

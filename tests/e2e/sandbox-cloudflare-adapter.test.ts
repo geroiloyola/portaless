@@ -52,6 +52,7 @@ describe("CloudflareWorkersForPlatformsAdapter -- integracion real v0.0.9.1 (fet
       dispatchNamespace: "ns-1",
       apiToken: "tok-1",
       dispatcherUrl: "https://dispatcher.example.workers.dev",
+      dispatcherToken: "disp-secret-1",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
@@ -80,7 +81,34 @@ describe("CloudflareWorkersForPlatformsAdapter -- integracion real v0.0.9.1 (fet
     expect(calls[1].url).toBe("https://dispatcher.example.workers.dev");
     const headers2 = calls[1].init?.headers as Record<string, string>;
     expect(headers2["x-portaless-script-name"]).toBe("mi-plugin-1-0-0");
+    // El token del dispatcher viaja en su header propio (fail-closed del
+    // Worker desplegado en infra/cloudflare/dispatcher).
+    expect(headers2["x-portaless-dispatch-token"]).toBe("disp-secret-1");
     expect(JSON.parse(calls[1].init?.body as string)).toEqual({ x: 1 });
+  });
+
+  it("sin dispatcherToken no envia el header del dispatcher (compatibilidad con dispatchers viejos)", async () => {
+    const calls: Array<{ init?: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+      calls.push({ init });
+      if (calls.length === 1) return jsonResponse({ success: true });
+      return jsonResponse({ __portalessOutput: 1 });
+    });
+    const adapter = new CloudflareWorkersForPlatformsAdapter({
+      accountId: "acc-1",
+      dispatchNamespace: "ns-1",
+      apiToken: "tok-1",
+      dispatcherUrl: "https://dispatcher.example.workers.dev",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    await adapter.execute({
+      manifest: makeManifest({ name: "P", version: "1.0.0" }),
+      granted: new Set() as GrantedCapabilities,
+      code: "globalThis.__portalessPluginEntry = async () => 1;",
+      payload: null,
+    });
+    const headers = calls[1].init?.headers as Record<string, string>;
+    expect(headers["x-portaless-dispatch-token"]).toBeUndefined();
   });
 
   it("falla explicitamente si dispatcherUrl no esta configurado, sin intentar el fetch de invocacion", async () => {

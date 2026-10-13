@@ -17,7 +17,16 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
   if (!manifest.name) errors.push('Falta "name" en el manifiesto.');
   if (!manifest.entry) errors.push('Falta "entry" en el manifiesto.');
 
-  for (const req of manifest.requestedCapabilities) {
+  // Sin este guard, un manifest sin requestedCapabilities reventaba con
+  // TypeError (no iterable) y tumbaria loadAll() de LocalManifestSource
+  // entero -- un manifiesto malo debe fallar como validacion, no como
+  // excepcion.
+  const requested = Array.isArray(manifest.requestedCapabilities) ? manifest.requestedCapabilities : null;
+  if (!requested) {
+    errors.push('Falta "requestedCapabilities" (array, puede ser vacio) en el manifiesto.');
+  }
+
+  for (const req of requested ?? []) {
     if (!capabilityRegistry[req.id as CapabilityId]) {
       errors.push(`Capacidad desconocida solicitada: "${req.id}"`);
       continue;

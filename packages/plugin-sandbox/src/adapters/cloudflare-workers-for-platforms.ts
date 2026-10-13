@@ -65,6 +65,13 @@ export interface CloudflareAdapterConfig {
    * scripts (isAvailable/paso 1) pero no ejecutarlos.
    */
   dispatcherUrl?: string;
+  /**
+   * Secreto compartido con el dispatcher Worker (infra/cloudflare/dispatcher):
+   * se envia en el header `x-portaless-dispatch-token`. El dispatcher
+   * desplegado es fail-closed: sin este token responde 401. Requiere la
+   * version del dispatcher que valida DISPATCH_TOKEN.
+   */
+  dispatcherToken?: string;
   /** Base URL de la API de Cloudflare. Parametrizable para tests. */
   apiBaseUrl?: string;
   /** `fetch` a usar -- parametrizable para tests con mocks. */
@@ -327,13 +334,17 @@ export class CloudflareWorkersForPlatformsAdapter implements SandboxAdapter {
     // `env.DISPATCH_NAMESPACE.get(scriptName)` internamente.
     let invokeResponse: Response;
     try {
+      const invokeHeaders: Record<string, string> = {
+        "content-type": "application/json",
+        "x-portaless-script-name": scriptName,
+      };
+      if (this.config.dispatcherToken) {
+        invokeHeaders["x-portaless-dispatch-token"] = this.config.dispatcherToken;
+      }
       invokeResponse = await withTimeout(
         fetchImpl(this.config.dispatcherUrl, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-portaless-script-name": scriptName,
-          },
+          headers: invokeHeaders,
           body: JSON.stringify(input.payload ?? null),
         }),
         timeoutMs,
