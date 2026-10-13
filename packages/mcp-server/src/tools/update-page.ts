@@ -5,11 +5,9 @@
 // de arbol de bloques requeriria una estrategia de diffing que no existe
 // hoy en PageStore ni en atomic-elements y no se debe improvisar aqui).
 //
-// ACTUALIZACION: mismo ajuste que create-page.ts -- elementNodeSchema.type
-// ahora incluye los 4 ElementType agregados para paginas de "link en bio"
-// (LinkList, SocialIcons, ProfileHeader, StoreBlock). Sin esto, update_page
-// habria rechazado un root que reemplazara bloques existentes por alguno
-// de estos 4 tipos nuevos.
+// El schema del arbol de bloques (elementNodeSchema) vive en
+// element-node-schema.ts y se deriva de elementRegistry -- no se hardcodea
+// aqui, para que un ElementType nuevo sea aceptado automaticamente.
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -21,28 +19,20 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
+import { elementNodeSchema } from "./element-node-schema";
 
 const TOOL_NAME = "update_page";
 const READ_CAPABILITY_ID = "content:read";
 const WRITE_CAPABILITY_ID = "content:write";
 
-const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
-  z.object({
-    id: z.string(),
-    type: z.enum([
-      "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
-      "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
-    ]),
-    props: z.record(z.unknown()),
-    children: z.array(elementNodeSchema).optional(),
-    columnSlots: z.array(z.array(elementNodeSchema)).optional(),
-  })
-);
-
 const inputSchema = {
   slug: z.string().min(1).describe("Slug de la pagina existente a modificar."),
   title: z.string().min(1).optional(),
   description: z.string().optional(),
+  status: z
+    .enum(["draft", "published"])
+    .optional()
+    .describe("Cambia el estado de publicacion. 'published' promueve un borrador (flujo de aprobacion humana)."),
   root: z.array(elementNodeSchema).optional().describe("Si se provee, reemplaza el arbol de bloques completo."),
 };
 
@@ -62,11 +52,12 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
       title: "Actualizar una pagina existente",
       description:
         "Lee una pagina existente via PageStore.load() y aplica los campos provistos (merge " +
-        "superficial; `root`, si se provee, reemplaza el arbol completo). Requiere 'content:read' " +
-        "para leer y 'content:write' para guardar, ambas concedidas en el Centro de Permisos.",
+        "superficial; `root`, si se provee, reemplaza el arbol completo; `status` cambia el " +
+        "estado de publicacion). Requiere 'content:read' para leer y 'content:write' para " +
+        "guardar, ambas concedidas en el Centro de Permisos.",
       inputSchema,
     },
-    async ({ slug, title, description, root }, extra?: AgentInvocationContext) => {
+    async ({ slug, title, description, status, root }, extra?: AgentInvocationContext) => {
       const agent = await deps.resolveAgent(extra);
       await requireCapability(deps.permissionStore, agent, READ_CAPABILITY_ID);
       const existing = await deps.pageStore.load(slug);
@@ -82,6 +73,7 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
         ...existing,
         title: title ?? existing.title,
         description: description ?? existing.description,
+        status: status ?? existing.status,
         root: (root as ElementNode[] | undefined) ?? existing.root,
       };
 

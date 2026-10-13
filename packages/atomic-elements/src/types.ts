@@ -16,6 +16,14 @@ export interface PageLayout {
   slug: string;
   title: string;
   description?: string;
+  /**
+   * Estado de publicacion nativo. Opcional por compatibilidad hacia atras con
+   * el layout JSON ya persistido en D1/SQLite (que no lo trae): si falta, se
+   * trata como "published". El gate de publicacion real es el publish filter
+   * (deploy-engine/draft-filter), que hoy excluye tanto los `-draft` de slug
+   * (legacy) como los `status: "draft"`.
+   */
+  status?: "draft" | "published";
   root: ElementNode[];
 }
 

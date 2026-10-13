@@ -83,7 +83,7 @@ describe("GET /admin/pages (listado con titulos)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("devuelve slugs (compat) y pages [{slug,title}]", async () => {
+  it("devuelve slugs (compat) y pages [{slug,title,status}]", async () => {
     const store = await createPageStore(env);
     await store.save({
       version: "0.1",
@@ -96,7 +96,8 @@ describe("GET /admin/pages (listado con titulos)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.slugs).toContain("listada");
-    expect(body.pages).toEqual(expect.arrayContaining([{ slug: "listada", title: "La Listada" }]));
+    // Layout legacy sin status -> se expone como "published".
+    expect(body.pages).toEqual(expect.arrayContaining([{ slug: "listada", title: "La Listada", status: "published" }]));
     // La pagina borrada en el test anterior ya no figura.
     expect(body.slugs).not.toContain("pagina-borrar");
 

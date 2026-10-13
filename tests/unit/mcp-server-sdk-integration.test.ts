@@ -62,26 +62,39 @@ async function connectedClient() {
 }
 
 describe("createPortalessMcpServer -- integracion con el SDK real (InMemoryTransport)", () => {
-  it("registra las 7 tools del servidor", async () => {
+  it("registra las 10 tools del servidor", async () => {
     const { client } = await connectedClient();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       "create_page",
+      "delete_block",
       "grant_capability",
+      "insert_block",
       "list_installed_plugins",
       "list_page_components",
       "query_usage_log",
       "revoke_permission",
+      "update_block",
       "update_page",
     ]);
   });
 
-  it("list_page_components responde los ElementType sin identidad ni auditoria", async () => {
+  it("list_page_components responde los ElementType y su metadata sin identidad ni auditoria", async () => {
     const { client } = await connectedClient();
     const result = await client.callTool({ name: "list_page_components", arguments: {} });
     const payload = JSON.parse((result.content as Array<{ text: string }>)[0].text);
     expect(payload.elementTypes).toContain("Hero");
     expect(payload.elementTypes).toContain("StoreBlock");
+    // Catalogo completo: metadata por tipo (lo que un agente usa para proponer
+    // props validas). Todos los tipos del palette deben venir con su def.
+    expect(payload.elements).toHaveLength(payload.elementTypes.length);
+    const hero = payload.elements.find((e: { type: string }) => e.type === "Hero");
+    expect(hero).toMatchObject({ type: "Hero" });
+    expect(typeof hero.displayName).toBe("string");
+    expect(typeof hero.icon).toBe("string");
+    expect(Array.isArray(hero.editableProps)).toBe(true);
+    // renderHTML es funcion de render del sitio: no debe filtrarse al agente.
+    expect(hero.renderHTML).toBeUndefined();
   });
 
   it("create_page via Client ejecuta el handler con la identidad del resolver (env) y audita", async () => {
@@ -94,7 +107,7 @@ describe("createPortalessMcpServer -- integracion con el SDK real (InMemoryTrans
 
     expect(result.isError).toBeFalsy();
     const payload = JSON.parse((result.content as Array<{ text: string }>)[0].text);
-    expect(payload).toMatchObject({ saved: true, slug: "equipo-draft" });
+    expect(payload).toMatchObject({ saved: true, slug: "equipo", status: "draft" });
     expect(saved).toHaveLength(1);
 
     expect(auditEntries).toHaveLength(1);

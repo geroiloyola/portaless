@@ -42,13 +42,16 @@ export async function onRequestGet(context) {
   // pagina, cargado via load() por slug (N+1 deliberado -- es un panel de
   // admin con pocas filas, no una vista publica; mantiene la interfaz
   // PageStore sin tocar).
+  // v0.0.9.10: se agrega `status` ("draft"/"published", ver
+  // PageLayout.status) para que el manager pueda mostrar el badge y el botón
+  // de publicar. Los layouts legacy sin status se tratan como "published".
   const pages = [];
   for (const slug of slugs) {
     try {
       const layout = await pageStore.load(slug);
-      pages.push({ slug, title: layout?.title || slug });
+      pages.push({ slug, title: layout?.title || slug, status: layout?.status || "published" });
     } catch {
-      pages.push({ slug, title: slug });
+      pages.push({ slug, title: slug, status: "published" });
     }
   }
 

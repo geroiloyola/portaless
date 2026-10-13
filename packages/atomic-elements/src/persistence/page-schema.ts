@@ -27,6 +27,9 @@ export function validatePageLayout(layout: PageLayout): ValidationResult {
   if (layout.version !== "0.1") errors.push(`Versión de esquema no soportada: ${layout.version}`);
   if (!layout.slug) errors.push('Falta "slug" en la página.');
   if (!Array.isArray(layout.root)) errors.push('"root" debe ser un arreglo de elementos.');
+  if (layout.status !== undefined && layout.status !== "draft" && layout.status !== "published") {
+    errors.push(`"status" debe ser "draft" o "published" (recibido: ${JSON.stringify(layout.status)}).`);
+  }
 
   layout.root?.forEach((node, i) => validateNode(node, `root[${i}]`, errors));
 

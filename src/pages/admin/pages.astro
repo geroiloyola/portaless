@@ -42,7 +42,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <table id="pm-table" class="pm-table" style="display:none;">
     <thead>
-      <tr><th>Título</th><th>Slug</th><th class="pm-actions-col">Acciones</th></tr>
+      <tr><th>Título</th><th>Slug</th><th>Estado</th><th class="pm-actions-col">Acciones</th></tr>
     </thead>
     <tbody id="pm-tbody"></tbody>
   </table>
@@ -86,6 +86,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
     .pm-msg { margin-top: 12px; font-size: 0.85rem; }
     .pm-msg.pm-err { color: var(--danger-fg, #B3372C); }
+    .pm-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .pm-badge--draft { background: rgba(217, 160, 46, 0.16); color: #B8860B; }
+    .pm-badge--published { background: rgba(46, 160, 90, 0.16); color: #2E9A5A; }
+    .pm-pub-btn {
+      border: 1px solid var(--portaless-border); background: transparent;
+      color: var(--portaless-accent); padding: 4px 10px; border-radius: var(--radius-button, 8px);
+      cursor: pointer; font-size: 0.8rem; margin-right: 10px;
+    }
   </style>
 </BaseLayout>
 
@@ -108,8 +119,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     window.setTimeout(() => { msgEl.style.display = "none"; }, 5000);
   }
 
-  function row(page: { slug: string; title: string }): HTMLTableRowElement {
+  function row(page: { slug: string; title: string; status?: string }): HTMLTableRowElement {
     const tr = document.createElement("tr");
+    const status = page.status === "draft" ? "draft" : "published";
 
     const tdTitle = document.createElement("td");
     tdTitle.textContent = page.title;
@@ -121,7 +133,43 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     tdSlug.appendChild(code);
     tr.appendChild(tdSlug);
 
+    const tdStatus = document.createElement("td");
+    const badge = document.createElement("span");
+    badge.className = `pm-badge pm-badge--${status}`;
+    badge.textContent = status === "draft" ? "Borrador" : "Publicado";
+    tdStatus.appendChild(badge);
+    tr.appendChild(tdStatus);
+
     const tdActions = document.createElement("td");
+
+    if (status === "draft") {
+      const pub = document.createElement("button");
+      pub.type = "button";
+      pub.className = "pm-pub-btn";
+      pub.textContent = "Publicar";
+      pub.addEventListener("click", () => {
+        pub.disabled = true;
+        (async () => {
+          const loadRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, { credentials: "same-origin" });
+          if (loadRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+          if (!loadRes.ok) throw new Error(`HTTP ${loadRes.status}`);
+          const layout = await loadRes.json();
+          layout.status = "published";
+          const putRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(layout),
+            credentials: "same-origin",
+          });
+          if (putRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+          if (!putRes.ok) throw new Error(`HTTP ${putRes.status}`);
+          badge.className = "pm-badge pm-badge--published";
+          badge.textContent = "Publicado";
+          pub.remove();
+        })().catch((err) => { pub.disabled = false; showMsg(`No se pudo publicar: ${(err as Error).message}`); });
+      });
+      tdActions.appendChild(pub);
+    }
 
     const edit = document.createElement("a");
     edit.href = `/admin/editor?slug=${encodeURIComponent(page.slug)}`;
@@ -169,7 +217,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const pages: Array<{ slug: string; title: string }> = Array.isArray(data.pages)
+      const pages: Array<{ slug: string; title: string; status?: string }> = Array.isArray(data.pages)
         ? data.pages
         : (data.slugs ?? []).map((slug: string) => ({ slug, title: slug }));
       loadingEl.style.display = "none";

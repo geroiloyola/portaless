@@ -5,24 +5,20 @@
 //
 // Principio del whitepaper (ver docs/architecture/mcp-agents.md):
 // "toda escritura de un agente se guarda como borrador, nunca se
-// publica directo". Este commit lo aplica de la forma mas simple
-// posible dado lo que existe hoy en PageStore (que no tiene un campo
-// `status: draft/published`): antepone un sufijo `-draft` al slug
-// cuando draftMode=true (default). Promover un borrador a publicado
-// significa, en este esquema, volver a llamar a create_page/update_page
-// con el slug final sin sufijo -- una vez que un humano lo aprueba.
-// Si PageStore evoluciona a tener un campo de estado nativo, este
-// mecanismo deberia migrar a usarlo en vez del sufijo de slug.
+// publica directo". PageLayout ahora tiene `status` nativo
+// ("draft"/"published"), asi que draftMode=true (default) marca
+// status="draft" y el slug queda limpio. Publicar es llamar a
+// update_page con status="published" una vez que un humano lo aprueba.
 //
-// ACTUALIZACION: elementNodeSchema.type solo aceptaba los 8 ElementType
-// originales -- no incluia los 4 tipos agregados para paginas de "link
-// en bio" (LinkList, SocialIcons, ProfileHeader, StoreBlock; ver
-// docs/architecture/creator-sites-agentic-workflow.md y el mismo ajuste
-// ya aplicado en list-page-components.ts). Sin este cambio, un agente
-// que llamara create_page con alguno de esos 4 tipos habria recibido un
-// error de validacion de Zod, aunque elementRegistry y PageStore ya los
-// soportan -- el schema de entrada de esta tool debe reflejar el mismo
-// ElementType real de atomic-elements/types.ts, no una copia congelada.
+// NOTA (legacy): hasta v0.0.9.10 el borrador se marcaba con un sufijo
+// "-draft" en el slug, y el publish filter (deploy-engine/draft-filter)
+// seguia ese sufijo para excluirlo. Las paginas creadas con ese mecanismo
+// siguen existiendo con su slug "-draft" y el filtro las excluye igual;
+// no se migran. El filtro ahora excluye ambos mecanismos.
+//
+// El schema del arbol de bloques (elementNodeSchema) vive en
+// element-node-schema.ts y se deriva de elementRegistry -- no se hardcodea
+// aqui, para que un ElementType nuevo sea aceptado automaticamente.
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -34,29 +30,17 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
+import { elementNodeSchema } from "./element-node-schema";
 
 const TOOL_NAME = "create_page";
 const CAPABILITY_ID = "content:write";
 
-const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
-  z.object({
-    id: z.string(),
-    type: z.enum([
-      "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
-      "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
-    ]),
-    props: z.record(z.unknown()),
-    children: z.array(elementNodeSchema).optional(),
-    columnSlots: z.array(z.array(elementNodeSchema)).optional(),
-  })
-);
-
 const inputSchema = {
-  slug: z.string().min(1).describe("Slug de la pagina, ej. 'contacto'. Se usa tal cual si draftMode=false."),
+  slug: z.string().min(1).describe("Slug de la pagina, ej. 'contacto'. Se usa tal cual (el borrador NO altera el slug)."),
   title: z.string().min(1),
   description: z.string().optional(),
   root: z.array(elementNodeSchema).describe("Arbol de bloques -- usar solo ElementType listados por list_page_components."),
-  draftMode: z.boolean().default(true).describe("Si true (default), guarda con sufijo '-draft' en el slug hasta aprobacion humana."),
+  draftMode: z.boolean().default(true).describe("Si true (default), guarda con status='draft' hasta aprobacion humana (publicar via update_page con status='published')."),
 };
 
 export interface RegisterCreatePageToolDeps {
@@ -74,21 +58,22 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
     {
       title: "Crear una pagina nueva (borrador por defecto)",
       description:
-        "Crea un PageLayout y lo guarda via PageStore real. Por defecto (draftMode=true) el slug " +
-        "queda con sufijo '-draft', para que un humano revise el contenido antes de publicarlo con " +
-        "el slug final. Requiere la capacidad 'content:write' concedida en el Centro de Permisos.",
+        "Crea un PageLayout y lo guarda via PageStore real. Por defecto (draftMode=true) el " +
+        "status queda en 'draft', para que un humano revise el contenido antes de publicarlo " +
+        "con update_page y status='published'. Requiere la capacidad 'content:write' concedida " +
+        "en el Centro de Permisos.",
       inputSchema,
     },
     async ({ slug, title, description, root, draftMode }, extra?: AgentInvocationContext) => {
       const agent = await deps.resolveAgent(extra);
       await requireCapability(deps.permissionStore, agent, CAPABILITY_ID);
 
-      const finalSlug = draftMode ? `${slug}-draft` : slug;
       const layout: PageLayout = {
         version: "0.1",
-        slug: finalSlug,
+        slug,
         title,
         description,
+        status: draftMode ? "draft" : "published",
         root: root as ElementNode[],
       };
 
@@ -104,7 +89,7 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
           {
             type: "text",
             text: JSON.stringify(
-              { saved: true, slug: finalSlug, draftMode, note: draftMode ? "Guardado como borrador. Revisar y volver a llamar con draftMode=false para publicar." : "Guardado con el slug final." },
+              { saved: true, slug, status: layout.status, note: draftMode ? "Guardado como borrador (status='draft'). Un humano lo publica con update_page + status='published'." : "Guardado como publicado (status='published')." },
               null,
               2
             ),

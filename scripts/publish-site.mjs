@@ -23,7 +23,7 @@ import { SqlitePageStore } from "../packages/atomic-elements/src/persistence/sto
 import { createDeploymentOAuthStore } from "../packages/deploy-engine/src/oauth-store.ts";
 import { readGitHubOAuthConfig, getGitHubAccessToken, GITHUB_PROVIDER } from "../packages/deploy-engine/src/github-oauth.ts";
 import { publishStaticSite } from "../packages/deploy-engine/src/github-static-publish.ts";
-import { excludeDrafts } from "../packages/deploy-engine/src/draft-filter.ts";
+import { excludeDraftPages } from "../packages/deploy-engine/src/draft-filter.ts";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
@@ -54,9 +54,18 @@ async function main() {
   console.log("1/4 Sincronizando paginas desde PageStore...");
   const pageStore = await SqlitePageStore.open(sqlitePath);
   const allSlugs = await pageStore.list();
-  const { slugs, skipped } = excludeDrafts(allSlugs, includeDrafts);
+  // Cargar los layouts ANTES de filtrar: el publish filter excluye tanto los
+  // slug "-draft" (legacy) como los `status: "draft"` nativos, y este ultimo
+  // solo se ve en el layout, no en el slug.
+  const allLayouts = [];
+  for (const slug of allSlugs) {
+    const layout = await pageStore.load(slug);
+    if (layout) allLayouts.push(layout);
+  }
+  const { pages: publishable, skipped } = excludeDraftPages(allLayouts, includeDrafts);
+  const slugs = publishable.map((p) => p.slug);
   if (skipped > 0) {
-    console.log(`   Omitiendo ${skipped} borrador(es) (*-draft). Usa --include-drafts para publicarlos igual.`);
+    console.log(`   Omitiendo ${skipped} borrador(es) (*-draft o status='draft'). Usa --include-drafts para publicarlos igual.`);
   }
   if (slugs.length === 0) {
     console.error("No hay ninguna pagina publicable en PageStore. Nada que compilar.");
@@ -64,9 +73,8 @@ async function main() {
   }
   const contentDir = path.join(ROOT, "src", "content", "pages");
   fs.mkdirSync(contentDir, { recursive: true });
-  for (const slug of slugs) {
-    const layout = await pageStore.load(slug);
-    fs.writeFileSync(path.join(contentDir, `${slug}.json`), JSON.stringify(layout, null, 2));
+  for (const layout of publishable) {
+    fs.writeFileSync(path.join(contentDir, `${layout.slug}.json`), JSON.stringify(layout, null, 2));
   }
   console.log(`   ${slugs.length} pagina(s) volcada(s) a src/content/pages/.`);
 

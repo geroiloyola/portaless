@@ -172,7 +172,7 @@ describe("create_page -- identidad por invocacion", () => {
     const { handler, tokenA, tokenB, saved, entries } = await setup();
 
     const result = (await handler(pageArgs, extraA(tokenA))) as { content: Array<{ text: string }> };
-    expect(JSON.parse(result.content[0].text)).toMatchObject({ saved: true, slug: "nosotros-draft" });
+    expect(JSON.parse(result.content[0].text)).toMatchObject({ saved: true, slug: "nosotros", status: "draft" });
     expect(saved).toHaveLength(1);
 
     const denial = await handler(pageArgs, { authInfo: { token: tokenB } }).catch((e) => e);

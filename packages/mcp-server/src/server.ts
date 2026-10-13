@@ -24,6 +24,9 @@ import type { UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
 import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";
 import { registerUpdatePageTool } from "./tools/update-page";
+import { registerInsertBlockTool } from "./tools/insert-block";
+import { registerUpdateBlockTool } from "./tools/update-block";
+import { registerDeleteBlockTool } from "./tools/delete-block";
 import { registerGrantCapabilityTool } from "./tools/grant-capability";
 import { registerRevokePermissionTool } from "./tools/revoke-permission";
 import { registerListPageComponentsTool } from "./tools/list-page-components";
@@ -85,6 +88,27 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     resolveAgent: deps.resolveAgent,
   });
   registerUpdatePageTool(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+  });
+  registerInsertBlockTool(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+  });
+  registerUpdateBlockTool(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+  });
+  registerDeleteBlockTool(server, {
     pageStore: deps.pageStore,
     permissionStore: deps.permissionStore,
     auditLog: deps.auditLog,
