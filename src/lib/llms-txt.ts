@@ -39,6 +39,13 @@ export const POLICY_LINK_TITLE = "Política de contenido";
 export const POLICY_LINK_NOTE = "Condiciones de uso, pago y excepciones por operador";
 export const AI_INPUT_BLOCKED_NOTICE =
   "El propietario de este sitio no autoriza el uso de su contenido como entrada para modelos de IA (Content-Signal: ai-input=no). Consulta la política de contenido antes de usarlo.";
+/**
+ * Marca emitida (solo) cuando la política bloquea ai_input. Un commentario
+ * en el texto no afecta a los lectores, pero functions/llms.txt.js la usa
+ * para NO inyectar las páginas de la base de datos sobre un índice que el
+ * dueño declaró cerrado: la política manda sobre la disponibilidad técnica.
+ */
+export const AI_INPUT_BLOCKED_MARKER = "<!-- portaless:ai-input-blocked -->";
 
 function oneLine(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -94,7 +101,7 @@ export function buildLlmsTxt(input: LlmsTxtInput): string {
     : [];
 
   if (input.aiInputAllowed === false) {
-    lines.push(AI_INPUT_BLOCKED_NOTICE, "");
+    lines.push(AI_INPUT_BLOCKED_MARKER, AI_INPUT_BLOCKED_NOTICE, "");
     pushSection(lines, "Optional", policyLinks);
   } else {
     for (const section of input.sections) pushSection(lines, section.heading, section.links);
@@ -102,4 +109,69 @@ export function buildLlmsTxt(input: LlmsTxtInput): string {
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
+}
+
+// ---------------------------------------------------------------------------
+// Fusion de paginas editadas en la base de datos (Phase 6)
+// ---------------------------------------------------------------------------
+
+export interface DbPageEntry {
+  slug: string;
+  title?: string;
+  description?: string;
+}
+
+/** Slug de /paginas/<slug> ya presentes en un llms.txt (para no duplicar). */
+export function listedPageSlugs(llmsTxt: string): Set<string> {
+  const slugs = new Set<string>();
+  const pattern = /\/paginas\/([^)\s/]+)\)/g;
+  for (const match of llmsTxt.matchAll(pattern)) slugs.add(decodeURIComponent(match[1]));
+  return slugs;
+}
+
+/**
+ * Agrega una seccion a un llms.txt ya generado, ANTES de "## Optional" (que
+ * es el ultimo bloque por convencion). Si no hay Optional, va al final.
+ * Devuelve el texto igual si la seccion esta vacia: un merge que no cambia
+ * nada debe poder compararse con === y devolver la respuesta estatica tal.
+ */
+export function appendLlmsTxtSection(base: string, section: LlmsTxtSection): string {
+  if (section.links.length === 0) return base;
+  const block = [`## ${oneLine(section.heading)}`, "", ...section.links.map(formatLink)].join("\n");
+  const text = base.replace(/\s+$/, "");
+  const marker = "\n## Optional";
+  const idx = text.indexOf(marker);
+  if (idx === -1) return `${text}\n\n${block}\n`;
+  return `${text.slice(0, idx)}\n\n${block}\n${text.slice(idx)}\n`;
+}
+
+/**
+ * Fusiona las paginas de la tabla `pages` (D1/SQLite) en el llms.txt que el
+ * build estatico ya emite. Reglas:
+ *   - la politica bloqueada (marcador) gana: no se lista nada agregado;
+ *   - un slug ya presente en el build no se repite (las de
+ *     src/content/pages/*.json ya estan listadas ahi);
+ *   - titulo por defecto = slug, descripcion solo si la tiene.
+ * La URL la decide el caller (self-host y Cloudflare Pages conocen el site
+ * URL en runtime; el build estatico no llega aca).
+ */
+export function mergeDbPagesIntoLlmsTxt(
+  base: string,
+  pages: DbPageEntry[],
+  toUrl: (slug: string) => string
+): string {
+  if (base.includes(AI_INPUT_BLOCKED_MARKER)) return base;
+  const existing = listedPageSlugs(base);
+  const links: LlmsTxtLink[] = [];
+  for (const page of pages) {
+    if (typeof page?.slug !== "string" || page.slug.length === 0) continue;
+    if (existing.has(page.slug)) continue;
+    existing.add(page.slug);
+    links.push({
+      title: oneLine(page.title || "") || page.slug,
+      url: toUrl(page.slug),
+      note: page.description,
+    });
+  }
+  return appendLlmsTxtSection(base, { heading: "Páginas del editor", links });
 }

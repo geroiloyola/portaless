@@ -73,6 +73,12 @@
 -- alsoKnownAs). Fuente schema-additions/atproto-links.sql; el store la
 -- crea al vuelo en bases existentes. Sin filas el did.json no cambia.
 --
+-- NOTA v0.0.9.33: tabla nueva site_settings -- ajustes generales del sitio
+-- en clave/valor (primer uso: configuracion de analytics que /admin/analytics
+-- escribe y /api/analytics emite al publico). Fuente
+-- schema-additions/site-settings.sql; el store la crea al vuelo en bases
+-- existentes. Ver packages/dashboard/src/site-settings/site-settings-store.ts.
+--
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
@@ -748,5 +754,23 @@ CREATE TABLE IF NOT EXISTS site_skin (
   site_id TEXT PRIMARY KEY,
   skin TEXT NOT NULL,
   tokens_json TEXT NOT NULL DEFAULT '{}',
+  updated_at TEXT NOT NULL
+);
+
+-- -----------------------------------------------------------------------------
+-- Phase 6 -- publication maturity: ajustes generales del sitio
+-- -----------------------------------------------------------------------------
+-- Clave/valor de un solo sitio (hoy "no hay sitio": Portaless corre una
+-- instancia por sitio). Primer uso: la configuracion de analytics que
+-- /admin/analytics escribe y que el sitio publico lee en /api/analytics.
+-- Valores SIEMPRE texto (la capa tipada valida antes de persistir: ver
+-- sanitizeAnalyticsInput en site-settings-store.ts).
+--
+-- No existe un settings generico hasta ahora: site_skin guarda tokens de
+-- color y el nombre/resumen del sitio eran solo variables de entorno.
+
+CREATE TABLE IF NOT EXISTS site_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL
 );

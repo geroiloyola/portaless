@@ -18,7 +18,14 @@ export interface Props {
   markdownUrl?: string;
 }
 const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl } = Astro.props;
-const llmsTxtUrl = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/llms.txt`;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const llmsTxtUrl = `${base}/llms.txt`;
+// Phase 6: el feed de los posts publicados se anuncia desde TODAS las
+// paginas (no solo /blog), que es como lo encuentran los lectores que no
+// conocen el sitio. /api/analytics sigue el mismo patron: un asset que el
+// hosting con functions puede reemplazar en runtime.
+const rssUrl = `${base}/rss.xml`;
+const analyticsUrl = `${base}/api/analytics`;
 import "../styles/fonts.css";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
@@ -30,12 +37,18 @@ import Footer from "../components/Footer.astro";
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="describedby" type="text/plain" href={llmsTxtUrl} />
+    <link rel="alternate" type="application/rss+xml" title="Feed RSS" href={rssUrl} />
     {markdownUrl && <link rel="alternate" type="text/markdown" href={markdownUrl} />}
     <!-- Phase 0: hoja del skin activo del sitio. Va despues de global.css
          (que trae la paleta oficial como default) para sobreescribirla.
          En hosting estatico sin functions el 404 lo ignora el navegador
          y manda el default -- nunca rompe la pagina. -->
-    <link rel="stylesheet" href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/site-skin`} />
+    <link rel="stylesheet" href={`${base}/api/site-skin`} />
+    <!-- Phase 6: analytics del sitio. El asset existe siempre (el build
+         emite un no-op si no hay nada configurado) y en hosting con
+         functions se genera desde la tabla site_settings en runtime,
+         igual que /paginas/[slug]: GitHub Pages se queda con el build. -->
+    <script src={analyticsUrl} defer></script>
     <script is:inline>
       // Toggle explicito de tema: localStorage("portaless-theme") =
       // "dark" | "light" fuerza el tema; ausente = auto (SO). Va antes

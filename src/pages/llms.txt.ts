@@ -58,6 +58,12 @@ export const GET: APIRoute = async ({ site }) => {
     ],
     aiInputAllowed: policy ? policy.aiInputAllowed : true,
     policyUrl: policy ? url(CONTENT_POLICY_PATH) : undefined,
+    optional: [
+      // Phase 6: el feed es la manera de enterarse de posts nuevos sin
+      // volver a rastrear /blog. Va en Optional porque un agente que ya
+      // tiene el llms.txt no lo necesita para leer el contenido actual.
+      { title: "Feed RSS del blog", url: url("/rss.xml"), note: "Posts publicados, mismo filtro que /blog" },
+    ],
   });
 
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } });

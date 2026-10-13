@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 17 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 20 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 12 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 15 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -45,6 +45,7 @@ const SOURCES = [
   { path: "schema-additions/atproto-links.sql", selfBanner: true },
   { path: "schema-additions/cloud-images.sql", selfBanner: true },
   { path: "schema-additions/site-skin.sql", selfBanner: true },
+  { path: "schema-additions/site-settings.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
@@ -123,6 +124,12 @@ const HEADER = `-- =============================================================
 -- APW <-> AT Protocol (handles que el sitio reclama en su did:apw via
 -- alsoKnownAs). Fuente schema-additions/atproto-links.sql; el store la
 -- crea al vuelo en bases existentes. Sin filas el did.json no cambia.
+--
+-- NOTA v0.0.9.33: tabla nueva site_settings -- ajustes generales del sitio
+-- en clave/valor (primer uso: configuracion de analytics que /admin/analytics
+-- escribe y /api/analytics emite al publico). Fuente
+-- schema-additions/site-settings.sql; el store la crea al vuelo en bases
+-- existentes. Ver packages/dashboard/src/site-settings/site-settings-store.ts.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql

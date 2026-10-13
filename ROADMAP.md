@@ -210,6 +210,22 @@ Categories are by **who** must resolve the piece, not by priority.
 
 **Exit criterion (and close of this roadmap)**: a person outside the project, without the author's direct help, installs Portaless, publishes a site with APW identity, and that site appears correctly in at least one Index node that is not the author's.
 
+### Phase 6 — Publication maturity (pre-Beta gap closers)
+
+**Status**: items 1–3 shipped in this repository. Items 4–7 are ordered work; none of them depends on a third party.
+
+**Goal**: a Portaless site is a *publication*, not only a page builder: it is discoverable by feed readers, its pages (including the ones edited in the database) are visible to LLM agents, and the operator has first-party traffic numbers without sending visitors to somebody else's dashboard.
+
+**Why after Phase 1**: features only matter once someone can install, edit and publish without help. This phase is about what happens *after* the first publish, and it is ordered strictly by cost/benefit: the first three are small and self-contained, the rest are not.
+
+1. **[shipped]** RSS feed at `/rss.xml` for published posts (no drafts), announced from every page via `<link rel="alternate" type="application/rss+xml">` and from the `Optional` block of `llms.txt`. **Current limit**: `content:encoded` (full post body as HTML) is not emitted — the repo has no markdown→HTML renderer at build time and adding one only for the feed is not worth the dependency; readers get title, permalink, publication date and description.
+2. **[shipped]** `llms.txt` lists the pages edited in D1/SQLite, not only `src/content/pages/*.json`. On a host with functions (self-host, Cloudflare Pages) a runtime function merges the database pages into the build-time file as their own section, deduplicated by slug, and honours the content-policy block signal. **Current limit**: on pure static hosting (GitHub Pages) the database is unreachable, so only the JSON pages appear — same honest limit as `/paginas/[slug]` and documented in both files. The sitemap still lists only the JSON pages.
+3. **[shipped]** First-party analytics, provider-agnostic: Plausible, Cloudflare Web Analytics, umami or any custom script URL, configured from `/admin/analytics`. The config lives in the new `site_settings` table (D1 → SQLite → InMemory), the public site reads it from `/api/analytics` at request time, and the build emits a no-op file for static hosting. **Current limit**: the admin can store a script URL and a site id, never raw JavaScript — that is a deliberate barrier, not a missing feature.
+4. **[next]** Visual editor polish and MCP parity: incremental work on the Atomic Elements catalog and the MCP tool surface (create/update page from the agent), no new subsystem.
+5. **[requires real people]** The exit criterion of Phase 5. It is repeated here because it is the real gate between "Beta announced" and "official Beta", and no item in this phase replaces it.
+6. **[deferred]** Newsletters and a subscriber store: double opt-in, unsubscribe, deliverability. The MCP→provider send is the cheap part; the store and the compliance are not, and there is no audience to send to yet. AT Protocol is a **discovery** channel for it (map followers → invite them), never a delivery channel: AT Protocol does not deliver email, and the follower graph lives in third-party AppViews.
+7. **[plugin, not core]** Paywall / premium content. Two hard rules from this repository's own architecture: (a) premium content must be **rendered at the edge at request time**, never committed as static HTML — static premium bytes are public in the repo and in every deploy, so no paywall can protect them; (b) the billing provider is chosen by the operator (Stripe, Webpay, Mercado Pago, …) through a **plugin** with capability tokens. Portaless core ships no billing provider and no subscription economy: the economy that is already in core is pay-per-crawl, and a second one would be a parallel system, not a feature.
+
 ### Beta readiness checklist
 
 One list, so progress does not depend on re-reading the six phases:
@@ -220,6 +236,9 @@ One list, so progress does not depend on re-reading the six phases:
 - [x] The README shows real screenshots of the product, not only text
 - [x] A public demo instance is browsable without installing anything
 - [x] The element catalog covers basic content-site use cases (video, FAQ, contact form, gallery)
+- [x] Published posts are reachable from an RSS reader (`/rss.xml`, no drafts, announced from every page)
+- [x] The pages edited in the database are listed in `llms.txt` on hosts with functions (not on pure static hosting — same limit as `/paginas/[slug]`)
+- [x] First-party analytics, configured by the operator, without sending visitors to a third-party dashboard
 - [ ] CI green in a sustained way, coverage floors held in the range the ROADMAP set for itself
 - [ ] At least one person other than the author with real capacity to review or merge code
 - [ ] At least one external domain (not the author's) publishes valid APW identity

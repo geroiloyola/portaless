@@ -96,7 +96,8 @@ h3 { font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem); }
   .wiz-case-panel,
   .st-source-section,
   .pc-capability,
-  .ae-shell
+  .ae-shell,
+  .an-form
 ) {
   --bg: #261C15;
   --panel-bg: #2F241B;

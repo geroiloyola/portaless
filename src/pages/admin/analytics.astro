@@ -1,0 +1,218 @@
+---
+// UI de administracion del analytics del sitio (Phase 6 — publication
+// maturity). Requiere sesion valida -- protegido por
+// functions/admin/_middleware.js.
+//
+// Escribe la tabla site_settings via PUT /admin/api/analytics (mismo patron
+// client-side de appearance.astro: fetch desde el <script>, estados
+// display, redirect a login en 401). El sitio publico lo lee en
+// /api/analytics, que BaseLayout pide siempre desde el <head>.
+//
+// El admin guarda SOLO tres datos: un proveedor de la lista, el id del
+// sitio en ese proveedor y (solo con "custom") un origen https. Nunca
+// JavaScript: eso lo construye Portaless en /api/analytics a partir de
+// esos datos. En hosting estatico sin functions la config se fija en
+// build con PORTALESS_ANALYTICS_* (se explica en el hint de abajo).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const PROVIDER_HINTS: Record<string, string> = {
+  none: "Sin analytics: /api/analytics no carga nada de terceros.",
+  plausible: "Plausible: el id es tu dominio (ej. ejemplo.com). Script oficial plausible.io.",
+  cloudflare: "Cloudflare Web Analytics: el id es el token del beacon (pestaña Web Analytics de tu zona).",
+  umami: "umami: el id es el website id (data-website-id) de tu instancia o de cloud.umami.is.",
+  custom: "Cualquier script https propio. Portaless lo inyecta como <script defer> sin interpretarlo.",
+};
+---
+
+<BaseLayout title="Analytics — Portaless Admin">
+  <div class="an-page-header">
+    <h1 class="an-page-title">Analytics</h1>
+    <p class="an-page-subtitle">
+      Tráfico de tu sitio, con la herramienta que elijas. El script se
+      sirve desde <code>/api/analytics</code> y lo carga el <code>&lt;head&gt;</code> de cada página.
+    </p>
+  </div>
+
+  <div id="an-loading" class="an-loading">Cargando configuración…</div>
+  <div id="an-load-error" class="an-load-error" style="display:none;"></div>
+
+  <div id="an-root" style="display:none;">
+    <form id="an-form" class="an-form">
+      <h2 class="an-form-title">Proveedor</h2>
+      <p class="an-hint">
+        Elige uno de los proveedores oficiales (sus scripts ya están
+        cableados) o "custom" para el tuyo. Portaless nunca guarda
+        JavaScript: solo el proveedor, el id y el origen https.
+      </p>
+      <label class="an-field">
+        <span>Proveedor</span>
+        <select id="an-provider"></select>
+      </label>
+      <p class="an-hint" id="an-provider-hint"></p>
+
+      <label class="an-field" id="an-id-field">
+        <span id="an-id-label">Id del sitio</span>
+        <input type="text" id="an-id" maxlength="128" placeholder="ejemplo.com" autocomplete="off" />
+      </label>
+
+      <label class="an-field" id="an-url-field" style="display:none;">
+        <span>Origen del script (solo custom)</span>
+        <input type="text" id="an-script-url" maxlength="200" placeholder="https://analytics.ejemplo.com/script.js" autocomplete="off" />
+      </label>
+
+      <div class="an-actions">
+        <button type="submit" class="an-save-btn">Guardar</button>
+        <button type="button" id="an-off-btn" class="an-off-btn">Desactivar analytics</button>
+      </div>
+      <p id="an-msg" class="an-msg" style="display:none;"></p>
+    </form>
+
+    <div class="an-form an-note">
+      <h2 class="an-form-title">Hosting sin functions (GitHub Pages)</h2>
+      <p class="an-hint">
+        En GitHub Pages no hay tabla que leer: la configuración se fija
+        al construir con las variables <code>PORTALESS_ANALYTICS_PROVIDER</code>,
+        <code>PORTALESS_ANALYTICS_ID</code> y <code>PORTALESS_ANALYTICS_SCRIPT_URL</code>.
+        En self-host y Cloudflare Pages lo guardado acá manda al instante.
+      </p>
+    </div>
+  </div>
+
+  <style>
+    .an-page-header { margin-bottom: 28px; }
+    .an-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+    .an-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
+    .an-loading, .an-load-error { color: var(--portaless-muted); font-size: 0.9rem; }
+    .an-load-error { color: var(--danger-fg, #B3372C); }
+    .an-form {
+      max-width: 640px; margin-bottom: 24px; padding: 20px 24px;
+      border: 1px solid var(--portaless-border); border-radius: 12px;
+      background: var(--panel-bg, #fff);
+    }
+    .an-note { padding-top: 4px; }
+    .an-form-title { margin: 0 0 12px; font-size: 1.05rem; }
+    .an-field { display: block; margin-bottom: 14px; }
+    .an-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
+    .an-field select, .an-field input[type="text"] {
+      width: 100%; max-width: 360px; padding: 8px 10px;
+      border: 1px solid var(--portaless-border); border-radius: 8px;
+      background: var(--portaless-bg); color: var(--portaless-fg);
+      font-size: 0.9rem; font-family: inherit;
+    }
+    .an-hint { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
+    .an-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .an-save-btn {
+      border: none; background: var(--portaless-accent); color: #261C15;
+      padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;
+    }
+    .an-off-btn {
+      border: 1px solid var(--portaless-border); background: transparent;
+      color: var(--portaless-fg); padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    }
+    .an-msg { margin: 12px 0 0; font-size: 0.85rem; }
+    .an-msg.an-ok { color: var(--success-fg, #4A6B1F); }
+    .an-msg.an-err { color: var(--danger-fg, #B3372C); }
+  </style>
+</BaseLayout>
+
+<script define:vars={{ PROVIDER_HINTS }}>
+  const loading = document.getElementById("an-loading");
+  const loadError = document.getElementById("an-load-error");
+  const root = document.getElementById("an-root");
+  const providerSelect = document.getElementById("an-provider");
+  const providerHint = document.getElementById("an-provider-hint");
+  const idField = document.getElementById("an-id-field");
+  const idLabel = document.getElementById("an-id-label");
+  const idInput = document.getElementById("an-id");
+  const urlField = document.getElementById("an-url-field");
+  const urlInput = document.getElementById("an-script-url");
+  const msg = document.getElementById("an-msg");
+
+  const PROVIDERS = ["none", "plausible", "cloudflare", "umami", "custom"];
+  const ID_LABELS = {
+    plausible: "Dominio del sitio en Plausible",
+    cloudflare: "Token del beacon de Cloudflare",
+    umami: "Website id de umami",
+    custom: "Id (opcional, si tu script lo usa)",
+  };
+
+  function showMsg(text, ok) {
+    msg.textContent = text;
+    msg.className = `an-msg ${ok ? "an-ok" : "an-err"}`;
+    msg.style.display = "block";
+  }
+
+  function syncFields() {
+    const provider = providerSelect.value;
+    providerHint.textContent = PROVIDER_HINTS[provider] ?? "";
+    const custom = provider === "custom";
+    idField.style.display = provider === "none" ? "none" : "block";
+    urlField.style.display = custom ? "block" : "none";
+    idLabel.textContent = ID_LABELS[provider] || "Id del sitio";
+  }
+
+  function fillForm(data) {
+    providerSelect.innerHTML = "";
+    for (const name of data.available ?? PROVIDERS) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      providerSelect.appendChild(opt);
+    }
+    providerSelect.value = data.provider || "none";
+    idInput.value = data.id || "";
+    urlInput.value = data.scriptUrl || "";
+    syncFields();
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/admin/api/analytics");
+      if (res.status === 401) { location.href = "/admin/login?error=1"; return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      fillForm(await res.json());
+      loading.style.display = "none";
+      root.style.display = "block";
+    } catch (err) {
+      loading.style.display = "none";
+      loadError.textContent = `No se pudo cargar la configuración: ${err.message}`;
+      loadError.style.display = "block";
+    }
+  }
+
+  async function save(payload) {
+    try {
+      const res = await fetch("/admin/api/analytics", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showMsg(body.message || body.error || `Error HTTP ${res.status}`, false);
+        return;
+      }
+      showMsg("Guardado. El sitio empieza a cargarlo en el próximo request.", true);
+      fillForm(body);
+    } catch (err) {
+      showMsg(`No se pudo guardar: ${err.message}`, false);
+    }
+  }
+
+  providerSelect.addEventListener("change", syncFields);
+
+  document.getElementById("an-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    save({
+      provider: providerSelect.value,
+      id: idInput.value.trim(),
+      scriptUrl: urlInput.value.trim(),
+    });
+  });
+
+  document.getElementById("an-off-btn").addEventListener("click", () => {
+    save({ provider: "none", id: "", scriptUrl: "" });
+  });
+
+  load();
+</script>
