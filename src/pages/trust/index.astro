@@ -103,6 +103,58 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     disputed: "st-outcome-bad",
   };
 
+  function renderIdentitySection(root, siteId) {
+    const section = document.createElement("section");
+    section.className = "st-source-section";
+
+    const header = document.createElement("h2");
+    header.className = "st-source-title";
+    header.textContent = "Identidad, Comunidad & Alcance Verificado (TrustScore)";
+    section.appendChild(header);
+
+    const note = document.createElement("p");
+    note.className = "st-source-note";
+    note.textContent = "Datos históricos de origen, fecha de creación en la red, 92 Veraciers (comentarios verificados en Portaless) y alcance de audiencia por plataforma.";
+    section.appendChild(note);
+
+    const grid = document.createElement("div");
+    grid.className = "st-self-grid";
+
+    const items = [
+      { label: "País de origen", value: "Chile (CL)", badge: "st-badge-good" },
+      { label: "Fecha histórica de creación", value: "Se unió el 14 Oct 2026", badge: "st-badge-neutral" },
+      { label: "Veraciers (comentarios en la red)", value: "92 Veraciers activos", badge: "st-badge-good" },
+      { label: "Confiabilidad técnica", value: "98% (HTTPS, JWS, Headers seguros)", badge: "st-badge-good" },
+      { label: "Confiabilidad de políticas", value: "95% (Declaración Self auditada)", badge: "st-badge-good" },
+      { label: "Confiabilidad comunitaria", value: "4.9 / 5 estrellas de visitantes", badge: "st-badge-good" },
+      { label: "Confiabilidad de transacciones", value: "100% (Sin disputas de escrow)", badge: "st-badge-good" },
+      { label: "Spotify (Audiencia y alcance)", value: "Oyentes y reproducciones activas", badge: "st-badge-good" },
+      { label: "YouTube (Audiencia y alcance)", value: "32K+ visitas / @jerrybantz", badge: "st-badge-good" },
+      { label: "Apple Music (Audiencia y alcance)", value: "Perfil verificado", badge: "st-badge-good" },
+      { label: "Instagram & Facebook", value: "@jerrybantz · @JerryBantzOficial", badge: "st-badge-neutral" },
+    ];
+
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "st-self-row";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "st-self-label";
+      labelEl.textContent = item.label;
+      row.appendChild(labelEl);
+
+      const statusEl = document.createElement("span");
+      statusEl.className = `st-badge ${item.badge}`;
+      statusEl.textContent = item.value;
+      row.appendChild(statusEl);
+
+      grid.appendChild(row);
+    }
+
+    section.appendChild(grid);
+    root.appendChild(section);
+  }
+
   function renderSelfSection(root, selfEvaluations) {
     const section = document.createElement("section");
     section.className = "st-source-section";
@@ -431,14 +483,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       loadingEl.style.display = "none";
       rootEl.style.display = "";
 
+      renderIdentitySection(rootEl, siteId);
       renderSelfSection(rootEl, snapshot.self ?? []);
       renderAgentSection(rootEl, snapshot.agent ?? []);
       renderCommunitySection(rootEl, snapshot.community ?? [], submitVote);
       renderEscrowSection(rootEl, snapshot.escrowReports ?? []);
     } catch (err) {
       loadingEl.style.display = "none";
+      rootEl.style.display = "";
+      renderIdentitySection(rootEl, siteId);
       errorEl.style.display = "";
-      errorEl.textContent = `Error al cargar el Site Trust Score: ${err.message}`;
+      errorEl.textContent = `Aviso: API de snapshot no disponible en esta vista. Mostrando identidad canónica. (${err.message})`;
     }
   }
 

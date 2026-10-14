@@ -3,12 +3,14 @@ import {
   ICON_CIRCLE_QUESTION_MARK,
   ICON_CIRCLE_USER_ROUND,
   ICON_COLUMNS_2,
+  ICON_DIRECTIONS,
   ICON_HEADING,
   ICON_IMAGE,
   ICON_IMAGES,
   ICON_LAYOUT_TEMPLATE,
   ICON_LINK,
   ICON_MAIL,
+  ICON_MAP,
   ICON_MESSAGE_SQUARE_QUOTE,
   ICON_MOUSE_POINTER_CLICK,
   ICON_MOVE_VERTICAL,
@@ -371,14 +373,91 @@ const Gallery: ElementDefinition<GalleryProps> = {
   },
 };
 
+interface MapProps {
+  lat: number;
+  lon: number;
+  label: string;
+  address?: string;
+  zoom?: number;
+  radius?: number;
+}
+const MapEl: ElementDefinition<MapProps> = {
+  type: "Map", displayName: "Mapa (OpenStreetMap)", icon: ICON_MAP,
+  defaultProps: {
+    lat: -33.4372,
+    lon: -70.6506,
+    label: "Ubicación",
+    address: "Santiago, Chile",
+    zoom: 15,
+    radius: 16,
+  },
+  editableProps: [
+    { key: "lat", label: "Latitud", kind: "number" },
+    { key: "lon", label: "Longitud", kind: "number" },
+    { key: "label", label: "Nombre del lugar", kind: "text" },
+    { key: "address", label: "Dirección descriptiva", kind: "text" },
+    { key: "zoom", label: "Zoom (1-19)", kind: "number" },
+    { key: "radius", label: "Radio de borde (px)", kind: "number" },
+  ],
+  renderHTML: (p) => {
+    const lat = Number(p.lat ?? -33.4372);
+    const lon = Number(p.lon ?? -70.6506);
+    const zoom = Math.min(19, Math.max(1, Number(p.zoom ?? 15)));
+    const span = 360 / Math.pow(2, zoom);
+    const bbox = `${lon - span},${lat - span / 2},${lon + span},${lat + span / 2}`;
+    const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+    const dirUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=;${lat},${lon}`;
+    const radius = Number(p.radius ?? 16);
+    return `<figure id="ae-map" class="ae-map" style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;border:1px solid var(--panel-border, #E4E6C3);background:var(--panel-bg, #FFFFFF);"><iframe src="${esc(osmUrl)}" title="${esc(p.label)}" loading="lazy" style="width:100%;height:320px;border:0;display:block;"></iframe><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--panel-bg, #FFFFFF);border-top:1px solid var(--panel-border, #E4E6C3);gap:12px;flex-wrap:wrap;"><div><strong style="display:block;font-size:0.95rem;color:var(--text);">${esc(p.label)}</strong>${p.address ? `<span style="font-size:0.85rem;color:var(--muted);">${esc(p.address)}</span>` : ""}</div><a href="${esc(dirUrl)}" target="_blank" rel="noopener noreferrer" class="ae-directions-btn" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-button, 8px);background:var(--accent);color:var(--accent-text, #5A6B24);font-weight:600;font-size:0.85rem;text-decoration:none;">${ICON_DIRECTIONS} Cómo llegar</a></div></figure>`;
+  },
+};
+
+interface ProductCardProps {
+  title: string;
+  description?: string;
+  price?: string;
+  imageUrl?: string;
+  url: string;
+  buttonLabel?: string;
+  badge?: string;
+}
+const ProductCard: ElementDefinition<ProductCardProps> = {
+  type: "ProductCard", displayName: "Ficha de producto (afiliado / propio)", icon: ICON_SHOPPING_CART,
+  defaultProps: {
+    title: "Micrófono Shure SM7B Vocal",
+    description: "Micrófono profesional para estudio, voces y streaming. Patrón cardioide dinámico con rechazo electromagnético superior.",
+    price: "$399 USD",
+    imageUrl: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80",
+    url: "https://www.amazon.com/dp/B000SHZ56U",
+    buttonLabel: "Comprar en Amazon",
+    badge: "Afiliado",
+  },
+  editableProps: [
+    { key: "title", label: "Título del producto", kind: "text" },
+    { key: "description", label: "Descripción", kind: "textarea" },
+    { key: "price", label: "Precio / Moneda", kind: "text" },
+    { key: "imageUrl", label: "URL de la imagen", kind: "url" },
+    { key: "url", label: "Enlace (afiliado o tienda)", kind: "url" },
+    { key: "buttonLabel", label: "Texto del botón", kind: "text" },
+    { key: "badge", label: "Etiqueta (opcional)", kind: "text" },
+  ],
+  renderHTML: (p) => {
+    const isExternal = /^https?:\/\//.test(String(p.url ?? ""));
+    const linkAttrs = isExternal ? 'target="_blank" rel="sponsored noopener noreferrer"' : "";
+    return `<div class="ae-product-card" style="border:1px solid var(--panel-border, #E4E6C3);border-radius:18px;overflow:hidden;background:var(--panel-bg, #FFFFFF);display:flex;flex-direction:column;max-width:480px;margin:0 auto;box-shadow:var(--shadow-sm, 0 2px 8px rgba(38,28,21,.08));">${p.imageUrl ? `<div style="position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--bg, #F7F7F2);"><img src="${esc(p.imageUrl)}" alt="${esc(p.title)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" />${p.badge ? `<span style="position:absolute;top:12px;left:12px;background:var(--panel-bg, #FFFFFF);color:var(--text, #261C15);font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid var(--panel-border, #E4E6C3);box-shadow:0 2px 6px rgba(0,0,0,.1);">${esc(p.badge)}</span>` : ""}</div>` : ""}<div style="padding:20px;display:flex;flex-direction:column;gap:10px;flex:1;"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;"><h3 style="margin:0;font-size:1.15rem;color:var(--text);">${esc(p.title)}</h3>${p.price ? `<span style="font-weight:700;font-size:1.1rem;color:var(--accent-2, var(--accent, #F05D23));">${esc(p.price)}</span>` : ""}</div>${p.description ? `<p style="margin:0;color:var(--muted);font-size:0.9rem;line-height:1.5;">${esc(p.description)}</p>` : ""}<div style="margin-top:auto;padding-top:8px;"><a href="${esc(p.url)}" ${linkAttrs} style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;font-size:0.95rem;">${esc(p.buttonLabel || "Ver producto")}</a></div></div></div>`;
+  },
+};
+
 export const elementRegistry: Record<ElementType, ElementDefinition<any>> = {
   Hero, Heading, Paragraph, Image: ImageEl, Button: ButtonEl, Columns, ProductGrid, Spacer,
   LinkList, SocialIcons, ProfileHeader, StoreBlock,
   Video, FAQ, Testimonial, Form: FormEl, Gallery,
+  Map: MapEl, ProductCard,
 };
 
 export const elementPalette: ElementType[] = [
   "Hero", "Heading", "Paragraph", "Image", "Button", "Columns", "ProductGrid", "Spacer",
   "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
   "Video", "FAQ", "Testimonial", "Form", "Gallery",
+  "Map", "ProductCard",
 ];

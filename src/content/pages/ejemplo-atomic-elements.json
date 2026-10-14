@@ -44,6 +44,17 @@
       "id": "spacer1",
       "type": "Spacer",
       "props": { "height": 24 }
+    },
+    {
+      "id": "mapa1",
+      "type": "Map",
+      "props": {
+        "lat": -33.4372,
+        "lon": -70.6506,
+        "label": "Estudio Portaless & Showroom",
+        "address": "Santiago, Chile",
+        "zoom": 15
+      }
     }
   ]
 }

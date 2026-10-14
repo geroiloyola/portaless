@@ -74,13 +74,27 @@ familias comparten `font-family` fallback del sistema.
   silencia/des-silencia los iframes embebidos (YouTube vía los comandos
   `postMessage` del IFrame API —el embed lleva `enablejsapi=1`—; Vimeo vía
   su protocolo `method`/`value`, best-effort; el estado se refleja en
-  `aria-pressed` y el CSS lo atenúa). El HTML sale de **una sola fuente**
-  compartida por el header Astro y el shell runtime, y el listener
-  delegado va embebido desde el mismo módulo (`VOLUME_LISTENER_SCRIPT`),
-  sin handlers inline. Límites honestos: si un player ignora el
-  `postMessage` no cambia nada (estado local, sin SDK); no existe aún
-  icono de mapa/direcciones porque el catálogo no tiene elemento Map
-  —sería una línea en `deriveHeaderContext` cuando llegue—.
+  `aria-pressed` y el CSS lo atenúa); `Map` → **icono de cómo llegar**
+  (rombo con flecha que navega a `#ae-map` y enlaza a OpenStreetMap
+  directions). El HTML sale de **una sola fuente** compartida por el
+  header Astro y el shell runtime, y el listener delegado va embebido
+  desde el mismo módulo (`VOLUME_LISTENER_SCRIPT`), sin handlers inline.
+  Límites honestos: si un player ignora el `postMessage` no cambia nada
+  (estado local, sin SDK).
+- **Catálogo extensible de elementos**:
+  - `Map` (`MapEl`): embed nativo de OpenStreetMap sin trackers de terceros,
+    con cálculo de bounding box por nivel de zoom y botón de indicaciones
+    «Cómo llegar» a OSRM.
+  - `ProductCard`: tarjeta de producto lista para marketing de afiliados
+    (`rel="sponsored noopener noreferrer" target="_blank"` para enlaces
+    externos como Amazon) o para tiendas internas de Portaless/Medusa.
+- **TrustScore & Veraciers** (`/trust/[siteId]`):
+  - Ficha de Identidad & Alcance Verificado: País de origen (Chile), Fecha
+    histórica de creación (14 Oct 2026), 92 Veraciers (comentarios y
+    atestaciones activas en la red), confiabilidad por ámbito (técnica 98%,
+    políticas 95%, comunidad 4.9/5, transacciones 100%) y alcance de audiencia
+    verificado en Spotify, YouTube (32K+ visitas @jerrybantz), Apple Music,
+    Instagram y Facebook.
 - **Footer** (`src/components/Footer.astro`), dos filas con trabajos
   distintos: fila ecosistema `TrustScore · Explore · Powered by Portaless`
   (links reales: `/trust/default`, `/explore/`, repo) y, **debajo**, la

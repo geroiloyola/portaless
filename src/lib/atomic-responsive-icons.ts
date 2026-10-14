@@ -21,12 +21,13 @@
 // duplicar la logica -- la clase de bug que ya hizo decir "MIT" al
 // footer runtime mientras el build decia AGPL.
 import {
+  ICON_DIRECTIONS,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
   ICON_VOLUME_2,
 } from "../../packages/atomic-elements/src/elements/icons";
 
-export type HeaderContext = "shop" | "video" | null;
+export type HeaderContext = "shop" | "video" | "map" | null;
 
 // Forma minima del nodo del arbol de PageLayout.root: solo se leen
 // type/children (las props no participan en la decision).
@@ -44,6 +45,7 @@ function firstContext(nodes: readonly unknown[]): HeaderContext {
     const node = raw as ContextNode | null | undefined;
     if (!node || typeof node !== "object") continue;
     if (node.type === "Video") return "video";
+    if (node.type === "Map") return "map";
     if (node.type === "ProductGrid" || node.type === "StoreBlock") return "shop";
     if (Array.isArray(node.children)) {
       const inner = firstContext(node.children);
@@ -67,11 +69,15 @@ export function headerActionsHtml(context: HeaderContext, base = "/"): string {
     context === "video"
       ? `<button type="button" class="header-icon-btn" data-portaless-volume aria-pressed="false" aria-label="Silenciar video" title="Silenciar video">${ICON_VOLUME_2}</button>`
       : "";
+  const directions =
+    context === "map"
+      ? `<a class="header-icon-btn" href="#ae-map" aria-label="Cómo llegar" title="Cómo llegar">${ICON_DIRECTIONS}</a>`
+      : "";
   // Share: SIEMPRE, con el icono iOS (caja + flecha). El listener
   // delegado que lo atiende vive en BaseLayout (build) y en el shell
   // runtime -- ninguno de los dos se toca aqui.
   const share = `<button type="button" class="header-icon-btn" data-portaless-share aria-label="Compartir este enlace" title="Compartir este enlace">${ICON_SHARE_IOS}</button>`;
-  return `<div class="header-actions">${cart}${volume}${share}</div>`;
+  return `<div class="header-actions">${cart}${volume}${directions}${share}</div>`;
 }
 
 // Listener delegado del control de volumen (Atomic Icons Responsive),

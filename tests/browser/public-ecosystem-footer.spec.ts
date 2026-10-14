@@ -55,6 +55,15 @@ test("Atomic Icons Responsive: pagina de shop lleva el carrito al rincon", async
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
+test("Atomic Icons Responsive: pagina con mapa lleva icono de como llegar", async ({ page }) => {
+  await page.goto("/paginas/ejemplo-atomic-elements/");
+
+  const dir = page.locator("header.site-header a.header-icon-btn[href='#ae-map']");
+  await expect(dir).toBeVisible();
+  await expect(dir).toHaveAttribute("aria-label", "Cómo llegar");
+  await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
+});
+
 test("footer del ecosistema: TrustScore · Explore · Powered by Portaless", async ({ page }) => {
   await page.goto(BIO_URL);
 

@@ -72,6 +72,19 @@ export const ICON_VOLUME_2 = icon(
   `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /> <path d="M15.54 8.46a5 5 0 0 1 0 7.07" /> <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />`,
 );
 
+// Direcciones / Como llegar (rombo con flecha de navegacion) -> SVG
+// canonico de instrucciones de mapa provisto para el rincon del header
+// y el boton del elemento Map.
+export const ICON_DIRECTIONS = icon(
+  `<path d="M16 11H10C9 11 8 12 8 13V14M16 11L14 9M16 11L14 13" /><path d="M1.42426 11.5757L11.5757 1.42426C11.8101 1.18995 12.1899 1.18995 12.4243 1.42426L22.5757 11.5757C22.8101 11.8101 22.81 12.1899 22.5757 12.4243L12.4243 22.5757C12.1899 22.8101 11.8101 22.81 11.5757 22.5757L1.42426 12.4243C1.18995 12.1899 1.18995 11.8101 1.42426 11.5757Z" />`,
+  1.5,
+);
+
+// Mapa -> lucide "map"
+export const ICON_MAP = icon(
+  `<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" /> <line x1="9" x2="9" y1="3" y2="18" /> <line x1="15" x2="15" y1="6" y2="21" />`,
+);
+
 // Perfil / Bio -> lucide "circle-user-round"
 export const ICON_CIRCLE_USER_ROUND = icon(`<path d="M17.925 20.056a6 6 0 0 0-11.851.001" /> <circle cx="12" cy="11" r="4" /> <circle cx="12" cy="12" r="10" />`);
 
@@ -115,6 +128,8 @@ export const ELEMENT_ICONS: Record<string, string> = {
   MESSAGE_SQUARE_QUOTE: ICON_MESSAGE_SQUARE_QUOTE,
   MAIL: ICON_MAIL,
   IMAGES: ICON_IMAGES,
+  MAP: ICON_MAP,
+  DIRECTIONS: ICON_DIRECTIONS,
 };
 
 // Helper de render: el icono es SVG (innerHTML) y el nombre es un text node,

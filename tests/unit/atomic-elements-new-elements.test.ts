@@ -155,8 +155,8 @@ describe("Gallery", () => {
 });
 
 describe("registro completo", () => {
-  it("los 5 elementos nuevos estan en el palette y son renderizables con defaultProps", () => {
-    for (const type of ["Video", "FAQ", "Testimonial", "Form", "Gallery"] as const) {
+  it("los elementos nuevos estan en el palette y son renderizables con defaultProps", () => {
+    for (const type of ["Video", "FAQ", "Testimonial", "Form", "Gallery", "Map", "ProductCard"] as const) {
       expect(elementPalette, type).toContain(type);
       const html = elementRegistry[type].renderHTML({ ...elementRegistry[type].defaultProps } as never);
       expect(html, type).toBeTruthy();

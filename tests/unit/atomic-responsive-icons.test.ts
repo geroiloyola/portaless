@@ -16,6 +16,7 @@ import {
   headerActionsHtml,
 } from "../../src/lib/atomic-responsive-icons";
 import {
+  ICON_DIRECTIONS,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
   ICON_VOLUME_2,
@@ -36,10 +37,11 @@ describe("deriveHeaderContext -- derivacion del icono principal", () => {
     expect(deriveHeaderContext([{ type: "ProfileHeader" }, { type: "LinkList" }])).toBeNull();
   });
 
-  it("ProductGrid y StoreBlock son shop; Video es video", () => {
+  it("ProductGrid y StoreBlock son shop; Video es video; Map es map", () => {
     expect(deriveHeaderContext([{ type: "ProductGrid" }])).toBe("shop");
     expect(deriveHeaderContext([{ type: "StoreBlock" }])).toBe("shop");
     expect(deriveHeaderContext([{ type: "Video" }])).toBe("video");
+    expect(deriveHeaderContext([{ type: "Map" }])).toBe("map");
   });
 
   it("recorre los hijos anidados (un Video dentro de Columns cuenta)", () => {
@@ -92,6 +94,15 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
     expect(html).toContain(ICON_VOLUME_2);
     expect(html).toContain("data-portaless-share");
     expect(html.indexOf("data-portaless-volume")).toBeLessThan(html.indexOf("data-portaless-share"));
+  });
+
+  it("map: icono de como llegar (anclado a #ae-map con ICON_DIRECTIONS) y share", () => {
+    const html = headerActionsHtml("map");
+    expect(html).toContain('href="#ae-map"');
+    expect(html).toContain('aria-label="Cómo llegar"');
+    expect(html).toContain(ICON_DIRECTIONS);
+    expect(html).toContain("data-portaless-share");
+    expect(html.indexOf("#ae-map")).toBeLessThan(html.indexOf("data-portaless-share"));
   });
 
   it("respeta el prefijo base de rutas (import.meta.env.BASE_URL)", () => {
@@ -164,6 +175,43 @@ describe("share iOS + control de volumen", () => {
       radius: 16,
     });
     expect(vimeoHtml).toContain('class="ae-video"');
+  });
+
+  it("el elemento Map emite iframe de OpenStreetMap y enlace Cómo llegar", () => {
+    const mapHtml = elementRegistry.Map.renderHTML({
+      lat: -33.4372,
+      lon: -70.6506,
+      label: "Estudio Jerry",
+      address: "Santiago",
+      zoom: 15,
+      radius: 16,
+    });
+    expect(mapHtml).toContain("openstreetmap.org/export/embed.html");
+    expect(mapHtml).toContain("openstreetmap.org/directions");
+    expect(mapHtml).toContain('id="ae-map"');
+    expect(mapHtml).toContain("Estudio Jerry");
+  });
+
+  it("el elemento ProductCard soporta enlaces de afiliados (sponsored noopener) y locales", () => {
+    const affHtml = elementRegistry.ProductCard.renderHTML({
+      title: "Micrófono Shure SM7B",
+      price: "$399 USD",
+      url: "https://www.amazon.com/dp/B000SHZ56U",
+      buttonLabel: "Ver en Amazon",
+      badge: "Afiliado",
+    });
+    expect(affHtml).toContain('rel="sponsored noopener noreferrer"');
+    expect(affHtml).toContain("Micrófono Shure SM7B");
+    expect(affHtml).toContain("$399 USD");
+    expect(affHtml).toContain("Ver en Amazon");
+
+    const localHtml = elementRegistry.ProductCard.renderHTML({
+      title: "Merch Oficial",
+      url: "/tienda/polera",
+      buttonLabel: "Comprar",
+    });
+    expect(localHtml).not.toContain("sponsored");
+    expect(localHtml).toContain('href="/tienda/polera"');
   });
 
   it("el listener de volumen habla con YouTube y Vimeo via postMessage, sin handlers inline", () => {
