@@ -50,6 +50,8 @@ export const REQUIRED_TABLES = [
   "settlement_provider_activations",
   "deployment_oauth_states",
   "deployment_credentials",
+  "element_packs",
+  "theme_packs",
 ];
 
 function defaultSqlitePath() {

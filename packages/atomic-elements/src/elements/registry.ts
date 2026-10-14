@@ -217,6 +217,11 @@ const ProfileHeader: ElementDefinition<ProfileHeaderProps> = {
     { key: "bio", label: "Bio corta", kind: "textarea" },
     { key: "bgColor", label: "Color de fondo", kind: "color" },
   ],
+  // El compartir NO vive aqui: el boton share del sitio esta UNA sola
+  // vez, en el rincon del header (Atomic Icons Responsive, ver
+  // src/lib/atomic-responsive-icons.ts). Antes de esa pieza el boton
+  // vivia anclado arriba a la derecha de esta tarjeta y quedaba el
+  // doble share (header + bio); el header es el unico dueño ahora.
   renderHTML: (p) => `<section style="background:${esc(p.bgColor)};padding:32px 24px;border-radius:20px;text-align:center;color:#fff;"><img src="${esc(p.avatarUrl)}" alt="${esc(p.name)}" style="width:96px;height:96px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;" loading="lazy" /><h2 style="margin:0 0 6px;font-size:1.3rem;">${esc(p.name)}</h2><p style="opacity:.85;margin:0;font-size:0.95rem;">${esc(p.bio)}</p></section>`,
 };
 
@@ -247,10 +252,15 @@ const Video: ElementDefinition<VideoProps> = {
     const vimeo = url.match(/vimeo\.com\/(\d+)/);
     const radius = esc(p.radius);
     if (yt) {
-      return `<figure style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://www.youtube-nocookie.com/embed/${esc(yt[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
+      // enablejsapi=1: habilita los comandos postMessage del IFrame API
+      // que el control de volumen del rincon del header (Atomic Icons
+      // Responsive) envia para silenciar/des-silenciar. Sin el parametro
+      // YouTube ignora los comandos. La clase ae-video es el selector
+      // con que el listener localiza los players de la pagina.
+      return `<figure class="ae-video" style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://www.youtube-nocookie.com/embed/${esc(yt[1])}?enablejsapi=1" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
     }
     if (vimeo) {
-      return `<figure style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://player.vimeo.com/video/${esc(vimeo[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
+      return `<figure class="ae-video" style="margin:0;position:relative;border-radius:${radius}px;overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://player.vimeo.com/video/${esc(vimeo[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
     }
     return `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radius}px;padding:32px;text-align:center;color:var(--muted, #6E6653);">URL no reconocida - pega un enlace de YouTube (youtube.com/watch, youtu.be o shorts) o Vimeo (vimeo.com).</div>`;
   },

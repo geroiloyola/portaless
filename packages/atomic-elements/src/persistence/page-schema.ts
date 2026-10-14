@@ -10,6 +10,7 @@
 import type { PageLayout, ElementNode } from "../types";
 import { elementRegistry } from "../elements/registry";
 import type { ResolvedCatalog } from "../elements/element-pack";
+import { THEME_NAME_PATTERN } from "../themes/theme-pack";
 
 export interface ValidationResult {
   valid: boolean;
@@ -47,6 +48,13 @@ export function validatePageLayout(
   if (!Array.isArray(layout.root)) errors.push('"root" debe ser un arreglo de elementos.');
   if (layout.status !== undefined && layout.status !== "draft" && layout.status !== "published") {
     errors.push(`"status" debe ser "draft" o "published" (recibido: ${JSON.stringify(layout.status)}).`);
+  }
+  // v0.0.9.11: tema por pagina. Solo se valida el FORMATO (slug); el
+  // membership contra el catalogo lo hace apply_theme al escribir, porque
+  // aqui no hay catalogo a mano y un tema desconocido cae honradamente al
+  // skin del sitio en el render (fallback, nunca crash).
+  if (layout.theme !== undefined && (typeof layout.theme !== "string" || !THEME_NAME_PATTERN.test(layout.theme))) {
+    errors.push(`"theme" debe ser un nombre de tema (slug): recibido ${JSON.stringify(layout.theme)}.`);
   }
 
   layout.root?.forEach((node, i) => validateNode(node, `root[${i}]`, errors, hasType));

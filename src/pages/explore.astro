@@ -1,0 +1,75 @@
+---
+// Explore -- hub de descubrimiento del ecosistema Portaless.
+//
+// Existe para que el footer (TrustScore · Explore · Powered by
+// Portaless) apunte SIEMPRE a un destino real: nunca linkeamos una
+// pagina que no existe. Muestra lo publicable de este sitio usando el
+// filtro de publicacion CANONICO (isDraft de deploy-engine) -- el mismo
+// que usa publish-site -- para que Explore nunca muestre un borrador.
+//
+// Nota de producto: el descubrimiento de la RED (sitios y temas de
+// terceros) vive en el marketplace de Portaless (AppPlace/AppLibre, otro
+// repo). Cuando ese marketplace exista, esta pagina puede redirigir o
+// embeberlo sin cambiar el link del footer.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
+import type { PageLayout } from "../../packages/atomic-elements/src/types";
+
+const base = import.meta.env.BASE_URL;
+
+const pageModules = import.meta.glob<{ default: PageLayout }>(
+  "../content/pages/*.json",
+  { eager: true }
+);
+const pages = Object.values(pageModules)
+  .map((mod) => mod.default)
+  .filter((page) => !isDraft(page))
+  .sort((a, b) => a.slug.localeCompare(b.slug));
+
+const posts = (await getCollection("posts"))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const trustHref = `${base}trust/default`;
+const repoHref = "https://github.com/geroiloyola/portaless";
+---
+<BaseLayout
+  title="Explore — Portaless"
+  description="Descubre sitios, perfiles y publicaciones hechos con Portaless."
+>
+  <h1>Explore</h1>
+  <p>Sitios, perfiles y publicaciones hechos con Portaless.</p>
+
+  <h2>Sitios y perfiles</h2>
+  {pages.length === 0 && (
+    <p class="empty-state">Todavía no hay sitios publicados.</p>
+  )}
+  {pages.map((page) => (
+    <div class="card">
+      <h3><a href={`${base}paginas/${page.slug}/`}>{page.title || page.slug}</a></h3>
+      {page.description && <p>{page.description}</p>}
+    </div>
+  ))}
+
+  <h2>Publicaciones</h2>
+  {posts.length === 0 && (
+    <p class="empty-state">Todavía no hay publicaciones.</p>
+  )}
+  {posts.map((post) => (
+    <div class="card">
+      <h3><a href={`${base}blog/${post.id}/`}>{post.data.title}</a></h3>
+      <p class="badge">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
+      {post.data.description && <p>{post.data.description}</p>}
+    </div>
+  ))}
+
+  <h2>Red Portaless</h2>
+  <div class="card">
+    <h3><a href={trustHref}>TrustScore de este sitio</a></h3>
+    <p>La señal de confianza del sitio, verificada por la red Portaless.</p>
+    <h3><a href={repoHref} target="_blank" rel="noopener noreferrer">Repositorio de Portaless</a></h3>
+    <p>Todo el ecosistema es open source bajo licencia AGPL-3.0.</p>
+    <p class="badge">Próximamente: el marketplace de temas de la red.</p>
+  </div>
+</BaseLayout>

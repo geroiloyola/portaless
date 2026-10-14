@@ -1,6 +1,6 @@
 // packages/mcp-server/src/server.ts (ahora testeable con el SDK real
 // instalado): smoke de integracion end-to-end via InMemoryTransport --
-// valida que createPortalessMcpServer registra las 7 tools reales sobre
+// valida que createPortalessMcpServer registra las tools reales sobre
 // McpServer del SDK y que una invocacion via Client ejecuta el handler
 // con su resolveAgent (aqui el de env/Opcion A, porque InMemoryTransport
 // no aporta authInfo -- el camino por invocacion con token esta cubierto
@@ -62,16 +62,18 @@ async function connectedClient() {
 }
 
 describe("createPortalessMcpServer -- integracion con el SDK real (InMemoryTransport)", () => {
-  it("registra las 10 tools del servidor", async () => {
+  it("registra las 12 tools del servidor", async () => {
     const { client } = await connectedClient();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "apply_theme",
       "create_page",
       "delete_block",
       "grant_capability",
       "insert_block",
       "list_installed_plugins",
       "list_page_components",
+      "list_themes",
       "query_usage_log",
       "revoke_permission",
       "update_block",

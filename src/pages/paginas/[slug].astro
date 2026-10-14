@@ -19,6 +19,12 @@ import JsonLd from "../../../packages/atomic-elements/astro-integration/JsonLd.a
 import SeoHead from "../../components/SeoHead.astro";
 import { getSiteUrl, buildCanonicalUrl } from "../../lib/seo";
 import type { PageLayout } from "../../../packages/atomic-elements/src/types";
+import {
+  BUILTIN_THEMES,
+  resolveThemePack,
+  themeStyleDecl,
+} from "../../../packages/atomic-elements/src/themes/theme-pack";
+import { deriveHeaderContext } from "../../lib/atomic-responsive-icons";
 
 export async function getStaticPaths() {
   const pages = await import.meta.glob<{ default: PageLayout }>(
@@ -33,6 +39,19 @@ export async function getStaticPaths() {
 
 const { layout } = Astro.props as { layout: PageLayout };
 
+// Tema por pagina. El build estatico NO tiene base de datos, asi que aqui
+// solo se resuelve sobre los builtins (que viajan en el codigo): un pack
+// instalado se aplica en el runtime (functions/paginas/[slug].js) y via
+// MCP. Un nombre que no resuelve cae al skin del sitio -- nunca rompe.
+const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
+const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
+
+// Atomic Icons Responsive: el rincon del header se adapta al contenido
+// de la pagina (carrito si trae ProductGrid/StoreBlock, volumen si trae
+// Video, solo Share para el resto). Derivado del arbol, no configurado
+// a mano; misma funcion que usa el shell runtime.
+const headerContext = deriveHeaderContext(layout.root);
+
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = buildCanonicalUrl(siteUrl, `/paginas/${layout.slug}`);
 const pageTitle = layout.title ?? layout.slug;
@@ -40,7 +59,7 @@ const pageDescription = layout.description ?? "";
 const siteInfo = { name: pageTitle, url: siteUrl };
 ---
 
-<BaseLayout>
+<BaseLayout pageTheme={pageTheme} headerContext={headerContext}>
   <SeoHead
     slot="head"
     title={pageTitle}

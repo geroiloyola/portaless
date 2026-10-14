@@ -1,6 +1,34 @@
+---
+// Footer del ecosistema Portaless -- dos filas con trabajos distintos:
+//
+//   1. Ecosistema  -> TrustScore (confianza verificable), Explore
+//      (descubrimiento de la red) y Powered by Portaless (atribucion --
+//      en un producto open source el "powered by" es de facto
+//      obligatorio y es ademas la puerta de entrada a la comunidad).
+//   2. Posicion    -> "Open Source, Modular, Agent-Ready & Zero-Hosting":
+//      la promesa del producto en cuatro palabras, exactamente. Es la
+//      linea que hace creible el "Powered by" de la fila 1.
+//
+// NOTA (SITE_ID): /trust/<siteId> necesita el id del sitio y ese valor
+// vive en SITE_ID de packages/dashboard/src/skin-engine/site-skin-store.
+// Ese modulo importa openSqlite, asi que NO se importa aqui (tiraria un
+// driver de base de datos al build estatico). Se duplica el string y
+// tests/unit/site-ecosystem-footer.test.ts lo amarra al SITE_ID real.
+const trustHref = `${import.meta.env.BASE_URL}trust/default`;
+const exploreHref = `${import.meta.env.BASE_URL}explore/`;
+const repoHref = "https://github.com/geroiloyola/portaless";
+---
 <footer class="site-footer">
   <div class="container">
-    Hecho con <a href="https://github.com/geroiloyola/portaless" target="_blank">Portaless</a> — open source, licencia AGPL-3.0.
-    Sin hosting pagado. Sin base de datos que administrar.
+    <nav class="footer-eco" aria-label="Ecosistema Portaless">
+      <a href={trustHref}>TrustScore</a>
+      <span class="sep" aria-hidden="true">·</span>
+      <a href={exploreHref}>Explore</a>
+      <span class="sep" aria-hidden="true">·</span>
+      <a href={repoHref} target="_blank" rel="noopener noreferrer">Powered by Portaless</a>
+    </nav>
+    <p class="footer-note">
+      Open Source, Modular, Agent-Ready & Zero-Hosting
+    </p>
   </div>
 </footer>

@@ -24,6 +24,13 @@ export interface PageLayout {
    * (legacy) como los `status: "draft"`.
    */
   status?: "draft" | "published";
+  /**
+   * Tema por PAGINA (theme pack). Opcional: si falta o el nombre no
+   * resuelve en el catalogo (builtin ∪ instalado), la pagina usa el skin
+   * del sitio -- el fallback es siempre el look por defecto. Ver
+   * themes/theme-pack.ts.
+   */
+  theme?: string;
   root: ElementNode[];
 }
 

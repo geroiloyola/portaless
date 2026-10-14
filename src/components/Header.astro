@@ -1,10 +1,37 @@
 ---
+import { getCollection } from "astro:content";
+import { postsLabel } from "../lib/site-lang";
+import {
+  headerActionsHtml,
+  type HeaderContext,
+} from "../lib/atomic-responsive-icons";
+
+interface Props {
+  // Atomic Icons Responsive: el rincon derecho adapta su icono principal
+  // al contenido de la pagina (carrito en tiendas, volumen en videos);
+  // null = solo Share. Lo calcula deriveHeaderContext desde el arbol de
+  // elementos del PageLayout y lo pasa BaseLayout.
+  context?: HeaderContext;
+}
+const { context = null } = Astro.props;
+
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
+// El indice de publicaciones solo se anuncia si hay algo que leer: si el
+// sitio no tiene ninguna publicacion no-borrador, el link desaparece en
+// vez de mandar al visitante a un indice vacio. Y la palabra "Blog" ya
+// no se usa -- el label sale de site-lang ("Publicaciones" | "Posts").
+const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
 ---
 <header class="site-header">
   <nav>
     <a class="brand" href={import.meta.env.BASE_URL}>Portaless</a>
-    <a href={`${import.meta.env.BASE_URL}blog/`}>Blog</a>
+    {publishedPosts.length > 0 && (
+      <a href={`${import.meta.env.BASE_URL}blog/`}>{postsLabel()}</a>
+    )}
     {commerceEnabled && <a href={`${import.meta.env.BASE_URL}tienda/`}>Tienda</a>}
+    <!-- Atomic Icons Responsive: share siempre; icono principal segun
+         contexto. El HTML sale de UNA sola fuente compartida con el
+         shell runtime (src/lib/atomic-responsive-icons.ts). -->
+    <Fragment set:html={headerActionsHtml(context, import.meta.env.BASE_URL)} />
   </nav>
 </header>

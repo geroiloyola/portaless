@@ -31,6 +31,13 @@ beforeAll(async () => {
       { id: "n2", type: "Paragraph", props: { text: "Contenido servido desde la tabla pages." } },
     ],
   } as unknown as PageLayout);
+  await store.save({
+    version: "0.1",
+    slug: "pagina-con-tema",
+    title: "Pagina Con Tema",
+    theme: "2pac-dark",
+    root: [{ id: "n1", type: "Paragraph", props: { text: "Tema aplicado en runtime." } }],
+  } as unknown as PageLayout);
 });
 
 afterAll(() => {
@@ -67,6 +74,38 @@ describe("GET /paginas/:slug (runtime dinamico)", () => {
     expect(html).toMatch(/--accent:\s*#C5D86D/); // global.css o fallback inline
     expect(html).toContain('rel="canonical" href="http://x.test/paginas/desde-la-base"');
     expect(html).toContain("application/ld+json");
+  });
+
+  it("el shell runtime trae el header/footer del ecosistema y el listener de compartir", async () => {
+    // Paridad con lo que emite el build estatico (BaseLayout/Header/
+    // Footer): la pagina servida desde la base no puede tener otro
+    // header ni otro footer que la estatica.
+    const { context } = ctx("desde-la-base");
+    const html = await (await onRequestGet(context)).text();
+
+    expect(html).toContain(">Publicaciones<");
+    expect(html).not.toMatch(/>Blog</);
+    expect(html).toContain(">TrustScore<");
+    expect(html).toContain(">Explore<");
+    expect(html).toContain("Powered by Portaless");
+    expect(html).not.toContain("Hecho con");
+    expect(html).toContain("[data-portaless-share]");
+    expect(html).toContain('lang="es"');
+    // pagina sin theme: nunca lleva atributos del tema por pagina
+    expect(html).not.toContain("data-theme-pack");
+  });
+
+  it("pagina con theme: variables inline en <html> y nunca como regla de hoja", async () => {
+    const { context } = ctx("pagina-con-tema");
+    const html = await (await onRequestGet(context)).text();
+
+    // Estilo inline en la propia etiqueta <html>: gana a cualquier regla
+    // de hoja (global.css y su @media oscuro se cargan despues en este
+    // shell), sin depender de orden ni de !important.
+    expect(html).toMatch(
+      /<html lang="es" data-theme-pack="2pac-dark" style="[^"]*--accent:#F05D23[^"]*--bg:#14100C/
+    );
+    expect(html).not.toContain(":root[data-theme-pack]");
   });
 
   it("miss en la base: delega al build estatico con next()", async () => {

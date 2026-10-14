@@ -27,7 +27,7 @@ const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
   {posts.length === 0 && <p class="empty-state">Todavía no hay publicaciones.</p>}
   {posts.map((post) => (
     <div class="card">
-      <h3><a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`}>{post.data.title}</a></h3>
+      <h3><a href={`${import.meta.env.BASE_URL}blog/${post.id}/`}>{post.data.title}</a></h3>
       {post.data.description && <p>{post.data.description}</p>}
     </div>
   ))}

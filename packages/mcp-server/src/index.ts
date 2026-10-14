@@ -26,6 +26,10 @@ import { startMcpHttpServer, MCP_HTTP_PATH } from "./http.js";
 import { createPageStore } from "../../atomic-elements/src/persistence/store-factory.js";
 import { createElementPackStore } from "../../atomic-elements/src/persistence/element-pack-store-factory.js";
 import { catalogFromStore } from "../../atomic-elements/src/persistence/element-pack-store.js";
+import { createThemePackStore } from "../../atomic-elements/src/persistence/theme-pack-store-factory.js";
+import { loadThemePacks } from "../../atomic-elements/src/persistence/theme-pack-store.js";
+import { availableThemes, BUILTIN_THEMES } from "../../atomic-elements/src/themes/theme-pack.js";
+import type { ThemePack } from "../../atomic-elements/src/themes/theme-pack.js";
 import { elementRegistry, elementPalette } from "../../atomic-elements/src/elements/registry.js";
 import { coreCatalog } from "../../atomic-elements/src/elements/element-pack.js";
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
@@ -85,7 +89,19 @@ async function main(): Promise<void> {
     elementCatalog = coreCatalog(elementRegistry, elementPalette);
   }
 
-  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger, elementCatalog };
+  // Temas de pagina (v0.0.9.11): builtin ∪ instalados de theme_packs, con
+  // los instalados sin poder ocultar un builtin (availableThemes). Mismo
+  // patron best-effort que el catalogo: si la tabla no existe o falla la
+  // carga, se sirven solo los builtins y apply_theme sigue funcionando.
+  let themes: ThemePack[];
+  try {
+    const themeStore = await createThemePackStore(env);
+    themes = availableThemes(await loadThemePacks(themeStore));
+  } catch {
+    themes = [...BUILTIN_THEMES];
+  }
+
+  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger, elementCatalog, themes };
 
   if (httpTransport) {
     const port = Number(process.env.PORTALESS_MCP_HTTP_PORT ?? 8788);

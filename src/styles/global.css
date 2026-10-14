@@ -202,10 +202,77 @@ header.site-header .brand {
   color: var(--text);
 }
 
+/* Atomic Icons Responsive: el rincon derecho del header. Share siempre
+   (icono iOS); el icono principal lo decide deriveHeaderContext segun el
+   contenido de la pagina (carrito en tiendas, volumen en videos). La
+   zona se empuja a la derecha con margin-left:auto para quedar a la
+   altura de Portaless/Publicaciones. */
+header.site-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+header.site-header .header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+header.site-header .header-icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+header.site-header .header-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Estado silenciado del control de volumen: el SVG no cambia, lo marca
+   aria-pressed (conmuta el listener delegado). */
+header.site-header .header-icon-btn[aria-pressed="true"] {
+  opacity: 0.55;
+}
+
 footer.site-footer {
   border-top: 1px solid var(--panel-border);
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* Fila 1: ecosistema (TrustScore / Explore / Powered by). Los labels son
+   el producto, asi que pesan mas que la nota legal de abajo: van en
+   --text y con la misma separacion tipografica que linktree. */
+footer.site-footer .footer-eco {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+footer.site-footer .footer-eco a {
+  color: var(--text);
+}
+
+footer.site-footer .footer-eco .sep {
+  color: var(--muted);
+}
+
+/* Fila 2: posicion del producto ("Open Source, Modular, Agent-Ready &
+   Zero-Hosting"), texto exacto del usuario. */
+footer.site-footer .footer-note {
+  margin: 0.35rem 0 0;
 }
 
 /* Tarjetas: radio de tarjeta (--radius, 22px) + escalera de sombra de la

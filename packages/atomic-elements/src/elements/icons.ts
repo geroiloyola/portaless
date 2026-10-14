@@ -6,10 +6,12 @@
 // como icono es una de las senales mas rapidas de interfaz desactualizada,
 // ademas de que el SO lo pinta con su propio color y rompe el contraste.
 
-const SVG_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+function svgOpen(strokeWidth = 2): string {
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`;
+}
 
-function icon(body: string): string {
-  return `${SVG_OPEN}${body}</svg>`;
+function icon(body: string, strokeWidth = 2): string {
+  return `${svgOpen(strokeWidth)}${body}</svg>`;
 }
 
 // Hero / Portada -> lucide "layout-template"
@@ -51,6 +53,25 @@ export const ICON_LINK = icon(`<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7
 // Iconos sociales -> lucide "share-2"
 export const ICON_SHARE_2 = icon(`<circle cx="18" cy="5" r="3" /> <circle cx="6" cy="12" r="3" /> <circle cx="18" cy="19" r="3" /> <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /> <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />`);
 
+// Compartir (boton de accion) -> el share de estilo iOS: caja abierta
+// con flecha hacia arriba, el gesto que todo el mundo reconoce del
+// boton compartir del iPhone. Es el share canonico del rincon del
+// header y del ProfileHeader; la variante share-2 se conserva solo
+// como icono del elemento SocialIcons en el palette del editor.
+// Stroke 1.5 (no 2) para que la caja fina se lea igual de bien a 16px.
+export const ICON_SHARE_IOS = icon(
+  `<path d="M20 13V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V13" /> <path d="M12 15V3M12 3L8.5 6.5M12 3L15.5 6.5" />`,
+  1.5,
+);
+
+// Volumen -> lucide "volume-2". El estado silenciado NO cambia el SVG:
+// lo marca el atributo aria-pressed (lo conmuta el listener delegado y
+// el CSS lo atenua), asi el boton es un solo nodo estable para test y
+// accesibilidad.
+export const ICON_VOLUME_2 = icon(
+  `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /> <path d="M15.54 8.46a5 5 0 0 1 0 7.07" /> <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />`,
+);
+
 // Perfil / Bio -> lucide "circle-user-round"
 export const ICON_CIRCLE_USER_ROUND = icon(`<path d="M17.925 20.056a6 6 0 0 0-11.851.001" /> <circle cx="12" cy="11" r="4" /> <circle cx="12" cy="12" r="10" />`);
 
@@ -85,6 +106,8 @@ export const ELEMENT_ICONS: Record<string, string> = {
   MOVE_VERTICAL: ICON_MOVE_VERTICAL,
   LINK: ICON_LINK,
   SHARE_2: ICON_SHARE_2,
+  SHARE_IOS: ICON_SHARE_IOS,
+  VOLUME_2: ICON_VOLUME_2,
   CIRCLE_USER_ROUND: ICON_CIRCLE_USER_ROUND,
   STORE: ICON_STORE,
   VIDEO: ICON_VIDEO,

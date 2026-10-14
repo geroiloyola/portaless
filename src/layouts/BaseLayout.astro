@@ -16,8 +16,21 @@ export interface Props {
   title?: string;
   description?: string;
   markdownUrl?: string;
+  /**
+   * Tema por pagina (theme pack) ya resuelto: nombre + la declaracion de
+   * variables que themeStyleDecl() construye. Lo pasa
+   * src/pages/paginas/[slug].astro; sin el, la pagina usa el skin del
+   * sitio como siempre. Ver packages/atomic-elements/src/themes/theme-pack.ts.
+   */
+  pageTheme?: { name: string; css: string };
+  /**
+   * Atomic Icons Responsive: contexto del rincon del header (carrito en
+   * tiendas, volumen en videos, null = solo Share). Lo deriva
+   * deriveHeaderContext() desde el arbol de elementos de la pagina.
+   */
+  headerContext?: import("../lib/atomic-responsive-icons").HeaderContext;
 }
-const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl } = Astro.props;
+const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, pageTheme, headerContext = null } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const llmsTxtUrl = `${base}/llms.txt`;
 // Phase 6: el feed de los posts publicados se anuncia desde TODAS las
@@ -30,9 +43,19 @@ import "../styles/fonts.css";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import { SITE_LANG } from "../lib/site-lang";
+import { VOLUME_LISTENER_SCRIPT } from "../lib/atomic-responsive-icons";
 ---
 <!doctype html>
-<html lang="es">
+<!-- Tema por pagina: las variables van como atributo style EN <html>, no
+     como regla de hoja. Motivo verificado en el build:
+     Astro inyecta el <link> de global.css (bloque @media oscuro, misma
+     especificidad 0,2,0) DESPUES del contenido estatico del head, asi
+     que cualquier selector perderia el empate por orden en sistemas en
+     modo oscuro. Un atributo style inline gana a cualquier regla de
+     hoja, siempre, sin !important. Solo lleva las variables del pack;
+     el resto sigue viniendo del skin del sitio. -->
+<html lang={SITE_LANG} data-theme-pack={pageTheme?.name} style={pageTheme?.css || undefined}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,13 +81,45 @@ import Footer from "../components/Footer.astro";
         if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
       } catch (e) { /* sin storage: auto */ }
     </script>
+    <script is:inline>
+      // Boton "Compartir" de las paginas bio (ProfileHeader). Listener
+      // DELEGADO: el HTML de los elementos es estatico y no trae
+      // handlers inline, asi que esto sigue funcionando si alguna vez se
+      // agrega Content-Security-Policy. Web Share API si existe (movil);
+      // si no, copia la URL al portapapeles y avisa con un toast.
+      document.addEventListener("click", async function (e) {
+        var t = e.target;
+        var el = t && t.closest ? t.closest("[data-portaless-share]") : null;
+        if (!el) return;
+        e.preventDefault();
+        var url = location.href;
+        if (navigator.share) {
+          try { await navigator.share({ title: document.title, url: url }); return; }
+          catch (err) { if (err && err.name === "AbortError") return; }
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          var toast = document.createElement("div");
+          toast.textContent = "Enlace copiado";
+          toast.setAttribute("role", "status");
+          toast.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#261C15;color:#fff;padding:8px 16px;border-radius:999px;font-size:0.85rem;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.25);";
+          document.body.appendChild(toast);
+          setTimeout(function () { toast.remove(); }, 1800);
+        } catch (err) { /* sin clipboard (contexto no seguro): nada que romper */ }
+      });
+    </script>
+    <!-- Atomic Icons Responsive: control de volumen del rincon del
+         header (solo se emite el boton en paginas con Video). Mismo
+         patron que el share: listener DELEGADO, sin handlers inline,
+         embebido desde el modulo compartido con el shell runtime. -->
+    <script is:inline set:html={VOLUME_LISTENER_SCRIPT} />
     <slot name="head">
       <meta name="description" content={description} />
       <title>{title}</title>
     </slot>
   </head>
   <body>
-    <Header />
+    <Header context={headerContext} />
     <main class="container">
       <slot />
     </main>

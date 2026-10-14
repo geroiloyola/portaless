@@ -1,0 +1,79 @@
+{
+  "version": "0.1",
+  "slug": "jerry-bantz",
+  "title": "Jerry Bantz — Artista",
+  "description": "Todos los enlaces de Jerry Bantz en un solo lugar: música, redes y contacto. Hecho con Portaless.",
+  "status": "published",
+  "theme": "2pac-dark",
+  "root": [
+    {
+      "id": "perfil",
+      "type": "ProfileHeader",
+      "props": {
+        "avatarUrl": "/avatars/jerry-bantz.svg",
+        "name": "Jerry Bantz",
+        "bio": "Música nueva todas las semanas. Escúchala, compártela, vuela conmigo.",
+        "bgColor": "#261C15"
+      }
+    },
+    {
+      "id": "enlaces",
+      "type": "LinkList",
+      "props": {
+        "title": "",
+        "buttonStyle": "solid",
+        "links": [
+          {
+            "label": "Escúchalo en Spotify",
+            "url": "https://open.spotify.com/search/Jerry%20Bantz",
+            "icon": "music",
+            "enabled": true
+          },
+          {
+            "label": "Música en YouTube",
+            "url": "https://www.youtube.com/results?search_query=Jerry+Bantz",
+            "icon": "youtube",
+            "enabled": true
+          },
+          {
+            "label": "Nuevo: «Me gustas»",
+            "url": "https://open.spotify.com/search/me%20gustas%20jerry%20bantz",
+            "icon": "sparkles",
+            "enabled": true
+          },
+          {
+            "label": "Síguelo en Instagram",
+            "url": "https://www.instagram.com/jerrybantz/",
+            "icon": "instagram",
+            "enabled": true
+          },
+          {
+            "label": "TikTok",
+            "url": "https://www.tiktok.com/@jerrybantz",
+            "icon": "video",
+            "enabled": true
+          },
+          {
+            "label": "Booking / Colaboraciones",
+            "url": "mailto:booking@jerrybantz.com",
+            "icon": "mail",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "redes",
+      "type": "SocialIcons",
+      "props": {
+        "align": "center",
+        "links": [
+          { "platform": "instagram", "url": "https://www.instagram.com/jerrybantz/" },
+          { "platform": "tiktok", "url": "https://www.tiktok.com/@jerrybantz" },
+          { "platform": "youtube", "url": "https://www.youtube.com/results?search_query=Jerry+Bantz" },
+          { "platform": "spotify", "url": "https://open.spotify.com/search/Jerry%20Bantz" }
+        ]
+      }
+    }
+  ]
+}

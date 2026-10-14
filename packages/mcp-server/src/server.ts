@@ -18,6 +18,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PageStore } from "../../atomic-elements/src/persistence/page-store";
 import type { ResolvedCatalog } from "../../atomic-elements/src/elements/element-pack";
+import type { ThemePack } from "../../atomic-elements/src/themes/theme-pack";
 import type { PermissionStore } from "../../permissions/src/permission-store";
 import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
@@ -31,6 +32,8 @@ import { registerDeleteBlockTool } from "./tools/delete-block";
 import { registerGrantCapabilityTool } from "./tools/grant-capability";
 import { registerRevokePermissionTool } from "./tools/revoke-permission";
 import { registerListPageComponentsTool } from "./tools/list-page-components";
+import { registerListThemesTool } from "./tools/list-themes";
+import { registerApplyThemeTool } from "./tools/apply-theme";
 import { registerListInstalledPluginsTool } from "./tools/list-installed-plugins";
 import { registerQueryUsageLogTool } from "./tools/query-usage-log";
 
@@ -61,6 +64,12 @@ export interface CreatePortalessMcpServerDeps {
    * retro-compatibilidad con callers que solo quieren el core.
    */
   elementCatalog?: ResolvedCatalog;
+  /**
+   * Temas de pagina (builtin ∪ instalados, ya deduplicados con
+   * availableThemes()) resuelto por index.ts. Lo usan list_themes y
+   * apply_theme para membership. Opcional: sin el, solo los builtins.
+   */
+  themes?: ThemePack[];
 }
 
 /** Solo stores (sin resolver) -- lo que el servidor HTTP comparte entre peticiones. */
@@ -75,6 +84,7 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
   // Tools de solo lectura primero (menor riesgo, sin requireCapability
   // interno mas alla de list_page_components que no necesita ninguna).
   registerListPageComponentsTool(server, { elementCatalog: deps.elementCatalog });
+  registerListThemesTool(server, { themes: deps.themes });
   registerQueryUsageLogTool(server, {
     usageLedger: deps.usageLedger,
     auditLog: deps.auditLog,
@@ -104,6 +114,14 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     usageLedger: deps.usageLedger,
     resolveAgent: deps.resolveAgent,
     elementCatalog: deps.elementCatalog,
+  });
+  registerApplyThemeTool(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+    themes: deps.themes,
   });
   registerInsertBlockTool(server, {
     pageStore: deps.pageStore,
