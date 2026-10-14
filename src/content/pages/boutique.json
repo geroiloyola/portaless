@@ -1,0 +1,111 @@
+{
+  "version": "0.1",
+  "slug": "boutique",
+  "title": "Maison Atelier — Tienda Boutique Independiente",
+  "description": "Moda consciente, marroquinería y objetos de diseño artesanal. Sin suscripciones ni intermediarios.",
+  "status": "published",
+  "root": [
+    {
+      "id": "hero-boutique",
+      "type": "Hero",
+      "props": {
+        "title": "Maison Atelier — Objetos & Moda Consciente",
+        "subtitle": "Colección cápsula de confección artesanal y producción de bajo impacto. Venta directa sin comisiones abusivas.",
+        "bgColor": "#221e1a"
+      }
+    },
+    {
+      "id": "heading-catalogo",
+      "type": "Heading",
+      "props": {
+        "text": "Catálogo de Temporada",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "columnas-productos",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "children": [
+        {
+          "id": "producto-chaqueta",
+          "type": "ProductCard",
+          "props": {
+            "title": "Chaqueta de Lana Merino",
+            "description": "Corte desestructurado, lana merino 100% hilada a mano y botones de asta natural. Confección en taller local.",
+            "price": "$180.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+            "url": "/tienda/chaqueta-lana",
+            "buttonLabel": "Comprar en Tienda",
+            "badge": "Hecho a mano"
+          }
+        },
+        {
+          "id": "producto-tote",
+          "type": "ProductCard",
+          "props": {
+            "title": "Bolso Tote Canvas Orgánico",
+            "description": "Algodón orgánico encerado de 18 oz con asas de cuero de curtición vegetal y costuras reforzadas de alta durabilidad.",
+            "price": "$45.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80",
+            "url": "/tienda/tote-canvas",
+            "buttonLabel": "Comprar en Tienda",
+            "badge": "Bestseller"
+          }
+        },
+        {
+          "id": "producto-lampara",
+          "type": "ProductCard",
+          "props": {
+            "title": "Lámpara Cerámica Escultural",
+            "description": "Pieza única torneada en gres chamotado con pantalla de lino crudo y casquillo de latón macizo.",
+            "price": "$95.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+            "url": "/tienda/lampara-ceramica",
+            "buttonLabel": "Comprar en Tienda",
+            "badge": "Pieza única"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spacer-testimonio",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "testimonio-cliente",
+      "type": "Testimonial",
+      "props": {
+        "quote": "La calidad de los materiales y el empaque sin plásticos demuestran un compromiso real con el oficio y la durabilidad. Una experiencia de compra boutique impecable.",
+        "author": "Camila Valenzuela",
+        "role": "Diseñadora de Interiores",
+        "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
+      }
+    },
+    {
+      "id": "spacer-contacto",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "heading-contacto",
+      "type": "Heading",
+      "props": {
+        "text": "Consultas & Encargos a Medida",
+        "level": "h2",
+        "align": "left"
+      }
+    },
+    {
+      "id": "formulario-boutique",
+      "type": "Form",
+      "props": {
+        "action": "https://formspree.io/f/demo",
+        "submitLabel": "Enviar mensaje al taller",
+        "anchorId": "contacto-boutique"
+      }
+    }
+  ]
+}

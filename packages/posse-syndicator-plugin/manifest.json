@@ -1,0 +1,18 @@
+{
+  "name": "posse-syndicator-plugin",
+  "version": "0.1.0",
+  "entry": "src/plugin-entry.js",
+  "runtime": "javascript",
+  "description": "Sindicador POSSE para Portaless: replica publicaciones canónicas de /posts/ en redes descentralizadas (Bluesky y Mastodon).",
+  "requestedCapabilities": [
+    {
+      "id": "content:read",
+      "reason": "Leer título, extracto y slug de las publicaciones en /posts/ para estructurar el mensaje espejo."
+    },
+    {
+      "id": "network:fetch",
+      "allowedHosts": ["bsky.social", "mastodon.social"],
+      "reason": "Enviar el post sindicado a las APIs descentralizadas de Bluesky (AT Protocol) y Mastodon."
+    }
+  ]
+}

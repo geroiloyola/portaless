@@ -1,0 +1,11 @@
+{
+  "name": "@portaless/posse-syndicator-plugin",
+  "version": "0.1.0",
+  "description": "Plugin POSSE (Publish on Own Site, Syndicate Everywhere) para Portaless. Replica publicaciones canónicas de /posts/ hacia Bluesky (AT Protocol) y Mastodon.",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "src/host-bridge.ts",
+  "dependencies": {
+    "@portaless/plugin-sandbox": "*"
+  }
+}

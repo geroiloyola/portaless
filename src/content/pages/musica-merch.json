@@ -1,0 +1,109 @@
+{
+  "version": "0.1",
+  "slug": "musica-merch",
+  "title": "Ecos del Mañana — Álbum & Merch Oficial",
+  "description": "Lanzamiento oficial del nuevo álbum: videoclip, escucha en streaming y merchandise físico oficial de inventario limitado.",
+  "status": "published",
+  "theme": "2pac-dark",
+  "root": [
+    {
+      "id": "hero-album",
+      "type": "Hero",
+      "props": {
+        "title": "Ecos del Mañana",
+        "subtitle": "Nuevo álbum ya disponible. Transmisión en alta fidelidad y reserva de mercancía física oficial para la gira 2026.",
+        "bgColor": "#1c1612"
+      }
+    },
+    {
+      "id": "videoclip",
+      "type": "Video",
+      "props": {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "title": "Videoclip Oficial: Ecos del Mañana",
+        "radius": 16
+      }
+    },
+    {
+      "id": "heading-streaming",
+      "type": "Heading",
+      "props": {
+        "text": "Disponible en Plataformas Digitales",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "enlaces-streaming",
+      "type": "LinkList",
+      "props": {
+        "title": "",
+        "buttonStyle": "solid",
+        "links": [
+          { "label": "Escuchar en Spotify", "url": "https://open.spotify.com/", "icon": "music", "enabled": true },
+          { "label": "Escuchar en Apple Music", "url": "https://music.apple.com/", "icon": "music", "enabled": true },
+          { "label": "Comprar en Bandcamp (FLAC / WAV)", "url": "https://bandcamp.com/", "icon": "sparkles", "enabled": true }
+        ]
+      }
+    },
+    {
+      "id": "spacer-merch",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "heading-merch",
+      "type": "Heading",
+      "props": {
+        "text": "Merchandise Físico & Ediciones Especiales",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "columnas-merch",
+      "type": "Columns",
+      "props": { "count": 2, "gap": 20 },
+      "children": [
+        {
+          "id": "producto-vinilo",
+          "type": "ProductCard",
+          "props": {
+            "title": "Vinilo 12\" Edición Coleccionista",
+            "description": "Prensado en vinilo naranja traslúcido de 180 gramos. Incluye libreto de 16 páginas con arte exclusivo y código de descarga digital.",
+            "price": "$35.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=600&q=80",
+            "url": "https://www.amazon.com/dp/B000000000",
+            "buttonLabel": "Comprar Vinilo (Afiliado)",
+            "badge": "Edición Limitada (500 copias)"
+          }
+        },
+        {
+          "id": "producto-polera",
+          "type": "ProductCard",
+          "props": {
+            "title": "Polera Tour Oficial 2026",
+            "description": "Algodón orgánico 100% pesado con serigrafía durable de alta definición en pecho y fechas del tour en la espalda.",
+            "price": "$25.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
+            "url": "https://www.amazon.com/dp/B000000001",
+            "buttonLabel": "Comprar Polera (Afiliado)",
+            "badge": "Merch Oficial"
+          }
+        }
+      ]
+    },
+    {
+      "id": "redes-artista",
+      "type": "SocialIcons",
+      "props": {
+        "align": "center",
+        "links": [
+          { "platform": "spotify", "url": "https://open.spotify.com/" },
+          { "platform": "youtube", "url": "https://youtube.com/" },
+          { "platform": "instagram", "url": "https://instagram.com/" }
+        ]
+      }
+    }
+  ]
+}

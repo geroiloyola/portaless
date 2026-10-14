@@ -1,0 +1,133 @@
+{
+  "version": "0.1",
+  "slug": "club-evento",
+  "title": "Synthesis Club — Noche Electrónica 2026",
+  "description": "Evento nocturno exclusivo: venta de entradas con entrega digital de código QR, lineup internacional y mapa de acceso.",
+  "status": "published",
+  "root": [
+    {
+      "id": "hero-club",
+      "type": "Hero",
+      "props": {
+        "title": "SYNTHESIS: Noche Electrónica 2026",
+        "subtitle": "24 de Octubre · Santiago, Chile · Aforo Estricto. Experiencia audiovisual inmersiva y sonido Funktion-One.",
+        "bgColor": "#11141c"
+      }
+    },
+    {
+      "id": "heading-lineup",
+      "type": "Heading",
+      "props": {
+        "text": "Lineup & Experiencia Sonora",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "parrafo-lineup",
+      "type": "Paragraph",
+      "props": {
+        "text": "Una noche dedicada al techno melódico, house experimental y artes visuales en tiempo real. Entradas nominativas con validación digital instantánea."
+      }
+    },
+    {
+      "id": "spacer-tickets",
+      "type": "Spacer",
+      "props": { "height": 20 }
+    },
+    {
+      "id": "heading-tickets",
+      "type": "Heading",
+      "props": {
+        "text": "Venta de Entradas (Ticketing Soberano)",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "columnas-tickets",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "children": [
+        {
+          "id": "ticket-early",
+          "type": "ProductCard",
+          "props": {
+            "title": "Pase Early Bird",
+            "description": "Acceso a la sala antes de las 23:00 hrs. Incluye 1 cover de cortesía y código QR de acceso prioritario.",
+            "price": "$15.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80",
+            "url": "https://tienda.portaless.com/tickets/early-bird",
+            "buttonLabel": "Comprar Entrada",
+            "badge": "Agotándose"
+          }
+        },
+        {
+          "id": "ticket-general",
+          "type": "ProductCard",
+          "props": {
+            "title": "Entrada General",
+            "description": "Acceso total a la pista principal y terraza toda la noche. Recepción inmediata del código QR al correo.",
+            "price": "$25.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80",
+            "url": "https://tienda.portaless.com/tickets/general",
+            "buttonLabel": "Comprar Entrada",
+            "badge": "Fase 2"
+          }
+        },
+        {
+          "id": "ticket-vip",
+          "type": "ProductCard",
+          "props": {
+            "title": "Pase VIP Backstage",
+            "description": "Acceso a terraza VIP elevada, barra exclusiva, guardarropía preferencial y encuentro con artistas.",
+            "price": "$60.00 USD",
+            "imageUrl": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80",
+            "url": "https://tienda.portaless.com/tickets/vip",
+            "buttonLabel": "Comprar Pase VIP",
+            "badge": "Acceso Limitado"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spacer-mapa",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "heading-mapa",
+      "type": "Heading",
+      "props": {
+        "text": "Ubicación del Recinto",
+        "level": "h2",
+        "align": "left"
+      }
+    },
+    {
+      "id": "mapa-recinto",
+      "type": "Map",
+      "props": {
+        "lat": -33.4372,
+        "lon": -70.6506,
+        "label": "Club Synthesis",
+        "address": "Av. Providencia 1200, Santiago, Chile",
+        "zoom": 16,
+        "radius": 16
+      }
+    },
+    {
+      "id": "spacer-faq",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "faq-evento",
+      "type": "FAQ",
+      "props": {
+        "title": "Preguntas Frecuentes sobre el Evento",
+        "items": "¿Cómo recibo mi entrada? :: Inmediatamente tras confirmar el pago se genera un código QR criptográfico único que se envía a tu correo electrónico.\n¿Cuál es la edad mínima? :: Evento exclusivo para mayores de 18 años con documento de identidad físico vigente.\n¿Se puede transferir una entrada? :: Sí, el código QR es transferible siempre que no haya sido validado previamente en la puerta de acceso."
+      }
+    }
+  ]
+}
