@@ -103,6 +103,9 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
   import type { ProductPreviewQuery } from "../../../packages/atomic-elements/src/editor/product-preview-loader";
   import type { PageStore } from "../../../packages/atomic-elements/src/persistence/page-store";
   import type { PageLayout } from "../../../packages/atomic-elements/src/types";
+  import type { ResolvedCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
+  import { resolveCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
+  import { elementRegistry, elementPalette } from "../../../packages/atomic-elements/src/elements/registry";
 
   const loadingEl = document.getElementById("editor-loading")!;
   const errorEl = document.getElementById("editor-load-error")!;
@@ -208,6 +211,24 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     };
   }
 
+  // v0.0.9.11: fusiona los element packs instalados (DB, via el endpoint
+  // autenticado) con el core que ya viaja en el bundle. Si el fetch falla
+  // (sin packs, sesión vencida, backend roto), el editor cae al core cerrado
+  // -- nunca se bloquea el editor por esto.
+  async function fetchElementCatalog(): Promise<ResolvedCatalog> {
+    let packs: unknown[] = [];
+    try {
+      const res = await fetch(`/admin/api/element-packs`, { credentials: "same-origin" });
+      if (res.ok) {
+        const body = (await res.json()) as { packs?: unknown[] };
+        packs = Array.isArray(body?.packs) ? body.packs : [];
+      }
+    } catch {
+      packs = [];
+    }
+    return resolveCatalog(elementRegistry, elementPalette, packs as never);
+  }
+
   function showSaveStatus(kind: "ok" | "error", message: string): void {
     saveStatusEl.style.display = "";
     saveStatusEl.className = `editor-save-status ${kind}`;
@@ -236,11 +257,16 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
     toolbarEl.style.display = "";
     rootEl.style.display = "";
 
+    // v0.0.9.11: el catalogo (core ∪ packs) se resuelve ANTES de montar, para
+    // que la paleta ya muestre los elementos de pack instalados.
+    const elementCatalog = await fetchElementCatalog();
+
     const editor = mountAtomicElementsEditor({
       container: rootEl,
       store,
       initialPage,
       fetchProductPreview,
+      elementCatalog,
     });
 
     saveBtn.addEventListener("click", async () => {

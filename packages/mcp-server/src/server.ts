@@ -17,6 +17,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PageStore } from "../../atomic-elements/src/persistence/page-store";
+import type { ResolvedCatalog } from "../../atomic-elements/src/elements/element-pack";
 import type { PermissionStore } from "../../permissions/src/permission-store";
 import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
@@ -52,6 +53,14 @@ export interface CreatePortalessMcpServerDeps {
   usageLedger: UsageLedgerStore;
   /** Resolver de identidad del agente invocante, ejecutado POR INVOCACION en cada tool. */
   resolveAgent: AgentIdentityResolver;
+  /**
+   * Catalogo de elementos (core ∪ element packs) resuelto por index.ts antes
+   * de arrancar. Las tools de contenido y list_page_components lo usan para
+   * decidir MEMBERSHIP de tipos y para mostrar los packs instalados --
+   * ver docs/architecture/element-catalog-plugins.md. Opcional para mantener
+   * retro-compatibilidad con callers que solo quieren el core.
+   */
+  elementCatalog?: ResolvedCatalog;
 }
 
 /** Solo stores (sin resolver) -- lo que el servidor HTTP comparte entre peticiones. */
@@ -65,7 +74,7 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
 
   // Tools de solo lectura primero (menor riesgo, sin requireCapability
   // interno mas alla de list_page_components que no necesita ninguna).
-  registerListPageComponentsTool(server);
+  registerListPageComponentsTool(server, { elementCatalog: deps.elementCatalog });
   registerQueryUsageLogTool(server, {
     usageLedger: deps.usageLedger,
     auditLog: deps.auditLog,
@@ -86,6 +95,7 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
     resolveAgent: deps.resolveAgent,
+    elementCatalog: deps.elementCatalog,
   });
   registerUpdatePageTool(server, {
     pageStore: deps.pageStore,
@@ -93,6 +103,7 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
     resolveAgent: deps.resolveAgent,
+    elementCatalog: deps.elementCatalog,
   });
   registerInsertBlockTool(server, {
     pageStore: deps.pageStore,
@@ -100,6 +111,7 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
     resolveAgent: deps.resolveAgent,
+    elementCatalog: deps.elementCatalog,
   });
   registerUpdateBlockTool(server, {
     pageStore: deps.pageStore,

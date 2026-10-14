@@ -19,7 +19,8 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
-import { elementNodeSchema } from "./element-node-schema";
+import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
+import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
 
 const TOOL_NAME = "update_page";
 const READ_CAPABILITY_ID = "content:read";
@@ -43,6 +44,8 @@ export interface RegisterUpdatePageToolDeps {
   usageLedger: UsageLedgerStore;
   /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
   resolveAgent: AgentIdentityResolver;
+  /** Catalogo core ∪ packs resuelto por server.ts. Opcional: sin el, solo el core. */
+  elementCatalog?: ResolvedCatalog;
 }
 
 export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePageToolDeps): void {
@@ -69,6 +72,18 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+
+      // Autoridad de membership sobre el nuevo arbol (si se provee) -- v0.0.9.11.
+      if (root) {
+        const typeError = checkNodeTypes(root as ElementNode[], toolCatalog(deps.elementCatalog));
+        if (typeError) {
+          return {
+            content: [{ type: "text", text: JSON.stringify({ saved: false, error: typeError }, null, 2) }],
+            isError: true,
+          };
+        }
+      }
+
       const updated = {
         ...existing,
         title: title ?? existing.title,

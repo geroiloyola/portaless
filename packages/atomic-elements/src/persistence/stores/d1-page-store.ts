@@ -6,6 +6,7 @@
 // Mismo patron que packages/permissions/src/stores/d1-permission-store.ts.
 
 import type { PageLayout } from "../../types";
+import type { ResolvedCatalog } from "../../elements/element-pack";
 import type { PageStore } from "../page-store";
 import { validatePageLayout } from "../page-schema";
 
@@ -17,7 +18,13 @@ interface PageRow {
 }
 
 export class D1PageStore implements PageStore {
+  private catalog?: ResolvedCatalog;
+
   constructor(private readonly db: D1Database) {}
+
+  setCatalog(catalog: ResolvedCatalog): void {
+    this.catalog = catalog;
+  }
 
   async load(slug: string): Promise<PageLayout | null> {
     const row = await this.db
@@ -28,7 +35,7 @@ export class D1PageStore implements PageStore {
   }
 
   async save(layout: PageLayout): Promise<void> {
-    const result = validatePageLayout(layout);
+    const result = validatePageLayout(layout, this.catalog);
     if (!result.valid) {
       throw new Error("Layout inv\u00e1lido: " + result.errors.join("; "));
     }

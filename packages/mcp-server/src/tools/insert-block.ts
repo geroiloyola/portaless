@@ -18,8 +18,10 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
-import { elementNodeSchema } from "./element-node-schema";
+import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
 import { insertNode } from "./node-ops";
+import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
+import type { ElementNode } from "../../../atomic-elements/src/types";
 
 const TOOL_NAME = "insert_block";
 const READ_CAPABILITY_ID = "content:read";
@@ -52,6 +54,8 @@ export interface RegisterInsertBlockToolDeps {
   auditLog: AuditLogStore;
   usageLedger: UsageLedgerStore;
   resolveAgent: AgentIdentityResolver;
+  /** Catalogo core ∪ packs resuelto por server.ts. Opcional: sin el, solo el core. */
+  elementCatalog?: ResolvedCatalog;
 }
 
 export function registerInsertBlockTool(server: McpServer, deps: RegisterInsertBlockToolDeps): void {
@@ -77,6 +81,16 @@ export function registerInsertBlockTool(server: McpServer, deps: RegisterInsertB
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+
+      // Autoridad de membership sobre el nodo a insertar -- v0.0.9.11.
+      const typeError = checkNodeTypes([node as ElementNode], toolCatalog(deps.elementCatalog));
+      if (typeError) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: typeError }, null, 2) }],
+          isError: true,
+        };
+      }
+
       const result = insertNode(existing.root, parentId, index, node, slotIndex);
       if (!result.ok) {
         return {

@@ -29,6 +29,9 @@
 import type { PageStore } from "./page-store";
 import { D1PageStore } from "./stores/d1-page-store";
 import { SqlitePageStore } from "./stores/sqlite-page-store";
+import { createElementPackStore } from "./element-pack-store-factory";
+import { catalogFromStore } from "./element-pack-store";
+import { elementRegistry, elementPalette } from "../elements/registry";
 
 export interface PageStoreEnv {
   DB?: D1Database;
@@ -41,9 +44,25 @@ export interface PageStoreEnv {
 
 export async function createPageStore(env: PageStoreEnv): Promise<PageStore> {
   const d1 = env.DB ?? env.PORTALESS_DB;
+  let store: PageStore;
   if (d1) {
-    return new D1PageStore(d1);
+    store = new D1PageStore(d1);
+  } else {
+    const dbPath = env.PORTALESS_SQLITE_PATH ?? env.PAGES_SQLITE_PATH ?? "./data/pages.sqlite";
+    store = await SqlitePageStore.open(dbPath);
   }
-  const dbPath = env.PORTALESS_SQLITE_PATH ?? env.PAGES_SQLITE_PATH ?? "./data/pages.sqlite";
-  return SqlitePageStore.open(dbPath);
+
+  // Best-effort: cablea el catalogo resuelto (core ∪ element packs) para que
+  // save() acepte tipos contribuidos por un pack. Si la carga de packs falla
+  // (sin DB, entorno sin permisos, pack corrupto), se valida contra el core y
+  // los tipos de pack quedan rechazados -- nunca tira abajo el PageStore.
+  try {
+    const packStore = await createElementPackStore(env);
+    const catalog = await catalogFromStore(packStore, elementRegistry, elementPalette);
+    store.setCatalog?.(catalog);
+  } catch {
+    // Sin catalogo de packs: validacion core-only (comportamiento previo).
+  }
+
+  return store;
 }

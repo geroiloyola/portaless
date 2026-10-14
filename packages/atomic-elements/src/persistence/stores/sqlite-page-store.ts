@@ -7,6 +7,7 @@
 // Uso: const store = await SqlitePageStore.open(path);
 
 import type { PageLayout } from "../../types";
+import type { ResolvedCatalog } from "../../elements/element-pack";
 import type { PageStore } from "../page-store";
 import { validatePageLayout } from "../page-schema";
 import { openSqlite } from "../../../../sqlite-driver/src/open";
@@ -20,6 +21,11 @@ interface PageRow {
 
 export class SqlitePageStore implements PageStore {
   private db: any;
+  private catalog?: ResolvedCatalog;
+
+  setCatalog(catalog: ResolvedCatalog): void {
+    this.catalog = catalog;
+  }
 
   static async open(dbPath: string): Promise<SqlitePageStore> {
     return new SqlitePageStore(await openSqlite(dbPath));
@@ -46,7 +52,7 @@ export class SqlitePageStore implements PageStore {
   }
 
   async save(layout: PageLayout): Promise<void> {
-    const result = validatePageLayout(layout);
+    const result = validatePageLayout(layout, this.catalog);
     if (!result.valid) {
       throw new Error("Layout inválido: " + result.errors.join("; "));
     }

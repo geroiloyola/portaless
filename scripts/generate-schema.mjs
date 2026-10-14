@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 20 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 21 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 15 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 16 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -46,6 +46,7 @@ const SOURCES = [
   { path: "schema-additions/cloud-images.sql", selfBanner: true },
   { path: "schema-additions/site-skin.sql", selfBanner: true },
   { path: "schema-additions/site-settings.sql", selfBanner: true },
+  { path: "schema-additions/element-packs.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";

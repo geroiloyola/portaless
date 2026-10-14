@@ -30,7 +30,8 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
-import { elementNodeSchema } from "./element-node-schema";
+import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
+import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
 
 const TOOL_NAME = "create_page";
 const CAPABILITY_ID = "content:write";
@@ -50,6 +51,8 @@ export interface RegisterCreatePageToolDeps {
   usageLedger: UsageLedgerStore;
   /** Identidad del agente invocante, resuelta POR INVOCACION (ver permissions/agent-identity.ts). */
   resolveAgent: AgentIdentityResolver;
+  /** Catalogo core ∪ packs resuelto por server.ts. Opcional: sin el, solo el core. */
+  elementCatalog?: ResolvedCatalog;
 }
 
 export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePageToolDeps): void {
@@ -67,6 +70,17 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
     async ({ slug, title, description, root, draftMode }, extra?: AgentInvocationContext) => {
       const agent = await deps.resolveAgent(extra);
       await requireCapability(deps.permissionStore, agent, CAPABILITY_ID);
+
+      // Autoridad de membership: el schema Zod solo valida la FORMA (acepta
+      // cualquier string namespaced). Aqui se decide que tipos existen hoy en
+      // el catalogo resuelto (core ∪ element packs) -- v0.0.9.11.
+      const typeError = checkNodeTypes(root as ElementNode[], toolCatalog(deps.elementCatalog));
+      if (typeError) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: typeError }, null, 2) }],
+          isError: true,
+        };
+      }
 
       const layout: PageLayout = {
         version: "0.1",

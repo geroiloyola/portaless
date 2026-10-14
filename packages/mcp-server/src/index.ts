@@ -24,6 +24,10 @@ import { createPortalessMcpServer } from "./server.js";
 import type { McpStoreDeps } from "./server.js";
 import { startMcpHttpServer, MCP_HTTP_PATH } from "./http.js";
 import { createPageStore } from "../../atomic-elements/src/persistence/store-factory.js";
+import { createElementPackStore } from "../../atomic-elements/src/persistence/element-pack-store-factory.js";
+import { catalogFromStore } from "../../atomic-elements/src/persistence/element-pack-store.js";
+import { elementRegistry, elementPalette } from "../../atomic-elements/src/elements/registry.js";
+import { coreCatalog } from "../../atomic-elements/src/elements/element-pack.js";
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
 import { createPluginRegistryStore } from "../../plugin-sandbox/src/registry/store-factory.js";
 import { createUsageLedgerStore } from "../../trust-layer/src/ledger/store-factory.js";
@@ -67,7 +71,21 @@ async function main(): Promise<void> {
   // (GET /.well-known/portaless-usage-log.json, desde v0.0.9.3).
   const usageLedger = await createUsageLedgerStore(env);
 
-  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger };
+  // Catalogo de elementos (core ∪ element packs) resuelto UNA vez y compartido
+  // por todas las tools -- es lo que hace visible un pack instalado en
+  // list_page_components y lo que valida el membership de tipos en
+  // create_page/update_page/insert_block (v0.0.9.11). Best-effort: si la carga
+  // de packs falla, se usa el core y los tipos de pack quedan rechazados --
+  // nunca tira abajo el servidor. Ver element-catalog-plugins.md.
+  let elementCatalog;
+  try {
+    const packStore = await createElementPackStore(env);
+    elementCatalog = await catalogFromStore(packStore, elementRegistry, elementPalette);
+  } catch {
+    elementCatalog = coreCatalog(elementRegistry, elementPalette);
+  }
+
+  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger, elementCatalog };
 
   if (httpTransport) {
     const port = Number(process.env.PORTALESS_MCP_HTTP_PORT ?? 8788);

@@ -1,5 +1,8 @@
 import type { ElementNode, PageLayout, ElementType } from "../types";
 import { elementRegistry, elementPalette } from "../elements/registry";
+import type { ResolvedCatalog, CatalogEntry } from "../elements/element-pack";
+import { coreCatalog } from "../elements/element-pack";
+import { renderContributedTemplate } from "../render";
 import { iconLabel, iconOnly, ICON_FOLDER, ICON_UNDO_2, ICON_REDO_2 } from "../elements/icons";
 import { makeDraggable, makeDropZone } from "./drag-drop";
 import { renderPropertyPanel } from "./property-panel";
@@ -36,6 +39,23 @@ export interface EditorAppOptions {
    * ProductGrid muestra su placeholder estatico (renderHTML).
    */
   fetchProductPreview?: ProductPreviewFetcher;
+  /**
+   * v0.0.9.11: catalogo core ∪ element packs que la paleta, el canvas y el
+   * panel de propiedades consumen. Lo inyecta editor.astro tras leer
+   * GET /admin/api/element-packs y fusionarlo con el core embebido en el
+   * bundle. Sin el, el editor usa el core cerrado (comportamiento previo).
+   */
+  elementCatalog?: ResolvedCatalog;
+}
+
+/** Vista normalizada de una entrada del catalogo, core o pack, para el editor. */
+interface EntryView {
+  kind: "core" | "pack";
+  type: string;
+  displayName: string;
+  icon: string;
+  defaultProps: Record<string, unknown>;
+  entry: CatalogEntry;
 }
 
 export class AtomicElementsEditor {
@@ -44,11 +64,13 @@ export class AtomicElementsEditor {
   private store: PageStore;
   private root: HTMLElement;
   private productPreview: ProductPreviewLoader | null = null;
+  private catalog: ResolvedCatalog;
 
   constructor(private options: EditorAppOptions) {
     this.history = new EditorHistory(options.initialPage);
     this.store = options.store;
     this.root = options.container;
+    this.catalog = options.elementCatalog ?? coreCatalog(elementRegistry, elementPalette);
     if (options.fetchProductPreview) {
       this.productPreview = new ProductPreviewLoader(options.fetchProductPreview, (key, state) =>
         this.patchProductPreviews(key, state)
@@ -56,6 +78,31 @@ export class AtomicElementsEditor {
     }
     this.bindKeyboardShortcuts();
     this.render();
+  }
+
+  // Normaliza una entrada del catalogo (core o pack) a los campos que el
+  // editor consume (icono, nombre, defaultProps). Sin esto, cada lookup usaba
+  // elementRegistry directo y un nodo de pack seria `undefined` y crashearia.
+  private entryView(type: string): EntryView | null {
+    const entry = this.catalog.lookup(type);
+    if (!entry) return null;
+    return entry.kind === "core"
+      ? {
+          kind: "core",
+          type,
+          displayName: entry.definition.displayName,
+          icon: entry.definition.icon,
+          defaultProps: entry.definition.defaultProps as Record<string, unknown>,
+          entry,
+        }
+      : {
+          kind: "pack",
+          type,
+          displayName: entry.element.displayName,
+          icon: entry.element.icon,
+          defaultProps: entry.element.defaultProps,
+          entry,
+        };
   }
 
   private get page(): PageLayout {
@@ -98,13 +145,14 @@ export class AtomicElementsEditor {
     return resolveContainerInTree(draft, path);
   }
 
-  private insertAt(type: ElementType, path: Path, index: number): void {
+  private insertAt(type: string, path: Path, index: number): void {
+    const view = this.entryView(type);
+    if (!view) return;
     this.commit((draft) => {
-      const definition = elementRegistry[type];
       const newNode: ElementNode = {
         id: uid(),
-        type,
-        props: { ...definition.defaultProps },
+        type: type as ElementType,
+        props: { ...view.defaultProps },
         columnSlots: type === "Columns" ? [[], []] : undefined,
       };
       const container = this.resolveContainer(draft, path);
@@ -245,11 +293,24 @@ export class AtomicElementsEditor {
     preview.className = "ae-block-preview";
     preview.style.pointerEvents = "none";
 
-    const def = elementRegistry[node.type];
-    const props: any = { ...def.defaultProps, ...(node.props as Record<string, unknown>) };
+    const view = this.entryView(node.type);
+    if (!view) {
+      preview.innerHTML = `<div style="font-size:11px;color:#ff8f8f;">Tipo desconocido: ${esc(node.type)}</div>`;
+      return preview;
+    }
+    const props: any = { ...view.defaultProps, ...(node.props as Record<string, unknown>) };
 
     try {
-      if (node.type === "ProductGrid" && props.source === "medusa" && this.productPreview) {
+      if (view.kind === "pack") {
+        // Nodo de pack: el host interpola el template (mismo codigo que el
+        // render de build), con props ya escapadas por renderContributedTemplate.
+        const element = (view.entry as { element: { render: { template: string } } }).element;
+        preview.innerHTML = renderContributedTemplate(
+          element as never,
+          props as Record<string, unknown>
+        );
+      } else if (node.type === "ProductGrid" && props.source === "medusa" && this.productPreview) {
+        const def = elementRegistry.ProductGrid;
         const query = clampPreviewQuery(props);
         preview.dataset.productPreviewKey = productPreviewKey(query);
         preview.dataset.columns = String(query.columns);
@@ -257,6 +318,7 @@ export class AtomicElementsEditor {
         const fallback = def.renderHTML({ ...props, ...query });
         preview.innerHTML = this.productPreviewHTML(this.productPreview.get(query), fallback);
       } else {
+        const def = elementRegistry[node.type as ElementType];
         preview.innerHTML = def.renderHTML(props);
       }
     } catch (err) {
@@ -271,8 +333,8 @@ export class AtomicElementsEditor {
 
     const toolbar = document.createElement("div");
     toolbar.className = "ae-block-toolbar";
-    const blockDef = elementRegistry[node.type];
-    toolbar.appendChild(iconLabel(blockDef.icon, blockDef.displayName));
+    const blockView = this.entryView(node.type);
+    toolbar.appendChild(iconLabel(blockView?.icon ?? "❓", blockView?.displayName ?? node.type));
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "\u2715";
     deleteBtn.onclick = (e) => { e.stopPropagation(); this.removeNode(node.id); };
@@ -342,12 +404,17 @@ export class AtomicElementsEditor {
     const palette = document.createElement("div");
     palette.className = "ae-palette";
     palette.innerHTML = `<h3>Elementos</h3>`;
-    elementPalette.forEach((type) => {
-      const def = elementRegistry[type];
+    this.catalog.palette().forEach((entry) => {
       const item = document.createElement("div");
       item.className = "ae-palette-item";
-      item.appendChild(iconLabel(def.icon, def.displayName));
-      makeDraggable(item, { kind: "new-element", elementType: type });
+      if (entry.kind === "pack") {
+        // Marca visual minima: un elemento de pack no es core. Sin CSS nuevo
+        // obligatorio -- el asterisco lo entiende cualquiera.
+        item.appendChild(iconLabel(entry.element.icon, `${entry.element.displayName} *`));
+      } else {
+        item.appendChild(iconLabel(entry.definition.icon, entry.definition.displayName));
+      }
+      makeDraggable(item, { kind: "new-element", elementType: entry.type });
       palette.appendChild(item);
     });
 
@@ -373,7 +440,7 @@ export class AtomicElementsEditor {
     canvasWrap.appendChild(canvas);
 
     const selectedNode = this.selectedId ? this.findNode(this.selectedId) : null;
-    const propertyPanel = renderPropertyPanel(selectedNode, (props) => this.updateSelectedProps(props));
+    const propertyPanel = renderPropertyPanel(selectedNode, (props) => this.updateSelectedProps(props), this.catalog);
 
     this.root.appendChild(palette);
     this.root.appendChild(canvasWrap);
