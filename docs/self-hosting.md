@@ -54,4 +54,5 @@ Los discos persistentes requieren un plan pago. Con plan free, Render rechaza el
 | `PORTALESS_TRUSTED_PROXIES` | vacía | IPs de proxies confiables delante del servidor (separadas por coma, coincidencia exacta). `X-Forwarded-For` solo se usa si la conexión viene de una de esas IPs; sin la lista, manda la IP del socket y los headers de IP del cliente (incluido `CF-Connecting-IP`) se descartan. Detrás de un proxy (Railway, Render, nginx) es necesario para que los rate limits por IP —login, MFA, password reset— identifiquen al cliente real y no al proxy |
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | generada en `/data` | Clave AES-GCM de la identidad del sitio |
 | `PORTALESS_SETUP_CODE` | generado | Código de configuración fijo |
+| `IP_HASH_SALT` | **sin default** | Salt para hashear la IP del votante community. **Obligatorio**: sin él, `POST /trust/:siteId/vote` responde `500 server_misconfigured` y el voto queda deshabilitado. Un salt público o vacío vuelve reversible por fuerza bruta el hash de una IPv4 |
 | `PORTALESS_RUN_UID` / `PORTALESS_RUN_GID` | `1000` | Usuario con el que corre el servidor |

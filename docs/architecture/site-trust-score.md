@@ -176,7 +176,14 @@ licencias financieras de una entidad regulada.
 - Los datos son filas en la base del propio sitio: no son verificables
   por terceros ni portables. APW v1.2 (secciones 5.3 a 5.5) lo resuelve.
 - El rate-limit del voto community es deliberadamente simple.
-- `IP_HASH_SALT` cae a un salt fijo de desarrollo si no está configurado.
+- `IP_HASH_SALT` es **obligatorio**: sin él el endpoint de voto responde
+  `500 server_misconfigured` en vez de caer a un salt fijo de desarrollo, porque
+  un salt público vuelve reversible por fuerza bruta el hash de una IPv4 (2^32
+  intentos). El voto community queda deshabilitado hasta configurarlo.
+- La respuesta pública (lectura) **no** incluye `voterId` ni `ipHash` de las
+  filas community: `ip_hash` es un artefacto interno de rate-limit y `voter_id`
+  un UUID anónimo del navegador, y ninguno es dato de protocolo (APW 6.6 publica
+  puntaje, conteo y suma de pesos; el Anexo A.6 no los nombra).
 - El resumen por dimensiones sí existe hoy: `GET /trust/:siteId` deriva las
   dimensiones W del snapshot (Anexo A.2 y A.4 de APW, en
   `packages/apw-resolver/src/scoring/site-dimensions.ts`) y las devuelve en

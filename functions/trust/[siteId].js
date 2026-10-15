@@ -73,6 +73,30 @@ function json(body, status, extraHeaders = {}) {
   });
 }
 
+// Privacidad de la fuente community. `ip_hash` es un artefacto interno de
+// rate-limit y `voter_id` es un UUID anonimo que genera el navegador; ninguno
+// de los dos es dato de protocolo: 6.6 publica el puntaje, la cantidad y la
+// suma de pesos, y el Anexo A.6 nunca nombra la IP ni el identificador del
+// votante. Se depuran de TODA respuesta publica por dos motivos concretos:
+// enumerar votantes y correlacionarlos entre sitios, y revertir la IP por
+// fuerza bruta contra el espacio IPv4 si el salt es debil (2^32 hashes).
+//
+// Se usa una lista blanca y no un borrado de campos: asi un campo nuevo que se
+// agregue a la fila en el futuro no se filtra por olvido.
+function publicCommunityRows(rows) {
+  return (rows ?? []).map((row) => ({
+    siteId: row.siteId,
+    category: row.category,
+    score: row.score,
+    comment: row.comment,
+    votedAt: row.votedAt,
+  }));
+}
+
+function toPublicSnapshot(snapshot) {
+  return { ...snapshot, community: publicCommunityRows(snapshot.community) };
+}
+
 async function loadPolicy(env) {
   try {
     const store = await createReadPolicyStore(env);
@@ -137,6 +161,7 @@ export async function onRequestGet(context) {
 
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
+  const publicSnapshot = toPublicSnapshot(snapshot);
   const siteScores = loadSiteScores(snapshot);
   const projection = (governedAllowed) =>
     siteScores ? projectTrustView(siteScores, governedAllowed, publicOverrides) : undefined;
@@ -144,7 +169,7 @@ export async function onRequestGet(context) {
   if (!policy) {
     return json(
       {
-        ...snapshot,
+        ...publicSnapshot,
         verification: VERIFICATION,
         governance: { enabled: false },
         projection: projection(true),
@@ -185,7 +210,7 @@ export async function onRequestGet(context) {
   if (decision.allow) {
     return json(
       {
-        ...snapshot,
+        ...publicSnapshot,
         verification: VERIFICATION,
         governance: {
           enabled: true,

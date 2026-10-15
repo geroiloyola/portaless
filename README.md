@@ -242,12 +242,13 @@ See the [Authentication](#authentication) section for the full detail, including
 
 ## Configuration
 
-All environment variables are optional — Portaless works out of the box, serving just the base static site.
+All environment variables are optional — Portaless works out of the box, serving just the base static site. The one functional exception is `IP_HASH_SALT`: without it the community vote endpoint (`POST /trust/:siteId/vote`) fails closed with `500 server_misconfigured` instead of using a public development salt, because a public salt makes an IPv4 hash reversible by brute force.
 
 | Variable | Module | Description |
 |---|---|---|
 | `ENABLE_COMMERCE` | Commerce | `true` to enable `/tienda` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
 | `ENABLE_TRUST_LAYER` | Trust Layer | `true` to enable AI agent verification in `functions/_middleware.js` (Cloudflare Pages and self-hosted Node) |
+| `IP_HASH_SALT` | SiteTrustScore (community votes) | **Required for community voting.** Salt used to hash the voter's IP before it is stored. Without it, `POST /trust/:siteId/vote` responds `500 server_misconfigured` and the vote is disabled — there is deliberately no fallback salt |
 | `PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY` | Deployment OAuth, pay-per-crawl | Secret of at least 32 characters used to encrypt infrastructure credentials at rest (deployment tokens and the settlement provider's API token). Required to activate a pay-per-crawl provider |
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | Protocol APW (`did:apw`) | Base64 key that encrypts the site's private identity key at rest. In the Node runtime, if it's missing, one is generated inside the data volume and `/setup` warns you to move it to a platform secret |
 | `PORTALESS_SITE_NAME` / `PORTALESS_SITE_DESCRIPTION` | AI discovery | Name and summary shown at the top of `/llms.txt` |

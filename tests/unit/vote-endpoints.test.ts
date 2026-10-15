@@ -119,7 +119,7 @@ describe("trust/[siteId]/vote.js (community, publico)", () => {
     expect(otherIp.status).toBe(200);
   });
 
-  it("sin IP_HASH_SALT usa el salt de desarrollo y aun asi registra (warning)", async () => {
+  it("500 server_misconfigured si falta IP_HASH_SALT (falla cerrada, sin salt de desarrollo)", async () => {
     const res = await siteVote.onRequestPost(
       ctx({
         ip: "198.51.100.7",
@@ -127,8 +127,8 @@ describe("trust/[siteId]/vote.js (community, publico)", () => {
         body: { category: "content_accuracy", score: 5, voterId: "dev-salt" },
       })
     );
-    expect(res.status).toBe(200);
-    expect((await res.json()).ok).toBe(true);
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toBe("server_misconfigured");
   });
 });
 

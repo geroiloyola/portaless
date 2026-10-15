@@ -20,8 +20,9 @@
 // IP del socket). Antes solo se leia CF-Connecting-IP y en self-host el
 // voto respondia siempre 400 missing_client_ip. Se hashea con SHA-256 +
 // salt antes de persistir; la IP cruda nunca toca el store. El salt viene
-// de env.IP_HASH_SALT -- si no esta configurado, se usa un salt fijo de
-// desarrollo con warning explicito.
+// de env.IP_HASH_SALT. Desde v0.0.9.10 el salt es OBLIGATORIO: sin el, el
+// endpoint responde 500 server_misconfigured en vez de caer a un salt fijo de
+// desarrollo, porque un salt publico vuelve reversible el hash de una IPv4.
 //
 // La ventana es de 24h y el limite es 1 voto por IP por sitio+categoria --
 // suficiente para que el ataque de inflar el propio community score sea
@@ -39,7 +40,6 @@ const COMMUNITY_CATEGORIES = [
 ];
 
 const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DEV_FALLBACK_SALT = "portaless-dev-salt-configure-IP_HASH_SALT";
 
 async function hashIp(ip, salt) {
   const encoder = new TextEncoder();
@@ -106,12 +106,20 @@ export async function onRequestPost(context) {
   }
 
   const salt = env.IP_HASH_SALT;
+  // Falla cerrada, sin salt de desarrollo. Hashear la IP con el salt publico
+  // del repo hace que el hash de una IPv4 sea reversible por fuerza bruta
+  // (2^32 intentos, segundos en una GPU). Un servidor que no puede proteger la
+  // IP del visitante no debe aceptar el voto.
   if (!salt) {
-    console.warn(
-      "[Portaless SiteTrustScore] IP_HASH_SALT no configurado -- usando salt de desarrollo. Configuralo en produccion."
+    return new Response(
+      JSON.stringify({
+        error: "server_misconfigured",
+        message: "IP_HASH_SALT no esta configurado en el servidor: el voto community esta deshabilitado.",
+      }),
+      { status: 500, headers: { "content-type": "application/json" } }
     );
   }
-  const ipHash = await hashIp(clientIp, salt ?? DEV_FALLBACK_SALT);
+  const ipHash = await hashIp(clientIp, salt);
 
   const store = await createSiteTrustScoreStore(env);
 

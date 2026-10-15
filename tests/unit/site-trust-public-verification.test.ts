@@ -50,6 +50,40 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "missing_site_id" });
   });
+
+  it("no expone voterId ni ipHash de las filas community (privacidad)", async () => {
+    // ipHash es un artefacto interno de rate-limit y voterId un UUID anonimo
+    // del navegador. Ninguno es dato de protocolo (6.6 publica puntaje, conteo
+    // y suma de pesos; A.6 nunca los nombra). Se depuran de toda respuesta
+    // publica: sin esto, cualquiera podia enumerar votantes, correlacionarlos
+    // entre sitios, y revertir la IP por fuerza bruta contra el espacio IPv4
+    // si el salt era debil.
+    state.snapshot.community = [
+      {
+        siteId: "ejemplo.com",
+        category: "content_accuracy",
+        score: 4,
+        comment: "ok",
+        voterId: "anon-abc",
+        ipHash: "deadbeef",
+        votedAt: "2026-10-15T00:00:00.000Z",
+      },
+    ];
+    const res = await get();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const raw = JSON.stringify(body);
+
+    expect(raw).not.toContain("anon-abc");
+    expect(raw).not.toContain("deadbeef");
+    expect(body.community[0].voterId).toBeUndefined();
+    expect(body.community[0].ipHash).toBeUndefined();
+
+    // Lo que si es dato de protocolo sigue publico.
+    expect(body.community[0].category).toBe("content_accuracy");
+    expect(body.community[0].score).toBe(4);
+    expect(body.community[0].comment).toBe("ok");
+  });
 });
 
 // Phase 1 (content negotiation): la Function tapaba la UI de
