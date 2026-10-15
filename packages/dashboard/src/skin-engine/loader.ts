@@ -1,7 +1,12 @@
-// Carga un skin.json y resuelve su cadena de herencia ("extends"), fusionando
-// tokens y layout con el skin padre. Ver Portaless_Skin_System.md, seccion 3.1.
+// Carga un skin.json y resuelve su cadena de herencia ("extends"),
+// fusionando tokens con el skin padre. Ver Portaless_Skin_System.md,
+// seccion 3.1.
+//
+// Fase 10: el loader resuelve SOLO tokens. El antiguo merge de "layout"
+// (organismos/gridPos) se retiro junto con el sistema de organismos mock:
+// nunca se renderizaba en produccion. Un skin es un preset de tokens.
 
-import type { SkinManifest, ResolvedSkin, OrganismPlacement, DesignTokens } from "../types";
+import type { SkinManifest, ResolvedSkin, DesignTokens } from "../types";
 import { DEFAULT_TOKENS } from "./tokens";
 
 export interface SkinSource {
@@ -21,16 +26,6 @@ export class StaticSkinSource implements SkinSource {
     if (!manifest) throw new Error(`Skin "${name}" no encontrado.`);
     return manifest;
   }
-}
-
-function mergeLayouts(base: OrganismPlacement[], override: OrganismPlacement[]): OrganismPlacement[] {
-  const byOrganism = new Map<string, OrganismPlacement>();
-  for (const item of base) byOrganism.set(item.organism, item);
-  for (const item of override) {
-    const existing = byOrganism.get(item.organism);
-    byOrganism.set(item.organism, existing ? { ...existing, ...item } : item);
-  }
-  return [...byOrganism.values()];
 }
 
 function mergeTokens(base: DesignTokens, override: DesignTokens): DesignTokens {
@@ -58,7 +53,6 @@ export async function resolveSkin(
     return {
       skin: manifest.skin,
       tokens: mergeTokens(DEFAULT_TOKENS, manifest.tokens ?? {}),
-      layout: manifest.layout,
     };
   }
 
@@ -66,6 +60,5 @@ export async function resolveSkin(
   return {
     skin: manifest.skin,
     tokens: mergeTokens(parent.tokens, manifest.tokens ?? {}),
-    layout: mergeLayouts(parent.layout, manifest.layout),
   };
 }

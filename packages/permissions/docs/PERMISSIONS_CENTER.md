@@ -69,8 +69,8 @@ seed de `hello-plugin`/`commerce-plugin` en cada reinicio.
 ## Limitaciones honestas que quedan pendientes
 
 - La UI (`permission-center-ui.ts`) genera DOM directo, sin framework,
-  para poder incrustarse en cualquier panel (ver integración como
-  organismo del dashboard en `packages/dashboard`).
+  para poder incrustarse en cualquier panel del dashboard (ver
+  `packages/dashboard`).
 - No hay todavía un registro de auditoría de cambios de permisos más allá
   del campo `grantedBy`/`grantedAt` por concesión individual (se sobrescribe
   en cada `setGrant`, no se guarda historial).

@@ -80,4 +80,4 @@ How to verify (the `npx`/`node_modules/.bin` shims are broken under Node 24 in t
 
 ## Reference tech stack
 
-Astro 4.x + TypeScript, no heavy UI framework (dashboard organisms and Atomic Elements render directly to DOM/HTML, no React/Vue). npm-workspaces monorepo (`packages/*`). Target deployment: GitHub Pages or Cloudflare Pages, no own server for the base use case.
+Astro 4.x + TypeScript, no heavy UI framework (dashboard panels and Atomic Elements render directly to DOM/HTML, no React/Vue). npm-workspaces monorepo (`packages/*`). Target deployment: GitHub Pages or Cloudflare Pages, no own server for the base use case.

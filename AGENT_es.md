@@ -89,7 +89,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 
 ## Stack técnico de referencia
 
-Astro 4.x + TypeScript, sin framework de UI pesado (los organismos del
+Astro 4.x + TypeScript, sin framework de UI pesado (los paneles del
 dashboard y los elementos de Atomic Elements se renderizan a DOM/HTML
 directo, sin React/Vue). Monorepo con npm workspaces (`packages/*`).
 Despliegue objetivo: GitHub Pages o Cloudflare Pages, sin servidor propio

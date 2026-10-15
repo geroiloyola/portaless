@@ -96,6 +96,8 @@ Categories are by **who** must resolve the piece, not by priority.
 - **Portaless Index — site discovery**: the local witness aggregator already exists (see production section); the cross-site discovery layer (indexability format reusing the APW TXT, third-party query permission — public / attributed / via settlement, manifest aggregation, provenance layer before treating community votes as sufficient) remains future work. Index is also the first natural reader of the enclaves.
 - **One-click onboarding**: third-party-dependent steps (DNS propagation, foreign infrastructure) live in the deferred dashboard checklist, never in a blocking wizard. Remaining internal gaps: visual draft preview of step 1, generic text outside the intent field, Cloudflare Pages OAuth (GitHub only today).
 - **Cloud Images + APW as cryptographic SSOT**: the cryptographic base landed in v0.0.9.10 (see the `[x]` item above): image hosting where each image carries the site's Ed25519 signature, a cryptographic existence timestamp, the contemporaneous SiteTrustScore, and a declared-origin flag (`human` | `ai` | `mixed`) — C2PA without a central authority, verifiable against the APW registry, both locally and standalone. The `key_algorithm` column prepares the ML-DSA migration without breaking the chain of custody. Still future: external storage (R2) for large images, moderation model for mis-declared images, EXIF handling, sidecar transport for non-PNG formats, and a management UI.
+- **Videos module**: the `Video` element exists as an embed, but a channel, a TikTok source and any ranking do not. A ranking needs a **view registry**, which this repository does not have. Not promised until that registry exists.
+- **Music module**: nothing exists but static links. **Before anything is communicated**: there is no public route to *stream plays* from Spotify or Apple Music. Any "consolidated global impact" must be defined from what is actually obtainable — followers, chart positions, top tracks, releases — or it is a claim a customer can disprove in one call.
 
 ---
 
@@ -228,7 +230,7 @@ Categories are by **who** must resolve the piece, not by priority.
 
 ### Phases 7–11 — From a product to a standard
 
-**Status: Phase 7 shipped; phases 8–11 planned (2026-10-15).** Phases 0–6 made Portaless a usable product. These five phases are about a different question: what would have to be true for *Protocol APW* to be a standard the rest of the web builds on, rather than one implementation with a spec attached. The repository boundary that governs them is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
+**Status: Phases 7 and 8 shipped; Phase 10's honesty cleanup shipped; phases 9 and 11 planned (2026-10-15).** Phases 0–6 made Portaless a usable product. These five phases are about a different question: what would have to be true for *Protocol APW* to be a standard the rest of the web builds on, rather than one implementation with a spec attached. The repository boundary that governs them is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
 
 **Why these five, and why in this order.** They are ordered by dependency, not by appeal. The chain is real and circular at one point, so it has to be broken at the cheapest link:
 
@@ -307,10 +309,13 @@ The data model is already in place and was verified to exist: `site_trust_commun
 
 **Goal**: adoption. Ordered by adoption value, not by dependency; none of it is a precondition for a standard.
 
-1. **Posts** with ordering beyond `pubDate` — and only once Phase 9 has defined what a ranking means.
-2. **Recents**: a unified activity feed. This also retires four dashboard panels that render hardcoded `mockData` today (`packages/dashboard/src/organisms/registry.ts`: traffic, ledger, orders, revenue), which is a standing honesty problem independent of this phase.
-3. **Videos**: the `Video` element exists as an embed; the channel, a TikTok source, and any ranking do not. A ranking needs a view registry first — there is no view counter in this repository.
-4. **Music**: nothing exists but static links in the example JSON. **Honest limit to settle before anything is communicated**: there is no public route to *streams plays* from Spotify or from Apple Music. Any "consolidated global impact" has to be defined from what is actually obtainable — followers, chart positions, top tracks, releases — or it is a claim a customer can disprove in one call.
+**Status (2026-10-15): the honesty cleanup shipped; the modules did not.**
+
+1. **Posts** with ordering beyond `pubDate` — and only once Phase 9 has defined what a ranking means. **[not started]**
+2. **Recents** — *partially shipped*. The standing honesty problem is closed: the mock panels were **seven**, not four, and all seven were **dead code**. `renderSkin()`/`organismRegistry` were called from nowhere, the real dashboard is hand-written HTML (`src/pages/admin/index.astro`), and `skins/*.json` only ever supplied tokens via `resolveActiveSkin`. They were deleted together with the `layout`/organism machinery; a skin is now a token preset with `extends` inheritance. In their place a real **admin-only** feed ships: append-only `activity_events` (D1 → SQLite → InMemory), a single writer `emitActivity()` (**no triggers, no backfill** — the table starts empty and never diverges from its sources), `GET /admin/api/recents` and `/admin/recents`. It records what exists (pages saved/deleted, community attestations, permission changes), **not** orders/revenue/human traffic — those have no data source. The *unified* feed across every module is still open.
+3. **Videos** and **Music**: moved to [Vision and scope](#vision-and-scope-decisions-what-portaless-will-not-do). This roadmap does not promise them without the condition each one needs.
+
+**Exit criterion**: the modules above, each with a real data source — not one feed. **Open**: this phase is adoption work, none of it a precondition for the standard, and the honest count today is one module partially shipped.
 
 #### Phase 11 — The commercial seam
 

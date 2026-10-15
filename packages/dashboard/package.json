@@ -1,7 +1,7 @@
 {
   "name": "@portaless/dashboard",
   "version": "0.0.3",
-  "description": "Panel de administracion modular de Portaless: catalogo de organismos atomicos + motor de skins (skin-engine) con herencia y tokens de diseno.",
+  "description": "Panel de administracion modular de Portaless: presets de skin (skin-engine) con herencia y tokens de diseno, ajustes del sitio y feed de actividad.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "main": "src/index.ts",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 22 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 24 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 17 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 19 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -49,6 +49,7 @@ const SOURCES = [
   { path: "schema-additions/element-packs.sql", selfBanner: true },
   { path: "schema-additions/theme-packs.sql", selfBanner: true },
   { path: "schema-additions/community-attestations.sql", selfBanner: true },
+  { path: "schema-additions/activity-events.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
@@ -133,6 +134,12 @@ const HEADER = `-- =============================================================
 -- escribe y /api/analytics emite al publico). Fuente
 -- schema-additions/site-settings.sql; el store la crea al vuelo en bases
 -- existentes. Ver packages/dashboard/src/site-settings/site-settings-store.ts.
+--
+-- NOTA v0.0.9.34: tabla nueva activity_events -- feed de actividad del
+-- dashboard (Fase 10). Append-only, admin-only, sin IPs; reemplaza los
+-- paneles mock que mostraban datos falsos. Fuente
+-- schema-additions/activity-events.sql; el store la crea al vuelo en bases
+-- existentes. Ver packages/dashboard/src/activity/activity-store.ts.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql

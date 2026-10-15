@@ -38,6 +38,7 @@ import {
   SETTLEMENT_SUBJECT_TYPE,
   isSettlementGrant,
 } from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-service.ts";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -218,6 +219,15 @@ export async function onRequestPut(context) {
     capabilityId,
     granted,
     grantedBy: user.username,
+  });
+
+  // Fase 10: feed de actividad (un solo escritor). Se registra el cambio de
+  // permiso, no el contenido de la concesion.
+  await emitActivity(env, {
+    kind: granted ? "permission.granted" : "permission.revoked",
+    actor: user.username,
+    subject: `${subject.type}:${subject.id}`,
+    detail: capabilityId,
   });
 
   return new Response(JSON.stringify({ ok: true }), {

@@ -2,7 +2,7 @@
 
 ## Problema que resuelve
 
-canWrite(role) (de @portaless/auth) ya existia, pero solo lo consultaban algunos puntos aislados -- un viewer podia ver controles habilitados en organismos que no lo consultaban.
+canWrite(role) (de @portaless/auth) ya existia, pero solo lo consultaban algunos puntos aislados -- un viewer podia ver controles habilitados en paneles del dashboard que no lo consultaban.
 
 ## Solucion: guard a nivel DOM (defensa en profundidad)
 
@@ -12,7 +12,7 @@ packages/dashboard/src/security/role-guard.ts expone applyRoleGuard, observeRole
 
 ```html
 <div id="dashboard-root" data-portaless-dashboard-root data-role="viewer">
-  <!-- organismos del skin -->
+  <!-- paneles del dashboard -->
 </div>
 ```
 
@@ -22,7 +22,7 @@ import "@portaless/dashboard/src/security/role-guard";
 
 ## Por que DOM-level y no "en cada componente"
 
-Los organismos son funciones que devuelven HTML string, no componentes reactivos. El guard DOM garantiza cobertura total, presente y futura, sin tocar el registry.
+Los paneles del dashboard se renderizan a DOM/HTML directo, no como componentes reactivos. El guard DOM garantiza cobertura total, presente y futura, sin tocar cada panel.
 
 ## Importante
 

@@ -1,40 +1,36 @@
 # Cómo crear un skin nuevo para el Dashboard de Portaless
 
-Un skin es **solo un archivo JSON**. No requiere escribir componentes,
-CSS ni tocar el motor de renderizado. Ver `Portaless_Skin_System.md` en la
-raíz del proyecto para el diseño completo detrás de este sistema.
+Un skin es **solo un archivo JSON con tokens de diseño**. No requiere
+escribir componentes, CSS, ni tocar ningún motor de renderizado. El skin
+gobierna color y tipografía del panel — **no** su estructura: el dashboard
+es HTML propio (`src/pages/admin/index.astro`) y los skins aportan el
+theme, no el layout.
+
+> Nota (Fase 10): hasta v0.0.9.x un skin también declaraba un `layout` de
+> "organismos" (paneles tipo gridPos) que el motor de skins renderizaba.
+> Ese sistema **nunca se usó en producción** y se retiró por honestidad: los
+> paneles eran datos mock. Hoy un skin es únicamente un preset de tokens con
+> herencia.
 
 ## Pasos
 
 1. Copia `src/skins/base.json` (o cualquier skin existente) como punto de
    partida, o crea uno nuevo declarando `"extends": "base"`.
-2. En `layout`, referencia solo organismos que ya existan en
-   `src/organisms/registry.ts` (`TrafficChartPanel`, `AgentLedgerPanel`,
-   `ContentListPanel`, `CommerceOrdersPanel`, `CommerceRevenuePanel`,
-   `PolicyPanel`).
-3. Para cada organismo, define:
-   - `w` / `h`: ancho/alto en unidades de la grilla.
-   - `order`: orden visual (menor = aparece antes).
-   - `hidden: true`: si tu skin no necesita ese organismo (ej. una tienda
-     no necesita `PolicyPanel` si no usa el Trust Layer).
-   - `priority: "high"`: sugiere al renderer destacar visualmente ese
-     organismo (uso reservado para futuras versiones con más de un tamaño
-     de énfasis).
-4. Ajusta `tokens.accent` / `tokens.accent2` / `tokens.accentText` para el
+2. Ajusta `tokens.accent` / `tokens.accent2` / `tokens.accentText` para el
    color de identidad de tu skin. El resto de los átomos los heredan
    automáticamente. `accentText` es la variante del accent legible COMO
    TEXTO sobre fondos claros (el lima oficial `#C5D86D` no alcanza
    contraste AA como texto sobre `#F7F7F2`).
-5. Registra tu skin en el `StaticSkinSource` del loader y ya aparece en
-   el selector de `/admin/appearance` (el panel escribe la fila
-   `site_skin` y el sitio público, el dashboard y el editor lo leen vía
-   la hoja `GET /api/site-skin`).
+3. Registra el nombre del skin en `SKIN_NAMES` y su manifiesto en
+   `SKIN_MANIFESTS` (`src/skin-engine/site-skin-store.ts`) y ya aparece en
+   el selector de `/admin/appearance` (el panel escribe la fila `site_skin`
+   y el sitio público, el dashboard y el editor lo leen vía la hoja
+   `GET /api/site-skin`).
 
 ## Qué NO se puede hacer en un skin (por diseño, no por limitación técnica)
 
-- No se puede introducir un organismo nuevo — eso requiere agregar un
-  componente al `registry.ts` (una contribución al código de Portaless,
-  no del skin).
+- No se puede cambiar la estructura del panel: eso es código del dashboard,
+  no del skin.
 - No se puede sobrescribir CSS libremente — solo los tokens definidos en
   `DesignTokens`. Esto es intencional: evita que un skin mal hecho rompa
   la usabilidad del panel, el mismo problema que sí puede ocurrir con un
@@ -46,14 +42,9 @@ raíz del proyecto para el diseño completo detrás de este sistema.
 {
   "skin": "mi-skin",
   "extends": "base",
-  "tokens": { "accent": "#ff5a5f" },
-  "layout": [
-    { "organism": "ContentListPanel", "w": 4, "h": 2, "order": 1 },
-    { "organism": "CommerceOrdersPanel", "hidden": true },
-    { "organism": "CommerceRevenuePanel", "hidden": true }
-  ]
+  "tokens": { "accent": "#ff5a5f" }
 }
 ```
 
-Esto genera un skin de una sola columna dominante de contenido, ocultando
-todo lo relacionado a comercio, en menos de 10 líneas.
+Esto genera un skin con un acento propio, heredando todo lo demás de
+`base`, en una línea.

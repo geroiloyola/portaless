@@ -19,6 +19,7 @@ import { createCommunityAttestationsStore, DUPLICATE_COMMUNITY_JTI } from "../..
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
 import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
 import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 const COMMUNITY_CATEGORIES = [
   "perceived_trustworthiness",
@@ -169,6 +170,15 @@ export async function onRequestPost(context) {
     }
     throw err;
   }
+
+  // Fase 10: se registra en el feed de actividad del sitio. El actor es el
+  // emisor (did:apw), no una IP; no se guarda el texto de nada.
+  await emitActivity(env, {
+    kind: "community.attestation",
+    actor: claims.iss,
+    subject: siteId,
+    detail: claims.cat,
+  });
 
   return json(
     {

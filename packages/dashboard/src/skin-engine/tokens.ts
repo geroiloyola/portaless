@@ -1,15 +1,12 @@
 // Aplica los tokens de diseno de un skin resuelto como variables CSS
 // globales, para que todos los atomos (definidos con var(--accent), etc.)
-// se actualicen automaticamente sin que ningun organismo necesite logica
+// se actualicen automaticamente sin que ningun componente necesite logica
 // propia de theming.
 //
 // v0.0.9.25: agrega 6 tokens de estado semantico (successBg/successFg,
-// warningBg/warningFg, dangerBg/dangerFg). Antes de este cambio,
-// organisms/registry.ts hardcodeaba 2 paletas hex distintas para el mismo
-// concepto bueno/medio/malo (una en AgentLedgerPanel/PolicyPanel, otra en
-// PermissionsCenterPanel) -- sin ningun punto unico de verdad, y sin forma
-// de que un admin los personalizara via skin.json como ya podia hacer con
-// accent/bg/text.
+// warningBg/warningFg, dangerBg/dangerFg) para el mismo concepto
+// bueno/medio/malo, con un punto unico de verdad y personalizables por un
+// admin via skin.json (como ya lo eran accent/bg/text).
 //
 // Phase 0 (visual identity foundation): DEFAULT_TOKENS pasa a ser la
 // PALETA OFICIAL de Portaless (lima #C5D86D / tinta #261C15 / hueso

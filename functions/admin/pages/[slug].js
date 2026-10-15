@@ -37,6 +37,7 @@
 
 import { validatePageLayout } from "../../../packages/atomic-elements/src/persistence/page-schema";
 import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -90,6 +91,15 @@ export async function onRequestPut(context) {
 
   const pageStore = await createPageStore(env);
   await pageStore.save(layout);
+
+  // Fase 10: el feed de actividad se alimenta en el punto de escritura (un
+  // solo escritor, sin backfill). emitActivity nunca lanza.
+  await emitActivity(env, {
+    kind: "page.saved",
+    actor: user.username,
+    subject: layout.slug,
+    detail: typeof layout.title === "string" && layout.title ? layout.title : null,
+  });
 
   return new Response(JSON.stringify({ ok: true, slug: layout.slug }), {
     status: 200,
@@ -157,6 +167,8 @@ export async function onRequestDelete(context) {
       headers: { "content-type": "application/json" },
     });
   }
+
+  await emitActivity(env, { kind: "page.deleted", actor: user.username, subject: params.slug });
 
   return new Response(JSON.stringify({ removed: true, slug: params.slug }), {
     status: 200,
