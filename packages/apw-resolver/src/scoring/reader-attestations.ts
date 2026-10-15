@@ -203,7 +203,9 @@ export async function loadReaderConduct(readerHost: string, deps: ReaderConductD
 
     let mapped: { dimension: string; value: number };
     try {
-      mapped = readerConductToDimension(r.claims.cat, r.claims.val);
+      // reader_conduct siempre lleva `val` booleano (5.3); `community` es la
+      // unica fuente con `val` numerico (E-13) y no pasa por este camino.
+      mapped = readerConductToDimension(r.claims.cat, r.claims.val === true);
     } catch {
       return fail("reader_conduct_invalid_attestation", c.seq);
     }

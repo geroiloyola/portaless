@@ -4,7 +4,7 @@
 **Project**: Portaless
 **Date**: October 2026
 **License**: CC BY 4.0 (see [License and governance](#license-and-governance))
-**Status**: the single normative document. Consolidates v1.0 (design), v1.1 (identity and history), v1.2 (section 6, today the Loyal Trust Protocol), and corrections E-1 through E-10 of [`ERRATA.md`](./ERRATA.md) (Spanish historical archive), which are **integrated into the text here**. When this document and any earlier version disagree, v1.3 governs. Fixed test vectors live in [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md), in a file independent of the code: an implementation outside Portaless can verify compatibility without reading or running this repository.
+**Status**: the single normative document. Consolidates v1.0 (design), v1.1 (identity and history), v1.2 (section 6, today the Loyal Trust Protocol), and corrections E-1 through E-11 of [`ERRATA.md`](./ERRATA.md) (Spanish, with the historical archive), which are **integrated into the text here**. When this document and any earlier version disagree, v1.3 governs. **Published errata that are not yet consolidated into the text below and are in effect**: E-12 (informative, Index aggregator) and E-13 (normative: `community` as an attestation source with a numeric `val`, and the definitions §6.7 required for distinct emitters, `min_weight` and minimum emitter history age). Fixed test vectors live in [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md), in a file independent of the code: an implementation outside Portaless can verify compatibility without reading or running this repository.
 
 > Spanish archival copy with the same normative content: [`APW-SPEC-v1.3_es.md`](./APW-SPEC-v1.3_es.md). On any discrepancy in numbers, formulas, or keywords, the English file governs.
 
@@ -19,6 +19,7 @@
 | v1.2 | October 2026 | Section 6 (mutual authentication and read governance; published then as "Loyola Trust Protocol", today the Loyal Trust Protocol) and dimension scoring (Annex A) |
 | v1.2 + E-1..E-9 | October 2026 | Complete reference implementation of sections 5, 6 and Annex A, with the corrections in [`ERRATA.md`](./ERRATA.md) |
 | **v1.3 (this)** | October 2026 | Normative consolidation: E-1 through E-9 integrated into the body; test vectors separated from the code. Subsequently E-10 (witnesses, section 5.7) and automatic `reader_conduct` emission (§6.4) were integrated |
+| v1.3 + E-11..E-13 | October 2026 | E-11 (public W-dimension projection, §6.6 and Annex A) integrated into the body; **E-12 (informative) and E-13 (normative) are published in [`ERRATA.md`](./ERRATA.md) and in effect, not yet consolidated here** |
 
 [`apw-spec.md`](./apw-spec.md) and [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md) are superseded by this document.
 
@@ -165,7 +166,7 @@ An attestation is a JWS issued by whoever produces the data, never by the evalua
   "typ": "apw-attestation+jws",
   "iss": "<issuer identity>",
   "sub": "did:apw:<domain>",
-  "src": "agent | escrow_report | self | reader_conduct",
+  "src": "agent | escrow_report | self | reader_conduct",   // + community (ERRATA E-13)
   "cat": "<category or transaction_outcome>",
   "val": true,
   "iat": 1790000000,
@@ -417,6 +418,8 @@ A policy is a **set of predicates over dimensions** (Annex A), evaluated against
   - **Evaluator weighting** (A.4.2): a new domain weighs 0.25 and only gains weight if its evaluations agree with the consensus of already-weighted emitters.
   - Count only **distinct** emitters and require a minimum weight sum in each predicate (`min_weight`). A reader's attestations about itself do not count toward its R-05.
   - Minimum age of the emitter's history (dimension W-07).
+
+> **ERRATA E-13 (in effect, not yet consolidated above)**: `community` is an attestation source whose `val` is an integer 1..5; a distinct emitter is a distinct `did:apw`, so one operator with several domains counts as several emitters; the community predicate's `min_weight` is 2.0 applied per (subject, category); and minimum emitter history age is a 7-day threshold below which an emitter's attestation is recorded but weighs 0 and does not count toward `min_weight`.
   - Weighting `escrow_report` (regulated third parties) above `reader_conduct` when the policy requires it.
 - No defense is perfect: an attacker with enough old, well-calibrated domains can build reputation. The cost of doing so is the defense, as in any trust network.
 

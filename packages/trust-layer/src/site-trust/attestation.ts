@@ -1,9 +1,15 @@
 // packages/trust-layer/src/site-trust/attestation.ts
 //
 // Atestaciones firmadas por el emisor (APW v1.2, seccion 5.3; ERRATA E-4).
-// Una atestacion es un JWS compacto que firma QUIEN GENERA el dato (agente o
-// proveedor de escrow), nunca el sitio evaluado. Payload:
+// Una atestacion es un JWS compacto que firma QUIEN GENERA el dato (agente,
+// proveedor de escrow o, desde E-13, un Veracier con did:apw), nunca el sitio
+// evaluado. Payload:
 //   { typ: "apw-attestation+jws", iss, sub: "did:apw:<dominio>", src, cat, val, iat, jti }
+//
+// `val` cambia de forma segun la fuente (ERRATA E-13): booleano en `agent`,
+// `escrow_report`, `self` y `reader_conduct`; entero 1..5 en `community`. Es la
+// unica diferencia; el resto de la validacion (orden de 12 pasos de V-06) es
+// comun a todas las fuentes.
 //
 // Aca solo se VERIFICA: los bytes del JWS se validan tal como llegan, sin
 // canonicalizar nada (la canonicalizacion es problema del emisor). Por eso
@@ -25,7 +31,14 @@ const MAX_JWS_LENGTH = 8192;
 const COMPACT_JWS_RE = /^[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$/;
 const JTI_RE = /^[\x21-\x7e]{1,128}$/;
 
-export type AttestationSource = "agent" | "escrow_report" | "self" | "reader_conduct";
+export type AttestationSource = "agent" | "escrow_report" | "self" | "reader_conduct" | "community";
+
+/**
+ * `val` es booleano en todas las fuentes menos `community`, donde es un entero
+ * 1..5 (ERRATA E-13). Es la unica diferencia de forma en el payload; el resto
+ * de las validaciones de 5.3 no cambian.
+ */
+export type AttestationVal = boolean | number;
 
 export interface AttestationClaims {
   typ: string;
@@ -33,7 +46,7 @@ export interface AttestationClaims {
   sub: string;
   src: AttestationSource;
   cat: string;
-  val: boolean;
+  val: AttestationVal;
   iat: number;
   jti: string;
 }
@@ -91,6 +104,14 @@ export function sameIssuer(actual: string, expected: string): boolean {
   }
 }
 
+/** `val` es booleano en todas las fuentes menos `community` (entero 1..5, E-13). */
+function validVal(src: unknown, val: unknown): boolean {
+  if (src === "community") {
+    return typeof val === "number" && Number.isInteger(val) && val >= 1 && val <= 5;
+  }
+  return typeof val === "boolean";
+}
+
 function validClaims(payload: Record<string, unknown>): payload is Record<string, unknown> & AttestationClaims {
   return (
     typeof payload.iss === "string" &&
@@ -100,7 +121,7 @@ function validClaims(payload: Record<string, unknown>): payload is Record<string
     typeof payload.cat === "string" &&
     payload.cat.length > 0 &&
     payload.cat.length <= 64 &&
-    typeof payload.val === "boolean" &&
+    validVal(payload.src, payload.val) &&
     Number.isSafeInteger(payload.iat) &&
     typeof payload.jti === "string" &&
     JTI_RE.test(payload.jti)

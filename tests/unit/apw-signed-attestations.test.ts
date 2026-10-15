@@ -154,6 +154,52 @@ describe("verifyAttestation", () => {
   });
 });
 
+describe("verifyAttestation: val numerico para community (ERRATA E-13)", () => {
+  const communityExpected = { sub: SUB, src: "community" as const, iss: "did:apw:veracier.example" };
+
+  function communityClaims(overrides: Record<string, unknown> = {}) {
+    return {
+      typ: ATTESTATION_TYP,
+      iss: communityExpected.iss,
+      sub: SUB,
+      src: "community",
+      cat: "content_accuracy",
+      val: 4,
+      iat: Math.floor(Date.now() / 1000),
+      jti: crypto.randomUUID(),
+      ...overrides,
+    };
+  }
+
+  it("acepta val entero de 1 a 5 y lo devuelve como numero", async () => {
+    const { privateJwk, publicJwk } = await newEd25519();
+    for (const val of [1, 2, 3, 4, 5]) {
+      const payload = communityClaims({ val });
+      const jws = await sign({ alg: "EdDSA" }, payload, privateJwk);
+      expect(await verifyAttestation(jws, publicJwk, communityExpected)).toEqual({ ok: true, claims: payload });
+    }
+  });
+
+  it("rechaza val fuera de 1..5, no entero, o booleano en community", async () => {
+    const { privateJwk, publicJwk } = await newEd25519();
+    const check = async (val: unknown) =>
+      verifyAttestation(await sign({ alg: "EdDSA" }, communityClaims({ val }), privateJwk), publicJwk, communityExpected);
+    for (const val of [0, 6, 3.5, -1, true, false, "4", null]) {
+      expect(await check(val), `val=${JSON.stringify(val)}`).toEqual({ ok: false, reason: "invalid_claims" });
+    }
+  });
+
+  it("rechaza val numerico en una fuente que no es community", async () => {
+    const { privateJwk, publicJwk } = await newEd25519();
+    const payload = { ...claims({ src: "agent", iss: AGENT_ORIGIN }), val: 4 };
+    const jws = await sign({ alg: "EdDSA" }, payload, privateJwk);
+    expect(await verifyAttestation(jws, publicJwk, { sub: SUB, src: "agent", iss: AGENT_ORIGIN })).toEqual({
+      ok: false,
+      reason: "invalid_claims",
+    });
+  });
+});
+
 describe("normalizeProviderPublicKey", () => {
   it("acepta Ed25519 publica y rechaza privada o de otro tipo", async () => {
     const { privateJwk, publicJwk } = await newEd25519();
