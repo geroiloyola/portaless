@@ -11,7 +11,7 @@ cerrar el codigo de su plugin debe resolverse leyendo este documento primero.
 |---|---|---|
 | Portaless core (CMS, dashboard, auth, Trust Layer, Centro de Permisos, motor del sandbox) | AGPL-3.0 | Este repo (`geroiloyola/portaless`) |
 | Especificacion Protocol APW (`docs/protocol-apw/`: spec, errata, vectores) | CC BY 4.0 | Este repo, en el mismo arbol que el core |
-| Plugin SDK (tipos, interfaces, contratos del capability bridge) | MIT (cuando se publique) | Planificado -- `packages/plugin-sdk` aun no existe como codigo en este repositorio, solo diseno documentado (ver `AGENT.md`) |
+| Plugin SDK (tipos, interfaces, contratos del capability bridge) | MIT | Este repo (`packages/plugin-sdk`, publicado v0.1.0) |
 | AppPlace (tienda oficial curada) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | AppLibre (registro comunitario) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | Plugins de terceros individuales | Libre eleccion del autor (abierta o cerrada) | Repos independientes de cada autor |
@@ -41,11 +41,10 @@ tecnico real**, no solo una declaracion de intenciones:
   ni a modulos internos del core.
 - La superficie publica que un plugin puede consumir para comunicarse con el
   core es el capability bridge (`ivm.Reference` + `hostBridge`) descrito en
-  `packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md`. Cuando `packages/plugin-sdk`
-  se publique como codigo, sera la forma recomendada de consumir esa
-  superficie desde TypeScript -- mientras tanto, el aislamiento del sandbox
-  ya es efectivo y suficiente para que un plugin de terceros elija su propia
-  licencia, con o sin el SDK publicado.
+  `packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md`. `packages/plugin-sdk`
+  (MIT, v0.1.0) es la forma recomendada de consumir esa superficie desde
+  TypeScript; el aislamiento del sandbox ya es efectivo y suficiente para que
+  un plugin de terceros elija su propia licencia, con o sin el SDK.
 - Toda comunicacion entre el plugin y el core pasa por ese capability bridge,
   nunca por import directo de codigo del core.
 
@@ -90,8 +89,7 @@ licencia que elija, abierta o cerrada, siempre que:
 
 1. El plugin se ejecute dentro del sandbox aislado (`plugin-sandbox`).
 2. Solo consuma la superficie publica del capability bridge para
-   comunicarse con el core (directamente, o a traves de `packages/plugin-sdk`
-   una vez publicado).
+   comunicarse con el core (directamente, o a traves de `packages/plugin-sdk`).
 3. No incorpore ni parchee directamente codigo del core AGPL-3.0.
 
 ## 6. Riesgos a vigilar (para que este modelo no falle en el futuro)
@@ -107,9 +105,11 @@ licencia que elija, abierta o cerrada, siempre que:
   repo (no como dependencia de npm) debe revisarse por compatibilidad de
   licencia antes de que el cambio a AGPL-3.0 se considere definitivo (ver
   tarea manual 9 en ROADMAP.md).
-- Mientras `packages/plugin-sdk` no exista como codigo, cualquier mencion a
-  "el SDK" en otra documentacion debe entenderse como diseno planificado, no
-  como superficie publicada -- ver `AGENT.md` para el estado real vigente.
+- `packages/plugin-sdk` ya existe como codigo (MIT, v0.1.0): re-declara sus
+  propios tipos y catalogo y no importa el core, de modo que consumirlo no
+  incorpora AGPL. La paridad con el core la fija un test del lado AGPL
+  (`tests/unit/plugin-sdk-parity.test.ts`); ver `AGENT.md` para el estado real
+  vigente y `CONTRIBUTING.md` para la nota de titularidad y el DCO.
 
 ## 7. La especificacion Protocol APW no esta bajo AGPL
 
@@ -131,10 +131,9 @@ seccion 2.
 si respeta la frontera de la seccion 2. La licencia AGPL-3.0 del core no se
 propaga a traves del sandbox.
 
-**¿Necesito esperar a que exista `packages/plugin-sdk` para licenciar mi
-plugin como quiera?** No. El aislamiento tecnico del sandbox ya es efectivo
-hoy; el SDK, cuando se publique, sera una comodidad de tipado, no un
-requisito legal.
+**¿Necesito el `packages/plugin-sdk` para licenciar mi plugin como quiera?**
+No. El aislamiento tecnico del sandbox ya es efectivo por si solo; el SDK es
+una comodidad de tipado, no un requisito legal.
 
 **¿Puedo publicar mi plugin gratis en AppLibre bajo licencia cerrada?**
 Tecnicamente si es legalmente posible, pero rompe la convencion esperada de

@@ -1,0 +1,38 @@
+{
+  "name": "@portaless/plugin-sdk",
+  "version": "0.1.0",
+  "description": "MIT-licensed public surface for third-party Portaless plugin authors: the capability catalog, manifest validation, and the typed sandbox contract. Self-contained — no AGPL code is imported.",
+  "license": "MIT",
+  "keywords": [
+    "portaless",
+    "plugin",
+    "sdk",
+    "capabilities",
+    "sandbox",
+    "manifest"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --format=esm --platform=neutral --outfile=dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

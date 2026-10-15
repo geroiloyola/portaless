@@ -10,7 +10,7 @@ Thanks for your interest in contributing. Portaless is a young project (v0.0.x, 
 2. Every new module must follow the "optional, not mandatory" principle — enabling a module (commerce, Trust Layer, sandboxing) must never break the site's behavior when it is disabled.
 3. Any `TODO` you resolve must come with a test in `tests/unit/` or `tests/e2e/`.
 4. Plugins must declare their capabilities in a manifest — never add implicit access to network, storage, or user data.
-5. The Portaless core is licensed AGPL-3.0. The Protocol APW specification (`docs/protocol-apw/`) is published under CC BY 4.0 — spec changes are proposed as an issue or PR and follow the "Licencia y gobernanza" process of `APW-SPEC-v1.3.md` (errata vs. new version). The Plugin SDK (`packages/plugin-sdk`) will be licensed separately under MIT, so third-party plugins consuming it are not restricted. See `docs/architecture/licensing-boundaries.md` for the exact boundary before contributing new code to either.
+5. The Portaless core is licensed AGPL-3.0. The Protocol APW specification (`docs/protocol-apw/`) is published under CC BY 4.0 — spec changes are proposed as an issue or PR and follow the "Licencia y gobernanza" process of `APW-SPEC-v1.3.md` (errata vs. new version). The Plugin SDK (`packages/plugin-sdk`) is licensed separately under MIT, so third-party plugins consuming it are not restricted. See `docs/architecture/licensing-boundaries.md` for the exact boundary, and the "Licensing, the Plugin SDK, and the DCO" section below before contributing new code to either.
 
 ## Areas where help is most needed today
 
@@ -19,6 +19,21 @@ Thanks for your interest in contributing. Portaless is a young project (v0.0.x, 
 - MCP server per-invocation agent identity (today it is per-process — see the known limitation in `AGENT.md`).
 - AT Protocol identity (`packages/identity-atproto/` is still an empty stub — the only such package left).
 - Documentation: English is now canonical; `*_es.md` archives stay frozen. If you touch a module, update the English docs first.
+
+## Licensing, the Plugin SDK, and the DCO
+
+Portaless has two licenses: the core (`functions/`, `src/`, every `packages/` except the SDK) is **AGPL-3.0** (`LICENSE`); the Plugin SDK (`packages/plugin-sdk`) is **MIT** (`packages/plugin-sdk/LICENSE`), so a closed-source plugin that imports it never incorporates AGPL code.
+
+**Copyright ownership (recorded 2026-10-15).** The two commit identities in this repository's history — `geroiloyola` and `linstarkcorp` — are **the same copyright holder** (Linstark is the corporate entity behind the commercial layer; see `docs/architecture/ecosystem-boundaries.md`). This is stated explicitly because the SDK's MIT license is only clean if code moved from AGPL to MIT has a single holder, and a reviewer years later must not have to infer it. Verify against a full clone (this repository's own clone may be shallow and see only part of the history):
+
+```sh
+git log --format='%ae %an' | sort -u
+git log --format='%ae' -- packages/plugin-sandbox/src/types.ts | sort -u
+```
+
+**One-way rule.** Only code whose copyright holder is the author crosses from the core (AGPL) to the SDK (MIT). The reverse direction — MIT-licensed SDK code reused inside the AGPL core — is fine: MIT is compatible with AGPL. Copying AGPL code into the MIT SDK is **not** allowed without the permission of every holder, which is what the check above establishes, file by file. The SDK re-declares its own types and catalog as its own document; equivalence with the core is guaranteed by a test on the AGPL side (`tests/unit/plugin-sdk-parity.test.ts`), not by a runtime import.
+
+**DCO.** Contributions are accepted under the [Developer Certificate of Origin](./DCO): sign off every commit with `git commit -s` (`Signed-off-by: Name <email>`). The DCO certifies each contribution; it does **not**, by itself, authorize moving existing AGPL code to the MIT SDK — the ownership note above is what does that.
 
 ## Code of conduct
 

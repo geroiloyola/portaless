@@ -1,0 +1,141 @@
+# Plugin SDK conformance (ROADMAP Phase 11, item 1).
+#
+# The SDK's claim is that a third-party plugin author can install it and import
+# a self-contained, MIT-licensed surface — with NO AGPL code pulled in — and that
+# the surface is complete enough to author a plugin against. Nothing in CI
+# proved that, so an incomplete `files:` list, a build that stops emitting JS, or
+# a missing export could break the tarball while the repo tests kept passing
+# (they import from source).
+#
+# This workflow closes that gap with a two-part clean-room check: the tarball is
+# installed into an empty project and (1) its runtime values are imported and
+# exercised, and (2) a consumer file that uses EVERY exported type is type-checked
+# with `tsc --noEmit`. Parity with the AGPL core is the job of
+# `tests/unit/plugin-sdk-parity.test.ts`, which runs in the normal test suite.
+
+name: Plugin SDK conformance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/plugin-sdk/**"
+      - "packages/plugin-sandbox/src/types.ts"
+      - "packages/plugin-sandbox/src/capabilities/**"
+      - "packages/plugin-sandbox/src/manifest/**"
+      - "tests/unit/plugin-sdk-parity.test.ts"
+      - "LICENSE-SDK"
+      - ".github/workflows/plugin-sdk-conformance.yml"
+  pull_request:
+    paths:
+      - "packages/plugin-sdk/**"
+      - "packages/plugin-sandbox/src/types.ts"
+      - "packages/plugin-sandbox/src/capabilities/**"
+      - "packages/plugin-sandbox/src/manifest/**"
+      - "tests/unit/plugin-sdk-parity.test.ts"
+      - "LICENSE-SDK"
+      - ".github/workflows/plugin-sdk-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-sdk-conformance
+  cancel-in-progress: true
+
+jobs:
+  tarball-consumes-standalone:
+    name: Pack and consume the published SDK tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # `npm ci` (like the other package workflows): this asserts reproducibility
+      # of the published artifact, not tolerance for lockfile drift.
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build and pack plugin-sdk
+        working-directory: packages/plugin-sdk
+        run: |
+          npm run build
+          npm pack --pack-destination "${RUNNER_TEMP}"
+
+      - name: Install the tarball into an empty project
+        run: |
+          set -euo pipefail
+          TARBALL=$(find "${RUNNER_TEMP}" -name '*.tgz' -print -quit)
+          test -n "$TARBALL" || { echo "no tarball produced"; exit 1; }
+          echo "tarball: $TARBALL"
+          # Sanity: the tarball must ship the MIT LICENSE, not just dist/.
+          tar -xOf "$TARBALL" package/LICENSE >/dev/null 2>&1 || { echo "tarball is missing LICENSE"; exit 1; }
+
+          SCRATCH="${RUNNER_TEMP}/consumer"
+          mkdir -p "$SCRATCH"
+          printf '{"name":"plugin-sdk-consumer-probe","private":true,"type":"module","version":"0.0.0"}\n' > "$SCRATCH/package.json"
+          cd "$SCRATCH"
+          npm install "$TARBALL" --no-audit --no-fund
+
+      - name: Runtime import of the values
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          node --input-type=module -e '
+            import { capabilityRegistry, listCapabilitiesByCategory, validateManifest, PLUGIN_CAPABILITY_IDS } from "@portaless/plugin-sdk";
+            const total = Object.keys(capabilityRegistry).length;
+            if (total !== 14) { console.error("registry size", total); process.exit(1); }
+            if (PLUGIN_CAPABILITY_IDS.length !== 12) { console.error("plugin ids", PLUGIN_CAPABILITY_IDS.length); process.exit(1); }
+            if (typeof listCapabilitiesByCategory() !== "object") { console.error("listCapabilitiesByCategory"); process.exit(1); }
+            const ok = validateManifest({ name:"x", version:"1", entry:"i.js", requestedCapabilities:[{ id:"content:read", reason:"lee contenido" }], runtime:"javascript" });
+            if (!ok.valid) { console.error("valid manifest rejected", ok.errors); process.exit(1); }
+            const bad = validateManifest({ name:"x", version:"1", entry:"i.js", requestedCapabilities:[{ id:"network:fetch", reason:"sin hosts" }], runtime:"javascript" });
+            if (bad.valid) { console.error("invalid manifest accepted"); process.exit(1); }
+            console.log("runtime surface OK:", total, "capabilities,", PLUGIN_CAPABILITY_IDS.length, "requestable");
+          '
+
+      - name: Type-check a consumer that uses every export
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          set -euo pipefail
+          cat > consumer.ts <<'EOF'
+          import {
+            capabilityRegistry, listCapabilitiesByCategory, validateManifest, PLUGIN_CAPABILITY_IDS,
+            type CapabilityId, type PluginCapabilityId, type CapabilityDefinition, type CapabilityRequest,
+            type PluginManifest, type GrantedCapabilities, type ManifestValidationResult,
+            type CapabilityHostBridge, type SandboxExecutionInput, type SandboxExecutionResult,
+            type SandboxAdapter, type PluginCapabilities, type PluginFetchAllowed, type PluginEntry, type PluginEntryContext,
+          } from "@portaless/plugin-sdk";
+
+          const id: CapabilityId = "content:read";
+          const pid: PluginCapabilityId = "site:admin";
+          const def: CapabilityDefinition = capabilityRegistry[id];
+          const byCat: Record<string, CapabilityDefinition[]> = listCapabilitiesByCategory();
+          const req: CapabilityRequest = { id, reason: "lee contenido del sitio" };
+          const manifest: PluginManifest = { name: "m", version: "1", entry: "i.js", requestedCapabilities: [req], runtime: "javascript" };
+          const v: ManifestValidationResult = validateManifest(manifest);
+          const granted: GrantedCapabilities = new Set<CapabilityId>([id]);
+          const ids: readonly PluginCapabilityId[] = PLUGIN_CAPABILITY_IDS;
+          const bridge: CapabilityHostBridge = {};
+          const input: SandboxExecutionInput = { manifest, granted, code: "", payload: null, hostBridge: bridge };
+          const check = (r: SandboxExecutionResult): boolean => r.success;
+          const adapter: SandboxAdapter = {
+            providerName: "x", supportsWasm: false, isAvailable: async () => true,
+            execute: async (): Promise<SandboxExecutionResult> => ({ success: true, deniedCapabilityAttempts: [], durationMs: 0, provider: "x" }),
+          };
+          const fetchAllowed: PluginFetchAllowed = async (url) => url;
+          const caps: PluginCapabilities = {
+            readContent: async () => null, writeContent: async () => null, mediaRead: async () => null, mediaWrite: async () => null,
+            emailSend: async () => null, commerceRead: async () => null, commerceCheckout: async () => null,
+            storageRead: async () => null, storageWrite: async () => null, agentIdentify: async () => null, siteAdmin: async () => null,
+          };
+          const ctx: PluginEntryContext = { fetchAllowed, capabilities: caps, console };
+          const entry: PluginEntry = async (_payload, _ctx) => ({ ok: true });
+          void [pid, def, byCat, v, ids, input, check, adapter, ctx, entry, capabilityRegistry, listCapabilitiesByCategory, validateManifest, PLUGIN_CAPABILITY_IDS];
+          EOF
+          npm install --no-audit --no-fund --save-dev typescript
+          ./node_modules/.bin/tsc --noEmit --strict --moduleResolution bundler --module esnext --target es2022 --lib es2022,dom consumer.ts
+          echo "type surface OK: every exported type is usable from the installed tarball"

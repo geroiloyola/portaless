@@ -2,15 +2,13 @@ MIT License
 
 Copyright (c) 2026 Gerardo Loyola
 
-NOTA DE ESTADO: este archivo define la licencia que aplicara a la superficie
-publica del Plugin SDK (packages/plugin-sdk) una vez publicada como codigo en
-este repositorio. A la fecha, packages/plugin-sdk todavia no existe como
-codigo -- es diseno documentado (ver AGENT.md y
-docs/architecture/licensing-boundaries.md). El modelo de licenciamiento de
-terceros ya es efectivo hoy sin depender de este archivo: cualquier plugin
-que corra aislado dentro de packages/plugin-sandbox y no incorpore codigo del
-core puede licenciarse libremente, segun se explica en
-docs/architecture/licensing-boundaries.md.
+NOTA DE ESTADO: packages/plugin-sdk ya existe como codigo (v0.1.0, Fase 11).
+La licencia MIT de ese paquete vive ademas en packages/plugin-sdk/LICENSE; este
+archivo es la declaracion en la raiz del repositorio y sigue siendo la
+referencia de la superficie publica. El modelo de licenciamiento de terceros ya
+es efectivo hoy: cualquier plugin que corra aislado dentro de
+packages/plugin-sandbox y no incorpore codigo del core puede licenciarse
+libremente, segun se explica en docs/architecture/licensing-boundaries.md.
 
 This license applies exclusively to the public Plugin SDK surface of
 Portaless -- the contents of packages/plugin-sdk (types, interfaces,

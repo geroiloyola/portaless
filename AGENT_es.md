@@ -19,11 +19,8 @@ AGPL-3.0 (texto oficial en `LICENSE`); la especificacion Protocol APW
 (`docs/protocol-apw/`) se publica aparte bajo CC BY 4.0 — reimplementarla
 no genera obligaciones AGPL, ver "Licencia y gobernanza" en
 `APW-SPEC-v1.3.md`; el Plugin SDK se licencia aparte bajo MIT para no
-restringir a
-los plugins de terceros (**nota:** `packages/plugin-sdk` todavia NO existe
-como carpeta real en el monorepo -- hoy es diseno documentado en
-`LICENSE-SDK` y `docs/architecture/licensing-boundaries.md`, sin codigo
-construido) — ver ese documento para la frontera exacta prevista.
+restringir a los plugins de terceros (`packages/plugin-sdk`, v0.1.0) — ver
+`docs/architecture/licensing-boundaries.md` para la frontera exacta.
 
 ## Regla de oro antes de tocar cualquier código
 
@@ -49,7 +46,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 | MCP server | `packages/mcp-server/` | ✅ Conectado end-to-end: `createPortalessMcpServer()` (`src/server.ts`) ya registra las 6 tools reales (`create_page`, `update_page`, `grant_capability`, `revoke_permission`, `list_page_components`, `list_installed_plugins`, `query_usage_log`), y `src/index.ts` construye los stores reales (`PageStore`, `PermissionStore` via sus store-factory, `InMemoryPluginRegistryStore`) antes de arrancar el `StdioServerTransport`. **Limitación conocida y deliberada (Opción A, NO resuelta como Opción B):** `AgentIdentity` se resuelve UNA SOLA VEZ por proceso, desde las variables de entorno `MCP_AGENT_KEY` (obligatoria) / `MCP_AGENT_DISPLAY_NAME`, no por invocación — el SDK de MCP no expone hoy sesión por llamada sobre `StdioServerTransport`. Esto significa que todo el proceso stdio actúa como un único agente fijo, sin verificación criptográfica real (a diferencia de Web Bot Auth, que sí verifica firma Ed25519 por request HTTP). Una identidad de agente real y verificada para stdio (Opción B) es trabajo futuro, no implementado todavía. Ver `docs/architecture/mcp-agents.md` para el diseño original. |
 | Identidad AT Protocol | `packages/identity-atproto/` | ❌ Stub vacío, sin lógica |
 | Protocol APW resolver | `packages/apw-resolver/` | ✅ Implementado de punta a punta (resolución DNS-over-HTTPS, `did:apw` con rotación, historial encadenado anclado en DNS, testigos 5.7, Portaless Index agregador local; ver `ROADMAP.md` y `docs/protocol-apw/`) — esta fila decía "stub vacío", era falso desde v0.0.9.x |
-| Plugin SDK | `packages/plugin-sdk/` (no existe todavia) | ❌ Solo diseño/licencia (`LICENSE-SDK`, `docs/architecture/licensing-boundaries.md`) -- ningun codigo construido todavia |
+| Plugin SDK | `packages/plugin-sdk/` | ✅ Publicado v0.1.0 (MIT): catalogo de capacidades, `validateManifest` y el contrato tipado del sandbox; la paridad con el core la fija `tests/unit/plugin-sdk-parity.test.ts`. El instalador HTTP y los backends reales de capacidades son la Fase 11.2 |
 
 ## Dónde está cada documento importante
 
@@ -57,7 +54,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 - `CHANGELOG.md` — historial real, versión por versión, de qué se implementó.
 - `SECURITY.md` — vulnerabilidades conocidas y activas (incluye la CVE real de `isolated-vm`, GHSA-864f-rcv7-6rh4).
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — por qué la estructura real del repo difiere de la propuesta original, y dónde está cada cosa de verdad.
-- `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT (diseño, aun no implementado), y los proyectos/plugins de terceros.
+- `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT, y los proyectos/plugins de terceros.
 - `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las 6 tools ya estan conectadas a `server.ts` (ver tabla de arriba) -- el gap real que queda es la identidad de agente real por invocacion (Opcion B), no conectar las tools (ya resuelto).
 - `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
 - `docs/protocol-apw/` — especificación normativa vigente del Protocol APW ([`APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md), implementada end-to-end); `apw-spec.md` en esa carpeta es un resumen conceptual histórico, no el estado del código.
@@ -70,7 +67,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 3. **Todo manifiesto de plugin declara capacidades atómicas con una razón legible.** Ver el catálogo completo en `packages/plugin-sandbox/src/capabilities/capability-registry.ts`.
 4. **Nunca declarar algo como "implementado" si tiene un TODO de integración real pendiente.** Este proyecto prioriza documentar honestamente las limitaciones sobre aparentar funcionalidad — mantén ese estándar en cualquier código o documentación que agregues.
 5. **Todo cambio va en la rama única `agentic`, nunca commit directo a `main`.** Este repositorio usa UNA sola rama de trabajo para cambios agentic; no crear ramas nuevas por feature salvo instrucción explícita del dueño del proyecto. (Excepcion aplicada con instruccion explicita: la consolidacion de `mcp-server-sync` y `atomic-elements-design` a `main` se hizo via la rama intermedia `fixes-main`, para poder revisar conflictos antes de tocar `main` directamente.)
-6. **La única superficie que un plugin de terceros podra importar es el futuro `packages/plugin-sdk`** (aun no existe como codigo -- ver nota en la seccion anterior). Mientras tanto, ningun plugin debe importar directamente modulos internos del core — toda comunicacion pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
+6. **La única superficie que un plugin de terceros importa es `packages/plugin-sdk`** (MIT, publicado v0.1.0). Ningun plugin debe importar directamente modulos internos del core — toda comunicacion pasa por el capability bridge (`ivm.Reference` + `hostBridge`).
 
 ## Flujo de trabajo esperado de un agente en este repo
 

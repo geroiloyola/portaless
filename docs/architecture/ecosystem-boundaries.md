@@ -133,20 +133,23 @@ entregan.
 ## 3. Piezas habilitantes que solo Portaless puede hacer
 
 La frontera de arriba no es una declaracion de intenciones: para que un modulo
-cerrado se pueda instalar y operar, faltan tres cosas, y las tres son del core.
+cerrado se pueda instalar y operar hicieron falta tres cosas, y las tres son
+del core. La primera ya existe; las otras dos siguen pendientes.
 
-### 3.1 `packages/plugin-sdk` — no existe
+### 3.1 `packages/plugin-sdk` — publicado (MIT, v0.1.0)
 
-`LICENSE-SDK` declara MIT para `packages/plugin-sdk` y el propio archivo lo
-admite: *"A la fecha, `packages/plugin-sdk` todavia no existe como codigo"*.
-`CONTRIBUTING.md:13` ya promete esa licencia y `AGENT.md:33` lo marca como
-`does not exist yet`.
+`packages/plugin-sdk` existe desde la Fase 11 (2026-10-15), como paquete MIT
+publicable: re-declara sus propios tipos, el catalogo de capacidades y
+`validateManifest`, y **no** importa `packages/plugin-sandbox` ni ningun otro
+paquete del core (AGPL). La equivalencia con el core la fija un test del lado
+AGPL (`tests/unit/plugin-sdk-parity.test.ts`: deep-equal del catalogo, misma
+agrupacion, y `validateManifest` con el mismo veredicto y los mismos errores).
 
-Mientras no exista, un plugin cerrado no tiene superficie tipada oficial que
-importar: su autor tiene que escribir sus tipos a mano contra lo que solo esta
-documentado en `packages/plugin-sandbox/src/types.ts` y `PLUGIN_SANDBOXING.md`.
-No es un requisito legal —el aislamiento ya es suficiente— pero si es un
-obstaculo de adopcion.
+Lo que **sigue faltando** (Fase 11.2): el instalador HTTP de plugins y los
+backends reales de las capacidades que hoy responden 501. La superficie de
+capacidades del SDK es **provisional** hasta que esa fase cierre (cuotas de
+`storage:*`, codigos de error de los backends reales): por eso esta version es
+0.1.0 y su README lo dice.
 
 ### 3.2 El tarball de `apw-resolver` instala, pero nadie lo prueba
 
