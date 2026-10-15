@@ -44,6 +44,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
   // siteId se lee de la URL real en el navegador: la Function sirve este
   // shell para /trust/<siteId> (Accept text/html), asi que el ultimo
   // segmento del pathname es el siteId. Si alguien abre /trust/ a
@@ -443,7 +445,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
 
   async function submitVote(category, score, comment) {
-    const res = await fetch(`/trust/${encodeURIComponent(siteId)}/vote`, {
+    const res = await fetch(`${baseUrl}/trust/${encodeURIComponent(siteId)}/vote`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ category, score, comment, voterId: getOrCreateVoterId() }),
@@ -476,7 +478,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
 
     try {
-      const res = await fetch(`/trust/${encodeURIComponent(siteId)}`);
+      const res = await fetch(`${baseUrl}/trust/${encodeURIComponent(siteId)}`);
       if (!res.ok) throw new Error(`No se pudo cargar el Trust Score (HTTP ${res.status}).`);
       const snapshot = await res.json();
 

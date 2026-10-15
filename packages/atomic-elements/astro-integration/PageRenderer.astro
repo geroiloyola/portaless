@@ -10,7 +10,7 @@ const validation = validatePageLayout(layout);
 if (!validation.valid) {
   throw new Error(`Pagina "${layout.slug}" invalida, build detenido: ${validation.errors.join("; ")}`);
 }
-const html = await renderPage(layout);
+const html = await renderPage(layout, { base: import.meta.env.BASE_URL });
 ---
 <article class="ae-page" set:html={html} />
 <style>

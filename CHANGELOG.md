@@ -43,6 +43,12 @@ maintained in English only.)
 
 ### Fixed
 
+- **Internal links in page templates broke under subpaths (`PORTALESS_BASE_PATH`).** Internal root-relative paths in page JSON files (such as `/blog/`, `/trust/default`, `/editor/`, or product handles) were rendered verbatim as absolute URLs, leading to 404s when deployed under a subpath like GitHub Pages (`/portaless/`). Fixed at the root: `PageRenderer.astro` and `renderPage()` in `packages/atomic-elements/src/render.ts` now accept `base?: string` and automatically resolve internal root-relative paths to the active subpath, leaving external, mailto, and anchor links untouched. Covered by a new permanent parity test `tests/unit/content-subpath-urls.test.ts` that renders all 9 JSON pages under `/portaless/` and verifies zero bare root URLs.
+
+- **`/explore/` discovery hub was missing from `sitemap.xml`.** The static sitemap generator in `src/pages/sitemap.xml.ts` listed home, blog, posts, pages, and products, but omitted `/explore/`. Added with weekly change frequency and 0.8 priority; covered by `tests/unit/sitemap.test.ts`.
+
+- **TrustScore client `fetch()` was not subpath-aware.** In `src/pages/trust/index.astro`, client-side API requests to `/trust/:siteId` and `/trust/:siteId/vote` did not prepend `import.meta.env.BASE_URL`, causing 404s on subpath deployments.
+
 - **`element_packs` was missing from `REQUIRED_TABLES`.** The element-packs slice created the table (`schema-additions/element-packs.sql`) but never registered it, so `scripts/setup.mjs` would not report it as missing on a corrupted first-run check. Both it and the new `theme_packs` are now listed.
 
 - **Every "latest posts" link on the site pointed to `/blog/undefined/` (a 404).** The index pages used `post.slug`, but with Astro v5's `glob` loader that property no longer exists on collection entries: `blog/[...slug].astro` had already been migrated to `post.id` (so the posts themselves built fine at `/blog/bienvenida/`) while every link *to* them 404'd — `src/pages/index.astro` ("Últimas publicaciones"), `src/pages/blog/index.astro`, and `/explore`, which copied the same pattern. All three now use `post.id`, and `tests/unit/blog-index-links.test.ts` scans every `.astro` under `src/pages` so a new file copying the broken pattern fails the suite instead of shipping.

@@ -1,7 +1,7 @@
 // GET /sitemap.xml -- generado en build. La logica esta en src/lib/sitemap.ts.
 //
 // Fuentes (mismo criterio que /llms.txt):
-//   - Home y /blog/: lastmod = pubDate del post mas reciente.
+//   - Home, /blog/ y /explore/ (hub de descubrimiento): lastmod = pubDate del post mas reciente.
 //   - Posts publicados (sin borradores): lastmod = pubDate.
 //   - Paginas de src/content/pages/*.json, sin barra final para coincidir con
 //     su canonical en paginas/[slug].astro.
@@ -47,6 +47,7 @@ export const GET: APIRoute = async ({ site }) => {
   const entries: SitemapEntry[] = [
     { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
     { path: "/blog/", lastmod: latest, changefreq: "weekly", priority: 0.6 },
+    { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
     ...posts.map((post) => ({
       path: `/blog/${post.id}/`,
       lastmod: post.data.pubDate,

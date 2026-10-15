@@ -29,12 +29,60 @@ export interface RenderOptions {
   catalog?: ResolvedCatalog;
   /** Resuelve un nodo requiresEdgeEval en modo "request". Si falta, se emite el placeholder. */
   dynamicRenderer?: (node: ElementNode, entry: CatalogEntry) => Promise<string>;
+  /** Prefijo de base (ej. import.meta.env.BASE_URL en Astro) para normalizar enlaces internos y evitar 404 en subpaths. */
+  base?: string;
 }
 
 let defaultCatalog: ResolvedCatalog | null = null;
 function getDefaultCatalog(): ResolvedCatalog {
   if (!defaultCatalog) defaultCatalog = coreCatalog(elementRegistry, elementPalette);
   return defaultCatalog;
+}
+
+/**
+ * Normaliza una URL interna anteponiendo el prefijo `base` (ej. `/portaless/`).
+ * Deja intactas URLs externas (http/https/mailto), anclas (#) o URLs que ya
+ * contengan el prefijo.
+ */
+export function resolveInternalUrl(url: unknown, base?: string): string {
+  const str = String(url ?? "").trim();
+  if (!str || !base || base === "/" || !str.startsWith("/") || str.startsWith("//")) {
+    return str;
+  }
+  const prefix = base.replace(/\/$/, "");
+  if (str.startsWith(prefix + "/") || str === prefix) {
+    return str;
+  }
+  return `${prefix}${str}`;
+}
+
+function normalizePropsWithBase(
+  props: Record<string, unknown>,
+  base?: string
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...props };
+  if (base && base !== "/") {
+    for (const [key, val] of Object.entries(result)) {
+      if (typeof val === "string" && val.startsWith("/") && !val.startsWith("//")) {
+        result[key] = resolveInternalUrl(val, base);
+      } else if (Array.isArray(val)) {
+        result[key] = val.map((item) => {
+          if (item && typeof item === "object") {
+            const sub = { ...(item as Record<string, unknown>) };
+            for (const [sk, sv] of Object.entries(sub)) {
+              if (typeof sv === "string" && sv.startsWith("/") && !sv.startsWith("//")) {
+                sub[sk] = resolveInternalUrl(sv, base);
+              }
+            }
+            return sub;
+          }
+          return item;
+        });
+      }
+    }
+  }
+  result.base = base || "/";
+  return result;
 }
 
 function escapeHtml(value: string): string {
@@ -76,7 +124,10 @@ async function renderCoreNode(
   node: ElementNode,
   opts: RenderOptions
 ): Promise<string> {
-  const props = { ...(definition.defaultProps as Record<string, unknown>), ...node.props };
+  const props = normalizePropsWithBase(
+    { ...(definition.defaultProps as Record<string, unknown>), ...node.props },
+    opts.base
+  );
 
   if (node.type === "Columns") {
     const slots = node.columnSlots ?? (node.children?.length ? [node.children] : []);
@@ -122,7 +173,7 @@ export async function renderNode(node: ElementNode, opts: RenderOptions = {}): P
   const childrenHtml = node.children?.length
     ? (await Promise.all(node.children.map((c) => renderNode(c, opts)))).join("\n")
     : undefined;
-  return renderContributedTemplate(element, node.props, childrenHtml);
+  return renderContributedTemplate(element, normalizePropsWithBase(node.props, opts.base), childrenHtml);
 }
 
 export async function renderPage(layout: PageLayout, opts: RenderOptions = {}): Promise<string> {
