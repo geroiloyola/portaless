@@ -1,0 +1,30 @@
+{
+  "id": "V-02",
+  "title": "Key identifiers",
+  "specSection": "5.4",
+  "minimalInterop": false,
+  "did": "did:apw:example.com",
+  "build": [
+    { "kind": "didKeyId", "did": "did:apw:example.com", "sequence": 1, "expect": "did:apw:example.com#key-1" },
+    { "kind": "didKeyId", "did": "did:apw:example.com", "sequence": 12, "expect": "did:apw:example.com#key-12" }
+  ],
+  "parse": [
+    { "kind": "parseDidKeyId", "input": "did:apw:example.com#key-1", "expect": { "did": "did:apw:example.com", "sequence": 1 } },
+    { "kind": "parseDidKeyId", "input": "did:apw:example.com#key-12", "expect": { "did": "did:apw:example.com", "sequence": 12 } }
+  ],
+  "parseRejections": [
+    { "kind": "parseDidKeyIdRejection", "input": "did:apw:example.com#key-0", "desc": "sequence 0" },
+    { "kind": "parseDidKeyIdRejection", "input": "did:apw:example.com#key-01", "desc": "leading zeros" },
+    { "kind": "parseDidKeyIdRejection", "input": "did:apw:example.com#key-", "desc": "no number" },
+    { "kind": "parseDidKeyIdRejection", "input": "did:apw:example.com", "desc": "DID without a fragment" },
+    { "kind": "parseDidKeyIdRejection", "input": "did:web:example.com#key-1", "desc": "did:web with the same pattern" },
+    { "kind": "parseDidKeyIdRejection", "input": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k", "desc": "bare 43-char fingerprint without #key-<n>" },
+    { "kind": "parseDidKeyIdRejection", "input": 12345, "desc": "non-string" }
+  ],
+  "buildRejections": [
+    { "desc": "not did:apw", "did": "did:web:example.com", "sequence": 1, "reason": "invalid_did" },
+    { "desc": "sequence 0", "did": "did:apw:example.com", "sequence": 0, "reason": "invalid_key_sequence" },
+    { "desc": "negative sequence", "did": "did:apw:example.com", "sequence": -1, "reason": "invalid_key_sequence" },
+    { "desc": "non-integer sequence", "did": "did:apw:example.com", "sequence": 1.5, "reason": "invalid_key_sequence" }
+  ]
+}

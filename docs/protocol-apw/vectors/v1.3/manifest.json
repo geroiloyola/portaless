@@ -1,0 +1,23 @@
+{
+  "$schema": "./vectors.schema.md",
+  "spec": "APW-SPEC-v1.3",
+  "source": "../../APW-VECTORS-v1.3.md",
+  "note": "Machine-readable form of APW-VECTORS-v1.3.md. This directory is independent of the code: it does not import, run or reference any implementation. The markdown is the human-readable form and both are pinned to the same spec version. License: CC BY 4.0.",
+  "vectorFiles": [
+    { "file": "v-01-fingerprint.json", "id": "V-01", "title": "Fingerprint k (RFC 7638)", "specSection": "5.1", "minimalInterop": true },
+    { "file": "v-02-key-ids.json", "id": "V-02", "title": "Key identifiers", "specSection": "5.4", "minimalInterop": false },
+    { "file": "v-03-txt-manifest.json", "id": "V-03", "title": "TXT manifest", "specSection": "5.1", "minimalInterop": true },
+    { "file": "v-04-jcs.json", "id": "V-04", "title": "JCS (RFC 8785)", "specSection": "5.2", "minimalInterop": false },
+    { "file": "v-05-history-hash.json", "id": "V-05", "title": "History hash and chain", "specSection": "5.4", "minimalInterop": true },
+    { "file": "v-08-scoring-primitives.json", "id": "V-08", "title": "Scoring primitives", "specSection": "A.4.1 to A.4.4", "minimalInterop": true },
+    { "file": "v-09-bayesian.json", "id": "V-09", "title": "Bayesian score", "specSection": "A.4.5", "minimalInterop": true },
+    { "file": "v-12-period-key.json", "id": "V-12", "title": "reader_conduct period key", "specSection": "6.4", "minimalInterop": false }
+  ],
+  "notYetMachineReadable": {
+    "V-06": "Foreign-issuer attestation verification. Needs the full 12-step validation order, which in this reference implementation lives in packages/trust-layer (verifyAttestation), not in apw-resolver. A third party cannot yet implement V-06 from the published package alone. Blocking item for Phase 7.",
+    "V-07": "Site-signed JWS. The verification routine is public (verifySiteJws) but the vectors are mutation matrices over bytes, so they are expressed as prose; they become mechanical once the fixture format supports byte-level mutation.",
+    "V-10": "R-05 calibration (leave-one-out, 8 rounds). The routine is public (calibrateJudges, scoreSubject) and reproducible, but the scenarios need per-subject attestation fixtures; scheduled for the second pass.",
+    "V-11": "Read policy and visibility. Requires a database and a policy table; the decision function is not pure, so it does not fit a vector file without a harness.",
+    "V-13": "Witnesses. The deterministic jti preimage is public and vectorisable; the evaluation matrix needs chain fixtures. Partially scheduled for the second pass."
+  }
+}

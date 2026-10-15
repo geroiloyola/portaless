@@ -47,6 +47,29 @@ npm publish            # prepublishOnly rebuilds; requires npm login
 
 The package is prepared for independent publication (version, `files`, `exports`, sole runtime dependency `canonicalize`); the publish itself is an operator step with npm credentials. Note: `dist/` is gitignored — publish from a clean `npm run build`.
 
+## Conformance (Phase 7)
+
+This package ships an executable conformance suite that verifies an implementation
+against the official test vectors of `APW-SPEC-v1.3`. A third-party
+implementer can verify compatibility without reading Portaless's source code by
+running the published runner against the spec's vectors.
+
+**To run the suite against this reference implementation:**
+```sh
+npm run conformance   # uses ../../docs/protocol-apw/vectors/v1.3/
+```
+
+**To run the suite against YOUR implementation:**
+1. Download the test vectors from the specification repository (`docs/protocol-apw/vectors/v1.3/`).
+2. Run the `apw-conformance` binary against that directory.
+```sh
+npx @portaless/apw-resolver@latest <path-to-your-vectors-dir>
+```
+
+The suite exits with code 0 if every executed case passes, 1 otherwise. Vectors
+with no executor for their `kind` are reported as `unsupported` and also fail,
+because an unexecuted vector is not a passing vector.
+
 ## License
 
 Implementation code: AGPL-3.0. The APW specification itself: CC BY 4.0 (reimplementation does not create AGPL obligations) — see "Licencia y gobernanza" in the spec.

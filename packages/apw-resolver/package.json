@@ -3,7 +3,15 @@
   "version": "0.1.0",
   "description": "Standalone client/resolver for Protocol APW: resolve did:apw identities, verify site manifests (DNS TXT), chained history, and JWS signatures. Zero Portaless dependencies — only Web APIs + canonicalize (JCS).",
   "license": "AGPL-3.0-or-later",
-  "keywords": ["apw", "did", "dnslink", "jws", "jcs", "ed25519", "protocol"],
+  "keywords": [
+    "apw",
+    "did",
+    "dnslink",
+    "jws",
+    "jcs",
+    "ed25519",
+    "protocol"
+  ],
   "type": "module",
   "main": "./dist/standalone.js",
   "types": "./dist/standalone.d.ts",
@@ -17,10 +25,14 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
-    "build": "npx --no-install tsc -p tsconfig.build.json && npx --no-install esbuild src/standalone.ts src/index.ts --bundle --format=esm --platform=neutral --external:canonicalize --outdir=dist",
-    "prepublishOnly": "npm run build"
+    "build": "npx --no-install tsc -p tsconfig.build.json && npx --no-install esbuild src/standalone.ts src/index.ts --bundle --format=esm --platform=neutral --external:canonicalize --outdir=dist && npx --no-install esbuild conformance/cli.ts --bundle --format=esm --platform=node --external:canonicalize --outfile=dist/conformance/cli.js",
+    "prepublishOnly": "npm run build",
+    "conformance": "tsx conformance/cli.ts"
   },
   "dependencies": {
     "canonicalize": "^2.0.0"
@@ -30,5 +42,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "apw-conformance": "dist/conformance/cli.js"
   }
 }

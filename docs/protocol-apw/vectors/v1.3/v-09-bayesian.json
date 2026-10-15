@@ -1,0 +1,113 @@
+{
+  "id": "V-09",
+  "title": "Bayesian score",
+  "specSection": "A.4.5",
+  "minimalInterop": true,
+  "specText": "S = (3 * 4.0 + sum(w_i v_i)) / (3 + sum(w_i)). The 3 is the prior weight P and 4.0 is NEUTRAL.",
+  "priorWeight": 3,
+  "neutral": 4.0,
+  "cases": [
+    {
+      "n": 1,
+      "items": [],
+      "expectScore": 4.0,
+      "expectWeightSum": 0,
+      "expectCount": 0,
+      "kind": "bayesianScore"
+    },
+    {
+      "n": 2,
+      "items": [
+        {
+          "w": "issuerWeight(6.0)",
+          "v": 7.0,
+          "repeat": 10
+        }
+      ],
+      "expectScore": 6.095,
+      "expectWeightSum": 6.944444444444445,
+      "tolerance": 0.0001,
+      "kind": "bayesianScore"
+    },
+    {
+      "n": 3,
+      "items": [
+        {
+          "w": "issuerWeight(6.0)",
+          "v": 7.0,
+          "repeat": 10
+        },
+        {
+          "w": "issuerWeight(4.0)",
+          "v": 1.0
+        }
+      ],
+      "expectScore": 5.97,
+      "expectWeightSum": 7.194444444444445,
+      "tolerance": 0.0001,
+      "kind": "bayesianScore"
+    },
+    {
+      "n": 4,
+      "items": [
+        {
+          "w": "issuerWeight(5.0)",
+          "v": 4.0,
+          "repeat": 10
+        }
+      ],
+      "expectScore": 4.0,
+      "expectWeightSum": 4.444444444444445,
+      "tolerance": 0.0001,
+      "kind": "bayesianScore"
+    },
+    {
+      "n": 5,
+      "items": [
+        {
+          "w": "issuerWeight(5.0)",
+          "v": 4.0,
+          "repeat": 10
+        },
+        {
+          "w": "issuerWeight(6.7)",
+          "v": 3.0
+        }
+      ],
+      "expectScore": 3.8919,
+      "expectWeightSum": 5.346944444444445,
+      "tolerance": 0.0001,
+      "kind": "bayesianScore"
+    },
+    {
+      "n": 6,
+      "items": [
+        {
+          "w": "issuerWeight(5.0)",
+          "v": 4.0,
+          "repeat": 10
+        },
+        {
+          "w": "issuerWeight(6.7)",
+          "v": 1.0
+        }
+      ],
+      "expectScore": 3.6756,
+      "expectWeightSum": 5.346944444444445,
+      "tolerance": 0.0001,
+      "kind": "bayesianScore"
+    }
+  ],
+  "variations": [
+    {
+      "desc": "case 3 vs case 2",
+      "percent": -2.05,
+      "tolerance": 0.01
+    },
+    {
+      "desc": "case 6 vs case 4",
+      "percent": -8.11,
+      "tolerance": 0.01
+    }
+  ]
+}

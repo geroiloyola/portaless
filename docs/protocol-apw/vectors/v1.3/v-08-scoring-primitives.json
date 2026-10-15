@@ -1,0 +1,248 @@
+{
+  "id": "V-08",
+  "title": "Scoring primitives",
+  "specSection": "A.4.1 to A.4.4",
+  "minimalInterop": true,
+  "specText": "Emitter weight w(J) = ((clamp(J,1,7) - 1) / 6)^2. Judge J from mean absolute deviation d: J = max(1, 7 - 1.5 d).",
+  "emitterWeight": [
+    {
+      "kind": "issuerWeight",
+      "J": 1.0,
+      "expect": 0.0,
+      "tolerance": 1e-12,
+      "exact": true
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 4.0,
+      "expect": 0.25,
+      "tolerance": 1e-12,
+      "exact": true
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 5.0,
+      "expect": 0.4444444444444444,
+      "tolerance": 1e-09,
+      "note": "4/9"
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 6.0,
+      "expect": 0.6944444444444445,
+      "tolerance": 1e-09,
+      "note": "25/36"
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 6.7,
+      "expect": 0.9025,
+      "tolerance": 1e-12,
+      "exact": true
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 7.0,
+      "expect": 1.0,
+      "tolerance": 1e-12,
+      "exact": true
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 0.5,
+      "expect": 0.0,
+      "tolerance": 1e-12,
+      "note": "clamped to J=1"
+    },
+    {
+      "kind": "issuerWeight",
+      "J": 9.0,
+      "expect": 1.0,
+      "tolerance": 1e-12,
+      "note": "clamped to J=7"
+    }
+  ],
+  "ratio": {
+    "kind": "issuerWeightRatio",
+    "numerator": 6.7,
+    "denominator": 4.0,
+    "expect": 3.61,
+    "tolerance": 1e-09
+  },
+  "judgeFromDeviation": [
+    {
+      "kind": "judgeFromDeviation",
+      "d": null,
+      "expect": 4.0,
+      "note": "no comparable attestations"
+    },
+    {
+      "kind": "judgeFromDeviation",
+      "d": 0,
+      "expect": 7.0
+    },
+    {
+      "kind": "judgeFromDeviation",
+      "d": 2,
+      "expect": 4.0
+    },
+    {
+      "kind": "judgeFromDeviation",
+      "d": 10,
+      "expect": 1.0,
+      "note": "clamped at the floor"
+    }
+  ],
+  "valueMapping": [
+    {
+      "kind": "toValue",
+      "scale": "boolean",
+      "input": true,
+      "expect": 7.0
+    },
+    {
+      "kind": "toValue",
+      "scale": "boolean",
+      "input": false,
+      "expect": 1.0
+    },
+    {
+      "kind": "toValue",
+      "scale": "community",
+      "input": 1,
+      "expect": 1.0
+    },
+    {
+      "kind": "toValue",
+      "scale": "community",
+      "input": 2,
+      "expect": 2.5
+    },
+    {
+      "kind": "toValue",
+      "scale": "community",
+      "input": 3,
+      "expect": 4.0
+    },
+    {
+      "kind": "toValue",
+      "scale": "community",
+      "input": 4,
+      "expect": 5.5
+    },
+    {
+      "kind": "toValue",
+      "scale": "community",
+      "input": 5,
+      "expect": 7.0
+    },
+    {
+      "kind": "toValue",
+      "scale": "native",
+      "input": 3.25,
+      "expect": 3.25
+    }
+  ],
+  "valueRejections": [
+    {
+      "desc": "community score outside 1..5",
+      "scale": "community",
+      "input": 0
+    },
+    {
+      "desc": "community score outside 1..5",
+      "scale": "community",
+      "input": 6
+    },
+    {
+      "desc": "native value outside 1..7",
+      "scale": "native",
+      "input": 0.5
+    },
+    {
+      "desc": "native value outside 1..7",
+      "scale": "native",
+      "input": 7.5
+    }
+  ],
+  "readerConductMapping": [
+    {
+      "kind": "readerConductToDimension",
+      "cat": "respected_policy",
+      "val": true,
+      "expectDimension": "R-01",
+      "expectValue": 7.0
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "respected_policy",
+      "val": false,
+      "expectDimension": "R-01",
+      "expectValue": 1.0
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "policy_violation",
+      "val": true,
+      "expectDimension": "R-01",
+      "expectValue": 1.0,
+      "note": "inverse"
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "policy_violation",
+      "val": false,
+      "expectDimension": "R-01",
+      "expectValue": 7.0,
+      "note": "inverse"
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "rate_respected",
+      "val": true,
+      "expectDimension": "R-02",
+      "expectValue": 7.0
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "paid_as_agreed",
+      "val": true,
+      "expectDimension": "R-03",
+      "expectValue": 7.0
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "redistribution",
+      "val": true,
+      "expectDimension": "R-04",
+      "expectValue": 1.0,
+      "note": "inverse"
+    },
+    {
+      "kind": "readerConductToDimension",
+      "cat": "redistribution",
+      "val": false,
+      "expectDimension": "R-04",
+      "expectValue": 7.0,
+      "note": "inverse"
+    }
+  ],
+  "readerConductRejection": {
+    "desc": "unknown category",
+    "cat": "not_a_category",
+    "val": true,
+    "kind": "readerConductRejection"
+  },
+  "selfWeight": {
+    "kind": "selfWeight",
+    "expect": 0.25,
+    "tolerance": 1e-12,
+    "note": "always 0.25 whatever the site's J, and it never feeds its own R-05"
+  },
+  "comparisonRule": {
+    "rule": "Every numeric expectation is compared within the per-case `tolerance`, never with strict equality.",
+    "why": "APW-VECTORS v1.3 prints 0.9025 for w(6.7) as 'exact'. In IEEE-754 doubles (5.7/6)**2 is 0.9025000000000001, one ULP above it. An implementation comparing with === would therefore fail against a correct one, in either language.",
+    "defaultTolerance": 1e-09,
+    "exactCases": "Cases marked `exact: true` are exact in decimal arithmetic and carry tolerance 1e-12: they are reproducible bit-for-bit only if the implementation evaluates the formula in the same order."
+  }
+}

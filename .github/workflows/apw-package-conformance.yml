@@ -1,0 +1,124 @@
+# APW conformance (ROADMAP Phase 7, item 3).
+#
+# The published claim of the package is that an implementation OUTSIDE Portaless
+# can install it and verify compatibility with the spec on its own. Nothing in
+# CI proved that, so a new entry point, a bundler change or an incomplete
+# `files:` list could break the tarball without anything noticing -- while the
+# repository tests kept passing, because they import from source.
+#
+# This workflow closes that gap. It packs the real tarball, installs it into a
+# throwaway project with no access to this repository, and imports it. A green
+# run is the only honest evidence that the entry condition for a second APW
+# implementer actually holds on every release.
+
+name: APW package conformance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/apw-resolver/**"
+      - "docs/protocol-apw/**"
+      - "tests/unit/apw-conformance-vectors.test.ts"
+      - ".github/workflows/apw-package-conformance.yml"
+  pull_request:
+    paths:
+      - "packages/apw-resolver/**"
+      - "docs/protocol-apw/**"
+      - "tests/unit/apw-conformance-vectors.test.ts"
+      - ".github/workflows/apw-package-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apw-package-conformance
+  cancel-in-progress: true
+
+jobs:
+  tarball-installs-standalone:
+    name: Pack and import the published tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Build and pack apw-resolver
+        working-directory: packages/apw-resolver
+        run: |
+          npm run build
+          npm pack --pack-destination "${RUNNER_TEMP}"
+
+      - name: Install the tarball into an empty project and import it
+        run: |
+          set -euo pipefail
+          TARBALL=$(find "${RUNNER_TEMP}" -name '*.tgz' -print -quit)
+          test -n "$TARBALL" || { echo "no tarball produced"; exit 1; }
+          echo "tarball: $TARBALL"
+
+          # A scratch project outside the repository: no workspaces, no
+          # node_modules from this repo, nothing that could mask a broken
+          # package. This is the situation of someone running `npm i
+          # @portaless/apw-resolver` for the first time.
+          SCRATCH="${RUNNER_TEMP}/consumer"
+          mkdir -p "$SCRATCH"
+          printf '{"name":"apw-consumer-probe","private":true,"type":"module","version":"0.0.0"}\n' > "$SCRATCH/package.json"
+          cd "$SCRATCH"
+          npm install "$TARBALL" --no-audit --no-fund
+
+      - name: Assert the published surface is importable and sufficient
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            import * as apw from "@portaless/apw-resolver";
+            import * as full from "@portaless/apw-resolver/full";
+
+            // Identity, history and manifests: V-01 to V-05.
+            const required = ["jwkThumbprint","jcs","sha256B64Url","didKeyId","parseDidKeyId",
+                              "parseApwManifest","buildApwManifest","serializeApwManifest","verifyChain"];
+            // Scoring: V-08 and V-09, which the spec lists as minimal
+            // interoperability vectors and which were not exported before.
+            const scoring = ["issuerWeight","judgeFromDeviation","toValue","readerConductToDimension",
+                             "bayesianScore","calibrateJudges","scoreSubject","scoreOf","periodKey"];
+            const missing = [...required, ...scoring].filter((n) => typeof apw[n] === "undefined");
+            if (missing.length) {
+              console.error("missing from the published surface:", missing.join(", "));
+              process.exit(1);
+            }
+            if (apw.NEUTRAL !== 4.0 || apw.PRIOR_WEIGHT !== 3) {
+              console.error("scoring constants drifted:", apw.NEUTRAL, apw.PRIOR_WEIGHT);
+              process.exit(1);
+            }
+            console.log("published exports:", Object.keys(apw).length);
+            console.log("./full exports:", Object.keys(full).length);
+            console.log("surface OK: a third-party implementation can reach every vector it needs");
+          '
+
+      - name: Check the conformance suite also runs against the installed tarball
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          set -euo pipefail
+          # The vector files are CC BY and code-independent, so a consumer can
+          # download them and run the same checks without this repository.
+          # Here we only prove the runner's logic executes end to end; the
+          # authoritative run is tests/unit/apw-conformance-vectors.test.ts.
+          node --input-type=module -e '
+            import { jwkThumbprint, jcs, issuerWeight, bayesianScore } from "@portaless/apw-resolver";
+            const fp = await jwkThumbprint({ crv:"Ed25519", kty:"OKP", x:"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo" });
+            if (fp !== "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k") { console.error("V-01 failed from the tarball:", fp); process.exit(1); }
+            const c = jcs({ b:1, a:[true,null,"x"], c:{ z:1, y:2 } });
+            if (c !== "{\"a\":[true,null,\"x\"],\"b\":1,\"c\":{\"y\":2,\"z\":1}}") { console.error("V-04 failed from the tarball:", c); process.exit(1); }
+            // Tolerance, not ===: 0.95^2 is 0.9025000000000001 in IEEE-754
+            // doubles, one ULP above the 0.9025 the vector document prints. A
+            // strict comparison here would fail a correct implementation, so
+            // the vectors are compared within tolerance everywhere.
+            if (Math.abs(issuerWeight(6.7) - 0.9025) > 1e-12) { console.error("V-08 failed from the tarball:", issuerWeight(6.7)); process.exit(1); }
+            const ten = bayesianScore(Array.from({ length: 10 }, () => ({ weight: issuerWeight(6.0), value: 7.0 })));
+            if (Math.abs(ten.score - 6.0950) > 1e-4) { console.error("V-09 case 2 failed:", ten.score); process.exit(1); }
+            console.log("V-01, V-04, V-08 and V-09 reproduce from the installed tarball");
+          '

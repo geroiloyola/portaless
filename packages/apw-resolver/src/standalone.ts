@@ -52,3 +52,37 @@ export { generateApwDid } from "./did-apw/generate";
 export { buildSiteManifest } from "./did-apw/site-manifest";
 export type { ApwManifest } from "./manifest";
 export { parseApwManifest } from "./manifest";
+
+// ---------------------------------------------------------------------------
+// Scoring (LTP Annex A). Exposed because APW-VECTORS v1.3 lists V-08 and V-09
+// among the minimal interoperability vectors: without this surface a third party
+// could not implement them against the published package at all, since the only
+// entry points exported identity, history and manifests. All of these are pure
+// and deterministic -- no I/O, no clock, no storage.
+// ---------------------------------------------------------------------------
+
+export {
+  NEUTRAL,
+  PRIOR_WEIGHT,
+  SELF_WEIGHT,
+  DEVIATION_PENALTY,
+  CALIBRATION_ROUNDS,
+  issuerWeight,
+  judgeFromDeviation,
+  toValue,
+  readerConductToDimension,
+  bayesianScore,
+  calibrateJudges,
+  scoreSubject,
+  scoreOf,
+} from "./scoring/scoring";
+export type { Source, ScoredAttestation, DimensionScore } from "./scoring/scoring";
+
+export { didKeyId, isDidKeyId } from "./did-apw/key-id";
+export type { ParsedDidKeyId } from "./did-apw/key-id";
+
+export { serializeApwManifest, buildApwManifest } from "./manifest";
+export type { ApwContentKind, ApwManifestValidationError, ApwManifestValidationResult } from "./manifest";
+
+export { periodKey, READER_CONDUCT_CONFIG } from "./scoring/reader-conduct-config";
+export type { EmissionPeriod } from "./scoring/reader-conduct-config";

@@ -1,0 +1,155 @@
+{
+  "id": "V-03",
+  "title": "TXT manifest",
+  "specSection": "5.1",
+  "minimalInterop": true,
+  "specText": "Serialization: compact JSON (no spaces), optional fields omitted. Accepted formats for k and h: /^[A-Za-z0-9_-]{43}$/.",
+  "build": [
+    {
+      "n": 1,
+      "desc": "no k/h/rg yields v1",
+      "input": {
+        "siteId": "s",
+        "contentKinds": [
+          "mixed"
+        ]
+      },
+      "expect": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"]}",
+      "kind": "manifestBuild"
+    },
+    {
+      "n": 2,
+      "desc": "with k the manifest becomes v2",
+      "input": {
+        "siteId": "s",
+        "contentKinds": [
+          "mixed"
+        ],
+        "k": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+      },
+      "expect": "{\"v\":2,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"],\"k\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}",
+      "kind": "manifestBuild"
+    }
+  ],
+  "parse": [
+    {
+      "n": 1,
+      "raw": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"]}",
+      "expectValid": true,
+      "expectManifest": {
+        "v": 1,
+        "siteId": "s",
+        "trustUrl": "/trust/s",
+        "contentKinds": [
+          "mixed"
+        ]
+      },
+      "kind": "manifestParse"
+    },
+    {
+      "n": 6,
+      "raw": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"],\"k\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}",
+      "expectValid": true,
+      "note": "v1 with k present is valid as v1 and k is ignored: no verifiable identity",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 7,
+      "raw": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[]}",
+      "expectValid": false,
+      "expectError": "empty_contentKinds",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 8,
+      "raw": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"pdf\"]}",
+      "expectValid": false,
+      "expectError": "invalid_contentKind_value",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 9,
+      "raw": "{\"v\":1,\"siteId\":\"s\",\"trustUrl\":\"trust/s\",\"contentKinds\":[\"mixed\"]}",
+      "expectValid": false,
+      "expectError": "missing_or_invalid_trustUrl",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 10,
+      "raw": "\"not an object\"",
+      "expectValid": false,
+      "expectError": "not_an_object",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 10.2,
+      "raw": "{ broken",
+      "expectValid": false,
+      "expectError": "not_an_object",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 11,
+      "raw": "{\"v\":3,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"]}",
+      "expectValid": false,
+      "expectError": "missing_or_invalid_version",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 3,
+      "raw": "{\"v\":2,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"],\"k\":\"short\"}",
+      "expectValid": false,
+      "expectError": "invalid_key_fingerprint",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 4,
+      "raw": "{\"v\":2,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"],\"h\":5}",
+      "expectValid": false,
+      "expectError": "invalid_history_head",
+      "kind": "manifestParse"
+    },
+    {
+      "n": 5,
+      "raw": "{\"v\":2,\"siteId\":\"s\",\"trustUrl\":\"/trust/s\",\"contentKinds\":[\"mixed\"],\"rg\":\"yes\"}",
+      "expectValid": false,
+      "expectError": "invalid_read_governance",
+      "kind": "manifestParse"
+    }
+  ],
+  "acceptedFormats": {
+    "k": "^[A-Za-z0-9_-]{43}$",
+    "h": "^[A-Za-z0-9_-]{43}$"
+  },
+  "crossResolutionReasons": [
+    {
+      "situation": "did.json fingerprint == k and id == did:apw:<domain>",
+      "reason": "ok",
+      "verified": true
+    },
+    {
+      "situation": "fingerprint different from k",
+      "reason": "key_mismatch"
+    },
+    {
+      "situation": "did.json from another domain",
+      "reason": "did_mismatch"
+    },
+    {
+      "situation": "manifest without k (single DNS lookup; did.json is not fetched)",
+      "reason": "manifest_without_key"
+    },
+    {
+      "situation": "did.json unreachable",
+      "reason": "did_document_unreachable"
+    },
+    {
+      "situation": "did.json without a valid DID structure",
+      "reason": "invalid_did_document"
+    },
+    {
+      "situation": "site with no registered identity",
+      "reason": "site_identity_not_found"
+    }
+  ]
+}

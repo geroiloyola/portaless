@@ -1,0 +1,24 @@
+{
+  "id": "V-12",
+  "title": "reader_conduct period key",
+  "specSection": "6.4",
+  "minimalInterop": false,
+  "specText": "UTC period key: month YYYY-MM, day YYYY-MM-DD, ISO week YYYY-Www. The same key makes an emission deterministic and idempotent per period.",
+  "cases": [
+    { "kind": "periodKey", "date": "2026-10-15T23:59:59.999Z", "period": "month", "expect": "2026-10" },
+    { "kind": "periodKey", "date": "2026-10-01T00:00:00.000Z", "period": "month", "expect": "2026-10" },
+    { "kind": "periodKey", "date": "2026-01-09T12:00:00.000Z", "period": "month", "expect": "2026-01" },
+    { "kind": "periodKey", "date": "2026-10-15T12:00:00.000Z", "period": "day", "expect": "2026-10-15" },
+    { "kind": "periodKey", "date": "2026-10-15T12:00:00.000Z", "period": "week", "expect": "2026-W42" },
+    { "kind": "periodKey", "date": "2026-01-01T12:00:00.000Z", "period": "week", "expect": "2026-W01" },
+    { "kind": "periodKey", "date": "2026-12-31T12:00:00.000Z", "period": "week", "expect": "2026-W53" }
+  ],
+  "defaults": {
+    "emissionPeriod": "month",
+    "policyDimensions": { "R-01": true, "R-05": false },
+    "maxAttestationsLoaded": 200,
+    "legacyEntriesWithoutJws": "ignore",
+    "legacyCutoff": "2026-10-04T00:00:00.000Z"
+  },
+  "note": "There is no 'year' period. A year range must aggregate the weekly or monthly buckets."
+}

@@ -1,0 +1,30 @@
+{
+  "id": "V-05",
+  "title": "History hash and chain",
+  "specSection": "5.4",
+  "minimalInterop": true,
+  "specText": "Normative hash: base64url(SHA-256(<bytes>)) unpadded (43 chars).",
+  "hashes": [
+    { "n": 1, "kind": "sha256b64url", "inputUtf8": "", "expect": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU" },
+    { "n": 2, "kind": "sha256b64url", "inputUtf8": "att-1", "expect": "IIZMRjHGtF_r1Jv8RZNnxpJ2s-xVBZoz-BkR8IWH9Ik" },
+    { "n": 3, "kind": "sha256b64url", "inputUtf8Repeat": { "char": "A", "count": 43 }, "expect": "DwBzhbb51LfusnSGBa_hqYSgo7-j8BTQnip4TOnlzRo" }
+  ],
+  "logEntryStructure": {
+    "jwsHeader": { "alg": "EdDSA", "kid": "did:apw:<domain>#key-<n>", "typ": "apw-log+jws" },
+    "payload": { "seq": 1, "prev": null, "att": "<43-char hash>", "ts": "<ISO 8601 UTC>" },
+    "note": "kid may also be the fingerprint in entries predating the keyId definition; both are accepted."
+  },
+  "chainRejections": [
+    { "mutation": "an entry's payload replaced by another", "reason": "bad_signature" },
+    { "mutation": "an entry removed", "reason": "seq_gap" },
+    { "mutation": "prev that is not the previous entry's hash", "reason": "prev_mismatch" },
+    { "mutation": "ts earlier than the previous entry's", "reason": "ts_regression" },
+    { "mutation": "ts outside its key's validFrom/validTo window", "reason": "ts_outside_key_window" },
+    { "mutation": "an entry's kid not published in keys", "reason": "unknown_key" },
+    { "mutation": "kid from another domain or malformed", "reason": "key_kid_mismatch" },
+    { "mutation": "TXT k != the log's active key", "reason": "active_key_mismatch" },
+    { "mutation": "TXT h that does not appear in the chain", "reason": "head_mismatch" },
+    { "mutation": "empty chain with a published h", "reason": "head_mismatch" },
+    { "mutation": "empty chain without h", "reason": null, "note": "valid: length 0, head null" }
+  ]
+}

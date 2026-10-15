@@ -1,0 +1,45 @@
+{
+  "id": "V-01",
+  "title": "Fingerprint k (RFC 7638 JWK Thumbprint)",
+  "specSection": "5.1",
+  "minimalInterop": true,
+  "specText": "Input: only the mandatory members of the Ed25519 JWK, in lexicographic order, no whitespace. Output: base64url(SHA-256(<json>)) unpadded, 43 characters.",
+  "cases": [
+    {
+      "n": 1,
+      "kind": "fingerprint",
+      "desc": "RFC 8037, Appendix A",
+      "input": { "crv": "Ed25519", "kty": "OKP", "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo" },
+      "expect": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+      "expectLength": 43
+    },
+    {
+      "n": 2,
+      "kind": "fingerprint",
+      "desc": "RFC 9421, Appendix B.1.4",
+      "input": { "crv": "Ed25519", "kty": "OKP", "x": "JrQLj5P_89iXES9-vFgrIy29clF9CC_oPPsw3c5D0bs" },
+      "expect": "poqkLGiymh_W0uP6PZFw-dvez3QJT5SolqXBCW38r0U",
+      "expectLength": 43
+    },
+    {
+      "n": 3,
+      "kind": "fingerprint",
+      "desc": "Optional and private members are ignored: adding d, key_ops, ext, kid and alg must still yield vector 1's fingerprint",
+      "input": {
+        "crv": "Ed25519",
+        "kty": "OKP",
+        "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+        "d": "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
+        "key_ops": ["sign"],
+        "ext": true,
+        "kid": "should-be-ignored",
+        "alg": "EdDSA"
+      },
+      "expect": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+    }
+  ],
+  "rejections": [
+    { "desc": "JWK without a supported kty (other than OKP)", "reason": "unsupported_key_type" },
+    { "desc": "OKP/Ed25519 JWK without x", "reason": "missing_jwk_member:x" }
+  ]
+}

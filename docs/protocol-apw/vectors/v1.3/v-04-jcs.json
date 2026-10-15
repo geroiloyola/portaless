@@ -1,0 +1,18 @@
+{
+  "id": "V-04",
+  "title": "JCS (RFC 8785)",
+  "specSection": "5.2",
+  "minimalInterop": false,
+  "specText": "Canonical JSON serialization used for every signed payload in APW.",
+  "cases": [
+    { "n": 1, "kind": "jcs", "desc": "member ordering and nested objects", "input": { "b": 1, "a": [true, null, "x"], "c": { "z": 1, "y": 2 } }, "expect": "{\"a\":[true,null,\"x\"],\"b\":1,\"c\":{\"y\":2,\"z\":1}}" },
+    { "n": 2, "kind": "jcs", "desc": "negative zero normalizes to zero", "input": { "n": -0 }, "expect": "{\"n\":0}" },
+    { "n": 3, "kind": "jcs", "desc": "exponential notation is normalized", "input": [1e21, 1.5, 100], "expect": "[1e+21,1.5,100]" },
+    { "n": 4, "kind": "jcs", "desc": "unicode is not escaped", "input": { "s": "ñ€" }, "expect": "{\"s\":\"ñ€\"}" }
+  ],
+  "rejections": {
+    "reason": "not_i_json",
+    "values": ["undefined", "NaN", "Infinity", "function", "bigint", "Date"],
+    "note": "The issuer rejects rather than omits or coerces."
+  }
+}

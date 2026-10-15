@@ -250,7 +250,7 @@ Phase 7 breaks that circle because it is the cheapest link in it. Phases 8 and 9
 
 **What none of these phases needs**: another architecture document. The boundaries, the licensing argument and the enabling-pieces inventory are already written down. What is missing is code and third parties.
 
-#### Phase 7 — Executable conformance
+### Phase 7 — Executable conformance
 
 **Goal**: §5.6 of the spec claims another implementation can verify compatibility "without depending on Portaless's code". Today that claim is unfalsifiable: `APW-VECTORS-v1.3.md` is 22 KB of markdown and **no workflow runs it**.
 
