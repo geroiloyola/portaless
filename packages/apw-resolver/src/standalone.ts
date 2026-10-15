@@ -118,3 +118,54 @@ export {
   rankingInputHash,
 } from "./scoring/ranking";
 export type { RankingFilter, RankingEntry, RankingQuery, RankedSubject, RankingResult } from "./scoring/ranking";
+
+// ---------------------------------------------------------------------------
+// Federation (Fase 9b, ROADMAP Phase 9 item 1). The signed pages document, the
+// hardened fetch, remote-render safety and the peer aggregator. Pure or
+// dependency-injected, so the guards, the cache/single-flight/stale contract and
+// the signature verification are testable from fixtures without opening a
+// public endpoint or touching the network.
+// ---------------------------------------------------------------------------
+
+export {
+  PAGES_TYP,
+  MAX_PAGES_ENTRIES,
+  parsePagesEntries,
+  buildPagesDocument,
+  signPagesDocument,
+  verifyPagesDocument,
+  peekJwsKid,
+  resolvePeerPages,
+} from "./federation/pages-document";
+export type {
+  PagesDocumentEntry,
+  PagesDocumentPayload,
+  PagesDocumentFailure,
+  VerifyPagesDocumentResult,
+} from "./federation/pages-document";
+
+export {
+  isPrivateIp,
+  assertSafeUrl,
+  createSafeFetcher,
+  SAFE_FETCH_DEFAULTS,
+} from "./federation/safe-fetch";
+export type { SafeFetchLimits, SafeFetchResult, SafeFetchFailure, SafeFetchDeps, SafeFetcher } from "./federation/safe-fetch";
+
+export { isSafeRemoteUrl, capItems, toPlainText, MAX_REMOTE_ITEMS, MAX_AGGREGATE_ITEMS } from "./federation/render-safe";
+
+export {
+  createPeerAggregator,
+  InMemoryPeerCache,
+  AGGREGATE_DEFAULTS,
+} from "./federation/aggregate";
+export type {
+  RemotePage,
+  PeerCache,
+  PeerCacheEntry,
+  PeerReport,
+  AggregateResult,
+  PeerAggregatorDeps,
+  PeerAggregator,
+  PeerLoadResult,
+} from "./federation/aggregate";
