@@ -29,6 +29,8 @@ import {
   readerConductToDimension,
   bayesianScore,
   periodKey,
+  emitterAgeOk,
+  communityPredicate,
   NEUTRAL,
   PRIOR_WEIGHT,
   SELF_WEIGHT,
@@ -350,6 +352,59 @@ const EXECUTORS: Record<string, Executor> = {
         ? { label: "SELF_WEIGHT", status: "pass" }
         : { label: "SELF_WEIGHT", status: "fail", detail: `esperado ${c.expect}, obtenido ${SELF_WEIGHT}` }
     ),
+
+  // V-14 (ERRATA E-13): umbral de antiguedad del emisor comunitario.
+  emitterAgeOk: (c, push) => {
+    const label = String(c.desc ?? `iat=${c.iat}`);
+    const minDays = typeof c.minDays === "number" ? c.minDays : undefined;
+    const first = (c.firstSeenIat ?? c.emitterFirstSeenIat ?? undefined) as number | null | undefined;
+    const actual = emitterAgeOk(c.iat as number, first, minDays);
+    push(
+      actual === c.expect
+        ? { label, status: "pass" }
+        : { label, status: "fail", detail: `esperado ${c.expect}, obtenido ${actual}` }
+    );
+  },
+
+  // V-15 (ERRATA E-13): emisor distinto + min_weight sobre una categoria.
+  communityPredicate: (c, push) => {
+    const label = String(c.desc ?? "communityPredicate");
+    const rows = (c.rows as Array<Record<string, unknown>>).map((r) => ({
+      iss: String(r.iss),
+      category: String(r.category),
+      val: r.val as number,
+      iat: r.iat as number,
+      jti: String(r.jti),
+      emitterFirstSeenIat: (r.emitterFirstSeenIat ?? undefined) as number | null | undefined,
+    }));
+    const judges = new Map<string, number>(
+      Object.entries((c.judges as Record<string, number> | undefined) ?? {})
+    );
+    const minWeight = typeof c.minWeight === "number" ? c.minWeight : undefined;
+    const result = communityPredicate(rows, judges, minWeight);
+
+    const tol = readNumber(c, "tolerance", 1e-9);
+    const problems: string[] = [];
+    if (typeof c.expectEmitters === "number" && result.emitters !== c.expectEmitters) {
+      problems.push(`emitters ${result.emitters} != ${c.expectEmitters}`);
+    }
+    if (typeof c.expectWeightSum === "number" && !near(result.weightSum, c.expectWeightSum, tol)) {
+      problems.push(`weightSum ${result.weightSum} != ${c.expectWeightSum}`);
+    }
+    if (typeof c.expectPasses === "boolean" && result.passes !== c.expectPasses) {
+      problems.push(`passes ${result.passes} != ${c.expectPasses}`);
+    }
+    if (Array.isArray(c.expectRows)) {
+      const pick = (r: Record<string, unknown>) => ({ iss: String(r.iss), val: r.val as number, iat: r.iat as number });
+      const byIss = (a: { iss: string }, b: { iss: string }) => (a.iss < b.iss ? -1 : a.iss > b.iss ? 1 : 0);
+      const got = result.rows.map(pick).sort(byIss);
+      const want = (c.expectRows as Array<Record<string, unknown>>).map(pick).sort(byIss);
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        problems.push(`rows ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
+      }
+    }
+    push(problems.length ? { label, status: "fail", detail: problems.join("; ") } : { label, status: "pass" });
+  },
 };
 
 /**

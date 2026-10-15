@@ -11,9 +11,12 @@
     { "file": "v-05-history-hash.json", "id": "V-05", "title": "History hash and chain", "specSection": "5.4", "minimalInterop": true },
     { "file": "v-08-scoring-primitives.json", "id": "V-08", "title": "Scoring primitives", "specSection": "A.4.1 to A.4.4", "minimalInterop": true },
     { "file": "v-09-bayesian.json", "id": "V-09", "title": "Bayesian score", "specSection": "A.4.5", "minimalInterop": true },
-    { "file": "v-12-period-key.json", "id": "V-12", "title": "reader_conduct period key", "specSection": "6.4", "minimalInterop": false }
+    { "file": "v-12-period-key.json", "id": "V-12", "title": "reader_conduct period key", "specSection": "6.4", "minimalInterop": false },
+    { "file": "v-14-emitter-age.json", "id": "V-14", "title": "Community predicate: emitter history age (E-13)", "specSection": "6.7", "minimalInterop": false },
+    { "file": "v-15-community-predicate.json", "id": "V-15", "title": "Community predicate: distinct emitters and min_weight (E-13)", "specSection": "6.7", "minimalInterop": false }
   ],
   "notYetMachineReadable": {
+    "community-claim": "The claim-level half of E-13 -- that `val` is an integer 1..5 only when `src` is `community` -- is enforced by `verifyAttestation` in packages/trust-layer, which is not part of the published package (the same boundary that keeps V-06 out). V-14 and V-15 cover the pure scoring half, which is published. The claim rule is verified by tests/unit/apw-signed-attestations.test.ts.",
     "V-06": "Foreign-issuer attestation verification. Needs the full 12-step validation order, which in this reference implementation lives in packages/trust-layer (verifyAttestation), not in apw-resolver. A third party cannot yet implement V-06 from the published package alone. Blocking item for Phase 7.",
     "V-07": "Site-signed JWS. The verification routine is public (verifySiteJws) but the vectors are mutation matrices over bytes, so they are expressed as prose; they become mechanical once the fixture format supports byte-level mutation.",
     "V-10": "R-05 calibration (leave-one-out, 8 rounds). The routine is public (calibrateJudges, scoreSubject) and reproducible, but the scenarios need per-subject attestation fixtures; scheduled for the second pass.",

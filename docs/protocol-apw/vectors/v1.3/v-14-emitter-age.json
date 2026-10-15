@@ -1,0 +1,20 @@
+{
+  "id": "V-14",
+  "title": "Community predicate: emitter history age (ERRATA E-13)",
+  "specSection": "6.7",
+  "minimalInterop": false,
+  "specText": "A community emitter credits age only if its verified chained history started at least 7 days before the attestation's iat. Without a resolved first entry the emitter does not credit (fail-closed): 6.7 is a floor, and with no datum there is no floor.",
+  "note": "Seconds are integral. minDays default is 7 and SECONDS_PER_DAY is 86400, so the boundary is exactly 604800 seconds.",
+  "cases": [
+    { "kind": "emitterAgeOk", "desc": "exactly 7 days before", "iat": 1800000000, "firstSeenIat": 1799395200, "expect": true },
+    { "kind": "emitterAgeOk", "desc": "one second short of 7 days", "iat": 1800000000, "firstSeenIat": 1799395201, "expect": false },
+    { "kind": "emitterAgeOk", "desc": "one second past 7 days", "iat": 1800000000, "firstSeenIat": 1799395199, "expect": true },
+    { "kind": "emitterAgeOk", "desc": "brand new emitter (first entry equals the attestation)", "iat": 1800000000, "firstSeenIat": 1800000000, "expect": false },
+    { "kind": "emitterAgeOk", "desc": "first entry in the future (clock skew): no age", "iat": 1800000000, "firstSeenIat": 1800000001, "expect": false },
+    { "kind": "emitterAgeOk", "desc": "unresolved history, explicit null", "iat": 1800000000, "firstSeenIat": null, "expect": false },
+    { "kind": "emitterAgeOk", "desc": "unresolved history, key absent", "iat": 1800000000, "expect": false },
+    { "kind": "emitterAgeOk", "desc": "192 days of history", "iat": 1800000000, "firstSeenIat": 1783411200, "expect": true },
+    { "kind": "emitterAgeOk", "desc": "custom minDays=1 accepts a 2-day-old history", "iat": 1800000000, "firstSeenIat": 1799827200, "minDays": 1, "expect": true },
+    { "kind": "emitterAgeOk", "desc": "custom minDays=1 rejects a 12-hour-old history", "iat": 1800000000, "firstSeenIat": 1799956800, "minDays": 1, "expect": false }
+  ]
+}

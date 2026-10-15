@@ -86,3 +86,18 @@ export type { ApwContentKind, ApwManifestValidationError, ApwManifestValidationR
 
 export { periodKey, READER_CONDUCT_CONFIG } from "./scoring/reader-conduct-config";
 export type { EmissionPeriod } from "./scoring/reader-conduct-config";
+
+// ---------------------------------------------------------------------------
+// Community predicate (APW E-13 over 6.7). Pure, so V-14 and V-15 are
+// executable from the published package without a database or a network.
+// ---------------------------------------------------------------------------
+
+export {
+  COMMUNITY_MIN_WEIGHT_DEFAULT,
+  COMMUNITY_MIN_AGE_DAYS_DEFAULT,
+  SECONDS_PER_DAY,
+  emitterAgeOk,
+  latestPerEmitter,
+  communityPredicate,
+} from "./scoring/community";
+export type { CommunityRow, CommunityPredicate } from "./scoring/community";

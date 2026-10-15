@@ -1,0 +1,133 @@
+{
+  "id": "V-15",
+  "title": "Community predicate: distinct emitters and min_weight (ERRATA E-13)",
+  "specSection": "6.7",
+  "minimalInterop": false,
+  "specText": "For one (subject, category): keep the most recent attestation per emitter, drop emitters whose verified history is younger than the minimum age, and sum the A.4.2 weights of what survives. The predicate passes only if that sum is at least min_weight (default 2.0). Weights: w = ((clamp(J,1,7)-1)/6)^2, so J=7 -> 1.0, J=4 -> 0.25.",
+  "note": "Rows are for a single category, as the predicate is applied per (subject, category). A row's `emitterFirstSeenIat` is the emitter's first verified chained entry, resolved before this call; an absent or null value means unresolved and the emitter does not credit.",
+  "cases": [
+    {
+      "kind": "communityPredicate",
+      "desc": "two old emitters at J=7 weigh 1.0 each: 2.0 passes exactly at the default min_weight",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "a1", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:b.example", "category": "content_accuracy", "val": 4, "iat": 1800000000, "jti": "b1", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "judges": { "did:apw:a.example": 7.0, "did:apw:b.example": 7.0 },
+      "expectEmitters": 2,
+      "expectWeightSum": 2.0,
+      "tolerance": 1e-9,
+      "expectPasses": true
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "two cold-start emitters at J=4 weigh 0.25 each: 0.5 does not pass",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "a1", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:b.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "b1", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "judges": {},
+      "expectEmitters": 2,
+      "expectWeightSum": 0.5,
+      "tolerance": 1e-9,
+      "expectPasses": false
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "the same emitter twice is one emitter, and the most recent attestation wins",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 1, "iat": 1800000000, "jti": "old", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000500, "jti": "new", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "judges": { "did:apw:a.example": 7.0 },
+      "expectEmitters": 1,
+      "expectWeightSum": 1.0,
+      "tolerance": 1e-9,
+      "expectPasses": false,
+      "expectRows": [{ "iss": "did:apw:a.example", "val": 5, "iat": 1800000500 }]
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "tie on iat is broken by jti, deterministically",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 1, "iat": 1800000000, "jti": "aaa", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "zzz", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "judges": { "did:apw:a.example": 7.0 },
+      "expectEmitters": 1,
+      "expectWeightSum": 1.0,
+      "tolerance": 1e-9,
+      "expectPasses": false,
+      "expectRows": [{ "iss": "did:apw:a.example", "val": 5, "iat": 1800000000 }]
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "an emitter younger than the minimum age is dropped even when old ones pass",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "a1", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:b.example", "category": "content_accuracy", "val": 1, "iat": 1800000000, "jti": "b1", "emitterFirstSeenIat": 1799999900 }
+      ],
+      "judges": { "did:apw:a.example": 7.0, "did:apw:b.example": 7.0 },
+      "expectEmitters": 1,
+      "expectWeightSum": 1.0,
+      "tolerance": 1e-9,
+      "expectPasses": false,
+      "expectRows": [{ "iss": "did:apw:a.example", "val": 5, "iat": 1800000000 }]
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "an emitter with unresolved history is dropped (fail-closed)",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "a1", "emitterFirstSeenIat": null },
+        { "iss": "did:apw:b.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "b1" }
+      ],
+      "judges": { "did:apw:a.example": 7.0, "did:apw:b.example": 7.0 },
+      "expectEmitters": 0,
+      "expectWeightSum": 0,
+      "tolerance": 1e-9,
+      "expectPasses": false,
+      "expectRows": []
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "eight cold-start emitters reach exactly 2.0 and pass with no judges map",
+      "rows": [
+        { "iss": "did:apw:e1.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "1", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e2.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "2", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e3.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "3", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e4.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "4", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e5.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "5", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e6.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "6", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e7.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "7", "emitterFirstSeenIat": 1790000000 },
+        { "iss": "did:apw:e8.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "8", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "expectEmitters": 8,
+      "expectWeightSum": 2.0,
+      "tolerance": 1e-9,
+      "expectPasses": true
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "a custom min_weight of 1.0 passes with a single calibrated emitter",
+      "rows": [
+        { "iss": "did:apw:a.example", "category": "content_accuracy", "val": 5, "iat": 1800000000, "jti": "a1", "emitterFirstSeenIat": 1790000000 }
+      ],
+      "judges": { "did:apw:a.example": 7.0 },
+      "minWeight": 1.0,
+      "expectEmitters": 1,
+      "expectWeightSum": 1.0,
+      "tolerance": 1e-9,
+      "expectPasses": true
+    },
+    {
+      "kind": "communityPredicate",
+      "desc": "no rows: no emitters, no weight, no pass",
+      "rows": [],
+      "expectEmitters": 0,
+      "expectWeightSum": 0,
+      "tolerance": 1e-9,
+      "expectPasses": false,
+      "expectRows": []
+    }
+  ]
+}
