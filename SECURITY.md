@@ -32,31 +32,46 @@ Areas that require special attention:
 
 Portaless has **one human point of failure**: a single author with merge
 permissions and the only deep knowledge of the codebase. This is a
-documented risk, not a hidden one — Phase 3 of the
-[Beta roadmap](./ROADMAP.md) requires an **explicit decision** before the
-public Beta invites third-party production data:
+documented risk, not a hidden one.
 
-> A project with a single human point of failure should not invite
-> third-party production data without that minimal safeguard, in honesty
-> with whoever trusts it.
+**Decision (recorded 2026-10-15): hybrid approach, invite-only Beta.**
 
-The decision to make (and record here when made): **is a second
-maintainer with real merge permissions sought before opening the Beta, or
-is the Beta deferred until one exists?** Options the author may weigh:
+Portaless does not open public sign-up while there is a single
+maintainer. Instead:
 
-1. **Seek a second maintainer first** — slowest, strongest; the Beta
-   waits until someone outside the author can review and merge.
-2. **Open the Beta with a documented single-maintainer notice** — every
-   operator is told plainly that there is no second reviewer; acceptable
-   only if the operator audience accepts that risk consciously (e.g.
-   hobby/self-hosted use, not third-party production data).
-3. **Hybrid** — Beta opens to trusted/known operators only (invite),
-   public signups wait for a second maintainer.
+1. **The Beta is invite-only.** Every operator running a Portaless
+   instance under this phase was personally invited by the author and
+   explicitly told, before onboarding, that the project has a single
+   maintainer today. No production data from a stranger is accepted
+   under this phase — only from people who made an informed decision
+   knowing that risk.
+2. **Public sign-up requires a second maintainer with real merge
+   permissions first.** Not a full-time hire — someone who reviews and
+   can merge pull requests **without the author's approval being
+   required**. This does not mean the author is absent from every pull
+   request; it means that person *could* merge alone if it came to
+   that, so that an unavailable author does not leave the project
+   stalled. That is the minimum that turns "one point of failure" into
+   "two people who can catch each other's mistakes."
+3. **Where that second maintainer is expected to come from**: the
+   author's existing network of people with demonstrated technical
+   trust (prior collaborators, clients from unrelated projects who
+   understand the codebase's domain), or an external APW/LTP
+   implementer from Phase 4 of the [Beta roadmap](./ROADMAP.md) — someone
+   who, by successfully implementing the protocol independently, has
+   already demonstrated they understand it well enough to review code
+   against it.
+4. **This section is updated, not just the ROADMAP checkbox**, the day
+   a second maintainer gains merge permissions — with their name (or
+   handle) and the date, so this stays a verifiable fact, not a stale
+   promise.
 
-Status: **pending decision.** When decided, this section is updated with
-the choice, the date, and (for option 1) the process used to find the
-second person. The companion review item — a minimal external security
-review of the auth flow and plugin sandbox — is mapped in
+Until all four conditions above are met, "Beta" means invited
+operators only, and this file is the place that says so — not a
+marketing page.
+
+The companion review item — a minimal external security review of the
+auth flow and plugin sandbox — is mapped in
 [`docs/security-review-guide.md`](./docs/security-review-guide.md) so a
 second pair of eyes has a concrete starting point.
 

@@ -113,8 +113,10 @@ reales.
 **No está listo hoy**: el paso final de publicación en GitHub Pages
 todavía usa terminal; la conexión OAuth a Cloudflare Pages está
 “próximamente” en el asistente; este Beta lo mantiene **una sola
-persona** (la decisión de sumar un segundo mantenedor está documentada
-en `SECURITY.md`); y todavía no hay ni una persona fuera del proyecto
+persona**, así que es **solo por invitación** — no habrá registro público
+hasta que exista un segundo mantenedor con permisos reales de merge
+(la decisión está documentada en `SECURITY.md`); y todavía no hay ni una
+persona fuera del proyecto
 que haya instalado Portaless sin ayuda del autor — ese es justamente el
 criterio de salida del Beta, y hasta que no pase, “Beta” es el nombre
 honesto de esta etapa, no un número de versión.

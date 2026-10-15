@@ -34,3 +34,6 @@ service-account*.json
 
 .airchive/
 .kilo/
+
+# Configuracion personal de herramientas (opencode), no del proyecto.
+config.json
