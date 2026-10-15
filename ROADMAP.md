@@ -226,6 +226,83 @@ Categories are by **who** must resolve the piece, not by priority.
 6. **[deferred]** Newsletters and a subscriber store: double opt-in, unsubscribe, deliverability. The MCP→provider send is the cheap part; the store and the compliance are not, and there is no audience to send to yet. AT Protocol is a **discovery** channel for it (map followers → invite them), never a delivery channel: AT Protocol does not deliver email, and the follower graph lives in third-party AppViews.
 7. **[plugin, not core]** Paywall / premium content. Two hard rules from this repository's own architecture: (a) premium content must be **rendered at the edge at request time**, never committed as static HTML — static premium bytes are public in the repo and in every deploy, so no paywall can protect them; (b) the billing provider is chosen by the operator (Stripe, Webpay, Mercado Pago, …) through a **plugin** with capability tokens. Portaless core ships no billing provider and no subscription economy: the economy that is already in core is pay-per-crawl, and a second one would be a parallel system, not a feature. **Shipped enabler (v0.0.9.11)**: the *open element catalog* that lets a paywall plugin exist at all — `ElementPack` (declarative, data-only: schema + `html-template`, never a render function), `ElementPackStore` (D1 → SQLite → in-memory, seeded with a `demo.Badge`), `resolveCatalog(core, packs)`, `renderPage` with `static`/`request` modes (a `requiresEdgeEval` node emits a structural placeholder in `static` that never touches its `props`, so premium bytes cannot reach `dist/`), `validatePageLayout(layout, catalog?)`, call-time catalog resolution in the MCP tools, and the editor palette/panel/preview over the resolved catalog. Design in [`docs/architecture/element-catalog-plugins.md`](./docs/architecture/element-catalog-plugins.md); 25 tests in `tests/unit/element-catalog-plugins.test.ts`. **Still not built (second pass / the plugin itself)**: `requiresEdgeEval` end-to-end through the sandbox, `secretProps` with the build-time guard, the pack-installation UI, and the paywall plugin (gating + billing) — all of which live in the operator's plugin, not in core.
 
+### Phases 7–11 — From a product to a standard
+
+**Status: planned, 2026-10-15.** Phases 0–6 made Portaless a usable product. These five phases are about a different question: what would have to be true for *Protocol APW* to be a standard the rest of the web builds on, rather than one implementation with a spec attached. The repository boundary that governs them is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
+
+**Why these five, and why in this order.** They are ordered by dependency, not by appeal. The chain is real and circular at one point, so it has to be broken at the cheapest link:
+
+```
+installable package + executable conformance suite
+        ↓
+a second implementer can build against the spec without reading this code
+        ↓
+that implementer emits reader_conduct attestations  →  a corpus exists
+        ↓
+R-05 becomes computable  →  evaluator weights become real
+        ↓
+the Sybil defenses in spec §6.7 have something to defend against
+        ↓
+a Veracier's reputation means something, and its history is worth publishing
+```
+
+Phase 7 breaks that circle because it is the cheapest link in it. Phases 8 and 9 are the substance of the trust web. Phase 10 is adoption. Phase 11 is the commercial seam and **blocks nothing in phases 7–10** — if it slips, APW is still a standard; if phases 7–9 slip, it is not.
+
+**What none of these phases needs**: another architecture document. The boundaries, the licensing argument and the enabling-pieces inventory are already written down. What is missing is code and third parties.
+
+#### Phase 7 — Executable conformance
+
+**Goal**: §5.6 of the spec claims another implementation can verify compatibility "without depending on Portaless's code". Today that claim is unfalsifiable: `APW-VECTORS-v1.3.md` is 22 KB of markdown and **no workflow runs it**.
+
+1. Extract the published vectors into machine-readable fixtures shipped alongside `@portaless/apw-resolver`, keeping the markdown as the human-readable form and pinning the two with a hash.
+2. A CI job that runs the reference implementation against every fixture — positive cases, rejection rules, and the Annex A scores — and publishes the result.
+3. A CI job that packs the tarball and imports it from an empty project, exercising both `.` and `./full`. The package is already independently installable (verified 2026-10-15: `npm pack` → `npm i` → clean import, single external dependency `canonicalize`); what is missing is any check that it stays that way. A new entry point or an incomplete `files:` list would break it silently.
+4. A published, versioned runner so a third party can execute the suite against their own implementation and get a comparable result.
+
+**Exit criterion**: a party with no access to this repository can run the suite and obtain a pass/fail against its own implementation, for the published spec version.
+
+#### Phase 8 — Bind identity to reputation
+
+**Goal**: make the trust graph mean something by giving every evaluation a verifiable author.
+
+The data model is already in place and was verified to exist: `site_trust_community_votes` (`schema.sql:319`) stores a `score` constrained to 1–5, a free-text `comment`, `voted_at`, and one row per category and voter. The scoring maths is real too — `bayesianScore` with `NEUTRAL = 4.0` and `PRIOR_WEIGHT = 3`, on top of witness calibration and weighted consensus. What is missing is the one thing that makes it a graph rather than a form.
+
+1. Replace `voter_id` (`anon-${crypto.randomUUID()}` in `localStorage`, `src/pages/trust/index.astro:63`) with a vote signed by the voter's `did:apw`, so an emitter is attributable and its `jti` is unique per issuer.
+2. Implement spec §6.7 with real data: evaluator weighting (0.25 for a new domain, gained only by agreeing with existing consensus), distinct emitters only, `min_weight` per predicate, minimum history age (W-07), and self-attestations never counting toward the emitter's own R-05.
+3. A public page per Veracier carrying its emission history.
+4. **Errata, not a version change** (decided 2026-10-15): APW v1.3 stands. Scores, counts and weight sums stay always public (already normative, §6.6); **the comment text stays governed** (§A.6), so it is visible to the emitter and to readers who meet the site's policy, not to everyone. The errata states this explicitly and names the Veracier page as a described surface. Making review text universally public would change what being reviewed means for every future subject and would alter the Sybil calculus — that is a v1.4 decision, deliberately not taken here.
+
+**Exit criterion**: `R-05` is computable from a corpus of at least two independent emitters, and no vote can be emitted without a signature. Note the second half is the real test: today the only bound on a vote is `ip_hash`.
+
+#### Phase 9 — Federated query
+
+**Goal**: the network becomes usable without becoming a directory anyone controls.
+
+1. `Explore` reads other nodes over APW. It is currently local-only — it globs `src/content/pages/*.json` of this repository (`src/pages/explore.astro:21`) — so today it cannot discover anything it does not already host.
+2. Normative definitions for every exposed filter, so `Top`, `Recents`, `Confidence`, `Old`, `New` and `History` mean the same thing on every implementation. `Top` is the prior-weighted bayesian score over a stated window; `Confidence` is the witness consensus over the stated `seq`, not the reader's own mean. `EmissionPeriod` currently covers `month | week | day` and has no `year` — either add it or state that year-ranges aggregate the weekly buckets.
+3. A property worth designing for explicitly: **a third party can recompute the ordering from the signed attestations**. That is what makes the feed auditable rather than merely visible, and it is the property neither X nor Google offers.
+
+**Exit criterion**: two independently operated nodes, neither operated by the author, can each produce the same ordering for the same signed attestations.
+
+#### Phase 10 — Product modules
+
+**Goal**: adoption. Ordered by adoption value, not by dependency; none of it is a precondition for a standard.
+
+1. **Posts** with ordering beyond `pubDate` — and only once Phase 9 has defined what a ranking means.
+2. **Recents**: a unified activity feed. This also retires four dashboard panels that render hardcoded `mockData` today (`packages/dashboard/src/organisms/registry.ts`: traffic, ledger, orders, revenue), which is a standing honesty problem independent of this phase.
+3. **Videos**: the `Video` element exists as an embed; the channel, a TikTok source, and any ranking do not. A ranking needs a view registry first — there is no view counter in this repository.
+4. **Music**: nothing exists but static links in the example JSON. **Honest limit to settle before anything is communicated**: there is no public route to *streams plays* from Spotify or from Apple Music. Any "consolidated global impact" has to be defined from what is actually obtainable — followers, chart positions, top tracks, releases — or it is a claim a customer can disprove in one call.
+
+#### Phase 11 — The commercial seam
+
+**Goal**: everything a closed module needs to exist, without touching the core's license.
+
+1. `packages/plugin-sdk` — the MIT-licensed typed surface. It does not exist yet, although `LICENSE-SDK` already grants it a license and `CONTRIBUTING.md` already promises it. The isolation alone makes a closed plugin legal today; the SDK is an adoption barrier, not a legal one.
+2. An HTTP installer for plugins. `PluginRegistryStore.register()` is currently called only from the seed (`packages/plugin-sandbox/src/registry/store-factory.ts:35`) and plugin code is read from local disk (`functions/admin/api/plugins/run.js:65`), returning `503 plugin_source_backend_unavailable` on workerd.
+3. Backends for the nine capabilities that return `501 NOT_CONFIGURED` (`media:*`, `email:send`, `commerce:*`, `storage:*`, `site:admin`, `agent:identify`). The pattern is already set and matches `ROADMAP.md:227`: the core exposes the interface, the plugin supplies the implementation — exactly as `SettlementProvider.charge()` is a placeholder returning `success: false`.
+
+**Exit criterion**: a closed module installs into a stock Portaless instance, runs under the sandbox, and is granted only capabilities a human approved. **Note**: Cloudum's relationship to the invite-only decision in [`SECURITY.md`](./SECURITY.md) is unresolved, and this phase does not decide it.
+
 ### Beta readiness checklist
 
 One list, so progress does not depend on re-reading the six phases:
@@ -243,6 +320,8 @@ One list, so progress does not depend on re-reading the six phases:
 - [ ] At least one person other than the author with real capacity to review or merge code
 - [ ] At least one external domain (not the author's) publishes valid APW identity
 - [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights — *(code ready: calibration + inter-node sync shipped; the box needs the external reality — more than one real operator — not more code)*
+- [ ] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(Phase 7)*
+- [ ] Every community vote is signed by a verifiable `did:apw`, and `R-05` is computable from more than one independent emitter — *(Phase 8; today `voter_id` is a client-side UUID bounded only by `ip_hash`)*
 - [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/primos-pasos.md` is the starting artifact)*
 - [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/primos-pasos.md` shipped; keep it honest and updated as the product changes)*
 
