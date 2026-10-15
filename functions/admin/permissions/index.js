@@ -39,6 +39,8 @@ import {
   isSettlementGrant,
 } from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-service.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -173,6 +175,28 @@ export async function onRequestPut(context) {
   }
 
   const { subject, capabilityId, granted } = body ?? {};
+
+  // Step-up obligatorio (Fase 11.2): conceder site:admin a un plugin ya
+  // instalado es una accion tan sensible como instalar. Una sesion robada sola
+  // no debe poder cambiarla. Mismo patron que site-identity.js (rotate).
+  const auth = new AuthService(await createUsersStore(env), await createSessionStore(env));
+  const check = await auth.verifyStepUp(user.username, {
+    password: typeof body?.password === "string" ? body.password : undefined,
+    totpCode: typeof body?.totpCode === "string" ? body.totpCode : undefined,
+  });
+  if (!check.ok) {
+    return new Response(
+      JSON.stringify({
+        error: "step_up_failed",
+        reason: check.reason,
+        message:
+          check.reason === "totp_required"
+            ? "Ingresa el codigo de tu app de 2FA para cambiar permisos."
+            : "Verificacion reforzada fallida (contrasena/2FA) para cambiar permisos.",
+      }),
+      { status: 401, headers: { "content-type": "application/json" } }
+    );
+  }
 
   if (
     !subject ||

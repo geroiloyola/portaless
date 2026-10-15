@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 24 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 25 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 19 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 20 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -50,6 +50,7 @@ const SOURCES = [
   { path: "schema-additions/theme-packs.sql", selfBanner: true },
   { path: "schema-additions/community-attestations.sql", selfBanner: true },
   { path: "schema-additions/activity-events.sql", selfBanner: true },
+  { path: "schema-additions/plugin-artifacts.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
@@ -140,6 +141,11 @@ const HEADER = `-- =============================================================
 -- paneles mock que mostraban datos falsos. Fuente
 -- schema-additions/activity-events.sql; el store la crea al vuelo en bases
 -- existentes. Ver packages/dashboard/src/activity/activity-store.ts.
+--
+-- NOTA v0.0.9.35: tablas nuevas plugin_artifacts y plugin_artifact_chunks --
+-- codigo de plugins instalados por HTTP, troceado en BLOB de 512 KB (limites
+-- de D1). Fuente schema-additions/plugin-artifacts.sql; el store las crea al
+-- vuelo. Ver packages/plugin-sandbox/src/registry/plugin-artifacts.ts.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql

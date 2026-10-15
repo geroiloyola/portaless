@@ -134,7 +134,8 @@ entregan.
 
 La frontera de arriba no es una declaracion de intenciones: para que un modulo
 cerrado se pueda instalar y operar hicieron falta tres cosas, y las tres son
-del core. La primera ya existe; las otras dos siguen pendientes.
+del core. Dos ya existen (el SDK y el instalador, este ultimo tras un flag); la
+tercera (los backends de capacidades) sigue pendiente por decision.
 
 ### 3.1 `packages/plugin-sdk` — publicado (MIT, v0.1.0)
 
@@ -145,11 +146,10 @@ paquete del core (AGPL). La equivalencia con el core la fija un test del lado
 AGPL (`tests/unit/plugin-sdk-parity.test.ts`: deep-equal del catalogo, misma
 agrupacion, y `validateManifest` con el mismo veredicto y los mismos errores).
 
-Lo que **sigue faltando** (Fase 11.2): el instalador HTTP de plugins y los
-backends reales de las capacidades que hoy responden 501. La superficie de
-capacidades del SDK es **provisional** hasta que esa fase cierre (cuotas de
-`storage:*`, codigos de error de los backends reales): por eso esta version es
-0.1.0 y su README lo dice.
+Lo que **sigue faltando** (Fase 11.2): los backends reales de las capacidades que
+hoy responden 501. La superficie de capacidades del SDK es **provisional** hasta
+que esa fase cierre (cuotas de `storage:*`, codigos de error de los backends
+reales): por eso esta version es 0.1.0 y su README lo dice.
 
 ### 3.2 El tarball de `apw-resolver` instala, pero nadie lo prueba
 
@@ -172,28 +172,31 @@ dependencias externas son `canonicalize`. Los seis imports entre paquetes que qu
 en el codigo fuente son un detalle interno de build, no una limitacion del
 consumidor.
 
-Lo que si falta es **la garantia de que siga siendo cierto**. No hay ningun job de
-CI que empaquete el tarball y lo importe desde un proyecto limpio, asi que una
-entrada nueva, un cambio de bundler o un `files:` incompleto podrian romper la
-instalacion sin que nada lo note. Para un protocolo que quiere ser implementado
-por terceros, que la referencia sea instalable no es un accidente aceptable: es la
-condicion de entrada, y por lo tanto merece una prueba automatica, no una
-comprobacion manual.
+La garantia ya existe desde la **Fase 7**: `.github/workflows/apw-package-conformance.yml`
+empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
+`./full` en cada push, de modo que una entrada nueva, un cambio de bundler o un
+`files:` incompleto rompen CI en vez de pasar desapercibidos.
 
-### 3.3 No hay instalador de plugins, y nueve capacidades no tienen backend
+### 3.3 Instalador de plugins (tras flag) y nueve capacidades sin backend
 
-- **Instalador**: `PluginRegistryStore.register()` solo se invoca desde el seed
-  (`packages/plugin-sandbox/src/registry/store-factory.ts:35`), y el codigo del
-  plugin se lee de disco local (`functions/admin/api/plugins/run.js:65`), con
-  `503 plugin_source_backend_unavailable` en workerd. Un producto comercial no se
-  puede instalar en la instancia de un cliente.
+- **Instalador**: existe desde la Fase 11.2, **detras de `PORTALESS_PLUGIN_INSTALLER`
+  apagado por defecto** y sin anuncio (`POST /admin/api/plugins/install` y
+  `uninstall`; ver ERRATA E-15). Verifica un manifiesto firmado por el publicador
+  contra su identidad resuelta, guarda el codigo troceado, **no concede nada**
+  (el grant sigue siendo `concedido ∩ manifiesto`), es inmutable por
+  `(publisher, name, version)` y reconcilia capacidades al actualizar (removidas
+  podadas, ampliadas a revision). **Lo que falta**: el runtime todavia lee de
+  disco (`functions/admin/api/plugins/run.js`), asi que el `503
+  plugin_source_backend_unavailable` de workerd sigue siendo cierto; ejecutar
+  desde el artefacto guardado es el paso siguiente.
 - **Capacidades**: 9 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
   (`media:read/write`, `email:send`, `commerce:read/checkout`,
-  `storage:read/write`, `site:admin`, `agent:identify`). El patron correcto ya
-  existe y respeta `ROADMAP.md:227`: **el core expone la interfaz y el plugin
-  pone la implementacion** — igual que hoy `SettlementProvider.charge()` es un
-  placeholder que devuelve `success: false` y la liquidacion real la construye un
-  tercero.
+  `storage:read/write`, `site:admin`, `agent:identify`) — **por decision, no por
+  olvido**: `site:admin`/`email:send` tienen efectos reales y `storage:*` necesita
+  cuotas y namespace por plugin. El patron correcto ya existe y respeta
+  `ROADMAP.md:227`: **el core expone la interfaz y el plugin pone la
+  implementacion** — igual que hoy `SettlementProvider.charge()` es un placeholder
+  que devuelve `success: false` y la liquidacion real la construye un tercero.
 
 ## 4. Nombres
 

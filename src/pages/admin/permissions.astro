@@ -41,26 +41,127 @@ import "../../../packages/permissions/src/permission-center-ui.css";
   const errorEl = document.getElementById("pc-load-error")!;
   const rootEl = document.getElementById("pc-root")!;
 
-  async function toggleGrant(grant: PermissionGrant): Promise<void> {
-    const res = await fetch("/admin/permissions", {
+  interface StepUp {
+    password: string;
+    totpCode: string;
+  }
+
+  // Fase 11.2: cambiar permisos exige verificacion reforzada (password + 2FA).
+  // Modal minimo creado en JS (styles inline: el contenido dinamico no hereda
+  // los estilos scoped de Astro).
+  function promptStepUp(totpOnly: boolean): Promise<StepUp | null> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      Object.assign(overlay.style, {
+        position: "fixed", inset: "0", background: "rgba(0,0,0,0.55)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: "9999",
+      });
+
+      const form = document.createElement("form");
+      Object.assign(form.style, {
+        background: "var(--panel-bg, #fff)", color: "var(--text, #261C15)", padding: "20px",
+        borderRadius: "12px", minWidth: "300px", display: "grid", gap: "10px",
+        border: "1px solid var(--panel-border, #E4E6C3)",
+      });
+
+      const title = document.createElement("h3");
+      title.textContent = totpOnly ? "Código 2FA" : "Verificación reforzada";
+      form.appendChild(title);
+
+      const hint = document.createElement("p");
+      hint.style.margin = "0";
+      hint.textContent = totpOnly
+        ? "Ingresá el código de tu app de 2FA para confirmar el cambio."
+        : "Cambiar permisos es una acción sensible: ingresá tu contraseña (y el código de 2FA si lo tenés).";
+      form.appendChild(hint);
+
+      const passwordInput = document.createElement("input");
+      passwordInput.type = "password";
+      passwordInput.placeholder = "Contraseña actual";
+      passwordInput.autocomplete = "current-password";
+      if (totpOnly) passwordInput.hidden = true;
+      form.appendChild(passwordInput);
+
+      const totpInput = document.createElement("input");
+      totpInput.type = "text";
+      totpInput.inputMode = "numeric";
+      totpInput.placeholder = "Código 2FA (opcional)";
+      totpInput.autocomplete = "one-time-code";
+      form.appendChild(totpInput);
+
+      const row = document.createElement("div");
+      Object.assign(row.style, { display: "flex", gap: "8px", justifyContent: "flex-end" });
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "Cancelar";
+      const submit = document.createElement("button");
+      submit.type = "submit";
+      submit.textContent = "Confirmar";
+      row.appendChild(cancel);
+      row.appendChild(submit);
+      form.appendChild(row);
+
+      function close(result: StepUp | null) {
+        overlay.remove();
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onKey(e: KeyboardEvent) {
+        if (e.key === "Escape") close(null);
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        close({ password: passwordInput.value, totpCode: totpInput.value });
+      });
+      cancel.addEventListener("click", () => close(null));
+      document.addEventListener("keydown", onKey);
+
+      overlay.appendChild(form);
+      document.body.appendChild(overlay);
+      (totpOnly ? totpInput : passwordInput).focus();
+    });
+  }
+
+  async function putGrant(grant: PermissionGrant, creds: StepUp): Promise<Response> {
+    return fetch("/admin/permissions", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         subject: grant.subject,
         capabilityId: grant.capabilityId,
         granted: grant.granted,
+        password: creds.password,
+        totpCode: creds.totpCode || undefined,
       }),
     });
+  }
+
+  async function toggleGrant(grant: PermissionGrant): Promise<void> {
+    let creds = await promptStepUp(false);
+    if (!creds) throw new Error("Cambio cancelado.");
+
+    let res = await putGrant(grant, creds);
+    let body: any = null;
+    try {
+      body = await res.clone().json();
+    } catch {
+      body = null;
+    }
+
+    if (res.status === 401 && body?.reason === "totp_required") {
+      const otp = await promptStepUp(true);
+      if (!otp) throw new Error("Cambio cancelado.");
+      res = await putGrant(grant, { password: creds.password, totpCode: otp.totpCode });
+      try {
+        body = await res.clone().json();
+      } catch {
+        body = null;
+      }
+    }
 
     if (!res.ok) {
-      let message = `HTTP ${res.status}`;
-      try {
-        const body = await res.json();
-        if (body?.message) message = body.message;
-        else if (body?.error) message = body.error;
-      } catch {
-        // Respuesta sin body JSON -- se usa el mensaje generico de arriba.
-      }
+      const message = body?.message ?? body?.error ?? `HTTP ${res.status}`;
       throw new Error(message);
     }
   }

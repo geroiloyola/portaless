@@ -59,6 +59,32 @@ best-effort host check actually run?); invoking the dispatcher URL
 without the token; a `scriptName` header with path characters; replaying
 a capability-bridge token after its TTL.
 
+### 3. Plugin installer (added 2026-10-15 — NEW, not yet reviewed)
+
+**Promise**: installing a plugin by HTTP never runs anything the publisher
+did not sign, never grants a capability on its own, and cannot be replayed
+with different bytes under the same version.
+
+This surface did **not** exist when this guide was written. It ships behind
+`PORTALESS_PLUGIN_INSTALLER`, **off by default** (404 without it), precisely
+because it is unreviewed.
+
+Key files, in review order:
+
+| File | What to check |
+|---|---|
+| `functions/admin/api/plugins/install.js` | Step-up enforced before anything; the signed manifest verified against the **resolved** publisher identity; install grants nothing; immutability `(publisher, name, version) → code hash`. |
+| `functions/admin/api/plugins/uninstall.js` | Step-up; revokes the plugin's grants on removal. |
+| `packages/apw-resolver/src/did-apw/plugin-manifest.ts` | The signature covers `requestedCapabilities`; `typ` is `apw-plugin-manifest+jws`. |
+| `packages/plugin-sandbox/src/registry/plugin-artifacts.ts` | Chunked BLOB storage, hard per-artifact cap, never base64. |
+| `packages/plugin-sandbox/src/install/reconcile.ts` | Removed capabilities pruned; expanded capabilities never auto-granted. |
+
+Attack ideas: a JWS whose `publisher` is not the resolved DID; a manifest
+whose `requestedCapabilities` were changed after signing (must fail); a
+re-install with different code under the same version (must be `409`); a
+session without step-up (must be `401`); enabling the flag without noticing
+that the runtime still reads code from disk.
+
 ## How to run the tests (no cloud accounts needed)
 
 ```bash

@@ -54,6 +54,8 @@ export const REQUIRED_TABLES = [
   "theme_packs",
   "community_attestations",
   "activity_events",
+  "plugin_artifacts",
+  "plugin_artifact_chunks",
 ];
 
 function defaultSqlitePath() {

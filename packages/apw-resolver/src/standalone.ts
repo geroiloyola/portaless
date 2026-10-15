@@ -45,6 +45,20 @@ export type { ChainEntry, ChainKey, VerifyChainResult } from "./did-apw/history-
 export { verifySiteJws, signSiteJws, jcs, MANIFEST_TYP, ATTESTATION_TYP } from "./did-apw/site-jws";
 export type { SiteJwsFailure, VerifySiteJwsResult, SiteSigningKey } from "./did-apw/site-jws";
 
+export {
+  PLUGIN_MANIFEST_TYP,
+  buildPluginManifestPayload,
+  signPluginManifest,
+  verifyPluginManifest,
+  isPluginManifestDocument,
+} from "./did-apw/plugin-manifest";
+export type {
+  PluginManifestDocument,
+  SignedPluginManifestInner,
+  SignedPluginCapabilityRequest,
+  VerifyPluginManifestResult,
+} from "./did-apw/plugin-manifest";
+
 export { jwkThumbprint, publicJwkMembers } from "./did-apw/fingerprint";
 export { parseDidKeyId } from "./did-apw/key-id";
 export { generateApwDid } from "./did-apw/generate";

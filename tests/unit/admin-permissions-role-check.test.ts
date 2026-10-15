@@ -1,4 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// Fase 11.2: PUT /admin/permissions exige step-up. Se mockea AuthService para
+// que la verificacion reforzada dependa de `password` sin montar el store real.
+vi.mock("../../packages/auth/src/auth-service", () => ({
+  AuthService: class {
+    async verifyStepUp(_username: string, creds: { password?: string; totpCode?: string }) {
+      if (creds.password === "correct") return { ok: true };
+      if (creds.password === undefined) return { ok: false, reason: "password_required" };
+      return { ok: false, reason: "invalid_password" };
+    }
+  },
+}));
+
 import { onRequestGet, onRequestPut } from "../../functions/admin/permissions/index.js";
 
 function makeFakeD1() {
@@ -196,10 +209,30 @@ describe("functions/admin/permissions/index.js", () => {
     expect(res.status).toBe(403);
   });
 
+  it("PUT rechaza con 401 si el admin no manda step-up (Fase 11.2)", async () => {
+    const ctx = makeContext({
+      user: { username: "admin1", role: "admin" },
+      body: { subject: { type: "plugin", id: "hello-plugin", displayName: "Hello" }, capabilityId: "network:fetch", granted: true },
+    });
+    const res = await onRequestPut(ctx);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("step_up_failed");
+  });
+
+  it("PUT rechaza con 401 si el step-up es incorrecto", async () => {
+    const ctx = makeContext({
+      user: { username: "admin1", role: "admin" },
+      body: { subject: { type: "plugin", id: "hello-plugin", displayName: "Hello" }, capabilityId: "network:fetch", granted: true, password: "mala" },
+    });
+    const res = await onRequestPut(ctx);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("step_up_failed");
+  });
+
   it("PUT rechaza con 400 si el body no tiene la forma esperada", async () => {
     const ctx = makeContext({
       user: { username: "admin1", role: "admin" },
-      body: { capabilityId: "network:fetch" },
+      body: { capabilityId: "network:fetch", password: "correct" },
     });
     const res = await onRequestPut(ctx);
     expect(res.status).toBe(400);
@@ -224,6 +257,7 @@ describe("functions/admin/permissions/index.js", () => {
           subject: { type: "plugin", id: "hello-plugin", displayName: "Hello Plugin (demo)" },
           capabilityId: "network:fetch",
           granted: true,
+          password: "correct",
         }),
       },
       data: { user: { username: "admin1", role: "admin" } },
@@ -254,13 +288,13 @@ describe("functions/admin/permissions/index.js", () => {
     const subject = { type: "plugin", id: "commerce-plugin", displayName: "Commerce Plugin (Medusa/Mercur)" };
 
     await onRequestPut({
-      request: { json: async () => ({ subject, capabilityId: "network:fetch", granted: true }) },
+      request: { json: async () => ({ subject, capabilityId: "network:fetch", granted: true, password: "correct" }) },
       data: { user },
       env,
     } as any);
 
     const revokeRes = await onRequestPut({
-      request: { json: async () => ({ subject, capabilityId: "network:fetch", granted: false }) },
+      request: { json: async () => ({ subject, capabilityId: "network:fetch", granted: false, password: "correct" }) },
       data: { user },
       env,
     } as any);
@@ -278,7 +312,7 @@ describe("functions/admin/permissions/index.js", () => {
     const env = { DB: makeFakeD1() };
     const user = { username: "admin1", role: "admin" };
     const subject = { type: "reader", id: "did:apw:indice.example", displayName: "did:apw:indice.example" };
-    const body = { subject, capabilityId: "trust:read-governance-bypass", granted: true };
+    const body = { subject, capabilityId: "trust:read-governance-bypass", granted: true, password: "correct" };
 
     const grantRes = await onRequestPut({
       request: { json: async () => body },
@@ -313,6 +347,7 @@ describe("functions/admin/permissions/index.js", () => {
         subject: { type: "reader", id: "indice.example", displayName: "indice.example" },
         capabilityId: "trust:read-governance-bypass",
         granted: true,
+        password: "correct",
       },
     });
     const res = await onRequestPut(ctx);
@@ -327,6 +362,7 @@ describe("functions/admin/permissions/index.js", () => {
         subject: { type: "reader", id: "did:apw:indice.example", displayName: "did:apw:indice.example" },
         capabilityId: "site:admin",
         granted: true,
+        password: "correct",
       },
     });
     const res = await onRequestPut(ctx);

@@ -9,6 +9,7 @@ import {
   listCapabilitiesByCategory as coreList,
 } from "../../packages/plugin-sandbox/src/capabilities/capability-registry";
 import { validateManifest as coreValidate } from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
+import { PLUGIN_MANIFEST_TYP as CORE_PLUGIN_MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
 import type { PluginManifest } from "../../packages/plugin-sandbox/src/types";
 
 const manifests: PluginManifest[] = [
@@ -72,5 +73,10 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
     for (const m of manifests) {
       expect(sdk.validateManifest(m), JSON.stringify(m)).toEqual(coreValidate(m));
     }
+  });
+
+  it("PLUGIN_MANIFEST_TYP coincide con el typ del core (ERRATA E-15)", () => {
+    expect(sdk.PLUGIN_MANIFEST_TYP).toBe(CORE_PLUGIN_MANIFEST_TYP);
+    expect(sdk.PLUGIN_MANIFEST_TYP).toBe("apw-plugin-manifest+jws");
   });
 });

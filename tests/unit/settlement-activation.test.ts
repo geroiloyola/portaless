@@ -135,7 +135,7 @@ describe("POST /admin/settlement activate", () => {
 describe("PUT /admin/permissions no puede activar cobros", () => {
   function put(body: unknown) {
     return permissions.onRequestPut({
-      request: new Request("https://site.example/admin/permissions", { method: "PUT", body: JSON.stringify(body) }),
+      request: new Request("https://site.example/admin/permissions", { method: "PUT", body: JSON.stringify({ ...(body as object), password: "correcta" }) }),
       data: { user: ADMIN },
       env: ENV,
     });

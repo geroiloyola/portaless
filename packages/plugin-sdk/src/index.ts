@@ -23,6 +23,14 @@
 // ---------------------------------------------------------------------------
 
 /**
+ * `typ` del header del manifiesto firmado por el publicador (ERRATA E-15). Un
+ * publisher firma su manifiesto con su `did:apw` usando este typ; el instalador
+ * lo verifica contra la identidad resuelta. Deep-equal con la constante del core
+ * (chequeado por `tests/unit/plugin-sdk-parity.test.ts`).
+ */
+export const PLUGIN_MANIFEST_TYP = "apw-plugin-manifest+jws";
+
+/**
  * Atomic capability a plugin can request — one thing at a time, the same
  * principle as an individual iOS/Android permission. This is the shared
  * vocabulary between the plugin sandbox and the Permissions Center.
