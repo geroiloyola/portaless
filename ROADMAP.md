@@ -228,7 +228,7 @@ Categories are by **who** must resolve the piece, not by priority.
 
 ### Phases 7–11 — From a product to a standard
 
-**Status: planned, 2026-10-15.** Phases 0–6 made Portaless a usable product. These five phases are about a different question: what would have to be true for *Protocol APW* to be a standard the rest of the web builds on, rather than one implementation with a spec attached. The repository boundary that governs them is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
+**Status: Phase 7 shipped; phases 8–11 planned (2026-10-15).** Phases 0–6 made Portaless a usable product. These five phases are about a different question: what would have to be true for *Protocol APW* to be a standard the rest of the web builds on, rather than one implementation with a spec attached. The repository boundary that governs them is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
 
 **Why these five, and why in this order.** They are ordered by dependency, not by appeal. The chain is real and circular at one point, so it has to be broken at the cheapest link:
 
@@ -250,16 +250,23 @@ Phase 7 breaks that circle because it is the cheapest link in it. Phases 8 and 9
 
 **What none of these phases needs**: another architecture document. The boundaries, the licensing argument and the enabling-pieces inventory are already written down. What is missing is code and third parties.
 
-### Phase 7 — Executable conformance
+#### Phase 7 — Executable conformance
+
+**Status: shipped (2026-10-15).** The spec's claim is now checked by CI instead of asserted.
 
 **Goal**: §5.6 of the spec claims another implementation can verify compatibility "without depending on Portaless's code". Today that claim is unfalsifiable: `APW-VECTORS-v1.3.md` is 22 KB of markdown and **no workflow runs it**.
 
-1. Extract the published vectors into machine-readable fixtures shipped alongside `@portaless/apw-resolver`, keeping the markdown as the human-readable form and pinning the two with a hash.
-2. A CI job that runs the reference implementation against every fixture — positive cases, rejection rules, and the Annex A scores — and publishes the result.
-3. A CI job that packs the tarball and imports it from an empty project, exercising both `.` and `./full`. The package is already independently installable (verified 2026-10-15: `npm pack` → `npm i` → clean import, single external dependency `canonicalize`); what is missing is any check that it stays that way. A new entry point or an incomplete `files:` list would break it silently.
-4. A published, versioned runner so a third party can execute the suite against their own implementation and get a comparable result.
+1. **[shipped]** Extract the published vectors into machine-readable fixtures, keeping the markdown as the human-readable form. **Deviation from the original wording**: the fixtures live in `docs/protocol-apw/vectors/v1.3/` (CC BY 4.0), **not inside the npm package**. Shipping them in the code distribution would undercut the very claim they exist to support — that they are independent of the code. The published runner takes a path to them instead.
+2. **[shipped]** A CI job that runs the reference implementation against every fixture: `tests/unit/apw-conformance-vectors.test.ts`, 7 tests, currently **78/78 cases passing** across V-01, V-02, V-03, V-04, V-05, V-08, V-09 and V-12. The runner imports **only** from the package's public entry point, so a missing export fails CI. **What this exposed and fixed**: `buildApwManifest` and the whole scoring surface (`issuerWeight`, `judgeFromDeviation`, `toValue`, `bayesianScore`, `calibrateJudges`, `scoreSubject`, `scoreOf`, …) were not exported at all, so the spec's *minimal interoperability vectors* V-08 and V-09 were not implementable from the published package.
+3. **[shipped]** A CI job that packs the real tarball, installs it into an empty project and imports it: `.github/workflows/apw-package-conformance.yml`, exercising both `.` (39 exports) and `./full` (13 exports), then running the published `bin` against the vectors.
+4. **[shipped]** A published runner: `bin: apw-conformance`, so a third party runs `npx @portaless/apw-resolver <path-to-vectors>` against its own implementation.
 
-**Exit criterion**: a party with no access to this repository can run the suite and obtain a pass/fail against its own implementation, for the published spec version.
+**Exit criterion**: a party with no access to this repository can run the suite and obtain a pass/fail against its own implementation, for the published spec version. **Met**, verified in a clean room (rsync without `node_modules` → `npm ci` → build → pack → install → run the bin).
+
+**Honest limits, recorded rather than hidden.**
+- **V-06 is not executable yet**, so the minimal interoperability set is *not fully* satisfied: it is the only required vector absent from the fixture set, and the test asserts exactly that (`expect(missing).toEqual(["V-06"])`) so the gap cannot regress into silence. Its 12-step validation order lives in `packages/trust-layer/src/site-trust/attestation.ts` (`verifyAttestation`), not in `apw-resolver`.
+- **V-07, V-10, V-11 and V-13 are not yet machine-readable**, and say so in `vectors/v1.3/manifest.json` under `notYetMachineReadable`, each with its reason. V-07 and V-13 are byte-level mutation matrices with a deterministic `jti` preimage; V-10 needs per-subject attestation fixtures; V-11 needs a database and a non-pure decision function.
+- **A spec-level precision was found and documented**: the vector document prints `w(6.7) = 0.9025` as "exact", but in IEEE-754 doubles `((6.7-1)/6)^2` is `0.9025000000000001`, one ULP above it. Every numeric comparison in the fixtures and the runner uses a tolerance, and `v-08-scoring-primitives.json` states the rule under `comparisonRule` — otherwise a correct implementation would fail a strict equality check against a correct one.
 
 #### Phase 8 — Bind identity to reputation
 
@@ -320,7 +327,7 @@ One list, so progress does not depend on re-reading the six phases:
 - [ ] At least one person other than the author with real capacity to review or merge code
 - [ ] At least one external domain (not the author's) publishes valid APW identity
 - [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights — *(code ready: calibration + inter-node sync shipped; the box needs the external reality — more than one real operator — not more code)*
-- [ ] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(Phase 7)*
+- [x] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(Phase 7; 78/78 cases over 8 vectors, minimal set except V-06, whose validation lives in `trust-layer` rather than in the published package)*
 - [ ] Every community vote is signed by a verifiable `did:apw`, and `R-05` is computable from more than one independent emitter — *(Phase 8; today `voter_id` is a client-side UUID bounded only by `ip_hash`)*
 - [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/primos-pasos.md` is the starting artifact)*
 - [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/primos-pasos.md` shipped; keep it honest and updated as the product changes)*

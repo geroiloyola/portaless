@@ -1,5 +1,5 @@
 {
-  "$schema": "./vectors.schema.md",
+  "formatDoc": "./README.md",
   "spec": "APW-SPEC-v1.3",
   "source": "../../APW-VECTORS-v1.3.md",
   "note": "Machine-readable form of APW-VECTORS-v1.3.md. This directory is independent of the code: it does not import, run or reference any implementation. The markdown is the human-readable form and both are pinned to the same spec version. License: CC BY 4.0.",
