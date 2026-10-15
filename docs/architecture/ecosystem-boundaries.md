@@ -145,26 +145,34 @@ documentado en `packages/plugin-sandbox/src/types.ts` y `PLUGIN_SANDBOXING.md`.
 No es un requisito legal —el aislamiento ya es suficiente— pero si es un
 obstaculo de adopcion.
 
-### 3.2 `apw-resolver` no es instalable por separado, todavia
+### 3.2 El tarball de `apw-resolver` instala, pero nadie lo prueba
 
-El paquete declara `publishConfig.access: public` y una unica dependencia de
-runtime (`canonicalize`), lo cual lo hace *casi* publicable. Pero **seis archivos
-importan por ruta relativa fuera del paquete**, a `packages/trust-layer/src/` y
-`packages/sqlite-driver/src/`:
+**Correccion (2026-10-15).** Una version anterior de esta seccion afirmaba que
+`@portaless/apw-resolver` no era instalable por separado porque seis archivos
+importan por ruta relativa fuera del paquete. **Era falso, y la comprobacion lo
+demuestra**: el `build` empaqueta con `esbuild --bundle`, que inlinea esas
+importaciones en el momento de compilar. La prueba real:
 
-| Archivo | Que importa | Tipo |
-| --- | --- | --- |
-| `src/did-apw/store-factory.ts:40` | `openSqlite` | valor |
-| `src/did-apw/atproto-links-store.ts:15` | `openSqlite` | valor |
-| `src/scoring/reader-attestations.ts:29` | `verifyAttestation` | valor |
-| `src/scoring/read-policy-store.ts:266` | `openSqlite` (dinamico) | valor |
-| `src/scoring/reader-conduct-auto.ts:24` | `UsageLedgerStore` | solo tipo |
-| `src/scoring/reader-conduct-emitter.ts:19` | `UsageLogPeriod` | solo tipo |
+```
+$ npm pack && npm i ./portaless-apw-resolver-0.1.0.tgz   # en un proyecto vacio
+INSTALL: OK
+IMPORT  : OK    -> APW_TXT_PREFIX, ATTESTATION_TYP, buildDidDocument,
+                   generateApwDid, jcs, jwkThumbprint, parseApwDidDocument, ...
+IMPORT /full : OK, 13 exports
+```
 
-Un `npm i @portaless/apw-resolver` aislado no resuelve esas tres imports de valor.
-Esto importa mas de lo que parece: **es la unica pieza que hoy impide que un
-segundo implementador de APW instale el protocolo sin arrastrar el resto del
-monorepo**, que es la condicion real de la seccion 5.
+El tarball publicado no contiene ninguna import relativa sin resolver, y sus unicas
+dependencias externas son `canonicalize`. Los seis imports entre paquetes que quedan
+en el codigo fuente son un detalle interno de build, no una limitacion del
+consumidor.
+
+Lo que si falta es **la garantia de que siga siendo cierto**. No hay ningun job de
+CI que empaquete el tarball y lo importe desde un proyecto limpio, asi que una
+entrada nueva, un cambio de bundler o un `files:` incompleto podrian romper la
+instalacion sin que nada lo note. Para un protocolo que quiere ser implementado
+por terceros, que la referencia sea instalable no es un accidente aceptable: es la
+condicion de entrada, y por lo tanto merece una prueba automatica, no una
+comprobacion manual.
 
 ### 3.3 No hay instalador de plugins, y nueve capacidades no tienen backend
 
@@ -232,5 +240,6 @@ Ademas, y por el mismo motivo de no mezclar licencias y ciclos de release: **est
 decision de 2026-10 de mantener APW, LTP y Portaless Index en este mismo repositorio,
 y no en repositorios separados, es consciente**. Lo que habilita a un segundo
 implementador del protocolo no es la ubicacion del codigo: es que exista un
-paquete publicable e instalable sin el resto de Portaless (seccion 3.2). Esa es
-la condicion que hay que cumplir, y hoy esta a medio camino.
+paquete publicable e instalable sin el resto de Portaless —que ya se cumple (seccion
+3.2)— y que ese hecho siga siendo cierto en cada release, con una prueba de CI que lo
+verifique en lugar de una comprobacion manual.
