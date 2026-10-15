@@ -21,7 +21,7 @@ or read the files directly and check your own implementation. Every expectation 
 
 Each vector file is a JSON object with an `id`, `title`, `specSection`, `minimalInterop`, and one or more **arrays of cases**. Each case carries a `kind` that identifies the operation to perform, so a runner dispatches on data rather than on which file it is reading.
 
-`kind` values in use: `fingerprint`, `jcs`, `sha256b64url`, `didKeyId`, `parseDidKeyId`, `parseDidKeyIdRejection`, `manifestBuild`, `manifestParse`, `issuerWeight`, `issuerWeightRatio`, `judgeFromDeviation`, `toValue`, `readerConductToDimension`, `readerConductRejection`, `bayesianScore`, `periodKey`, `selfWeight`, `emitterAgeOk`, `communityPredicate`.
+`kind` values in use: `fingerprint`, `jcs`, `sha256b64url`, `didKeyId`, `parseDidKeyId`, `parseDidKeyIdRejection`, `manifestBuild`, `manifestParse`, `issuerWeight`, `issuerWeightRatio`, `judgeFromDeviation`, `toValue`, `readerConductToDimension`, `readerConductRejection`, `bayesianScore`, `periodKey`, `selfWeight`, `emitterAgeOk`, `communityPredicate`, `ranking`, `rankingHash`.
 
 A case whose `kind` has no implementation in a runner **must fail**, not pass: an unexecuted vector is not a passing vector.
 

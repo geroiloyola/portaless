@@ -13,7 +13,8 @@
     { "file": "v-09-bayesian.json", "id": "V-09", "title": "Bayesian score", "specSection": "A.4.5", "minimalInterop": true },
     { "file": "v-12-period-key.json", "id": "V-12", "title": "reader_conduct period key", "specSection": "6.4", "minimalInterop": false },
     { "file": "v-14-emitter-age.json", "id": "V-14", "title": "Community predicate: emitter history age (E-13)", "specSection": "6.7", "minimalInterop": false },
-    { "file": "v-15-community-predicate.json", "id": "V-15", "title": "Community predicate: distinct emitters and min_weight (E-13)", "specSection": "6.7", "minimalInterop": false }
+    { "file": "v-15-community-predicate.json", "id": "V-15", "title": "Community predicate: distinct emitters and min_weight (E-13)", "specSection": "6.7", "minimalInterop": false },
+    { "file": "v-16-ranking.json", "id": "V-16", "title": "Ranking: deterministic order and input hash", "specSection": "7.1", "minimalInterop": false }
   ],
   "notYetMachineReadable": {
     "community-claim": "The claim-level half of E-13 -- that `val` is an integer 1..5 only when `src` is `community` -- is enforced by `verifyAttestation` in packages/trust-layer, which is not part of the published package (the same boundary that keeps V-06 out). V-14 and V-15 cover the pure scoring half, which is published. The claim rule is verified by tests/unit/apw-signed-attestations.test.ts.",

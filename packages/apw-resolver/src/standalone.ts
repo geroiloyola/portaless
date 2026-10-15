@@ -101,3 +101,20 @@ export {
   communityPredicate,
 } from "./scoring/community";
 export type { CommunityRow, CommunityPredicate } from "./scoring/community";
+
+// ---------------------------------------------------------------------------
+// Ranking (Fase 9a, ROADMAP Phase 9 item 3). El orden debe poder recomputarse
+// por un tercero desde las mismas atestaciones firmadas. V-16 lo comprueba
+// contra esta superficie publica; por eso el modulo es puro y no arrastra el
+// grafo del store (consensusHeadAtSeq se duplica en vez de importarse).
+// ---------------------------------------------------------------------------
+
+export {
+  RANKING_FILTERS,
+  RANKING_PRECISION,
+  RANKING_EPSILON,
+  rankOrder,
+  rankSubjects,
+  rankingInputHash,
+} from "./scoring/ranking";
+export type { RankingFilter, RankingEntry, RankingQuery, RankedSubject, RankingResult } from "./scoring/ranking";

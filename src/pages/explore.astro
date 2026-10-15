@@ -33,6 +33,16 @@ const posts = (await getCollection("posts"))
 
 const trustHref = `${base}trust/default`;
 const repoHref = "https://github.com/geroiloyola/portaless";
+
+// Estado degradado honesto (Fase 9a): Explore es una pagina estatica. El orden
+// normativo (ROADMAP Phase 9) se calcula en un nodo con functions/ a partir de
+// atestaciones firmadas y observaciones de testigos ancladas (asOf + ventana
+// declaradas). En hosting puro estatico esas fuentes no existen, asi que la UI
+// NO finge un ranking: declara la fuente local, el instante de build y la
+// ventana, y explica que los filtros por testigos requieren un nodo.
+const buildAsOf = new Date().toISOString();
+const windowSeconds = 30 * 86400;
+const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"] as const;
 ---
 <BaseLayout
   title="Explore — Portaless"
@@ -40,6 +50,28 @@ const repoHref = "https://github.com/geroiloyola/portaless";
 >
   <h1>Explore</h1>
   <p>Sitios, perfiles y publicaciones hechos con Portaless.</p>
+
+  <section class="explore-ranking" data-explore-source="local">
+    <h2>Orden</h2>
+    <p class="explore-ranking-hint">
+      <strong>Fuente:</strong> contenido local de este sitio (build).
+      <strong>asOf:</strong> <time datetime={buildAsOf}>{buildAsOf}</time>.
+      <strong>Ventana:</strong> {windowSeconds / 86400} días (solo aplica a <code>top</code>).
+    </p>
+    <label class="explore-ranking-label">
+      Filtro
+      <select id="explore-filter">
+        {RANKING_FILTERS.map((f) => (
+          <option value={f} selected={f === "recents"}>{f}</option>
+        ))}
+      </select>
+    </label>
+    <p class="explore-ranking-status" id="explore-filter-status" role="status">
+      Orden local. El orden por atestaciones firmadas y observaciones de testigos
+      (<code>top</code>, <code>confidence</code>) se calcula en un nodo con
+      <code>functions/</code>, no en este hosting estático.
+    </p>
+  </section>
 
   <h2>Sitios y perfiles</h2>
   {pages.length === 0 && (
@@ -73,3 +105,39 @@ const repoHref = "https://github.com/geroiloyola/portaless";
     <p class="badge">Próximamente: el marketplace de temas de la red.</p>
   </div>
 </BaseLayout>
+
+<style>
+  .explore-ranking {
+    border: 1px solid var(--panel-border, #e4e6c3);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0 24px;
+    background: var(--panel-bg, #fff);
+  }
+  .explore-ranking-hint { color: var(--muted, #6e6653); font-size: 0.9rem; }
+  .explore-ranking-label { display: block; margin: 8px 0; font-weight: 600; }
+  .explore-ranking-label select { margin-left: 8px; }
+  .explore-ranking-status { color: var(--muted, #6e6653); font-size: 0.9rem; max-width: 70ch; }
+</style>
+
+<script>
+  // Estado degradado honesto: en hosting estático no hay nodo, así que ningún
+  // filtro se finge. La UI solo declara qué necesitaría cada uno y cuál es la
+  // fuente actual.
+  const EXPLORE_NOTES: Record<string, string> = {
+    top: "ordena por el puntaje bayesiano ponderado por prior sobre la ventana declarada; necesita atestaciones firmadas de un nodo con functions/.",
+    confidence: "es el consenso de testigos sobre el seq declarado; necesita observaciones de testigos de un nodo con functions/.",
+    recents: "ordena por la última posición observada por un testigo; en estático no hay observaciones.",
+    new: "ordena por la primera aparición observada; en estático no hay observaciones.",
+    old: "ordena por la primera aparición, más antiguos primero; en estático no hay observaciones.",
+    history: "ordena por cantidad de evidencia por sujeto; en estático no hay atestaciones.",
+  };
+  const select = document.getElementById("explore-filter") as HTMLSelectElement | null;
+  const status = document.getElementById("explore-filter-status");
+  select?.addEventListener("change", () => {
+    if (!status) return;
+    const f = select.value;
+    status.textContent = `Filtro "${f}": ${EXPLORE_NOTES[f] ?? ""} Fuente actual: contenido local (build), sin atestaciones firmadas.`;
+  });
+</script>
+

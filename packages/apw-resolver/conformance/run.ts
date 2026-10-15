@@ -31,6 +31,8 @@ import {
   periodKey,
   emitterAgeOk,
   communityPredicate,
+  rankOrder,
+  rankingInputHash,
   NEUTRAL,
   PRIOR_WEIGHT,
   SELF_WEIGHT,
@@ -322,8 +324,75 @@ const execManifestBuild: Executor = (c, push) => {
   }
 };
 
+// V-16 (Fase 9a): ranking determinista y hash del conjunto usado.
+const asRankingEntries = (raw: ReadonlyArray<Record<string, unknown>>) =>
+  raw.map((e) => ({
+    subject: String(e.subject),
+    issuer: String(e.issuer ?? e.subject),
+    observedAt: e.observedAt as number,
+    weight: e.weight as number,
+    ...(typeof e.value === "number" ? { value: e.value } : {}),
+    ...(typeof e.seq === "number" ? { seq: e.seq } : {}),
+    ...(e.head !== undefined ? { head: e.head as string | null } : {}),
+  }));
+
+const execRanking: Executor = (c, push) => {
+  const label = String(c.desc ?? "ranking");
+  const q = (c.query ?? {}) as Record<string, unknown>;
+  let result: ReturnType<typeof rankOrder>;
+  try {
+    result = rankOrder(
+      {
+        filter: q.filter as never,
+        asOf: q.asOf as number,
+        windowSeconds: q.windowSeconds as number | undefined,
+        seq: q.seq as number | undefined,
+        minWeight: q.minWeight as number | undefined,
+      },
+      asRankingEntries(c.entries as ReadonlyArray<Record<string, unknown>>)
+    );
+  } catch (e) {
+    push({ label, status: "fail", detail: `lanzo: ${(e as Error).message}` });
+    return;
+  }
+  const tol = readNumber(c, "tolerance", 1e-9);
+  const problems: string[] = [];
+  if (typeof c.expectAdmissible === "number" && result.admissible !== c.expectAdmissible) {
+    problems.push(`admissible ${result.admissible} != ${c.expectAdmissible}`);
+  }
+  if (typeof c.expectExcluded === "number" && result.excludedWithoutObservation !== c.expectExcluded) {
+    problems.push(`excluded ${result.excludedWithoutObservation} != ${c.expectExcluded}`);
+  }
+  if (Array.isArray(c.expectOrder)) {
+    const want = c.expectOrder as Array<Record<string, unknown>>;
+    if (want.length !== result.order.length) {
+      problems.push(`order length ${result.order.length} != ${want.length} [${result.order.map((o) => o.subject).join(", ")}]`);
+    } else {
+      want.forEach((w, i) => {
+        const g = result.order[i];
+        if (String(w.subject) !== g.subject) problems.push(`#${i} subject ${g.subject} != ${w.subject}`);
+        if (typeof w.score === "number" && !near(g.score, w.score, tol)) problems.push(`#${i} score ${g.score} != ${w.score}`);
+        if (typeof w.weightSum === "number" && !near(g.weightSum, w.weightSum, tol)) problems.push(`#${i} weightSum ${g.weightSum} != ${w.weightSum}`);
+        if (typeof w.count === "number" && g.count !== w.count) problems.push(`#${i} count ${g.count} != ${w.count}`);
+        if (w.head !== undefined && (g.head ?? null) !== (w.head ?? null)) problems.push(`#${i} head ${g.head} != ${w.head}`);
+      });
+    }
+  }
+  push(problems.length ? { label, status: "fail", detail: problems.join("; ") } : { label, status: "pass" });
+};
+
+const execRankingHash: Executor = async (c, push) => {
+  const label = String(c.desc ?? "rankingHash");
+  const ha = await rankingInputHash(asRankingEntries(c.setA as ReadonlyArray<Record<string, unknown>>));
+  const hb = await rankingInputHash(asRankingEntries(c.setB as ReadonlyArray<Record<string, unknown>>));
+  const equal = ha === hb;
+  push(equal === c.expectEqual ? { label, status: "pass" } : { label, status: "fail", detail: `equal=${equal} esperado ${c.expectEqual}` });
+};
+
 const EXECUTORS: Record<string, Executor> = {
   fingerprint: execFingerprint,
+  ranking: execRanking,
+  rankingHash: execRankingHash,
   jcs: execJcs,
   sha256b64url: execSha256,
   issuerWeight: execIssuerWeight,

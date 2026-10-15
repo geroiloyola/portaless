@@ -1,0 +1,231 @@
+{
+  "id": "V-16",
+  "title": "Ranking: deterministic order and input hash (ROADMAP Phase 9 item 3)",
+  "specSection": "7.1",
+  "minimalInterop": false,
+  "specText": "A ranking query declares a filter, an evaluation instant `asOf` (epoch seconds) and, for windowed filters, a window; `confidence` declares a `seq` instead. Every entry is anchored to a verified observation; `observedAt` is the ONE time key used for both the window and the order. An entry without a resolved observation is excluded from every filter. Scores are rounded to 6 decimals and compared with tolerance 1e-9; ties break by (score desc, weightSum desc, count desc, subject asc). `top` never fills an empty subject with the neutral prior: a subject whose weight sum is below `minWeight` is absent. An `inputHash` (sha256 of the admissible set, canonically serialized) makes omissions visible.",
+  "note": "The definition is normative in the spec, not in the code: @portaless/apw-resolver is AGPL-3.0. A third party recomputes these expectations from this file. `observedAt` is used for BOTH the window (`top`) and the order (`recents`/`new`/`old`/`history`); `asOf` bounds the considered set for every filter. Weights are the A.4.2 calibrated weight, passed in already resolved.",
+  "cases": [
+    {
+      "kind": "ranking",
+      "desc": "top does not fill an empty subject: one cold entry (weight 0.25) is below minWeight 2.0, so the order is empty",
+      "entries": [
+        { "subject": "did:apw:solo.example", "issuer": "did:apw:solo.example", "observedAt": 1799999000, "weight": 0.25, "value": 1 }
+      ],
+      "query": { "filter": "top", "asOf": 1800000000, "windowSeconds": 86400 },
+      "expectAdmissible": 1,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": []
+    },
+    {
+      "kind": "ranking",
+      "desc": "top with two calibrated emitters: S = (3*4 + 1*5 + 1*4) / (3+2) = 4.2, weightSum 2.0 passes min_weight",
+      "entries": [
+        { "subject": "did:apw:s.example", "issuer": "did:apw:a.example", "observedAt": 1799999000, "weight": 1.0, "value": 5 },
+        { "subject": "did:apw:s.example", "issuer": "did:apw:b.example", "observedAt": 1799999500, "weight": 1.0, "value": 4 }
+      ],
+      "query": { "filter": "top", "asOf": 1800000000, "windowSeconds": 86400 },
+      "expectAdmissible": 2,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:s.example", "score": 4.2, "weightSum": 2.0, "count": 2 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "equal score, weightSum and count: the tie breaks by subject ascending (DID is the LAST criterion)",
+      "entries": [
+        { "subject": "did:apw:b.example", "issuer": "did:apw:x.example", "observedAt": 1799999000, "weight": 1.0, "value": 5 },
+        { "subject": "did:apw:a.example", "issuer": "did:apw:x.example", "observedAt": 1799999000, "weight": 1.0, "value": 5 }
+      ],
+      "query": { "filter": "top", "asOf": 1800000000, "windowSeconds": 86400, "minWeight": 1.0 },
+      "expectAdmissible": 2,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:a.example", "score": 4.25, "weightSum": 1.0, "count": 1 },
+        { "subject": "did:apw:b.example", "score": 4.25, "weightSum": 1.0, "count": 1 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "equal score and weightSum, different count: the tie breaks by count descending",
+      "entries": [
+        { "subject": "did:apw:p.example", "issuer": "did:apw:pa.example", "observedAt": 1799999000, "weight": 0.5, "value": 7 },
+        { "subject": "did:apw:p.example", "issuer": "did:apw:pb.example", "observedAt": 1799999000, "weight": 0.5, "value": 3 },
+        { "subject": "did:apw:q.example", "issuer": "did:apw:qa.example", "observedAt": 1799999000, "weight": 1.0, "value": 5 }
+      ],
+      "query": { "filter": "top", "asOf": 1800000000, "windowSeconds": 86400, "minWeight": 1.0 },
+      "expectAdmissible": 3,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:p.example", "score": 4.25, "weightSum": 1.0, "count": 2 },
+        { "subject": "did:apw:q.example", "score": 4.25, "weightSum": 1.0, "count": 1 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "the window is inclusive at the lower bound and excludes an entry one second earlier",
+      "entries": [
+        { "subject": "did:apw:w.example", "issuer": "did:apw:x.example", "observedAt": 1799913600, "weight": 1.0, "value": 5 },
+        { "subject": "did:apw:v.example", "issuer": "did:apw:x.example", "observedAt": 1799913599, "weight": 1.0, "value": 5 }
+      ],
+      "query": { "filter": "top", "asOf": 1800000000, "windowSeconds": 86400, "minWeight": 1.0 },
+      "expectAdmissible": 2,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:w.example", "score": 4.25, "weightSum": 1.0, "count": 1 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "an entry with no resolved observation is excluded from every filter, explicitly",
+      "entries": [
+        { "subject": "did:apw:v.example", "issuer": "did:apw:x.example", "observedAt": 100, "weight": 1.0, "value": 5 },
+        { "subject": "did:apw:u.example", "issuer": "did:apw:x.example", "weight": 1.0, "value": 5 }
+      ],
+      "query": { "filter": "recents", "asOf": 200 },
+      "expectAdmissible": 1,
+      "expectExcluded": 1,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:v.example", "score": 100, "weightSum": 0, "count": 1 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "recents orders by the LAST observedAt descending; an observation after asOf is not considered",
+      "entries": [
+        { "subject": "did:apw:x.example", "issuer": "did:apw:witness.example", "observedAt": 100, "weight": 1.0 },
+        { "subject": "did:apw:y.example", "issuer": "did:apw:witness.example", "observedAt": 200, "weight": 1.0 },
+        { "subject": "did:apw:z.example", "issuer": "did:apw:witness.example", "observedAt": 150, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 50, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 250, "weight": 1.0 },
+        { "subject": "did:apw:f.example", "issuer": "did:apw:witness.example", "observedAt": 400, "weight": 1.0 }
+      ],
+      "query": { "filter": "recents", "asOf": 300 },
+      "expectAdmissible": 6,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:w.example", "score": 250 },
+        { "subject": "did:apw:y.example", "score": 200 },
+        { "subject": "did:apw:z.example", "score": 150 },
+        { "subject": "did:apw:x.example", "score": 100 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "new orders by the FIRST observedAt descending (most recently first-seen first)",
+      "entries": [
+        { "subject": "did:apw:x.example", "issuer": "did:apw:witness.example", "observedAt": 100, "weight": 1.0 },
+        { "subject": "did:apw:y.example", "issuer": "did:apw:witness.example", "observedAt": 200, "weight": 1.0 },
+        { "subject": "did:apw:z.example", "issuer": "did:apw:witness.example", "observedAt": 150, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 50, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 250, "weight": 1.0 },
+        { "subject": "did:apw:f.example", "issuer": "did:apw:witness.example", "observedAt": 400, "weight": 1.0 }
+      ],
+      "query": { "filter": "new", "asOf": 300 },
+      "expectAdmissible": 6,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:y.example", "score": 200 },
+        { "subject": "did:apw:z.example", "score": 150 },
+        { "subject": "did:apw:x.example", "score": 100 },
+        { "subject": "did:apw:w.example", "score": 50 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "old orders by the FIRST observedAt ascending (oldest first-seen first)",
+      "entries": [
+        { "subject": "did:apw:x.example", "issuer": "did:apw:witness.example", "observedAt": 100, "weight": 1.0 },
+        { "subject": "did:apw:y.example", "issuer": "did:apw:witness.example", "observedAt": 200, "weight": 1.0 },
+        { "subject": "did:apw:z.example", "issuer": "did:apw:witness.example", "observedAt": 150, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 50, "weight": 1.0 },
+        { "subject": "did:apw:w.example", "issuer": "did:apw:witness.example", "observedAt": 250, "weight": 1.0 },
+        { "subject": "did:apw:f.example", "issuer": "did:apw:witness.example", "observedAt": 400, "weight": 1.0 }
+      ],
+      "query": { "filter": "old", "asOf": 300 },
+      "expectAdmissible": 6,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:w.example", "score": 50 },
+        { "subject": "did:apw:x.example", "score": 100 },
+        { "subject": "did:apw:z.example", "score": 150 },
+        { "subject": "did:apw:y.example", "score": 200 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "history orders by count descending (most documented first)",
+      "entries": [
+        { "subject": "did:apw:m.example", "issuer": "did:apw:wx.example", "observedAt": 10, "weight": 1.0 },
+        { "subject": "did:apw:m.example", "issuer": "did:apw:wx.example", "observedAt": 20, "weight": 1.0 },
+        { "subject": "did:apw:m.example", "issuer": "did:apw:wx.example", "observedAt": 30, "weight": 1.0 },
+        { "subject": "did:apw:p.example", "issuer": "did:apw:wx.example", "observedAt": 40, "weight": 1.0 },
+        { "subject": "did:apw:p.example", "issuer": "did:apw:wx.example", "observedAt": 50, "weight": 1.0 },
+        { "subject": "did:apw:n.example", "issuer": "did:apw:wx.example", "observedAt": 60, "weight": 1.0 }
+      ],
+      "query": { "filter": "history", "asOf": 100 },
+      "expectAdmissible": 6,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:m.example", "score": 3, "count": 3 },
+        { "subject": "did:apw:p.example", "score": 2, "count": 2 },
+        { "subject": "did:apw:n.example", "score": 1, "count": 1 }
+      ]
+    },
+    {
+      "kind": "ranking",
+      "desc": "confidence is the witness consensus over the declared seq: the head with most weight wins; observations at other seq are ignored",
+      "entries": [
+        { "subject": "did:apw:aa.example", "issuer": "did:apw:w1.example", "observedAt": 100, "weight": 1.0, "seq": 5, "head": "H1" },
+        { "subject": "did:apw:aa.example", "issuer": "did:apw:w2.example", "observedAt": 100, "weight": 1.0, "seq": 5, "head": "H1" },
+        { "subject": "did:apw:aa.example", "issuer": "did:apw:w3.example", "observedAt": 100, "weight": 0.5, "seq": 5, "head": "H2" },
+        { "subject": "did:apw:aa.example", "issuer": "did:apw:w4.example", "observedAt": 100, "weight": 9.0, "seq": 4, "head": "H9" },
+        { "subject": "did:apw:bb.example", "issuer": "did:apw:w5.example", "observedAt": 100, "weight": 1.0, "seq": 5, "head": "H2" }
+      ],
+      "query": { "filter": "confidence", "asOf": 200, "seq": 5 },
+      "expectAdmissible": 5,
+      "expectExcluded": 0,
+      "tolerance": 1e-9,
+      "expectOrder": [
+        { "subject": "did:apw:aa.example", "score": 2.0, "weightSum": 2.5, "count": 3, "head": "H1" },
+        { "subject": "did:apw:bb.example", "score": 1.0, "weightSum": 1.0, "count": 1, "head": "H2" }
+      ]
+    },
+    {
+      "kind": "rankingHash",
+      "desc": "the input hash is order-independent: a permutation of the same admissible set hashes the same",
+      "setA": [
+        { "subject": "did:apw:s1.example", "issuer": "did:apw:i.example", "observedAt": 1, "weight": 1.0 },
+        { "subject": "did:apw:s2.example", "issuer": "did:apw:i.example", "observedAt": 2, "weight": 1.0 }
+      ],
+      "setB": [
+        { "subject": "did:apw:s2.example", "issuer": "did:apw:i.example", "observedAt": 2, "weight": 1.0 },
+        { "subject": "did:apw:s1.example", "issuer": "did:apw:i.example", "observedAt": 1, "weight": 1.0 }
+      ],
+      "expectEqual": true
+    },
+    {
+      "kind": "rankingHash",
+      "desc": "the input hash changes when an attestation is omitted: a different set hashes differently",
+      "setA": [
+        { "subject": "did:apw:s1.example", "issuer": "did:apw:i.example", "observedAt": 1, "weight": 1.0 },
+        { "subject": "did:apw:s2.example", "issuer": "did:apw:i.example", "observedAt": 2, "weight": 1.0 }
+      ],
+      "setB": [
+        { "subject": "did:apw:s1.example", "issuer": "did:apw:i.example", "observedAt": 1, "weight": 1.0 }
+      ],
+      "expectEqual": false
+    }
+  ]
+}

@@ -363,7 +363,7 @@ For a reader to have reputation, someone must emit it. The **`reader_conduct`** 
 - Entries with `ts` before `legacyCutoff` (2026-10-04T00:00:00.000Z) may lack a JWS; per `legacyEntriesWithoutJws` (`ignore` by default) they are ignored or break completeness. After the cutoff, an entry without a JWS always breaks completeness.
 - **Fail-closed**: if a `reader_conduct` cannot be verified, the reader is `apw_unresolvable` with reason `reader_conduct_*`. A reader cannot discard its negatives by claiming they do not verify.
 
-**Emission.** The Trust Layer ledger is the source. The site records the reader's candidate DID in the ledger (`did:apw:<host of Signature-Agent>`, unverified). `POST /admin/api/reader-conduct/emit` (admin + step-up) emits per period (month by default) only when `operatorKeyId` is the reader's TXT `k`. It signs with the active key, uses a deterministic `jti` (issuer, reader, period, category), and logs each emission into its own history: the issuer publishes what it emitted. Repeating a period's emission does not duplicate: already-logged `jti`s are reported as `already_emitted`. Today `respected_policy` and `policy_violation` are emitted; the other three await a datum the origin does not yet have:
+**Emission.** The Trust Layer ledger is the source. The site records the reader's candidate DID in the ledger (`did:apw:<host of Signature-Agent>`, unverified). `POST /admin/api/reader-conduct/emit` (admin + step-up) emits per period (month by default; there is no `year` period — a year range aggregates the weekly buckets, §7.1) only when `operatorKeyId` is the reader's TXT `k`. It signs with the active key, uses a deterministic `jti` (issuer, reader, period, category), and logs each emission into its own history: the issuer publishes what it emitted. Repeating a period's emission does not duplicate: already-logged `jti`s are reported as `already_emitted`. Today `respected_policy` and `policy_violation` are emitted; the other three await a datum the origin does not yet have:
 
 - `rate_respected` (R-02): there is no rate to respect. The content policy only declares `access`, `price_usd` and `unit`: there is no per-reader request limit, nor its enforcement, nor a rate-rejection counter in the ledger.
 - `paid_as_agreed` (R-03): the origin does not know whether the crawler paid. With the current settlement provider (Cloudflare Pay Per Crawl, in-band pricing) the origin answers `200` with `crawler-price` and collection settles outside it: that is why the ledger always records `charged: false` and its charging columns never move. Emitting this category from there would invent the datum; it would need a settlement that reports the outcome to the origin.
@@ -452,6 +452,26 @@ A policy is a **set of predicates over dimensions** (Annex A), evaluated against
 - **Content governance**: extend §6.5 to any path, not just `/trust/*`.
 - **ML-DSA (FIPS 204)** in site and emitter APW signatures. ML-DSA verification already exists for the Web Bot Auth identity of the `agent` source, but attestations require Ed25519 (§5.3).
 - **Portaless Cloud Images**: the same attestation format applied to images.
+
+### 7.1 Ranking filters (order must be recomputable)
+
+The exhibit of a network (ROADMAP Phase 9) is that a third party can **recompute the ordering** from the same signed attestations — not merely see it. That requires the filters to be normative here, not in any implementation. The reference implementation is `packages/apw-resolver/src/scoring/ranking.ts` (AGPL-3.0); the definition is this section plus vector **V-16** (CC BY 4.0), so a closed product can implement it without copying the code.
+
+**Query.** Every query declares a `filter`, an evaluation instant `asOf` (epoch seconds) and, for `top`, a `windowSeconds`; `confidence` declares a `seq` instead of a window. There is no implicit "now": without `asOf` the order is not recomputable.
+
+**One time key.** Each entry is anchored to a verified observation; `observedAt` is the `ts` of the witness's chained entry that contains the statement (§5.7), the credible date. The window (`top`) and the order (`recents`, `new`, `old`, `history`) use **that same key**; never the emitter's `iat`, which is declared by whoever signs and is therefore backdatable within its key's window (§8). An entry with no resolved observation is excluded from **every** filter — explicitly, with no default. `asOf` bounds the considered set for every filter: an observation after `asOf` did not exist at that instant.
+
+**Order.** Scores are rounded to 6 decimals and compared with tolerance `1e-9` (the same rule as A.4.5 and V-08: `((6.7-1)/6)^2` is not exact in IEEE-754). Ties break by the full tuple **(score desc, Σweight desc, count desc, subject asc)** — the subject identifier is the **last** criterion, never the only one, because in a young network `top` is a field of near-ties and "tie-break by DID" alone would be alphabetical order.
+
+**`top`.** Prior-weighted Bayesian score (A.4.3) over the entries in the window, computed only if the surviving weight sum is at least `min_weight` (default `COMMUNITY_MIN_WEIGHT_DEFAULT = 2.0`, §6.7). A subject below the threshold is **absent**; it is never filled with the neutral prior (`NEUTRAL = 4.0`). In a young network this means `top` is nearly empty: that is the datum, not a defect.
+
+**`confidence`.** The witness consensus over the declared `seq`: the head with the greatest weight among observations at that `seq` (the same rule the Index uses, §5.7). It is not the reader's own mean. Observations at other `seq` are ignored.
+
+**`recents` / `new` / `old` / `history`.** `recents` orders by the last `observedAt` (descending); `new` by the first `observedAt` (descending); `old` by the first (ascending); `history` by the count of entries (descending, then last `observedAt` descending).
+
+**Input hash.** The result carries `inputHash` — the `sha256` of the admissible set (entries with a resolved observation), canonically serialized. A node cannot omit attestations without the hash changing.
+
+**Year ranges.** `EmissionPeriod` covers `month | week | day`; there is no `year` (§6.4). A year-range query aggregates the weekly buckets rather than adding a fourth period; a `year` period would be a v1.4 change with its own vector.
 
 ## 8. General limits
 
