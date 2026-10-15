@@ -47,6 +47,14 @@ jobs:
           node-version: "24"
           cache: npm
 
+      # Without this, `npm run build` in the workspace resolves neither
+      # `canonicalize` nor the pinned TypeScript, and tsc fails on type
+      # definitions that only exist in the version this repo locks. `npm ci`
+      # (like unit-tests.yml and full-tests.yml) instead of `npm install`
+      # because this workflow asserts reproducibility, not tolerance for drift.
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Build and pack apw-resolver
         working-directory: packages/apw-resolver
         run: |
@@ -122,3 +130,15 @@ jobs:
             if (Math.abs(ten.score - 6.0950) > 1e-4) { console.error("V-09 case 2 failed:", ten.score); process.exit(1); }
             console.log("V-01, V-04, V-08 and V-09 reproduce from the installed tarball");
           '
+
+      - name: Run the published bin against the spec vectors
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}/consumer"
+          # The `bin` is a published artifact (Phase 7, item 4), so it gets the
+          # same treatment as the library: it must work from the installed
+          # tarball, not only from this repository's source. The vectors are read
+          # from the checkout by absolute path because they are CC BY and
+          # code-independent -- pointing at them is exactly what a third party
+          # does after downloading them from the specification.
+          ./node_modules/.bin/apw-conformance "${GITHUB_WORKSPACE}/docs/protocol-apw/vectors/v1.3"
