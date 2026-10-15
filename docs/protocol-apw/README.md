@@ -8,7 +8,7 @@ Portaless is the reference implementation of **Protocol APW (Air Portal Website)
 
 | Document | Status |
 |---|---|
-| [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) | **Current — consolidated normative specification** (v1.0 + v1.1 + v1.2 + errata E-1..E-10 integrated; witnesses in §5.7). English canonical. |
+| [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) | **Current — consolidated normative specification** (v1.0 + v1.1 + v1.2 + errata E-1..E-10 integrated; witnesses in §5.7; ranking/filter semantics in §7.1). English canonical. **E-11..E-15 are normative and in effect but not yet consolidated** into the body — see [`ERRATA.md`](./ERRATA.md). |
 | [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) | **Current — test vectors**, in a file independent of the code |
 | [`STARTER-KIT.md`](./STARTER-KIT.md) | **Guide for external implementers** — language-agnostic, pseudocode, no Portaless code required |
 | [`ERRATA.md`](./ERRATA.md) | Historical record of corrections E-1 to E-10 (Spanish); integrated into v1.3 |
