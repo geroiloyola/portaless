@@ -11,7 +11,7 @@ const shared = vi.hoisted(() => {
     ["admin", { username: "admin", role: "admin", passwordHash: "hash:correcta", totpSecret: null }],
     ["admin2fa", { username: "admin2fa", role: "admin", passwordHash: "hash:correcta", totpSecret: "S" }],
   ]);
-  return { users };
+  return { users, activity: [] as Array<Record<string, unknown>> };
 });
 
 vi.mock("../../packages/auth/src/password", () => ({
@@ -45,6 +45,14 @@ vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async () => {
   const store = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: key });
   return { createSiteIdentityStore: async () => store };
 });
+
+// Fase 10: se captura emitActivity() para probar que el cambio de contrasena
+// alimenta el feed de actividad (un solo escritor) sin tocar el store real.
+vi.mock("../../packages/dashboard/src/activity/activity-store", () => ({
+  emitActivity: async (_env: unknown, input: Record<string, unknown>) => {
+    shared.activity.push(input);
+  },
+}));
 
 import * as siteIdentity from "../../functions/admin/api/site-identity.js";
 import * as changePassword from "../../functions/admin/api/change-password.js";
@@ -111,19 +119,27 @@ describe("change-password + password-events", () => {
   });
 
   it("rechaza contrasena nueva corta o actual incorrecta", async () => {
+    shared.activity.length = 0;
     const short = await changePassword.onRequestPost(ctx(post({ currentPassword: "correcta", newPassword: "corta" }), "admin"));
     expect(short.status).toBe(400);
     const wrong = await changePassword.onRequestPost(ctx(post({ currentPassword: "mala", newPassword: "nueva-segura" }), "admin"));
     expect(wrong.status).toBe(400);
     expect((await wrong.json()).error).toBe("invalid_password");
+    // Un intento fallido no emite actividad.
+    expect(shared.activity).toHaveLength(0);
   });
 
   it("cambia la contrasena y el historial muestra IP y pais, nunca la contrasena", async () => {
+    shared.activity.length = 0;
     const res = await changePassword.onRequestPost(
       ctx(post({ currentPassword: "correcta", newPassword: "nueva-segura" }, { "CF-Connecting-IP": "203.0.113.77", "CF-IPCountry": "AR" }), "admin")
     );
     expect(res.status).toBe(200);
     expect(shared.users.get("admin")?.passwordHash).toBe("hash:nueva-segura");
+
+    // Fase 10: el cambio alimenta el feed, sin contrasena.
+    expect(shared.activity).toContainEqual({ kind: "password.changed", actor: "admin", subject: "admin" });
+    expect(JSON.stringify(shared.activity)).not.toContain("nueva-segura");
 
     const history = await passwordEvents.onRequestGet(ctx(new Request("https://sitio.test/x"), "admin"));
     const { events } = await history.json();

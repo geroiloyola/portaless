@@ -26,6 +26,7 @@ import { createSiteIdentityStore, createAttestationLogStore } from "../../../../
 import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
 import { signWitnessStatement } from "../../../../packages/apw-resolver/src/did-apw/witness.ts";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
 
 const SITE_ID = "default";
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
@@ -85,6 +86,15 @@ export async function onRequestPost(context) {
     }
     throw err;
   }
+
+  // Fase 10: feed de actividad (un solo escritor). El actor es este sitio
+  // (el testigo), el sujeto es el dominio observado.
+  await emitActivity(env, {
+    kind: "witness.recorded",
+    actor: identity.did,
+    subject: subjectDid,
+    detail: `seq ${payload.seq}`,
+  });
 
   return json(
     {

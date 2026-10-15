@@ -2,9 +2,24 @@
 //
 // Feed de actividad del sitio (Fase 10). Una tabla append-only con lo que
 // pasa en el dashboard y en el runtime: paginas guardadas/borradas,
-// atestaciones comunitarias recibidas, cambios de permisos. Es el reemplazo
-// honesto de los paneles mock que mostraban datos falsos (traffic, ledger,
-// orders, revenue) -- ver ROADMAP.md, Fase 10.
+// atestaciones comunitarias recibidas, cambios de permisos, statements de
+// testigo grabados y cambios/resets de contrasena. Es el reemplazo honesto de
+// los paneles mock que mostraban datos falsos (traffic, ledger, orders,
+// revenue) -- ver ROADMAP.md, Fase 10.
+//
+// FUENTES ACTUALES (emitActivity en el punto de escritura): page.saved y
+// page.deleted (functions/admin/pages/[slug].js), community.attestation
+// (functions/trust/[siteId]/community-attestation.js), permission.granted /
+// permission.revoked (functions/admin/permissions/index.js), witness.recorded
+// (functions/admin/api/witness/record.js), password.changed
+// (functions/admin/api/change-password.js) y password.reset
+// (functions/admin/password-reset/confirm.js).
+//
+// NO ES FUENTE: posts. Los posts son markdown estatico
+// (src/content/posts/*.md) que se publica en build; no hay escritor runtime,
+// asi que no hay punto donde emitir. Se documenta en vez de inventar un
+// emisor. (Tampoco lo son orders/revenue/trafico-humano: no existen como
+// datos.)
 //
 // ADMIN-ONLY POR DISENO: activity_events alimenta /admin/api/recents, que
 // corre bajo la sesion de /admin/*. No es una fuente publica. Por eso NO se

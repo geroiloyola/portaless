@@ -9,6 +9,7 @@
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore, createPasswordResetStore } from "../../../packages/auth/src/store-factory.ts";
 import { createPasswordEventStore, passwordEventContextFromRequest } from "../../../packages/auth/src/password-event-store.ts";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -49,5 +50,11 @@ export async function onRequestPost(context) {
     typeof totpCode === "string" ? totpCode : undefined,
     passwordEventContextFromRequest(request, env)
   );
+
+  // Fase 10: feed de actividad. Se registra el cambio, nunca la contrasena.
+  if (result.success) {
+    await emitActivity(env, { kind: "password.changed", actor: user.username, subject: user.username });
+  }
+
   return json(result, result.success ? 200 : 400);
 }

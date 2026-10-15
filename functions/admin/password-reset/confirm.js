@@ -16,6 +16,7 @@ import {
   createPasswordEventStore,
   passwordEventContextFromRequest,
 } from "../../../packages/auth/src/password-event-store.ts";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -54,6 +55,14 @@ export async function onRequestPost(context) {
   const authService = new AuthService(usersStore, sessionStore, passwordResetStore, passwordEventStore);
 
   const result = await authService.completePasswordReset(token, newPassword, passwordEventContextFromRequest(request, env));
+
+  // Fase 10: feed de actividad. EN ESTA SUPERFICIE el usuario del reset no se
+  // conoce (el token lo resuelve el AuthService por dentro), asi que NO se
+  // inventa una identidad: actor null y subject "password-reset". El registro
+  // autoritativo con el username es password_change_events (admin-only).
+  if (result.success) {
+    await emitActivity(env, { kind: "password.reset", actor: null, subject: "password-reset" });
+  }
 
   return new Response(JSON.stringify(result), {
     status: result.success ? 200 : 400,
