@@ -48,6 +48,7 @@ const SOURCES = [
   { path: "schema-additions/site-settings.sql", selfBanner: true },
   { path: "schema-additions/element-packs.sql", selfBanner: true },
   { path: "schema-additions/theme-packs.sql", selfBanner: true },
+  { path: "schema-additions/community-attestations.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";

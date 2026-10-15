@@ -30,6 +30,7 @@
 // incluidas (`governed: "granted"`). El nivel publico nunca se oculta.
 
 import { createSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { createCommunityAttestationsStore } from "../../packages/trust-layer/src/site-trust/community-attestations.ts";
 import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts";
 import { createReadPolicyStore, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
 import { evaluatePolicy, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy.ts";
@@ -122,6 +123,29 @@ function loadSiteScores(snapshot) {
   }
 }
 
+// E-13: las atestaciones comunitarias firmadas viven en su propio store
+// append-only, no en el snapshot del SiteTrustScore. Se normalizan a la forma
+// de fila que entiende el scoring. Si el store falla, la proyeccion sigue con
+// lo que haya: la respuesta nunca se cae por esto.
+async function loadCommunityAttestations(env, siteId) {
+  try {
+    const store = await createCommunityAttestationsStore(env);
+    const rows = await store.listBySite(siteId);
+    return rows.map((row) => ({
+      category: row.category,
+      score: row.val,
+      iss: row.iss,
+      jti: row.jti,
+      iat: row.iat,
+      votedAt: row.receivedAt,
+      emitterFirstSeenIat: row.emitterFirstSeenIat,
+    }));
+  } catch (err) {
+    console.warn(`[Portaless APW] Sin atestaciones comunitarias para ${siteId}: ${err?.message}`);
+    return [];
+  }
+}
+
 export async function onRequestGet(context) {
   const { env, params, request, data } = context;
 
@@ -161,8 +185,13 @@ export async function onRequestGet(context) {
 
   const store = await createSiteTrustScoreStore(env);
   const snapshot = await store.getSnapshot(siteId);
-  const publicSnapshot = toPublicSnapshot(snapshot);
-  const siteScores = loadSiteScores(snapshot);
+  // E-13: las atestaciones comunitarias firmadas se agregan al snapshot antes
+  // de puntuar. Las filas sin `iss` (opinion de visitante) siguen viajando como
+  // dato publico, pero el scoring las ignora.
+  const attested = await loadCommunityAttestations(env, siteId);
+  const scoringSnapshot = { ...snapshot, community: [...(snapshot.community ?? []), ...attested] };
+  const publicSnapshot = toPublicSnapshot(scoringSnapshot);
+  const siteScores = loadSiteScores(scoringSnapshot);
   const projection = (governedAllowed) =>
     siteScores ? projectTrustView(siteScores, governedAllowed, publicOverrides) : undefined;
 
@@ -237,7 +266,7 @@ export async function onRequestGet(context) {
         counts: {
           self: snapshot.self.length,
           agent: snapshot.agent.length,
-          community: snapshot.community.length,
+          community: scoringSnapshot.community.length,
           escrowReports: snapshot.escrowReports.length,
         },
         // 6.6: el nivel publico completo, no solo los metadatos.

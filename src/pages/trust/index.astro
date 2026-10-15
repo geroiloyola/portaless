@@ -58,16 +58,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   document.getElementById("st-site-id").textContent = siteId;
   document.title = `Site Trust Score — ${siteId}`;
 
-  const STORAGE_KEY = "portaless_trust_voter_id";
-
-  function getOrCreateVoterId() {
-    let id = localStorage.getItem(STORAGE_KEY);
-    if (!id) {
-      id = `anon-${crypto.randomUUID()}`;
-      localStorage.setItem(STORAGE_KEY, id);
-    }
-    return id;
-  }
 
   const SELF_LABELS = {
     gdpr_compliance: "Cumplimiento GDPR",
@@ -320,7 +310,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     root.appendChild(section);
   }
 
-  function renderCommunitySection(root, communityVotes, onSubmitVote) {
+  function renderCommunitySection(root, communityVotes) {
     const section = document.createElement("section");
     section.className = "st-source-section";
 
@@ -331,7 +321,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const note = document.createElement("p");
     note.className = "st-source-note";
-    note.textContent = "Atestacion de visitantes humanos. Ausencia significa que nadie voto todavia — no es una señal negativa. Tu voto es anonimo (no requiere cuenta Portaless). Limite: 1 voto por categoria cada 24h desde la misma red.";
+    note.textContent = "Atestaciones firmadas por Veraciers (did:apw). Ausencia significa que nadie emitio todavia — no es una señal negativa. Las opiniones de visitantes que no cuentan con firma se muestran aparte y no puntuan (APW v1.3, ERRATA E-13).";
     section.appendChild(note);
 
     const grid = document.createElement("div");
@@ -364,105 +354,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     section.appendChild(grid);
 
-    const formWrap = document.createElement("div");
-    formWrap.className = "st-vote-form";
+    // E-13: el voto anonimo se retiro. La fuente community que PUNTUA son
+    // atestaciones firmadas por un did:apw (un Veracier), que se emiten fuera
+    // del navegador. Aca solo queda la explicacion; el formulario ya no existe.
+    const noVote = document.createElement("p");
+    noVote.className = "st-source-note";
+    noVote.textContent =
+      "Para calificar hace falta una identidad Veracier: una atestacion firmada por un did:apw vía POST /trust/<siteId>/community-attestation. El voto anonimo se retiro en APW v1.3 (ERRATA E-13) porque no tenia identidad verificable.";
+    section.appendChild(noVote);
 
-    const formTitle = document.createElement("h3");
-    formTitle.className = "st-vote-form-title";
-    formTitle.textContent = "Calificar este sitio";
-    formWrap.appendChild(formTitle);
-
-    const select = document.createElement("select");
-    select.className = "st-vote-select";
-    for (const [category, label] of Object.entries(COMMUNITY_LABELS)) {
-      const opt = document.createElement("option");
-      opt.value = category;
-      opt.textContent = label;
-      select.appendChild(opt);
-    }
-    formWrap.appendChild(select);
-
-    const starsRow = document.createElement("div");
-    starsRow.className = "st-vote-stars-row";
-    let selectedScore = null;
-    const starButtons = [];
-    function paintStars(upTo) {
-      starButtons.forEach((btn, idx) => btn.classList.toggle("st-vote-star-filled", idx < upTo));
-    }
-    for (let i = 1; i <= 5; i++) {
-      const starBtn = document.createElement("button");
-      starBtn.type = "button";
-      starBtn.className = "st-vote-star";
-      starBtn.textContent = "★";
-      starBtn.addEventListener("mouseenter", () => paintStars(i));
-      starBtn.addEventListener("mouseleave", () => paintStars(selectedScore ?? 0));
-      starBtn.addEventListener("click", () => {
-        selectedScore = i;
-        paintStars(i);
-      });
-      starButtons.push(starBtn);
-      starsRow.appendChild(starBtn);
-    }
-    formWrap.appendChild(starsRow);
-
-    const commentInput = document.createElement("textarea");
-    commentInput.className = "st-vote-comment";
-    commentInput.placeholder = "Comentario opcional…";
-    commentInput.rows = 2;
-    formWrap.appendChild(commentInput);
-
-    const feedback = document.createElement("div");
-    feedback.className = "st-vote-feedback";
-
-    const submitBtn = document.createElement("button");
-    submitBtn.type = "button";
-    submitBtn.className = "st-vote-submit";
-    submitBtn.textContent = "Enviar voto";
-    submitBtn.addEventListener("click", async () => {
-      if (!selectedScore) {
-        feedback.textContent = "Elegí una calificación de 1 a 5 estrellas primero.";
-        feedback.classList.add("st-status-error");
-        return;
-      }
-      submitBtn.disabled = true;
-      feedback.classList.remove("st-status-error");
-      feedback.textContent = "Enviando voto…";
-      try {
-        await onSubmitVote(select.value, selectedScore, commentInput.value || undefined);
-        feedback.textContent = "¡Voto registrado! Recargá la página para ver el promedio actualizado.";
-      } catch (err) {
-        feedback.textContent = `Error al votar: ${err.message ?? "desconocido"}`;
-        feedback.classList.add("st-status-error");
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-    formWrap.appendChild(submitBtn);
-    formWrap.appendChild(feedback);
-
-    section.appendChild(formWrap);
     root.appendChild(section);
-  }
-
-  async function submitVote(category, score, comment) {
-    const res = await fetch(`${baseUrl}/trust/${encodeURIComponent(siteId)}/vote`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ category, score, comment, voterId: getOrCreateVoterId() }),
-    });
-    if (!res.ok) {
-      let message = `HTTP ${res.status}`;
-      try {
-        const body = await res.json();
-        message = body?.message ?? body?.error ?? message;
-      } catch {
-        // sin body JSON -- se usa el mensaje generico de arriba
-      }
-      if (res.status === 429 && !message) {
-        message = "Ya se registró un voto desde esta red en las últimas 24 horas.";
-      }
-      throw new Error(message);
-    }
   }
 
   async function init() {
@@ -488,7 +389,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       renderIdentitySection(rootEl, siteId);
       renderSelfSection(rootEl, snapshot.self ?? []);
       renderAgentSection(rootEl, snapshot.agent ?? []);
-      renderCommunitySection(rootEl, snapshot.community ?? [], submitVote);
+      renderCommunitySection(rootEl, snapshot.community ?? []);
       renderEscrowSection(rootEl, snapshot.escrowReports ?? []);
     } catch (err) {
       loadingEl.style.display = "none";

@@ -270,6 +270,8 @@ Phase 7 breaks that circle because it is the cheapest link in it. Phases 8 and 9
 
 #### Phase 8 — Bind identity to reputation
 
+**Status: shipped (2026-10-15), with one recorded limit.** The trust graph now has verifiable authors, but the *corpus* it needs is still a fact about the world, not code.
+
 **Goal**: make the trust graph mean something by giving every evaluation a verifiable author.
 
 The data model is already in place and was verified to exist: `site_trust_community_votes` (`schema.sql:319`) stores a `score` constrained to 1–5, a free-text `comment`, `voted_at`, and one row per category and voter. The scoring maths is real too — `bayesianScore` with `NEUTRAL = 4.0` and `PRIOR_WEIGHT = 3`, on top of witness calibration and weighted consensus. What is missing is the one thing that makes it a graph rather than a form.
@@ -279,7 +281,17 @@ The data model is already in place and was verified to exist: `site_trust_commun
 3. A public page per Veracier carrying its emission history.
 4. **Errata, not a version change** (decided 2026-10-15): APW v1.3 stands. Scores, counts and weight sums stay always public (already normative, §6.6); **the comment text stays governed** (§A.6), so it is visible to the emitter and to readers who meet the site's policy, not to everyone. The errata states this explicitly and names the Veracier page as a described surface. Making review text universally public would change what being reviewed means for every future subject and would alter the Sybil calculus — that is a v1.4 decision, deliberately not taken here.
 
-**Exit criterion**: `R-05` is computable from a corpus of at least two independent emitters, and no vote can be emitted without a signature. Note the second half is the real test: today the only bound on a vote is `ip_hash`.
+**Exit criterion**: `R-05` is computable from a corpus of at least two independent emitters, and no vote can be emitted without a signature. **Met for the second half; the first half is not a code deliverable.** A vote cannot be emitted without a signature: `POST /trust/:siteId/community-attestation` verifies a JWS against the emitter's resolved `did:apw` identity (§5.1) and the old `/vote` route now answers `410`. But "at least two independent emitters" is a fact about operators, and today there is exactly one (`SECURITY.md`: the Beta is invite-only for want of a second maintainer). A test fixture with three keys proves the mechanism, not that three operators exist.
+
+**What shipped, and what did not.**
+1. **[shipped]** `voter_id` is gone. A community evaluation is a JWS signed by a `did:apw` (ERRATA E-13), with `jti` unique per issuer (`iss, jti` primary key). Storage is a new append-only table `community_attestations` — re-emitting adds a row, and the scoring takes the latest per `(iss, subject, category)`, so a history exists and cannot be quietly overwritten. `site_trust_community_votes` is left untouched as the visitor-opinion table: it stays visible and **no longer scores**, because it has no verifiable identity.
+2. **[shipped]** §6.7 has real definitions (E-13): a **distinct emitter** is a distinct `did:apw`; the community predicate's **`min_weight` is 2.0 applied per (subject, category)**; **minimum emitter history age is a 7-day threshold**, fail-closed when the history cannot be resolved. Calibration, distinct-emitter counting and self-exclusion already existed and are now exercised against signed rows. Vectors **V-14** and **V-15** make the predicate executable from the published package (conformance is 97/97 over 10 vectors).
+3. **[shipped, with a scope limit]** `/trust/veracier/<domain>` publishes counts, averages and the last emission per category for that emitter — a JSON surface with an HTML shell. **Limit**: it shows what *this site* recorded from that emitter, not the emitter's global history, which lives in its own APW chain (§5.4) and is not fetched here. This is a direct consequence of choosing the evaluated site's table over the emitter's chain (see the decision recorded in E-13).
+4. **[shipped]** The errata is written (E-13), APW v1.3 stands, and comment text stays governed (A.6): the Veracier page publishes aggregates, never the text. The rule that makes this work is stated in the spec's Status line, beside the §5.3 `src` enum, and in §6.7.
+
+**Consequences worth stating plainly, because they are the real shape of this phase.**
+- **`min_weight` 2.0 is strict.** §6.7 asks for a minimum weight sum, and A.4.2 gives a cold-start emitter 0.25, so a category needs **eight** cold-start domains — or fewer well-calibrated ones — to clear it. Two emitters that agree calibrate each other to J = 7 and reach exactly 2.0; two that disagree do not clear it at all. This was found while writing the tests, not in review. It is the intended trade: fewer, harder votes over many cheap ones, and the honest cost is that a young network scores almost nothing.
+- **The real Sybil cost is the 7-day history floor plus the price of domains, not the weight.** `calibrateJudges` awards high weight to a set of emitters that agree with each other even when all are new, so a cabal is a "consensus". §6.7 already says no defense is perfect and that the cost of building old, calibrated domains is the defense; this phase does not change that, it just makes the floor explicit.
 
 #### Phase 9 — Federated query
 
@@ -328,7 +340,8 @@ One list, so progress does not depend on re-reading the six phases:
 - [ ] At least one external domain (not the author's) publishes valid APW identity
 - [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights — *(code ready: calibration + inter-node sync shipped; the box needs the external reality — more than one real operator — not more code)*
 - [x] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(Phase 7; 78/78 cases over 8 vectors, minimal set except V-06, whose validation lives in `trust-layer` rather than in the published package)*
-- [ ] Every community vote is signed by a verifiable `did:apw`, and `R-05` is computable from more than one independent emitter — *(Phase 8; today `voter_id` is a client-side UUID bounded only by `ip_hash`)*
+- [x] Every community vote is signed by a verifiable `did:apw` — *(Phase 8: `POST /trust/:siteId/community-attestation` verifies a JWS against the emitter's resolved identity; the anonymous route answers 410)*
+- [ ] `R-05` is computable from more than one **real** independent emitter — *(Phase 8 shipped the mechanism with `min_weight`, distinct-emitter counting and a 7-day history floor; the corpus needs operators, and the Beta is invite-only for want of a second maintainer, so today it is one)*
 - [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/primos-pasos.md` is the starting artifact)*
 - [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/primos-pasos.md` shipped; keep it honest and updated as the product changes)*
 

@@ -69,9 +69,14 @@ beforeEach(() => {
       { category: "structured_data_quality", verified: true, agentKeyId: "https://ag.example", verifiedAt: "t" },
     ],
     community: [
-      { category: "spam_or_deceptive", score: 5, voterId: "v1", votedAt: "t" },
-      { category: "responsiveness", score: 4, voterId: "v1", votedAt: "t" },
-      { category: "content_accuracy", score: 3, voterId: "v2", votedAt: "t" },
+      // E-13: atestaciones firmadas, dos emisores distintos por categoria
+      // (coincidentes -> calibran a J = 7 -> 2.0, el minimo del gate).
+      { category: "spam_or_deceptive", score: 5, iss: "did:apw:v1.example", jti: "c1", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
+      { category: "spam_or_deceptive", score: 5, iss: "did:apw:v2.example", jti: "c2", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
+      { category: "responsiveness", score: 5, iss: "did:apw:v1.example", jti: "c3", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
+      { category: "responsiveness", score: 5, iss: "did:apw:v2.example", jti: "c4", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
+      { category: "content_accuracy", score: 5, iss: "did:apw:v1.example", jti: "c5", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
+      { category: "content_accuracy", score: 5, iss: "did:apw:v2.example", jti: "c6", iat: 1800000000, votedAt: "t", emitterFirstSeenIat: 1700000000 },
     ],
     escrowReports: [{ transactionOutcome: "completed_as_promised", escrowProvider: "p1", reportedAt: "t" }],
   };
@@ -101,7 +106,7 @@ describe("GET /trust/:siteId: proyeccion de dimensiones W (6.6)", () => {
     );
     expect(projection.dimensions["W-10"]).toBeUndefined();
     expect(projection.dimensions["W-02"]).toBeUndefined();
-    expect(projection.aggregates["W-10"]).toMatchObject({ score: expect.any(Number), count: 1 });
+    expect(projection.aggregates["W-10"]).toMatchObject({ score: expect.any(Number), count: 2 });
     expect(projection.aggregates["W-10"].weightSum).toBeGreaterThan(0);
 
     // El nivel publico nunca se oculta: cada dimension publica con datos esta.

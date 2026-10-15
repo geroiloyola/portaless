@@ -14,6 +14,18 @@ import { PUBLIC_DIMENSIONS, projectTrustView } from "../../packages/apw-resolver
 const SITE = "ejemplo.com";
 const SUBJECT = `did:apw:${SITE}`;
 
+// E-13: la fuente community solo puntua con atestaciones FIRMADAS por un
+// did:apw y con historial suficientemente viejo. Con peso cold-start 0.25
+// (A.4.2) hacen falta 8 emisores distintos para juntar el min_weight de 2.0.
+const FIRST_SEEN = 1_700_000_000;
+const IAT = 1_800_000_000;
+function communityEmitter(n: number, category: string, score: number) {
+  const iss = `did:apw:v${n}.example`;
+  return { category, score, iss, jti: `${iss}:${category}`, iat: IAT, votedAt: "t1", emitterFirstSeenIat: FIRST_SEEN };
+}
+const eightOn = (category: string, score: number) =>
+  Array.from({ length: 8 }, (_, i) => communityEmitter(i + 1, category, score));
+
 const snapshot = {
   siteId: SITE,
   self: [
@@ -28,9 +40,10 @@ const snapshot = {
     { category: "structured_data_quality", verified: true, agentKeyId: "https://ag2.example", verifiedAt: "t1" },
   ],
   community: [
-    { category: "spam_or_deceptive", score: 5, voterId: "v1", votedAt: "t1" },
-    { category: "responsiveness", score: 3, voterId: "v1", votedAt: "t1" },
-    { category: "perceived_trustworthiness", score: 1, voterId: "v2", votedAt: "t1" },
+    ...eightOn("spam_or_deceptive", 5),
+    ...eightOn("responsiveness", 3),
+    // perceived_trustworthiness no esta en A.2: no puntua aunque este firmada.
+    communityEmitter(99, "perceived_trustworthiness", 1),
   ],
   escrowReports: [
     { transactionOutcome: "completed_as_promised", escrowProvider: "p1", reportedAt: "t1" },
@@ -86,7 +99,8 @@ describe("mapeo categoria -> dimension (A.2)", () => {
     const gdpr = atts.find((a) => a.id === "j-gdpr")!;
     expect(gdpr).toMatchObject({ iss: SUBJECT, sub: SUBJECT, src: "self", dimension: "W-04" });
     expect(atts.find((a) => a.src === "agent")!.iss).toBe("https://ag.example");
-    expect(atts.find((a) => a.src === "community")!.iss).toBe("community:v1");
+    // E-13: el emisor comunitario es el did:apw del Veracier, no un voterId.
+    expect(atts.find((a) => a.src === "community")!.iss).toMatch(/^did:apw:v\d+\.example$/);
     expect(atts.find((a) => a.src === "escrow_report")!.iss).toBe("p1");
     expect(atts.every((a) => a.sub === SUBJECT)).toBe(true);
   });
@@ -94,11 +108,33 @@ describe("mapeo categoria -> dimension (A.2)", () => {
   it("descarta categorias fuera del modelo y resultados de escrow desconocidos", () => {
     const atts = snapshotToAttestations(snapshot);
     expect(atts.some((a) => a.dimension === "W-08")).toBe(false);
-    // perceived_trustworthiness no esta en A.2 y 'algo_raro' no es un resultado.
-    expect(atts).toHaveLength(snapshot.self.length + snapshot.agent.length + snapshot.community.length - 1 + 2);
+    // perceived_trustworthiness no esta en A.2 y 'algo_raro' no es un resultado:
+    // 16 atestaciones comunitarias firmadas + 2 de escrow sobreviven.
+    expect(atts).toHaveLength(snapshot.self.length + snapshot.agent.length + 16 + 2);
     expect(escrowOutcomeValue("algo_raro")).toBeNull();
     expect(escrowOutcomeValue("refunded_no_delivery")).toBe(2.5);
     expect(() => snapshotToAttestations({ siteId: SITE })).not.toThrow();
+  });
+
+  it("una opinion de visitante sin firma (legacy) no puntua", () => {
+    const atts = snapshotToAttestations({
+      siteId: SITE,
+      community: [
+        { category: "content_accuracy", score: 5, voterId: "anon-1", votedAt: "t" },
+        { category: "responsiveness", score: 4, voterId: "anon-2", votedAt: "t" },
+      ],
+    });
+    expect(atts).toEqual([]);
+  });
+
+  it("una atestacion firmada sin historial resuelto no acredita antiguedad (fail-closed)", () => {
+    const atts = snapshotToAttestations({
+      siteId: SITE,
+      community: [
+        { category: "content_accuracy", score: 5, iss: "did:apw:v1.example", jti: "j1", iat: IAT, votedAt: "t" },
+      ],
+    });
+    expect(atts).toEqual([]);
   });
 
   it("una fila legacy sin campo de valor, o fuera de escala, no puntua y no lanza", () => {
@@ -137,19 +173,44 @@ describe("scoreSiteDimensions (A.4)", () => {
     const both = scoreSiteDimensions({
       siteId: SITE,
       self: [{ category: "terms_of_service", declaredValue: true }],
-      community: [{ category: "responsiveness", score: 5, voterId: "v1", votedAt: "t" }],
+      // E-13: dos emisores distintos. Calibrados sin desviacion (J = 7, w = 1
+      // cada uno) juntan el min_weight de 2.0, que es lo que hace puntuar a la
+      // categoria; con uno solo (0.25) no pasaria el gate.
+      community: [communityEmitter(1, "responsiveness", 5), communityEmitter(2, "responsiveness", 5)],
     });
     expect(both.has("W-09")).toBe(true);
     // declarado 7.0 vs verificado 7.0 -> divergencia 0 -> coherencia 7.0.
-    // Pesos: self 0.25 + v1 calibrado sin desviacion (J = 7 -> w = 1).
-    expect(both.get("W-09")).toMatchObject({ count: 1, weightSum: 1.25 });
-    expect(both.get("W-09")!.score).toBeCloseTo((12 + 1.25 * 7) / 4.25, 10);
+    // Pesos: self 0.25 + dos emisores J = 7 -> w = 1 cada uno.
+    expect(both.get("W-09")).toMatchObject({ count: 1, weightSum: 2.25 });
+    expect(both.get("W-09")!.score).toBeCloseTo((12 + 2.25 * 7) / 5.25, 10);
 
     const onlySelf = scoreSiteDimensions({
       siteId: SITE,
       self: [{ category: "terms_of_service", declaredValue: true }],
     });
     expect(onlySelf.has("W-09")).toBe(false);
+  });
+
+  it("E-13: el gate de min_weight decide si la categoria puntua", () => {
+    const scores = scoreSiteDimensions({
+      siteId: SITE,
+      community: [communityEmitter(1, "spam_or_deceptive", 5)],
+    });
+    // Un emisor sin nadie con quien compararse queda en J = 4 (0.25 de peso),
+    // por debajo de 2.0: la categoria se descarta entera.
+    expect(scores.has("W-10")).toBe(false);
+    expect(scores.size).toBe(0);
+
+    // Dos emisores que coinciden se calibran entre si a J = 7 (w = 1.0 cada
+    // uno): 2.0 exactos, el minimo. El peso cold-start de 0.25 no es el estado
+    // estable -- el costo real de un Sybil es el piso de antiguedad de 7 dias
+    // mas el precio de los dominios, no el peso.
+    const two = scoreSiteDimensions({
+      siteId: SITE,
+      community: [communityEmitter(1, "spam_or_deceptive", 5), communityEmitter(2, "spam_or_deceptive", 5)],
+    });
+    expect(two.get("W-10")).toMatchObject({ count: 2 });
+    expect(two.get("W-10")!.weightSum).toBeCloseTo(2.0, 10);
   });
 
   it("un snapshot vacio no produce dimensiones", () => {
@@ -168,7 +229,7 @@ describe("proyeccion de niveles (A.6 / 6.6)", () => {
     );
     expect(Object.keys(view.dimensions).sort()).toEqual(["W-01", "W-04", "W-06", "W-07", "W-09"]);
     expect(Object.keys(view.aggregates).sort()).toEqual([...scores.keys()].sort());
-    expect(view.aggregates["W-10"]).toMatchObject({ score: expect.any(Number), count: 1, weightSum: expect.any(Number) });
+    expect(view.aggregates["W-10"]).toMatchObject({ score: expect.any(Number), count: 8, weightSum: expect.any(Number) });
     expect(view.dimensions["W-10"]).toBeUndefined();
   });
 

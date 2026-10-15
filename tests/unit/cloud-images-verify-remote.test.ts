@@ -214,7 +214,12 @@ describe("captureSiteTrust", () => {
     siteId: IMAGE_SITE_ID,
     self: [{ category: "privacy_policy", declaredValue: true }],
     agent: [{ category: "https_and_headers", verified: true, agentKeyId: "k1", verifiedAt: "2026-10-01T00:00:00.000Z" }],
-    community: [{ category: "content_accuracy", score: 5, voterId: "v1", votedAt: "2026-10-01T00:00:00.000Z" }],
+    // E-13: dos atestaciones firmadas y coincidentes (calibran a J = 7 -> 2.0,
+    // el min_weight) para que W-02 puntue. Una opinion sin firma ya no puntua.
+    community: [
+      { category: "content_accuracy", score: 5, iss: "did:apw:v1.example", jti: "c1", iat: 1800000000, votedAt: "2026-10-01T00:00:00.000Z", emitterFirstSeenIat: 1700000000 },
+      { category: "content_accuracy", score: 5, iss: "did:apw:v2.example", jti: "c2", iat: 1800000000, votedAt: "2026-10-01T00:00:00.000Z", emitterFirstSeenIat: 1700000000 },
+    ],
     escrowReports: [{ transactionOutcome: "completed_as_promised", escrowProvider: "e1", reportedAt: "2026-10-01T00:00:00.000Z" }]
   };
 
@@ -225,7 +230,7 @@ describe("captureSiteTrust", () => {
     });
     expect(trust).not.toBeNull();
     expect(trust!.siteId).toBe("default");
-    expect(trust!.counts).toEqual({ self: 1, agent: 1, community: 1, escrowReports: 1 });
+    expect(trust!.counts).toEqual({ self: 1, agent: 1, community: 2, escrowReports: 1 });
     expect(trust!.computedAt).toBe("2026-10-12T12:00:00.000Z");
     // publicas (W-01/04) en dimensions + agregados de TODAS (A.6); W-02 y
     // W-05 existen pero son gobernadas -> solo en aggregates con withheld

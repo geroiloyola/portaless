@@ -110,12 +110,15 @@ Lo que el core **ya tiene**, verificado:
 
 Lo que **falta** para que esos filtros existan:
 
-1. **La identidad del votante no es verificable.** `voter_id` se genera en el
-   cliente como `anon-${crypto.randomUUID()}` guardado en `localStorage`
-   (`src/pages/trust/index.astro:63-70`). Es estable, pero **se puede volver a
-   emitir infinitas veces**; lo unico que lo limita es `ip_hash`. Sin ligar el
-   voto a un `did:apw` firmado, un agente puede llenar el grafo de votos falsos —
-   que es justamente lo que un historial publico pretendria evitar.
+1. **La identidad del votante ya es verificable (Fase 8, 2026-10-15).** Este
+   documento lo marcaba como el bloqueo del grafo de confianza: `voter_id` se
+   generaba en el cliente como `anon-${crypto.randomUUID()}` en `localStorage` y
+   lo unico que lo acotaba era `ip_hash`. Ya no: una evaluacion comunitaria es
+   una atestacion firmada por un `did:apw` (ERRATA E-13), con `jti` unico por
+   emisor, almacenada de forma append-only. La ruta anonima responde 410. Lo que
+   sigue pendiente no es codigo: **que existan emisores reales**. Un fixture con
+   tres claves prueba la mecanica, no que haya tres operadores — y hoy hay uno
+   solo (`SECURITY.md`).
 2. **No hay periodo "anio"**: `EmissionPeriod` cubre `"month" | "week" | "day"`.
 3. **No hay clasificacion tematica**, asi que los cortes por categoria editorial
    (polemico, preguntas y respuestas, viral) no tienen dato de origen.

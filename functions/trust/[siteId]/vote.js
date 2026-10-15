@@ -1,151 +1,34 @@
-// Endpoint PUBLICO de voto community sobre SiteTrustScore -- v0.0.9.19.
-// POST /trust/:siteId/vote registra UN voto (1-5) de un visitante humano
-// sobre una categoria de la fuente "community" (perceived_trustworthiness,
-// content_accuracy, spam_or_deceptive, responsiveness -- ver
-// docs/architecture/site-trust-score.md). Sin sesion: a diferencia del
-// voto de plugins (functions/admin/plugins/[pluginId]/vote.js, que exige
-// rol admin porque vota sobre PLUGINS instalados por el propio operador),
-// votar sobre la confianza de un SITIO es una atestacion de visitante --
-// no requiere cuenta Portaless, igual que una resena de producto.
+// Endpoint RETIRADO (APW v1.3, ERRATA E-13).
+// POST /trust/:siteId/vote
 //
-// v0.0.9.19: agrega rate-limiting server-side por IP. voterId (localStorage,
-// client-side) sigue existiendo para el ON CONFLICT que sobrescribe el
-// voto de un mismo navegador, pero YA NO es la unica defensa -- borrar
-// localStorage y generar un voterId nuevo no alcanza para eludir el
-// limite, porque isRateLimited() chequea por ip_hash, no por voterId.
+// El voto anonimo dejo de ser una fuente que puntua. Un `voter_id` que el
+// navegador genera en localStorage es reemisible sin costo, asi que lo unico
+// que acotaba al votante era un rate-limit por IP hasheada -- insuficiente para
+// un grafo de confianza (6.7 exige emisores distintos y con antiguedad).
 //
-// APW v1.2 (B8): la IP sale de getClientIp() -- CF-Connecting-IP en
-// Cloudflare, y en el runtime Node el header interno que calcula el propio
-// runtime (X-Forwarded-For solo desde PORTALESS_TRUSTED_PROXIES, si no la
-// IP del socket). Antes solo se leia CF-Connecting-IP y en self-host el
-// voto respondia siempre 400 missing_client_ip. Se hashea con SHA-256 +
-// salt antes de persistir; la IP cruda nunca toca el store. El salt viene
-// de env.IP_HASH_SALT. Desde v0.0.9.10 el salt es OBLIGATORIO: sin el, el
-// endpoint responde 500 server_misconfigured en vez de caer a un salt fijo de
-// desarrollo, porque un salt publico vuelve reversible el hash de una IPv4.
-//
-// La ventana es de 24h y el limite es 1 voto por IP por sitio+categoria --
-// suficiente para que el ataque de inflar el propio community score sea
-// "mas molesto que util", ya que community es la senal mas debil de las
-// 4 por diseno. No pretende ser criptograficamente robusto.
+// La via vigente es `POST /trust/:siteId/community-attestation`, con una
+// atestacion JWS firmada por un did:apw (5.3 + E-13). Responde 410 para que un
+// cliente viejo vea un motivo explicito en vez de un 404 mudo.
 
-import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
-import { getClientIp } from "../../../packages/trust-layer/src/net/client-ip.ts";
-
-const COMMUNITY_CATEGORIES = [
-  "perceived_trustworthiness",
-  "content_accuracy",
-  "spam_or_deceptive",
-  "responsiveness",
-];
-
-const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-async function hashIp(ip, salt) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`${ip}:${salt}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export async function onRequestPost(context) {
-  const { request, env, params } = context;
-
-  const siteId = params?.siteId;
-  if (!siteId) {
-    return new Response(JSON.stringify({ error: "missing_site_id" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "invalid_json_body" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-
-  const { category, score, comment, voterId } = body ?? {};
-
-  if (!COMMUNITY_CATEGORIES.includes(category)) {
-    return new Response(
-      JSON.stringify({
-        error: "invalid_category",
-        message: `category debe ser una de: ${COMMUNITY_CATEGORIES.join(", ")}.`,
-      }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  if (!Number.isInteger(score) || score < 1 || score > 5) {
-    return new Response(
-      JSON.stringify({ error: "invalid_score", message: "score debe ser un entero entre 1 y 5." }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  if (typeof voterId !== "string" || !voterId.trim()) {
-    return new Response(
-      JSON.stringify({ error: "missing_voter_id", message: "Se requiere voterId (huella anonima del visitante)." }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  const clientIp = getClientIp(request, env);
-  if (!clientIp) {
-    return new Response(
-      JSON.stringify({ error: "missing_client_ip", message: "No se pudo determinar la IP del visitante." }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  const salt = env.IP_HASH_SALT;
-  // Falla cerrada, sin salt de desarrollo. Hashear la IP con el salt publico
-  // del repo hace que el hash de una IPv4 sea reversible por fuerza bruta
-  // (2^32 intentos, segundos en una GPU). Un servidor que no puede proteger la
-  // IP del visitante no debe aceptar el voto.
-  if (!salt) {
-    return new Response(
-      JSON.stringify({
-        error: "server_misconfigured",
-        message: "IP_HASH_SALT no esta configurado en el servidor: el voto community esta deshabilitado.",
-      }),
-      { status: 500, headers: { "content-type": "application/json" } }
-    );
-  }
-  const ipHash = await hashIp(clientIp, salt);
-
-  const store = await createSiteTrustScoreStore(env);
-
-  const limited = await store.isRateLimited(siteId, category, ipHash, RATE_LIMIT_WINDOW_MS);
-  if (limited) {
-    return new Response(
-      JSON.stringify({
-        error: "rate_limited",
-        message: "Ya se registro un voto para esta categoria desde esta red en las ultimas 24 horas.",
-      }),
-      { status: 429, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  const vote = await store.recordCommunityVote({
-    siteId,
-    category,
-    score,
-    comment: typeof comment === "string" && comment.trim() ? comment.trim() : undefined,
-    voterId: voterId.trim(),
-    ipHash,
-    votedAt: new Date().toISOString(),
-  });
-
-  return new Response(JSON.stringify({ ok: true, vote: { ...vote, ipHash: undefined } }), {
-    status: 200,
+function json(body, status) {
+  return new Response(JSON.stringify(body), {
+    status,
     headers: { "content-type": "application/json" },
   });
+}
+
+const GONE = {
+  error: "endpoint_retired",
+  message:
+    "El voto anonimo fue retirado en APW v1.3 (ERRATA E-13): no tenia identidad verificable. " +
+    "Emite una atestacion firmada con un did:apw en POST /trust/:siteId/community-attestation.",
+  replacement: "/trust/:siteId/community-attestation",
+};
+
+export async function onRequestPost() {
+  return json(GONE, 410);
+}
+
+export async function onRequestGet() {
+  return json(GONE, 410);
 }

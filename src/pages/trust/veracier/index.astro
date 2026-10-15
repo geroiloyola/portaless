@@ -1,0 +1,69 @@
+---
+// Shell estatico de la pagina por Veracier (APW v1.3, ERRATA E-13).
+// La Function functions/trust/veracier/[domain].js sirve este archivo cuando el
+// visitante pide HTML (Accept: text/html) via env.ASSETS, igual que /trust/.
+// La URL del navegador sigue siendo /trust/veracier/<domain>: el dominio se lee
+// del pathname en el cliente.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Veracier — Portaless" description="Historial de atestaciones comunitarias firmadas por un Veracier.">
+  <main class="st-page">
+    <h1 class="st-title">Veracier</h1>
+    <p class="st-source-note" id="veracier-note">Cargando…</p>
+    <table class="st-veracier-table" id="veracier-table" hidden>
+      <thead>
+        <tr><th>Categoria</th><th>Atestaciones</th><th>Promedio (1–5)</th><th>Ultima emision</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+</BaseLayout>
+
+<style is:global>
+  .st-veracier-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  .st-veracier-table th, .st-veracier-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--panel-border, #E4E6C3); }
+  .st-veracier-table th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+</style>
+
+<script>
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const parts = window.location.pathname.replace(/\/$/, "").split("/");
+  const domain = decodeURIComponent(parts[parts.length - 1] || "");
+  const note = document.getElementById("veracier-note");
+  const table = document.getElementById("veracier-table");
+
+  async function init() {
+    if (!domain || domain === "veracier") {
+      note.textContent = "Falta el dominio en la URL: /trust/veracier/<dominio>";
+      return;
+    }
+    try {
+      const res = await fetch(`${baseUrl}/trust/veracier/${encodeURIComponent(domain)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const entries = Object.entries(data.categories || {});
+      if (entries.length === 0) {
+        note.textContent = `No hay atestaciones firmadas por ${data.issuer} registradas en este sitio.`;
+        return;
+      }
+      note.textContent = `${data.total} atestaciones firmadas por ${data.issuer} (vistas desde este sitio).`;
+      const tbody = table.querySelector("tbody");
+      for (const [category, agg] of entries) {
+        const tr = document.createElement("tr");
+        const last = new Date(agg.lastIat * 1000).toISOString().slice(0, 10);
+        for (const cell of [category, String(agg.count), String(agg.average), last]) {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.hidden = false;
+    } catch (err) {
+      note.textContent = `No se pudo cargar el historial del Veracier (${err.message}).`;
+    }
+  }
+
+  init();
+</script>

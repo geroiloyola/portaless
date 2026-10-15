@@ -167,6 +167,29 @@ dimensiones y gobernanza de lectura (Loyal Trust Protocol).
 Los pasos 2 y 3 no se construyen dentro de Portaless — requieren
 licencias financieras de una entidad regulada.
 
+## Community firmado (APW v1.3, ERRATA E-13)
+
+La fuente `community` que **puntua** ya no es el voto anonimo. Ahora son
+atestaciones firmadas por un Veracier con `did:apw`:
+
+- **Emision**: `POST /trust/:siteId/community-attestation` con la atestacion JWS
+  en el cuerpo. La identidad del emisor se resuelve con 5.1 (TXT `_apw.<dominio>`
+  con `k` + `did.json`) y la firma se verifica con `verifyAttestation` (5.3).
+  `src` es `community` y `val` es un entero 1..5. `jti` es unico por emisor.
+- **Almacenamiento**: tabla `community_attestations` (append-only; PK
+  `(iss, jti)`). Reemitir agrega una fila; el scoring toma la ultima por
+  `(iss, sujeto, categoria)`, asi que el historial no se pierde.
+- **Puntua solo con umbrales** (E-13): emisor distinto = `did:apw` distinto;
+  antiguedad minima del historial del emisor de **7 dias** (si no se resuelve, no
+  acredita); `min_weight` **2.0 por (sujeto, categoria)**. Con el peso cold-start
+  de A.4.2 (0.25) eso pide ocho dominios distintos, o menos si estan calibrados.
+- **La tabla `site_trust_community_votes` sigue existiendo** como opinion de
+  visitante: se muestra, y **no puntua**, porque no tiene identidad verificable.
+  La ruta vieja `POST /trust/:siteId/vote` responde `410`.
+- **Lectura**: `/trust/veracier/<dominio>` publica lo que ESTE sitio registro de
+  ese emisor (cantidad, promedio y ultima emision por categoria). No publica el
+  texto de los comentarios: A.6 los deja gobernados.
+
 ## Limitaciones vigentes
 
 - Las allowlists de `agent` y `escrow_report` están vacías por defecto:
@@ -175,7 +198,9 @@ licencias financieras de una entidad regulada.
   intencional.
 - Los datos son filas en la base del propio sitio: no son verificables
   por terceros ni portables. APW v1.2 (secciones 5.3 a 5.5) lo resuelve.
-- El rate-limit del voto community es deliberadamente simple.
+- El rate-limit del voto community es deliberadamente simple. Con E-13 el
+  limite se aplica por identidad del emisor (`iss`), no por IP, y la via
+  anonima quedo retirada.
 - `IP_HASH_SALT` es **obligatorio**: sin él el endpoint de voto responde
   `500 server_misconfigured` en vez de caer a un salt fijo de desarrollo, porque
   un salt público vuelve reversible por fuerza bruta el hash de una IPv4 (2^32

@@ -20,6 +20,11 @@ export interface ScoredAttestation {
   dimension: string;
   /** valor ya llevado a 1.0..7.0 con toValue() */
   value: number;
+  /**
+   * Categoria de origen (A.2), cuando se conoce. La necesita el predicado
+   * comunitario de E-13, que se aplica POR categoria y no por dimension.
+   */
+  category?: string;
 }
 
 export interface DimensionScore {

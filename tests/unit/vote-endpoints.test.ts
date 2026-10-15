@@ -1,11 +1,8 @@
-// Votos: trust/[siteId]/vote.js (publico, community, rate-limit por IP
-// hasheada) y admin/plugins/[pluginId]/vote.js (rol admin sobre el
-// registro de plugins). Ambos a 0% de cobertura. Los votes de site-trust
-// corren contra SqliteSiteTrustScoreStore REAL en un archivo temporal
-// (ademas de cubrir el endpoint, cubre isRateLimited/recordCommunityVote
-// del backend SQLite). El registro de plugins usa el cache en memoria del
-// factory (seedeado con hello-plugin/commerce-plugin). La IP del voto
-// publico viene del header CF-Connecting-IP via getClientIp().
+// Votos: trust/[siteId]/vote.js (RETIRADO en E-13: responde 410) y
+// admin/plugins/[pluginId]/vote.js (rol admin sobre el registro de plugins,
+// sigue vigente). El endpoint de atestacion comunitaria firmada que reemplaza
+// al voto anonimo se prueba en tests/unit/apw-community-attestations.test.ts:
+// este archivo solo cubre que la ruta vieja ya no acepta nada.
 
 import { describe, it, expect, afterAll } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -51,84 +48,21 @@ function ctx(opts: {
   } as any;
 }
 
-describe("trust/[siteId]/vote.js (community, publico)", () => {
-  it("400: sin siteId, JSON roto, categoria invalida, score fuera de rango o sin voterId", async () => {
-    expect((await siteVote.onRequestPost(ctx({ siteId: "" as any, body: {} }))).status).toBe(400);
-    expect((await siteVote.onRequestPost(ctx({ rawBody: "{" }))).status).toBe(400);
-    const badCategory = await siteVote.onRequestPost(
-      ctx({ body: { category: "no-existe", score: 5, voterId: "v1" } })
-    );
-    expect(badCategory.status).toBe(400);
-    for (const score of [0, 6, 3.5]) {
-      const res = await siteVote.onRequestPost(
-        ctx({ body: { category: "content_accuracy", score, voterId: "v1" } })
-      );
-      expect(res.status).toBe(400);
-      expect((await res.json()).error).toBe("invalid_score");
-    }
-    const noVoter = await siteVote.onRequestPost(ctx({ body: { category: "content_accuracy", score: 4 } }));
-    expect(noVoter.status).toBe(400);
-  });
-
-  it("400 missing_client_ip si no hay CF-Connecting-IP", async () => {
-    const res = await siteVote.onRequestPost(ctx({ body: { category: "content_accuracy", score: 5, voterId: "v1" } }));
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("missing_client_ip");
-  });
-
-  it("voto valido: ok true y el voto persiste SIN exponer ipHash", async () => {
+describe("trust/[siteId]/vote.js (retirado por E-13)", () => {
+  it("POST responde 410 con el reemplazo indicado", async () => {
     const res = await siteVote.onRequestPost(
-      ctx({
-        ip: "203.0.113.10",
-        env: { PORTALESS_SQLITE_PATH: dbPath, IP_HASH_SALT: "salt-test" },
-        body: { category: "perceived_trustworthiness", score: 4, comment: "  buena web  ", voterId: "v-uno" },
-      })
+      ctx({ body: { category: "content_accuracy", score: 5, voterId: "v1" } })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const body = await res.json();
-    expect(body.ok).toBe(true);
-    expect(body.vote.siteId).toBe("site-1");
-    expect(body.vote.category).toBe("perceived_trustworthiness");
-    expect(body.vote.score).toBe(4);
-    expect(body.vote.comment).toBe("buena web"); // trim del comentario
-    expect(body.vote.ipHash).toBeUndefined(); // la IP cruda/nunca el hash no salen
-    expect(JSON.stringify(body)).not.toContain("203.0.113.10");
+    expect(body.error).toBe("endpoint_retired");
+    expect(body.replacement).toBe("/trust/:siteId/community-attestation");
   });
 
-  it("429: misma IP y categoria en 24h; otra categoria u otra IP si pasan", async () => {
-    const env = { PORTALESS_SQLITE_PATH: dbPath, IP_HASH_SALT: "salt-test" };
-    const repeat = await siteVote.onRequestPost(
-      ctx({ ip: "203.0.113.20", env, body: { category: "spam_or_deceptive", score: 1, voterId: "a" } })
-    );
-    expect(repeat.status).toBe(200);
-
-    const limited = await siteVote.onRequestPost(
-      ctx({ ip: "203.0.113.20", env, body: { category: "spam_or_deceptive", score: 5, voterId: "b" } })
-    );
-    expect(limited.status).toBe(429);
-    expect((await limited.json()).error).toBe("rate_limited");
-
-    const otherCategory = await siteVote.onRequestPost(
-      ctx({ ip: "203.0.113.20", env, body: { category: "responsiveness", score: 3, voterId: "b" } })
-    );
-    expect(otherCategory.status).toBe(200);
-
-    const otherIp = await siteVote.onRequestPost(
-      ctx({ ip: "203.0.113.99", env, body: { category: "spam_or_deceptive", score: 2, voterId: "c" } })
-    );
-    expect(otherIp.status).toBe(200);
-  });
-
-  it("500 server_misconfigured si falta IP_HASH_SALT (falla cerrada, sin salt de desarrollo)", async () => {
-    const res = await siteVote.onRequestPost(
-      ctx({
-        ip: "198.51.100.7",
-        env: { PORTALESS_SQLITE_PATH: dbPath },
-        body: { category: "content_accuracy", score: 5, voterId: "dev-salt" },
-      })
-    );
-    expect(res.status).toBe(500);
-    expect((await res.json()).error).toBe("server_misconfigured");
+  it("GET responde 410 (el voto anonimo ya no existe)", async () => {
+    const res = await siteVote.onRequestGet();
+    expect(res.status).toBe(410);
+    expect((await res.json()).error).toBe("endpoint_retired");
   });
 });
 

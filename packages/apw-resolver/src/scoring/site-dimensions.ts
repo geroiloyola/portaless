@@ -40,6 +40,7 @@ import {
   type DimensionScore,
   type ScoredAttestation,
 } from './scoring';
+import { communityPredicate, emitterAgeOk, latestPerEmitter, type CommunityRow } from './community';
 
 export const SITE_SUBJECT_PREFIX = 'did:apw:';
 
@@ -103,8 +104,16 @@ export interface SiteSnapshotLike {
   community?: ReadonlyArray<{
     category: string;
     score: number;
-    voterId: string;
+    /** Opinion de visitante (legacy). Sin `iss` no puntua: no tiene identidad. */
+    voterId?: string;
+    /** `did:apw` del emisor (el Veracier). Presente solo en atestaciones firmadas. */
+    iss?: string;
+    jti?: string;
+    /** `iat` de la atestacion, en segundos. */
+    iat?: number;
     votedAt: string;
+    /** Primera entrada verificada del historial del emisor (E-13); null/ausente no acredita. */
+    emitterFirstSeenIat?: number | null;
   }>;
   escrowReports?: ReadonlyArray<{
     transactionOutcome: string;
@@ -138,6 +147,60 @@ function rowValue(input: unknown, scale: 'boolean' | 'community'): number | null
  * el dato. Las categorias fuera del modelo se descartan: no hay dimension
  * donde ponerlas.
  */
+/**
+ * Filas comunitarias FIRMADAS, agrupadas por categoria y ya filtradas (E-13).
+ *
+ * Una fila sin `iss` es una opinion de visitante del modelo anterior: no tiene
+ * identidad verificable, asi que NO puntua. De las que si la tienen se toma la
+ * ultima por emisor (reemitir reemplaza) y se descartan los emisores que no
+ * acreditan el minimo de antiguedad de historial. El `min_weight` NO se aplica
+ * aca: necesita la calibracion, y esa se calcula en `scoreSiteDimensions`.
+ */
+export function attestedCommunityRows(snapshot: SiteSnapshotLike): Map<string, CommunityRow[]> {
+  const grouped = new Map<string, CommunityRow[]>();
+  for (const row of snapshot.community ?? []) {
+    if (typeof row.iss !== 'string' || !row.iss) continue;
+    if (!CATEGORY_DIMENSION[row.category]) continue;
+    if (rowValue(row.score, 'community') === null) continue;
+    if (typeof row.iat !== 'number' || !Number.isFinite(row.iat)) continue;
+    const list = grouped.get(row.category) ?? [];
+    list.push({
+      iss: row.iss,
+      category: row.category,
+      val: row.score,
+      iat: row.iat,
+      jti: row.jti ?? `${row.iss}:${row.category}:${row.iat}`,
+      emitterFirstSeenIat: row.emitterFirstSeenIat ?? null,
+    });
+    grouped.set(row.category, list);
+  }
+
+  const out = new Map<string, CommunityRow[]>();
+  for (const [category, rows] of grouped) {
+    out.set(
+      category,
+      latestPerEmitter(rows).filter((r) => emitterAgeOk(r.iat, r.emitterFirstSeenIat))
+    );
+  }
+  return out;
+}
+
+function communityRowsToAttestations(
+  rowsByCategory: ReadonlyMap<string, CommunityRow[]>,
+  sub: string
+): ScoredAttestation[] {
+  const out: ScoredAttestation[] = [];
+  for (const rows of rowsByCategory.values()) {
+    for (const row of rows) {
+      const dimension = CATEGORY_DIMENSION[row.category];
+      const value = rowValue(row.val, 'community');
+      if (!dimension || value === null) continue;
+      out.push({ id: row.jti, iss: row.iss, sub, src: 'community', dimension, value, category: row.category });
+    }
+  }
+  return out;
+}
+
 export function snapshotToAttestations(snapshot: SiteSnapshotLike): ScoredAttestation[] {
   const sub = siteSubject(snapshot.siteId);
   const out: ScoredAttestation[] = [];
@@ -170,18 +233,12 @@ export function snapshotToAttestations(snapshot: SiteSnapshotLike): ScoredAttest
     });
   }
 
-  for (const row of snapshot.community ?? []) {
-    const dimension = CATEGORY_DIMENSION[row.category];
-    const value = rowValue(row.score, 'community');
-    if (!dimension || value === null) continue;
-    out.push({
-      id: `${row.voterId}:${row.category}:${row.votedAt}`,
-      iss: `community:${row.voterId}`,
-      sub,
-      src: 'community',
-      dimension,
-      value,
-    });
+  // Community (E-13): solo atestaciones firmadas. Las filas sin `iss` son
+  // opinion de visitante del modelo anterior y no puntuan; deduplicacion y
+  // antiguedad ya vienen aplicadas. El `min_weight` se aplica en
+  // scoreSiteDimensions, que es quien tiene la calibracion.
+  for (const attestation of communityRowsToAttestations(attestedCommunityRows(snapshot), sub)) {
+    out.push(attestation);
   }
 
   for (const row of snapshot.escrowReports ?? []) {
@@ -237,9 +294,32 @@ function coherenceScore(
  * projectTrustView). R-05 (neutral, inyectado por scoreSubject) se quita.
  */
 export function scoreSiteDimensions(snapshot: SiteSnapshotLike): Map<string, DimensionScore> {
-  const attestations = snapshotToAttestations(snapshot);
-  const judges = calibrateJudges(attestations);
-  const scores = scoreSubject(siteSubject(snapshot.siteId), attestations, judges);
+  const sub = siteSubject(snapshot.siteId);
+
+  // Pasada 1: se calibra con TODO lo que hay, sin el gate de `min_weight`,
+  // porque los pesos que decide el gate salen justamente de la calibracion.
+  const ungated = snapshotToAttestations(snapshot);
+  const preJudges = calibrateJudges(ungated);
+
+  // Gate de E-13: `min_weight` POR (sujeto, categoria). Una categoria que no
+  // junta 2.0 de peso entre emisores distintos no puntua; las demas fuentes
+  // que comparten su dimension (W-03 recibe `self` y `community`) quedan
+  // intactas.
+  const rowsByCategory = attestedCommunityRows(snapshot);
+  const surviving = new Map<string, CommunityRow[]>();
+  let gatedAny = false;
+  for (const [category, rows] of rowsByCategory) {
+    const predicate = communityPredicate(rows, preJudges);
+    if (predicate.passes) surviving.set(category, predicate.rows);
+    else gatedAny = true;
+  }
+
+  const attestations = gatedAny
+    ? [...ungated.filter((a) => a.src !== 'community'), ...communityRowsToAttestations(surviving, sub)]
+    : ungated;
+  const judges = gatedAny ? calibrateJudges(attestations) : preJudges;
+
+  const scores = scoreSubject(sub, attestations, judges);
 
   const coherence = coherenceScore(attestations, judges);
   if (coherence) scores.set('W-09', coherence);
