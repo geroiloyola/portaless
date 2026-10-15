@@ -11,7 +11,9 @@ A lightweight, open source, modular CMS — built to be published without paid h
 [![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
 [![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](./docs/protocol-apw/APW-SPEC-v1.3.md)
 
-[Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless/) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless/) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+
+> **New here?** [`VISION.md`](./docs/VISION.md) is where the project says what it must become — and what it refuses to become. It carries no status, versions or dates, so it does not go stale. What exists **today** is this README and [`ROADMAP.md`](./ROADMAP.md).
 
 </div>
 
@@ -57,15 +59,18 @@ Real screenshots of the running product — captured from the live app, not mock
 
 Portaless is in its **first public Beta**. What that means honestly:
 
-- **Ready today**: the full edit→publish cycle from the browser (17-element catalog, 6 skins), `did:apw` cryptographic identity with key rotation, SiteTrustScore (4 sources), external witnesses, the Portaless Index aggregator with calibrated weights and inter-node sync, plugin sandboxing, Pay-per-crawl plumbing, and the open [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) with independently checkable [test vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md) and a [starter kit](./docs/protocol-apw/STARTER-KIT.md) for implementers who never saw this code.
-- **Not ready yet**: the final GitHub-Pages publish step still needs a terminal; Cloudflare Pages OAuth in the wizard is “coming soon”; this Beta has a **single maintainer**, so it is **invite-only** — no public sign-up until a second maintainer with real merge permissions exists ([the recorded decision](./SECURITY.md#bus-factor-single-maintainer-risk)); and the roadmap's exit criterion — a person outside the project installing Portaless unaided, with their site appearing in an Index node that is not the author's — has **not been met yet**. “Beta” is the honest name for that stage, not a marketing number.
+- **Ready today**: the full edit→publish cycle from the browser (17-element catalog, 6 skins), `did:apw` cryptographic identity with key rotation, SiteTrustScore (4 sources), external witnesses, the Portaless Index aggregator with calibrated weights and inter-node sync, plugin sandboxing, an MIT-licensed [plugin SDK](./packages/plugin-sdk/), signed community attestations, a recomputable ranking defined in the spec (V-16), and the open [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) with independently checkable [test vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md) that run as an **executable conformance suite** (110/110 cases over 11 vectors) plus a [starter kit](./docs/protocol-apw/STARTER-KIT.md) for implementers who never saw this code.
+- **Not ready yet**: the final GitHub-Pages publish step still needs a terminal; Cloudflare Pages OAuth in the wizard is “coming soon”; the plugin installer exists but is **behind a flag, off by default**, and the nine capability backends still answer an explicit `501`; discovery across nodes has a shipped mechanism but **no public endpoint, because there are no peers to federate with**; this Beta has a **single maintainer**, so it is **invite-only** — no public sign-up until a second maintainer with real merge permissions exists ([the recorded decision](./SECURITY.md#bus-factor-single-maintainer-risk)); and the roadmap's exit criterion — a person outside the project installing Portaless unaided, with their site appearing in an Index node that is not the author's — has **not been met yet**. “Beta” is the honest name for that stage, not a marketing number.
+- **Where it is going**: [`docs/VISION.md`](./docs/VISION.md), which carries no status and no dates on purpose. What is missing today, item by item, is [`ROADMAP.md`](./ROADMAP.md) — organized by *who* has to resolve each piece: Portaless, or a third party.
 - **Install in 10 minutes** (Docker + browser, non-technical guide with screenshots): [`docs/primos-pasos.md`](./docs/primos-pasos.md). Announcement page on the demo: [geroiloyola.github.io/portaless/beta](https://geroiloyola.github.io/portaless/beta). The transparency standard for first-time visitors is the same one this repo uses for readers of the code: see [`ROADMAP.md`](./ROADMAP.md) (“Real status by module”).
 
 ---
 
 ## Table of contents
 
+- [What is Portaless?](#what-is-portaless)
 - [See Portaless in action](#see-portaless-in-action)
+- [Public Beta](#public-beta)
 - [Features](#features)
 - [Recent updates](#recent-updates)
 - [Real status by module](#real-status-by-module)
@@ -115,7 +120,7 @@ For what is true **today**, read [Real status by module](#real-status-by-module)
 
 ## Real status by module
 
-This project explicitly documents what's implemented versus what's a pending skeleton. Don't assume functionality from a folder name — check [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) for the live detail. Summary:
+This project explicitly documents what's implemented versus what's a pending skeleton. Don't assume functionality from a folder name — check [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) for the live detail, and [`VISION.md`](./docs/VISION.md) for where it is all going (which is a different question, and deliberately a different file). Summary:
 
 | Module | Status |
 |---|---|
@@ -126,8 +131,13 @@ This project explicitly documents what's implemented versus what's a pending ske
 | Pay-per-crawl (`cloudflare-pay-per-crawl`) | 🟡 Implemented: in-band `crawler-price` behind Cloudflare, activation only with a verified Cloudflare API token (Zone Read) + admin password/2FA + APW site identity. Pending: test against a live Cloudflare zone with Pay Per Crawl enabled (today only mocked tests) and confirm the minimum price (assumed USD 0.01). The `settlement_provider_activations` table is in the master `schema.sql` and `REQUIRED_TABLES` since v0.0.9.10 (stores still create it on the fly for pre-existing databases). Without an active provider, `charge` responds `402` with `settlement: "not_available"` and nothing is charged |
 | AI discovery (`llms.txt`, markdown per post, `robots.txt`, sitemap) | ✅ Generated at build time from your content and AI policy. Limitation: pages stored only in D1/SQLite are not included in `llms.txt` |
 | SiteTrustScore (4 sources: self, agent, community, escrow_report) | ✅ All 4 sources have a connected HTTP endpoint; `agent` and `escrow_report` have a full admin lifecycle (grant/revoke UI, no manual API calls needed). Pending: both allowlists are empty by default, and there's no automated onboarding flow for a second escrow provider yet |
-| Protocol APW (cross-site identity, trust and discovery) | ✅ Full implementation of the normative spec v1.3 ([`APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md)): DNS-over-HTTPS resolution of the `_apw.` TXT record (manifest v2 with `k`/`h`/`rg`), `did:apw` identity with key rotation and public `did.json`, signed site artifacts (JWS + JCS), issuer-signed attestations (`agent`, `escrow_report`, `self`), a hash-chained, DNS-anchored attestation history (`/.well-known/apw-log.json` + `/.well-known/apw-attestations.json`), external witnesses (§5.7), the Portaless Index aggregator with A.4.4-style calibration and inter-node sync (§5.7 informative, erratum E-12), per-dimension scoring, and fail-closed read governance with reader reputation (`reader_conduct`). Test vectors are published separately in [`APW-VECTORS-v1.3.md`](./docs/protocol-apw/APW-VECTORS-v1.3.md), independent of this codebase; external implementers start at [`STARTER-KIT.md`](./docs/protocol-apw/STARTER-KIT.md). Pending: automatic DNS anchoring of `h`, the `did:web` Path A subject-mapping erratum, and — above all — a second real implementer (Phase 4) |
-| MCP server | ✅ 7 real tools connected end-to-end (`create_page`, `update_page`, `list_page_components`, `query_usage_log`, `list_installed_plugins`, `grant_capability`, `revoke_permission`). Known limitation: agent identity is resolved once per process, not per call — documented as an active security consideration in `AGENT.md` |
+| Protocol APW (cross-site identity, trust and discovery) | ✅ Full implementation of the normative spec v1.3 ([`APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md)): DNS-over-HTTPS resolution of the `_apw.` TXT record (manifest v2 with `k`/`h`/`rg`), `did:apw` identity with key rotation and public `did.json`, signed site artifacts (JWS + JCS), issuer-signed attestations (`agent`, `escrow_report`, `self`), a hash-chained, DNS-anchored attestation history (`/.well-known/apw-log.json` + `/.well-known/apw-attestations.json`), external witnesses (§5.7), the Portaless Index aggregator with A.4.4-style calibration and inter-node sync (§5.7 informative, erratum E-12), per-dimension scoring, and fail-closed read governance with reader reputation (`reader_conduct`). An errata series (E-1…E-15) carries the normative changes without a version bump — including E-13 (signed community attestations), E-14 (the signed pages document) and E-15 (the signed plugin manifest). Test vectors are published separately in [`APW-VECTORS-v1.3.md`](./docs/protocol-apw/APW-VECTORS-v1.3.md), independent of this codebase, and now run **executably** in CI: **110/110 cases over 11 vectors**, including the machine-readable fixtures under `docs/protocol-apw/vectors/v1.3/`; external implementers start at [`STARTER-KIT.md`](./docs/protocol-apw/STARTER-KIT.md) and can run the published `apw-conformance` bin against their own implementation. Pending: pasting the `_apw.` TXT into the DNS provider is still manual (the `h` value is computed for the operator), the `did:web` Path A subject-mapping erratum, and — above all — a second real implementer (Phase 4) |
+| MCP server | ✅ 7 real tools connected end-to-end (`create_page`, `update_page`, `list_page_components`, `query_usage_log`, `list_installed_plugins`, `grant_capability`, `revoke_permission`). Agent identity is resolved **per invocation** on the HTTP transport (`Authorization: Bearer <token>`, tokens issued from `POST /admin/api/mcp-agents`, stored sha256-only); over stdio the SDK exposes no per-call auth info, so the local process keeps one fixed env identity — the honest remaining gap, documented in [`docs/architecture/mcp-agents.md`](./docs/architecture/mcp-agents.md) |
+| Plugin SDK (MIT) | ✅ `packages/plugin-sdk` 0.1.0 — the typed surface for third-party authors: capability catalog, `validateManifest` and the sandbox contract, re-declared with **no AGPL code imported**; equivalence with the core is pinned by an AGPL-side parity test, and its tarball is checked in CI (pack → install into an empty project → type-check a consumer + runtime import). **Honest scope**: the capability surface is provisional until the capability backends close — [the SDK README](./packages/plugin-sdk/README.md) says so |
+| Plugin installer (HTTP) | 🟡 Mechanism shipped **behind a flag that is off by default** (`PORTALESS_PLUGIN_INSTALLER`; the endpoint answers 404 without it and is not announced). It requires step-up, verifies a publisher-signed manifest against the resolved `did:apw` identity (ERRATA **E-15**, signature covers `requestedCapabilities`), stores code chunked in BLOB with a hard cap, and **grants nothing** — installing registers, and the grant stays `granted ∩ manifest` in the Permissions Center. Pending: the runtime still loads code from disk, so the workerd `503 plugin_source_backend_unavailable` remains true; and the nine capability backends are still `501` by decision |
+| Community reputation (signed) | ✅ A community evaluation is a JWS signed by a `did:apw` (ERRATA **E-13**): `POST /trust/:siteId/community-attestation` verifies it against the emitter's resolved identity, the anonymous route answers `410`, and `min_weight` (2.0 per subject and category), distinct-emitter counting and the 7-day history floor are implemented and fixture-checked (vectors **V-14**, **V-15**). Pending: **portable** reputation (the emitter's own chain is not fetched yet) and, above all, real emitters — today there is one |
+| Federated query + ranking | 🟡 **Ranking shipped (Phase 9a)**: normative filter semantics in spec §7.1, executable as vector **V-16** (total order with a full tie-break tuple; an empty subject is never filled with the neutral prior), with the filters exposed in the `/explore` UI and an **honest degraded state** — the page is static, so it declares its local source, build instant and window instead of faking a ranking. **Federation mechanism shipped (Phase 9b)**: signed `/.well-known/apw-pages.jws` (ERRATA **E-14**) plus a hardened peer reader (per-hop redirect validation, streaming byte cap, private-range blocking, sanitized render, mandatory cache + single-flight + stale-while-error), verified against fixtures. Pending: the public endpoint is deliberately not opened — it would fan out to peers that do not exist yet |
+| Dashboard activity feed | ✅ The seven mock panels were deleted (they were dead code) and replaced by a real, **admin-only** feed: append-only `activity_events` (D1 → SQLite → InMemory), a single writer `emitActivity()` with **no triggers and no backfill**, `GET /admin/api/recents` and `/admin/recents`. It records pages saved/deleted, community attestations, permission changes, witness statements and password changes/resets — and **not** orders, revenue or human traffic, which have no data source. It stores no IPs |
 | Plugin sandboxing (4 adapters) | 🟡 `isolated-vm` (self-hosted) runs real code with an isolate pool and **12/12 plugin capabilities with a real bridge** (`billing:pay-per-crawl` is an admin-only capability for settlement providers, not a plugin capability, and has no sandbox bridge by design); Cloudflare Workers for Platforms and Deno Deploy make real calls to their APIs (not yet verified against a real account, only tested with mocked `fetch`); Fastly remains contract + detailed TODOs only, no real API call yet |
 | Web Bot Auth cryptographic verification | ✅ Validates Ed25519 signatures (RFC 9421) with key-directory caching and nonce-uniqueness checks. Both verifiers share draft-03 header rules (quoted `Signature-Agent`, signed `signature-agent`, `tag="web-bot-auth"`), with an end-to-end test and an interoperability test against the official `web-bot-auth` library. Since v0.0.9.31 nonces are stored in D1/SQLite (`webbotauth_nonces`, TTL 300 s) when a backend is configured, so replay protection is shared across instances (in-memory fallback for single-process dev). ML-DSA-44/65/87 is supported in both the middleware verifier and the `SiteTrustScore` verifier (shared implementation, `@noble/post-quantum`, still awaiting an independent audit) |
 | Installation / setup | ✅ Single command (`npm run setup`) for self-hosted SQLite, or first run from `/setup` with a one-time code in the Node runtime — Cloudflare D1 still uses `wrangler d1 execute` (or `npm run setup:d1`) separately |
@@ -281,23 +291,30 @@ Portaless never processes the payment: Cloudflare charges the crawler. The ledge
 portaless/
 ├── src/                    # Astro site (pages, content, layouts, commerce, llms.txt/robots.txt/sitemap)
 ├── packages/
-│   ├── atomic-elements/    # Visual page editor
-│   ├── dashboard/          # Admin panel + Skin System
-│   ├── permissions/        # Permissions Center
-│   ├── plugin-sandbox/     # Multi-provider sandboxing
+│   ├── atomic-elements/    # Visual page editor (element registry, drag-and-drop, page model, theme packs)
+│   ├── dashboard/          # Admin panel + Skin System + the real activity feed (emitActivity)
+│   ├── permissions/        # Permissions Center (grants per plugin and per agent)
+│   ├── plugin-sandbox/     # Multi-provider sandboxing, capability bridge, plugin registry + installer
+│   ├── plugin-sdk/         # MIT-licensed typed surface for third-party plugin authors (0.1.0, self-contained)
 │   ├── trust-layer/        # AI agent identification + SiteTrustScore + pay-per-crawl providers
-│   ├── apw-resolver/       # Protocol APW: DNS-over-HTTPS resolver + manifest + publishing CLI; `.` export = standalone client (see its README + docs/protocol-apw/STARTER-KIT.md)
-│   ├── mcp-server/         # Native MCP server (6 real tools connected)
-│   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, persistence)
-│   ├── commerce-plugin/    # Reference manifest for the commerce module
+│   ├── apw-resolver/       # Protocol APW reference implementation: resolver, did:apw, witnesses, scoring, ranking, federation, the `apw-conformance` runner
+│   ├── mcp-server/         # Native MCP server (7 real tools; per-invocation agent identity on the HTTP transport)
+│   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, step-up, persistence)
+│   ├── deploy-engine/      # Publish path: draft filter, manifests, GitHub Pages / Cloudflare deployment
+│   ├── onboarding/         # Wizard intent→layout templates
+│   ├── commerce-plugin/    # Reference manifest for the commerce module (real logic in src/commerce/)
+│   ├── posse-syndicator-plugin/ # POSSE syndication to Bluesky and Mastodon, inside the sandbox
 │   ├── identity-atproto/   # AT Protocol identity + optional APW bridge
-│   └── cloud-images/       # Cloud Images: APW-signed image sidecars (C2PA without a central authority)
-├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints, settlement, first-run setup)
+│   ├── cloud-images/       # Cloud Images: APW-signed image sidecars (C2PA without a central authority)
+│   └── sqlite-driver/      # Shared better-sqlite3 wrapper used by every SQLite store
+├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints, settlement, plugin run/install, admin APIs, first-run setup)
 ├── server/                 # Self-hosted Node runtime and first-run service (runs functions/ with Pages-compatible bindings)
-├── scripts/                # Setup (schema.sql + initial admin in one command), Docker entrypoint
-├── docs/                   # Whitepaper, architecture, deployment guides, self-hosting, licensing boundaries, Protocol APW spec
+├── scripts/                # Setup (schema.sql + initial admin in one command), schema generation, manifest validation, Docker entrypoint
+├── infra/                  # Deployable infrastructure that is not the app (e.g. the Cloudflare dispatcher Worker)
+├── schema.sql              # Master schema, generated from 13 sources (regenerate with scripts/generate-schema.mjs)
+├── docs/                   # Vision, whitepaper, architecture, Protocol APW spec/errata/vectors, deployment guides
 ├── examples/               # Reference configurations (blog, landing page, store)
-├── tests/                  # Unit and e2e tests
+├── tests/                  # Unit, browser (Playwright) and e2e tests
 ├── Dockerfile              # Multi-stage image (node:24-bookworm-slim); also docker-compose.yml, railway.json, render.yaml
 └── ROADMAP.md              # Current state of the project (history in docs/roadmap/)
 ```
