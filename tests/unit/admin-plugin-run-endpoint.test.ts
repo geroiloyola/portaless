@@ -226,6 +226,33 @@ describe("POST /admin/api/plugins/run", () => {
     expect((await res.json()).error).toBe("artifact_integrity_failed");
   });
 
+  it("§14.1: si la version activa del registro no tiene artefacto -> 409 artifact_version_missing", async () => {
+    const publisher = "did:apw:pub.example";
+    const artifacts = await createPluginArtifactStore({});
+    await artifacts.put({
+      publisher,
+      name: "mi-plugin",
+      version: "1.0.0",
+      code: new TextEncoder().encode("1;"),
+      manifest: { name: "mi-plugin", version: "1.0.0", entry: "index.js", runtime: "javascript", requestedCapabilities: [] },
+    });
+    const registry = await createPluginRegistryStore({});
+    await registry.register({
+      pluginId: "mi-plugin",
+      displayName: "Mi plugin",
+      author: publisher,
+      version: "2.0.0", // version activa SIN artefacto guardado
+      sourceType: "closed",
+      requestedCapabilities: [],
+      registeredAt: new Date().toISOString(),
+      active: true,
+    });
+
+    const res = await post({ plugin: "mi-plugin" }, adminUser, { noFs: true });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("artifact_version_missing");
+  });
+
   it("§14.1: rechaza con 409 artifact_manifest_missing si el artefacto guardado no trae manifiesto", async () => {
     const publisher = "did:apw:pub.example";
     const artifacts = await createPluginArtifactStore({});

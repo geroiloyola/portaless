@@ -69,12 +69,24 @@ async function loadPluginFromArtifact(env, entry) {
   const artifacts = await createPluginArtifactStore(env);
   const pluginId = entry.pluginId;
   const authorIsDid = typeof entry.author === "string" && entry.author.startsWith("did:apw:");
+  const hasActiveVersion = authorIsDid && typeof entry.version === "string" && entry.version.length > 0;
 
   let artifact = null;
-  if (authorIsDid && typeof entry.version === "string" && entry.version.length > 0) {
+  if (hasActiveVersion) {
+    // La version que el registro marca como activa es la que se ejecuta. Si no
+    // tiene artefacto, es un estado inconsistente que se dice explicito en vez
+    // de caer a "el mas reciente" (eso romperia registro <-> artefacto, §14.1).
     artifact = await artifacts.get(entry.author, pluginId, entry.version);
-  }
-  if (!artifact) {
+    if (!artifact) {
+      return {
+        error: "artifact_version_missing",
+        status: 409,
+        message: `El registro marca '${pluginId}@${entry.version}' como activo, pero no hay artefacto guardado para esa version. Reinstala el plugin con el instalador HTTP.`,
+      };
+    }
+  } else {
+    // Entradas sin version (plugins seeded/legacy): unica opcion disponible, el
+    // artefacto mas reciente por createdAt.
     const all = await artifacts.list();
     const candidates = all.filter(
       (m) => m.name === pluginId && (!authorIsDid || m.publisher === entry.author)
