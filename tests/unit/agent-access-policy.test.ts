@@ -350,3 +350,203 @@ describe("/admin/api/agents", () => {
     expect((await mod.onRequestDelete(ctx({ user: null, method: "DELETE" }))).status).toBe(401);
   });
 });
+
+describe("el feed de actividad registra el cambio de politica (6a)", () => {
+  const sharedStore = new InMemoryAgentAccessPolicyStore();
+  const activity: { kind: string; actor: string; subject: string; detail?: string }[] = [];
+
+  beforeEach(async () => {
+    await sharedStore.clear();
+    activity.length = 0;
+    vi.doMock("../../packages/trust-layer/src/policy/agent-access-store", async (importOriginal) => {
+      const original = await importOriginal<typeof import("../../packages/trust-layer/src/policy/agent-access-store")>();
+      return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
+    });
+    vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {
+      const original = await importOriginal<typeof import("../../packages/dashboard/src/activity/activity-store")>();
+      return {
+        ...original,
+        emitActivity: async (_env: unknown, input: any) => {
+          activity.push(input);
+        },
+      };
+    });
+  });
+
+  function ctx(opts: { user: { username: string; role: string }; method?: string; body?: unknown }) {
+    const headers: Record<string, string> = {};
+    let body: string | undefined;
+    if (opts.body !== undefined) {
+      headers["content-type"] = "application/json";
+      body = JSON.stringify(opts.body);
+    }
+    return {
+      request: new Request("https://sitio.test/admin/api/agents", {
+        method: opts.method ?? "PUT",
+        headers,
+        body,
+      }),
+      env: {},
+      params: {},
+      data: { user: opts.user },
+      next: async () => new Response("static"),
+    } as any;
+  }
+
+  async function loadEndpoint() {
+    vi.resetModules();
+    return import("../../functions/admin/api/agents");
+  }
+
+  const admin = { username: "ana", role: "admin" };
+  const blocking = {
+    policies: {
+      search: { access: "allow" },
+      ai_input: { access: "block" },
+      ai_train: { access: "allow" },
+    },
+  };
+
+  it("PUT emite agents.policy_changed con las tres reglas y quien lo hizo", async () => {
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestPut(ctx({ user: admin, method: "PUT", body: blocking }));
+    expect(res.status).toBe(200);
+
+    expect(activity).toHaveLength(1);
+    expect(activity[0]).toMatchObject({
+      kind: "agents.policy_changed",
+      actor: "ana",
+      subject: "search=allow ai_input=block ai_train=allow",
+    });
+  });
+
+  it("un 403 por rol NO emite nada (el feed no registra intentos que no ocurrir)", async () => {
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestPut(
+      ctx({ user: { username: "ana", role: "viewer" }, method: "PUT", body: blocking })
+    );
+    expect(res.status).toBe(403);
+    expect(activity).toHaveLength(0);
+  });
+
+  it("un 400 por politica invalida NO emite nada", async () => {
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestPut(
+      ctx({
+        user: admin,
+        method: "PUT",
+        body: { policies: { search: { access: "allow" }, ai_input: { access: "charge" }, ai_train: { access: "block" } } },
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(activity).toHaveLength(0);
+  });
+
+  it("DELETE registra DE QUE politica se salio, no solo que se borro algo", async () => {
+    const mod = await loadEndpoint();
+    await mod.onRequestPut(ctx({ user: admin, method: "PUT", body: blocking }));
+    activity.length = 0;
+
+    const res = await mod.onRequestDelete(ctx({ user: admin, method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect(activity).toHaveLength(1);
+    expect(activity[0]).toMatchObject({
+      kind: "agents.policy_changed",
+      actor: "ana",
+      subject: "search=allow ai_input=block ai_train=allow",
+    });
+    expect(activity[0].detail).toContain("Portaless");
+  });
+
+  it("DELETE sin override no emite: no se registro un cambio que no ocurrio", async () => {
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestDelete(ctx({ user: admin, method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect(activity).toHaveLength(0);
+  });
+
+  it("el feed registra lo que SE GUARDO, no lo que pidio el body", async () => {
+    // El body pide un policy distinto al que efectivamente acaba en el store
+    // (sanitizePolicy descarta lo que el panel no controla). El feed tiene que
+    // reflejar el segundo, asi que se observa el store en el momento en que se
+    // llama emitActivity, no el body de la peticion.
+    let savedAtEmit: string | undefined;
+    vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {
+      const original = await importOriginal<typeof import("../../packages/dashboard/src/activity/activity-store")>();
+      return {
+        ...original,
+        emitActivity: async (_env: unknown, input: any) => {
+          savedAtEmit = (await sharedStore.read())?.policy.policies.ai_input.access;
+          activity.push(input);
+        },
+      };
+    });
+
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestPut(
+      ctx({
+        user: admin,
+        method: "PUT",
+        body: {
+          settlement_provider: "cloudflare-pay-per-crawl",
+          policies: {
+            search: { access: "allow" },
+            ai_input: { access: "charge", price_usd: 0.05, unit: "request" },
+            ai_train: { access: "block" },
+          },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    // El store ya estaba escrito cuando se emitio.
+    expect(savedAtEmit).toBe("charge");
+    expect(activity[0].subject).toBe("search=allow ai_input=charge ai_train=block");
+    // Y settlement_provider no aparece en el feed: no es una regla de acceso.
+    expect(activity[0].subject).not.toContain("cloudflare-pay-per-crawl");
+  });
+});
+
+describe("KIND_LABELS de /admin/recents cubre todos los kind emitidos", () => {
+  it("todo kind que emitActivity() recibe en functions/ tiene etiqueta humana", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+
+    // 1. Todos los kind emitidos de verdad en functions/
+    const emitted = new Set<string>();
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (entry.endsWith(".js")) {
+          const src = readFileSync(full, "utf-8");
+          // Se lee la POSICION `kind:`, no cualquier literal: un archivo que
+          // escribe el feed tiene decenas de literales mas (codigos de error,
+          // tipos de subject) y escanearlos todos daria falsos positivos.
+          // Las dos formas que existen: literal directo, o ternario
+          // (`kind: granted ? "permission.granted" : "permission.revoked"`).
+          const KIND_POSITION =
+            /kind:\s*(?:"([a-z][a-z0-9._-]{0,63})"|[^,{}]*?\?\s*"([a-z][a-z0-9._-]{0,63})"\s*:\s*"([a-z][a-z0-9._-]{0,63})")/g;
+          for (const m of src.matchAll(KIND_POSITION)) for (const g of m.slice(1)) if (g) emitted.add(g);
+        }
+      }
+    };
+    walk("functions");
+
+    // 2. Las etiquetas declaradas en la pagina del feed
+    const page = readFileSync("src/pages/admin/recents.astro", "utf-8");
+    const block = page.match(/const KIND_LABELS[^=]*=\s*\{([^}]*)\}/);
+    expect(block, "no se encontro KIND_LABELS en recents.astro").not.toBeNull();
+    const labeled = new Set<string>();
+    for (const m of block![1].matchAll(/"([a-z][a-z0-9._-]*)":/g)) labeled.add(m[1]);
+
+    // Un kind emitido sin etiqueta se renderiza crudo al operador (fallback
+    // `?? e.kind`), que es el defecto que este test cierra.
+    const sinEtiqueta = [...emitted].filter((k) => !labeled.has(k)).sort();
+    expect(sinEtiqueta).toEqual([]);
+
+    // Y que la lista no tenga entradas muertas: cada etiqueta corresponde a algo emitido.
+    const sinEmitir = [...labeled].filter((k) => !emitted.has(k)).sort();
+    expect(sinEmitir).toEqual([]);
+  });
+});

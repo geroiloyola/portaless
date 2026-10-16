@@ -24,6 +24,7 @@
 import { createAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "../../../packages/trust-layer/src/policy/agent-access-store.ts";
 import { resolveContentPolicy, CONTENT_POLICY_WELL_KNOWN_PATH } from "../../../packages/trust-layer/src/policy/load-policy.ts";
 import { defaultContentPolicy } from "../../../packages/trust-layer/src/policy/manifest-schema.ts";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -51,6 +52,13 @@ function badRequest(message) {
     status: 400,
     headers: { "content-type": "application/json" },
   });
+}
+
+/** Las tres reglas en texto corto, para el feed: "search=allow ai_input=block ai_train=block". Sin el site ni nada controlable por el body. */
+function describePolicy(policy) {
+  const p = policy?.policies ?? {};
+  const part = (k) => `${k}=${p[k]?.access ?? "?"}`;
+  return `${part("search")} ${part("ai_input")} ${part("ai_train")}`;
 }
 
 export async function onRequestGet(context) {
@@ -102,6 +110,16 @@ export async function onRequestPut(context) {
   const store = await createAgentAccessPolicyStore(env);
   try {
     const record = await store.write(candidate, user.username);
+    // El razonamiento de "no step-up" (arriba) se apoya en que el cambio es
+    // reversible Y auditable. Sin esta linea lo segundo era falso: un
+    // ai_train block -> allow cambia la licencia de facto del contenido y
+    // no quedaba registro de quien lo hizo.
+    await emitActivity(env, {
+      kind: "agents.policy_changed",
+      actor: user.username,
+      subject: describePolicy(record.policy),
+      detail: "guardada en el panel",
+    });
     return new Response(
       JSON.stringify({ ok: true, policy: record.policy, updatedAt: record.updatedAt, updatedBy: record.updatedBy, source: "store" }),
       { status: 200, headers: { "content-type": "application/json" } }
@@ -121,12 +139,24 @@ export async function onRequestDelete(context) {
   if (!canWrite(user.role)) return forbidden(user.role);
 
   const store = await createAgentAccessPolicyStore(env);
+  // Se lee el override ANTES de borrarlo: el feed tiene que decir de que
+  // politica se salio, no solo que se borro algo.
+  const previous = await store.read();
   await store.clear();
 
   // Lo que queda despues de borrar el override: el asset si esta completo, el
   // default si no. Se devuelve para que el panel no tenga que adivinarlo.
   const origin = new URL(context.request.url).origin;
   const resolved = await resolveContentPolicy(origin, env?.ASSETS, store);
+
+  if (previous) {
+    await emitActivity(env, {
+      kind: "agents.policy_changed",
+      actor: user.username,
+      subject: describePolicy(previous.policy),
+      detail: `restaurado el valor de ${resolved.source === "asset" ? "el archivo" : "Portaless"}`,
+    });
+  }
 
   return new Response(
     JSON.stringify({ ok: true, policy: resolved.policy ?? defaultContentPolicy(origin), source: resolved.source }),

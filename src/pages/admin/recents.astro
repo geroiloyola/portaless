@@ -57,12 +57,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     occurredAt: string;
   };
 
+  // Etiqueta humana por kind. Un kind sin entrada se renderiza crudo
+  // (fallback), y ESO es el defecto: el feed terminaba mostrando
+  // "witness.recorded" o "plugin.installed" al operador. La lista cubre todos
+  // los kind que emite emitActivity() en functions/.
   const KIND_LABELS: Record<string, string> = {
     "page.saved": "Página guardada",
     "page.deleted": "Página borrada",
     "community.attestation": "Atestación comunitaria",
     "permission.granted": "Permiso concedido",
     "permission.revoked": "Permiso revocado",
+    "agents.policy_changed": "Política de acceso de agentes cambiada",
+    "plugin.installed": "Plugin instalado",
+    "plugin.uninstalled": "Plugin desinstalado",
+    "witness.recorded": "Testigo registrado",
+    "password.changed": "Contraseña cambiada",
+    "password.reset": "Contraseña recuperada",
   };
 
   const hint = document.getElementById("rc-hint")!;
