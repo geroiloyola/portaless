@@ -27,9 +27,7 @@
         "buttonStyle": "solid",
         "links": [
           { "label": "Mi blog", "url": "/blog/", "icon": "blog", "enabled": true },
-          { "label": "Portafolio de proyectos", "url": "https://example.com/portafolio", "icon": "store", "enabled": true },
-          { "label": "Newsletter semanal", "url": "https://example.com/newsletter", "icon": "mail", "enabled": true },
-          { "label": "Contacto y colaboraciones", "url": "mailto:hola@example.com", "icon": "mail", "enabled": true }
+          { "label": "Portafolio de proyectos", "url": "/paginas/portafolio/", "icon": "store", "enabled": true }
         ]
       }
     },
@@ -39,9 +37,8 @@
       "props": {
         "align": "center",
         "links": [
-          { "platform": "instagram", "url": "https://instagram.com/" },
-          { "platform": "tiktok", "url": "https://tiktok.com/@" },
-          { "platform": "youtube", "url": "https://youtube.com/" }
+          { "platform": "instagram", "url": "https://instagram.com/jerrybantz" },
+          { "platform": "youtube", "url": "https://www.youtube.com/@jerrybantz" }
         ]
       }
     },

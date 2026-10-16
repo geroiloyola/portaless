@@ -19,7 +19,7 @@
       "id": "videoclip",
       "type": "Video",
       "props": {
-        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
         "title": "Videoclip Oficial: Ecos del Mañana",
         "radius": 16
       }
@@ -40,9 +40,8 @@
         "title": "",
         "buttonStyle": "solid",
         "links": [
-          { "label": "Escuchar en Spotify", "url": "https://open.spotify.com/", "icon": "music", "enabled": true },
-          { "label": "Escuchar en Apple Music", "url": "https://music.apple.com/", "icon": "music", "enabled": true },
-          { "label": "Comprar en Bandcamp (FLAC / WAV)", "url": "https://bandcamp.com/", "icon": "sparkles", "enabled": true }
+          { "label": "Escuchar en Spotify", "url": "https://open.spotify.com/artist/0ka8Jh7qTCH6JeVk8hAUCq", "icon": "music", "enabled": true },
+          { "label": "Escuchar en Apple Music", "url": "https://music.apple.com/us/artist/jerry-bantz/1459194717", "icon": "music", "enabled": true }
         ]
       }
     },
@@ -73,8 +72,8 @@
             "description": "Prensado en vinilo naranja traslúcido de 180 gramos. Incluye libreto de 16 páginas con arte exclusivo y código de descarga digital.",
             "price": "$35.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=600&q=80",
-            "url": "https://www.amazon.com/dp/B000000000",
-            "buttonLabel": "Comprar Vinilo (Afiliado)",
+            "url": "/tienda/",
+            "buttonLabel": "Comprar en la tienda",
             "badge": "Edición Limitada (500 copias)"
           }
         },
@@ -86,8 +85,8 @@
             "description": "Algodón orgánico 100% pesado con serigrafía durable de alta definición en pecho y fechas del tour en la espalda.",
             "price": "$25.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
-            "url": "https://www.amazon.com/dp/B000000001",
-            "buttonLabel": "Comprar Polera (Afiliado)",
+            "url": "/tienda/",
+            "buttonLabel": "Comprar en la tienda",
             "badge": "Merch Oficial"
           }
         }
@@ -99,9 +98,9 @@
       "props": {
         "align": "center",
         "links": [
-          { "platform": "spotify", "url": "https://open.spotify.com/" },
-          { "platform": "youtube", "url": "https://youtube.com/" },
-          { "platform": "instagram", "url": "https://instagram.com/" }
+          { "platform": "spotify", "url": "https://open.spotify.com/artist/0ka8Jh7qTCH6JeVk8hAUCq" },
+          { "platform": "youtube", "url": "https://www.youtube.com/@jerrybantz" },
+          { "platform": "instagram", "url": "https://instagram.com/jerrybantz" }
         ]
       }
     }

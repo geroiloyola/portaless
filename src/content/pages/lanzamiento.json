@@ -18,7 +18,7 @@
     {
       "id": "l4",
       "type": "Video",
-      "props": { "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "title": "Presentación del curso", "radius": 16 }
+      "props": { "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ", "title": "Presentación del curso", "radius": 16 }
     },
     { "id": "l5", "type": "Spacer", "props": { "height": 24 } },
     {

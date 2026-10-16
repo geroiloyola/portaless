@@ -51,6 +51,27 @@ Para preservar la promesa de que el repositorio de Portaless clone y descargue e
 3. **Documentación Técnica & UI**:
    - **unDraw (`https://undraw.co/`)**: Ilustraciones vectoriales SVG en código abierto que heredan la paleta de colores del sistema sin peso binario y sin necesidad de atribución obligatoria.
 
+### 3.1 Regla de enlaces (Fase 12)
+
+Ninguna página de ejemplo puede contener un enlace que no resuelva. Aplica el
+mismo criterio que las fuentes de imagen de arriba: si un destino no existe, se
+quita el enlace (o la tarjeta) en vez de dejar uno que lleva a la nada. Reglas
+concretas, verificadas por `tests/unit/demo-pages-links.test.ts`:
+
+- Nada de `example.com` ni de dominios que no resuelvan (p. ej.
+  `tienda.portaless.com`): para lo interno, una ruta del propio sitio
+  (`/tienda/`, `/paginas/portafolio/`).
+- Nada de raíces peladas de plataformas (`instagram.com/`, `youtube.com/`,
+  `open.spotify.com/`, `music.apple.com/`, `bandcamp.com/`, `tiktok.com/@`):
+  un perfil concreto, o se quita.
+- Nada de `http://` sin TLS.
+- Un producto o perfil sin destino real se quita: una `ProductCard` sin `url` es
+  mejor que una que lleva a `example.com`.
+- `mailto:` solo con direcciones reales.
+
+Los videos embebidos apuntan a material real y verificable (p. ej. los cortos
+abiertos de Blender, CC-BY), nunca a un enlace de broma.
+
 ---
 
 ## 4. Portaless como Red Social Soberana — El Modelo POSSE
