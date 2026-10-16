@@ -8,8 +8,8 @@
 // por agente, list nunca expone hashes ni plaintexts, y el plaintext NO
 // se persiste (solo su hash sha256).
 
-import { describe, it, expect, afterAll, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -26,6 +26,17 @@ import {
 import type { McpAgentTokenStore } from "../../packages/mcp-server/src/permissions/agent-token-store";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-mcp-agent-tokens-"));
+
+// El schema se aplica UNA vez a una plantilla en beforeAll (hook, 10s de
+// presupuesto) y cada test D1 copia el archivo. Antes cada make() aplicaba el
+// schema.sql completo dentro del test: en un runner lento eso roza el timeout
+// de 5s por defecto y el test se cae por tiempo, no por contrato. El resto del
+// repo ya usa este patron (beforeAll + applySchema).
+let d1Template = "";
+beforeAll(async () => {
+  d1Template = join(tmp, "d1-template.db");
+  await applySchema(d1Template, { quiet: true });
+});
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -57,7 +68,7 @@ function backends(): Array<{ name: string; make: () => Promise<McpAgentTokenStor
       name: "D1",
       make: async () => {
         const file = join(tmp, `d1-${Math.random().toString(36).slice(2)}.db`);
-        await applySchema(file, { quiet: true });
+        copyFileSync(d1Template, file);
         const db = new Database(file);
         return new D1McpAgentTokenStore(fakeD1(db));
       },
