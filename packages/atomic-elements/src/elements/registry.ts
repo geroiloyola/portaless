@@ -145,8 +145,8 @@ function esc(value: unknown): string {
   );
 }
 
-type HeroVariant = "centered" | "split" | "minimal";
-const HERO_VARIANTS = ["centered", "split", "minimal"] as const satisfies readonly HeroVariant[];
+type HeroVariant = "centered" | "split" | "minimal" | "spotlight";
+const HERO_VARIANTS = ["centered", "split", "minimal", "spotlight"] as const satisfies readonly HeroVariant[];
 
 interface HeroProps {
   title: string;
@@ -163,6 +163,9 @@ interface HeroProps {
   size?: ElementSize;
   /** Solo la usa la variante split. */
   imageUrl?: string;
+  /** CTA opcional (label + href). Solo lo usa la variante spotlight. */
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 const Hero: ElementDefinition<HeroProps> = {
   type: "Hero", displayName: "Hero / Portada", icon: ICON_LAYOUT_TEMPLATE,
@@ -174,15 +177,28 @@ const Hero: ElementDefinition<HeroProps> = {
       centered: "Centrado (el clasico)",
       split: "Texto a la izquierda, imagen a la derecha",
       minimal: "Sin fondo, tipografia grande",
+      spotlight: "Foco: titular grande con degradado y CTA",
     } },
     { key: "size", label: "Tamanio del titulo", kind: "select", options: [...ELEMENT_SIZES], optionLabels: ELEMENT_SIZE_LABELS },
     { key: "imageUrl", label: "URL de la imagen (variante split)", kind: "url" },
+    { key: "ctaLabel", label: "Texto del boton (variante foco)", kind: "text" },
+    { key: "ctaHref", label: "Enlace del boton (variante foco)", kind: "url" },
     { key: "bgColor", label: "Color de fondo", kind: "color" },
   ],
   renderHTML: (p) => {
     const variant = variantOf(p.variant, HERO_VARIANTS, "centered");
     const size = variantOf(p.size, ELEMENT_SIZES, "md");
     const titleSize = HERO_TITLE_SIZES[size];
+
+    // spotlight: full-bleed centrado, titular grande y CTA. Sin fondo inline --
+    // el glow y el degradado del titulo los pone el tema del home
+    // (global.css, [data-theme-pack="home-nocturno"]), no el elemento.
+    if (variant === "spotlight") {
+      const cta = p.ctaLabel && p.ctaHref
+        ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}" style="display:inline-block;margin-top:${space(6)};padding:${BUTTON_SIZES.lg};border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;">${esc(p.ctaLabel)}</a>`
+        : "";
+      return `<section class="ae-hero ae-hero--spotlight" style="text-align:center;padding:${space(8)} ${space(5)} ${space(6)};"><h1 class="ae-hero-spotlight-title" style="font-size:${titleSize};line-height:1.05;margin:0 0 ${space(4)};">${esc(p.title)}</h1><p style="opacity:.85;margin:0 auto;max-width:640px;font-size:1.15rem;line-height:1.6;">${esc(p.subtitle)}</p>${cta}</section>`;
+    }
 
     if (variant === "minimal") {
       // Sin fondo ni caja: la tipografia hace el trabajo.
@@ -893,25 +909,18 @@ const IconEl: ElementDefinition<IconProps> = {
   renderHTML: (p) => iconSpan(p.name),
 };
 
-interface FeatureGridProps { title: string; items: string; columns: 2 | 3 | 4; }
+interface FeatureGridProps { title: string; items: string; }
 const FeatureGrid: ElementDefinition<FeatureGridProps> = {
   type: "FeatureGrid", displayName: "Grilla de features", icon: ICON_LAYOUT_TEMPLATE,
   defaultProps: {
     title: "",
-    columns: 3,
     items: "sparkles :: Titulo de la feature :: Una linea que explica que hace.\nshield :: Otra feature :: Otra linea de apoyo.",
   },
   editableProps: [
     { key: "title", label: "Titulo de la seccion (opcional)", kind: "text" },
-    { key: "columns", label: "Columnas", kind: "select", options: ["2", "3", "4"], optionLabels: {
-      "2": "2 columnas",
-      "3": "3 columnas",
-      "4": "4 columnas",
-    } },
     { key: "items", label: "Items (uno por linea: icono :: titulo :: texto)", kind: "textarea" },
   ],
   renderHTML: (p) => {
-    const cols = String(p.columns) === "2" ? 2 : String(p.columns) === "4" ? 4 : 3;
     const parsed = String(p.items ?? "")
       .split("\n")
       .map((line) => line.split("::").map((s) => s.trim()))
@@ -924,7 +933,10 @@ const FeatureGrid: ElementDefinition<FeatureGridProps> = {
       .join("");
     const heading = p.title ? `<h2 style="margin:0 0 ${space(5)};text-align:center;">${esc(p.title)}</h2>` : "";
     const empty = `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
-    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${space(4)};">${cards || empty}</div></section>`;
+    // auto-fit + minmax: la grilla es RESPONSIVE por si misma (envuelve en
+    // pantallas angostas) sin media queries ni JS, y en pantallas anchas
+    // muestra todas las tarjetas en una fila.
+    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:${space(4)};">${cards || empty}</div></section>`;
   },
 };
 

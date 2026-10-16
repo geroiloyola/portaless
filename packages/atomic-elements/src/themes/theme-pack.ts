@@ -260,4 +260,26 @@ export const BUILTIN_THEMES: readonly ThemePack[] = [
       "--danger-fg": "#E8968C",
     },
   },
+  {
+    name: "home-nocturno",
+    displayName: "Home Nocturno",
+    description:
+      "Tema oscuro del home de Portaless (docs/design/home-redesign.md): tinta muy profunda y el lima oficial como acento. Solo declara las variables permitidas; los efectos ambientales viven en global.css bajo [data-theme-pack=\"home-nocturno\"].",
+    vars: {
+      "--bg": "#0E0B08",
+      "--panel-bg": "#171310",
+      "--panel-border": "#2C231A",
+      "--text": "#F7F7F2",
+      "--muted": "#B7AC9B",
+      "--accent": "#C5D86D",
+      "--accent-text": "#C5D86D",
+      "--accent-2": "#F05D23",
+      "--success-bg": "#1E2A16",
+      "--success-fg": "#A8CC6B",
+      "--warning-bg": "#2E2410",
+      "--warning-fg": "#E0B060",
+      "--danger-bg": "#2E1714",
+      "--danger-fg": "#E8968C",
+    },
+  },
 ];

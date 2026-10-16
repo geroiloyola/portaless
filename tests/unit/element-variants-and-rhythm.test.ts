@@ -87,7 +87,7 @@ describe("el default de cada elemento sigue siendo el render historico", () => {
 // --- 2. Variantes: renderizan, y la desconocida cae al default ---------------
 
 const VARIANT_CASES: Array<{ type: keyof typeof elementRegistry; variants: string[]; extra?: Record<string, unknown> }> = [
-  { type: "Hero", variants: ["centered", "split", "minimal"], extra: { imageUrl: "https://ejemplo.test/a.jpg" } },
+  { type: "Hero", variants: ["centered", "split", "minimal", "spotlight"], extra: { imageUrl: "https://ejemplo.test/a.jpg" } },
   { type: "Heading", variants: ["plain", "eyebrow", "ruled"], extra: { eyebrow: "Antetitulo" } },
   { type: "Button", variants: ["solid", "outline", "ghost"] },
   { type: "Testimonial", variants: ["plain", "quote", "card"] },
@@ -98,9 +98,9 @@ const VARIANT_CASES: Array<{ type: keyof typeof elementRegistry; variants: strin
 ];
 
 describe("variantes", () => {
-  it("cada elemento con variantes expone exactamente las 3 acordadas y su default es la primera", () => {
+  it("cada elemento con variantes expone exactamente las acordadas y su default es la primera", () => {
     const expected: Record<string, string[]> = {
-      Hero: ["centered", "split", "minimal"],
+      Hero: ["centered", "split", "minimal", "spotlight"],
       Heading: ["plain", "eyebrow", "ruled"],
       Button: ["solid", "outline", "ghost"],
       Testimonial: ["plain", "quote", "card"],

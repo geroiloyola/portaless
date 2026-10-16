@@ -1,40 +1,82 @@
 ---
+// Home de Portaless. Desde la fase 0 del rediseno (docs/design/home-redesign.md)
+// NO es HTML a mano: es un PageLayout JSON (src/content/home.json) renderizado
+// por el MISMO motor de Atomic Elements que usa el editor. Es el primer caso de
+// uso real del producto.
+//
+// El motor no conoce astro:content, asi que aqui se inyectan las publicaciones
+// reales en los nodos PostList (mismo filtro canonico publishedPosts() que
+// /blog, RSS y llms.txt) y se quita el bloque de tienda cuando el comercio no
+// esta activado -- una landing no muestra un placeholder de catalogo vacio.
 import BaseLayout from "../layouts/BaseLayout.astro";
+import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
+import SeoHead from "../components/SeoHead.astro";
 import { getCollection } from "astro:content";
+import { renderPage } from "../../packages/atomic-elements/src/render";
+import {
+  BUILTIN_THEMES,
+  resolveThemePack,
+  themeStyleDecl,
+} from "../../packages/atomic-elements/src/themes/theme-pack";
+import { publishedPosts } from "../lib/llms-txt";
+import { getSiteUrl, buildCanonicalUrl } from "../lib/seo";
+import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
+import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
+import home from "../content/home.json";
 
-const posts = (await getCollection("posts"))
-  .filter((p) => !p.data.draft)
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .slice(0, 3);
-
+const base = import.meta.env.BASE_URL;
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
+const layout = home as unknown as PageLayout;
+
+const posts = publishedPosts(await getCollection("posts"));
+const postItems = posts.map((post) => ({
+  title: post.data.title,
+  href: `/blog/${post.id}/`,
+  date: post.data.pubDate.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+  description: post.data.description ?? "",
+}));
+
+// Inyecta datos en build y quita la tienda si el comercio esta apagado.
+function prepare(nodes: ElementNode[]): ElementNode[] {
+  return nodes
+    .filter((node) => commerceEnabled || (node.type !== "ProductGrid" && node.type !== "StoreBlock"))
+    .map((node) => ({
+      ...node,
+      props: node.type === "PostList" ? { ...node.props, items: postItems } : node.props,
+      children: node.children ? prepare(node.children) : node.children,
+      columnSlots: node.columnSlots ? node.columnSlots.map(prepare) : node.columnSlots,
+    }));
+}
+
+const prepared: PageLayout = { ...layout, root: prepare(layout.root) };
+
+const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
+const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
+const headerContext = deriveHeaderContext(prepared.root);
+
+const html = await renderPage(prepared, { base });
+
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = buildCanonicalUrl(siteUrl, "/");
+const pageTitle = layout.title;
+const pageDescription = layout.description ?? "";
 ---
-<BaseLayout title="Portaless — Inicio">
-  <h1>Portaless</h1>
-  <p>
-    Un sitio simple, rápido y sin hosting pagado. Construido sobre Astro,
-    desplegado gratis en GitHub Pages o Cloudflare Pages.
-  </p>
 
-  <p>
-    Vos decidís, desde el panel, quién puede leer tu sitio —buscadores,
-    asistentes de IA, entrenamiento de modelos— y el sitio responde en
-    consecuencia, por escrito.
-  </p>
-
-  {commerceEnabled && (
-    <p>
-      <span class="badge">Comercio activado</span> Este sitio tiene una
-      <a href={`${import.meta.env.BASE_URL}tienda/`}>tienda</a> conectada vía Medusa/Mercur.
-    </p>
-  )}
-
-  <h2>Últimas publicaciones</h2>
-  {posts.length === 0 && <p class="empty-state">Todavía no hay publicaciones.</p>}
-  {posts.map((post) => (
-    <div class="card">
-      <h3><a href={`${import.meta.env.BASE_URL}blog/${post.id}/`}>{post.data.title}</a></h3>
-      {post.data.description && <p>{post.data.description}</p>}
-    </div>
-  ))}
+<BaseLayout pageTheme={pageTheme} headerContext={headerContext}>
+  <SeoHead slot="head" title={pageTitle} description={pageDescription} canonicalUrl={canonicalUrl} />
+  <JsonLd slot="head" layout={prepared} site={{ name: pageTitle, url: siteUrl }} />
+  <article class="ae-page ae-home" set:html={html} />
 </BaseLayout>
+
+<style is:global>
+  /* El home respira mas ancho que una pagina de contenido (860px). Solo el home. */
+  main.container {
+    max-width: 1080px;
+  }
+  .ae-home {
+    gap: 0;
+  }
+  .ae-home > * + * {
+    margin-top: 40px;
+  }
+</style>

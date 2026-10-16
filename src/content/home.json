@@ -1,0 +1,88 @@
+{
+  "version": "0.1",
+  "slug": "home",
+  "title": "Portaless — own your site, answer the machines, extend it safely",
+  "description": "A self-hosted publishing system with a cryptographic identity, a written policy for AI readers, and extensions that run in a sandbox.",
+  "theme": "home-nocturno",
+  "root": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "props": {
+        "variant": "spotlight",
+        "size": "lg",
+        "title": "Own your site. Answer the machines. Extend it safely.",
+        "subtitle": "Portaless is a self-hosted publishing system: your content, your identity, your rules — with a written policy for the automated readers that now consume the public web.",
+        "ctaLabel": "Start in 10 minutes",
+        "ctaHref": "/beta"
+      }
+    },
+    {
+      "id": "proof",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "columnSlots": [
+        [{ "id": "proof-gh", "type": "Button", "props": { "label": "GitHub", "href": "https://github.com/geroiloyola/portaless", "variant": "outline", "size": "sm" } }],
+        [{ "id": "proof-docs", "type": "Button", "props": { "label": "Docs", "href": "https://github.com/geroiloyola/portaless/tree/main/docs", "variant": "outline", "size": "sm" } }],
+        [{ "id": "proof-spec", "type": "Button", "props": { "label": "Protocol APW", "href": "https://github.com/geroiloyola/portaless/blob/main/docs/protocol-apw/APW-SPEC-v1.3.md", "variant": "outline", "size": "sm" } }]
+      ]
+    },
+    {
+      "id": "answer-h",
+      "type": "Heading",
+      "props": { "text": "The machines are answered, in writing", "level": "h2", "variant": "eyebrow", "eyebrow": "Why Portaless", "align": "left", "size": "lg" }
+    },
+    {
+      "id": "answer-p",
+      "type": "Paragraph",
+      "props": { "text": "You decide, from the panel, who may read your site — search engines, AI assistants, model training — and the site answers accordingly, in writing. It is an answer a reader can observe, plus a published policy, not a setting that only the owner knows about." }
+    },
+    {
+      "id": "pillars",
+      "type": "FeatureGrid",
+      "props": {
+        "title": "",
+        "items": "shield :: Own the state :: Identity, content and policy live in a node you control — portable, verifiable, self-hosted.\nbot :: Answer the machines :: One written policy decides who may read, and the site answers the same way to every reader.\npackage :: Extend it safely :: Third-party code runs in a sandbox, granted one capability at a time — never unrestricted access to the core.\nserver :: Self-host, no exposed database :: One command installs it; it runs without paid hosting and without a database on the internet."
+      }
+    },
+    {
+      "id": "meta-h",
+      "type": "Heading",
+      "props": { "text": "This home is Portaless", "level": "h2", "variant": "eyebrow", "eyebrow": "Dogfooding", "align": "left" }
+    },
+    {
+      "id": "meta-p",
+      "type": "Paragraph",
+      "props": { "text": "Everything above is a JSON page of Atomic Elements rendered by Portaless's own engine — the same engine you edit from the panel. There is no hand-written HTML here: this home is the product's first real use case." }
+    },
+    {
+      "id": "posts",
+      "type": "PostList",
+      "props": { "title": "Latest posts", "limit": 3 }
+    },
+    {
+      "id": "store",
+      "type": "ProductGrid",
+      "props": { "source": "medusa", "columns": 3, "limit": 3 }
+    },
+    {
+      "id": "faq",
+      "type": "FAQ",
+      "props": {
+        "title": "Honest answers",
+        "variant": "bordered",
+        "items": "Is it ready for production? :: It is in public Beta and honest about its limits: the plugin installer is behind a flag that is off by default until an external security review, and six of twelve plugin capabilities still answer an explicit 501.\nDo I need a paid host? :: No. It runs on free static hosting (GitHub Pages, Cloudflare Pages) or self-hosted, and no database is exposed to the internet.\nDoes an AI reading my site have to identify itself? :: Only if you decide so. Reading public content requires no identity; when you ask who is reading, the reader proves control of a key it already holds — not another account with another company.\nHow is this different from a CMS? :: Extensions run in a sandbox and are granted capabilities one at a time; the core never certifies them, and your content is a projection of your own canonical state."
+      }
+    },
+    {
+      "id": "cta",
+      "type": "Hero",
+      "props": { "variant": "minimal", "size": "lg", "title": "Ready when you are.", "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes." }
+    },
+    {
+      "id": "cta-btn",
+      "type": "Button",
+      "props": { "label": "Start in 10 minutes", "href": "/beta", "variant": "solid", "size": "lg" }
+    }
+  ]
+}

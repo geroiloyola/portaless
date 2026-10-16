@@ -204,12 +204,12 @@ describe("availableThemes", () => {
     const intruso: ThemePack = { name: "2pac-dark", displayName: "Falso", vars: { "--bg": "#FFF" } };
     const otro: ThemePack = { name: "otro-tema", displayName: "Otro", vars: { "--bg": "#000" } };
     const catalog = availableThemes([intruso, otro]);
-    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "otro-tema"]);
+    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "home-nocturno", "otro-tema"]);
     expect(catalog[0].displayName).toBe("2Pac Dark");
   });
 
   it("sin instalados devuelve exactamente los builtins", () => {
-    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark"]);
+    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark", "home-nocturno"]);
   });
 });
 
@@ -262,5 +262,35 @@ describe("2pac-dark: pares AA verificados por math WCAG", () => {
     expect(themeStyleDecl(resolveThemePack(BUILTIN_THEMES, "2pac-dark")!)).toBe(
       themeStyleDecl({ name: PAC.name, vars: PAC.vars })
     );
+  });
+});
+
+describe("home-nocturno: pares AA verificados por math WCAG", () => {
+  const HOME = BUILTIN_THEMES.find((t) => t.name === "home-nocturno")!;
+  const V = HOME.vars;
+  const pairs: Array<[string, string, string]> = [
+    ["texto del sitio sobre la pagina", V["--text"], V["--bg"]],
+    ["texto del sitio sobre un panel", V["--text"], V["--panel-bg"]],
+    ["links (accent-text) sobre la pagina", V["--accent-text"], V["--bg"]],
+    ["links (accent-text) sobre un panel", V["--accent-text"], V["--panel-bg"]],
+    ["texto apagado sobre la pagina", V["--muted"], V["--bg"]],
+    ["texto apagado sobre un panel", V["--muted"], V["--panel-bg"]],
+    // Boton solido: color hardcodeado #261C15 sobre var(--accent).
+    ["texto de boton solido sobre el acento", "#261C15", V["--accent"]],
+    ["chip success", V["--success-fg"], V["--success-bg"]],
+    ["chip warning", V["--warning-fg"], V["--warning-bg"]],
+    ["chip danger", V["--danger-fg"], V["--danger-bg"]],
+  ];
+
+  it("todos los pares de texto alcanzan 4.5:1 (AA)", () => {
+    for (const [label, fg, bg] of pairs) {
+      const ratio = contrast(fg, bg);
+      expect(ratio, `${label}: ${fg} sobre ${bg} = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("solo declara variables de la allowlist (nada fuera de THEME_VARS)", () => {
+    expect(Object.keys(V).every((k) => THEME_VARS.includes(k))).toBe(true);
+    expect(validateThemePack(HOME).valid).toBe(true);
   });
 });

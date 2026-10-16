@@ -91,8 +91,12 @@ describe("GET /paginas/:slug (runtime dinamico)", () => {
     expect(html).not.toContain("Hecho con");
     expect(html).toContain("[data-portaless-share]");
     expect(html).toContain('lang="es"');
-    // pagina sin theme: nunca lleva atributos del tema por pagina
-    expect(html).not.toContain("data-theme-pack");
+    // pagina sin theme: el tag <html> nunca lleva el atributo del tema por
+    // pagina. (El string "data-theme-pack" SI aparece en el documento: el shell
+    // inlinea global.css, que tiene selectores [data-theme-pack="..."]; lo que
+    // se verifica es el atributo, no la subcadena.)
+    expect(html).toMatch(/<html lang="es">/);
+    expect(html).not.toMatch(/<html[^>]*data-theme-pack/);
   });
 
   it("pagina con theme: variables inline en <html> y nunca como regla de hoja", async () => {

@@ -42,14 +42,7 @@ describe("FeatureGrid", () => {
     expect(html).toContain("Vos sos dueno del estado.");
     expect(html).toContain("Identidad");
     expect(html).toContain("<svg"); // los iconos
-    expect(html).toContain("grid-template-columns:repeat(3,1fr)");
-  });
-
-  it("respeta columnas 2 y 4", () => {
-    const two = elementRegistry.FeatureGrid.renderHTML({ title: "", columns: 2, items: "check :: A :: b" } as never);
-    expect(two).toContain("repeat(2,1fr)");
-    const four = elementRegistry.FeatureGrid.renderHTML({ title: "", columns: 4, items: "check :: A :: b" } as never);
-    expect(four).toContain("repeat(4,1fr)");
+    expect(html).toContain("repeat(auto-fit, minmax(220px, 1fr))"); // responsive
   });
 
   it("sin items muestra el estado vacio honesto (no una grilla rota)", () => {
