@@ -27,7 +27,10 @@ describe("vocabulario por audiencia (site-lang)", () => {
   });
 
   it("el <html lang> sale de la misma config que el label (nunca desincronizados)", () => {
-    expect(baseLayoutSrc).toContain("<html lang={SITE_LANG} data-theme-pack=");
+    // El idioma del documento es una prop (i18n, docs/i18n-design.md) cuyo
+    // DEFAULT es SITE_LANG: el resto del sitio sigue atado a esa unica fuente.
+    expect(baseLayoutSrc).toContain("<html lang={lang} data-theme-pack=");
+    expect(baseLayoutSrc).toContain("lang = SITE_LANG");
     expect(baseLayoutSrc).toContain('import { SITE_LANG } from "../lib/site-lang"');
   });
 

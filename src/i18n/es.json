@@ -1,0 +1,13 @@
+{
+  "localeName": "Español",
+  "home": {
+    "otherLocaleName": "English",
+    "otherLocaleAria": "Leer esta página en inglés"
+  },
+  "nav": {
+    "posts": "Publicaciones"
+  },
+  "cta": {
+    "start": "Empezá en {{minutes}} minutos"
+  }
+}

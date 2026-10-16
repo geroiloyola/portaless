@@ -1,0 +1,8 @@
+---
+// Home en español: la PROYECCION de locale del canon ingles (docs/i18n-design.md).
+// Traduccion humana (provenance: human). Misma vista y mismo motor que la raiz.
+import HomePage from "../../components/HomePage.astro";
+import home from "../../content/home.es.json";
+import type { PageLayout } from "../../../packages/atomic-elements/src/types";
+---
+<HomePage layout={home as unknown as PageLayout} locale="es" canonPath="/" />

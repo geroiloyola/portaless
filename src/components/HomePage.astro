@@ -1,0 +1,102 @@
+---
+// Vista compartida del home (docs/design/home-redesign.md + docs/i18n-design.md).
+// Las dos proyecciones de locale la usan: src/pages/index.astro (en) y
+// src/pages/es/index.astro (es). El contenido es un PageLayout JSON; aca solo
+// se resuelve el tema, se inyectan los datos de build y se emite el head
+// (SEO + hreflang).
+import BaseLayout from "../layouts/BaseLayout.astro";
+import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
+import SeoHead from "../components/SeoHead.astro";
+import { getCollection } from "astro:content";
+import { renderPage } from "../../packages/atomic-elements/src/render";
+import {
+  BUILTIN_THEMES,
+  resolveThemePack,
+  themeStyleDecl,
+} from "../../packages/atomic-elements/src/themes/theme-pack";
+import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
+import { getSiteUrl } from "../lib/seo";
+import { joinSiteUrl, publishedPosts } from "../lib/llms-txt";
+import { prepareHome } from "../lib/home";
+import {
+  DEFAULT_LOCALE,
+  hreflangAlternates,
+  localePath,
+  otherLocale,
+  t,
+  type Locale,
+} from "../lib/i18n";
+import type { PageLayout } from "../../packages/atomic-elements/src/types";
+
+interface Props {
+  layout: PageLayout;
+  locale: Locale;
+  /** Ruta canonica sin prefijo de locale (el home es "/"). */
+  canonPath: string;
+}
+const { layout, locale, canonPath } = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
+const siteUrl = getSiteUrl(Astro.site);
+const absolute = (path: string) => joinSiteUrl(siteUrl, base, path);
+
+const posts = publishedPosts(await getCollection("posts"));
+const postItems = posts.map((post) => ({
+  title: post.data.title,
+  href: `/blog/${post.id}/`,
+  date: post.data.pubDate.toLocaleDateString(locale === "es" ? "es-CL" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  description: post.data.description ?? "",
+}));
+
+const prepared = prepareHome(layout, postItems, commerceEnabled);
+
+const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
+const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
+const headerContext = deriveHeaderContext(prepared.root);
+
+const html = await renderPage(prepared, { base });
+
+const canonicalUrl = absolute(localePath(locale, canonPath));
+const alternates = [
+  ...hreflangAlternates(canonPath).map((a) => ({ hreflang: a.hreflang, href: absolute(a.path) })),
+  { hreflang: "x-default", href: absolute(localePath(DEFAULT_LOCALE, canonPath)) },
+];
+
+const other = otherLocale(locale);
+const otherHref = absolute(localePath(other, canonPath));
+---
+
+<BaseLayout lang={locale} pageTheme={pageTheme} headerContext={headerContext} alternates={alternates}>
+  <SeoHead slot="head" title={layout.title} description={layout.description ?? ""} canonicalUrl={canonicalUrl} />
+  <JsonLd slot="head" layout={prepared} site={{ name: layout.title, url: siteUrl }} />
+  <nav class="home-lang" aria-label="Language">
+    <a href={otherHref} hreflang={other} aria-label={t(locale, "home.otherLocaleAria")}>
+      {t(locale, "home.otherLocaleName")}
+    </a>
+  </nav>
+  <article class="ae-page ae-home" set:html={html} />
+</BaseLayout>
+
+<style is:global>
+  /* El home respira mas ancho que una pagina de contenido (860px). Solo el home. */
+  main.container {
+    max-width: 1080px;
+  }
+  .ae-home {
+    gap: 0;
+  }
+  .ae-home > * + * {
+    margin-top: 40px;
+  }
+  .home-lang {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+  }
+</style>

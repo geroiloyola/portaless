@@ -1,0 +1,88 @@
+{
+  "version": "0.1",
+  "slug": "home",
+  "title": "Portaless — sé dueño de tu sitio, responde a las máquinas, extiéndelo con seguridad",
+  "description": "Un sistema de publicación autoalojado con identidad criptográfica, una política escrita para los lectores de IA y extensiones que corren en un sandbox.",
+  "theme": "home-nocturno",
+  "root": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "props": {
+        "variant": "spotlight",
+        "size": "lg",
+        "title": "Sé dueño de tu sitio. Responde a las máquinas. Extiéndelo con seguridad.",
+        "subtitle": "Portaless es un sistema de publicación autoalojado: tu contenido, tu identidad, tus reglas — con una política escrita para los lectores automatizados que hoy consumen la web pública.",
+        "ctaLabel": "Empezá en 10 minutos",
+        "ctaHref": "/beta"
+      }
+    },
+    {
+      "id": "proof",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "columnSlots": [
+        [{ "id": "proof-gh", "type": "Button", "props": { "label": "GitHub", "href": "https://github.com/geroiloyola/portaless", "variant": "outline", "size": "sm" } }],
+        [{ "id": "proof-docs", "type": "Button", "props": { "label": "Documentación", "href": "https://github.com/geroiloyola/portaless/tree/main/docs", "variant": "outline", "size": "sm" } }],
+        [{ "id": "proof-spec", "type": "Button", "props": { "label": "Protocolo APW", "href": "https://github.com/geroiloyola/portaless/blob/main/docs/protocol-apw/APW-SPEC-v1.3.md", "variant": "outline", "size": "sm" } }]
+      ]
+    },
+    {
+      "id": "answer-h",
+      "type": "Heading",
+      "props": { "text": "A las máquinas se les responde, por escrito", "level": "h2", "variant": "eyebrow", "eyebrow": "Por qué Portaless", "align": "left", "size": "lg" }
+    },
+    {
+      "id": "answer-p",
+      "type": "Paragraph",
+      "props": { "text": "Vos decidís, desde el panel, quién puede leer tu sitio — buscadores, asistentes de IA, entrenamiento de modelos — y el sitio responde en consecuencia, por escrito. Es una respuesta que cualquier lector puede observar, más una política publicada, no un ajuste que solo conoce el dueño." }
+    },
+    {
+      "id": "pillars",
+      "type": "FeatureGrid",
+      "props": {
+        "title": "",
+        "items": "shield :: Sé dueño del estado :: La identidad, el contenido y la política viven en un nodo que controlás — portable, verificable, autoalojado.\nbot :: Respondé a las máquinas :: Una política escrita decide quién puede leer, y el sitio responde igual a cada lector.\npackage :: Extendelo con seguridad :: El código de terceros corre en un sandbox, con capacidades concedidas de a una — nunca acceso sin restricciones al core.\nserver :: Autoalojado, sin base expuesta :: Un comando lo instala; corre sin hosting pago y sin una base de datos expuesta a internet."
+      }
+    },
+    {
+      "id": "meta-h",
+      "type": "Heading",
+      "props": { "text": "Este home es Portaless", "level": "h2", "variant": "eyebrow", "eyebrow": "Dogfooding", "align": "left" }
+    },
+    {
+      "id": "meta-p",
+      "type": "Paragraph",
+      "props": { "text": "Todo lo de arriba es una página JSON de Atomic Elements renderizada por el propio motor de Portaless — el mismo motor que editás desde el panel. Acá no hay HTML escrito a mano: este home es el primer caso de uso real del producto." }
+    },
+    {
+      "id": "posts",
+      "type": "PostList",
+      "props": { "title": "Últimas publicaciones", "limit": 3 }
+    },
+    {
+      "id": "store",
+      "type": "ProductGrid",
+      "props": { "source": "medusa", "columns": 3, "limit": 3 }
+    },
+    {
+      "id": "faq",
+      "type": "FAQ",
+      "props": {
+        "title": "Respuestas honestas",
+        "variant": "bordered",
+        "items": "¿Está listo para producción? :: Está en Beta pública y es honesto con sus límites: el instalador de plugins está detrás de un flag apagado por defecto hasta una revisión de seguridad externa, y seis de doce capacidades de plugin todavía responden un 501 explícito.\n¿Necesito un hosting pago? :: No. Corre en hosting estático gratuito (GitHub Pages, Cloudflare Pages) o autoalojado, y ninguna base de datos queda expuesta a internet.\n¿Un agente de IA que lee mi sitio tiene que identificarse? :: Solo si vos lo decidís. Leer contenido público no requiere identidad; cuando pedís saber quién lee, el lector prueba el control de una clave que ya tiene — no otra cuenta en otra empresa.\n¿En qué se diferencia de un CMS? :: Las extensiones corren en un sandbox y reciben capacidades de a una; el core nunca las certifica, y tu contenido es una proyección de tu propio estado canónico."
+      }
+    },
+    {
+      "id": "cta",
+      "type": "Hero",
+      "props": { "variant": "minimal", "size": "lg", "title": "Cuando quieras.", "subtitle": "Instalalo, publicá y decidí quién puede leer. El primer sitio toma unos diez minutos." }
+    },
+    {
+      "id": "cta-btn",
+      "type": "Button",
+      "props": { "label": "Empezá en 10 minutos", "href": "/beta", "variant": "solid", "size": "lg" }
+    }
+  ]
+}

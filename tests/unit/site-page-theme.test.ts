@@ -33,7 +33,7 @@ describe("BaseLayout (build estatico) emite el tema", () => {
   it("declara pageTheme en Props y lo pega en <html> como data-theme-pack + style", () => {
     expect(baseLayout).toMatch(/export interface Props \{[\s\S]*pageTheme\?: \{ name: string; css: string \}/);
     expect(baseLayout).toContain(
-      '<html lang={SITE_LANG} data-theme-pack={pageTheme?.name} style={pageTheme?.css || undefined}>'
+      '<html lang={lang} data-theme-pack={pageTheme?.name} style={pageTheme?.css || undefined}>'
     );
   });
 
