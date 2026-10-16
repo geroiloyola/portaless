@@ -20,6 +20,10 @@ import * as images from "../../functions/admin/api/cloud-images";
 const SITE_ID = "default";
 const tmp = mkdtempSync(join(tmpdir(), "portaless-admin-cloud-images-"));
 const DB = join(tmp, "portaless.db");
+// Schema aplicado UNA vez en beforeAll (no dentro del test): el schema.sql
+// completo dentro del body de un test roza el timeout de 5s bajo carga del
+// runner -- mismo patron que tests/unit/mcp-agent-token-store.test.ts.
+const OTRO_DB = join(tmp, "sin-identidad.db");
 const ENV_KEY = randomBytes(32).toString("base64");
 
 let env: Record<string, unknown>;
@@ -75,6 +79,7 @@ const viewer = { username: "v", role: "viewer" };
 
 beforeAll(async () => {
   await applySchema(DB, { quiet: true });
+  await applySchema(OTRO_DB, { quiet: true });
   env = { PORTALESS_SQLITE_PATH: DB, PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ENV_KEY };
   const keyPair = await generateApwDid("ejemplo.com");
   identityDid = keyPair.did;
@@ -125,10 +130,8 @@ describe("POST /admin/api/cloud-images", () => {
   });
 
   it("404 site_identity_not_found en un entorno sin identidad", async () => {
-    const otroDb = join(tmp, "sin-identidad.db");
-    await applySchema(otroDb, { quiet: true });
     const res = await images.onRequestPost(
-      ctx({ user: admin, body: { imageBase64: encodeBase64(PNG), declaredOrigin: "ai" }, env: { PORTALESS_SQLITE_PATH: otroDb, PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ENV_KEY } })
+      ctx({ user: admin, body: { imageBase64: encodeBase64(PNG), declaredOrigin: "ai" }, env: { PORTALESS_SQLITE_PATH: OTRO_DB, PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ENV_KEY } })
     );
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe("site_identity_not_found");
