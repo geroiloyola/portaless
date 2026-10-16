@@ -17,8 +17,11 @@ import {
   ICON_PILCROW,
   ICON_SHARE_2,
   ICON_SHOPPING_CART,
+  ICON_SPARKLES,
   ICON_STORE,
   ICON_VIDEO,
+  CONTENT_ICONS,
+  CONTENT_ICON_NAMES,
 } from "./icons";
 
 // Phase 0 (visual identity foundation): los colores de SISTEMA del
@@ -849,11 +852,111 @@ const ProductCard: ElementDefinition<ProductCardProps> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Icon, FeatureGrid, PostList (home / landing). Ver docs/design/home-redesign.md.
+// Icon y FeatureGrid son formas nuevas; PostList recibe sus datos EN BUILD (la
+// pagina los inyecta en node.props antes de renderPage) porque el motor no
+// conoce astro:content -- mismo patron que ProductGrid con `source`: el core
+// expone la forma, la pagina provee los datos.
+// ---------------------------------------------------------------------------
+
+const CONTENT_ICON_LABELS: Record<string, string> = {
+  sparkles: "Destello",
+  shield: "Escudo",
+  key: "Llave",
+  server: "Servidor",
+  package: "Paquete",
+  globe: "Globo",
+  layers: "Capas",
+  lock: "Candado",
+  bot: "Robot",
+  book: "Libro",
+  terminal: "Terminal",
+  code: "Codigo",
+  "arrow-right": "Flecha",
+  check: "Check",
+};
+
+/** Icono de contenido resuelto por nombre, fail-safe a `sparkles`. */
+function iconSpan(name: unknown, sizePx = 24): string {
+  const resolved = variantOf(name, CONTENT_ICON_NAMES, "sparkles");
+  return `<span class="ae-icon" style="display:inline-flex;width:${sizePx}px;height:${sizePx}px;color:var(--accent-text, #5A6B24);">${CONTENT_ICONS[resolved]}</span>`;
+}
+
+interface IconProps { name: string; }
+const IconEl: ElementDefinition<IconProps> = {
+  type: "Icon", displayName: "Icono", icon: ICON_SPARKLES,
+  defaultProps: { name: "sparkles" },
+  editableProps: [
+    { key: "name", label: "Icono", kind: "select", options: [...CONTENT_ICON_NAMES], optionLabels: CONTENT_ICON_LABELS },
+  ],
+  renderHTML: (p) => iconSpan(p.name),
+};
+
+interface FeatureGridProps { title: string; items: string; columns: 2 | 3 | 4; }
+const FeatureGrid: ElementDefinition<FeatureGridProps> = {
+  type: "FeatureGrid", displayName: "Grilla de features", icon: ICON_LAYOUT_TEMPLATE,
+  defaultProps: {
+    title: "",
+    columns: 3,
+    items: "sparkles :: Titulo de la feature :: Una linea que explica que hace.\nshield :: Otra feature :: Otra linea de apoyo.",
+  },
+  editableProps: [
+    { key: "title", label: "Titulo de la seccion (opcional)", kind: "text" },
+    { key: "columns", label: "Columnas", kind: "select", options: ["2", "3", "4"], optionLabels: {
+      "2": "2 columnas",
+      "3": "3 columnas",
+      "4": "4 columnas",
+    } },
+    { key: "items", label: "Items (uno por linea: icono :: titulo :: texto)", kind: "textarea" },
+  ],
+  renderHTML: (p) => {
+    const cols = String(p.columns) === "2" ? 2 : String(p.columns) === "4" ? 4 : 3;
+    const parsed = String(p.items ?? "")
+      .split("\n")
+      .map((line) => line.split("::").map((s) => s.trim()))
+      .filter((parts) => (parts[1] ?? "").length > 0);
+    const cards = parsed
+      .map(([icon, title, ...rest]) => {
+        const text = rest.join("::").trim();
+        return `<article class="ae-feature-card" style="border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};background:var(--panel-bg, #FFFFFF);">${iconSpan(icon)}<h3 style="margin:${space(3)} 0 ${space(2)};font-size:1.05rem;color:var(--text, #261C15);">${esc(title)}</h3><p style="margin:0;color:var(--muted, #6E6653);line-height:1.55;font-size:.95rem;">${esc(text)}</p></article>`;
+      })
+      .join("");
+    const heading = p.title ? `<h2 style="margin:0 0 ${space(5)};text-align:center;">${esc(p.title)}</h2>` : "";
+    const empty = `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
+    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${space(4)};">${cards || empty}</div></section>`;
+  },
+};
+
+interface PostListItem { title: string; href: string; date?: string; description?: string; markdownHref?: string; }
+interface PostListProps { title: string; limit: number; items?: PostListItem[]; }
+const PostList: ElementDefinition<PostListProps> = {
+  type: "PostList", displayName: "Lista de publicaciones", icon: ICON_PILCROW,
+  defaultProps: { title: "Ultimas publicaciones", limit: 3 },
+  editableProps: [
+    { key: "title", label: "Titulo de la seccion", kind: "text" },
+    { key: "limit", label: "Maximo de publicaciones", kind: "number" },
+  ],
+  renderHTML: (p) => {
+    const limit = Number(p.limit) > 0 ? Number(p.limit) : 3;
+    const items = Array.isArray(p.items) ? p.items.slice(0, limit) : [];
+    const heading = p.title ? `<h2 style="margin:0 0 ${space(4)};">${esc(p.title)}</h2>` : "";
+    if (items.length === 0) {
+      return `<section class="ae-post-list-wrap">${heading}<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Esta lista se llena en el build con tus publicaciones. Todavia no hay ninguna publicada.</div></section>`;
+    }
+    const cards = items
+      .map((it) => `<a class="ae-post-card" href="${esc(it.href)}" style="display:block;border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(4)} ${space(5)};text-decoration:none;color:inherit;background:var(--panel-bg, #FFFFFF);">${it.date ? `<time style="display:block;font-size:.8rem;color:var(--muted, #6E6653);margin-bottom:${space(1)};">${esc(it.date)}</time>` : ""}<h3 style="margin:0 0 ${space(1)};font-size:1.05rem;">${esc(it.title)}</h3>${it.description ? `<p style="margin:0;color:var(--muted, #6E6653);font-size:.9rem;line-height:1.5;">${esc(it.description)}</p>` : ""}</a>`)
+      .join("");
+    return `<section class="ae-post-list-wrap">${heading}<div class="ae-post-list" style="display:grid;gap:${space(3)};">${cards}</div></section>`;
+  },
+};
+
 export const elementRegistry: Record<ElementType, ElementDefinition<any>> = {
   Hero, Heading, Paragraph, Image: ImageEl, Button: ButtonEl, Columns, ProductGrid, Spacer,
   LinkList, SocialIcons, ProfileHeader, StoreBlock,
   Video, FAQ, Testimonial, Form: FormEl, Gallery,
   Map: MapEl, ProductCard,
+  Icon: IconEl, FeatureGrid, PostList,
 };
 
 export const elementPalette: ElementType[] = [
@@ -861,4 +964,5 @@ export const elementPalette: ElementType[] = [
   "ProfileHeader", "LinkList", "SocialIcons", "StoreBlock",
   "Video", "FAQ", "Testimonial", "Form", "Gallery",
   "Map", "ProductCard",
+  "Icon", "FeatureGrid", "PostList",
 ];

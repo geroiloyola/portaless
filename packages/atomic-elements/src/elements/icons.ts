@@ -106,6 +106,38 @@ export const ICON_MAIL = icon(`<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"
 // Galeria -> lucide "images"
 export const ICON_IMAGES = icon(`<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16" /> <path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2" /> <circle cx="13" cy="7" r="1" fill="currentColor" /> <rect x="8" y="2" width="14" height="14" rx="2" />`);
 
+// ---------------------------------------------------------------------------
+// Iconos de CONTENIDO (elemento Icon). A diferencia de los de arriba (iconos
+// de la UI del editor, 16px fijos), estos escalan con CSS: el <svg> no fija
+// width/height y usa viewBox 0 0 24 24, asi el elemento los dimensiona con una
+// caja. Geometria simple y propia (nada copiado), `stroke="currentColor"`.
+// ---------------------------------------------------------------------------
+function contentIcon(body: string, strokeWidth = 1.75): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="100%" height="100%">${body}</svg>`;
+}
+
+export const CONTENT_ICONS: Record<string, string> = {
+  sparkles: contentIcon(`<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />`),
+  shield: contentIcon(`<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z" /><path d="M9.3 12l1.9 1.9L15 10" />`),
+  key: contentIcon(`<circle cx="8" cy="15" r="4" /><path d="M11 12l8-8" /><path d="M17 4l3 3" /><path d="M15 6l2 2" />`),
+  server: contentIcon(`<rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><path d="M7 7.5h.01" /><path d="M7 16.5h.01" />`),
+  package: contentIcon(`<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" /><path d="M4 7.5l8 4.5 8-4.5" /><path d="M12 12v9" />`),
+  globe: contentIcon(`<circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c3 3.5 3 14.5 0 18" /><path d="M12 3c-3 3.5-3 14.5 0 18" />`),
+  layers: contentIcon(`<path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" />`),
+  lock: contentIcon(`<rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />`),
+  bot: contentIcon(`<rect x="4" y="8" width="16" height="11" rx="3" /><path d="M12 4v4" /><circle cx="12" cy="3" r="1" /><path d="M9 13h.01" /><path d="M15 13h.01" />`),
+  book: contentIcon(`<path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z" /><path d="M4 17a2 2 0 0 1 2-2h12" />`),
+  terminal: contentIcon(`<rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 9l3 3-3 3" /><path d="M13 15h4" />`),
+  code: contentIcon(`<path d="M8 8l-4 4 4 4" /><path d="M16 8l4 4-4 4" /><path d="M13.5 6l-3 12" />`),
+  "arrow-right": contentIcon(`<path d="M4 12h15" /><path d="M13 6l6 6-6 6" />`),
+  check: contentIcon(`<path d="M4 12.5l5 5 11-11" />`),
+};
+
+export const CONTENT_ICON_NAMES: string[] = Object.keys(CONTENT_ICONS);
+
+// Icono del palette del editor para el elemento Icon (16px, como el resto).
+export const ICON_SPARKLES = icon(`<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /> <path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />`);
+
 // Mapa tipo -> icono, para que registry.ts (y cualquier otro render)
 // resuelva sin repetir el string SVG.
 export const ELEMENT_ICONS: Record<string, string> = {
@@ -130,6 +162,7 @@ export const ELEMENT_ICONS: Record<string, string> = {
   IMAGES: ICON_IMAGES,
   MAP: ICON_MAP,
   DIRECTIONS: ICON_DIRECTIONS,
+  SPARKLES: ICON_SPARKLES,
 };
 
 // Helper de render: el icono es SVG (innerHTML) y el nombre es un text node,

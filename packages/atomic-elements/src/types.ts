@@ -2,7 +2,7 @@ export type ElementType =
   | "Hero" | "Heading" | "Paragraph" | "Image" | "Button" | "Columns" | "ProductGrid" | "Spacer"
   | "LinkList" | "SocialIcons" | "ProfileHeader" | "StoreBlock"
   | "Video" | "FAQ" | "Testimonial" | "Form" | "Gallery"
-  | "Map" | "ProductCard";
+  | "Map" | "ProductCard" | "Icon" | "FeatureGrid" | "PostList";
 
 export interface ElementNode {
   id: string;
