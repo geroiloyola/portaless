@@ -3,7 +3,7 @@
   "slug": "home",
   "title": "Portaless — own your site, answer the machines, extend it safely",
   "description": "A self-hosted publishing system with a cryptographic identity, a written policy for AI readers, and extensions that run in a sandbox.",
-  "theme": "home-nocturno",
+  "theme": "portaless-nocturno",
   "root": [
     {
       "id": "hero",

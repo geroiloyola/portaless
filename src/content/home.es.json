@@ -3,7 +3,7 @@
   "slug": "home",
   "title": "Portaless — sé dueño de tu sitio, responde a las máquinas, extiéndelo con seguridad",
   "description": "Un sistema de publicación autoalojado con identidad criptográfica, una política escrita para los lectores de IA y extensiones que corren en un sandbox.",
-  "theme": "home-nocturno",
+  "theme": "portaless-nocturno",
   "root": [
     {
       "id": "hero",

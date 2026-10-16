@@ -52,12 +52,12 @@ describe("home: 100% motor", () => {
   });
 
   it("declara el theme pack del home", () => {
-    expect(homeJson).toContain('"theme": "home-nocturno"');
+    expect(homeJson).toContain('"theme": "portaless-nocturno"');
   });
 
-  it("el theme pack home-nocturno existe en los builtins", () => {
+  it("el theme pack portaless-nocturno existe en los builtins", () => {
     const themes = readFileSync(join(root, "packages/atomic-elements/src/themes/theme-pack.ts"), "utf8");
-    expect(themes).toContain('name: "home-nocturno"');
+    expect(themes).toContain('name: "portaless-nocturno"');
   });
 });
 
@@ -71,7 +71,7 @@ describe("home es: la proyeccion de locale (i18n)", () => {
   });
 
   it("la proyeccion es en si misma un PageLayout del motor, con el mismo tema", () => {
-    expect(esJson).toContain('"theme": "home-nocturno"');
+    expect(esJson).toContain('"theme": "portaless-nocturno"');
     expect(esJson).toContain('"type": "Hero"');
   });
 

@@ -169,6 +169,19 @@ precedencia exactas:
   tinta profunda (`#14100C`) con **naranja como acento** y lima como acent-2.
   Todos sus pares de texto pasan AA por matemática WCAG en
   `tests/unit/theme-pack.test.ts` — no es una paleta improvisada.
+- **`portaless-nocturno` (default del ecosistema)**: la paleta oscura del
+  ecosistema Portaless — tinta muy profunda (`#0E0B08`) con el **lima oficial**
+  como acento y el naranja como acent-2. Es el look que un visitante ve en las
+  superficies del ecosistema: el **home** (lo declara en su `PageLayout`), el
+  **blog** (índice y cada post) y **Explore** (los dos lo aplican con
+  `src/lib/ecosystem-theme.ts`, porque no son `PageLayout`). **Es un default de
+  diseño, no un color fijo: el admin puede cambiarlo por página** con
+  `apply_theme` (o el editor), como cualquier theme pack. Los efectos
+  ambientales (fondo con degradado, capa de puntos, titular en degradado, hover)
+  viven en `global.css` bajo `[data-theme-pack="portaless-nocturno"]` — CSS-only,
+  sin `!important`, respetando `prefers-reduced-motion`. Las **plantillas demo**
+  (`/paginas/*`) no lo heredan: conservan su propio look para mostrar la
+  variedad de temas.
 
 ## 6. Accesibilidad
 

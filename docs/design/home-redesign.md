@@ -49,11 +49,11 @@ The header and footer are **not** part of the layout: they come from
 
 ## Technical approach
 
-- **Theme pack `home-nocturno`** sets the 16 allowlisted CSS variables to a deep
+- **Theme pack `portaless-nocturno`** sets the 16 allowlisted CSS variables to a deep
   dark palette with the official accents (`#C5D86D`, `#F05D23`). A theme pack is
   data-only and can only set those 16 vars (`theme-pack.ts`), so it cannot carry
   arbitrary CSS.
-- **Ambient effects live in `global.css`**, scoped by `[data-theme-pack="home-nocturno"]`:
+- **Ambient effects live in `global.css`**, scoped by `[data-theme-pack="portaless-nocturno"]`:
   page background gradient, a subtle grid/glow layer (`body::before`), gradient
   headline (`background-clip:text` on the spotlight hero title), and glass on
   the new elements' cards. These are page-level, CSS-only, and never override

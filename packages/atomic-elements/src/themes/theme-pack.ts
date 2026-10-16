@@ -261,10 +261,10 @@ export const BUILTIN_THEMES: readonly ThemePack[] = [
     },
   },
   {
-    name: "home-nocturno",
-    displayName: "Home Nocturno",
+    name: "portaless-nocturno",
+    displayName: "Portaless Nocturno",
     description:
-      "Tema oscuro del home de Portaless (docs/design/home-redesign.md): tinta muy profunda y el lima oficial como acento. Solo declara las variables permitidas; los efectos ambientales viven en global.css bajo [data-theme-pack=\"home-nocturno\"].",
+      "Tema oscuro del ecosistema Portaless (default de la guia de diseno): tinta muy profunda y el lima oficial como acento. Lo usan el home, el blog y Explore; el admin puede cambiarlo por pagina.",
     vars: {
       "--bg": "#0E0B08",
       "--panel-bg": "#171310",

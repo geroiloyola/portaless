@@ -204,12 +204,12 @@ describe("availableThemes", () => {
     const intruso: ThemePack = { name: "2pac-dark", displayName: "Falso", vars: { "--bg": "#FFF" } };
     const otro: ThemePack = { name: "otro-tema", displayName: "Otro", vars: { "--bg": "#000" } };
     const catalog = availableThemes([intruso, otro]);
-    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "home-nocturno", "otro-tema"]);
+    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno", "otro-tema"]);
     expect(catalog[0].displayName).toBe("2Pac Dark");
   });
 
   it("sin instalados devuelve exactamente los builtins", () => {
-    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark", "home-nocturno"]);
+    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno"]);
   });
 });
 
@@ -265,8 +265,8 @@ describe("2pac-dark: pares AA verificados por math WCAG", () => {
   });
 });
 
-describe("home-nocturno: pares AA verificados por math WCAG", () => {
-  const HOME = BUILTIN_THEMES.find((t) => t.name === "home-nocturno")!;
+describe("portaless-nocturno: pares AA verificados por math WCAG", () => {
+  const HOME = BUILTIN_THEMES.find((t) => t.name === "portaless-nocturno")!;
   const V = HOME.vars;
   const pairs: Array<[string, string, string]> = [
     ["texto del sitio sobre la pagina", V["--text"], V["--bg"]],

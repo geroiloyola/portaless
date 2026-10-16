@@ -192,7 +192,7 @@ const Hero: ElementDefinition<HeroProps> = {
 
     // spotlight: full-bleed centrado, titular grande y CTA. Sin fondo inline --
     // el glow y el degradado del titulo los pone el tema del home
-    // (global.css, [data-theme-pack="home-nocturno"]), no el elemento.
+    // (global.css, [data-theme-pack="portaless-nocturno"]), no el elemento.
     if (variant === "spotlight") {
       const cta = p.ctaLabel && p.ctaHref
         ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}" style="display:inline-block;margin-top:${space(6)};padding:${BUTTON_SIZES.lg};border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;">${esc(p.ctaLabel)}</a>`

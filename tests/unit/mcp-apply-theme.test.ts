@@ -146,7 +146,7 @@ describe("list_themes", () => {
     expect(parsed.themes[0]).toMatchObject({ name: "2pac-dark", source: "builtin" });
     expect(parsed.themes[0].vars["--bg"]).toBe("#14100C");
     expect(parsed.themes[0].vars["--radius"]).toBeUndefined(); // no declarado: hereda
-    expect(parsed.themes[1]).toMatchObject({ name: "home-nocturno", source: "builtin" });
+    expect(parsed.themes[1]).toMatchObject({ name: "portaless-nocturno", source: "builtin" });
   });
 
   it("los instalados aparecen con source installed y el extends ya resuelto", async () => {

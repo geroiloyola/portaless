@@ -1,22 +1,24 @@
 ---
 // Explore -- hub de descubrimiento del ecosistema Portaless.
 //
-// Existe para que el footer (TrustScore · Explore · Powered by
-// Portaless) apunte SIEMPRE a un destino real: nunca linkeamos una
-// pagina que no existe. Muestra lo publicable de este sitio usando el
-// filtro de publicacion CANONICO (isDraft de deploy-engine) -- el mismo
-// que usa publish-site -- para que Explore nunca muestre un borrador.
+// Proposito (docs/design/home-redesign.md): guiar tanto a una persona como a
+// una IA a encontrar lo que busca, rapido, por CATEGORIA, en el contenido de
+// este sitio. No finge un ranking de red: en hosting estatico no hay testigos,
+// asi que el estado degradado honesto (fuente local, asOf, ventana, filtros)
+// vive en un <details> al final, fuera del camino del usuario -- la promesa
+// sigue escrita, pero no es lo primero que ve.
 //
-// Nota de producto: el descubrimiento de la RED (sitios y temas de
-// terceros) vive en el marketplace de Portaless (AppPlace/AppLibre, otro
-// repo). Cuando ese marketplace exista, esta pagina puede redirigir o
-// embeberlo sin cambiar el link del footer.
+// Clasificacion automatica de las paginas demo por su arbol de elementos
+// (ProfileHeader -> perfil, StoreBlock/ProductGrid -> tienda, resto -> pagina).
+// El filtro de publicacion es el CANONICO (isDraft de deploy-engine).
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { ecosystemPageTheme } from "../lib/ecosystem-theme";
+import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
 
 const base = import.meta.env.BASE_URL;
+const pageTheme = ecosystemPageTheme();
 
 const pageModules = import.meta.glob<{ default: PageLayout }>(
   "../content/pages/*.json",
@@ -31,122 +33,205 @@ const posts = (await getCollection("posts"))
   .filter((p) => !p.data.draft)
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
+function flatten(nodes: ElementNode[]): ElementNode[] {
+  return nodes.flatMap((n) => [
+    n,
+    ...(n.children ? flatten(n.children) : []),
+    ...(n.columnSlots ? n.columnSlots.flatMap(flatten) : []),
+  ]);
+}
+function kindOf(page: PageLayout): "profile" | "shop" | "page" {
+  const flat = flatten(page.root);
+  if (flat.some((n) => n.type === "ProfileHeader")) return "profile";
+  if (flat.some((n) => n.type === "StoreBlock" || n.type === "ProductGrid" || n.type === "ProductCard")) return "shop";
+  return "page";
+}
+const demoPages = pages.filter((p) => kindOf(p) === "page");
+const demoShops = pages.filter((p) => kindOf(p) === "shop");
+const demoProfiles = pages.filter((p) => kindOf(p) === "profile");
+
+// Documentacion: los 4 documentos mas relevantes para empezar. Viven en el repo
+// (todavia no son paginas; tenerlas como paginas hermosas es un commit futuro).
+const REPO = "https://github.com/geroiloyola/portaless/blob/main";
+const docs = [
+  { title: "Install in 10 minutes", href: `${REPO}/docs/primos-pasos.md`, note: "Docker + navegador, guia para quien no escribe codigo." },
+  { title: "Self-hosting", href: `${REPO}/docs/self-hosting.md`, note: "Node, Docker, Railway y Render, sin base expuesta." },
+  { title: "Protocol APW", href: `${REPO}/docs/protocol-apw/APW-SPEC-v1.3.md`, note: "La especificacion normativa de identidad y evidencia." },
+  { title: "Architecture", href: `${REPO}/docs/architecture/README.md`, note: "Como esta armado el kernel y sus modulos." },
+];
+
+const CATEGORIES = [
+  { id: "documentation", label: "Documentation", count: docs.length },
+  { id: "demo-pages", label: "Demo Pages", count: demoPages.length },
+  { id: "demo-shops", label: "Demo Shops", count: demoShops.length },
+  { id: "demo-profiles", label: "Demo Profiles", count: demoProfiles.length },
+  { id: "publications", label: "Publications", count: posts.length },
+].filter((c) => c.count > 0);
+
 const trustHref = `${base}trust/default`;
 const repoHref = "https://github.com/geroiloyola/portaless";
 
-// Estado degradado honesto (Fase 9a): Explore es una pagina estatica. El orden
-// normativo (ROADMAP Phase 9) se calcula en un nodo con functions/ a partir de
-// atestaciones firmadas y observaciones de testigos ancladas (asOf + ventana
-// declaradas). En hosting puro estatico esas fuentes no existen, asi que la UI
-// NO finge un ranking: declara la fuente local, el instante de build y la
-// ventana, y explica que los filtros por testigos requieren un nodo.
+// Estado degradado honesto (Fase 9a): Explore es estatica; el orden normativo
+// por testigos se calcula en un nodo con functions/. Vive en el <details>.
 const buildAsOf = new Date().toISOString();
 const windowSeconds = 30 * 86400;
 const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"] as const;
 ---
+
 <BaseLayout
   title="Explore — Portaless"
-  description="Descubre sitios, perfiles y publicaciones hechos con Portaless."
+  description="Descubrí por categoría los sitios, perfiles, publicaciones y documentación hechos con Portaless."
+  pageTheme={pageTheme}
 >
   <h1>Explore</h1>
-  <p>Sitios, perfiles y publicaciones hechos con Portaless.</p>
+  <p class="explore-intro">
+    Todo lo que este sitio publica, agrupado por categoría para que lo encuentres rápido —
+    vos o un agente de IA. La clasificación es automática (por el contenido de cada página).
+  </p>
 
-  <section class="explore-ranking" data-explore-source="local">
-    <h2>Orden</h2>
-    <p class="explore-ranking-hint">
+  <nav class="explore-chips" aria-label="Categorías">
+    <a href="#documentation" class="explore-chip">Documentation</a>
+    {demoPages.length > 0 && <a href="#demo-pages" class="explore-chip">Demo Pages</a>}
+    {demoShops.length > 0 && <a href="#demo-shops" class="explore-chip">Demo Shops</a>}
+    {demoProfiles.length > 0 && <a href="#demo-profiles" class="explore-chip">Demo Profiles</a>}
+    {posts.length > 0 && <a href="#publications" class="explore-chip">Publications</a>}
+  </nav>
+
+  <section id="documentation">
+    <h2>Documentation</h2>
+    <div class="explore-grid">
+      {docs.map((doc) => (
+        <a class="explore-card" href={doc.href} target="_blank" rel="noopener noreferrer">
+          <h3>{doc.title}</h3>
+          <p>{doc.note}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  {demoPages.length > 0 && (
+    <section id="demo-pages">
+      <h2>Demo Pages</h2>
+      <div class="explore-grid">
+        {demoPages.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {demoShops.length > 0 && (
+    <section id="demo-shops">
+      <h2>Demo Shops</h2>
+      <div class="explore-grid">
+        {demoShops.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {demoProfiles.length > 0 && (
+    <section id="demo-profiles">
+      <h2>Demo Profiles</h2>
+      <div class="explore-grid">
+        {demoProfiles.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {posts.length > 0 && (
+    <section id="publications">
+      <h2>Publications</h2>
+      <div class="explore-grid">
+        {posts.map((post) => (
+          <a class="explore-card" href={`${base}blog/${post.id}/`}>
+            <h3>{post.data.title}</h3>
+            <p class="explore-card-meta">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
+            {post.data.description && <p>{post.data.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section id="how">
+    <h2>Cómo se publica</h2>
+    <div class="explore-grid">
+      <a class="explore-card" href={`${base}proyecciones/`}>
+        <h3>Un canon, cinco proyecciones</h3>
+        <p>Cada publicación nace una sola vez y se deriva a página, feed, manifiesto, índice y una plataforma externa.</p>
+      </a>
+    </div>
+  </section>
+
+  <section id="network">
+    <h2>Red Portaless</h2>
+    <div class="explore-grid">
+      <a class="explore-card" href={trustHref}>
+        <h3>TrustScore de este sitio</h3>
+        <p>La señal de confianza del sitio, verificada por la red Portaless.</p>
+      </a>
+      <a class="explore-card" href={repoHref} target="_blank" rel="noopener noreferrer">
+        <h3>Repositorio de Portaless</h3>
+        <p>Todo el ecosistema es open source bajo licencia AGPL-3.0.</p>
+      </a>
+    </div>
+  </section>
+
+  <details class="explore-about" data-explore-source="local">
+    <summary>How this list is ordered</summary>
+    <p>
       <strong>Fuente:</strong> contenido local de este sitio (build).
       <strong>asOf:</strong> <time datetime={buildAsOf}>{buildAsOf}</time>.
       <strong>Ventana:</strong> {windowSeconds / 86400} días (solo aplica a <code>top</code>).
-    </p>
-    <label class="explore-ranking-label">
-      Filtro
-      <select id="explore-filter">
-        {RANKING_FILTERS.map((f) => (
-          <option value={f} selected={f === "recents"}>{f}</option>
-        ))}
-      </select>
-    </label>
-    <p class="explore-ranking-status" id="explore-filter-status" role="status">
-      Orden local. El orden por atestaciones firmadas y observaciones de testigos
+      El orden por atestaciones firmadas y observaciones de testigos
       (<code>top</code>, <code>confidence</code>) se calcula en un nodo con
-      <code>functions/</code>, no en este hosting estático.
+      <code>functions/</code>, no en este hosting estático: por eso acá no se finge un ranking.
+      Filtros normativos: {RANKING_FILTERS.join(", ")}.
     </p>
-  </section>
-
-  <h2>Sitios y perfiles</h2>
-  {pages.length === 0 && (
-    <p class="empty-state">Todavía no hay sitios publicados.</p>
-  )}
-  {pages.map((page) => (
-    <div class="card">
-      <h3><a href={`${base}paginas/${page.slug}/`}>{page.title || page.slug}</a></h3>
-      {page.description && <p>{page.description}</p>}
-    </div>
-  ))}
-
-  <h2>Publicaciones</h2>
-  {posts.length === 0 && (
-    <p class="empty-state">Todavía no hay publicaciones.</p>
-  )}
-  {posts.map((post) => (
-    <div class="card">
-      <h3><a href={`${base}blog/${post.id}/`}>{post.data.title}</a></h3>
-      <p class="badge">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
-      {post.data.description && <p>{post.data.description}</p>}
-    </div>
-  ))}
-
-  <h2>Cómo se publica</h2>
-  <div class="card">
-    <h3><a href={`${base}proyecciones/`}>Un canon, cinco proyecciones</a></h3>
-    <p>
-      Cada publicación nace una sola vez y se deriva a página, feed, manifiesto,
-      índice y una plataforma externa. La demo lo deriva y lo compara en vivo.
-    </p>
-  </div>
-
-  <h2>Red Portaless</h2>
-  <div class="card">
-    <h3><a href={trustHref}>TrustScore de este sitio</a></h3>
-    <p>La señal de confianza del sitio, verificada por la red Portaless.</p>
-    <h3><a href={repoHref} target="_blank" rel="noopener noreferrer">Repositorio de Portaless</a></h3>
-    <p>Todo el ecosistema es open source bajo licencia AGPL-3.0.</p>
-    <p class="badge">Próximamente: el marketplace de temas de la red.</p>
-  </div>
+  </details>
 </BaseLayout>
 
 <style>
-  .explore-ranking {
+  .explore-intro { color: var(--muted, #6e6653); max-width: 70ch; }
+  .explore-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
+  .explore-chip {
+    padding: 6px 14px;
     border: 1px solid var(--panel-border, #e4e6c3);
-    border-radius: 12px;
-    padding: 16px;
-    margin: 16px 0 24px;
-    background: var(--panel-bg, #fff);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
   }
-  .explore-ranking-hint { color: var(--muted, #6e6653); font-size: 0.9rem; }
-  .explore-ranking-label { display: block; margin: 8px 0; font-weight: 600; }
-  .explore-ranking-label select { margin-left: 8px; }
-  .explore-ranking-status { color: var(--muted, #6e6653); font-size: 0.9rem; max-width: 70ch; }
+  .explore-chip:hover { border-color: var(--accent); }
+  section { margin-top: 40px; }
+  .explore-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+  .explore-card {
+    display: block;
+    border: 1px solid var(--panel-border, #e4e6c3);
+    border-radius: var(--radius-card, 16px);
+    padding: 18px 20px;
+    background: var(--panel-bg, #fff);
+    text-decoration: none;
+    color: inherit;
+  }
+  .explore-card:hover { border-color: var(--accent); }
+  .explore-card h3 { margin: 0 0 6px; font-size: 1rem; }
+  .explore-card p { margin: 0; color: var(--muted, #6e6653); font-size: 0.88rem; line-height: 1.5; }
+  .explore-card-meta { font-size: 0.78rem !important; margin-bottom: 6px !important; }
+  .explore-about { margin-top: 48px; color: var(--muted, #6e6653); font-size: 0.85rem; }
+  .explore-about summary { cursor: pointer; font-weight: 600; }
+  .explore-about p { max-width: 80ch; line-height: 1.6; }
 </style>
-
-<script>
-  // Estado degradado honesto: en hosting estático no hay nodo, así que ningún
-  // filtro se finge. La UI solo declara qué necesitaría cada uno y cuál es la
-  // fuente actual.
-  const EXPLORE_NOTES: Record<string, string> = {
-    top: "ordena por el puntaje bayesiano ponderado por prior sobre la ventana declarada; necesita atestaciones firmadas de un nodo con functions/.",
-    confidence: "es el consenso de testigos sobre el seq declarado; necesita observaciones de testigos de un nodo con functions/.",
-    recents: "ordena por la última posición observada por un testigo; en estático no hay observaciones.",
-    new: "ordena por la primera aparición observada; en estático no hay observaciones.",
-    old: "ordena por la primera aparición, más antiguos primero; en estático no hay observaciones.",
-    history: "ordena por cantidad de evidencia por sujeto; en estático no hay atestaciones.",
-  };
-  const select = document.getElementById("explore-filter") as HTMLSelectElement | null;
-  const status = document.getElementById("explore-filter-status");
-  select?.addEventListener("change", () => {
-    if (!status) return;
-    const f = select.value;
-    status.textContent = `Filtro "${f}": ${EXPLORE_NOTES[f] ?? ""} Fuente actual: contenido local (build), sin atestaciones firmadas.`;
-  });
-</script>
-

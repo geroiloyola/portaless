@@ -373,14 +373,14 @@ code, kbd, samp, pre { font-family: var(--font-mono); }
 
 /* ---------------------------------------------------------------------------
    Home de Portaless (docs/design/home-redesign.md, ROADMAP fase 13/14). El
-   theme pack "home-nocturno" solo puede declarar las 16 variables permitidas;
-   los EFECTOS ambientales viven aqui, bajo [data-theme-pack="home-nocturno"],
+   theme pack "portaless-nocturno" solo puede declarar las 16 variables permitidas;
+   los EFECTOS ambientales viven aqui, bajo [data-theme-pack="portaless-nocturno"],
    y solo tocan propiedades que los estilos inline de los elementos NO fijan
    (fondo de body, pseudo-elementos, backdrop-filter, transiciones). Nunca
    hay !important ni pelea con el render. CSS-only, sin JS, y respeta
    prefers-reduced-motion (abajo).
    --------------------------------------------------------------------------- */
-[data-theme-pack="home-nocturno"] body {
+[data-theme-pack="portaless-nocturno"] body {
   background:
     radial-gradient(1100px 560px at 50% -8%, rgba(197, 216, 109, 0.10), transparent 60%),
     radial-gradient(820px 480px at 88% 8%, rgba(240, 93, 35, 0.08), transparent 55%),
@@ -390,7 +390,7 @@ code, kbd, samp, pre { font-family: var(--font-mono); }
 
 /* Capa decorativa de puntos (starfield sutil). pointer-events:none: no
    intercepta clics; se desvanece hacia abajo con mask. */
-[data-theme-pack="home-nocturno"] body::before {
+[data-theme-pack="portaless-nocturno"] body::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -402,42 +402,42 @@ code, kbd, samp, pre { font-family: var(--font-mono); }
   mask-image: linear-gradient(to bottom, #000, transparent 72%);
 }
 
-[data-theme-pack="home-nocturno"] main.container {
+[data-theme-pack="portaless-nocturno"] main.container {
   position: relative;
   z-index: 1;
 }
 
 /* Titular del hero spotlight con degradado (lima -> naranja). El elemento no
    fija `color`, asi que la regla no compite con ningun inline. */
-[data-theme-pack="home-nocturno"] .ae-hero-spotlight-title {
+[data-theme-pack="portaless-nocturno"] .ae-hero-spotlight-title {
   background: linear-gradient(100deg, #F7F7F2 0%, #C5D86D 52%, #F05D23 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-[data-theme-pack="home-nocturno"] .ae-icon { color: var(--accent-text, #C5D86D); }
+[data-theme-pack="portaless-nocturno"] .ae-icon { color: var(--accent-text, #C5D86D); }
 
-[data-theme-pack="home-nocturno"] .ae-feature-card,
-[data-theme-pack="home-nocturno"] .ae-post-card {
+[data-theme-pack="portaless-nocturno"] .ae-feature-card,
+[data-theme-pack="portaless-nocturno"] .ae-post-card {
   transition: transform 0.18s ease, border-color 0.18s ease;
 }
-[data-theme-pack="home-nocturno"] .ae-feature-card:hover,
-[data-theme-pack="home-nocturno"] .ae-post-card:hover {
+[data-theme-pack="portaless-nocturno"] .ae-feature-card:hover,
+[data-theme-pack="portaless-nocturno"] .ae-post-card:hover {
   transform: translateY(-3px);
   border-color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-theme-pack="home-nocturno"] .ae-feature-card,
-  [data-theme-pack="home-nocturno"] .ae-post-card { transition: none; }
-  [data-theme-pack="home-nocturno"] .ae-feature-card:hover,
-  [data-theme-pack="home-nocturno"] .ae-post-card:hover { transform: none; }
+  [data-theme-pack="portaless-nocturno"] .ae-feature-card,
+  [data-theme-pack="portaless-nocturno"] .ae-post-card { transition: none; }
+  [data-theme-pack="portaless-nocturno"] .ae-feature-card:hover,
+  [data-theme-pack="portaless-nocturno"] .ae-post-card:hover { transform: none; }
 }
 
 /* La franja de enlaces reales del home (Columns con un Button por columna):
    centra cada boton dentro de su columna. No pisa ningun estilo inline (los
    botones son inline-block; text-align los centra). */
-[data-theme-pack="home-nocturno"] .ae-columns .ae-column-slot {
+[data-theme-pack="portaless-nocturno"] .ae-columns .ae-column-slot {
   text-align: center;
 }
