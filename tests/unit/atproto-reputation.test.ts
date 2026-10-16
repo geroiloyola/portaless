@@ -9,7 +9,7 @@
 // gobernado con public embebido, fetch que tira, y camino local (identidad
 // did:apw:<siteId> en esta misma instancia, sin fetch).
 
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,6 +22,25 @@ import {
 } from "../../packages/identity-atproto/src/reputation";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-atproto-reputation-"));
+
+// El schema (27 fuentes) + la identidad local se preparan UNA vez en beforeAll:
+// dentro del body de un test rozaban el timeout de 5s bajo carga de CI (mismo
+// patron que mcp-agent-token-store / admin-cloud-images-endpoint).
+let localEnv: Record<string, unknown>;
+
+beforeAll(async () => {
+  const file = join(tmp, "local.db");
+  await applySchema(file, { quiet: true });
+  localEnv = {
+    PORTALESS_SQLITE_PATH: file,
+    PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.from(randomBytes(32)).toString("base64"),
+  };
+  const { generateApwDid } = await import("../../packages/apw-resolver/src/did-apw/generate");
+  const { createSiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/store-factory");
+  const keyPair = await generateApwDid(SITE);
+  expect(keyPair.did).toBe(SITE_DID);
+  await (await createSiteIdentityStore(localEnv)).create("default", keyPair, "test");
+});
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -320,21 +339,8 @@ describe("default fetchSiteTrust (no inyectado)", () => {
   });
 
   it("local: identidad did:apw:<siteId> en esta instancia -> lee el store sin fetch", async () => {
-    const file = join(tmp, `local-${Math.random().toString(36).slice(2)}.db`);
-    await applySchema(file, { quiet: true });
-    const env = {
-      PORTALESS_SQLITE_PATH: file,
-      PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.from(randomBytes(32)).toString("base64"),
-    };
-
-    const { generateApwDid } = await import("../../packages/apw-resolver/src/did-apw/generate");
-    const { createSiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/store-factory");
-    const keyPair = await generateApwDid(SITE);
-    expect(keyPair.did).toBe(SITE_DID);
-    await (await createSiteIdentityStore(env)).create("default", keyPair, "test");
-
     const fetchImpl = vi.fn(async () => { throw new Error("no deberia haber fetch en el camino local"); });
-    const result = await buildAtprotoReputation(HANDLE, deps({ ...linkDeps(), env, fetchImpl }));
+    const result = await buildAtprotoReputation(HANDLE, deps({ ...linkDeps(), env: localEnv, fetchImpl }));
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(result.apw?.trust).toMatchObject({

@@ -10,5 +10,13 @@ export default defineConfig({
     // archivos estan junto a su codigo (packages/**/__tests__/ y
     // packages/apw-resolver/src/scoring/).
     include: ["**/*.test.ts"],
+    // Varios tests aplican el schema.sql completo (27 fuentes) para tener una
+    // base real: es I/O real, y bajo la carga de CI (186 workers) rozaba el
+    // default de 5s y fallaba por timeout -- no por contrato (tres veces:
+    // mcp-agent-token-store, admin-cloud-images-endpoint, atproto-reputation).
+    // 15s es un presupuesto honesto para ese trabajo; no enmascara cuelgues
+    // (la suite es determinista y corre en <1s por archivo localmente).
+    testTimeout: 15000,
+    hookTimeout: 15000,
   },
 });
