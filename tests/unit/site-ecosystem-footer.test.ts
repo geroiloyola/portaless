@@ -40,7 +40,9 @@ describe("footer del ecosistema Portaless", () => {
   });
 
   it("el hub de descubrimiento usa el filtro de publicacion canónico", () => {
-    const exploreSrc = readFileSync(join(root, "src/pages/explore.astro"), "utf8");
+    // Desde i18n (docs/i18n-design.md) el hub vive en la vista compartida
+    // ExplorePage.astro (dos proyecciones de locale), no en explore.astro.
+    const exploreSrc = readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8");
     expect(exploreSrc).toContain("draft-filter");
     expect(exploreSrc).toContain("isDraft");
   });

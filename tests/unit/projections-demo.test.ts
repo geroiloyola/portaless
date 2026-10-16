@@ -136,7 +136,7 @@ describe("la demo esta enlazada y sin links rotos", () => {
   });
 
   it("Explore y el post enlazan a la demo", () => {
-    expect(readFileSync(join(root, "src/pages/explore.astro"), "utf8")).toContain("proyecciones/");
+    expect(readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8")).toContain("proyecciones/");
     expect(readFileSync(join(root, "src/pages/blog/[...slug].astro"), "utf8")).toContain("proyecciones/");
   });
 

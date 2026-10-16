@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const src = readFileSync(join(__dirname, "..", "..", "src", "pages", "explore.astro"), "utf8");
+const src = readFileSync(join(__dirname, "..", "..", "src", "components", "ExplorePage.astro"), "utf8");
 
 describe("Explore: estado degradado honesto", () => {
   it("declara la fuente local y el instante/ventana", () => {

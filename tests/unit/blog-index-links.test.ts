@@ -32,15 +32,17 @@ describe("enlaces de publicaciones -> /blog/<id>/", () => {
   });
 
   it("los indices usan post.id, igual que la ruta detalle", () => {
-    const indexes = ["blog/index.astro", "explore.astro"];
+    const indexes = ["blog/index.astro"];
     for (const name of indexes) {
       const src = readFileSync(join(pagesDir, name), "utf8");
       expect(src, `${name} debe linkear con post.id`).toContain("post.id");
     }
-    // El home tambien: desde la fase 0 del rediseno su lista de posts vive en la
-    // vista compartida (components/HomePage.astro), no en src/pages/index.astro.
+    // El home y Explore linkean los posts desde sus vistas compartidas
+    // (components/), no desde src/pages/.
     const homeView = readFileSync(join(__dirname, "../../src/components/HomePage.astro"), "utf8");
     expect(homeView, "HomePage debe linkear con post.id").toContain("post.id");
+    const exploreView = readFileSync(join(__dirname, "../../src/components/ExplorePage.astro"), "utf8");
+    expect(exploreView, "ExplorePage debe linkear con post.id").toContain("post.id");
     const detail = readFileSync(join(pagesDir, "blog/[...slug].astro"), "utf8");
     expect(detail).toContain("post.id");
   });

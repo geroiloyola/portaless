@@ -17,8 +17,11 @@ interface Props {
   // (Home/Inicio, Publications/Publicaciones, Explore/Explorar) y el selector
   // de idioma. Default: SITE_LANG.
   locale?: Locale;
+  // Ruta canonica sin prefijo de locale (default "/"): el selector de idioma
+  // enlaza a la MISMA ruta en el otro locale (home y Explore estan localizados).
+  alternatePath?: string;
 }
-const { context = null, locale = SITE_LANG } = Astro.props;
+const { context = null, locale = SITE_LANG, alternatePath = "/" } = Astro.props;
 
 const base = import.meta.env.BASE_URL;
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
@@ -27,11 +30,12 @@ const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
 // al visitante a un indice vacio.
 const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
 
-// Selector de idioma: apunta al home del OTRO locale (el unico destino
-// localizado hoy; el resto del sitio sigue en SITE_LANG). Muestra el nombre del
-// otro idioma, asi el enlace dice a donde va.
+// Selector de idioma: apunta a la MISMA ruta en el OTRO locale (el home y
+// Explore estan localizados; para el resto de las paginas, que aun no lo estan,
+// alternatePath cae a "/" y el switcher lleva al home del otro idioma). Muestra
+// el nombre del otro idioma, asi el enlace dice a donde va.
 const other = otherLocale(locale);
-const otherHref = `${base.replace(/\/$/, "")}${localePath(other, "/")}`;
+const otherHref = `${base.replace(/\/$/, "")}${localePath(other, alternatePath)}`;
 ---
 <header class="site-header">
   <nav>

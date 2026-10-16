@@ -1,0 +1,338 @@
+---
+// Vista compartida de Explore (hub de descubrimiento). Dos proyecciones de
+// locale: /explore/ (en) y /es/explore/ (es) -- mismo motor y mismo tema, el
+// copy sale de COPY[locale] para que la ruta sea coherente con el idioma.
+//
+// No finge un ranking de red: el estado degradado honesto (fuente local, asOf,
+// ventana, filtros) vive en un <details>. La clasificacion de las paginas demo
+// es automatica por su arbol de elementos; el filtro de publicacion es el
+// canonico (isDraft de deploy-engine).
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
+import { ecosystemPageTheme } from "../lib/ecosystem-theme";
+import type { Locale } from "../lib/i18n";
+import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
+
+interface Props { locale: Locale; }
+const { locale } = Astro.props;
+
+const COPY = {
+  en: {
+    title: "Explore — Portaless",
+    description: "Browse by category the sites, profiles, publications and documentation made with Portaless.",
+    heading: "Explore",
+    intro: "Everything this site publishes, grouped by category so you find it fast — you or an AI agent. The classification is automatic, from each page's content.",
+    orderBy: "Order by",
+    status: {
+      new: "Newest first, by publish date (local).",
+      old: "Oldest first, by publish date (local).",
+      recents: "Newest first by publish date — a local approximation. The network order (last position observed by a witness) needs a node with functions/.",
+      top: "The weighted Bayesian score over the declared window needs signed attestations from a node with functions/; showing the local order instead.",
+      confidence: "Witness consensus over the declared seq needs a node with functions/; showing the local order instead.",
+      history: "Order by amount of evidence per subject needs attestations from a node with functions/; showing the local order instead.",
+    },
+    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", publications: "Publications" },
+    docsHeading: "Documentation",
+    docs: [
+      { title: "Install in 10 minutes", note: "Docker + browser, a guide for people who do not write code." },
+      { title: "Self-hosting", note: "Node, Docker, Railway and Render, no exposed database." },
+      { title: "Protocol APW", note: "The normative specification for identity and evidence." },
+      { title: "Architecture", note: "How the kernel and its modules are put together." },
+    ],
+    howHeading: "How it is published",
+    howTitle: "One canon, five projections",
+    howNote: "Every publication is born once and derived to a page, a feed, a manifest, an index entry and an external platform.",
+    networkHeading: "Portaless network",
+    trustTitle: "TrustScore of this site",
+    trustNote: "The site's trust signal, verified by the Portaless network.",
+    repoTitle: "Portaless repository",
+    repoNote: "The whole ecosystem is open source under AGPL-3.0.",
+    aboutSummary: "How this list is ordered",
+    aboutSource: "Source:",
+    aboutSourceValue: "local content of this site (build).",
+    aboutAsOf: "asOf:",
+    aboutWindow: "Window:",
+    aboutWindowValue: (days: number) => `${days} days (only applies to top).`,
+    aboutNode: "The order by signed attestations and witness observations (top, confidence) is computed on a node with functions/, not on this static host: that is why no ranking is faked here.",
+    aboutFilters: "Normative filters:",
+    dateLocale: "en-US",
+  },
+  es: {
+    title: "Explore — Portaless",
+    description: "Descubrí por categoría los sitios, perfiles, publicaciones y documentación hechos con Portaless.",
+    heading: "Explore",
+    intro: "Todo lo que este sitio publica, agrupado por categoría para que lo encuentres rápido — vos o un agente de IA. La clasificación es automática (por el contenido de cada página).",
+    orderBy: "Order by",
+    status: {
+      new: "Más reciente primero, por fecha de publicación (local).",
+      old: "Más antiguo primero, por fecha de publicación (local).",
+      recents: "Más reciente primero por fecha de publicación — una aproximación local. El orden de red (última posición observada por un testigo) necesita un nodo con functions/.",
+      top: "El puntaje bayesiano ponderado sobre la ventana declarada necesita atestaciones firmadas de un nodo con functions/; se muestra el orden local.",
+      confidence: "El consenso de testigos sobre el seq declarado necesita un nodo con functions/; se muestra el orden local.",
+      history: "El orden por cantidad de evidencia por sujeto necesita atestaciones de un nodo con functions/; se muestra el orden local.",
+    },
+    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", publications: "Publications" },
+    docsHeading: "Documentation",
+    docs: [
+      { title: "Install in 10 minutes", note: "Docker + navegador, guía para quien no escribe código." },
+      { title: "Self-hosting", note: "Node, Docker, Railway y Render, sin base expuesta." },
+      { title: "Protocol APW", note: "La especificación normativa de identidad y evidencia." },
+      { title: "Architecture", note: "Cómo está armado el kernel y sus módulos." },
+    ],
+    howHeading: "Cómo se publica",
+    howTitle: "Un canon, cinco proyecciones",
+    howNote: "Cada publicación nace una sola vez y se deriva a página, feed, manifiesto, índice y una plataforma externa.",
+    networkHeading: "Red Portaless",
+    trustTitle: "TrustScore de este sitio",
+    trustNote: "La señal de confianza del sitio, verificada por la red Portaless.",
+    repoTitle: "Repositorio de Portaless",
+    repoNote: "Todo el ecosistema es open source bajo licencia AGPL-3.0.",
+    aboutSummary: "How this list is ordered",
+    aboutSource: "Fuente:",
+    aboutSourceValue: "contenido local de este sitio (build).",
+    aboutAsOf: "asOf:",
+    aboutWindow: "Ventana:",
+    aboutWindowValue: (days: number) => `${days} días (solo aplica a top).`,
+    aboutNode: "El orden por atestaciones firmadas y observaciones de testigos (top, confidence) se calcula en un nodo con functions/, no en este hosting estático: por eso acá no se finge un ranking.",
+    aboutFilters: "Filtros normativos:",
+    dateLocale: "es-CL",
+  },
+} as const;
+
+const c = COPY[locale];
+const base = import.meta.env.BASE_URL;
+const pageTheme = ecosystemPageTheme();
+
+const pageModules = import.meta.glob<{ default: PageLayout }>("../content/pages/*.json", { eager: true });
+const pages = Object.values(pageModules)
+  .map((mod) => mod.default)
+  .filter((page) => !isDraft(page))
+  .sort((a, b) => a.slug.localeCompare(b.slug));
+
+const posts = (await getCollection("posts"))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+function flatten(nodes: ElementNode[]): ElementNode[] {
+  return nodes.flatMap((n) => [
+    n,
+    ...(n.children ? flatten(n.children) : []),
+    ...(n.columnSlots ? n.columnSlots.flatMap(flatten) : []),
+  ]);
+}
+function kindOf(page: PageLayout): "profile" | "shop" | "page" {
+  const flat = flatten(page.root);
+  if (flat.some((n) => n.type === "ProfileHeader")) return "profile";
+  if (flat.some((n) => n.type === "StoreBlock" || n.type === "ProductGrid" || n.type === "ProductCard")) return "shop";
+  return "page";
+}
+const demoPages = pages.filter((p) => kindOf(p) === "page");
+const demoShops = pages.filter((p) => kindOf(p) === "shop");
+const demoProfiles = pages.filter((p) => kindOf(p) === "profile");
+
+const REPO = "https://github.com/geroiloyola/portaless/blob/main";
+const DOC_HREF: Record<string, string> = {
+  "Install in 10 minutes": `${REPO}/docs/primos-pasos.md`,
+  "Self-hosting": `${REPO}/docs/self-hosting.md`,
+  "Protocol APW": `${REPO}/docs/protocol-apw/APW-SPEC-v1.3.md`,
+  Architecture: `${REPO}/docs/architecture/README.md`,
+};
+
+const trustHref = `${base}trust/default`;
+const repoHref = "https://github.com/geroiloyola/portaless";
+const buildAsOf = new Date().toISOString();
+const windowDays = 30;
+const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"] as const;
+const notesJson = JSON.stringify(c.status);
+---
+
+<BaseLayout title={c.title} description={c.description} pageTheme={pageTheme} lang={locale} alternatePath="/explore/">
+  <h1>{c.heading}</h1>
+  <p class="explore-intro">{c.intro}</p>
+
+  <div class="explore-order">
+    <span class="explore-order-label">{c.orderBy}</span>
+    <div class="explore-order-pills" role="radiogroup" aria-label={c.orderBy}>
+      {RANKING_FILTERS.map((f) => (
+        <label class="explore-order-pill">
+          <input type="radio" name="explore-order" value={f} checked={f === "new"} />
+          <span>{f}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+  <p class="explore-order-status" id="explore-order-status" role="status"></p>
+  <script type="application/json" id="explore-order-notes" set:html={notesJson} />
+
+  <nav class="explore-chips" aria-label="Categories">
+    <a href="#documentation" class="explore-chip">{c.chips.documentation}</a>
+    {demoPages.length > 0 && <a href="#demo-pages" class="explore-chip">{c.chips.demoPages}</a>}
+    {demoShops.length > 0 && <a href="#demo-shops" class="explore-chip">{c.chips.demoShops}</a>}
+    {demoProfiles.length > 0 && <a href="#demo-profiles" class="explore-chip">{c.chips.demoProfiles}</a>}
+    {posts.length > 0 && <a href="#publications" class="explore-chip">{c.chips.publications}</a>}
+  </nav>
+
+  <section id="documentation">
+    <h2>{c.docsHeading}</h2>
+    <div class="explore-grid">
+      {c.docs.map((doc) => (
+        <a class="explore-card" href={DOC_HREF[doc.title]} target="_blank" rel="noopener noreferrer">
+          <h3>{doc.title}</h3>
+          <p>{doc.note}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  {demoPages.length > 0 && (
+    <section id="demo-pages">
+      <h2>{c.chips.demoPages}</h2>
+      <div class="explore-grid">
+        {demoPages.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {demoShops.length > 0 && (
+    <section id="demo-shops">
+      <h2>{c.chips.demoShops}</h2>
+      <div class="explore-grid">
+        {demoShops.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {demoProfiles.length > 0 && (
+    <section id="demo-profiles">
+      <h2>{c.chips.demoProfiles}</h2>
+      <div class="explore-grid">
+        {demoProfiles.map((page) => (
+          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+            <h3>{page.title || page.slug}</h3>
+            {page.description && <p>{page.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {posts.length > 0 && (
+    <section id="publications">
+      <h2>{c.chips.publications}</h2>
+      <div class="explore-grid">
+        {posts.map((post) => (
+          <a class="explore-card" href={`${base}blog/${post.id}/`} data-order={post.data.pubDate.toISOString()}>
+            <h3>{post.data.title}</h3>
+            <p class="explore-card-meta">{post.data.pubDate.toLocaleDateString(c.dateLocale)}</p>
+            {post.data.description && <p>{post.data.description}</p>}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section id="how">
+    <h2>{c.howHeading}</h2>
+    <div class="explore-grid">
+      <a class="explore-card" href={`${base}proyecciones/`}>
+        <h3>{c.howTitle}</h3>
+        <p>{c.howNote}</p>
+      </a>
+    </div>
+  </section>
+
+  <section id="network">
+    <h2>{c.networkHeading}</h2>
+    <div class="explore-grid">
+      <a class="explore-card" href={trustHref}>
+        <h3>{c.trustTitle}</h3>
+        <p>{c.trustNote}</p>
+      </a>
+      <a class="explore-card" href={repoHref} target="_blank" rel="noopener noreferrer">
+        <h3>{c.repoTitle}</h3>
+        <p>{c.repoNote}</p>
+      </a>
+    </div>
+  </section>
+
+  <details class="explore-about" data-explore-source="local">
+    <summary>{c.aboutSummary}</summary>
+    <p>
+      <strong>{c.aboutSource}</strong> {c.aboutSourceValue}
+      <strong>{c.aboutAsOf}</strong> <time datetime={buildAsOf}>{buildAsOf}</time>.
+      <strong>{c.aboutWindow}</strong> {c.aboutWindowValue(windowDays)}
+      {c.aboutNode}
+      {c.aboutFilters} {RANKING_FILTERS.join(", ")}.
+    </p>
+  </details>
+</BaseLayout>
+
+<script>
+  const notesEl = document.getElementById("explore-order-notes");
+  const NOTES: Record<string, string> = notesEl ? JSON.parse(notesEl.textContent || "{}") : {};
+  const status = document.getElementById("explore-order-status");
+
+  function reorder(criterion: string): void {
+    const desc = criterion === "new" || criterion === "recents";
+    const asc = criterion === "old";
+    const apply = desc || asc;
+
+    document.querySelectorAll(".explore-grid").forEach((grid) => {
+      const cards = Array.from(grid.children) as HTMLElement[];
+      cards.forEach((card, i) => card.setAttribute("data-idx", String(i)));
+      cards.sort((a, b) => {
+        const da = a.getAttribute("data-order");
+        const db = b.getAttribute("data-order");
+        if (apply && da && db) return desc ? db.localeCompare(da) : da.localeCompare(db);
+        return Number(a.getAttribute("data-idx")) - Number(b.getAttribute("data-idx"));
+      });
+      cards.forEach((card) => grid.appendChild(card));
+    });
+
+    if (status) status.textContent = NOTES[criterion] ?? "";
+  }
+
+  document.querySelectorAll('input[name="explore-order"]').forEach((el) => {
+    el.addEventListener("change", () => reorder((el as HTMLInputElement).value));
+  });
+  reorder("new");
+</script>
+
+<style>
+  .explore-intro { color: var(--muted, #6e6653); max-width: 70ch; }
+  .explore-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
+  .explore-chip { padding: 6px 14px; border: 1px solid var(--panel-border, #e4e6c3); border-radius: 999px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+  .explore-chip:hover { border-color: var(--accent); }
+  section { margin-top: 40px; }
+  .explore-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+  .explore-card { display: block; border: 1px solid var(--panel-border, #e4e6c3); border-radius: var(--radius-card, 16px); padding: 18px 20px; background: var(--panel-bg, #fff); text-decoration: none; color: inherit; }
+  .explore-card:hover { border-color: var(--accent); }
+  .explore-card h3 { margin: 0 0 6px; font-size: 1rem; }
+  .explore-card p { margin: 0; color: var(--muted, #6e6653); font-size: 0.88rem; line-height: 1.5; }
+  .explore-card-meta { font-size: 0.78rem !important; margin-bottom: 6px !important; }
+  .explore-about { margin-top: 48px; color: var(--muted, #6e6653); font-size: 0.85rem; }
+  .explore-about summary { cursor: pointer; font-weight: 600; }
+  .explore-about p { max-width: 80ch; line-height: 1.6; }
+
+  .explore-order { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 4px; }
+  .explore-order-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #6e6653); font-weight: 700; }
+  .explore-order-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--panel-border, #e4e6c3); border-radius: 999px; background: var(--panel-bg, #fff); }
+  .explore-order-pill { position: relative; cursor: pointer; }
+  .explore-order-pill input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .explore-order-pill span { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--muted, #6e6653); text-transform: capitalize; transition: background 0.15s ease, color 0.15s ease; }
+  .explore-order-pill span:hover { color: var(--text, #261c15); }
+  .explore-order-pill input:checked + span { background: var(--accent, #c5d86d); color: #261c15; }
+  .explore-order-pill input:focus-visible + span { outline: 2px solid var(--accent-text, #5a6b24); outline-offset: 2px; }
+  .explore-order-status { font-size: 0.82rem; color: var(--muted, #6e6653); margin: 6px 0 0; max-width: 80ch; }
+</style>

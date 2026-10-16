@@ -75,6 +75,7 @@ try {
   await shot(page, `${base}/paginas/link-in-bio`, "public-link-in-bio.png", { fullPage: true });
   await shot(page, `${base}/blog/`, "public-blog.png", { fullPage: true });
   await shot(page, `${base}/explore/`, "public-explore.png", { fullPage: true });
+  await shot(page, `${base}/es/explore/`, "public-explore-es.png", { fullPage: true });
   await shot(page, `${base}/proyecciones/`, "public-proyecciones.png", { fullPage: true });
 
   console.log("[captura] dashboard / editor / trust...");
