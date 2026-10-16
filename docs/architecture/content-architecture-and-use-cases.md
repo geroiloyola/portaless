@@ -98,3 +98,8 @@ Portaless adopta la filosofía **POSSE**: *Publish on Own Site, Syndicate Everyw
 3. **Autoría e Imágenes Inmutables (Portaless Cloud Images & IPFS)**:
    - **Firmas Ed25519 en PNG**: `packages/cloud-images` implementa la incrustación de firmas criptográficas directas dentro del archivo de imagen (similar al estándar C2PA pero 100% soberano y descentralizado).
    - **Preservación con IPFS**: El direccionamiento por contenido (CID) garantiza que si un solo píxel de la imagen se altera, el identificador cambia, blindando la autoría y la autenticidad del material gráfico compartido.
+
+## 4.1 El principio hecho visible: un canon, cinco proyecciones (fase 13, §13.4)
+
+`docs/VISION.md` enuncia el principio ("One canon, many projections") y `/proyecciones/` lo hace visible en el demo: toma **una** publicación canónica y muestra sus cinco salidas — página, feed, manifiesto, entrada de índice y post en otra plataforma — y la página no las afirma: las **deriva** con los mismos generadores que usan `/rss.xml`, `/llms.txt` y `/sitemap.xml` (`src/lib/projections.ts`) y compara si cada una sigue llevando el título y la URL canónica del canon. La regla "gana el canon" es una función (`containsCanon()`): una proyección que no lleve este canon no coincide y se reconstruye desde él. Lo que solo existe en un nodo (el manifiesto APW firmado por request y el espejo POSSE) se marca `requiere nodo` en vez de pintarse en verde — la misma honestidad que el ranking degradado de `/explore/`. La demo está enlazada desde Explore y desde cada post, que es donde vive el canon.
+

@@ -48,6 +48,7 @@ export const GET: APIRoute = async ({ site }) => {
     { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
     { path: "/blog/", lastmod: latest, changefreq: "weekly", priority: 0.6 },
     { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
+    { path: "/proyecciones/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
     ...posts.map((post) => ({
       path: `/blog/${post.id}/`,
       lastmod: post.data.pubDate,
