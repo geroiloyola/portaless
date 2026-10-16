@@ -62,9 +62,14 @@ const entry: PluginEntry = async (payload, { capabilities, fetchAllowed, console
 
 This is the initial **0.1.0** shape. The capability surface — quotas for
 `storage:*`, error codes for the real backends, and the HTTP installer — is
-still being wired in the core (Phase 11.2). Treat the exact set of capability
-fields as **provisional until that phase closes**; the catalog and manifest
-rules are stable.
+still being wired in the core (Phase 11.2 and Phase 14). **`storage:read`/
+`storage:write` closed in Phase 14 (§14.2)**: a per-plugin store with namespace
+and quotas (`STORAGE_INVALID_KEY` / `STORAGE_VALUE_TOO_LARGE` /
+`STORAGE_TOO_MANY_KEYS` / `STORAGE_QUOTA_EXCEEDED`) served through the same
+`CapabilityHostBridge`. `content:read`/`content:write` were already real; the
+other non-network capabilities still answer `501`. Treat the exact set of
+capability fields as **provisional until those phases close**; the catalog and
+manifest rules are stable.
 
 ## License
 

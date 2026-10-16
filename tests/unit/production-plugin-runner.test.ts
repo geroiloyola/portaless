@@ -11,6 +11,7 @@ import {
 } from "../../packages/plugin-sandbox/src/runtime/production-plugin-runner";
 import { AdapterRegistry } from "../../packages/plugin-sandbox/src/adapters/adapter-registry";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
+import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
 import { onRequestPost as bridgeOnRequestPost } from "../../functions/api/internal/capability-bridge.js";
 import type {
   PluginManifest,
@@ -219,6 +220,41 @@ describe("runPluginInProduction", () => {
     );
 
     expect(captured[0].bridgeUrl).toBe("https://env.test/api/internal/capability-bridge");
+  });
+
+  it("§14.2: pasa al adaptador un hostBridge real de capacidades (storage con namespace y cuotas)", async () => {
+    __resetPluginStorageStoreForTests();
+    const captured: SandboxExecutionInput[] = [];
+    const storageManifest: PluginManifest = {
+      ...manifest,
+      requestedCapabilities: [
+        { id: "storage:write", reason: "guarda estado del plugin" },
+        { id: "storage:read", reason: "lee estado del plugin" },
+      ],
+    };
+    const permissionStore = await permissionStoreWith([
+      { capabilityId: "storage:write", granted: true },
+      { capabilityId: "storage:read", granted: true },
+    ]);
+
+    await runPluginInProduction(
+      env,
+      { manifest: storageManifest, code: "//", payload: null },
+      { adapterRegistry: registryWith(createRecordingAdapter(captured)), permissionStore }
+    );
+
+    const bridge = captured[0].hostBridge!;
+    expect(typeof bridge.storageRead).toBe("function");
+    expect(typeof bridge.storageWrite).toBe("function");
+
+    await bridge.storageWrite!(storageManifest.name, { key: "estado", value: { n: 1 } });
+    expect(await bridge.storageRead!(storageManifest.name, { key: "estado" })).toMatchObject({
+      key: "estado",
+      value: { n: 1 },
+      found: true,
+    });
+    // Otro plugin no ve la clave (namespace por plugin).
+    expect(await bridge.storageRead!("otro-plugin", { key: "estado" })).toMatchObject({ found: false });
   });
 
   it("manifiesto invalido falla sin llegar al adaptador", async () => {

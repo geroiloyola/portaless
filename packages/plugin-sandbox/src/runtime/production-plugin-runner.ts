@@ -33,11 +33,13 @@ import { AdapterRegistry } from "../adapters/adapter-registry";
 import { CloudflareWorkersForPlatformsAdapter } from "../adapters/cloudflare-workers-for-platforms";
 import { DenoDeployAdapter } from "../adapters/deno-deploy";
 import { NodeIsolatedVmAdapter } from "../adapters/node-isolated-vm";
+import { createCapabilityHostBridge } from "../capabilities/capability-backends";
 import type {
   PluginManifest,
   SandboxAdapter,
   SandboxExecutionResult,
   GrantedCapabilities,
+  CapabilityHostBridge,
 } from "../types";
 import { createPermissionStore } from "../../../permissions/src/store-factory";
 import type { PermissionStore } from "../../../permissions/src/permission-store";
@@ -79,6 +81,12 @@ export interface RunPluginInProductionDeps {
   adapterRegistry?: AdapterRegistry;
   /** Solo para tests o wiring custom -- si se omite se crea desde env (D1/SQLite/memoria). */
   permissionStore?: PermissionStore;
+  /**
+   * Solo para tests o wiring custom -- si se omite se construye desde env con
+   * `createCapabilityHostBridge()`. Es lo que le da al adaptador self-hosted
+   * los backends reales (content:*, storage:*) que hasta §14.2 no recibia.
+   */
+  hostBridge?: CapabilityHostBridge;
 }
 
 /**
@@ -184,7 +192,13 @@ export async function runPluginInProduction(
   const adapterRegistry = deps.adapterRegistry ?? (await createProductionAdapterRegistry(env));
   const runtime = await createSandboxRuntime(env, adapterRegistry, resolver);
 
+  // §14.2: los backends reales de capacidades no-red, los MISMOS que sirve el
+  // capability bridge HTTP. Se pasan al adaptador self-hosted (isolated-vm) por
+  // hostBridge; los adaptadores edge los alcanzan por HTTP via bridgeUrl.
+  const hostBridge = deps.hostBridge ?? createCapabilityHostBridge(env);
+
   return runtime.runPlugin(input.manifest, input.code, input.payload, {
     bridgeUrl: input.bridgeUrl ?? env.PORTALESS_CAPABILITY_BRIDGE_URL,
+    hostBridge,
   });
 }

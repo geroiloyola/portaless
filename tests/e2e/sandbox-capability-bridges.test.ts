@@ -20,6 +20,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
 import type { CapabilityHostBridge } from "../../packages/plugin-sandbox/src/types";
+import { createCapabilityHostBridge } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -196,5 +198,45 @@ describe("NodeIsolatedVmAdapter -- puentes de capacidades v0.0.9", () => {
     expect(parsed.commerceCheckout.checkoutUrl).toContain("checkout");
     expect(parsed.mediaWrite.path).toBe("/uploads/x.png");
     expect(parsed.siteAdmin.applied).toBe(true);
+  });
+
+  it("§14.2: storage real (createCapabilityHostBridge) escribe y lee a traves del isolate", async (t) => {
+    const adapter = await getAdapter(t);
+    if (!adapter) return;
+
+    __resetPluginStorageStoreForTests();
+    const hostBridge = createCapabilityHostBridge({});
+
+    const manifest = {
+      name: "storage-e2e-plugin",
+      version: "0.0.1",
+      entry: "index.js",
+      runtime: "javascript" as const,
+      requestedCapabilities: [
+        { id: "storage:write", reason: "guarda estado" },
+        { id: "storage:read", reason: "lee estado" },
+      ],
+    };
+    const code = `
+      const written = await capabilities.storageWrite({ key: "estado", value: { n: 7 } });
+      const read = await capabilities.storageRead({ key: "estado" });
+      const missing = await capabilities.storageRead({ key: "no-existe" });
+      JSON.stringify({ written, read, missing });
+    `;
+
+    const result = await adapter.execute({
+      manifest,
+      granted: new Set(["storage:write", "storage:read"]) as never,
+      code,
+      payload: {},
+      hostBridge,
+    });
+
+    expect(result.success, `deberia tener exito. Error: ${result.error}`).toBe(true);
+    expect(result.deniedCapabilityAttempts.length).toBe(0);
+    const parsed = JSON.parse(result.output as string);
+    expect(parsed.read).toMatchObject({ key: "estado", value: { n: 7 }, found: true });
+    expect(parsed.written.sizeBytes).toBeGreaterThan(0);
+    expect(parsed.missing).toMatchObject({ key: "no-existe", found: false });
   });
 });

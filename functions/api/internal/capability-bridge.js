@@ -40,8 +40,15 @@
 // pueda mentir su propia identidad).
 
 import { createCapabilityTokenStore } from "../../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory";
-import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
+import {
+  createCapabilityHostBridge,
+  dispatchCapability,
+} from "../../../packages/plugin-sandbox/src/capabilities/capability-backends";
 
+// Frontera de seguridad: por el bridge solo pueden pedirse las capacidades
+// NO-red de plugins (network:fetch lo maneja cada adaptador, y billing/trust
+// no son capacidades de plugins). El backend real de cada una vive en
+// capability-backends.ts; aca se valida la FORMA antes de enrutar.
 const SUPPORTED_CAPABILITIES = [
   "content:read",
   "content:write",
@@ -117,59 +124,25 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const result = await dispatchCapability(capability, args, env);
+    const bridge = createCapabilityHostBridge(env);
+    const result = await dispatchCapability(capability, args, bridge, validation.pluginName);
     return new Response(JSON.stringify({ result }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    const status = err && err.code === "NOT_CONFIGURED" ? 501 : 500;
-    return new Response(JSON.stringify({ error: err.message || "Error interno." }), {
+    const code = err && err.code;
+    const status =
+      code === "NOT_CONFIGURED"
+        ? 501
+        : code === "STORAGE_INVALID_KEY"
+          ? 400
+          : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
+            ? 413
+            : 500;
+    return new Response(JSON.stringify({ error: err.message || "Error interno.", ...(code ? { code } : {}) }), {
       status,
       headers: { "Content-Type": "application/json" },
     });
   }
-}
-
-// Enruta cada capacidad al handler real disponible en este entorno.
-// Mismo principio de "handler no configurado" que packages/plugin-sandbox/
-// src/adapters/node-isolated-vm.ts (NOT_CONFIGURED): si la capacidad esta
-// concedida pero no hay backend real conectado todavia, responde 501
-// explicito en vez de fingir exito o tratarlo como denegado.
-//
-// content:read/content:write son las 2 unicas capacidades con backend real
-// disponible hoy en este repo (PageStore, ya conectado desde v0.0.8/v0.0.9.4).
-// Las 9 restantes (media, email, commerce, storage, agent:identify,
-// site:admin) no tienen todavia un backend real -- mismo estado que
-// documenta ROADMAP.md para NodeIsolatedVmAdapter.
-async function dispatchCapability(capability, args, env) {
-  switch (capability) {
-    case "content:read": {
-      const pageStore = await createPageStore(env);
-      if (!args || typeof args.slug !== "string") {
-        throw notConfigured("content:read requiere { slug: string }");
-      }
-      const layout = await pageStore.load(args.slug);
-      if (!layout) throw notConfigured(`Pagina '${args.slug}' no encontrada.`);
-      return layout;
-    }
-    case "content:write": {
-      const pageStore = await createPageStore(env);
-      if (!args || typeof args.slug !== "string") {
-        throw notConfigured("content:write requiere un PageLayout completo con slug.");
-      }
-      await pageStore.save(args);
-      return { success: true };
-    }
-    default:
-      throw notConfigured(
-        `Capacidad '${capability}' concedida, pero sin backend real conectado en este endpoint todavia.`
-      );
-  }
-}
-
-function notConfigured(message) {
-  const err = new Error(message);
-  err.code = "NOT_CONFIGURED";
-  return err;
 }

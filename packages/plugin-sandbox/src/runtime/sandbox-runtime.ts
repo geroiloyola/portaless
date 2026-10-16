@@ -20,6 +20,7 @@ import type {
   PluginManifest,
   GrantedCapabilities,
   SandboxExecutionResult,
+  CapabilityHostBridge,
 } from "../types";
 import { validateManifest } from "../manifest/manifest-schema";
 import { AdapterRegistry } from "../adapters/adapter-registry";
@@ -47,11 +48,17 @@ export class SandboxRuntime {
   // remoto vuelva al capability bridge HTTP de ESTE origen (por-request, en
   // vez del global PORTALESS_CAPABILITY_BRIDGE_URL). Los adaptadores
   // self-hosted lo ignoran.
+  //
+  // Fase 14 (§14.2): options.hostBridge se propaga igual, como
+  // SandboxExecutionInput.hostBridge. Es lo que le da al adaptador self-hosted
+  // (node-isolated-vm) los MISMOS backends reales que un adaptador edge obtiene
+  // por HTTP -- antes el caller de produccion no lo pasaba y toda capacidad
+  // no-red respondia NOT_CONFIGURED en self-host.
   async runPlugin(
     manifest: PluginManifest,
     code: string,
     payload: unknown,
-    options?: { bridgeUrl?: string }
+    options?: { bridgeUrl?: string; hostBridge?: CapabilityHostBridge }
   ): Promise<SandboxExecutionResult> {
     const validation = validateManifest(manifest);
     if (!validation.valid) {
@@ -85,6 +92,6 @@ export class SandboxRuntime {
         }
       : undefined;
 
-    return adapter.execute({ manifest, granted, code, payload, issueCapabilityToken, bridgeUrl: options?.bridgeUrl });
+    return adapter.execute({ manifest, granted, code, payload, hostBridge: options?.hostBridge, issueCapabilityToken, bridgeUrl: options?.bridgeUrl });
   }
 }

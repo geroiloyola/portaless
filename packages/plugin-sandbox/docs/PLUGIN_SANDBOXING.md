@@ -124,6 +124,39 @@ tests: denegacion sin capacidad concedida, `NOT_CONFIGURED` sin `hostBridge`
 configurado, ida y vuelta real con datos anidados, y ambas capacidades
 concedidas simultaneamente sin interferencia entre si).
 
+## Backends reales de capacidades (Fase 14, §14.2)
+
+Tener el *puente* (la capacidad cruza al host) no es tener el *backend* (hay un
+handler real detras). La Fase 14 conecta los backends **uno a la vez**. Hoy:
+
+| Capacidad | Backend real |
+| --- | --- |
+| `content:read` / `content:write` | `PageStore` (D1/SQLite) |
+| `storage:read` / `storage:write` | `PluginStorageStore` (`plugin_storage`): namespace por plugin + cuotas |
+| `media:*`, `email:send`, `commerce:*`, `agent:identify`, `site:admin` | sin backend -> `501 NOT_CONFIGURED` |
+
+La fuente unica es `packages/plugin-sandbox/src/capabilities/capability-backends.ts`
+(`createCapabilityHostBridge()`, `CAPABILITY_BACKENDS`, `dispatchCapability()`),
+consumida por el bridge HTTP (`functions/api/internal/capability-bridge.js`,
+adaptadores edge) **y** por `runPluginInProduction()`, que la pasa como
+`hostBridge` al adaptador self-hosted. Antes cada superficie tenia su propio
+dispatch y el caller de produccion no pasaba `hostBridge`, asi que en self-host
+`content:read` tambien respondia `NOT_CONFIGURED`; ahora es una sola lista y
+aplica igual en edge y en self-host.
+
+**`storage:*` (namespace + cuotas).** La clave primaria es `(plugin_id, key)` y
+el `plugin_id` lo fija el SERVIDOR (viene del token de ejecucion, nunca del body
+del plugin), asi que un plugin no puede leer ni pisar el espacio de otro. Cuotas
+por plugin, aplicadas al escribir con un codigo de error explicito:
+`MAX_STORAGE_VALUE_BYTES` (64 KiB), `MAX_STORAGE_KEYS_PER_PLUGIN` (256) y
+`MAX_STORAGE_BYTES_PER_PLUGIN` (1 MiB). El bridge HTTP traduce
+`STORAGE_INVALID_KEY` a `400` y los topes a `413`, devolviendo el `code`.
+
+Para conectar la proxima capacidad alcanza con: implementar su store/handler,
+agregar su entrada a `CAPABILITY_BACKENDS`, y sumar el handler al
+`createCapabilityHostBridge()`. El contrato del adaptador (`hostBridge`) no
+cambia.
+
 ## Probarlo
 
 ```
