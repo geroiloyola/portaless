@@ -25,6 +25,35 @@ justificacion.
 3. El archivo `functions/_middleware.js` ya intercepta cada request y aplica
    estas politicas automaticamente en Cloudflare Pages.
 
+## Precedencia: panel > archivo > por defecto
+
+Desde la fase 12 de [`ROADMAP.md`](../../../ROADMAP.md) la politica tambien se
+puede editar **desde el panel**, sin editar un archivo ni redesplegar:
+
+| Capa | Que es | Donde se cambia |
+|---|---|---|
+| `store` | Override del dueno | `/admin/agents` -> Guardar politica |
+| `asset` | El archivo del sitio | `public/.well-known/portaless-content-policy.json` |
+| `default` | `defaultContentPolicy()` | -- |
+
+Precedencia: **store > asset > default**. Cada capa cae a la siguiente si no
+existe o es invalida; nunca se aplica una politica a medias. El panel muestra
+de que capa sale el valor efectivo, porque el problema que esta fase resuelve es
+justo no poder confirmar si el cambio surtio efecto.
+
+Detalles que conviene saber antes de cambiar una regla:
+
+- **Guardar un precio no activa el cobro.** `ai_input: "charge"` sin un
+  proveedor de pago verificado en `/admin/settlement` hace que el agente reciba
+  `402` con `settlement: "not_available"`. El panel lo dice en la misma pagina.
+- **El store se lee en cada peticion de agente, sin cache.** Un `block` guardado
+  desde el panel tiene que aplicar en la peticion siguiente; un retardo de
+  enforcement seria un fallo de privacidad, no una optimizacion.
+- **El override se puede borrar** con "Restaurar el valor del archivo" (DELETE
+  `/admin/api/agents`), que devuelve el sitio al asset o al default.
+- Esto **no** cambia quien puede reportar sobre el sitio en el Site Trust Score:
+  eso lo decide la allowlist de `/admin/authorized-agents`.
+
 ## Importante: estado de la verificacion criptografica en este MVP
 
 `packages/trust-layer/src/webbotauth/verify.ts` **no implementa todavia** la

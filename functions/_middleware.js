@@ -46,6 +46,7 @@ import {
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
+import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
@@ -124,7 +125,11 @@ export async function onRequest(context) {
   const result = await verifyWebBotAuthRequest(request, { env });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   const origin = new URL(request.url).origin;
-  const policy = await loadContentPolicy(origin, env.ASSETS);
+  // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
+  // override que el dueno escribio desde /admin/agents; si no hay override se
+  // lee el asset de siempre.
+  const policyStore = await createAgentAccessPolicyStore(env);
+  const policy = await loadContentPolicy(origin, env.ASSETS, policyStore);
   const rule = policy.policies.ai_input;
 
   if (!result.verified) {

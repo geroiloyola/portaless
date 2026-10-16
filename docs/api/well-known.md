@@ -136,6 +136,8 @@ The site's public traceability ledger (what its Trust Layer recorded about agent
 
 The site's content policy (access/price rules per content kind), served as a static file from `public/.well-known/` when present. Used by crawlers to discover pay-per-crawl terms.
 
+Since phase 12 of [`ROADMAP.md`](../../ROADMAP.md) the operator can override this file from the panel (`/admin/agents`), and the effective policy follows the precedence **store > asset > default**. The file stays the published, cacheable statement of the site's terms; the store is the layer that makes it operable without a redeploy. The panel shows which layer applies, because "I edited the file and nothing changed" was the failure this phase removes.
+
 ---
 
 ## `GET /trust/:siteId`

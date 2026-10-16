@@ -51,6 +51,7 @@ const SOURCES = [
   { path: "schema-additions/community-attestations.sql", selfBanner: true },
   { path: "schema-additions/activity-events.sql", selfBanner: true },
   { path: "schema-additions/plugin-artifacts.sql", selfBanner: true },
+  { path: "schema-additions/agent-access-policy.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";

@@ -1,0 +1,498 @@
+---
+// ROADMAP.md fase 12 -- "una pagina que diga, en espanol claro, quien puede
+// leer el sitio y en que terminos" (§12.2).
+//
+// Que resuelve: hasta ahora la politica de acceso de agentes era un archivo
+// (/.well-known/portaless-content-policy.json) que el dueno editaba a mano y
+// desplegaba. No habia ningun lugar en el panel donde leer "quien puede leer
+// mi sitio y en que terminos", ni forma de confirmar que el cambio surtio
+// efecto. Esta pagina responde las dos cosas: primero el valor efectivo
+// escrito en espanol llano, despues los controles para cambiarlo.
+//
+// Patron identico a src/pages/admin/authorized-agents.astro: fetch
+// client-side, estados de carga/error como <div> conmutados por display,
+// redirect a /admin/login?error=1 en 401. Protegida por
+// functions/admin/_middleware.js.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Acceso de agentes — Portaless Admin">
+  <div class="ag-page-header">
+    <h1 class="ag-page-title">Acceso de agentes</h1>
+    <p class="ag-page-subtitle">
+      Quien puede leer este sitio, y en que terminos. La misma politica que
+      responde el Trust Layer cuando llega una peticion firmada de un agente, y
+      que se publica en <code class="ag-code">/.well-known/portaless-content-policy.json</code>.
+    </p>
+  </div>
+
+  <div id="ag-loading" class="ag-loading">Cargando politica de acceso…</div>
+  <div id="ag-load-error" class="ag-load-error" style="display:none;"></div>
+
+  <div id="ag-root" style="display:none;">
+    <section class="ag-origin" id="ag-origin-box">
+      <h2 class="ag-section-title">De donde sale este valor</h2>
+      <p class="ag-origin-text" id="ag-origin-text"></p>
+    </section>
+
+    <section class="ag-plain">
+      <h2 class="ag-section-title">En espanol claro</h2>
+      <p class="ag-plain-note">
+        Esto es lo que un agente recibe de verdad hoy. No es lo que la politica
+        "deberia" permitir: es lo que el sitio responde.
+      </p>
+      <ul class="ag-terms" id="ag-terms"></ul>
+    </section>
+
+    <section class="ag-form" id="ag-form-section">
+      <h2 class="ag-section-title">Cambiar la politica</h2>
+      <form id="ag-form" class="ag-form-inner">
+        <div class="ag-rule" data-rule="search">
+          <div class="ag-rule-head">
+            <span class="ag-rule-name">Busqueda</span>
+            <span class="ag-rule-current" data-current="search"></span>
+          </div>
+          <p class="ag-rule-help">Si tu pagina aparece o no en un buscador.</p>
+          <select class="ag-select" data-select="search">
+            <option value="allow">Permitir</option>
+            <option value="charge">Cobrar</option>
+            <option value="block">Bloquear</option>
+          </select>
+        </div>
+
+        <div class="ag-rule" data-rule="ai_input">
+          <div class="ag-rule-head">
+            <span class="ag-rule-name">Lectura por IA</span>
+            <span class="ag-rule-current" data-current="ai_input"></span>
+          </div>
+          <p class="ag-rule-help">
+            Si un asistente puede leer tus paginas para responder o resumir.
+            "Cobrar" exige ademas un medio de pago verificado (ver abajo).
+          </p>
+          <select class="ag-select" data-select="ai_input">
+            <option value="allow">Permitir</option>
+            <option value="charge">Cobrar</option>
+            <option value="block">Bloquear</option>
+          </select>
+          <label class="ag-price">
+            <span>Precio por peticion (USD)</span>
+            <input type="number" class="ag-price-input" data-price="ai_input" step="0.0001" min="0" placeholder="0.002" />
+          </label>
+        </div>
+
+        <div class="ag-rule" data-rule="ai_train">
+          <div class="ag-rule-head">
+            <span class="ag-rule-name">Entrenamiento de modelos</span>
+            <span class="ag-rule-current" data-current="ai_train"></span>
+          </div>
+          <p class="ag-rule-help">
+            Si tu contenido puede usarse para entrenar un modelo. Es la decision
+            que un visitante no ve, asi que el valor por defecto del proyecto
+            es bloquearla.
+          </p>
+          <select class="ag-select" data-select="ai_train">
+            <option value="allow">Permitir</option>
+            <option value="charge">Cobrar</option>
+            <option value="block">Bloquear</option>
+          </select>
+        </div>
+
+        <div class="ag-actions">
+          <button type="submit" class="ag-submit" id="ag-save">Guardar politica</button>
+          <button type="button" class="ag-restore" id="ag-restore">Restaurar el valor del archivo</button>
+        </div>
+        <p id="ag-form-error" class="ag-form-error" style="display:none;"></p>
+        <p id="ag-form-ok" class="ag-form-ok" style="display:none;"></p>
+      </form>
+    </section>
+
+    <section class="ag-caveats" id="ag-caveats"></section>
+  </div>
+</BaseLayout>
+
+<script>
+  interface PolicyRuleView {
+    access: string;
+    price_usd?: number;
+    unit?: string;
+  }
+
+  interface AgentPolicyResponse {
+    policy: {
+      site: string;
+      policies: { search: PolicyRuleView; ai_input: PolicyRuleView; ai_train: PolicyRuleView };
+    };
+    source: "store" | "asset" | "default";
+    updatedAt: string | null;
+    updatedBy: string | null;
+    writable: boolean;
+    policyPath: string;
+  }
+
+  const RULE_LABELS: Record<string, string> = {
+    search: "Busqueda",
+    ai_input: "Lectura por IA",
+    ai_train: "Entrenamiento de modelos",
+  };
+
+  const ACCESS_LABELS: Record<string, string> = {
+    allow: "Permitido",
+    charge: "Con costo",
+    block: "Bloqueado",
+  };
+
+  const SOURCE_LABELS: Record<string, string> = {
+    store: "Guardado en este panel",
+    asset: "Del archivo del sitio",
+    default: "Del valor por defecto de Portaless",
+  };
+
+  const loadingEl = document.getElementById("ag-loading")!;
+  const errorEl = document.getElementById("ag-load-error")!;
+  const rootEl = document.getElementById("ag-root")!;
+  const termsEl = document.getElementById("ag-terms")!;
+  const originTextEl = document.getElementById("ag-origin-text")!;
+  const formSection = document.getElementById("ag-form-section")!;
+  const form = document.getElementById("ag-form") as HTMLFormElement;
+  const formError = document.getElementById("ag-form-error")!;
+  const formOk = document.getElementById("ag-form-ok")!;
+  const saveBtn = document.getElementById("ag-save") as HTMLButtonElement;
+  const restoreBtn = document.getElementById("ag-restore") as HTMLButtonElement;
+  const caveatsEl = document.getElementById("ag-caveats")!;
+
+  function escapeHtml(value: string): string {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+
+  function formatPrice(rule: PolicyRuleView): string | null {
+    if (rule.access !== "charge") return null;
+    const price = rule.price_usd;
+    if (typeof price !== "number" || !isFinite(price)) return null;
+    const unit = rule.unit === "1k_tokens_estimated" ? "por 1k tokens estimados" : "por peticion";
+    return `${price < 0.01 ? price.toFixed(4) : price.toFixed(2)} USD ${unit}`;
+  }
+
+  // El texto en espanol llano. IMPORTANTE: describe lo que el sitio RESPONDE,
+  // no lo que la politica permitiria en teoria. Por eso "con costo" dice que
+  // hoy responde 402 sin medio de pago: un dueno que solo lee "cobrar" puede
+  // creer que esta cobrando cuando en realidad esta bloqueando.
+  function plainTerm(rule: PolicyRuleView): string {
+    const price = formatPrice(rule);
+    switch (rule.access) {
+      case "allow":
+        return "Se le permite, sin pedir nada a cambio.";
+      case "charge":
+        return price
+          ? `Se le permite pagando ${price}. Ojo: si este sitio no tiene un medio de pago verificado, el agente recibe "pago requerido" y no puede leer.`
+          : 'La politica dice cobrar pero no hay precio: el sitio responde "pago requerido" y el agente no puede leer.';
+      case "block":
+        return "Se le responde que no, con un error 403. El contenido no llega al agente.";
+      default:
+        return "Valor desconocido: el sitio aplica su politica por defecto.";
+    }
+  }
+
+  function renderTerms(policies: Record<string, PolicyRuleView>): void {
+    termsEl.innerHTML = "";
+    for (const key of ["search", "ai_input", "ai_train"]) {
+      const rule = policies[key];
+      if (!rule) continue;
+      const li = document.createElement("li");
+      li.className = "ag-term";
+      li.innerHTML = `
+        <span class="ag-term-name">${escapeHtml(RULE_LABELS[key] ?? key)}</span>
+        <span class="ag-term-access ag-term-access-${escapeHtml(rule.access)}">${escapeHtml(ACCESS_LABELS[rule.access] ?? rule.access)}</span>
+        <span class="ag-term-text">${escapeHtml(plainTerm(rule))}</span>
+      `;
+      termsEl.appendChild(li);
+    }
+  }
+
+  function renderOrigin(data: AgentPolicyResponse): void {
+    const label = SOURCE_LABELS[data.source] ?? data.source;
+    let text = `Esta politica viene de ${label.toLowerCase()}.`;
+
+    if (data.source === "store") {
+      const who = data.updatedBy ?? "alguien";
+      const when = data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "";
+      text += ` La guardo ${who}${when ? ` el ${when}` : ""}, y aplica a todas las peticiones desde entonces.`;
+    } else if (data.source === "asset") {
+      text += ` Para cambiarla desde el panel, guardala abajo: lo que guardes aqui manda sobre el archivo.`;
+    } else {
+      text += ` Este sitio todavia no publico un archivo de politica, asi que aplica la de Portaless. Guardala abajo para cambiarlo.`;
+    }
+
+    originTextEl.textContent = text;
+  }
+
+  function renderCaveats(policies: Record<string, PolicyRuleView>): void {
+    const notes: string[] = [];
+
+    const aiInput = policies.ai_input;
+    if (aiInput?.access === "charge") {
+      notes.push(
+        "Con \"cobrar\" activo, un agente recibe un 402 con un precio. Si este sitio no tiene un proveedor de pago activado en /admin/settlement, el cobro no se puede completar: el agente recibe \"pago requerido, no disponible\" y se va. Guardar un precio aqui NO activa el pago."
+      );
+    }
+    if (aiInput?.access === "block") {
+      notes.push(
+        "Con \"bloquear\" activo ningun agente lee este sitio, ni siquiera los que firmen correctamente su identidad. Los buscadores y la lectura humana no se ven afectados."
+      );
+    }
+    notes.push(
+      "Estas reglas no cambian quien puede reportar sobre tu sitio en el Site Trust Score: eso lo decide la allowlist de /admin/authorized-agents."
+    );
+
+    caveatsEl.innerHTML = "";
+    for (const note of notes) {
+      const li = document.createElement("li");
+      li.textContent = note;
+      caveatsEl.appendChild(li);
+    }
+  }
+
+  function fillForm(policies: Record<string, PolicyRuleView>, writable: boolean): void {
+    for (const key of ["search", "ai_input", "ai_train"]) {
+      const rule = policies[key];
+      if (!rule) continue;
+      const select = form.querySelector(`[data-select="${key}"]`) as HTMLSelectElement | null;
+      const current = form.querySelector(`[data-current="${key}"]`) as HTMLElement | null;
+      const price = form.querySelector(`[data-price="${key}"]`) as HTMLInputElement | null;
+      if (select) select.value = rule.access;
+      if (current) current.textContent = ACCESS_LABELS[rule.access] ?? rule.access;
+      if (price && key === "ai_input") {
+        price.value = typeof rule.price_usd === "number" ? String(rule.price_usd) : "";
+        price.disabled = rule.access !== "charge";
+      }
+    }
+
+    for (const el of Array.from(form.querySelectorAll<HTMLSelectElement | HTMLInputElement>("select, input"))) {
+      el.disabled = !writable;
+    }
+    saveBtn.disabled = !writable;
+    restoreBtn.disabled = !writable;
+
+    if (!writable) {
+      formSection.setAttribute("data-readonly", "true");
+      const note = document.createElement("p");
+      note.className = "ag-readonly-note";
+      note.textContent = "Tu rol puede ver esta politica pero no cambiarla. Se requiere rol admin.";
+      formSection.appendChild(note);
+    }
+  }
+
+  function showError(message: string): void {
+    formError.style.display = "";
+    formError.textContent = message;
+    formOk.style.display = "none";
+  }
+
+  async function parseErrorMessage(res: Response): Promise<string> {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+      else if (body?.error) message = body.error;
+    } catch {
+      // Respuesta sin body JSON.
+    }
+    return message;
+  }
+
+  let currentData: AgentPolicyResponse | null = null;
+
+  async function load(): Promise<void> {
+    const res = await fetch("/admin/api/agents");
+    if (res.status === 401) {
+      window.location.href = "/admin/login?error=1";
+      return;
+    }
+    if (!res.ok) throw new Error(await parseErrorMessage(res));
+
+    const data: AgentPolicyResponse = await res.json();
+    currentData = data;
+    renderTerms(data.policy.policies);
+    renderOrigin(data);
+    renderCaveats(data.policy.policies);
+    fillForm(data.policy.policies, data.writable);
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    formError.style.display = "none";
+    formOk.style.display = "none";
+
+    const policies: Record<string, PolicyRuleView> = {};
+    for (const key of ["search", "ai_input", "ai_train"]) {
+      const select = form.querySelector(`[data-select="${key}"]`) as HTMLSelectElement | null;
+      if (!select) continue;
+      const access = select.value;
+      const rule: PolicyRuleView = { access };
+      if (key === "ai_input" && access === "charge") {
+        const priceInput = form.querySelector('[data-price="ai_input"]') as HTMLInputElement | null;
+        const price = priceInput ? Number(priceInput.value) : NaN;
+        if (!isFinite(price) || price <= 0) {
+          showError("Para cobrar hay que poner un precio mayor que 0.");
+          return;
+        }
+        rule.price_usd = price;
+        rule.unit = "request";
+      }
+      policies[key] = rule;
+    }
+
+    try {
+      const res = await fetch("/admin/api/agents", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ policies }),
+      });
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) throw new Error(await parseErrorMessage(res));
+
+      await load();
+      formOk.style.display = "";
+      formOk.textContent = "Politica guardada. Aplica a las siguientes peticiones.";
+    } catch (err) {
+      showError((err as Error).message);
+    }
+  });
+
+  restoreBtn.addEventListener("click", async () => {
+    if (!confirm("¿Restaurar el valor del archivo? Se borra lo que guardaste en el panel y vuelve a regir /.well-known/portaless-content-policy.json (o el valor por defecto de Portaless).")) {
+      return;
+    }
+    formError.style.display = "none";
+    formOk.style.display = "none";
+    try {
+      const res = await fetch("/admin/api/agents", { method: "DELETE" });
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) throw new Error(await parseErrorMessage(res));
+
+      await load();
+      formOk.style.display = "";
+      formOk.textContent = "Override borrado. Vuelve a regir el valor del archivo.";
+    } catch (err) {
+      showError((err as Error).message);
+    }
+  });
+
+  async function init(): Promise<void> {
+    try {
+      await load();
+      loadingEl.style.display = "none";
+      rootEl.style.display = "";
+    } catch (err) {
+      loadingEl.style.display = "none";
+      errorEl.style.display = "";
+      errorEl.textContent = `Error al cargar la politica de acceso: ${(err as Error).message}`;
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .ag-page-header { margin-bottom: 28px; }
+  .ag-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+  .ag-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 680px; line-height: 1.5; }
+  .ag-code { font-size: 0.85em; background: var(--bg); border: 1px solid var(--portaless-border); border-radius: 4px; padding: 1px 5px; }
+
+  .ag-loading, .ag-load-error { font-size: 0.9rem; color: var(--portaless-muted); }
+  .ag-load-error { color: var(--danger-fg); }
+
+  .ag-section-title { margin: 0 0 8px; font-size: 1rem; }
+  .ag-section-title + * { margin-top: 0; }
+
+  .ag-origin {
+    padding: 16px 18px;
+    margin-bottom: 28px;
+    border: 1px solid var(--portaless-border);
+    border-left: 3px solid var(--accent-text);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+  .ag-origin-text { margin: 0; font-size: 0.88rem; line-height: 1.55; }
+
+  .ag-plain { margin-bottom: 28px; }
+  .ag-plain-note { margin: 0 0 14px; font-size: 0.85rem; color: var(--portaless-muted); line-height: 1.5; }
+  .ag-terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .ag-term {
+    display: grid;
+    grid-template-columns: 190px 110px 1fr;
+    gap: 14px;
+    align-items: baseline;
+    padding: 12px 14px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 10px;
+    background: var(--panel-bg);
+  }
+  .ag-term-name { font-size: 0.88rem; font-weight: 600; }
+  .ag-term-access { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .ag-term-access-allow { color: var(--success-fg); }
+  .ag-term-access-charge { color: var(--accent-text); }
+  .ag-term-access-block { color: var(--danger-fg); }
+  .ag-term-text { font-size: 0.85rem; line-height: 1.5; color: var(--portaless-fg); }
+
+  .ag-form-inner {
+    max-width: 520px;
+    padding: 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+  .ag-rule { margin-bottom: 18px; }
+  .ag-rule-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .ag-rule-name { font-size: 0.88rem; font-weight: 600; }
+  .ag-rule-current { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--portaless-muted); }
+  .ag-rule-help { margin: 4px 0 8px; font-size: 0.78rem; color: var(--portaless-muted); line-height: 1.45; }
+  .ag-select, .ag-price-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--portaless-border);
+    border-radius: var(--radius-input, 6px);
+    color: var(--portaless-fg);
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+  .ag-select:disabled, .ag-price-input:disabled { opacity: 0.55; }
+  .ag-price { display: block; margin-top: 10px; }
+  .ag-price span { display: block; font-size: 0.78rem; color: var(--portaless-muted); margin-bottom: 5px; }
+
+  .ag-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .ag-submit {
+    border: 1px solid var(--accent-text);
+    background: var(--portaless-accent);
+    color: #261C15;
+    border-radius: var(--radius-button, 8px);
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ag-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ag-restore {
+    border: 1px solid var(--portaless-border);
+    background: transparent;
+    color: var(--portaless-fg);
+    border-radius: var(--radius-button, 8px);
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .ag-restore:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ag-form-error { color: var(--danger-fg); font-size: 0.8rem; margin-top: 12px; }
+  .ag-form-ok { color: var(--success-fg); font-size: 0.8rem; margin-top: 12px; }
+  .ag-readonly-note { margin: 12px 0 0; font-size: 0.78rem; color: var(--portaless-muted); }
+
+  .ag-caveats { margin-top: 28px; padding-left: 20px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.55; }
+  .ag-caveats li { margin-bottom: 8px; }
+</style>
