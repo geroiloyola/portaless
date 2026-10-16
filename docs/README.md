@@ -51,6 +51,7 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 
 ## Other
 
+- [`plugin-author-guide.md`](./plugin-author-guide.md) — write a sandboxed, closed-source plugin: manifest, capabilities (granted vs backend), the entry contract, storage limits, signing, install, licensing.
 - [`whitepaper/portaless-whitepaper.md`](./whitepaper/portaless-whitepaper.md) (ES) — original product vision (much of it design, not built code).
 - Package-level docs: see each `packages/*/docs/` and `packages/*/README.md` (mixed ES/EN; `packages/apw-resolver/README.md` is English).
 - Examples: [`../examples/`](../examples/) · Infra: [`../infra/`](../infra/) · Setup script: [`../scripts/SETUP.md`](../scripts/SETUP.md) (ES).

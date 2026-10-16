@@ -165,6 +165,40 @@ are arithmetic, not crypto.
 
 ---
 
+## Run the conformance suite against your implementation
+
+You do not have to eyeball the vectors. The reference package publishes a runner
+you can point at the machine-readable vectors:
+
+```sh
+# vectors live in this repo under docs/protocol-apw/vectors/v1.3/
+npx @portaless/apw-resolver apw-conformance <path-to-vectors>
+```
+
+It prints pass/fail per case. The reference implementation runs the same suite
+in CI (**110/110 cases over 11 vectors**), so a green run is evidence you agree
+with the spec on the scored behavior; a red one points at the vector that broke.
+The bin is `apw-conformance` (`packages/apw-resolver`, `dist/conformance/cli.js`).
+
+## From verifier to node (optional)
+
+A **verifier** — Steps 1–7 — needs no Portaless install, no node, no database:
+it reads DNS, `did.json` and the log over HTTPS and decides. That is the smallest
+useful thing to build, and it is enough to claim minimal conformance.
+
+A **node** is a bigger choice: running one lets you *publish* your own
+`did:apw` identity and log, *serve* your content's signed artifacts, and
+*participate* in the network (witness peers, run a Portaless Index aggregator).
+That is a Portaless deployment, not a protocol step; start at
+[`../self-hosting.md`](../self-hosting.md) and the install guide
+[`../primos-pasos.md`](../primos-pasos.md). **Honest limit:** the discovery
+endpoint that would let nodes find each other is deliberately **not opened**
+until there are real peers — with one operator there is nothing to discover, and
+the network's exit criterion (an independent implementer publishing valid
+identity) closes with people, not code.
+
+---
+
 ## What you publish to claim conformance
 
 1. `_apw.<domain>` TXT record (v2 with `k` and `h`).
