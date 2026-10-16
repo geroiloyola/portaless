@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
-import { postsLabel } from "../lib/site-lang";
+import { homeLabel, postsLabel, exploreLabel, SITE_LANG } from "../lib/site-lang";
+import { localePath, otherLocale, t, type Locale } from "../lib/i18n";
 import {
   headerActionsHtml,
   type HeaderContext,
@@ -12,26 +13,44 @@ interface Props {
   // null = solo Share. Lo calcula deriveHeaderContext desde el arbol de
   // elementos del PageLayout y lo pasa BaseLayout.
   context?: HeaderContext;
+  // Idioma del documento (docs/i18n-design.md): decide las etiquetas del menu
+  // (Home/Inicio, Publications/Publicaciones, Explore/Explorar) y el selector
+  // de idioma. Default: SITE_LANG.
+  locale?: Locale;
 }
-const { context = null } = Astro.props;
+const { context = null, locale = SITE_LANG } = Astro.props;
 
+const base = import.meta.env.BASE_URL;
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
-// El indice de publicaciones solo se anuncia si hay algo que leer: si el
-// sitio no tiene ninguna publicacion no-borrador, el link desaparece en
-// vez de mandar al visitante a un indice vacio. Y la palabra "Blog" ya
-// no se usa -- el label sale de site-lang ("Publicaciones" | "Posts").
+// El indice de publicaciones solo se anuncia si hay algo que leer: si el sitio
+// no tiene ninguna publicacion no-borrador, el link desaparece en vez de mandar
+// al visitante a un indice vacio.
 const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
+
+// Selector de idioma: apunta al home del OTRO locale (el unico destino
+// localizado hoy; el resto del sitio sigue en SITE_LANG). Muestra el nombre del
+// otro idioma, asi el enlace dice a donde va.
+const other = otherLocale(locale);
+const otherHref = `${base.replace(/\/$/, "")}${localePath(other, "/")}`;
 ---
 <header class="site-header">
   <nav>
-    <a class="brand" href={import.meta.env.BASE_URL}>Portaless</a>
+    <a class="brand" href={base}>Portaless</a>
+    <a href={base}>{homeLabel(locale)}</a>
     {publishedPosts.length > 0 && (
-      <a href={`${import.meta.env.BASE_URL}blog/`}>{postsLabel()}</a>
+      <a href={`${base}blog/`}>{postsLabel(locale)}</a>
     )}
-    {commerceEnabled && <a href={`${import.meta.env.BASE_URL}tienda/`}>Tienda</a>}
+    <a href={`${base}explore/`}>{exploreLabel(locale)}</a>
+    {commerceEnabled && <a href={`${base}tienda/`}>Tienda</a>}
+    <a
+      class="header-lang"
+      href={otherHref}
+      hreflang={other}
+      aria-label={t(locale, "home.otherLocaleAria")}
+    >{t(locale, "home.otherLocaleName")}</a>
     <!-- Atomic Icons Responsive: share siempre; icono principal segun
          contexto. El HTML sale de UNA sola fuente compartida con el
          shell runtime (src/lib/atomic-responsive-icons.ts). -->
-    <Fragment set:html={headerActionsHtml(context, import.meta.env.BASE_URL)} />
+    <Fragment set:html={headerActionsHtml(context, base)} />
   </nav>
 </header>

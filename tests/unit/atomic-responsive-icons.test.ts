@@ -112,7 +112,7 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
 
 describe("rincon del header -- wiring estatico y runtime", () => {
   it("Header.astro usa la fuente unica y expone la prop de contexto", () => {
-    expect(headerSrc).toContain("headerActionsHtml(context, import.meta.env.BASE_URL)");
+    expect(headerSrc).toContain("headerActionsHtml(context, base)");
     expect(headerSrc).toContain("context?: HeaderContext");
   });
 
@@ -123,7 +123,7 @@ describe("rincon del header -- wiring estatico y runtime", () => {
 
   it("BaseLayout recibe el contexto, lo pasa al Header y trae el listener de volumen", () => {
     expect(baseLayoutSrc).toContain("headerContext?: import(\"../lib/atomic-responsive-icons\").HeaderContext");
-    expect(baseLayoutSrc).toContain("<Header context={headerContext} />");
+    expect(baseLayoutSrc).toContain("<Header context={headerContext} locale=");
     expect(baseLayoutSrc).toContain("VOLUME_LISTENER_SCRIPT");
     expect(baseLayoutSrc).toContain("set:html={VOLUME_LISTENER_SCRIPT}");
   });

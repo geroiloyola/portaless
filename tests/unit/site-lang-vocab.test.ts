@@ -1,7 +1,7 @@
 // Regla de producto: "Blog" queda anticuada para las novedades. Cada
 // audiencia usa el termino que las plataformas oficiales usan:
-// hispana -> "Publicaciones", global -> "Posts". Fuente unica:
-// src/lib/site-lang.ts (tambien decide el lang del <html>).
+// hispana -> "Publicaciones", global -> "Publications". Fuente unica: el
+// catalogo i18n (src/i18n/<locale>.json), consumido por src/lib/site-lang.ts.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -17,8 +17,8 @@ describe("vocabulario por audiencia (site-lang)", () => {
     expect(postsLabel("es")).toBe("Publicaciones");
   });
 
-  it("audiencia global: Posts (el termino que usan las plataformas)", () => {
-    expect(postsLabel("en")).toBe("Posts");
+  it("audiencia global: Publications", () => {
+    expect(postsLabel("en")).toBe("Publications");
   });
 
   it("este sitio arranca en español y su label es Publicaciones", () => {
@@ -36,7 +36,7 @@ describe("vocabulario por audiencia (site-lang)", () => {
 
   it("el header anuncia las publicaciones solo si hay, y nunca dice Blog", () => {
     expect(headerSrc).toContain("publishedPosts.length > 0");
-    expect(headerSrc).toContain("postsLabel()");
+    expect(headerSrc).toContain("postsLabel(locale)");
     expect(headerSrc).not.toMatch(/>Blog</);
   });
 

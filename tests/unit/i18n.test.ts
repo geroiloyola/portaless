@@ -36,8 +36,10 @@ describe("locales", () => {
 
 describe("t", () => {
   it("resuelve claves anidadas", () => {
-    expect(t("en", "nav.posts")).toBe("Posts");
+    expect(t("en", "nav.posts")).toBe("Publications");
     expect(t("es", "nav.posts")).toBe("Publicaciones");
+    expect(t("en", "nav.home")).toBe("Home");
+    expect(t("es", "nav.explore")).toBe("Explorar");
   });
 
   it("clave faltante cae al locale por defecto, y si tampoco esta, devuelve la clave", () => {

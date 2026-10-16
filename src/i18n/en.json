@@ -5,7 +5,9 @@
     "otherLocaleAria": "Read this page in Spanish"
   },
   "nav": {
-    "posts": "Posts"
+    "home": "Home",
+    "posts": "Publications",
+    "explore": "Explore"
   },
   "cta": {
     "start": "Start in {{minutes}} minutes"

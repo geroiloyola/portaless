@@ -63,7 +63,7 @@ describe("paridad static <-> runtime (functions/paginas/[slug].js)", () => {
   });
 
   it("el header runtime usa el vocabulario de site-lang, nunca Blog", () => {
-    expect(shellSrc).toContain("postsLabel()");
+    expect(shellSrc).toContain("postsLabel(SITE_LANG)");
     expect(shellSrc).toContain("SITE_LANG");
     expect(shellSrc).not.toMatch(/>Blog</);
   });

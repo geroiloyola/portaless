@@ -22,8 +22,6 @@ import {
   DEFAULT_LOCALE,
   hreflangAlternates,
   localePath,
-  otherLocale,
-  t,
   type Locale,
 } from "../lib/i18n";
 import type { PageLayout } from "../../packages/atomic-elements/src/types";
@@ -66,19 +64,11 @@ const alternates = [
   ...hreflangAlternates(canonPath).map((a) => ({ hreflang: a.hreflang, href: absolute(a.path) })),
   { hreflang: "x-default", href: absolute(localePath(DEFAULT_LOCALE, canonPath)) },
 ];
-
-const other = otherLocale(locale);
-const otherHref = absolute(localePath(other, canonPath));
 ---
 
 <BaseLayout lang={locale} pageTheme={pageTheme} headerContext={headerContext} alternates={alternates}>
   <SeoHead slot="head" title={layout.title} description={layout.description ?? ""} canonicalUrl={canonicalUrl} />
   <JsonLd slot="head" layout={prepared} site={{ name: layout.title, url: siteUrl }} />
-  <nav class="home-lang" aria-label="Language">
-    <a href={otherHref} hreflang={other} aria-label={t(locale, "home.otherLocaleAria")}>
-      {t(locale, "home.otherLocaleName")}
-    </a>
-  </nav>
   <article class="ae-page ae-home" set:html={html} />
 </BaseLayout>
 
@@ -87,16 +77,11 @@ const otherHref = absolute(localePath(other, canonPath));
   main.container {
     max-width: 1080px;
   }
+  /* Espaciado entre secciones por GAP (flex), no por margin-top: el margin
+     inline de los elementos (margin:0) pisaria la regla de hoja. */
   .ae-home {
-    gap: 0;
-  }
-  .ae-home > * + * {
-    margin-top: 40px;
-  }
-  .home-lang {
     display: flex;
-    justify-content: flex-end;
-    margin: 0 0 8px;
-    font-size: 0.85rem;
+    flex-direction: column;
+    gap: 40px;
   }
 </style>

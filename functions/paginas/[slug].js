@@ -29,7 +29,8 @@ import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
-import { SITE_LANG, postsLabel } from "../../src/lib/site-lang.ts";
+import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
+import { localePath, otherLocale, t } from "../../src/lib/i18n.ts";
 import {
   deriveHeaderContext,
   headerActionsHtml,
@@ -185,7 +186,10 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
 <header class="site-header">
   <nav>
     <a class="brand" href="/">Portaless</a>
-    ${showPostsLink() ? `<a href="/blog/">${postsLabel()}</a>` : ""}
+    <a href="/">${homeLabel(SITE_LANG)}</a>
+    ${showPostsLink() ? `<a href="/blog/">${postsLabel(SITE_LANG)}</a>` : ""}
+    <a href="/explore/">${exploreLabel(SITE_LANG)}</a>
+    <a class="header-lang" href="${localePath(otherLocale(SITE_LANG), "/")}" hreflang="${otherLocale(SITE_LANG)}" aria-label="${t(SITE_LANG, "home.otherLocaleAria")}">${t(SITE_LANG, "home.otherLocaleName")}</a>
     ${headerActionsHtml(deriveHeaderContext(layout.root))}
   </nav>
 </header>
