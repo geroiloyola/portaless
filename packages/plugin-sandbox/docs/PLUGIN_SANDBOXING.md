@@ -133,7 +133,8 @@ handler real detras). La Fase 14 conecta los backends **uno a la vez**. Hoy:
 | --- | --- |
 | `content:read` / `content:write` | `PageStore` (D1/SQLite) |
 | `storage:read` / `storage:write` | `PluginStorageStore` (`plugin_storage`): namespace por plugin + cuotas |
-| `media:*`, `email:send`, `commerce:*`, `agent:identify`, `site:admin` | sin backend -> `501 NOT_CONFIGURED` |
+| `agent:identify` | lectura del ledger de uso del Trust Layer (campos publicos, agregados por operador) |
+| `media:*`, `email:send`, `commerce:*`, `site:admin` | sin backend -> `501 NOT_CONFIGURED` |
 
 La fuente unica es `packages/plugin-sandbox/src/capabilities/capability-backends.ts`
 (`createCapabilityHostBridge()`, `CAPABILITY_BACKENDS`, `dispatchCapability()`),

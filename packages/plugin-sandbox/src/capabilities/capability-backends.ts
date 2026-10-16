@@ -15,14 +15,16 @@
 // "Uno a la vez" (Fase 14): cada capacidad se conecta con su store real y el
 // resto sigue devolviendo un error explicito NOT_CONFIGURED -- nunca un exito
 // silencioso ni un 403 falso (la capacidad SI esta concedida, solo falta el
-// backend). Estado hoy: content:read/content:write (PageStore) y
+// backend). Estado hoy: content:read/content:write (PageStore),
 // storage:read/storage:write (PluginStorageStore, cuotas + namespace por
-// plugin). Las capacidades de red (network:fetch) no pasan por aqui: las
-// maneja cada adaptador.
+// plugin) y agent:identify (lectura del ledger de uso del Trust Layer). Las
+// capacidades de red (network:fetch) no pasan por aqui: las maneja cada
+// adaptador.
 
 import type { CapabilityId, CapabilityHostBridge } from "../types";
 import { createPageStore } from "../../../atomic-elements/src/persistence/store-factory";
 import { createPluginStorageStore } from "../registry/plugin-storage";
+import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-factory";
 
 export interface CapabilityError extends Error {
   code: string;
@@ -37,6 +39,20 @@ export function capabilityError(code: string, message: string): CapabilityError 
 
 export function notConfigured(message: string): CapabilityError {
   return capabilityError("NOT_CONFIGURED", message);
+}
+
+function parseBoundedInt(value: unknown, name: string, fallback: number, min: number, max: number): number {
+  if (value === undefined) return fallback;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
+    throw capabilityError("INVALID_ARGS", `agent:identify: '${name}' debe ser un entero entre ${min} y ${max}.`);
+  }
+  return value;
+}
+
+function periodForOffsetUtc(offset: number): string {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 export interface CapabilityBackendEnv {
@@ -83,6 +99,63 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       const saved = await store.set(pluginName, key, (payload as { value: unknown }).value);
       return { key: saved.key, sizeBytes: saved.sizeBytes, updatedAt: saved.updatedAt };
     },
+    // Solo LECTURA del ledger de uso de agentes (Trust Layer), agregado por
+    // operador. Expone exactamente los mismos campos que ya publica
+    // /.well-known/portaless-usage-log.json (operatorKeyId ya es publico por
+    // diseno de Web Bot Auth; contadores agregados, nunca contenido de las
+    // requests). No hay proveedor externo: lee el mismo ledger que el middleware
+    // escribe.
+    agentIdentify: async (payload) => {
+      const args = (payload ?? {}) as { months?: unknown; limit?: unknown };
+      const months = parseBoundedInt(args.months, "months", 3, 1, 12);
+      const limit = parseBoundedInt(args.limit, "limit", 50, 1, 200);
+      const store = await createUsageLedgerStore(env);
+      const periodsCovered = Array.from({ length: months }, (_, i) => periodForOffsetUtc(i));
+
+      interface AgentAcc {
+        operatorKeyId: string;
+        operatorNameClaimed?: string;
+        readerDid?: string;
+        requestsTotal: number;
+        requestsCharged: number;
+        requestsFreeTier: number;
+        revenueUsd: number;
+        policyViolationsDetected: number;
+        firstSeen: string;
+        lastSeen: string;
+      }
+      const byOperator = new Map<string, AgentAcc>();
+      for (const period of periodsCovered) {
+        const log = await store.get(period);
+        for (const entry of log?.agents ?? []) {
+          const acc = byOperator.get(entry.operatorKeyId) ?? {
+            operatorKeyId: entry.operatorKeyId,
+            requestsTotal: 0,
+            requestsCharged: 0,
+            requestsFreeTier: 0,
+            revenueUsd: 0,
+            policyViolationsDetected: 0,
+            firstSeen: entry.firstSeen,
+            lastSeen: entry.lastSeen,
+          };
+          if (entry.operatorNameClaimed) acc.operatorNameClaimed = entry.operatorNameClaimed;
+          if (entry.readerDid) acc.readerDid = entry.readerDid;
+          acc.requestsTotal += entry.requestsTotal;
+          acc.requestsCharged += entry.requestsCharged;
+          acc.requestsFreeTier += entry.requestsFreeTier;
+          acc.revenueUsd += entry.revenueUsd;
+          acc.policyViolationsDetected += entry.policyViolationsDetected;
+          if (entry.firstSeen < acc.firstSeen) acc.firstSeen = entry.firstSeen;
+          if (entry.lastSeen > acc.lastSeen) acc.lastSeen = entry.lastSeen;
+          byOperator.set(entry.operatorKeyId, acc);
+        }
+      }
+
+      const agents = [...byOperator.values()]
+        .sort((a, b) => b.requestsTotal - a.requestsTotal)
+        .slice(0, limit);
+      return { agents, periodsCovered, generatedAt: new Date().toISOString() };
+    },
   };
 }
 
@@ -100,6 +173,7 @@ export const CAPABILITY_BACKENDS: CapabilityBackendSpec[] = [
   { id: "content:write", method: "contentWrite", withPlugin: false },
   { id: "storage:read", method: "storageRead", withPlugin: true },
   { id: "storage:write", method: "storageWrite", withPlugin: true },
+  { id: "agent:identify", method: "agentIdentify", withPlugin: false },
 ];
 
 export function hasCapabilityBackend(id: CapabilityId | string): boolean {

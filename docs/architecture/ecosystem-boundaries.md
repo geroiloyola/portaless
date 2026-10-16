@@ -177,7 +177,7 @@ empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
 `./full` en cada push, de modo que una entrada nueva, un cambio de bundler o un
 `files:` incompleto rompen CI en vez de pasar desapercibidos.
 
-### 3.3 Instalador de plugins (tras flag) y siete capacidades sin backend
+### 3.3 Instalador de plugins (tras flag) y seis capacidades sin backend
 
 - **Instalador**: existe desde la Fase 11.2, **detras de `PORTALESS_PLUGIN_INSTALLER`
   apagado por defecto** y sin anuncio (`POST /admin/api/plugins/install` y
@@ -194,17 +194,18 @@ empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
   plugin_source_backend_unavailable` de workerd para los plugins instalados.
   El instalador sigue detras del flag apagado por defecto mientras la revision
   externa del sandbox esta pendiente.
-- **Capacidades**: 7 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
+- **Capacidades**: 6 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
   (`media:read/write`, `email:send`, `commerce:read/checkout`,
-  `site:admin`, `agent:identify`) — **por decision, no por
-  olvido**: `site:admin`/`email:send` tienen efectos reales y `storage:*`
-  necesita cuotas y namespace por plugin. El patron correcto ya existe y respeta
+  `site:admin`) — **por decision, no por
+  olvido**: `site:admin`/`email:send` tienen efectos reales y el resto
+  necesita un proveedor externo. El patron correcto ya existe y respeta
   `ROADMAP.md:227`: **el core expone la interfaz y el plugin pone la
   implementacion** — igual que hoy `SettlementProvider.charge()` es un placeholder
   que devuelve `success: false` y la liquidacion real la construye un tercero.
-  Desde la Fase 14 (§14.2) `storage:read`/`storage:write` ya tienen backend real
-  (`PluginStorageStore`: namespace por plugin + cuotas; `content:read/write` lo
-  tenian desde antes), servidos por una sola fuente
+  Desde la Fase 14 (§14.2) `content:read/write`, `storage:read/write`
+  (`PluginStorageStore`: namespace por plugin + cuotas) y `agent:identify`
+  (lectura del ledger de uso del Trust Layer, los mismos campos ya publicos)
+  tienen backend real, servidos por una sola fuente
   (`packages/plugin-sandbox/src/capabilities/capability-backends.ts`) tanto al
   bridge HTTP edge como al caller de produccion self-hosted.
 

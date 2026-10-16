@@ -137,7 +137,7 @@ export async function onRequestPost(context) {
         ? 501
         : code === "PAGE_NOT_FOUND"
           ? 404
-          : code === "STORAGE_INVALID_KEY"
+          : code === "STORAGE_INVALID_KEY" || code === "INVALID_ARGS"
             ? 400
             : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
               ? 413

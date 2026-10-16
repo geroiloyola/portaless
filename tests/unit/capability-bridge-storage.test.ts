@@ -99,4 +99,24 @@ describe("capability-bridge HTTP: storage", () => {
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe("PAGE_NOT_FOUND");
   });
+
+  it("agent:identify con token valido -> 200 (agents array, ledger vacio)", async () => {
+    await sharedTokenStore.issue("tok_agent", "mi-plugin", ["agent:identify"]);
+    const res = await onRequestPost(makeContext("tok_agent", { capability: "agent:identify", args: { months: 1 } }));
+    expect(res.status).toBe(200);
+    expect(Array.isArray((await res.json()).result.agents)).toBe(true);
+  });
+
+  it("agent:identify fuera del snapshot -> 403", async () => {
+    await sharedTokenStore.issue("tok_noagent", "mi-plugin", ["storage:read"]);
+    const res = await onRequestPost(makeContext("tok_noagent", { capability: "agent:identify", args: {} }));
+    expect(res.status).toBe(403);
+  });
+
+  it("agent:identify con months invalido -> 400 INVALID_ARGS", async () => {
+    await sharedTokenStore.issue("tok_agent2", "mi-plugin", ["agent:identify"]);
+    const res = await onRequestPost(makeContext("tok_agent2", { capability: "agent:identify", args: { months: 0 } }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("INVALID_ARGS");
+  });
 });
