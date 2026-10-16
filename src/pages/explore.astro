@@ -89,6 +89,19 @@ const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"
     vos o un agente de IA. La clasificación es automática (por el contenido de cada página).
   </p>
 
+  <div class="explore-order">
+    <span class="explore-order-label">Order by</span>
+    <div class="explore-order-pills" role="radiogroup" aria-label="Order by">
+      {RANKING_FILTERS.map((f) => (
+        <label class="explore-order-pill">
+          <input type="radio" name="explore-order" value={f} checked={f === "new"} />
+          <span>{f}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+  <p class="explore-order-status" id="explore-order-status" role="status"></p>
+
   <nav class="explore-chips" aria-label="Categorías">
     <a href="#documentation" class="explore-chip">Documentation</a>
     {demoPages.length > 0 && <a href="#demo-pages" class="explore-chip">Demo Pages</a>}
@@ -156,7 +169,7 @@ const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"
       <h2>Publications</h2>
       <div class="explore-grid">
         {posts.map((post) => (
-          <a class="explore-card" href={`${base}blog/${post.id}/`}>
+          <a class="explore-card" href={`${base}blog/${post.id}/`} data-order={post.data.pubDate.toISOString()}>
             <h3>{post.data.title}</h3>
             <p class="explore-card-meta">{post.data.pubDate.toLocaleDateString("es-CL")}</p>
             {post.data.description && <p>{post.data.description}</p>}
@@ -204,6 +217,48 @@ const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"
   </details>
 </BaseLayout>
 
+<script>
+  // Order by. Ordena de verdad donde hay dato local (la fecha de publicación de
+  // los posts) y dice, sin fingir, que los criterios de red necesitan un nodo.
+  // Orden estable: las tarjetas sin fecha (docs, páginas demo) conservan su
+  // orden relativo; solo se reordenan las que tienen data-order.
+  const NOTES: Record<string, string> = {
+    new: "Newest first, by publish date (local).",
+    old: "Oldest first, by publish date (local).",
+    recents: "Newest first by publish date — a local approximation. The network order (last position observed by a witness) needs a node with functions/.",
+    top: "The weighted Bayesian score over the declared window needs signed attestations from a node with functions/; showing the local order instead.",
+    confidence: "Witness consensus over the declared seq needs a node with functions/; showing the local order instead.",
+    history: "Order by amount of evidence per subject needs attestations from a node with functions/; showing the local order instead.",
+  };
+
+  const status = document.getElementById("explore-order-status");
+
+  function reorder(criterion: string): void {
+    const desc = criterion === "new" || criterion === "recents";
+    const asc = criterion === "old";
+    const apply = desc || asc;
+
+    document.querySelectorAll(".explore-grid").forEach((grid) => {
+      const cards = Array.from(grid.children) as HTMLElement[];
+      cards.forEach((card, i) => card.setAttribute("data-idx", String(i)));
+      cards.sort((a, b) => {
+        const da = a.getAttribute("data-order");
+        const db = b.getAttribute("data-order");
+        if (apply && da && db) return desc ? db.localeCompare(da) : da.localeCompare(db);
+        return Number(a.getAttribute("data-idx")) - Number(b.getAttribute("data-idx"));
+      });
+      cards.forEach((card) => grid.appendChild(card));
+    });
+
+    if (status) status.textContent = NOTES[criterion] ?? "";
+  }
+
+  document.querySelectorAll('input[name="explore-order"]').forEach((el) => {
+    el.addEventListener("change", () => reorder((el as HTMLInputElement).value));
+  });
+  reorder("new");
+</script>
+
 <style>
   .explore-intro { color: var(--muted, #6e6653); max-width: 70ch; }
   .explore-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
@@ -234,4 +289,32 @@ const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"
   .explore-about { margin-top: 48px; color: var(--muted, #6e6653); font-size: 0.85rem; }
   .explore-about summary { cursor: pointer; font-weight: 600; }
   .explore-about p { max-width: 80ch; line-height: 1.6; }
+
+  .explore-order { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 4px; }
+  .explore-order-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #6e6653); font-weight: 700; }
+  .explore-order-pills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--panel-border, #e4e6c3);
+    border-radius: 999px;
+    background: var(--panel-bg, #fff);
+  }
+  .explore-order-pill { position: relative; cursor: pointer; }
+  .explore-order-pill input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .explore-order-pill span {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted, #6e6653);
+    text-transform: capitalize;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .explore-order-pill span:hover { color: var(--text, #261c15); }
+  .explore-order-pill input:checked + span { background: var(--accent, #c5d86d); color: #261c15; }
+  .explore-order-pill input:focus-visible + span { outline: 2px solid var(--accent-text, #5a6b24); outline-offset: 2px; }
+  .explore-order-status { font-size: 0.82rem; color: var(--muted, #6e6653); margin: 6px 0 0; max-width: 80ch; }
 </style>
