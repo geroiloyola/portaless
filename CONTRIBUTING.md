@@ -14,6 +14,8 @@ Thanks for your interest in contributing. Portaless is a young project (v0.0.x, 
 
 ## Areas where help is most needed today
 
+- **Report specification ambiguity** — if you implement Protocol APW (or LTP) and the text forced you to guess, open a [Specification ambiguity](./.github/ISSUE_TEMPLATE/spec_ambiguity.md) issue citing the section and the vectors. [`docs/VISION.md`](./docs/VISION.md) asks implementers to "say where the specification was ambiguous, because that is how a specification improves"; this channel is for exactly that, and it claims nothing more.
+- **Be a reviewer** — the two highest-damage surfaces (how a person proves who they are, and how third-party code is contained) need a second pair of eyes; [`docs/security-review-guide.md`](./docs/security-review-guide.md) maps where they live and how to break them, and needs no commit rights. A second maintainer with real merge authority is the project's biggest structural gap ([`SECURITY.md`](./SECURITY.md)).
 - Completing real integration of the edge sandboxing adapters (`packages/plugin-sandbox/src/adapters/deno-deploy.ts` and `cloudflare-workers-for-platforms.ts`) against real test accounts — today they are only verified with mocked `fetch`. The self-hosted `isolated-vm` adapter has run real code since v0.0.6.
 - Testing `npm run setup` locally against a real SQLite file before trusting the install flow documented in `scripts/SETUP.md`.
 - MCP server per-invocation agent identity (today it is per-process — see the known limitation in `AGENT.md`).
