@@ -167,6 +167,18 @@ export interface CapabilityBackendSpec {
   withPlugin: boolean;
 }
 
+// Decision registrada (ROADMAP §14.2 item 3): `site:admin` y `email:send` NO se
+// conectan aqui mientras no exista un caso de uso concreto y revisado.
+//   - site:admin ("modificar configuracion global del sitio") es la capacidad de
+//     mayor riesgo; el panel admin con step-up ya cubre la necesidad del dueno,
+//     y ningun documento define que operaciones expondria a un plugin. Sin esa
+//     definicion, conectarla seria inventar superficie de ataque.
+//   - email:send tiene un transporte server (packages/auth/src/email-sender.ts)
+//     que su propio encabezado declara que NO es el puente de plugins; dejaria a
+//     un plugin enviando email COMO el sitio (vector de spam) y necesita diseno
+//     de cuota/rate-limit por plugin y una decision de identidad de remitente.
+// El resto (media:*, commerce:*) necesita proveedor externo o namespace propio.
+
 /** Las capacidades que HOY tienen backend real. Una nueva se agrega aqui. */
 export const CAPABILITY_BACKENDS: CapabilityBackendSpec[] = [
   { id: "content:read", method: "contentRead", withPlugin: false },

@@ -176,7 +176,12 @@ that is **off by default**:
 
 - The **HTTPS installer is behind a flag, off by default**, and is not announced,
   until the external sandbox review closes (ROADMAP Phase 14 exit criteria).
-- **6 of 12 capabilities have no backend** and answer `501` (§3).
+- **6 of 12 capabilities have no backend** and answer `501` (§3). Two of them
+  (`site:admin`, `email:send`) are a **recorded decision, not a gap**: they stay
+  `501` until a concrete, reviewed use case exists (`site:admin` has no defined
+  operation set for a plugin; `email:send` would let a plugin mail as the site
+  and needs a per-plugin quota design first). `media:*` and `commerce:checkout`
+  need an external provider or a per-plugin media namespace.
 - Real **edge execution** (Cloudflare/Deno) needs `PORTALESS_CLOUDFLARE_*` /
   `PORTALESS_DENO_*` credentials; without them the runtime falls back to
   `isolated-vm` (Node self-host only).

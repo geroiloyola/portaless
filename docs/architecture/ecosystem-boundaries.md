@@ -197,8 +197,12 @@ empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
 - **Capacidades**: 6 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
   (`media:read/write`, `email:send`, `commerce:read/checkout`,
   `site:admin`) — **por decision, no por
-  olvido**: `site:admin`/`email:send` tienen efectos reales y el resto
-  necesita un proveedor externo. El patron correcto ya existe y respeta
+  olvido**: `site:admin`/`email:send` quedan en `501` hasta que exista un caso
+  de uso concreto y revisado (documentado en `ROADMAP.md` §14.2 item 3:
+  `site:admin` no tiene un conjunto de operaciones definido para un plugin, y
+  `email:send` dejaria a un plugin enviando email como el sitio, sin diseno de
+  cuota por plugin), y `media:*`/`commerce:checkout` necesitan un proveedor
+  externo. El patron correcto ya existe y respeta
   `ROADMAP.md:227`: **el core expone la interfaz y el plugin pone la
   implementacion** — igual que hoy `SettlementProvider.charge()` es un placeholder
   que devuelve `success: false` y la liquidacion real la construye un tercero.
