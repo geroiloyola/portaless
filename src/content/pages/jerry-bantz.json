@@ -54,7 +54,7 @@
             "enabled": true
           },
           {
-            "label": "TrustScore: 92 Veraciers · Perfil Verificado",
+            "label": "Ver el registro de confianza (TrustScore)",
             "url": "/trust/default",
             "icon": "shield-check",
             "enabled": true

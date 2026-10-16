@@ -81,3 +81,18 @@ test("Explore existe y lista paginas publicadas (sin links rotos)", async ({ pag
   await expect(page.getByRole("link", { name: /Jerry Bantz/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "TrustScore de este sitio" })).toBeVisible();
 });
+
+// Fase 12 (§2): la superficie publica /trust/default no muestra valores
+// fabricados. El resumen son conteos reales del snapshot o "Sin datos".
+test("/trust/default renderiza el resumen real y no contiene '92'", async ({ page }) => {
+  await page.goto("/trust/default");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Site Trust Score" })).toBeVisible();
+  await expect(page.locator(".st-source-section").first()).toBeVisible();
+
+  const body = await page.locator("body").innerText();
+  expect(body).not.toContain("92");
+  expect(body).not.toContain("32K+");
+  expect(body).not.toContain("Sin disputas");
+  expect(body).not.toContain("canónica");
+});
