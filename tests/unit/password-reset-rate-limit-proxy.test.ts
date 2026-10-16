@@ -15,8 +15,8 @@
 // temporal, PORTALESS_DEV_MODE=1 (el devToken revela si el rate limit dejo
 // pasar el pedido) y usuarios sembrados de verdad.
 
-import { describe, it, expect, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
+import { copyFileSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
@@ -32,6 +32,17 @@ const cleanup: Array<() => void> = [];
 afterEach(() => {
   while (cleanup.length) cleanup.pop()!();
 });
+
+// El schema se aplica UNA vez a una plantilla; cada start() copia el archivo
+// (antes, applySchema dentro del test rozaba el timeout de 5s bajo carga).
+let TEMPLATE: string;
+let templateDir: string;
+beforeAll(async () => {
+  templateDir = mkdtempSync(join(tmpdir(), "portaless-reset-proxy-template-"));
+  TEMPLATE = join(templateDir, "template.db");
+  await applySchema(TEMPLATE, { quiet: true });
+});
+afterAll(() => rmSync(templateDir, { recursive: true, force: true }));
 
 describe("clientIpFromHeaders -- runtime Node vs Cloudflare", () => {
   it("en self-host Node lee solo x-portaless-client-ip e ignora los headers falsificables", () => {
@@ -92,7 +103,7 @@ describe("endpoint real /admin/password-reset/request tras el runtime Node", () 
       ...envOverrides,
     };
 
-    await applySchema(dbPath, { quiet: true });
+    copyFileSync(TEMPLATE, dbPath);
     const users = await createUsersStore(env);
     for (let i = 1; i <= userCount; i++) {
       await users.createUser(`reset-proxy-u${i}`, "hunter2hunter2", "editor");

@@ -15,8 +15,8 @@
 // un middleware trivial. Las functions reales se reexportan con el
 // patron de self-host-first-run.test.ts (shim + import real).
 
-import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { afterEach, afterAll, beforeAll, describe, expect, it } from "vitest";
+import { copyFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
@@ -29,6 +29,17 @@ const cleanup: Array<() => void> = [];
 afterEach(() => {
   while (cleanup.length) cleanup.pop()!();
 });
+
+// El schema se aplica UNA vez a una plantilla; cada boot() copia el archivo
+// (antes, applySchema dentro del test rozaba el timeout de 5s bajo carga).
+let TEMPLATE: string;
+let templateDir: string;
+beforeAll(async () => {
+  templateDir = mkdtempSync(join(tmpdir(), "portaless-paginas-e2e-template-"));
+  TEMPLATE = join(templateDir, "template.db");
+  await applySchema(TEMPLATE, { quiet: true });
+});
+afterAll(() => rmSync(templateDir, { recursive: true, force: true }));
 
 async function listen(server: ReturnType<typeof import("node:http").createServer>) {
   await new Promise<void>((ok, fail) => {
@@ -62,7 +73,7 @@ async function boot() {
 
   const sqlitePath = join(root, "data", "portaless.db");
   mkdirSync(join(root, "data"), { recursive: true });
-  await applySchema(sqlitePath, { quiet: true });
+  copyFileSync(TEMPLATE, sqlitePath);
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: sqlitePath });
   await store.save({
     version: "0.1",

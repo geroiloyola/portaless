@@ -4,8 +4,8 @@
 // InMemory), round-trip de bytes y sidecar, dedupe por content_hash,
 // list limitado, baja booleana, y el factory D1/SQLite/InMemory.
 
-import { describe, it, expect, afterAll } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -23,6 +23,14 @@ import { signCloudImage } from "../../packages/cloud-images/src/sign";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-cloud-images-"));
+
+// El schema se aplica UNA vez a una plantilla; cada backend copia el archivo
+// (antes, applySchema dentro del test rozaba el timeout de 5s bajo carga).
+let TEMPLATE: string;
+beforeAll(async () => {
+  TEMPLATE = join(tmp, "template.db");
+  await applySchema(TEMPLATE, { quiet: true });
+});
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -73,7 +81,7 @@ function backends(): Array<{ name: string; make: () => Promise<CloudImageStore> 
       name: "D1",
       make: async () => {
         const file = join(tmp, `d1-${Math.random().toString(36).slice(2)}.db`);
-        await applySchema(file, { quiet: true });
+        copyFileSync(TEMPLATE, file);
         return new D1CloudImageStore(fakeD1(new Database(file)) as never);
       },
     },
@@ -81,7 +89,7 @@ function backends(): Array<{ name: string; make: () => Promise<CloudImageStore> 
       name: "Sqlite",
       make: async () => {
         const file = join(tmp, `sqlite-${Math.random().toString(36).slice(2)}.db`);
-        await applySchema(file, { quiet: true });
+        copyFileSync(TEMPLATE, file);
         return SqliteCloudImageStore.open(file);
       },
     },
@@ -138,7 +146,7 @@ describe.each(backends())("$name CloudImageStore", ({ make }) => {
 describe("createCloudImageStore (factory)", () => {
   it("SQLite con PORTALESS_SQLITE_PATH, D1 con env.DB, si no InMemory con warning", async () => {
     const file = join(tmp, `factory-${Math.random().toString(36).slice(2)}.db`);
-    await applySchema(file, { quiet: true });
+    copyFileSync(TEMPLATE, file);
 
     const sqliteStore = await createCloudImageStore({ PORTALESS_SQLITE_PATH: file });
     expect(sqliteStore).toBeInstanceOf(SqliteCloudImageStore);

@@ -6,8 +6,8 @@
 // snapshot de capacidades; validate reutilizable dentro del TTL (no es
 // consume); tokens vencidos razonan "expired" y deleteExpired los borra.
 
-import { describe, it, expect, afterAll, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -20,6 +20,15 @@ import {
 import type { CapabilityTokenStore } from "../../packages/plugin-sandbox/src/registry/stores/capability-token-store";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-cap-tokens-"));
+
+// El schema (27 fuentes) se aplica UNA vez a una plantilla; cada backend copia
+// el archivo. Antes cada make() aplicaba el schema completo dentro del test y
+// rozaba el timeout de 5s bajo carga de CI (mismo patron que 187db77/757b408).
+let TEMPLATE: string;
+beforeAll(async () => {
+  TEMPLATE = join(tmp, "template.db");
+  await applySchema(TEMPLATE, { quiet: true });
+});
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -50,8 +59,8 @@ function backends(): Array<{ name: string; make: () => Promise<CapabilityTokenSt
     {
       name: "D1",
       make: async () => {
-        const file = join(tmp, "d1.db");
-        await applySchema(file, { quiet: true });
+        const file = join(tmp, `d1-${Math.random().toString(36).slice(2)}.db`);
+        copyFileSync(TEMPLATE, file);
         const db = new Database(file);
         return new D1CapabilityTokenStore(fakeD1(db));
       },
@@ -59,8 +68,8 @@ function backends(): Array<{ name: string; make: () => Promise<CapabilityTokenSt
     {
       name: "SQLite",
       make: async () => {
-        const file = join(tmp, "sqlite.db");
-        await applySchema(file, { quiet: true });
+        const file = join(tmp, `sqlite-${Math.random().toString(36).slice(2)}.db`);
+        copyFileSync(TEMPLATE, file);
         const db = new Database(file);
         return new SqliteCapabilityTokenStore(db);
       },

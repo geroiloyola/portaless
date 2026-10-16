@@ -6,8 +6,8 @@
 // con vinculos incluye alsoKnownAs; un shape corrupto invalida el
 // documento completo.
 
-import { describe, it, expect, afterAll } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -23,6 +23,14 @@ import {
 import { buildDidDocument, parseApwDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-atproto-links-"));
+
+// El schema se aplica UNA vez a una plantilla; cada backend copia el archivo
+// (antes, applySchema dentro del test rozaba el timeout de 5s bajo carga).
+let TEMPLATE: string;
+beforeAll(async () => {
+  TEMPLATE = join(tmp, "template.db");
+  await applySchema(TEMPLATE, { quiet: true });
+});
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -54,7 +62,7 @@ function backends(): Array<{ name: string; make: () => Promise<SiteAtprotoLinksS
       name: "D1",
       make: async () => {
         const file = join(tmp, `d1-${Math.random().toString(36).slice(2)}.db`);
-        await applySchema(file, { quiet: true });
+        copyFileSync(TEMPLATE, file);
         return new D1SiteAtprotoLinksStore(fakeD1(new Database(file)) as never);
       },
     },
@@ -62,7 +70,7 @@ function backends(): Array<{ name: string; make: () => Promise<SiteAtprotoLinksS
       name: "Sqlite",
       make: async () => {
         const file = join(tmp, `sqlite-${Math.random().toString(36).slice(2)}.db`);
-        await applySchema(file, { quiet: true });
+        copyFileSync(TEMPLATE, file);
         return SqliteSiteAtprotoLinksStore.open(file);
       },
     },
@@ -99,7 +107,7 @@ describe("createSiteAtprotoLinksStore (factory)", () => {
     const { createSiteAtprotoLinksStore } = await import("../../packages/apw-resolver/src/did-apw/store-factory");
 
     const file = join(tmp, `factory-${Math.random().toString(36).slice(2)}.db`);
-    await applySchema(file, { quiet: true });
+    copyFileSync(TEMPLATE, file);
     const sqliteStore = await createSiteAtprotoLinksStore({ PORTALESS_SQLITE_PATH: file });
     expect(sqliteStore).toBeInstanceOf(SqliteSiteAtprotoLinksStore);
     await sqliteStore.add("default", "a.example.com");
