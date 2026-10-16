@@ -266,11 +266,16 @@ const Heading: ElementDefinition<HeadingProps> = {
     const level = p.level ?? "h2";
     const fontSize = HEADING_SIZES[size];
     const style = `text-align:${p.align};margin:0;${fontSize ? `font-size:${fontSize};` : ""}`;
-    const pre = variant === "eyebrow" && String(p.eyebrow ?? "").trim()
+    const eyebrowSpan = variant === "eyebrow" && String(p.eyebrow ?? "").trim()
       ? `<span style="display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-text, #5A6B24);margin:0 0 ${space(1)};">${esc(p.eyebrow)}</span>`
       : "";
     const post = variant === "ruled" ? `border-bottom:1px solid var(--panel-border, #E4E6C3);padding-bottom:${space(2)};` : "";
-    return `${pre}<${level} style="${style}${post}">${esc(p.text)}</${level}>`;
+    // El antetitulo va DENTRO del encabezado (no como hermano): asi hereda la
+    // alineacion del heading y el heading sigue siendo UN solo elemento, que es
+    // lo que necesita un layout por gap. Como hermano, un contenedor con gap lo
+    // separaba de su titulo y quedaba alineado a la izquierda aunque el heading
+    // fuera centrado.
+    return `<${level} style="${style}${post}">${eyebrowSpan}${esc(p.text)}</${level}>`;
   },
 };
 

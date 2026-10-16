@@ -77,12 +77,14 @@
     {
       "id": "cta",
       "type": "Hero",
-      "props": { "variant": "minimal", "size": "lg", "title": "Ready when you are.", "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes." }
-    },
-    {
-      "id": "cta-btn",
-      "type": "Button",
-      "props": { "label": "Start in 10 minutes", "href": "/beta", "variant": "solid", "size": "lg" }
+      "props": {
+        "variant": "spotlight",
+        "size": "lg",
+        "title": "Ready when you are.",
+        "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes.",
+        "ctaLabel": "Start in 10 minutes",
+        "ctaHref": "/beta"
+      }
     }
   ]
 }
