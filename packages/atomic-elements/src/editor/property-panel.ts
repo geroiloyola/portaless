@@ -72,7 +72,10 @@ export function renderPropertyPanel(
       (field.options ?? []).forEach((opt) => {
         const optionEl = document.createElement("option");
         optionEl.value = opt;
-        optionEl.textContent = opt;
+        // optionLabels: el desplegable muestra la palabra humana y no el valor
+        // crudo. Si no hay etiqueta para ese valor, cae al valor (comportamiento
+        // anterior), asi que anadir variantes no obliga a tocar los selects viejos.
+        optionEl.textContent = field.optionLabels?.[opt] ?? opt;
         if (String(props[field.key]) === opt) optionEl.selected = true;
         (input as HTMLSelectElement).appendChild(optionEl);
       });

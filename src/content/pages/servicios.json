@@ -46,7 +46,7 @@
       "type": "Paragraph",
       "props": { "text": "Si quieres que tu equipo deje de improvisar con discovery, escribime. Respondo en menos de 24 horas." }
     },
-    { "id": "s10", "type": "Button", "props": { "label": "Agendar llamada", "href": "#contacto", "style": "primary" } },
+    { "id": "s10", "type": "Button", "props": { "label": "Agendar llamada", "href": "#contacto", "variant": "solid" } },
     { "id": "s11", "type": "Spacer", "props": { "height": 16 } },
     {
       "id": "s12",

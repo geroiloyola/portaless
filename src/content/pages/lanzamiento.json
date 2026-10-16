@@ -47,7 +47,7 @@
       "type": "Paragraph",
       "props": { "text": "Inscripciones abiertas hasta el 30 de noviembre. Dejanos tus datos y te contactamos con el detalle del curso." }
     },
-    { "id": "l11", "type": "Button", "props": { "label": "Inscribirme", "href": "#contacto", "style": "primary" } },
+    { "id": "l11", "type": "Button", "props": { "label": "Inscribirme", "href": "#contacto", "variant": "solid" } },
     { "id": "l12", "type": "Spacer", "props": { "height": 16 } },
     {
       "id": "l13",

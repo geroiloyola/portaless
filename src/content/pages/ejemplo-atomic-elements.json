@@ -38,7 +38,7 @@
     {
       "id": "btn1",
       "type": "Button",
-      "props": { "label": "Ver el editor", "href": "/editor/", "style": "primary" }
+      "props": { "label": "Ver el editor", "href": "/editor/", "variant": "solid" }
     },
     {
       "id": "spacer1",

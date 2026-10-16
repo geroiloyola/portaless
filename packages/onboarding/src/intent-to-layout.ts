@@ -85,7 +85,7 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
         n("Heading", { text: "Mis trabajos", level: "h2", align: "center" }),
         n("Columns", { count: 2, gap: 16 }, { columnSlots: [[img("Trabajo destacado")], [img("Otro trabajo")]] }),
         n("Paragraph", { text: "Disponible para encargos y colaboraciones. Escribime y conversemos." }),
-        n("Button", { label: "Contacto", href: "#contacto", style: "primary" }),
+        n("Button", { label: "Contacto", href: "#contacto", variant: "solid" }),
         // Phase 2: el boton #contacto apunta a algo real -- el Form con
         // anchorId "contacto" (sin action todavia: el usuario configura su
         // endpoint de Formspree/Basin y empieza a recibir mensajes).
@@ -97,7 +97,7 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
         n("Hero", { title: name, subtitle: intent, bgColor: "#111827" }),
         n("Heading", { text: "Productos destacados", level: "h2", align: "left" }),
         n("ProductGrid", { source: "medusa", columns: 3, limit: 6 }),
-        n("Button", { label: "Ver toda la tienda", href: "/tienda", style: "secondary" }),
+        n("Button", { label: "Ver toda la tienda", href: "/tienda", variant: "outline" }),
       ];
     case "link-in-bio":
       return [
@@ -123,7 +123,7 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
       return [
         n("Hero", { title: name, subtitle: intent, bgColor: "#111827" }),
         n("Paragraph", { text: intent }),
-        n("Button", { label: "Contactanos", href: "#contacto", style: "primary" }),
+        n("Button", { label: "Contactanos", href: "#contacto", variant: "solid" }),
         // Phase 2: destino real del ancla #contacto (ver comentario en portfolio).
         n("Form", { action: "", submitLabel: "Enviar mensaje", anchorId: "contacto" }),
       ];

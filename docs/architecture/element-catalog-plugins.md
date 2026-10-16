@@ -44,6 +44,7 @@ interface ContributedElement {
   icon: string;                    // nombre de icono o SVG inline
   defaultProps: Record<string, unknown>;
   editableProps: EditableProp[];   // mismo shape que ElementDefinition.editableProps
+  // optionLabels?: Record<string,string> -- etiqueta humana por valor de select (opcional)
   render: {
     kind: "html-template";         // v1: solo plantillas seguras que el host escapa
     template: string;              // "…{{prop}}…" — el host interpola + escapa
@@ -102,7 +103,17 @@ Resultado: el agente ve `paywall.Boundary` en `list_page_components` (con `sourc
 
 ## El editor
 
-La paleta del editor se construye iterando el **catálogo resuelto** (`editor-app.ts`, `this.catalog.palette()`), cargado desde el endpoint admin (`GET /admin/api/element-packs`, que devuelve solo los packs; el cliente los fusiona con el core que ya viaja en su bundle vía `resolveCatalog`). Un elemento de pack se edita con el mismo panel de propiedades que uno core (mismo shape de `editableProps`), y su preview en el canvas usa el template interpolado por el host (`renderContributedTemplate`, exportado de `render.ts`). Un nodo de pack no está en `elementRegistry`, por eso el editor y el panel de propiedades ahora hacen lookup contra el catálogo (`entryView` / `renderPropertyPanel(..., catalog)`) en vez de contra el registro directo.
+La paleta del editor se construye iterando el **catálogo resuelto** (`editor-app.ts`, `this.catalog.palette()`), cargado desde el endpoint admin (`GET /admin/api/element-packs`, que devuelve solo los packs; el cliente los fusiona con el core que ya viaja en su bundle vía `resolveCatalog`). Un elemento de pack se edita con el mismo panel de propiedades que uno core (mismo shape de `editableProps`, incluido el `optionLabels` opcional que traduce cada valor de un `select` a la palabra que ve la persona: sin el, el desplegable muestra `centered` o `h1` en una interfaz en castellano), y su preview en el canvas usa el template interpolado por el host (`renderContributedTemplate`, exportado de `render.ts`). Un nodo de pack no está en `elementRegistry`, por eso el editor y el panel de propiedades ahora hacen lookup contra el catálogo (`entryView` / `renderPropertyPanel(..., catalog)`) en vez de contra el registro directo.
+
+## Variantes, tamaño y ritmo (fase 13)
+
+El core define en `elementRegistry` (`packages/atomic-elements/src/elements/registry.ts`) dos campos ortogonales y una escala:
+
+- **`variant`** — la FORMA del elemento (`Hero`: `centered`/`split`/`minimal`, `Button`: `solid`/`outline`/`ghost`, `FAQ`: `list`/`bordered`/`numbered`, y así). Una variante es una forma, no un adorno: si dos valores solo cambian color o padding, eso lo hacen los tokens del tema. Valor desconocido → default (`variantOf()`), el mismo criterio fail-safe que un pack que no resuelve.
+- **`size`** — la escala visual, campo propio y no parte de la variante (3+3 opciones en vez de 3×3), solo en `Hero`, `Heading` y `Button`. **`Heading.size` es visual y `Heading.level` es semántico, y no se tocan**: un `h2` con `size: lg` sigue siendo un `h2`.
+- **El ritmo** — `--space-1..8` en `global.css`, derivados de `--space-unit`, que es la única longitud real. Vive FUERA de `DesignTokens` a propósito: un theme pack controla identidad (color, radio, densidad), no ritmo, y `THEME_VARS` está fijado en paridad con `TOKEN_TO_CSS_VAR` por test. `--density` se traduce a `--space-unit` en `applyDesignTokens()` (`comfortable` 4px / `compact` 3px).
+
+Un pack que quiera el mismo ritmo consume `var(--space-N, <fallback>)` en su template, igual que el core: no hay una API de espaciado que un pack pueda ignorar por descuido, y sí un escaneo de fuente que falla si un átomo emite un `padding` o un `border-radius` en píxeles crudos.
 
 ## Límites honestos (decididos, no descuidos)
 

@@ -45,6 +45,14 @@ export interface ElementDefinition<TProps = Record<string, unknown>> {
     label: string;
     kind: "text" | "textarea" | "url" | "number" | "color" | "select";
     options?: string[];
+    /**
+     * Texto visible de cada valor de un `select`. El panel lo usa en lugar del
+     * valor crudo: sin esto el desplegable de un editor en castellano
+     * mostraba `centered` o `h1`. Es aditivo -- si falta la clave, se renderiza
+     * el valor crudo, como antes. Sirve igual para las variantes (`variant`) y
+     * para los select que ya existian (`h1|h2|h3`, `left|center|right`).
+     */
+    optionLabels?: Record<string, string>;
   }>;
   renderHTML: (props: TProps, children?: string) => string;
   renderHTMLAsync?: (props: TProps, children?: string) => Promise<string>;

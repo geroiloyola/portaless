@@ -43,7 +43,7 @@
       "type": "Paragraph",
       "props": { "text": "Disponible para sesiones de producto, retrato corporativo y campañas. Escribime y armamos una propuesta a tu medida." }
     },
-    { "id": "p9", "type": "Button", "props": { "label": "Contacto", "href": "#contacto", "style": "primary" } },
+    { "id": "p9", "type": "Button", "props": { "label": "Contacto", "href": "#contacto", "variant": "solid" } },
     { "id": "p10", "type": "Spacer", "props": { "height": 16 } },
     {
       "id": "p11",

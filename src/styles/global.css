@@ -55,6 +55,38 @@
      sigue siendo el radio de tarjetas/paneles. */
   --radius-button: 8px;
   --radius-input: 6px;
+  /* pill: el unico radio que NO es una medida de la escala, porque su
+     significacion es "todo lo redondeado". Badge, chip y avatar. */
+  --radius-pill: 999px;
+
+  /* Ritmo: escala de espaciado compartida por todos los atomos.
+     Vive ACA y no en DesignTokens a proposito: un theme pack controla
+     IDENTIDAD (color, radio, densidad), no RITMO, y meterla en
+     DesignTokens obligaria a cada pack a declarar espaciado y romperia la
+     paridad de 16 variables fijada por test (theme-pack.test.ts). Mismo
+     precedente que --radius-button/--radius-input.
+
+     --space-unit es la unica longitud real: el resto se deriva, y un skin
+     compacto la cambia (comfortable 4px / compact 3px) desde
+     applyDesignTokens(). Por eso los atomos emiten var(--space-N, <literal>px):
+     el fallback conserva el valor exacto de hoy si el CSS no cargo, y nunca
+     dependen del orden de carga. */
+  --space-unit: 4px;
+  --space-1: var(--space-unit);
+  --space-2: calc(var(--space-unit) * 2);
+  --space-3: calc(var(--space-unit) * 3);
+  --space-4: calc(var(--space-unit) * 4);
+  --space-5: calc(var(--space-unit) * 6);
+  --space-6: calc(var(--space-unit) * 8);
+  --space-7: calc(var(--space-unit) * 12);
+  --space-8: calc(var(--space-unit) * 16);
+
+  /* Tipografia por ROL: el Hero deja de emitir 2.2rem a mano y el Heading deja
+     de depender de la cascada h1/h2/h3 del tema para decidir su tamano visual.
+     --fs-title es el clamp que hoy aplica a h2. */
+  --fs-display: clamp(2.1rem, 1.5rem + 2.4vw, 3.2rem);
+  --fs-title: clamp(1.45rem, 1.2rem + 0.9vw, 1.9rem);
+  --fs-body: 1rem;
 
   font-family: var(--font-sans);
 }

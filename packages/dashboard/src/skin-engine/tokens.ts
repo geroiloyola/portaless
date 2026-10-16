@@ -37,6 +37,24 @@ export const TOKEN_TO_CSS_VAR: Record<keyof DesignTokens, string> = {
   dangerFg: "--danger-fg",
 };
 
+/**
+ * `--density` es un token que se emitia sin consumidor: es una palabra
+ * ("comfortable"), y CSS no puede convertir una palabra en longitud. Por eso
+ * NO va en TOKEN_TO_CSS_VAR (que esta fijado en paridad con THEME_VARS por
+ * test: 16 claves exactas) sino que se traduce aca a la escala de espaciado
+ * que consumen los atomos: `--space-unit` es la unica longitud real de
+ * `--space-1..8`, y un skin compacto compacta de verdad en vez de describirlo.
+ */
+export const DENSITY_TO_SPACE_UNIT: Record<string, string> = {
+  compact: "3px",
+  comfortable: "4px",
+};
+
+export function spaceUnitForDensity(density: string | undefined): string | undefined {
+  if (typeof density !== "string") return undefined;
+  return DENSITY_TO_SPACE_UNIT[density];
+}
+
 export function applyDesignTokens(tokens: DesignTokens, root: HTMLElement = document.documentElement): void {
   for (const key of Object.keys(tokens) as (keyof DesignTokens)[]) {
     const cssVar = TOKEN_TO_CSS_VAR[key];
@@ -44,6 +62,13 @@ export function applyDesignTokens(tokens: DesignTokens, root: HTMLElement = docu
     if (cssVar && value !== undefined) {
       root.style.setProperty(cssVar, String(value));
     }
+  }
+
+  // Un token que se declara y no se aplica es decoracion. --density se
+  // traduce a la unidad de la escala de espaciado (global.css).
+  const spaceUnit = spaceUnitForDensity(tokens.density);
+  if (spaceUnit) {
+    root.style.setProperty("--space-unit", spaceUnit);
   }
 }
 
