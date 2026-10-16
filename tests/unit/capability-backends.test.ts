@@ -2,7 +2,10 @@
 // CapabilityHostBridge que consumen el bridge HTTP (adaptadores edge) y el
 // caller de produccion (adaptador self-hosted). Aqui se prueba el bridge en
 // proceso: storage con namespace + cuotas, content, y el enrutado por id.
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   createCapabilityHostBridge,
   dispatchCapability,
@@ -12,6 +15,9 @@ import {
 } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
 import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
 import type { CapabilityError } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
+
+const tmp = mkdtempSync(join(tmpdir(), "portaless-cap-backends-"));
+afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 beforeEach(() => __resetPluginStorageStoreForTests());
 
@@ -60,6 +66,11 @@ describe("createCapabilityHostBridge: content (validacion de forma)", () => {
     const bridge = createCapabilityHostBridge({});
     await expect(bridge.contentRead!({})).rejects.toMatchObject({ code: "NOT_CONFIGURED" });
     await expect(bridge.contentWrite!({})).rejects.toMatchObject({ code: "NOT_CONFIGURED" });
+  });
+
+  it("pagina inexistente -> PAGE_NOT_FOUND, no NOT_CONFIGURED (el backend existe, la pagina no)", async () => {
+    const bridge = createCapabilityHostBridge({ PORTALESS_SQLITE_PATH: join(tmp, "pages.sqlite") });
+    await expect(bridge.contentRead!({ slug: "no-existe-jamas" })).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
   });
 });
 

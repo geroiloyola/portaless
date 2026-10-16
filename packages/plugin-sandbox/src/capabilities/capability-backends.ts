@@ -56,7 +56,7 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       if (typeof slug !== "string") throw notConfigured("content:read requiere { slug: string }");
       const pageStore = await createPageStore(env);
       const layout = await pageStore.load(slug);
-      if (!layout) throw notConfigured(`Pagina '${slug}' no encontrada.`);
+      if (!layout) throw capabilityError("PAGE_NOT_FOUND", `Pagina '${slug}' no encontrada.`);
       return layout;
     },
     contentWrite: async (payload) => {

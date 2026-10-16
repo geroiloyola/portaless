@@ -90,4 +90,13 @@ describe("capability-bridge HTTP: storage", () => {
     const res = await onRequestPost(makeContext("tok_ro", { capability: "storage:write", args: { key: "k", value: 1 } }));
     expect(res.status).toBe(403);
   });
+
+  it("content:read de una pagina inexistente -> 404 con code PAGE_NOT_FOUND (backend real, pagina ausente)", async () => {
+    await sharedTokenStore.issue("tok_content", "mi-plugin", ["content:read"]);
+    const res = await onRequestPost(
+      makeContext("tok_content", { capability: "content:read", args: { slug: "no-existe-jamas" } })
+    );
+    expect(res.status).toBe(404);
+    expect((await res.json()).code).toBe("PAGE_NOT_FOUND");
+  });
 });

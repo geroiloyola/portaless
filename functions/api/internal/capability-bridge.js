@@ -135,11 +135,13 @@ export async function onRequestPost(context) {
     const status =
       code === "NOT_CONFIGURED"
         ? 501
-        : code === "STORAGE_INVALID_KEY"
-          ? 400
-          : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
-            ? 413
-            : 500;
+        : code === "PAGE_NOT_FOUND"
+          ? 404
+          : code === "STORAGE_INVALID_KEY"
+            ? 400
+            : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
+              ? 413
+              : 500;
     return new Response(JSON.stringify({ error: err.message || "Error interno.", ...(code ? { code } : {}) }), {
       status,
       headers: { "Content-Type": "application/json" },

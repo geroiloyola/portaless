@@ -110,7 +110,8 @@ const myPlugin: PluginEntry = async (payload, { capabilities, fetchAllowed, cons
 
 - `payload` — the per-invocation input (whatever the caller passed).
 - `capabilities` — the typed handlers; calling one you were not granted throws
-  `Capacidad '<id>' no concedida`.
+  `Capacidad '<id>' no concedida`; a missing record is a normal outcome
+  (`content:read` of an unknown slug answers `404 PAGE_NOT_FOUND`, not a `501`).
 - `fetchAllowed(url, opts)` — network, gated by `network:fetch` + `allowedHosts`.
 - `console.log` — forwarded to the host log.
 
