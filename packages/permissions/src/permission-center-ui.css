@@ -1,15 +1,44 @@
-/* Estilos del Centro de Permisos -- pantalla estilo "Privacidad y
- * Seguridad" de iOS/Android: agrupado por categoria, un switch
- * individual por cada plugin/agente/theme que solicita esa capacidad.
- * Reutiliza las variables de tema definidas en src/styles/global.css
- * (--portaless-bg, --portaless-fg, --portaless-accent, etc.) para que
- * el Centro de Permisos se vea coherente con el resto del dashboard. */
+/* Estilos del Centro de Permisos: agrupado por RIESGO de la capacidad
+ * (alto primero), un switch individual por cada plugin/agente/theme que la
+ * solicita, y la categoria como etiqueta secundaria. Reutiliza las variables
+ * de tema definidas en src/styles/global.css (--portaless-bg, --portaless-fg,
+ * --portaless-accent, etc.) para que el Centro de Permisos se vea coherente
+ * con el resto del dashboard. */
 
 .pc-shell {
   display: flex;
   flex-direction: column;
   gap: 28px;
   max-width: 720px;
+}
+
+.pc-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  border: 1px solid var(--portaless-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--panel-bg);
+}
+
+.pc-risk-summary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pc-risk-summary-count {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-risk-summary-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--portaless-muted);
 }
 
 .pc-category {
@@ -66,7 +95,7 @@
   line-height: 1.45;
 }
 
-.pc-risk {
+.pc-cap-category {
   flex-shrink: 0;
   font-size: 0.7rem;
   font-weight: 700;
@@ -75,6 +104,8 @@
   padding: 4px 10px;
   border-radius: 999px;
   white-space: nowrap;
+  color: var(--portaless-muted);
+  border: 1px solid var(--portaless-border);
 }
 
 .pc-subject-list {

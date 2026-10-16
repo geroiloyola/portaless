@@ -7,6 +7,9 @@ import * as sdk from "../../packages/plugin-sdk/src/index";
 import {
   capabilityRegistry as coreRegistry,
   listCapabilitiesByCategory as coreList,
+  listCapabilitiesByRisk as coreListByRisk,
+  RISK_ORDER as CORE_RISK_ORDER,
+  RISK_LABELS as CORE_RISK_LABELS,
 } from "../../packages/plugin-sandbox/src/capabilities/capability-registry";
 import { validateManifest as coreValidate } from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
 import { PLUGIN_MANIFEST_TYP as CORE_PLUGIN_MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
@@ -60,6 +63,12 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
 
   it("la agrupacion por categoria es identica", () => {
     expect(sdk.listCapabilitiesByCategory()).toEqual(coreList());
+  });
+
+  it("la agrupacion por riesgo y su orden son identicas", () => {
+    expect(sdk.listCapabilitiesByRisk()).toEqual(coreListByRisk());
+    expect(sdk.RISK_ORDER).toEqual(CORE_RISK_ORDER);
+    expect(sdk.RISK_LABELS).toEqual(CORE_RISK_LABELS);
   });
 
   it("PLUGIN_CAPABILITY_IDS es el catalogo menos las dos capacidades reservadas", () => {

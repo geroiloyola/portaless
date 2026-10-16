@@ -76,7 +76,22 @@ try {
   await shot(page, `${base}/proyecciones/`, "public-proyecciones.png", { fullPage: true });
 
   console.log("[captura] dashboard / editor / trust...");
-  await shot(page, `${base}/admin/`, "admin-dashboard.png");
+  await shot(page, `${base}/admin/`, "admin-dashboard.png", {
+    waitFor: async () => {
+      // El resumen de riesgo se llena en el navegador contra /admin/permissions.
+      await page
+        .waitForFunction(() => {
+          const el = document.getElementById("ai-risk-desc");
+          return el && !el.textContent.includes("Contando");
+        }, { timeout: 15_000 })
+        .catch(() => {});
+    },
+  });
+  await shot(page, `${base}/admin/permissions`, "admin-permissions.png", {
+    waitFor: async () => {
+      await page.waitForSelector(".pc-capability", { timeout: 15_000 });
+    },
+  });
   await shot(page, `${base}/admin/editor?slug=link-in-bio`, "editor-atomic-elements.png", {
     waitFor: async () => {
       await page.waitForSelector(".ae-canvas .ae-block", { timeout: 15_000 });

@@ -25,7 +25,30 @@ concesiones de este Centro como un `PermissionResolver` que el
 concesión del administrador siempre gana sobre lo que el plugin
 solicitó** en su manifiesto.
 
-## Categorías de permisos (igual que iOS agrupa Cámara/Micrófono/Contactos)
+## Agrupación por riesgo (fase 13, §13.5)
+
+El catálogo sigue teniendo categorías (Contenido, Red, ...), pero la UI ya no
+agrupa por categoría: **agrupa por riesgo**, de alto a bajo, y muestra la
+categoría como etiqueta de cada capacidad. El motivo es de producto: lo que una
+persona necesita ver primero no es si un permiso es "de Red" o "de Comercio",
+sino cuáles de alto riesgo están concedidos. El riesgo ya existía como dato
+(`risk: "bajo" | "medio" | "alto"` en cada capacidad) pero era decorativo: un
+badge por fila. Ahora es la estructura.
+
+- `listCapabilitiesByRisk()` en `capability-registry.ts` (y su espejo en el SDK,
+  verificado por `plugin-sdk-parity.test.ts`) agrupa por riesgo.
+- `RISK_ORDER` fija el orden (`alto`, `medio`, `bajo`) y `RISK_LABELS` la
+  etiqueta humana; la UI itera `RISK_ORDER`, no las claves del objeto.
+- Arriba del Centro hay un resumen por nivel: **concedidas / total**. La unidad
+  es la capacidad (con al menos un grant activo), no el grant: 1 capacidad con 3
+  plugins concedidos cuenta 1.
+- El dashboard (`/admin`) muestra el mismo resumen. El total por nivel sale del
+  catálogo en build; las concedidas se cuentan en el navegador contra
+  `GET /admin/permissions` (el build estático no conoce los grants). Sin nodo
+  con `functions/`, el conteo se muestra como `—` y se dice por qué, en vez de
+  mostrar un cero falso.
+
+## Categorías de permisos (siguen siendo el vocabulario del catálogo)
 
 - **Contenido**: leer/escribir páginas, posts y medios.
 - **Red**: conexión a servicios externos (siempre con hosts explícitos),
@@ -33,8 +56,8 @@ solicitó** en su manifiesto.
 - **Comercio**: lectura de catálogo, inicio de checkout.
 - **Almacenamiento**: lectura/escritura del espacio propio del plugin.
 - **Agentes IA**: lectura del ledger del Trust Layer.
-- **Administración**: cambios de configuración global (el nivel de riesgo
-  más alto, mostrado explícitamente en rojo en la interfaz).
+- **Administración**: cambios de configuración global (la categoría con las
+  capacidades de más alto riesgo, marcadas en rojo por su nivel de riesgo).
 
 ## Persistencia real (v0.0.9.2)
 

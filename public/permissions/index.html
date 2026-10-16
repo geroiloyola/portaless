@@ -17,6 +17,11 @@
   .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
   .intro { font-size: 13px; color: #6c7386; margin-bottom: 22px; }
 
+  .pc-risk-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background:#fff; border:1px solid #eceef5; border-radius:16px; padding:14px 16px; margin-bottom:22px; }
+  .pc-risk-summary-cell { display:flex; flex-direction:column; gap:2px; }
+  .pc-risk-summary-count { font-size:22px; font-weight:800; font-variant-numeric: tabular-nums; }
+  .pc-risk-summary-label { font-size:11px; font-weight:600; color:#8b8ea0; }
+
   .pc-category { margin-bottom: 26px; }
   .pc-category h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #8b8ea0; margin-bottom: 10px; padding-left: 4px; }
 
@@ -27,7 +32,7 @@
   .pc-capability-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
   .pc-cap-label { font-size: 14px; font-weight: 700; }
   .pc-cap-desc { font-size: 12px; color: #8b8ea0; margin-top: 2px; }
-  .pc-risk { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .pc-cap-category { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; color:#8b8ea0; border:1px solid #eceef5; }
 
   .pc-subject-row {
     display: flex; justify-content: space-between; align-items: center;
@@ -86,14 +91,21 @@ let grants = [
 ];
 
 function riskColor(risk) { return risk === "alto" ? "#ff5a5f" : risk === "medio" ? "#ffb347" : "#34c759"; }
+const RISK_ORDER = ["alto", "medio", "bajo"];
+const RISK_LABELS = { alto: "Alto riesgo", medio: "Riesgo medio", bajo: "Riesgo bajo" };
 
-function groupByCategory() {
-  const grouped = {};
-  for (const [id, def] of Object.entries(capabilityRegistry)) {
-    grouped[def.category] = grouped[def.category] || [];
-    grouped[def.category].push({ id, ...def });
-  }
+// Agrupado por RIESGO (mas peligroso primero); la categoria queda como
+// etiqueta de cada capacidad. Mismo criterio que permission-center-ui.ts.
+function groupByRisk() {
+  const grouped = { alto: [], medio: [], bajo: [] };
+  for (const [id, def] of Object.entries(capabilityRegistry)) grouped[def.risk].push({ id, ...def });
   return grouped;
+}
+
+function grantedCapabilityIds() {
+  const ids = new Set();
+  for (const g of grants) if (g.granted) ids.add(g.capabilityId);
+  return ids;
 }
 
 // Iconos del tipo de subject -- SVG inline (Lucide, ISC), mismo criterio que
@@ -117,22 +129,39 @@ function subjectIcon(type) {
 function render() {
   const container = document.getElementById("permission-center");
   container.innerHTML = "";
-  const grouped = groupByCategory();
+  const grouped = groupByRisk();
+  const granted = grantedCapabilityIds();
 
-  for (const [category, caps] of Object.entries(grouped)) {
+  const summary = document.createElement("div");
+  summary.className = "pc-risk-summary";
+  RISK_ORDER.forEach((risk) => {
+    const caps = grouped[risk];
+    const on = caps.filter((c) => granted.has(c.id)).length;
+    const color = riskColor(risk);
+    const cell = document.createElement("div");
+    cell.className = "pc-risk-summary-cell";
+    cell.innerHTML = `<span class="pc-risk-summary-count" style="color:${color}">${on}/${caps.length}</span>` +
+      `<span class="pc-risk-summary-label">${RISK_LABELS[risk]} · concedidas</span>`;
+    summary.appendChild(cell);
+  });
+  container.appendChild(summary);
+
+  for (const risk of RISK_ORDER) {
+    const caps = grouped[risk];
+    if (caps.length === 0) continue;
     const section = document.createElement("div");
     section.className = "pc-category";
     const h3 = document.createElement("h3");
-    h3.textContent = category;
+    h3.textContent = RISK_LABELS[risk];
+    h3.style.color = riskColor(risk);
     section.appendChild(h3);
 
     caps.forEach((cap) => {
       const block = document.createElement("div");
       block.className = "pc-capability";
-      const color = riskColor(cap.risk);
       block.innerHTML = `<div class="pc-capability-header">
         <div><div class="pc-cap-label">${cap.label}</div><div class="pc-cap-desc">${cap.description}</div></div>
-        <span class="pc-risk" style="background:${color}22;color:${color};">riesgo ${cap.risk}</span>
+        <span class="pc-cap-category">${cap.category}</span>
       </div>`;
 
       const subjectsForCap = grants.filter((g) => g.capabilityId === cap.id);

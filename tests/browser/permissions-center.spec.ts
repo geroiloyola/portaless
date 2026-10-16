@@ -35,3 +35,28 @@ test("el endpoint sigue devolviendo JSON a los clientes de API", async ({ page }
   expect(res.type).toContain("application/json");
   expect(Array.isArray(res.body.grants)).toBe(true);
 });
+
+// §13.5: el Centro de Permisos agrupa por RIESGO (alto primero) y la
+// categoria queda como etiqueta secundaria de cada capacidad.
+test("las secciones van por riesgo, de alto a bajo, con la categoria como etiqueta", async ({ page }) => {
+  await login(page);
+  await page.goto("/admin/permissions");
+
+  // El resumen de riesgo arriba, con las tres celdas.
+  await expect(page.locator(".pc-risk-summary .pc-risk-summary-cell")).toHaveCount(3);
+  await expect(page.locator('.pc-risk-summary-cell[data-risk="alto"]')).toBeVisible();
+
+  // Las secciones, en orden, por nivel de riesgo.
+  const titles = page.locator(".pc-category > .pc-category-title");
+  await expect(titles).toHaveText(["Alto riesgo", "Riesgo medio", "Riesgo bajo"]);
+
+  const sections = page.locator("section.pc-category");
+  await expect(sections.nth(0)).toHaveAttribute("data-risk", "alto");
+  await expect(sections.nth(1)).toHaveAttribute("data-risk", "medio");
+  await expect(sections.nth(2)).toHaveAttribute("data-risk", "bajo");
+
+  // La categoria sobrevive como etiqueta de cada capacidad.
+  await expect(page.locator(".pc-cap-category").first()).toBeVisible();
+  // Y ya no queda el badge redundante "riesgo <nivel>" por capacidad.
+  await expect(page.locator(".pc-risk")).toHaveCount(0);
+});

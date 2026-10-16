@@ -1,18 +1,33 @@
-// Catalogo maestro de capacidades atomicas, agrupadas por categoria --
-// exactamente como agrupa iOS/Android sus permisos (Camara, Ubicacion,
-// Contactos...) en su pantalla de Privacidad. Este registro es la fuente
-// de verdad compartida entre el sandbox de plugins y el Centro de Permisos
-// del dashboard (packages/permissions).
+// Catalogo maestro de capacidades atomicas. La fuente de verdad compartida
+// entre el sandbox de plugins y el Centro de Permisos del dashboard
+// (packages/permissions). Se puede agrupar de dos maneras:
+//   - por CATEGORIA (Contenido, Red, ...), como agrupa iOS/Android; y
+//   - por RIESGO (alto/medio/bajo), que es como el Centro de Permisos ordena
+//     hoy: primero lo peligroso, y la categoria queda como etiqueta.
+// El riesgo ya existia como dato decorativo; ahora tambien es la estructura.
 
 import type { CapabilityId } from "../types";
+
+export type CapabilityRisk = "bajo" | "medio" | "alto";
 
 export interface CapabilityDefinition {
   id: CapabilityId;
   category: "Contenido" | "Red" | "Comercio" | "Almacenamiento" | "Agentes IA" | "Administración" | "Cobros";
   label: string;
   description: string;
-  risk: "bajo" | "medio" | "alto";
+  risk: CapabilityRisk;
 }
+
+// De mas peligroso a menos: el orden en que el Centro de Permisos muestra las
+// secciones. Una capacidad nueva se ubica sola segun su `risk`.
+export const RISK_ORDER: readonly CapabilityRisk[] = ["alto", "medio", "bajo"];
+
+export const RISK_LABELS: Record<CapabilityRisk, string> = {
+  alto: "Alto riesgo",
+  medio: "Riesgo medio",
+  bajo: "Riesgo bajo",
+};
+
 
 export const capabilityRegistry: Record<CapabilityId, CapabilityDefinition> = {
   "content:read": {
@@ -113,5 +128,17 @@ export function listCapabilitiesByCategory(): Record<string, CapabilityDefinitio
     grouped[def.category] = grouped[def.category] ?? [];
     grouped[def.category].push(def);
   }
+  return grouped;
+}
+
+/**
+ * Agrupa por riesgo, de mas peligroso a menos (RISK_ORDER). Las tres claves
+ * existen siempre, aunque una quede vacia: el Centro de Permisos itera
+ * RISK_ORDER, no las claves del objeto, para que el orden no dependa del
+ * orden de insercion ni de como JavaScript ordena las claves.
+ */
+export function listCapabilitiesByRisk(): Record<CapabilityRisk, CapabilityDefinition[]> {
+  const grouped = { alto: [], medio: [], bajo: [] } as Record<CapabilityRisk, CapabilityDefinition[]>;
+  for (const def of Object.values(capabilityRegistry)) grouped[def.risk].push(def);
   return grouped;
 }

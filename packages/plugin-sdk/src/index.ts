@@ -74,13 +74,28 @@ export const PLUGIN_CAPABILITY_IDS: readonly PluginCapabilityId[] = [
   "site:admin",
 ];
 
+export type CapabilityRisk = "bajo" | "medio" | "alto";
+
 export interface CapabilityDefinition {
   id: CapabilityId;
   category: "Contenido" | "Red" | "Comercio" | "Almacenamiento" | "Agentes IA" | "Administración" | "Cobros";
   label: string;
   description: string;
-  risk: "bajo" | "medio" | "alto";
+  risk: CapabilityRisk;
 }
+
+/**
+ * Risk levels from most to least dangerous. Deep-equal to `RISK_ORDER` in
+ * `@portaless/plugin-sandbox` (checked by the parity test).
+ */
+export const RISK_ORDER: readonly CapabilityRisk[] = ["alto", "medio", "bajo"];
+
+/** Human labels for each risk level. Deep-equal to the core `RISK_LABELS`. */
+export const RISK_LABELS: Record<CapabilityRisk, string> = {
+  alto: "Alto riesgo",
+  medio: "Riesgo medio",
+  bajo: "Riesgo bajo",
+};
 
 /**
  * Master catalog of atomic capabilities grouped by category. Deep-equal to
@@ -180,6 +195,13 @@ export function listCapabilitiesByCategory(): Record<string, CapabilityDefinitio
     grouped[def.category] = grouped[def.category] ?? [];
     grouped[def.category].push(def);
   }
+  return grouped;
+}
+
+/** Grouped by risk, most dangerous first. Deep-equal to the core helper. */
+export function listCapabilitiesByRisk(): Record<CapabilityRisk, CapabilityDefinition[]> {
+  const grouped = { alto: [], medio: [], bajo: [] } as Record<CapabilityRisk, CapabilityDefinition[]>;
+  for (const def of Object.values(capabilityRegistry)) grouped[def.risk].push(def);
   return grouped;
 }
 

@@ -44,6 +44,22 @@
 // "Sitio Verificado" y nunca pedia actualizarse. Sin identidad, el banner
 // se comporta igual que antes.
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  capabilityRegistry,
+  listCapabilitiesByRisk,
+  RISK_LABELS,
+  RISK_ORDER,
+} from "../../../packages/plugin-sandbox/src/capabilities/capability-registry";
+
+// §13.5: el dashboard muestra el riesgo de las capacidades concedidas, no solo
+// un enlace al Centro de Permisos. El total por nivel sale del catalogo (build);
+// las concedidas se cuentan en el navegador contra /admin/permissions, porque
+// el build estatico no conoce los grants. Sin nodo con functions, degrada.
+const capsByRisk = listCapabilitiesByRisk();
+const riskById = Object.fromEntries(
+  Object.values(capabilityRegistry).map((cap) => [cap.id, cap.risk])
+);
+const riskIdMapJson = JSON.stringify(riskById);
 ---
 <BaseLayout title="Panel de administración — Portaless">
   <div class="ai-page-header">
@@ -112,6 +128,25 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       </p>
       <p class="ai-apw-txt-warn" id="ai-apw-txt-warn" hidden></p>
     </div>
+  </section>
+
+  <section class="ai-risk-summary" id="ai-risk-summary" aria-label="Resumen de riesgo de permisos">
+    <div class="ai-risk-summary-row">
+      <div class="ai-risk-summary-text">
+        <span class="ai-risk-summary-title">Riesgo de permisos</span>
+        <p class="ai-risk-summary-desc" id="ai-risk-desc">Contando cuántas capacidades están concedidas…</p>
+      </div>
+      <a class="ai-risk-summary-link" href="/admin/permissions">Abrir el Centro de Permisos</a>
+    </div>
+    <div class="ai-risk-summary-grid">
+      {RISK_ORDER.map((risk) => (
+        <div class="ai-risk-cell" data-risk={risk}>
+          <span class="ai-risk-count" id={`ai-risk-${risk}`} data-total={capsByRisk[risk].length}>—</span>
+          <span class="ai-risk-label">{RISK_LABELS[risk]} · de {capsByRisk[risk].length}</span>
+        </div>
+      ))}
+    </div>
+    <script type="application/json" id="ai-risk-map" set:html={riskIdMapJson} />
   </section>
 
   <nav class="ai-nav-grid">
@@ -373,6 +408,52 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   checkApwStatus();
 </script>
 
+<script>
+  // §13.5: resumen de riesgo. El total por nivel ya viene del build (catalogo);
+  // aca se cuentan las capacidades CONCEDIDAS (al menos un grant activo), que
+  // solo se conocen en runtime. Si el hosting no tiene functions, el fetch
+  // falla y se dice, en vez de mostrar un cero falso.
+  const riskMapEl = document.getElementById("ai-risk-map");
+  const RISK_BY_ID = riskMapEl ? JSON.parse(riskMapEl.textContent || "{}") : {};
+  const RISK_LEVELS = ["alto", "medio", "bajo"];
+
+  async function loadRiskSummary() {
+    const desc = document.getElementById("ai-risk-desc");
+    try {
+      const res = await fetch("/admin/permissions", {
+        credentials: "same-origin",
+        headers: { accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const granted = new Set();
+      for (const grant of data.grants || []) if (grant.granted) granted.add(grant.capabilityId);
+
+      const counts = { alto: 0, medio: 0, bajo: 0 };
+      for (const id of granted) {
+        const risk = RISK_BY_ID[id];
+        if (risk) counts[risk] += 1;
+      }
+      for (const risk of RISK_LEVELS) {
+        const el = document.getElementById(`ai-risk-${risk}`);
+        if (el) el.textContent = String(counts[risk]);
+      }
+      desc.textContent =
+        counts.alto > 0
+          ? `Hay ${counts.alto} ${counts.alto === 1 ? "capacidad" : "capacidades"} de alto riesgo concedidas. Revisá el Centro de Permisos.`
+          : "Ninguna capacidad de alto riesgo está concedida.";
+    } catch (e) {
+      desc.textContent = "No pudimos leer los permisos concedidos en este hosting (requiere un nodo con functions). El total por nivel del catálogo se muestra igual.";
+      for (const risk of RISK_LEVELS) {
+        const el = document.getElementById(`ai-risk-${risk}`);
+        if (el) el.textContent = "—";
+      }
+    }
+  }
+
+  loadRiskSummary();
+</script>
+
 <style>
   .ai-page-header { margin-bottom: 28px; }
   .ai-page-title { margin: 0 0 6px; font-size: 1.4rem; }
@@ -451,8 +532,36 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .ai-apw-txt-warn { margin: 8px 0 0; font-size: 0.78rem; color: var(--warning-fg); }
   #ai-apw-txt-stale { margin: 0 0 10px; }
 
-  .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
+  .ai-risk-summary {
+    max-width: 780px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+    color: var(--text);
+  }
+  .ai-risk-summary-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .ai-risk-summary-text { flex: 1; min-width: 220px; }
+  .ai-risk-summary-title { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .ai-risk-summary-desc { margin: 0; font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+  .ai-risk-summary-link {
+    flex-shrink: 0;
+    align-self: center;
+    color: var(--accent-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ai-risk-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+  .ai-risk-cell { display: flex; flex-direction: column; gap: 2px; }
+  .ai-risk-count { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ai-risk-cell[data-risk="alto"] .ai-risk-count { color: var(--danger-fg); }
+  .ai-risk-cell[data-risk="medio"] .ai-risk-count { color: var(--warning-fg); }
+  .ai-risk-cell[data-risk="bajo"] .ai-risk-count { color: var(--success-fg); }
+  .ai-risk-label { font-size: 0.75rem; color: var(--portaless-muted); }
 
+  .ai-nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 780px; }
   .ai-nav-card {
     display: flex;
     flex-direction: column;

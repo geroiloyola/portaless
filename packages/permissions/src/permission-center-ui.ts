@@ -1,8 +1,10 @@
-// Renderiza el Centro de Permisos con la misma logica visual que la
-// pantalla de Privacidad y Seguridad de iOS/Android: agrupado por
-// categoria de permiso, y dentro de cada categoria, la lista de
-// plugins/agentes/themes que lo solicitan, con un switch individual --
-// nunca un permiso "todo o nada" por plugin.
+// Renderiza el Centro de Permisos: agrupado por RIESGO de la capacidad
+// (alto primero), y dentro de cada grupo la lista de plugins/agentes/themes
+// que la solicitan, con un switch individual -- nunca un permiso "todo o
+// nada" por plugin. La categoria de la capacidad (Contenido, Red...) queda
+// como etiqueta secundaria: el riesgo es lo que una persona necesita ver
+// primero (ROADMAP fase 13, §13.5), y arriba va un resumen de cuantas
+// capacidades de cada nivel estan concedidas.
 //
 // v0.0.9.2: el unico canal de escritura es onToggle (fetch real contra
 // /admin/permissions, ver src/pages/admin/permissions.astro), con estado
@@ -24,7 +26,13 @@
 // revoca igual que cualquier otro permiso.
 
 import type { PermissionGrant, PermissionSubject } from "./types";
-import { capabilityRegistry, listCapabilitiesByCategory } from "../../plugin-sandbox/src/capabilities/capability-registry";
+import {
+  listCapabilitiesByRisk,
+  RISK_LABELS,
+  RISK_ORDER,
+  type CapabilityDefinition,
+  type CapabilityRisk,
+} from "../../plugin-sandbox/src/capabilities/capability-registry";
 import { READ_GOVERNANCE_BYPASS_CAPABILITY, isReaderDid, readerSubject } from "./reader-bypass";
 
 export interface PermissionCenterOptions {
@@ -38,8 +46,53 @@ export interface PermissionCenterOptions {
 
 const SETTLEMENT_CONFIG_URL = "/admin/settlement";
 
-function riskColor(risk: "bajo" | "medio" | "alto"): string {
+function riskColor(risk: CapabilityRisk): string {
   return risk === "alto" ? "var(--danger-fg)" : risk === "medio" ? "var(--warning-fg)" : "var(--success-fg)";
+}
+
+// Capacidades con al menos un grant activo (granted=true). Es la unidad del
+// resumen: "cuantas capacidades de este riesgo estan concedidas", no cuantos
+// subjects por capacidad (que confundiria 1 capacidad x 3 plugins con 3).
+function grantedCapabilityIds(allGrants: PermissionGrant[]): Set<string> {
+  const ids = new Set<string>();
+  for (const grant of allGrants) if (grant.granted) ids.add(grant.capabilityId);
+  return ids;
+}
+
+// Resumen de riesgo arriba del Centro: por cada nivel, concedidas / total. El
+// nivel con mas concedidas de alto riesgo es lo que una persona deberia ver
+// primero, asi que va primero (RISK_ORDER).
+function buildRiskSummary(
+  byRisk: Record<CapabilityRisk, CapabilityDefinition[]>,
+  grantedIds: Set<string>
+): HTMLElement {
+  const summary = document.createElement("section");
+  summary.className = "pc-risk-summary";
+  summary.setAttribute("aria-label", "Resumen de capacidades concedidas por nivel de riesgo");
+
+  for (const risk of RISK_ORDER) {
+    const caps = byRisk[risk];
+    const granted = caps.filter((cap) => grantedIds.has(cap.id)).length;
+
+    const cell = document.createElement("div");
+    cell.className = "pc-risk-summary-cell";
+    cell.dataset.risk = risk;
+
+    const count = document.createElement("span");
+    count.className = "pc-risk-summary-count";
+    count.style.color = riskColor(risk);
+    count.textContent = `${granted}/${caps.length}`;
+
+    const label = document.createElement("span");
+    label.className = "pc-risk-summary-label";
+    label.textContent = `${RISK_LABELS[risk]} · concedidas`;
+
+    cell.appendChild(count);
+    cell.appendChild(label);
+    summary.appendChild(cell);
+  }
+
+  return summary;
 }
 
 // Iconos de tipo de subject -- SVG inline (Lucide, ISC) en vez de emoji.
@@ -343,13 +396,13 @@ function buildReaderGrantForm(
 
 export function renderPermissionCenter(options: PermissionCenterOptions): void {
   const { container, allGrants, onToggle, onVote } = options;
-  const grouped = listCapabilitiesByCategory();
+  const byRisk = listCapabilitiesByRisk();
 
   container.innerHTML = "";
   container.className = "pc-shell";
 
-  const categoryNames = Object.keys(grouped);
-  if (categoryNames.length === 0) {
+  const totalCaps = RISK_ORDER.reduce((sum, risk) => sum + byRisk[risk].length, 0);
+  if (totalCaps === 0) {
     const empty = document.createElement("p");
     empty.className = "pc-empty";
     empty.textContent = "No hay capacidades registradas en el catálogo.";
@@ -357,13 +410,20 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
     return;
   }
 
-  for (const [category, capabilities] of Object.entries(grouped)) {
+  container.appendChild(buildRiskSummary(byRisk, grantedCapabilityIds(allGrants)));
+
+  for (const risk of RISK_ORDER) {
+    const capabilities = byRisk[risk];
+    if (capabilities.length === 0) continue;
+
     const section = document.createElement("section");
     section.className = "pc-category";
+    section.dataset.risk = risk;
 
     const header = document.createElement("h3");
     header.className = "pc-category-title";
-    header.textContent = category;
+    header.style.color = riskColor(risk);
+    header.textContent = RISK_LABELS[risk];
     section.appendChild(header);
 
     const list = document.createElement("div");
@@ -390,14 +450,14 @@ export function renderPermissionCenter(options: PermissionCenterOptions): void {
       capText.appendChild(capLabel);
       capText.appendChild(capDesc);
 
-      const riskBadge = document.createElement("span");
-      riskBadge.className = "pc-risk";
-      riskBadge.style.background = `${riskColor(cap.risk)}22`;
-      riskBadge.style.color = riskColor(cap.risk);
-      riskBadge.textContent = `riesgo ${cap.risk}`;
+      // El riesgo ya es la seccion; la etiqueta de la capacidad muestra su
+      // CATEGORIA, que es el dato que se perderia al agrupar por riesgo.
+      const categoryBadge = document.createElement("span");
+      categoryBadge.className = "pc-cap-category";
+      categoryBadge.textContent = cap.category;
 
       capHeader.appendChild(capText);
-      capHeader.appendChild(riskBadge);
+      capHeader.appendChild(categoryBadge);
       capBlock.appendChild(capHeader);
 
       const subjectsForCap = allGrants.filter((g) => g.capabilityId === cap.id);
