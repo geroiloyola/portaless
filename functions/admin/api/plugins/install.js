@@ -19,10 +19,10 @@
 //   - Al ACTUALIZAR: las capacidades REMOVIDAS se podan (revocan) y las
 //     AMPLIADAS NO se auto-conceden; vuelven a revision (reconcileGrants).
 //   - El codigo se guarda troceado (BLOB), con tope declarado. Nunca base64.
-//
-// Lo que NO hace todavia (honesto): el runtime (`run.js`) sigue cargando de
-// disco; ejecutar desde el artefacto guardado espera a que el manifiesto viaje
-// con el artefacto. El 503 de workerd por el loader de disco sigue siendo cierto.
+//   - §14.1: el manifiesto verificado viaja con el artefacto en
+//     `plugin_artifacts` y el registro conserva la `version` activa, de modo
+//     que `POST /admin/api/plugins/run` lo ejecuta desde la base sin depender
+//     del filesystem (cierra el 503 de workerd).
 
 import { resolveApwIdentity } from "../../../../packages/apw-resolver/src/index.ts";
 import { verifyPluginManifest } from "../../../../packages/apw-resolver/src/did-apw/plugin-manifest.ts";
@@ -133,13 +133,17 @@ export async function onRequestPost(context) {
   }
 
   const manifest = verified.document.manifest;
-  const validation = validateManifest({
+  const manifestPayload = {
     name: manifest.name,
     version: manifest.version,
     entry: manifest.entry,
     runtime: manifest.runtime,
     requestedCapabilities: manifest.requestedCapabilities,
-  });
+    ...(typeof manifest.description === "string" && manifest.description.length > 0
+      ? { description: manifest.description }
+      : {}),
+  };
+  const validation = validateManifest(manifestPayload);
   if (!validation.valid) {
     return json({ error: "invalid_manifest", details: validation.errors }, 400);
   }
@@ -161,8 +165,24 @@ export async function onRequestPost(context) {
       409
     );
   }
+  if (existing?.manifest && JSON.stringify(existing.manifest) !== JSON.stringify(manifestPayload)) {
+    return json(
+      {
+        error: "immutable_version_conflict",
+        message: "Esa (publisher, name, version) ya existe con otro manifiesto. Publica una version nueva.",
+      },
+      409
+    );
+  }
 
-  await artifacts.put({ publisher: identity.did, name: manifest.name, version: manifest.version, code: codeBytes, codeHash });
+  await artifacts.put({
+    publisher: identity.did,
+    name: manifest.name,
+    version: manifest.version,
+    code: codeBytes,
+    codeHash,
+    manifest: manifestPayload,
+  });
 
   const pluginId = manifest.name;
   const registry = await createPluginRegistryStore(env);
@@ -172,6 +192,7 @@ export async function onRequestPost(context) {
     pluginId,
     displayName: manifest.name,
     author: identity.did,
+    version: manifest.version,
     sourceType: body?.sourceType === "open" ? "open" : "closed",
     requestedCapabilities: manifest.requestedCapabilities,
     registeredAt: previous?.registeredAt ?? nowIso,

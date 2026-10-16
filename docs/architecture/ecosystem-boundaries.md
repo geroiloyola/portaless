@@ -185,10 +185,15 @@ empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
   contra su identidad resuelta, guarda el codigo troceado, **no concede nada**
   (el grant sigue siendo `concedido ∩ manifiesto`), es inmutable por
   `(publisher, name, version)` y reconcilia capacidades al actualizar (removidas
-  podadas, ampliadas a revision). **Lo que falta**: el runtime todavia lee de
-  disco (`functions/admin/api/plugins/run.js`), asi que el `503
-  plugin_source_backend_unavailable` de workerd sigue siendo cierto; ejecutar
-  desde el artefacto guardado es el paso siguiente.
+  podadas, ampliadas a revision). Desde la Fase 14 (§14.1) el manifiesto
+  verificado viaja con el artefacto en `plugin_artifacts.manifest_json` y
+  `POST /admin/api/plugins/run` resuelve `{ manifest, code }` desde
+  `PluginArtifactStore` primero (verificando `sha256Hex(code) === codeHash`
+  antes de ejecutar) y solo cae al disco (`PORTALESS_PLUGIN_DIR`) si el plugin
+  no tiene artefacto guardado, cerrando el `503
+  plugin_source_backend_unavailable` de workerd para los plugins instalados.
+  El instalador sigue detras del flag apagado por defecto mientras la revision
+  externa del sandbox esta pendiente.
 - **Capacidades**: 9 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
   (`media:read/write`, `email:send`, `commerce:read/checkout`,
   `storage:read/write`, `site:admin`, `agent:identify`) — **por decision, no por

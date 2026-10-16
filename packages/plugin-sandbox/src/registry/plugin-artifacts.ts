@@ -18,6 +18,8 @@
 // schema-additions/plugin-artifacts.sql (schema.sql lo regenera).
 
 import { openSqlite } from "../../../sqlite-driver/src/open";
+import { validateManifest } from "../manifest/manifest-schema";
+import type { PluginManifest } from "../types";
 
 export const ARTIFACT_CHUNK_BYTES = 512 * 1024;
 export const MAX_ARTIFACT_BYTES = 4 * 1024 * 1024;
@@ -27,7 +29,9 @@ export const ARTIFACTS_TABLE_DDL =
   "CREATE TABLE IF NOT EXISTS plugin_artifacts (" +
   "publisher TEXT NOT NULL, name TEXT NOT NULL, version TEXT NOT NULL, " +
   "code_hash TEXT NOT NULL, total_bytes INTEGER NOT NULL, chunk_count INTEGER NOT NULL, " +
-  "created_at TEXT NOT NULL, PRIMARY KEY (publisher, name, version))";
+  "created_at TEXT NOT NULL, manifest_json TEXT, PRIMARY KEY (publisher, name, version))";
+
+const ARTIFACTS_ALTER_MANIFEST_DDL = "ALTER TABLE plugin_artifacts ADD COLUMN manifest_json TEXT";
 
 export const ARTIFACT_CHUNKS_TABLE_DDL =
   "CREATE TABLE IF NOT EXISTS plugin_artifact_chunks (" +
@@ -42,6 +46,7 @@ export interface PluginArtifactMeta {
   totalBytes: number;
   chunkCount: number;
   createdAt: string;
+  manifest?: PluginManifest;
 }
 
 export interface PluginArtifact {
@@ -56,6 +61,7 @@ export interface PutArtifactInput {
   code: Uint8Array;
   codeHash?: string;
   createdAt?: string;
+  manifest?: PluginManifest;
 }
 
 export interface PluginArtifactStore {
@@ -77,6 +83,25 @@ function assertIdentity(publisher: string, name: string, version: string): void 
   if (typeof version !== "string" || version.length === 0 || version.length > 64) throw new Error("invalid_version");
 }
 
+function normalizeManifest(manifest: PluginManifest | undefined, name: string, version: string): PluginManifest | undefined {
+  if (manifest === undefined) return undefined;
+  const check = validateManifest(manifest);
+  if (!check.valid) throw new Error("invalid_manifest");
+  if (manifest.name !== name || manifest.version !== version) throw new Error("manifest_identity_mismatch");
+  return {
+    name: manifest.name,
+    version: manifest.version,
+    entry: manifest.entry,
+    runtime: manifest.runtime,
+    requestedCapabilities: manifest.requestedCapabilities.map((c) => ({
+      id: c.id,
+      reason: c.reason,
+      ...(c.allowedHosts ? { allowedHosts: [...c.allowedHosts] } : {}),
+    })),
+    ...(typeof manifest.description === "string" && manifest.description.length > 0 ? { description: manifest.description } : {}),
+  };
+}
+
 function chunk(code: Uint8Array): Uint8Array[] {
   if (code.byteLength === 0) throw new Error("empty_artifact");
   if (code.byteLength > MAX_ARTIFACT_BYTES) throw new Error("artifact_too_large");
@@ -96,6 +121,7 @@ export class InMemoryPluginArtifactStore implements PluginArtifactStore {
 
   async put(input: PutArtifactInput): Promise<PluginArtifactMeta> {
     assertIdentity(input.publisher, input.name, input.version);
+    const manifest = normalizeManifest(input.manifest, input.name, input.version);
     const parts = chunk(input.code);
     const meta: PluginArtifactMeta = {
       publisher: input.publisher,
@@ -105,6 +131,7 @@ export class InMemoryPluginArtifactStore implements PluginArtifactStore {
       totalBytes: input.code.byteLength,
       chunkCount: parts.length,
       createdAt: input.createdAt ?? new Date().toISOString(),
+      ...(manifest ? { manifest } : {}),
     };
     const k = this.key(input.publisher, input.name, input.version);
     this.metas.set(k, meta);
@@ -140,15 +167,20 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
   constructor(private db: any) {}
 
   private ensure() {
-    return (this.ready ??= this.db
-      .prepare(ARTIFACTS_TABLE_DDL)
-      .bind()
-      .run()
-      .then(() => this.db.prepare(ARTIFACT_CHUNKS_TABLE_DDL).bind().run()));
+    return (this.ready ??= (async () => {
+      await this.db.prepare(ARTIFACTS_TABLE_DDL).bind().run();
+      await this.db.prepare(ARTIFACT_CHUNKS_TABLE_DDL).bind().run();
+      try {
+        await this.db.prepare(ARTIFACTS_ALTER_MANIFEST_DDL).bind().run();
+      } catch {
+        // Columna ya existe (tabla creada con DDL nuevo o ya migrada).
+      }
+    })());
   }
 
   async put(input: PutArtifactInput): Promise<PluginArtifactMeta> {
     assertIdentity(input.publisher, input.name, input.version);
+    const manifest = normalizeManifest(input.manifest, input.name, input.version);
     const parts = chunk(input.code);
     const meta: PluginArtifactMeta = {
       publisher: input.publisher,
@@ -158,7 +190,9 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
       totalBytes: input.code.byteLength,
       chunkCount: parts.length,
       createdAt: input.createdAt ?? new Date().toISOString(),
+      ...(manifest ? { manifest } : {}),
     };
+    const manifestJson = manifest ? JSON.stringify(manifest) : null;
     await this.ensure();
     // Reemplaza cualquier version previa de esa (publisher, name, version).
     await this.db
@@ -167,10 +201,10 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
       .run();
     await this.db
       .prepare(
-        "INSERT INTO plugin_artifacts (publisher, name, version, code_hash, total_bytes, chunk_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) " +
-          "ON CONFLICT(publisher, name, version) DO UPDATE SET code_hash = excluded.code_hash, total_bytes = excluded.total_bytes, chunk_count = excluded.chunk_count, created_at = excluded.created_at"
+        "INSERT INTO plugin_artifacts (publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+          "ON CONFLICT(publisher, name, version) DO UPDATE SET code_hash = excluded.code_hash, total_bytes = excluded.total_bytes, chunk_count = excluded.chunk_count, created_at = excluded.created_at, manifest_json = excluded.manifest_json"
       )
-      .bind(meta.publisher, meta.name, meta.version, meta.codeHash, meta.totalBytes, meta.chunkCount, meta.createdAt)
+      .bind(meta.publisher, meta.name, meta.version, meta.codeHash, meta.totalBytes, meta.chunkCount, meta.createdAt, manifestJson)
       .run();
     for (let seq = 0; seq < parts.length; seq++) {
       await this.db
@@ -184,7 +218,7 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
   async getMeta(publisher: string, name: string, version: string): Promise<PluginArtifactMeta | null> {
     await this.ensure();
     const row = await this.db
-      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at FROM plugin_artifacts WHERE publisher = ? AND name = ? AND version = ?")
+      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json FROM plugin_artifacts WHERE publisher = ? AND name = ? AND version = ?")
       .bind(publisher, name, version)
       .first();
     return row ? rowToMeta(row) : null;
@@ -203,7 +237,7 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
   async list(): Promise<PluginArtifactMeta[]> {
     await this.ensure();
     const { results } = await this.db
-      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at FROM plugin_artifacts")
+      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json FROM plugin_artifacts")
       .bind()
       .all();
     return (results ?? []).map(rowToMeta);
@@ -232,10 +266,16 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
     this.db = db;
     this.db.exec(ARTIFACTS_TABLE_DDL);
     this.db.exec(ARTIFACT_CHUNKS_TABLE_DDL);
+    try {
+      this.db.exec(ARTIFACTS_ALTER_MANIFEST_DDL);
+    } catch {
+      // Columna ya existe (tabla creada con DDL nuevo o ya migrada).
+    }
   }
 
   async put(input: PutArtifactInput): Promise<PluginArtifactMeta> {
     assertIdentity(input.publisher, input.name, input.version);
+    const manifest = normalizeManifest(input.manifest, input.name, input.version);
     const parts = chunk(input.code);
     const meta: PluginArtifactMeta = {
       publisher: input.publisher,
@@ -245,14 +285,16 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
       totalBytes: input.code.byteLength,
       chunkCount: parts.length,
       createdAt: input.createdAt ?? new Date().toISOString(),
+      ...(manifest ? { manifest } : {}),
     };
+    const manifestJson = manifest ? JSON.stringify(manifest) : null;
     this.db.prepare("DELETE FROM plugin_artifact_chunks WHERE publisher = ? AND name = ? AND version = ?").run(meta.publisher, meta.name, meta.version);
     this.db
       .prepare(
-        "INSERT INTO plugin_artifacts (publisher, name, version, code_hash, total_bytes, chunk_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) " +
-          "ON CONFLICT(publisher, name, version) DO UPDATE SET code_hash = excluded.code_hash, total_bytes = excluded.total_bytes, chunk_count = excluded.chunk_count, created_at = excluded.created_at"
+        "INSERT INTO plugin_artifacts (publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+          "ON CONFLICT(publisher, name, version) DO UPDATE SET code_hash = excluded.code_hash, total_bytes = excluded.total_bytes, chunk_count = excluded.chunk_count, created_at = excluded.created_at, manifest_json = excluded.manifest_json"
       )
-      .run(meta.publisher, meta.name, meta.version, meta.codeHash, meta.totalBytes, meta.chunkCount, meta.createdAt);
+      .run(meta.publisher, meta.name, meta.version, meta.codeHash, meta.totalBytes, meta.chunkCount, meta.createdAt, manifestJson);
     for (let seq = 0; seq < parts.length; seq++) {
       this.db.prepare("INSERT INTO plugin_artifact_chunks (publisher, name, version, seq, data) VALUES (?, ?, ?, ?, ?)").run(meta.publisher, meta.name, meta.version, seq, Buffer.from(parts[seq]));
     }
@@ -261,7 +303,7 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
 
   async getMeta(publisher: string, name: string, version: string): Promise<PluginArtifactMeta | null> {
     const row = this.db
-      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at FROM plugin_artifacts WHERE publisher = ? AND name = ? AND version = ?")
+      .prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json FROM plugin_artifacts WHERE publisher = ? AND name = ? AND version = ?")
       .get(publisher, name, version);
     return row ? rowToMeta(row) : null;
   }
@@ -276,7 +318,7 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
   }
 
   async list(): Promise<PluginArtifactMeta[]> {
-    return this.db.prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at FROM plugin_artifacts").all().map(rowToMeta);
+    return this.db.prepare("SELECT publisher, name, version, code_hash, total_bytes, chunk_count, created_at, manifest_json FROM plugin_artifacts").all().map(rowToMeta);
   }
 
   async delete(publisher: string, name: string, version: string): Promise<boolean> {
@@ -291,15 +333,30 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
   }
 }
 
+function parseStoredManifest(raw: unknown, name: string, version: string): PluginManifest | undefined {
+  if (typeof raw !== "string" || raw.length === 0) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as PluginManifest;
+    return normalizeManifest(parsed, name, version);
+  } catch {
+    console.warn(`plugin_artifacts: manifest_json invalido o corrupto para ${name}@${version} -- se descarta.`);
+    return undefined;
+  }
+}
+
 function rowToMeta(row: Record<string, unknown>): PluginArtifactMeta {
+  const name = String(row.name);
+  const version = String(row.version);
+  const manifest = parseStoredManifest(row.manifest_json, name, version);
   return {
     publisher: String(row.publisher),
-    name: String(row.name),
-    version: String(row.version),
+    name,
+    version,
     codeHash: String(row.code_hash),
     totalBytes: Number(row.total_bytes),
     chunkCount: Number(row.chunk_count),
     createdAt: String(row.created_at),
+    ...(manifest ? { manifest } : {}),
   };
 }
 
@@ -326,9 +383,18 @@ function toBytes(data: unknown): Uint8Array {
   throw new Error("invalid_chunk_data");
 }
 
-export async function createPluginArtifactStore(env: Record<string, any>): Promise<PluginArtifactStore> {
+let cachedInMemoryArtifactStore: InMemoryPluginArtifactStore | null = null;
+
+export function __resetPluginArtifactStoreForTests(): void {
+  cachedInMemoryArtifactStore = null;
+}
+
+export async function createPluginArtifactStore(env: Record<string, any> = {}): Promise<PluginArtifactStore> {
   if (env.DB) return new D1PluginArtifactStore(env.DB);
   if (env.PORTALESS_SQLITE_PATH) return new SqlitePluginArtifactStore(await openSqlite(env.PORTALESS_SQLITE_PATH));
   console.warn("createPluginArtifactStore: sin DB ni PORTALESS_SQLITE_PATH — usando InMemory (no persiste entre reinicios).");
-  return new InMemoryPluginArtifactStore();
+  if (!cachedInMemoryArtifactStore) {
+    cachedInMemoryArtifactStore = new InMemoryPluginArtifactStore();
+  }
+  return cachedInMemoryArtifactStore;
 }

@@ -909,6 +909,11 @@ CREATE INDEX IF NOT EXISTS idx_activity_events_occurred
 --
 -- code_hash permite que reinstalar la MISMA (publisher, name, version) con
 -- bytes distintos falle: si no, el hash guardado no protege nada.
+--
+-- §14.1: manifest_json viaja con el artefacto para que POST /admin/api/plugins/run
+-- pueda ejecutarlo desde la base sin depender del filesystem (cierra el 503 de
+-- workerd). En bases creadas antes de §14.1 el store agrega la columna con
+-- ALTER TABLE al abrirse.
 
 CREATE TABLE IF NOT EXISTS plugin_artifacts (
   publisher TEXT NOT NULL,
@@ -918,6 +923,7 @@ CREATE TABLE IF NOT EXISTS plugin_artifacts (
   total_bytes INTEGER NOT NULL,
   chunk_count INTEGER NOT NULL,
   created_at TEXT NOT NULL,
+  manifest_json TEXT,
   PRIMARY KEY (publisher, name, version)
 );
 

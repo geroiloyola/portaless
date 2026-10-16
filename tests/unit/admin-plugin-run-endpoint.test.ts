@@ -3,11 +3,15 @@
 // camino feliz real: tiny-plugin cargado desde disco y ejecutado en un
 // isolate isolated-vm de verdad (mismos guards de skip que el resto de
 // los tests con isolated-vm).
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { onRequestPost } from "../../functions/admin/api/plugins/run.js";
 import { createPluginRegistryStore } from "../../packages/plugin-sandbox/src/registry/store-factory";
+import {
+  createPluginArtifactStore,
+  __resetPluginArtifactStoreForTests,
+} from "../../packages/plugin-sandbox/src/registry/plugin-artifacts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PLUGIN_DIR = join(__dirname, "..", "fixtures", "plugins");
@@ -17,13 +21,17 @@ const env = { PORTALESS_PLUGIN_DIR: FIXTURE_PLUGIN_DIR };
 const adminUser = { role: "admin" };
 const viewerUser = { role: "viewer" };
 
-function post(body: unknown, user: unknown) {
+beforeEach(() => {
+  __resetPluginArtifactStoreForTests();
+});
+
+function post(body: unknown, user: unknown, deps?: Record<string, unknown>) {
   const request = new Request("https://sitio.test/admin/api/plugins/run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return onRequestPost({ request, env, data: user ? { user } : {} } as never);
+  return onRequestPost({ request, env, data: user ? { user } : {} } as never, deps as never);
 }
 
 async function isolatedVmAvailable(): Promise<boolean> {
@@ -123,5 +131,125 @@ describe("POST /admin/api/plugins/run", () => {
     expect(result.success).toBe(true);
     expect(result.output).toBe(42);
     expect(result.provider).toBe("node-isolated-vm");
+  });
+
+  it("§14.1: ejecuta desde el artefacto guardado sin necesitar filesystem (cierra el 503 de workerd)", async (t) => {
+    if (!(await isolatedVmAvailable())) {
+      t.skip("isolated-vm no esta instalado -- test omitido, no fallado.");
+      return;
+    }
+
+    const publisher = "did:apw:pub.example";
+    const manifest = {
+      name: "stored-only-plugin",
+      version: "1.0.0",
+      entry: "index.js",
+      runtime: "javascript" as const,
+      requestedCapabilities: [],
+    };
+    const code = new TextEncoder().encode("777;");
+
+    const artifacts = await createPluginArtifactStore({});
+    await artifacts.put({ publisher, name: manifest.name, version: manifest.version, code, manifest });
+
+    const registry = await createPluginRegistryStore({});
+    await registry.register({
+      pluginId: manifest.name,
+      displayName: "Stored Only",
+      author: publisher,
+      version: manifest.version,
+      sourceType: "closed",
+      requestedCapabilities: [],
+      registeredAt: new Date().toISOString(),
+      installedAt: new Date().toISOString(),
+      active: true,
+    });
+
+    // Con noFs: true (simula workerd, sin node:fs), un plugin con artefacto guardado responde 200 y corre.
+    const res = await post({ plugin: "stored-only-plugin", payload: null }, adminUser, { noFs: true });
+    expect(res.status).toBe(200);
+    const result = await res.json();
+    expect(result.success).toBe(true);
+    expect(result.output).toBe(777);
+  });
+
+  it("§14.1: en workerd (noFs: true), un plugin SIN artefacto guardado sigue respondiendo 503", async () => {
+    const store = await createPluginRegistryStore({});
+    await store.register({
+      pluginId: "solo-disco",
+      displayName: "Solo disco",
+      author: "Portaless",
+      sourceType: "open",
+      requestedCapabilities: [],
+      registeredAt: new Date().toISOString(),
+      active: true,
+    });
+
+    const res = await post({ plugin: "solo-disco" }, adminUser, { noFs: true });
+    expect(res.status).toBe(503);
+    expect((await res.json()).error).toBe("plugin_source_backend_unavailable");
+  });
+
+  it("§14.1: rechaza con 409 artifact_integrity_failed si el codigo guardado no coincide con su codeHash", async () => {
+    const publisher = "did:apw:pub.example";
+    const manifest = {
+      name: "tampered-plugin",
+      version: "1.0.0",
+      entry: "index.js",
+      runtime: "javascript" as const,
+      requestedCapabilities: [],
+    };
+    const artifacts = await createPluginArtifactStore({});
+    await artifacts.put({
+      publisher,
+      name: manifest.name,
+      version: manifest.version,
+      code: new TextEncoder().encode("module.exports = () => 1;"),
+      codeHash: "0".repeat(64), // hash que no coincide con los bytes guardados
+      manifest,
+    });
+
+    const registry = await createPluginRegistryStore({});
+    await registry.register({
+      pluginId: manifest.name,
+      displayName: "Tampered",
+      author: publisher,
+      version: manifest.version,
+      sourceType: "closed",
+      requestedCapabilities: [],
+      registeredAt: new Date().toISOString(),
+      active: true,
+    });
+
+    const res = await post({ plugin: "tampered-plugin" }, adminUser, { noFs: true });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("artifact_integrity_failed");
+  });
+
+  it("§14.1: rechaza con 409 artifact_manifest_missing si el artefacto guardado no trae manifiesto", async () => {
+    const publisher = "did:apw:pub.example";
+    const artifacts = await createPluginArtifactStore({});
+    await artifacts.put({
+      publisher,
+      name: "legacy-no-manifest",
+      version: "1.0.0",
+      code: new TextEncoder().encode("module.exports = () => 1;"),
+    });
+
+    const registry = await createPluginRegistryStore({});
+    await registry.register({
+      pluginId: "legacy-no-manifest",
+      displayName: "Legacy",
+      author: publisher,
+      version: "1.0.0",
+      sourceType: "closed",
+      requestedCapabilities: [],
+      registeredAt: new Date().toISOString(),
+      active: true,
+    });
+
+    const res = await post({ plugin: "legacy-no-manifest" }, adminUser, { noFs: true });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("artifact_manifest_missing");
   });
 });

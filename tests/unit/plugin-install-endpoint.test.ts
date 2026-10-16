@@ -26,9 +26,12 @@ vi.mock("../../packages/auth/src/auth-service", () => ({
 
 import { signPluginManifest } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
 import { reconcileGrants } from "../../packages/plugin-sandbox/src/install/reconcile";
+import { createPluginArtifactStore } from "../../packages/plugin-sandbox/src/registry/plugin-artifacts";
+import { createPluginRegistryStore } from "../../packages/plugin-sandbox/src/registry/store-factory";
 import { createPermissionStore } from "../../packages/permissions/src/store-factory";
 import * as install from "../../functions/admin/api/plugins/install";
 import * as uninstall from "../../functions/admin/api/plugins/uninstall";
+import * as runEndpoint from "../../functions/admin/api/plugins/run";
 
 const DOMAIN = "pub.example";
 const PUBLISHER = `did:apw:${DOMAIN}`;
@@ -114,6 +117,13 @@ describe("POST /admin/api/plugins/install", () => {
     const permStore = await createPermissionStore(e);
     const grants = await permStore.getGrantsFor({ type: "plugin", id: "mi-plugin", displayName: "mi-plugin" });
     expect(grants.filter((g) => g.granted)).toHaveLength(0);
+
+    // §14.1: el manifiesto viaja con el artefacto y el registro conserva la version activa.
+    const artifacts = await createPluginArtifactStore(e);
+    const stored = await artifacts.get(PUBLISHER, "mi-plugin", "1.0.0");
+    expect(stored?.meta.manifest).toEqual(pluginManifest("1.0.0", [{ id: "content:read", reason: "lee contenido" }]));
+    const reg = await createPluginRegistryStore(e);
+    expect((await reg.get("mi-plugin"))?.version).toBe("1.0.0");
   });
 
   it("400 si la firma no verifica contra la identidad resuelta", async () => {
@@ -125,13 +135,70 @@ describe("POST /admin/api/plugins/install", () => {
     expect((await res.json()).error).toBe("invalid_manifest_signature");
   });
 
-  it("inmutabilidad: misma version con otro hash de codigo -> 409", async () => {
+  it("inmutabilidad: misma version con otro hash de codigo o manifiesto -> 409", async () => {
     const e = env(true);
     const jws = await signed(pluginManifest("1.0.0", [{ id: "content:read", reason: "lee contenido" }]));
     expect((await install.onRequestPost(ctx(e, { manifest: jws, code: "v1", password: "correct" }))).status).toBe(200);
     const again = await install.onRequestPost(ctx(e, { manifest: jws, code: "v2-distinto", password: "correct" }));
     expect(again.status).toBe(409);
     expect((await again.json()).error).toBe("immutable_version_conflict");
+
+    const jwsOtherManifest = await signed(pluginManifest("1.0.0", [{ id: "media:read", reason: "otra capacidad" }]));
+    const diffManifest = await install.onRequestPost(ctx(e, { manifest: jwsOtherManifest, code: "v1", password: "correct" }));
+    expect(diffManifest.status).toBe(409);
+    expect((await diffManifest.json()).error).toBe("immutable_version_conflict");
+  });
+
+  it("§14.1: ciclo install -> run -> update -> run ejecuta desde el artefacto guardado (sin disco / noFs)", async () => {
+    const e = env(true);
+    const v1 = await signed(pluginManifest("1.0.0", []));
+    expect(
+      (await install.onRequestPost(ctx(e, { manifest: v1, code: "export default () => 101;", password: "correct" }))).status
+    ).toBe(200);
+
+    const runReq = (plugin: string) =>
+      new Request("https://sitio.test/admin/api/plugins/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plugin, payload: { ping: true } }),
+      });
+    const fakeAdapterRegistry = {
+      resolve: async () => ({
+        provider: "cloudflare-workers-for-platforms",
+        execute: async ({ code, manifest }: { code: string; manifest: { version: string } }) => ({
+          success: true,
+          output: { version: manifest.version, code },
+          durationMs: 1,
+          provider: "cloudflare-workers-for-platforms" as const,
+        }),
+      }),
+    };
+
+    const run1 = await runEndpoint.onRequestPost(
+      { request: runReq("mi-plugin"), env: e, data: { user: { username: "admin", role: "admin" } } } as never,
+      { noFs: true, adapterRegistry: fakeAdapterRegistry as never }
+    );
+    expect(run1.status).toBe(200);
+    expect(await run1.json()).toMatchObject({
+      success: true,
+      output: { version: "1.0.0", code: "export default () => 101;" },
+    });
+
+    // Actualizar a 1.1.0 cambia la version activa en el registro y run ejecuta 1.1.0.
+    const v11 = await signed(pluginManifest("1.1.0", []));
+    expect(
+      (await install.onRequestPost(ctx(e, { manifest: v11, code: "export default () => 202;", password: "correct" }))).status
+    ).toBe(200);
+
+    const run2 = await runEndpoint.onRequestPost(
+      { request: runReq("mi-plugin"), env: e, data: { user: { username: "admin", role: "admin" } } } as never,
+      { noFs: true, adapterRegistry: fakeAdapterRegistry as never }
+    );
+    expect(run2.status).toBe(200);
+    expect(await run2.json()).toMatchObject({
+      success: true,
+      output: { version: "1.1.0", code: "export default () => 202;" },
+    });
   });
 
   it("al actualizar, poda las capacidades removidas y no auto-concede las ampliadas", async () => {

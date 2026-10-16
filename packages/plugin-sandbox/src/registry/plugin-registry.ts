@@ -22,6 +22,8 @@ export interface PluginRegistryEntry {
   pluginId: string;
   displayName: string;
   author: string;
+  /** Version activa instalada en PluginArtifactStore, si proviene del instalador HTTP. */
+  version?: string;
   sourceType: PluginSourceType;
   requestedCapabilities: CapabilityRequest[];
   registeredAt: string;

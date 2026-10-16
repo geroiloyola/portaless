@@ -13,10 +13,17 @@
 //     /admin/*; el check de rol se repite AQUI, no se confia en la UI).
 //   - Solo plugins que existan en el PluginRegistryStore y esten
 //     `active` -- un plugin dado de baja no se puede invocar.
-//   - El codigo NUNCA viene del request: se carga de disco, de
-//     PORTALESS_PLUGIN_DIR (default: packages/plugin-sandbox/examples,
-//     donde vive el hello-plugin de ejemplo). Un id con path traversal
-//     o un manifest.entry con ".." se rechaza con 400.
+//   - El codigo NUNCA viene del request. Precedencia (§14.1):
+//       1. `PluginArtifactStore` (`plugin_artifacts` / `plugin_artifact_chunks`
+//          en D1, SQLite o memoria): el artefacto instalado por HTTP viaja con
+//          su `manifest` verificado y su `code_hash` SHA-256. Antes de ejecutar
+//          se valida el manifiesto y se recalcula `sha256Hex(code) === codeHash`.
+//          No usa `node:fs`, asi que corre igual en Cloudflare Pages (workerd)
+//          y en self-host.
+//       2. Fallback a disco (`PORTALESS_PLUGIN_DIR`, default
+//          `packages/plugin-sandbox/examples`) para los plugins de ejemplo que
+//          viven en el repo y no pasaron por el instalador HTTP. Un id con path
+//          traversal o un `manifest.entry` con ".." se rechaza con 400.
 //   - Capacidades: granted = Centro de Permisos INTERSECTADO con lo que
 //     el manifiesto declara (regla v0.0.9.30, aplicada dentro de
 //     runPluginInProduction).
@@ -25,16 +32,18 @@
 //     el bootstrap edge vuelve al capability bridge de este mismo sitio.
 //
 // Limitaciones honestas:
-//   - El loader de codigo usa node:fs, asi que en Cloudflare Pages
-//     (workerd, sin filesystem) responde 503
-//     plugin_source_backend_unavailable. En self-host (Node runtime,
-//     Docker, Railway/Render) funciona sin configurar nada.
-//   - La ejecucion edge real (Cloudflare/Deno) sigue requer credenciales
+//   - Si el plugin NO tiene artefacto guardado en `plugin_artifacts` y el
+//     runtime no tiene filesystem (workerd), el fallback a disco responde
+//     `503 plugin_source_backend_unavailable`. Con artefacto guardado no toca
+//     el disco y el `503` desaparece.
+//   - La ejecucion edge real (Cloudflare/Deno) sigue requiriendo credenciales
 //     en env (PORTALESS_CLOUDFLARE_* / PORTALESS_DENO_*); sin ellas el
 //     registry cae a isolated-vm, igual que el resto del sistema.
 
 import { runPluginInProduction } from "../../../../packages/plugin-sandbox/src/runtime/production-plugin-runner.ts";
 import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
+import { createPluginArtifactStore, sha256Hex } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
+import { validateManifest } from "../../../../packages/plugin-sandbox/src/manifest/manifest-schema.ts";
 
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9._-]*$/i;
 const DEFAULT_PLUGIN_DIR = "packages/plugin-sandbox/examples";
@@ -48,11 +57,73 @@ function canWrite(role) {
 }
 
 /**
+ * Intenta resolver `{ manifest, code }` desde `PluginArtifactStore` (§14.1).
+ * Devuelve:
+ *   - `null` si no hay ningun artefacto guardado para este plugin (cae a disco);
+ *   - `{ manifest, code }` si el artefacto existe, trae manifiesto valido y su
+ *     hash SHA-256 coincide con `meta.codeHash`;
+ *   - `{ error, status, message }` si el artefacto existe pero le falta el
+ *     manifiesto o falla la verificacion de integridad.
+ */
+async function loadPluginFromArtifact(env, entry) {
+  const artifacts = await createPluginArtifactStore(env);
+  const pluginId = entry.pluginId;
+  const authorIsDid = typeof entry.author === "string" && entry.author.startsWith("did:apw:");
+
+  let artifact = null;
+  if (authorIsDid && typeof entry.version === "string" && entry.version.length > 0) {
+    artifact = await artifacts.get(entry.author, pluginId, entry.version);
+  }
+  if (!artifact) {
+    const all = await artifacts.list();
+    const candidates = all.filter(
+      (m) => m.name === pluginId && (!authorIsDid || m.publisher === entry.author)
+    );
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const latest = candidates[candidates.length - 1];
+      artifact = await artifacts.get(latest.publisher, latest.name, latest.version);
+    }
+  }
+  if (!artifact) return null;
+
+  const manifest = artifact.meta.manifest;
+  if (!manifest) {
+    return {
+      error: "artifact_manifest_missing",
+      status: 409,
+      message: `El artefacto guardado para '${pluginId}@${artifact.meta.version}' no incluye su manifiesto. Reinstalalo con el instalador HTTP.`,
+    };
+  }
+  const validation = validateManifest(manifest);
+  if (!validation.valid || manifest.name !== pluginId || manifest.version !== artifact.meta.version) {
+    return {
+      error: "invalid_manifest",
+      status: 400,
+      message: `El manifiesto guardado para '${pluginId}@${artifact.meta.version}' no es válido.`,
+    };
+  }
+
+  const actualHash = await sha256Hex(artifact.code);
+  if (actualHash !== artifact.meta.codeHash) {
+    return {
+      error: "artifact_integrity_failed",
+      status: 409,
+      message: `El código guardado para '${pluginId}@${artifact.meta.version}' no coincide con su hash SHA-256 registrado.`,
+    };
+  }
+
+  const code = new TextDecoder().decode(artifact.code);
+  return { manifest, code };
+}
+
+/**
  * Resuelve manifiesto + codigo de un plugin desde disco (solo Node).
  * Devuelve { manifest, code } o { error } con el codigo de fallo.
  */
-async function loadPluginSource(env, pluginId) {
+async function loadPluginSourceFromDisk(env, pluginId, deps = {}) {
   if (!PLUGIN_ID_RE.test(pluginId)) return { error: "invalid_plugin_id" };
+  if (deps?.noFs === true) return { error: "plugin_source_backend_unavailable" };
 
   let fs, path;
   try {
@@ -96,7 +167,7 @@ async function loadPluginSource(env, pluginId) {
   return { manifest, code };
 }
 
-export async function onRequestPost(context) {
+export async function onRequestPost(context, deps = {}) {
   const { request, env, data } = context;
 
   if (!data?.user) {
@@ -131,13 +202,18 @@ export async function onRequestPost(context) {
     return json({ error: "plugin_inactive", message: `El plugin '${pluginId}' esta registrado pero inactivo.` }, 409);
   }
 
-  const source = await loadPluginSource(env, pluginId);
+  const fromArtifact = await loadPluginFromArtifact(env, entry);
+  if (fromArtifact?.error) {
+    return json({ error: fromArtifact.error, message: fromArtifact.message }, fromArtifact.status ?? 409);
+  }
+
+  const source = fromArtifact ?? (await loadPluginSourceFromDisk(env, pluginId, deps));
   if (source.error) {
     const status = source.error === "plugin_source_backend_unavailable" ? 503 : 404;
     const message =
       source.error === "plugin_source_backend_unavailable"
-        ? "La carga de codigo de plugins desde disco solo esta disponible en el runtime Node (self-host). En Cloudflare Pages (workerd) no hay filesystem."
-        : `No se encontraron manifest.json/entry para '${pluginId}' en ${env.PORTALESS_PLUGIN_DIR || DEFAULT_PLUGIN_DIR}.`;
+        ? `El plugin '${pluginId}' no tiene artefacto guardado en plugin_artifacts y la carga desde disco solo esta disponible en el runtime Node (self-host). En Cloudflare Pages (workerd) instala el plugin con POST /admin/api/plugins/install.`
+        : `No se encontraron artefacto guardado ni manifest.json/entry para '${pluginId}' en ${env.PORTALESS_PLUGIN_DIR || DEFAULT_PLUGIN_DIR}.`;
     return json({ error: source.error, message }, status);
   }
 
@@ -147,12 +223,16 @@ export async function onRequestPost(context) {
   const origin = new URL(request.url).origin;
   const bridgeUrl = `${origin}/api/internal/capability-bridge`;
 
-  const result = await runPluginInProduction(env, {
-    manifest: source.manifest,
-    code: source.code,
-    payload: body?.payload ?? null,
-    bridgeUrl,
-  });
+  const result = await runPluginInProduction(
+    env,
+    {
+      manifest: source.manifest,
+      code: source.code,
+      payload: body?.payload ?? null,
+      bridgeUrl,
+    },
+    deps
+  );
 
   return json(result, 200);
 }

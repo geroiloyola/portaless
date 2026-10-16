@@ -33,11 +33,13 @@ interface PluginRow {
 function rowToEntry(row: PluginRow): PluginRegistryEntry {
   const manifest = JSON.parse(row.manifest_json) as {
     requestedCapabilities: CapabilityRequest[];
+    version?: string;
   };
   return {
     pluginId: row.plugin_id,
     displayName: row.display_name,
     author: row.author,
+    ...(typeof manifest.version === "string" && manifest.version.length > 0 ? { version: manifest.version } : {}),
     sourceType: row.source_type as PluginSourceType,
     requestedCapabilities: manifest.requestedCapabilities,
     registeredAt: row.registered_at,
@@ -106,6 +108,7 @@ export class SqlitePluginRegistryStore implements PluginRegistryStore {
   ): Promise<PluginRegistryEntry> {
     const manifestJson = JSON.stringify({
       requestedCapabilities: entry.requestedCapabilities,
+      ...(typeof entry.version === "string" && entry.version.length > 0 ? { version: entry.version } : {}),
     });
 
     this.db
