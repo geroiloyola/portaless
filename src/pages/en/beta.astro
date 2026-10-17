@@ -1,0 +1,8 @@
+---
+// /en/beta (version en ingles). La primaria (espanol) vive en /beta/.
+import BetaPage from "../../components/BetaPage.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<BetaPage locale="en" alternateHref={`${base}beta/`} alternateHreflang="es" />

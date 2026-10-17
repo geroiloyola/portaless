@@ -1,0 +1,76 @@
+---
+// Vista compartida de /tienda (indice). Texto en COPY por locale; las rutas
+// /tienda (es) y /en/tienda (en) renderizan la misma vista.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductCard from "./ProductCard.astro";
+import { isCommerceEnabled, fetchProducts, formatPrice } from "../commerce/medusa-client";
+import type { Locale } from "../lib/i18n";
+
+interface Props {
+  locale: Locale;
+  alternateHref?: string;
+  alternateHreflang?: Locale;
+}
+const { locale, alternateHref, alternateHreflang } = Astro.props;
+
+const COPY: Record<Locale, Record<string, string>> = {
+  es: {
+    title: "Tienda — Portaless",
+    heading: "Tienda",
+    disabled:
+      "El módulo de comercio no está activado. Configura ENABLE_COMMERCE=true y src/commerce/config.ts apuntando a tu instancia de Medusa/Mercur para habilitar esta página. Ver docs/COMMERCE_SETUP.md.",
+    empty: "Tu tienda no tiene productos publicados todavía.",
+    badge:
+      "Catálogo servido en vivo desde tu instancia de Medusa/Mercur. Carrito y checkout se manejan en tu tienda, no en Portaless.",
+  },
+  en: {
+    title: "Store — Portaless",
+    heading: "Store",
+    disabled:
+      "The commerce module is not enabled. Set ENABLE_COMMERCE=true and src/commerce/config.ts pointing at your Medusa/Mercur instance to enable this page. See docs/COMMERCE_SETUP.md.",
+    empty: "Your store has no published products yet.",
+    badge:
+      "Catalog served live from your Medusa/Mercur instance. Cart and checkout are handled in your store, not in Portaless.",
+  },
+};
+const c = COPY[locale];
+
+// Si el comercio no esta habilitado, esta pagina informa en vez de fallar el
+// build. Asi el modulo es 100% opcional.
+const enabled = await isCommerceEnabled();
+let products: Awaited<ReturnType<typeof fetchProducts>> = [];
+let errorMsg: string | null = null;
+if (enabled) {
+  try {
+    products = await fetchProducts();
+  } catch (err) {
+    errorMsg = err instanceof Error ? err.message : c.empty;
+  }
+}
+---
+
+<BaseLayout
+  title={c.title}
+  lang={locale}
+  languageAlternate={alternateHref ? { hreflang: alternateHreflang ?? "en", href: alternateHref } : undefined}
+>
+  <h1>{c.heading}</h1>
+
+  {!enabled && <p class="empty-state">{c.disabled}</p>}
+  {enabled && errorMsg && <p class="empty-state">{errorMsg}</p>}
+  {enabled && !errorMsg && products.length === 0 && <p class="empty-state">{c.empty}</p>}
+  {enabled && !errorMsg && products.length > 0 && (
+    <div class="product-grid">
+      {products.map((product) => (
+        <ProductCard
+          title={product.title}
+          thumbnail={product.thumbnail}
+          price={formatPrice(product)}
+          handle={product.handle}
+        />
+      ))}
+    </div>
+  )}
+
+  <p class="badge">{c.badge}</p>
+</BaseLayout>

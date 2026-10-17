@@ -98,6 +98,24 @@ test("una pagina con traduccion: el switcher lleva a la MISMA pagina en el otro 
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
+test("beta es bilingue: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
+  await page.goto("/beta/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  await expect(page.locator("h1")).toContainText("Sitios verificables");
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
+    "href",
+    /\/en\/beta\/$/
+  );
+
+  await page.goto("/en/beta/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("h1")).toContainText("Verifiable sites");
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
+    "href",
+    /\/beta\/$/
+  );
+});
+
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {
   await page.goto("/paginas/lanzamiento/");
 

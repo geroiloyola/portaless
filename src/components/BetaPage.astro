@@ -1,0 +1,161 @@
+---
+// Vista compartida de /beta (anuncio publico del Beta). El texto vive en COPY
+// por locale; las rutas /beta (es) y /en/beta (en) renderizan la misma vista,
+// asi no driftén. Mismo modelo que las paginas de contenido: la primaria es
+// espanol y el ingles vive bajo /en/.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import type { Locale } from "../lib/i18n";
+
+interface Props {
+  locale: Locale;
+  /** href base-relativo de la version en el otro idioma (para el switcher). */
+  alternateHref?: string;
+  alternateHreflang?: Locale;
+}
+const { locale, alternateHref, alternateHreflang } = Astro.props;
+const base = import.meta.env.BASE_URL;
+
+const COPY: Record<Locale, Record<string, unknown>> = {
+  es: {
+    title: "Beta publico — Portaless",
+    description: "Portaless esta en su primer Beta publico: que esta listo, que no, y como instalarlo en 10 minutos.",
+    kicker: "Primer Beta publico",
+    h1: "Sitios verificables, sin empresas intermediarias",
+    lead: "Portaless es software libre (AGPL-3.0) para publicar un sitio con <strong>identidad criptografica propia</strong> (Protocol APW) y un <strong>Score de Confianza publico</strong> que agentes de IA y humanos pueden verificar sin pedirle permiso a nadie. Esta en Beta: funciona de verdad y tambien te decimos, sin adornos, lo que todavía no esta listo.",
+    btnExample: "Ver el sitio de ejemplo",
+    btnDemo: "Demo completa ↗",
+    readyTitle: "Listo hoy",
+    ready: [
+      "Editor visual: 17 elementos, 6 skins, publicar desde el navegador (sin terminal)",
+      "Identidad <code>did:apw</code> con rotacion de claves y verificacion via DNS",
+      "SiteTrustScore publico por sitio (4 fuentes)",
+      "Testigos externos y Portaless Index (agregador con pesos calibrados y sincronizacion entre nodos)",
+      "Protocolo abierto APW v1.3 con vectores de prueba independientes del codigo",
+      "Sandbox de plugins, Pay-per-crawl, servidor MCP",
+      "Politica de acceso de agentes operable desde el panel: decidis quien lee tu sitio —buscadores, asistentes de IA, entrenamiento de modelos— y el sitio responde en consecuencia, por escrito",
+    ],
+    notReadyTitle: "No listo todavía",
+    notReady: [
+      "El ultimo paso de publicar en GitHub Pages todavia usa terminal",
+      "Conexion OAuth a Cloudflare Pages en el asistente: “proximamente”",
+      "Este Beta lo mantiene <strong>una sola persona</strong> (la decision de bus-factor esta documentada en SECURITY.md)",
+      "Todavia nadie fuera del proyecto instalo Portaless sin ayuda del autor: ese es el criterio de salida del Beta, y hasta que pase, “Beta” es un nombre honesto, no un numero de version",
+    ],
+    startTitle: "Empeza en 10 minutos",
+    startBody:
+      'Con Docker y un navegador, sin saber programar: <a href="https://github.com/geroiloyola/portaless/blob/main/docs/primos-pasos.md">guia paso a paso con capturas</a>. Si investigas el codigo, el estado real por modulo esta en <a href="https://github.com/geroiloyola/portaless/blob/main/ROADMAP.md">ROADMAP.md</a>.',
+    implTitle: "Para implementadores (el protocolo no es de Portaless)",
+    implBody:
+      'APW es un protocolo abierto (CC BY 4.0): cualquiera puede implementarlo sin pedir permiso ni usar este repositorio. El <a href="https://github.com/geroiloyola/portaless/blob/main/docs/protocol-apw/STARTER-KIT.md">starter kit</a> explica como, en pseudocodigo y contra vectores de prueba independientes; <code>@portaless/apw-resolver</code> es la implementacion de referencia en TypeScript.',
+    footerBody:
+      'Capturas reales del producto, no maquetas: <a href="https://geroiloyola.github.io/portaless/">demo publica</a> · <a href="https://github.com/geroiloyola/portaless">codigo fuente</a> · <a href="https://github.com/geroiloyola/portaless/blob/main/SECURITY.md">seguridad y bus-factor</a>',
+  },
+  en: {
+    title: "Public Beta — Portaless",
+    description: "Portaless is in its first public Beta: what is ready, what is not, and how to install it in 10 minutes.",
+    kicker: "First public Beta",
+    h1: "Verifiable sites, with no company in between",
+    lead: "Portaless is free software (AGPL-3.0) for publishing a site with its <strong>own cryptographic identity</strong> (Protocol APW) and a <strong>public TrustScore</strong> that AI agents and humans can verify without asking anyone's permission. It is in Beta: it really works, and we also tell you, plainly, what is not ready yet.",
+    btnExample: "See the example site",
+    btnDemo: "Full demo ↗",
+    readyTitle: "Ready today",
+    ready: [
+      "Visual editor: 17 elements, 6 skins, publish from the browser (no terminal)",
+      "A <code>did:apw</code> identity with key rotation and DNS verification",
+      "A public SiteTrustScore per site (4 sources)",
+      "External witnesses and Portaless Index (aggregator with calibrated weights and node sync)",
+      "Open APW v1.3 protocol with test vectors independent of the code",
+      "Plugin sandbox, Pay-per-crawl, MCP server",
+      "Agent access policy operable from the panel: you decide who reads your site —search engines, AI assistants, model training— and the site answers accordingly, in writing",
+    ],
+    notReadyTitle: "Not ready yet",
+    notReady: [
+      "The last step of publishing to GitHub Pages still uses the terminal",
+      "OAuth connection to Cloudflare Pages in the wizard: “coming soon”",
+      "This Beta is maintained by <strong>one person</strong> (the bus-factor decision is documented in SECURITY.md)",
+      "Nobody outside the project has installed Portaless without the author's help yet: that is the Beta's exit criterion, and until it happens, “Beta” is an honest name, not a version number",
+    ],
+    startTitle: "Start in 10 minutes",
+    startBody:
+      'With Docker and a browser, without knowing how to program: <a href="https://github.com/geroiloyola/portaless/blob/main/docs/primos-pasos.md">step-by-step guide with screenshots</a>. If you are reading the code, the real status per module is in <a href="https://github.com/geroiloyola/portaless/blob/main/ROADMAP.md">ROADMAP.md</a>.',
+    implTitle: "For implementers (the protocol is not Portaless's)",
+    implBody:
+      'APW is an open protocol (CC BY 4.0): anyone can implement it without asking permission or using this repository. The <a href="https://github.com/geroiloyola/portaless/blob/main/docs/protocol-apw/STARTER-KIT.md">starter kit</a> explains how, in pseudocode and against independent test vectors; <code>@portaless/apw-resolver</code> is the reference implementation in TypeScript.',
+    footerBody:
+      'Real screenshots of the product, not mockups: <a href="https://geroiloyola.github.io/portaless/">public demo</a> · <a href="https://github.com/geroiloyola/portaless">source code</a> · <a href="https://github.com/geroiloyola/portaless/blob/main/SECURITY.md">security and bus-factor</a>',
+  },
+};
+const c = COPY[locale];
+const items = (key: string) => c[key] as string[];
+---
+
+<BaseLayout
+  title={c.title as string}
+  description={c.description as string}
+  lang={locale}
+  languageAlternate={alternateHref ? { hreflang: alternateHreflang ?? "en", href: alternateHref } : undefined}
+>
+  <article class="beta">
+    <header class="beta-hero">
+      <p class="beta-kicker">{c.kicker}</p>
+      <h1>{c.h1}</h1>
+      <p class="beta-lead" set:html={c.lead as string} />
+      <p class="beta-actions">
+        <a class="beta-btn" href={`${base}paginas/link-in-bio/`}>{c.btnExample}</a>
+        <a class="beta-btn beta-btn-ghost" href="https://geroiloyola.github.io/portaless/">{c.btnDemo}</a>
+      </p>
+    </header>
+
+    <section class="beta-grid">
+      <div class="beta-card">
+        <h2>{c.readyTitle}</h2>
+        <ul>
+          {items("ready").map((li) => <li set:html={li} />)}
+        </ul>
+      </div>
+      <div class="beta-card beta-card-warn">
+        <h2>{c.notReadyTitle}</h2>
+        <ul>
+          {items("notReady").map((li) => <li set:html={li} />)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="beta-section">
+      <h2>{c.startTitle}</h2>
+      <p set:html={c.startBody as string} />
+    </section>
+
+    <section class="beta-section">
+      <h2>{c.implTitle}</h2>
+      <p set:html={c.implBody as string} />
+    </section>
+
+    <footer class="beta-footer">
+      <p set:html={c.footerBody as string} />
+    </footer>
+  </article>
+</BaseLayout>
+
+<style>
+  .beta { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .beta-hero { padding: 1.5rem 0 1rem; border-bottom: 2px solid var(--accent-2); margin-bottom: 1.5rem; }
+  .beta-kicker { display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--portaless-accent-text, var(--portaless-fg)); background: var(--portaless-accent); padding: 0.2rem 0.6rem; border-radius: 999px; margin-bottom: 0.7rem; }
+  .beta-hero h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1.2; margin-bottom: 0.7rem; }
+  .beta-lead { font-size: 1rem; line-height: 1.6; color: var(--portaless-fg); max-width: 46rem; }
+  .beta-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.1rem; }
+  .beta-btn { display: inline-block; padding: 0.55rem 1.1rem; border-radius: 8px; background: var(--portaless-accent); color: var(--portaless-accent-text, var(--portaless-fg)); font-weight: 700; text-decoration: none; font-size: 0.92rem; }
+  .beta-btn:hover { filter: brightness(1.05); }
+  .beta-btn-ghost { background: transparent; color: var(--portaless-fg); border: 1px solid var(--portaless-border); }
+  .beta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin-bottom: 1.6rem; }
+  .beta-card { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 1rem 1.1rem; background: var(--portaless-surface, transparent); }
+  .beta-card h2 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+  .beta-card ul { margin: 0; padding-left: 1.1rem; font-size: 0.88rem; line-height: 1.55; }
+  .beta-card li { margin-bottom: 0.4rem; }
+  .beta-card-warn { border-color: var(--warning-fg); }
+  .beta-section { margin-bottom: 1.4rem; }
+  .beta-section h2 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .beta-section p { font-size: 0.92rem; line-height: 1.6; }
+  .beta a { color: var(--portaless-accent-text, var(--portaless-fg)); }
+  .beta-footer { border-top: 1px solid var(--portaless-border); padding-top: 1rem; font-size: 0.82rem; color: var(--portaless-muted); }
+</style>
