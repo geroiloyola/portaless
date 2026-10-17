@@ -4,6 +4,10 @@
     "otherLocaleName": "English",
     "otherLocaleAria": "Leer esta página en inglés"
   },
+  "lang": {
+    "notice": "Esta página solo está disponible en un idioma.",
+    "noticeCta": "Ver el sitio en inglés"
+  },
   "nav": {
     "home": "Inicio",
     "posts": "Publicaciones",

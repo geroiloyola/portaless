@@ -1,9 +1,10 @@
 ---
 import { getCollection } from "astro:content";
 import { homeLabel, postsLabel, exploreLabel, SITE_LANG } from "../lib/site-lang";
-import { localePath, otherLocale, t, type Locale } from "../lib/i18n";
+import { isMultilingual, localePath, otherLocales, t, type Locale } from "../lib/i18n";
 import {
   headerActionsHtml,
+  langNoticeHtml,
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
@@ -20,25 +21,37 @@ interface Props {
   // (Home/Inicio, Publications/Publicaciones, Explore/Explorar) y el selector
   // de idioma. Default: SITE_LANG.
   locale?: Locale;
-  // Ruta canonica sin prefijo de locale (default "/"): el selector de idioma
-  // enlaza a la MISMA ruta en el otro locale (home y Explore estan localizados).
+  // Ruta canonica (sin prefijo de locale) de ESTA pagina, si tiene version en
+  // otro locale (home = "/", Explore = "/explore/"). SIN valor = la pagina NO
+  // esta localizada: no se dibuja el switcher (un icono que lleva al home a
+  // ciegas es un downgrade silencioso) y en su lugar va el aviso de idioma.
   alternatePath?: string;
 }
-const { context = null, locale = SITE_LANG, alternatePath = "/" } = Astro.props;
+const { context = null, locale = SITE_LANG, alternatePath } = Astro.props;
 
 const base = import.meta.env.BASE_URL;
+const baseNoSlash = base.replace(/\/$/, "");
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
 // El indice de publicaciones solo se anuncia si hay algo que leer: si el sitio
 // no tiene ninguna publicacion no-borrador, el link desaparece en vez de mandar
 // al visitante a un indice vacio.
 const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
 
-// Selector de idioma: apunta a la MISMA ruta en el OTRO locale (el home y
-// Explore estan localizados; para el resto de las paginas, que aun no lo estan,
-// alternatePath cae a "/" y el switcher lleva al home del otro idioma). Muestra
-// el nombre del otro idioma, asi el enlace dice a donde va.
-const other = otherLocale(locale);
-const otherHref = `${base.replace(/\/$/, "")}${localePath(other, alternatePath)}`;
+// El control de idioma depende del DATO REAL, no de una suposicion:
+//   - sitio multi-locale (LOCALES.length > 1) y ESTA pagina localizada -> pill
+//     que enlaza a la MISMA ruta en el otro locale.
+//   - sitio multi-locale y pagina NO localizada -> aviso honesto (no se finge
+//     traduccion: la traduccion automatica es GATED) con la entrada del sitio
+//     en el otro idioma.
+//   - sitio de un solo locale -> ninguno de los dos (no hay nada que ofrecer).
+const multi = isMultilingual();
+const others = otherLocales(locale);
+const isLocalized = typeof alternatePath === "string" && alternatePath.length > 0;
+const showSwitcher = multi && isLocalized && others.length > 0;
+const showNotice = multi && !isLocalized && others.length > 0;
+const other = others[0] ?? locale;
+const otherHref = `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`;
+const noticeHref = `${baseNoSlash}${localePath(other, "/")}`;
 ---
 <header class="site-header">
   <nav>
@@ -70,18 +83,29 @@ const otherHref = `${base.replace(/\/$/, "")}${localePath(other, alternatePath)}
          el rincon de iconos. Empujado a la derecha con margin-left:auto, para
          que el idioma quede alineado a la derecha y no entre las etiquetas. -->
     <div class="header-right">
-      <Fragment
-        set:html={langSwitcherHtml({
-          href: otherHref,
-          hreflang: other,
-          ariaLabel: t(locale, "home.otherLocaleAria"),
-          text: t(locale, "home.otherLocaleName"),
-        })}
-      />
+      {showSwitcher && (
+        <Fragment
+          set:html={langSwitcherHtml({
+            href: otherHref,
+            hreflang: other,
+            ariaLabel: t(locale, "home.otherLocaleAria"),
+            text: t(locale, "home.otherLocaleName"),
+          })}
+        />
+      )}
       <!-- Atomic Icons Responsive: share siempre; icono principal segun
            contexto. El HTML sale de UNA sola fuente compartida con el
            shell runtime (src/lib/atomic-responsive-icons.ts). -->
       <Fragment set:html={headerActionsHtml(context, base)} />
     </div>
   </nav>
+  {showNotice && (
+    <Fragment
+      set:html={langNoticeHtml({
+        text: t(locale, "lang.notice"),
+        ctaLabel: t(locale, "lang.noticeCta"),
+        href: noticeHref,
+      })}
+    />
+  )}
 </header>

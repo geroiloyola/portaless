@@ -66,7 +66,7 @@ const alternates = [
 ];
 ---
 
-<BaseLayout lang={locale} pageTheme={pageTheme} headerContext={headerContext} alternates={alternates}>
+<BaseLayout lang={locale} pageTheme={pageTheme} headerContext={headerContext} alternatePath={canonPath} alternates={alternates}>
   <SeoHead slot="head" title={layout.title} description={layout.description ?? ""} canonicalUrl={canonicalUrl} />
   <JsonLd slot="head" layout={prepared} site={{ name: layout.title, url: siteUrl }} />
   <article class="ae-page ae-home" set:html={html} />

@@ -4,6 +4,10 @@
     "otherLocaleName": "Español",
     "otherLocaleAria": "Read this page in Spanish"
   },
+  "lang": {
+    "notice": "This page is only available in one language.",
+    "noticeCta": "See the site in Spanish"
+  },
   "nav": {
     "home": "Home",
     "posts": "Publications",

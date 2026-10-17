@@ -26,6 +26,7 @@ const mdHref = `${base.replace(/\/$/, "")}/docs/${entry.id}.md`;
 <BaseLayout
   title={`${meta?.title ?? entry.id} — Portaless Docs`}
   description={meta?.title}
+  lang={lang}
   pageTheme={pageTheme}
   markdownUrl={mdHref}
 >

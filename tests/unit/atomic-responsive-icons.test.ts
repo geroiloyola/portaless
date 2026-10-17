@@ -14,6 +14,7 @@ import { join } from "node:path";
 import {
   deriveHeaderContext,
   headerActionsHtml,
+  langNoticeHtml,
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
@@ -152,8 +153,10 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
     expect(headerSrc.indexOf("headerActionsHtml(context, base)")).toBeGreaterThan(groupIdx);
   });
 
-  it("el shell runtime emite el mismo switcher con la MISMA fuente", () => {
-    expect(shellSrc).toContain("langSwitcherHtml({");
+  it("el shell runtime emite el AVISO de idioma con la MISMA fuente", () => {
+    // El shell sirve /paginas/*, que no estan localizadas: no lleva el switcher
+    // sino el aviso honesto.
+    expect(shellSrc).toContain("langNoticeHtml(");
     expect(shellSrc).toContain('<div class="header-right">');
   });
 
@@ -164,6 +167,40 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
     expect(cssSrc).toContain(".header-lang-icon");
     expect(shellSrc).toContain(".header-right{");
     expect(shellSrc).toContain(".header-lang{");
+  });
+});
+
+describe("langNoticeHtml -- aviso de idioma honesto (patron Airbnb)", () => {
+  it("es una linea con texto y un enlace a la version del otro idioma", () => {
+    const html = langNoticeHtml({
+      text: "This page is only available in one language.",
+      ctaLabel: "See the site in Spanish",
+      href: "/es/",
+    });
+    expect(html).toContain('class="header-lang-notice"');
+    expect(html).toContain('class="header-lang-notice-txt"');
+    expect(html).toContain("only available in one language");
+    expect(html).toContain('class="header-lang-notice-link" href="/es/"');
+    expect(html).toContain("See the site in Spanish");
+  });
+
+  it("NO promete traducir: el aviso no dice 'Translate'", () => {
+    const html = langNoticeHtml({ text: "x", ctaLabel: "y", href: "/es/" });
+    expect(html.toLowerCase()).not.toContain("translate");
+  });
+
+  it("el header dibuja el switcher SOLO con alternatePath, y el aviso sin el", () => {
+    // La condicion es el dato real (alternatePath), no una suposicion.
+    expect(headerSrc).toContain("const showSwitcher = multi && isLocalized");
+    expect(headerSrc).toContain("const showNotice = multi && !isLocalized");
+    expect(headerSrc).toContain("langNoticeHtml({");
+    expect(headerSrc).toContain('t(locale, "lang.notice")');
+  });
+
+  it("el CSS del aviso esta en ambas superficies", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toContain(".header-lang-notice");
+    expect(shellSrc).toContain(".header-lang-notice{");
   });
 });
 

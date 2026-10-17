@@ -39,22 +39,41 @@ test("header dice Publicaciones (nunca Blog) y trae el indice si hay posts", asy
   await expect(page.locator("header.site-header a.header-icon-btn[href='/tienda/']")).toHaveCount(0);
 });
 
-test("el selector de idioma es un control accionable, alineado a la derecha", async ({ page }) => {
-  await page.goto(BIO_URL);
+test("el selector de idioma es un control accionable, alineado a la derecha (en el home)", async ({ page }) => {
+  // El switcher vive donde hay una version REAL en el otro locale: el home.
+  await page.goto("/");
 
   // Vive en el grupo derecho del header, no entre las etiquetas del menu.
   const lang = page.locator("header.site-header .header-right a.header-lang");
   await expect(lang).toBeVisible();
-  await expect(lang).toHaveAttribute("hreflang", "en");
+  await expect(lang).toHaveAttribute("hreflang", "es");
+  await expect(lang).toHaveAttribute("href", /\/es\/$/);
 
   // Trae el icono de idiomas: se lee como accion, no como una palabra suelta.
   await expect(lang.locator(".header-lang-icon svg")).toHaveCount(1);
-  await expect(lang.locator(".header-lang-text")).toHaveText("English");
+  await expect(lang.locator(".header-lang-text")).toHaveText("Español");
 
   // El grupo derecho arranca a la derecha del ultimo enlace del menu.
   const exploreBox = await page.locator("header.site-header a[href='/explore/']").boundingBox();
   const langBox = await lang.boundingBox();
   expect(langBox!.x).toBeGreaterThan(exploreBox!.x + exploreBox!.width);
+});
+
+test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto", async ({ page }) => {
+  // La bio no tiene version en otro locale: en vez de un icono que lleva al
+  // home a ciegas, va el aviso (patron Airbnb) con la entrada del otro idioma.
+  await page.goto(BIO_URL);
+
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveCount(0);
+  const notice = page.locator("header.site-header .header-lang-notice");
+  await expect(notice).toBeVisible();
+  await expect(notice.locator(".header-lang-notice-txt")).toHaveText(
+    "Esta página solo está disponible en un idioma."
+  );
+  await expect(notice.locator(".header-lang-notice-link")).toHaveAttribute("href", "/");
+  // No promete traduccion automatica.
+  await expect(notice).not.toContainText("Traducir");
+  await expect(notice).not.toContainText("Translate");
 });
 
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {

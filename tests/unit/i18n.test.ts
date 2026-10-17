@@ -11,6 +11,8 @@ import {
   t,
   localePath,
   otherLocale,
+  otherLocales,
+  isMultilingual,
   hreflangAlternates,
 } from "../../src/lib/i18n";
 
@@ -77,5 +79,32 @@ describe("otherLocale + hreflangAlternates", () => {
       { hreflang: "en", path: "/" },
       { hreflang: "es", path: "/es/" },
     ]);
+  });
+
+  it("otherLocales devuelve TODOS los demas (no asume dos)", () => {
+    expect(otherLocales("en")).toEqual(["es"]);
+    expect(otherLocales("es")).toEqual(["en"]);
+    // la union de un locale + los demas reconstruye el set completo
+    for (const l of LOCALES) {
+      expect([l, ...otherLocales(l)].sort()).toEqual([...LOCALES].sort());
+    }
+  });
+
+  it("isMultilingual refleja LOCALES.length > 1 (condicion del switcher)", () => {
+    expect(isMultilingual()).toBe(LOCALES.length > 1);
+    expect(isMultilingual()).toBe(true); // el seed es bilingue
+  });
+});
+
+describe("avisos de idioma (lang.*)", () => {
+  it("existen en ambos locales y no prometen traduccion automatica", () => {
+    for (const l of LOCALES) {
+      expect(t(l, "lang.notice")).not.toBe("lang.notice");
+      expect(t(l, "lang.noticeCta")).not.toBe("lang.noticeCta");
+      expect(t(l, "lang.notice").toLowerCase()).not.toContain("translate");
+      expect(t(l, "lang.noticeCta").toLowerCase()).not.toContain("translate");
+    }
+    expect(t("en", "lang.notice")).toBe("This page is only available in one language.");
+    expect(t("es", "lang.noticeCta")).toBe("Ver el sitio en inglés");
   });
 });

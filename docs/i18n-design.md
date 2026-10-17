@@ -91,3 +91,25 @@ wins. This decides the model:
   document (`src/lib/docs-nav.mjs`) instead of pretending to a locale that does
   not exist. Docs are a projection of the Markdown in `docs/`, not a translated
   catalogue.
+
+## The language control is conditional on real coverage
+
+The language control does **not** assume the site is bilingual; it reads the
+data:
+
+- **A page with a real translation** (home, Explore — they pass `alternatePath`
+  to `BaseLayout`) shows the **switcher pill**, which links to the *same* route
+  in the other locale.
+- **A page without one** (blog, docs, pages, trust, …) shows **no pill** — a
+  language icon that silently drops you at the other-locale *home* is a
+  downgrade, not a translation. Instead it shows a **one-line notice** (the
+  Airbnb pattern: *"This page is only available in one language."* + *"See the
+  site in Spanish"*), which is honest about what exists and offers the other
+  locale's entry point.
+- **A single-locale site** (`LOCALES.length === 1`) shows neither: there is
+  nothing to offer. The guard is `isMultilingual()`, and `otherLocales()` is
+  the primitive that does **not** assume exactly two locales.
+
+The notice **never says "Translate"**: automatic machine translation is `GATED`
+above (it needs a provider and a declared-provenance rule), so the notice only
+states coverage and links to what is really there.

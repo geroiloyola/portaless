@@ -99,6 +99,17 @@ export function langSwitcherHtml(input: {
   return `<a class="header-lang" href="${input.href}" hreflang="${input.hreflang}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${input.text}</span></a>`;
 }
 
+// Aviso de idioma (patron Airbnb: "Some info is shown in its original
+// language. Translate"), pero HONESTO con lo que el sitio puede hacer hoy: no
+// hay traduccion automatica (es GATED: requiere provider + procedencia), asi
+// que en una pagina sin version en el otro locale NO se promete traducir; se
+// dice que la pagina esta en un solo idioma y se ofrece la entrada del sitio en
+// el otro idioma. Aparece solo si el sitio es multi-locale. UNA fuente para el
+// header Astro y el shell runtime.
+export function langNoticeHtml(input: { text: string; ctaLabel: string; href: string }): string {
+  return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${input.text}</span> <a class="header-lang-notice-link" href="${input.href}">${input.ctaLabel}</a></p>`;
+}
+
 // Iconos de navegacion para MOVIL (CSS los muestra solo bajo el breakpoint; en
 // desktop se ve el texto). UNA sola fuente para el header Astro y el shell
 // runtime, igual que headerActionsHtml/langSwitcherHtml -- asi no driftan. El

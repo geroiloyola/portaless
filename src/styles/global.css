@@ -288,6 +288,27 @@ header.site-header .header-lang-text {
   white-space: nowrap;
 }
 
+/* Aviso de idioma (patron Airbnb, honesto): una linea compacta bajo el nav en
+   las paginas que NO tienen version en el otro locale. Discreto, no insistente,
+   y con la entrada del sitio en el otro idioma. */
+header.site-header .header-lang-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.25rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+header.site-header .header-lang-notice-link {
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
 /* Navegacion del header: el icono esta en el DOM pero oculto en DESKTOP (solo
    el texto, como siempre). El texto nunca se quita del DOM, asi el nombre
    accesible se conserva en los dos modos. Ningun cambio de color/estilo base:

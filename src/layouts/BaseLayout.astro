@@ -28,9 +28,10 @@ export interface Props {
    */
   alternates?: Array<{ hreflang: string; href: string }>;
   /**
-   * Ruta canonica (sin prefijo de locale) de esta pagina, para el selector de
-   * idioma: el header enlaza a la MISMA ruta en el otro locale. Default "/"
-   * (el home), que es el unico destino localizado ademas de Explore.
+   * Ruta canonica (sin prefijo de locale) de ESTA pagina, si tiene version en
+   * otro locale (home = "/", Explore = "/explore/"). Sin valor = la pagina no
+   * esta localizada: el header no dibuja el switcher y muestra el aviso de
+   * idioma (si el sitio es multi-locale). Ver src/components/Header.astro.
    */
   alternatePath?: string;
   /**
@@ -47,7 +48,7 @@ export interface Props {
    */
   headerContext?: import("../lib/atomic-responsive-icons").HeaderContext;
 }
-const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath = "/", pageTheme, headerContext = null } = Astro.props;
+const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath, pageTheme, headerContext = null } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const llmsTxtUrl = `${base}/llms.txt`;
 // Phase 6: el feed de los posts publicados se anuncia desde TODAS las

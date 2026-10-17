@@ -30,11 +30,11 @@ import { createPageStore } from "../../packages/atomic-elements/src/persistence/
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
 import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
-import { localePath, otherLocale, t } from "../../src/lib/i18n.ts";
+import { isMultilingual, localePath, otherLocale, t } from "../../src/lib/i18n.ts";
 import {
   deriveHeaderContext,
   headerActionsHtml,
-  langSwitcherHtml,
+  langNoticeHtml,
   NAV_ICONS,
   navIconHtml,
   VOLUME_LISTENER_SCRIPT,
@@ -88,6 +88,8 @@ header.site-header .header-right{display:flex;align-items:center;gap:0.6rem;marg
 header.site-header .header-lang{display:inline-flex;align-items:center;gap:0.4rem;padding:0.32rem 0.7rem;border:1px solid var(--panel-border);border-radius:999px;color:var(--text);font-size:0.85rem;line-height:1;text-decoration:none}
 header.site-header .header-lang:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-lang-icon svg{width:16px;height:16px}
+header.site-header .header-lang-notice{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.4rem;max-width:860px;margin:0 auto;padding:0 1.25rem 0.7rem;font-size:0.8rem;line-height:1.4;color:var(--muted)}
+header.site-header .header-lang-notice-link{color:var(--accent-text);white-space:nowrap}
 header.site-header .nav-ico{display:none;align-items:center;justify-content:center}
 @media (max-width:640px){header.site-header nav{gap:0.3rem;padding:0.75rem 0.9rem}header.site-header .brand{font-size:1rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem}header.site-header .header-lang{width:34px;height:34px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
 header.site-header .header-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
@@ -199,10 +201,18 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
     ${showPostsLink() ? `<a class="nav-link" href="/blog/">${navIconHtml(NAV_ICONS.posts)}<span class="nav-txt">${postsLabel(SITE_LANG)}</span></a>` : ""}
     <a class="nav-link" href="/explore/">${navIconHtml(NAV_ICONS.explore)}<span class="nav-txt">${exploreLabel(SITE_LANG)}</span></a>
     <div class="header-right">
-      ${langSwitcherHtml({ href: localePath(otherLocale(SITE_LANG), "/"), hreflang: otherLocale(SITE_LANG), ariaLabel: t(SITE_LANG, "home.otherLocaleAria"), text: t(SITE_LANG, "home.otherLocaleName") })}
       ${headerActionsHtml(deriveHeaderContext(layout.root))}
     </div>
   </nav>
+  ${
+    isMultilingual()
+      ? langNoticeHtml({
+          text: t(SITE_LANG, "lang.notice"),
+          ctaLabel: t(SITE_LANG, "lang.noticeCta"),
+          href: localePath(otherLocale(SITE_LANG), "/"),
+        })
+      : ""
+  }
 </header>
 <main class="container">
 <article class="ae-page">${bodyHtml}</article>

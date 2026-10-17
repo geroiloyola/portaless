@@ -64,6 +64,20 @@ export function otherLocale(locale: Locale): Locale {
 }
 
 /**
+ * Todos los demas locales de un sitio. El switcher NO debe asumir que son dos:
+ * un sitio con 3+ locales usa esta lista (hoy el header dibuja un pill por
+ * locale; con 3+ el futuro es un menu, pero la condicion ya es N).
+ */
+export function otherLocales(locale: Locale): Locale[] {
+  return LOCALES.filter((l) => l !== locale);
+}
+
+/** ¿El sitio tiene mas de un locale? Es la condicion del switcher y del aviso. */
+export function isMultilingual(): boolean {
+  return LOCALES.length > 1;
+}
+
+/**
  * Alternates hreflang para una ruta canonica (sin base). El caller les antepone
  * el site URL + base para volverlos absolutos (requisito de hreflang).
  */
