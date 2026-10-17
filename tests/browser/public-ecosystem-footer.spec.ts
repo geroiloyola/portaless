@@ -97,7 +97,11 @@ test("Explore existe y lista paginas publicadas (sin links rotos)", async ({ pag
 
   await expect(page.getByRole("heading", { level: 1, name: "Explore" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Jerry Bantz/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: "TrustScore de este sitio" })).toBeVisible();
+  // Explore esta localizado (/explore/ en, /es/explore/ es): el label del
+  // TrustScore cambia con el locale, asi que el test no fija uno solo.
+  await expect(
+    page.getByRole("link", { name: /TrustScore (de este sitio|of this site)/ })
+  ).toBeVisible();
 });
 
 // Fase 12 (§2): la superficie publica /trust/default no muestra valores

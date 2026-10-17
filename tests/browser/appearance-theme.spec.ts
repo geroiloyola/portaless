@@ -15,6 +15,13 @@ const OFFICIAL_ACCENT = "#c5d86d";
 const TEST_ACCENT = "#ff00aa";
 const TEST_BG = "#fef3c7"; // amber-100, distinguishable del hueso oficial
 
+// Pagina testigo del SKIN del sitio: publica, con BaseLayout (trae
+// /api/site-skin) y SIN tema por pagina. El home, blog, docs y explore llevan
+// el pack del ecosistema (data-theme-pack + estilos inline en <html>), que por
+// diseno vence al skin; por eso el contrato del skin se mide en una pagina sin
+// pack, no en el home (que es del pack, no del skin).
+const SKIN_WITNESS_URL = "/trust/";
+
 async function varOf(page: Page, name: string): Promise<string> {
   return page.evaluate(
     (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim().toLowerCase(),
@@ -44,12 +51,20 @@ test.afterAll(async ({ browser }) => {
 });
 
 test("sitio publico: el accent por defecto es el oficial (#C5D86D)", async ({ page }) => {
-  await page.goto("/");
+  await page.goto(SKIN_WITNESS_URL);
   await page.waitForLoadState("networkidle");
   expect(await varOf(page, "--accent")).toBe(OFFICIAL_ACCENT);
   expect(await varOf(page, "--bg")).toBe("#f7f7f2");
   // Los alias historicos siguen atados a los tokens.
   expect(await varOf(page, "--portaless-accent")).toBe(OFFICIAL_ACCENT);
+});
+
+test("el home lleva el pack del ecosistema, no el skin (por diseno)", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await expect(page.locator("html")).toHaveAttribute("data-theme-pack", "portaless-nocturno");
+  // El pack se aplica inline en <html>, asi que gana sobre el skin.
+  expect(await varOf(page, "--bg")).toBe("#0e0b08");
 });
 
 test("cambiar accent y fondo desde /admin/appearance se refleja en publico, dashboard y editor", async ({ page }) => {
@@ -59,7 +74,7 @@ test("cambiar accent y fondo desde /admin/appearance se refleja en publico, dash
   await expect(page.locator("#ap-skin")).toHaveValue("base");
 
   // Before: el sitio publico tiene el oficial.
-  await page.goto("/");
+  await page.goto(SKIN_WITNESS_URL);
   await page.waitForLoadState("networkidle");
   const accentBefore = await varOf(page, "--accent");
   expect(accentBefore).toBe(OFFICIAL_ACCENT);
@@ -81,7 +96,7 @@ test("cambiar accent y fondo desde /admin/appearance se refleja en publico, dash
   await expect(page.locator("#ap-accent")).toHaveValue(TEST_ACCENT);
 
   // After (sitio publico): vars nuevas + consumidor real (body bg).
-  await page.goto("/");
+  await page.goto(SKIN_WITNESS_URL);
   await page.waitForLoadState("networkidle");
   expect(await varOf(page, "--accent")).toBe(TEST_ACCENT);
   expect(await varOf(page, "--portaless-accent")).toBe(TEST_ACCENT);
@@ -111,7 +126,7 @@ test("toggle oscuro: data-theme=dark aplica la paleta oficial oscura y auto la r
   await expect(page.locator("#ap-root")).toBeVisible();
 
   await page.selectOption("#ap-theme", "dark");
-  await page.goto("/");
+  await page.goto(SKIN_WITNESS_URL);
   await page.waitForLoadState("networkidle");
   expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("dark");
   expect(await varOf(page, "--bg")).toBe("#261c15");
@@ -125,7 +140,7 @@ test("toggle oscuro: data-theme=dark aplica la paleta oficial oscura y auto la r
   await page.goto("/admin/appearance");
   await expect(page.locator("#ap-root")).toBeVisible();
   await page.selectOption("#ap-theme", "auto");
-  await page.goto("/");
+  await page.goto(SKIN_WITNESS_URL);
   await page.waitForLoadState("networkidle");
   expect(await page.evaluate(() => document.documentElement.hasAttribute("data-theme"))).toBe(false);
 });

@@ -131,12 +131,15 @@ const demoPages = pages.filter((p) => kindOf(p) === "page");
 const demoShops = pages.filter((p) => kindOf(p) === "shop");
 const demoProfiles = pages.filter((p) => kindOf(p) === "profile");
 
-const REPO = "https://github.com/geroiloyola/portaless/blob/main";
+// Docs: ahora son paginas del propio sitio (/docs/), no enlaces a GitHub.
+// La fuente sigue siendo el Markdown de docs/ (el sitio es su proyeccion), asi
+// que estos destacados apuntan a la ruta interna. "Architecture" no tiene un
+// doc exacto publicado; se apunta al doc de arquitectura del ecosistema.
 const DOC_HREF: Record<string, string> = {
-  "Install in 10 minutes": `${REPO}/docs/primos-pasos.md`,
-  "Self-hosting": `${REPO}/docs/self-hosting.md`,
-  "Protocol APW": `${REPO}/docs/protocol-apw/APW-SPEC-v1.3.md`,
-  Architecture: `${REPO}/docs/architecture/README.md`,
+  "Install in 10 minutes": `${base}docs/start-in-10-minutes/`,
+  "Self-hosting": `${base}docs/self-hosting/`,
+  "Protocol APW": `${base}docs/protocol-apw/`,
+  Architecture: `${base}docs/ecosystem-boundaries/`,
 };
 
 const trustHref = `${base}trust/default`;
@@ -177,7 +180,7 @@ const notesJson = JSON.stringify(c.status);
     <h2>{c.docsHeading}</h2>
     <div class="explore-grid">
       {c.docs.map((doc) => (
-        <a class="explore-card" href={DOC_HREF[doc.title]} target="_blank" rel="noopener noreferrer">
+        <a class="explore-card" href={DOC_HREF[doc.title]}>
           <h3>{doc.title}</h3>
           <p>{doc.note}</p>
         </a>

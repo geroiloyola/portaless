@@ -29,7 +29,8 @@ test("la bio demo trae data-theme-pack y el look 2pac-dark calculado (incluso en
 });
 
 test("una pagina sin theme se queda con el skin del sitio (sin atributo)", async ({ page }) => {
-  await page.goto("/");
+  // /trust/ usa BaseLayout y NO define tema por pagina: es la testigo del skin.
+  await page.goto("/trust/");
 
   await expect(page.locator("html")).not.toHaveAttribute("data-theme-pack", /.*/);
 
