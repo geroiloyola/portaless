@@ -61,6 +61,25 @@ describe("home: 100% motor", () => {
   });
 });
 
+describe("home: el acceso a docs es interno (las paginas /docs/, no GitHub)", () => {
+  const esJson = readFileSync(join(root, "src/content/home.es.json"), "utf8");
+
+  it("el boton Docs del home apunta a la pagina /docs/, no a GitHub", () => {
+    expect(homeJson).toContain('"href": "/docs/"');
+    expect(homeJson).not.toContain("github.com/geroiloyola/portaless/tree/main/docs");
+  });
+
+  it("Protocol APW apunta a la pagina del spec /docs/protocol-apw/", () => {
+    expect(homeJson).toContain('"href": "/docs/protocol-apw/"');
+  });
+
+  it("la proyeccion espanola tambien es interna", () => {
+    expect(esJson).toContain('"href": "/docs/"');
+    expect(esJson).toContain('"href": "/docs/protocol-apw/"');
+    expect(esJson).not.toContain("github.com/geroiloyola/portaless/tree/main/docs");
+  });
+});
+
 describe("home es: la proyeccion de locale (i18n)", () => {
   const esJson = readFileSync(join(root, "src/content/home.es.json"), "utf8");
 

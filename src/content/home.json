@@ -23,8 +23,8 @@
       "props": { "count": 3, "gap": 16 },
       "columnSlots": [
         [{ "id": "proof-gh", "type": "Button", "props": { "label": "GitHub", "href": "https://github.com/geroiloyola/portaless", "variant": "outline", "size": "sm" } }],
-        [{ "id": "proof-docs", "type": "Button", "props": { "label": "Docs", "href": "https://github.com/geroiloyola/portaless/tree/main/docs", "variant": "outline", "size": "sm" } }],
-        [{ "id": "proof-spec", "type": "Button", "props": { "label": "Protocol APW", "href": "https://github.com/geroiloyola/portaless/blob/main/docs/protocol-apw/APW-SPEC-v1.3.md", "variant": "outline", "size": "sm" } }]
+        [{ "id": "proof-docs", "type": "Button", "props": { "label": "Docs", "href": "/docs/", "variant": "outline", "size": "sm" } }],
+        [{ "id": "proof-spec", "type": "Button", "props": { "label": "Protocol APW", "href": "/docs/protocol-apw/", "variant": "outline", "size": "sm" } }]
       ]
     },
     {
