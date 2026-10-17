@@ -26,7 +26,7 @@ import type { PageLayout } from "../../packages/atomic-elements/src/types";
 
 const root = join(__dirname, "../..");
 const baseLayout = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
-const slugRoute = readFileSync(join(root, "src/pages/paginas/[slug].astro"), "utf8");
+const slugRoute = readFileSync(join(root, "src/components/ContentPage.astro"), "utf8");
 const runtimeFn = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
 
 describe("BaseLayout (build estatico) emite el tema", () => {

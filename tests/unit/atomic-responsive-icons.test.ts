@@ -37,7 +37,9 @@ import { elementRegistry } from "../../packages/atomic-elements/src/elements/reg
 const root = join(__dirname, "../..");
 const headerSrc = readFileSync(join(root, "src/components/Header.astro"), "utf8");
 const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
-const slugPageSrc = readFileSync(join(root, "src/pages/paginas/[slug].astro"), "utf8");
+// La logica de la pagina de contenido vive en el componente compartido
+// (lo usan la ruta primaria y la de traduccion).
+const slugPageSrc = readFileSync(join(root, "src/components/ContentPage.astro"), "utf8");
 const shellSrc = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
 
 describe("deriveHeaderContext -- derivacion del icono principal", () => {

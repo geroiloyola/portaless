@@ -101,14 +101,19 @@ export function langSwitcherHtml(input: {
 }
 
 // Aviso de idioma (patron Airbnb: "Some info is shown in its original
-// language. Translate"), pero HONESTO con lo que el sitio puede hacer hoy: no
-// hay traduccion automatica (es GATED: requiere provider + procedencia), asi
-// que en una pagina sin version en el otro locale NO se promete traducir; se
-// dice que la pagina esta en un solo idioma y se ofrece la entrada del sitio en
-// el otro idioma. Aparece solo si el sitio es multi-locale. UNA fuente para el
+// language"), pero HONESTO con lo que el sitio puede hacer hoy: no hay
+// traduccion automatica (es GATED: requiere provider + procedencia), asi que en
+// una pagina sin version en el otro idioma NO se promete traducir NI se enlaza a
+// otro sitio -- solo se declara que la pagina esta en un solo idioma. Si algun
+// dia hay un CTA (p.ej. traduccion automatica con proveedor), se pasa
+// ctaLabel+href. Aparece solo si el sitio es multi-locale. UNA fuente para el
 // header Astro y el shell runtime.
-export function langNoticeHtml(input: { text: string; ctaLabel: string; href: string }): string {
-  return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${input.text}</span> <a class="header-lang-notice-link" href="${input.href}">${input.ctaLabel}</a></p>`;
+export function langNoticeHtml(input: { text: string; ctaLabel?: string; href?: string }): string {
+  const cta =
+    input.ctaLabel && input.href
+      ? ` <a class="header-lang-notice-link" href="${input.href}">${input.ctaLabel}</a>`
+      : "";
+  return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${input.text}</span>${cta}</p>`;
 }
 
 // TrustScore en el header: el score DEL SITIO (no de una persona dentro de el),

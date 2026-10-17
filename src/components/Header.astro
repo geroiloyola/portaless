@@ -27,8 +27,12 @@ interface Props {
   // esta localizada: no se dibuja el switcher (un icono que lleva al home a
   // ciegas es un downgrade silencioso) y en su lugar va el aviso de idioma.
   alternatePath?: string;
+  // Alternate EXPLICITO (href base-relativo + locale): lo usan las paginas de
+  // contenido, cuya traduccion vive en /<locale>/paginas/<slug>/. Gana sobre
+  // alternatePath.
+  languageAlternate?: { hreflang: string; href: string };
 }
-const { context = null, locale = SITE_LANG, alternatePath } = Astro.props;
+const { context = null, locale = SITE_LANG, alternatePath, languageAlternate } = Astro.props;
 
 const base = import.meta.env.BASE_URL;
 const baseNoSlash = base.replace(/\/$/, "");
@@ -39,20 +43,23 @@ const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
 const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
 
 // El control de idioma depende del DATO REAL, no de una suposicion:
-//   - sitio multi-locale (LOCALES.length > 1) y ESTA pagina localizada -> pill
-//     que enlaza a la MISMA ruta en el otro locale.
-//   - sitio multi-locale y pagina NO localizada -> aviso honesto (no se finge
-//     traduccion: la traduccion automatica es GATED) con la entrada del sitio
-//     en el otro idioma.
+//   - sitio multi-locale y ESTA pagina tiene version en otro locale (home y
+//     Explore via alternatePath; las paginas de contenido via languageAlternate)
+//     -> pill que enlaza a la MISMA pagina en el otro idioma.
+//   - sitio multi-locale y pagina SIN traduccion -> aviso honesto (no se finge
+//     traduccion, y NO se enlaza a otro sitio: la traduccion automatica es
+//     GATED).
 //   - sitio de un solo locale -> ninguno de los dos (no hay nada que ofrecer).
 const multi = isMultilingual();
 const others = otherLocales(locale);
-const isLocalized = typeof alternatePath === "string" && alternatePath.length > 0;
+const isLocalized =
+  Boolean(languageAlternate) || (typeof alternatePath === "string" && alternatePath.length > 0);
 const showSwitcher = multi && isLocalized && others.length > 0;
 const showNotice = multi && !isLocalized && others.length > 0;
 const other = others[0] ?? locale;
-const otherHref = `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`;
-const noticeHref = `${baseNoSlash}${localePath(other, "/")}`;
+const otherHref =
+  languageAlternate?.href ?? `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`;
+const otherHreflang = languageAlternate?.hreflang ?? other;
 // TrustScore del sitio: sexto item universal, al lado de Share. Apunta a
 // /trust/ (hub publico que existe en el deploy estatico; resuelve el siteId
 // por defecto). Ver src/components/Footer.astro.
@@ -92,7 +99,7 @@ const trustHref = `${base}trust/`;
         <Fragment
           set:html={langSwitcherHtml({
             href: otherHref,
-            hreflang: other,
+            hreflang: otherHreflang,
             ariaLabel: t(locale, "home.otherLocaleAria"),
             text: t(locale, "home.otherLocaleName"),
           })}
@@ -114,12 +121,6 @@ const trustHref = `${base}trust/`;
     </div>
   </nav>
   {showNotice && (
-    <Fragment
-      set:html={langNoticeHtml({
-        text: t(locale, "lang.notice"),
-        ctaLabel: t(locale, "lang.noticeCta"),
-        href: noticeHref,
-      })}
-    />
+    <Fragment set:html={langNoticeHtml({ text: t(locale, "lang.notice") })} />
   )}
 </header>

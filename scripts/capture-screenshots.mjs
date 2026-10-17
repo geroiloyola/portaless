@@ -79,6 +79,9 @@ try {
   await shot(page, `${base}/proyecciones/`, "public-proyecciones.png", { fullPage: true });
   await shot(page, `${base}/docs/`, "public-docs.png", { fullPage: true });
   await shot(page, `${base}/docs/protocol-apw/`, "public-docs-detail.png", { fullPage: true });
+  // Pagina de contenido con traduccion: el switcher lleva a la MISMA pagina en
+  // el otro idioma (no al home).
+  await shot(page, `${base}/paginas/ejemplo-atomic-elements/`, "public-page-translated.png", { fullPage: true });
 
   // Header en MOVIL: el menu pasa a iconos (Inicio, Publicaciones, Explorar,
   // idioma) y el compartir se queda a la derecha. Captura del viewport (no

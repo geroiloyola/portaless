@@ -35,6 +35,13 @@ export interface Props {
    */
   alternatePath?: string;
   /**
+   * Alternate EXPLICITO para el selector de idioma (href base-relativo + el
+   * locale de destino). Lo usan las paginas de contenido, cuya traduccion no
+   * sigue la regla global de localePath (vive en /<locale>/paginas/<slug>/).
+   * Si esta presente, gana sobre alternatePath.
+   */
+  languageAlternate?: { hreflang: string; href: string };
+  /**
    * Tema por pagina (theme pack) ya resuelto: nombre + la declaracion de
    * variables que themeStyleDecl() construye. Lo pasa
    * src/pages/paginas/[slug].astro; sin el, la pagina usa el skin del
@@ -48,7 +55,7 @@ export interface Props {
    */
   headerContext?: import("../lib/atomic-responsive-icons").HeaderContext;
 }
-const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath, pageTheme, headerContext = null } = Astro.props;
+const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath, languageAlternate, pageTheme, headerContext = null } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const llmsTxtUrl = `${base}/llms.txt`;
 // Phase 6: el feed de los posts publicados se anuncia desde TODAS las
@@ -141,7 +148,7 @@ import { VOLUME_LISTENER_SCRIPT } from "../lib/atomic-responsive-icons";
     </slot>
   </head>
   <body>
-    <Header context={headerContext} locale={isLocale(lang) ? lang : SITE_LANG} alternatePath={alternatePath} />
+    <Header context={headerContext} locale={isLocale(lang) ? lang : SITE_LANG} alternatePath={alternatePath} languageAlternate={languageAlternate} />
     <main class="container">
       <slot />
     </main>

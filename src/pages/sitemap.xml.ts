@@ -3,8 +3,8 @@
 // Fuentes (mismo criterio que /llms.txt):
 //   - Home, /blog/ y /explore/ (hub de descubrimiento): lastmod = pubDate del post mas reciente.
 //   - Posts publicados (sin borradores): lastmod = pubDate.
-//   - Paginas de src/content/pages/*.json, sin barra final para coincidir con
-//     su canonical en paginas/[slug].astro.
+//   - Paginas de src/content/pages/*.json (todas sus versiones de locale).
+//   - Docs publicados (docs-nav.mjs) y sus rutas.
 //   - Productos de la tienda si el commerce esta activo.
 //
 // Antes las paginas salian de page-store, que en build estatico esta vacio:
@@ -17,8 +17,7 @@ import { getSiteUrl } from "../lib/seo";
 import { publishedPosts } from "../lib/llms-txt";
 import { buildSitemapXml, type SitemapEntry } from "../lib/sitemap";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
-
-const pageModules = import.meta.glob<{ default: { slug?: string } }>("../content/pages/*.json", { eager: true });
+import { contentPageHref, loadContentPages } from "../lib/content-pages";
 
 async function collectCommerceEntries(): Promise<SitemapEntry[]> {
   try {
@@ -41,9 +40,14 @@ export const GET: APIRoute = async ({ site }) => {
   const posts = publishedPosts(await getCollection("posts"));
   const latest = posts[0]?.data.pubDate;
 
-  const pageSlugs = Object.values(pageModules)
-    .map((mod) => mod.default?.slug)
-    .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
+  // Una entrada por VERSION de cada pagina de contenido (primaria + traducciones).
+  const contentPageEntries = loadContentPages().flatMap((page) =>
+    page.versions.map((version) => ({
+      path: contentPageHref(version, "/"),
+      changefreq: "monthly" as const,
+      priority: 0.8,
+    })),
+  );
 
   const entries: SitemapEntry[] = [
     { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
@@ -65,11 +69,7 @@ export const GET: APIRoute = async ({ site }) => {
       changefreq: "monthly" as const,
       priority: 0.7,
     })),
-    ...pageSlugs.map((slug) => ({
-      path: `/paginas/${encodeURIComponent(slug)}`,
-      changefreq: "monthly" as const,
-      priority: 0.8,
-    })),
+    ...contentPageEntries,
     ...(await collectCommerceEntries()),
   ];
 

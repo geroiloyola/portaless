@@ -59,9 +59,10 @@ test("el selector de idioma es un control accionable, alineado a la derecha (en 
   expect(langBox!.x).toBeGreaterThan(exploreBox!.x + exploreBox!.width);
 });
 
-test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto", async ({ page }) => {
-  // La bio no tiene version en otro locale: en vez de un icono que lleva al
-  // home a ciegas, va el aviso (patron Airbnb) con la entrada del otro idioma.
+test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto (sin link a otro sitio)", async ({ page }) => {
+  // La bio no tiene version en otro idioma: en vez de un icono que lleva al
+  // home a ciegas, va el aviso (patron Airbnb). No enlaza a otro sitio: la
+  // traduccion real de una pagina es su version en el otro locale.
   await page.goto(BIO_URL);
 
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveCount(0);
@@ -70,10 +71,31 @@ test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto"
   await expect(notice.locator(".header-lang-notice-txt")).toHaveText(
     "Esta página solo está disponible en un idioma."
   );
-  await expect(notice.locator(".header-lang-notice-link")).toHaveAttribute("href", "/");
+  // Sin CTA: no hay una version de ESTA pagina en otro idioma que ofrecer.
+  await expect(notice.locator(".header-lang-notice-link")).toHaveCount(0);
   // No promete traduccion automatica.
   await expect(notice).not.toContainText("Traducir");
   await expect(notice).not.toContainText("Translate");
+});
+
+test("una pagina con traduccion: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
+  // /paginas/ejemplo-atomic-elements/ es espanol y tiene version en ingles:
+  // el switcher va a esa version (misma pagina), nunca al home.
+  await page.goto("/paginas/ejemplo-atomic-elements/");
+
+  const pill = page.locator("header.site-header .header-right a.header-lang");
+  await expect(pill).toHaveAttribute("href", /\/en\/paginas\/ejemplo-atomic-elements\/$/);
+  await expect(pill).toHaveAttribute("hreflang", "en");
+  // Sin aviso: hay traduccion real.
+  await expect(page.locator("header.site-header .header-lang-notice")).toHaveCount(0);
+
+  // Y la version en ingles vuelve a la espanola.
+  await page.goto("/en/paginas/ejemplo-atomic-elements/");
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
+    "href",
+    /\/paginas\/ejemplo-atomic-elements\/$/
+  );
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {

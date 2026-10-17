@@ -18,6 +18,14 @@ export interface PageLayout {
   title: string;
   description?: string;
   /**
+   * Idioma del contenido de la pagina (i18n, docs/i18n-design.md). Opcional y
+   * aditivo: el motor no lo usa para renderizar (solo compone nodos), lo lee la
+   * capa de sitio para el <html lang>, el selector de idioma y el aviso. Si
+   * falta, la capa de sitio cae al idioma del archivo (sufijo `.en`/`.es`) o al
+   * idioma del sitio (SITE_LANG).
+   */
+  locale?: string;
+  /**
    * Estado de publicacion nativo. Opcional por compatibilidad hacia atras con
    * el layout JSON ya persistido en D1/SQLite (que no lo trae): si falta, se
    * trata como "published". El gate de publicacion real es el publish filter

@@ -1,0 +1,26 @@
+---
+// Ruta dinamica de las TRADUCCIONES de una pagina de contenido
+// (/<locale>/paginas/<slug>/). La version primaria vive en /paginas/<slug>/.
+// Solo se generan las versiones declaradas (archivos `<slug>.<locale>.json`).
+import ContentPage from "../../../components/ContentPage.astro";
+import {
+  loadContentPages,
+  type ContentPage as ContentPageData,
+  type PageVersion,
+} from "../../../lib/content-pages";
+
+export async function getStaticPaths() {
+  const out: Array<{ params: { locale: string; slug: string }; props: { page: ContentPageData; version: PageVersion } }> = [];
+  for (const page of loadContentPages()) {
+    for (const version of page.versions) {
+      if (version.primary) continue;
+      out.push({ params: { locale: version.locale, slug: version.slug }, props: { page, version } });
+    }
+  }
+  return out;
+}
+
+const { page, version } = Astro.props as { page: ContentPageData; version: PageVersion };
+---
+
+<ContentPage page={page} version={version} />

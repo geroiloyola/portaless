@@ -30,7 +30,7 @@ import { createPageStore } from "../../packages/atomic-elements/src/persistence/
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
 import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
-import { isMultilingual, localePath, otherLocale, t } from "../../src/lib/i18n.ts";
+import { isMultilingual, t } from "../../src/lib/i18n.ts";
 import {
   deriveHeaderContext,
   headerActionsHtml,
@@ -211,11 +211,7 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
   </nav>
   ${
     isMultilingual()
-      ? langNoticeHtml({
-          text: t(SITE_LANG, "lang.notice"),
-          ctaLabel: t(SITE_LANG, "lang.noticeCta"),
-          href: localePath(otherLocale(SITE_LANG), "/"),
-        })
+      ? langNoticeHtml({ text: t(SITE_LANG, "lang.notice") })
       : ""
   }
 </header>
