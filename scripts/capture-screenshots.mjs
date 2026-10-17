@@ -80,6 +80,17 @@ try {
   await shot(page, `${base}/docs/`, "public-docs.png", { fullPage: true });
   await shot(page, `${base}/docs/protocol-apw/`, "public-docs-detail.png", { fullPage: true });
 
+  // Header en MOVIL: el menu pasa a iconos (Inicio, Publicaciones, Explorar,
+  // idioma) y el compartir se queda a la derecha. Captura del viewport (no
+  // fullPage) para que se vea la barra.
+  const mobileCtx = await browser.newContext({
+    viewport: { width: 390, height: 780 },
+    deviceScaleFactor: 2,
+  });
+  const mobilePage = await mobileCtx.newPage();
+  await shot(mobilePage, `${base}/`, "public-home-mobile.png");
+  await mobileCtx.close();
+
   console.log("[captura] dashboard / editor / trust...");
   await shot(page, `${base}/admin/`, "admin-dashboard.png", {
     waitFor: async () => {

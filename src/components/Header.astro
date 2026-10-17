@@ -5,6 +5,8 @@ import { localePath, otherLocale, t, type Locale } from "../lib/i18n";
 import {
   headerActionsHtml,
   langSwitcherHtml,
+  NAV_ICONS,
+  navIconHtml,
   type HeaderContext,
 } from "../lib/atomic-responsive-icons";
 
@@ -41,12 +43,29 @@ const otherHref = `${base.replace(/\/$/, "")}${localePath(other, alternatePath)}
 <header class="site-header">
   <nav>
     <a class="brand" href={base}>Portaless</a>
-    <a href={base}>{homeLabel(locale)}</a>
+    <!-- Cada enlace lleva su icono (visible solo en movil) y su texto (visible
+         solo en desktop). El texto SIEMPRE esta en el DOM: en movil se oculta
+         visualmente, asi el nombre accesible se conserva. -->
+    <a class="nav-link" href={base}>
+      <Fragment set:html={navIconHtml(NAV_ICONS.home)} />
+      <span class="nav-txt">{homeLabel(locale)}</span>
+    </a>
     {publishedPosts.length > 0 && (
-      <a href={`${base}blog/`}>{postsLabel(locale)}</a>
+      <a class="nav-link" href={`${base}blog/`}>
+        <Fragment set:html={navIconHtml(NAV_ICONS.posts)} />
+        <span class="nav-txt">{postsLabel(locale)}</span>
+      </a>
     )}
-    <a href={`${base}explore/`}>{exploreLabel(locale)}</a>
-    {commerceEnabled && <a href={`${base}tienda/`}>Tienda</a>}
+    <a class="nav-link" href={`${base}explore/`}>
+      <Fragment set:html={navIconHtml(NAV_ICONS.explore)} />
+      <span class="nav-txt">{exploreLabel(locale)}</span>
+    </a>
+    {commerceEnabled && (
+      <a class="nav-link" href={`${base}tienda/`}>
+        <Fragment set:html={navIconHtml(NAV_ICONS.shop)} />
+        <span class="nav-txt">Tienda</span>
+      </a>
+    )}
     <!-- Grupo derecho: selector de idioma (con icono, se lee como accion) y
          el rincon de iconos. Empujado a la derecha con margin-left:auto, para
          que el idioma quede alineado a la derecha y no entre las etiquetas. -->

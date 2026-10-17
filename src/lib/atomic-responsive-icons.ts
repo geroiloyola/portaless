@@ -22,9 +22,13 @@
 // footer runtime mientras el build decia AGPL.
 import {
   ICON_DIRECTIONS,
+  ICON_HOUSE,
   ICON_LANGUAGES,
+  ICON_NEWSPAPER,
+  ICON_SEARCH,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
+  ICON_STORE,
   ICON_VOLUME_2,
 } from "../../packages/atomic-elements/src/elements/icons";
 
@@ -93,6 +97,22 @@ export function langSwitcherHtml(input: {
   text: string;
 }): string {
   return `<a class="header-lang" href="${input.href}" hreflang="${input.hreflang}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${input.text}</span></a>`;
+}
+
+// Iconos de navegacion para MOVIL (CSS los muestra solo bajo el breakpoint; en
+// desktop se ve el texto). UNA sola fuente para el header Astro y el shell
+// runtime, igual que headerActionsHtml/langSwitcherHtml -- asi no driftan. El
+// texto de cada enlace SIGUE en el DOM (clase .nav-txt, oculto visualmente en
+// movil) para no perder el nombre accesible.
+export const NAV_ICONS = {
+  home: ICON_HOUSE,
+  posts: ICON_NEWSPAPER,
+  explore: ICON_SEARCH,
+  shop: ICON_STORE,
+} as const;
+
+export function navIconHtml(icon: string): string {
+  return `<span class="nav-ico" aria-hidden="true">${icon}</span>`;
 }
 
 // Listener delegado del control de volumen (Atomic Icons Responsive),

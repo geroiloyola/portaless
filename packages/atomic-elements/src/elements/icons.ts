@@ -92,6 +92,24 @@ export const ICON_LANGUAGES = icon(
   1.5,
 );
 
+// Iconos de navegacion del header en MOVIL (el texto sigue en el DOM, solo se
+// oculta visualmente). Inicio -> lucide "house"; Publicaciones -> "newspaper";
+// Explorar -> "search". Stroke 1.5 para acompanar el rincon de iconos.
+export const ICON_HOUSE = icon(
+  `<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />`,
+  1.5,
+);
+
+export const ICON_NEWSPAPER = icon(
+  `<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /> <path d="M18 14h-8" /> <path d="M15 18h-5" /> <path d="M10 6h8v4h-8V6Z" />`,
+  1.5,
+);
+
+export const ICON_SEARCH = icon(
+  `<circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" />`,
+  1.5,
+);
+
 // Perfil / Bio -> lucide "circle-user-round"
 export const ICON_CIRCLE_USER_ROUND = icon(`<path d="M17.925 20.056a6 6 0 0 0-11.851.001" /> <circle cx="12" cy="11" r="4" /> <circle cx="12" cy="12" r="10" />`);
 

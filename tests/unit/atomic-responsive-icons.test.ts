@@ -15,12 +15,18 @@ import {
   deriveHeaderContext,
   headerActionsHtml,
   langSwitcherHtml,
+  NAV_ICONS,
+  navIconHtml,
 } from "../../src/lib/atomic-responsive-icons";
 import {
   ICON_DIRECTIONS,
+  ICON_HOUSE,
   ICON_LANGUAGES,
+  ICON_NEWSPAPER,
+  ICON_SEARCH,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
+  ICON_STORE,
   ICON_VOLUME_2,
 } from "../../packages/atomic-elements/src/elements/icons";
 import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
@@ -158,6 +164,59 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
     expect(cssSrc).toContain(".header-lang-icon");
     expect(shellSrc).toContain(".header-right{");
     expect(shellSrc).toContain(".header-lang{");
+  });
+});
+
+describe("nav movil por iconos -- una sola fuente", () => {
+  it("NAV_ICONS mapea cada destino a su icono", () => {
+    expect(NAV_ICONS.home).toBe(ICON_HOUSE);
+    expect(NAV_ICONS.posts).toBe(ICON_NEWSPAPER);
+    expect(NAV_ICONS.explore).toBe(ICON_SEARCH);
+    expect(NAV_ICONS.shop).toBe(ICON_STORE);
+  });
+
+  it("navIconHtml es un span decorativo (.nav-ico, aria-hidden)", () => {
+    const html = navIconHtml(ICON_HOUSE);
+    expect(html).toContain('class="nav-ico"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain(ICON_HOUSE);
+  });
+
+  it("Header.astro pone icono + texto en cada enlace (texto SIEMPRE en el DOM)", () => {
+    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.home)");
+    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.posts)");
+    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.explore)");
+    // el texto no se quita del DOM: se oculta visualmente en movil via CSS
+    expect(headerSrc).toContain('<span class="nav-txt">');
+  });
+
+  it("el shell runtime usa la MISMA fuente (NAV_ICONS + navIconHtml + .nav-txt)", () => {
+    expect(shellSrc).toContain("navIconHtml(NAV_ICONS.home)");
+    expect(shellSrc).toContain("navIconHtml(NAV_ICONS.explore)");
+    expect(shellSrc).toContain('<span class="nav-txt">');
+  });
+
+  it("el modo iconos es SOLO movil (media query en ambos CSS, desktop con texto)", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toContain(".nav-ico");
+    expect(cssSrc).toContain(".nav-txt");
+    expect(cssSrc).toContain("@media (max-width: 640px)");
+    // en desktop el icono esta oculto (display:none por defecto)
+    expect(cssSrc).toMatch(/\.nav-ico\s*\{[^}]*display:\s*none/);
+    expect(shellSrc).toContain("@media (max-width:640px)");
+    expect(shellSrc).toContain(".nav-ico{display:none");
+    expect(shellSrc).toContain(".nav-txt{");
+  });
+
+  it("el compartir NO se toca en movil: sigue siendo .header-icon-btn redondo", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toContain("header.site-header .header-icon-btn");
+    // El bloque movil no menciona el share: no se re-estiliza ni se mueve.
+    const mobile = cssSrc.slice(
+      cssSrc.indexOf("@media (max-width: 640px)"),
+      cssSrc.indexOf("header.site-header .header-icon-btn", cssSrc.indexOf("@media (max-width: 640px)")),
+    );
+    expect(mobile).not.toContain("header-icon-btn");
   });
 });
 
