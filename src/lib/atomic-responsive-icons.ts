@@ -27,6 +27,7 @@ import {
   ICON_NEWSPAPER,
   ICON_SEARCH,
   ICON_SHARE_IOS,
+  ICON_SHIELD,
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
@@ -108,6 +109,15 @@ export function langSwitcherHtml(input: {
 // header Astro y el shell runtime.
 export function langNoticeHtml(input: { text: string; ctaLabel: string; href: string }): string {
   return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${input.text}</span> <a class="header-lang-notice-link" href="${input.href}">${input.ctaLabel}</a></p>`;
+}
+
+// TrustScore en el header: el score DEL SITIO (no de una persona dentro de el),
+// como sexto item universal -- la prueba de confianza verificable deja de vivir
+// solo en el footer. Icono escudo + etiqueta; en movil el texto se oculta
+// visualmente (misma regla que el resto del menu) y queda el icono. UNA fuente
+// para el header Astro y el shell runtime.
+export function trustLinkHtml(input: { href: string; label: string; ariaLabel: string }): string {
+  return `<a class="header-trust" href="${input.href}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-trust-icon" aria-hidden="true">${ICON_SHIELD}</span><span class="header-trust-text">${input.label}</span></a>`;
 }
 
 // Iconos de navegacion para MOVIL (CSS los muestra solo bajo el breakpoint; en

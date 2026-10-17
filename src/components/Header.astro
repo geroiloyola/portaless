@@ -8,6 +8,7 @@ import {
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
+  trustLinkHtml,
   type HeaderContext,
 } from "../lib/atomic-responsive-icons";
 
@@ -52,6 +53,10 @@ const showNotice = multi && !isLocalized && others.length > 0;
 const other = others[0] ?? locale;
 const otherHref = `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`;
 const noticeHref = `${baseNoSlash}${localePath(other, "/")}`;
+// TrustScore del sitio: sexto item universal, al lado de Share. Apunta a
+// /trust/ (hub publico que existe en el deploy estatico; resuelve el siteId
+// por defecto). Ver src/components/Footer.astro.
+const trustHref = `${base}trust/`;
 ---
 <header class="site-header">
   <nav>
@@ -93,6 +98,15 @@ const noticeHref = `${baseNoSlash}${localePath(other, "/")}`;
           })}
         />
       )}
+      <!-- TrustScore del sitio, al lado de Share: la prueba de confianza
+           verificable deja de vivir solo en el footer. -->
+      <Fragment
+        set:html={trustLinkHtml({
+          href: trustHref,
+          label: t(locale, "trust.label"),
+          ariaLabel: t(locale, "trust.aria"),
+        })}
+      />
       <!-- Atomic Icons Responsive: share siempre; icono principal segun
            contexto. El HTML sale de UNA sola fuente compartida con el
            shell runtime (src/lib/atomic-responsive-icons.ts). -->

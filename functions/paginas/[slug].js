@@ -37,6 +37,7 @@ import {
   langNoticeHtml,
   NAV_ICONS,
   navIconHtml,
+  trustLinkHtml,
   VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
@@ -90,8 +91,11 @@ header.site-header .header-lang:hover{border-color:var(--accent);color:var(--acc
 header.site-header .header-lang-icon svg{width:16px;height:16px}
 header.site-header .header-lang-notice{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.4rem;max-width:860px;margin:0 auto;padding:0 1.25rem 0.7rem;font-size:0.8rem;line-height:1.4;color:var(--muted)}
 header.site-header .header-lang-notice-link{color:var(--accent-text);white-space:nowrap}
+header.site-header .header-trust{display:inline-flex;align-items:center;gap:0.4rem;padding:0.32rem 0.7rem;border:1px solid var(--panel-border);border-radius:999px;color:var(--text);font-size:0.85rem;line-height:1;text-decoration:none}
+header.site-header .header-trust:hover{border-color:var(--accent);color:var(--accent)}
+header.site-header .header-trust-icon svg{width:16px;height:16px}
 header.site-header .nav-ico{display:none;align-items:center;justify-content:center}
-@media (max-width:640px){header.site-header nav{gap:0.3rem;padding:0.75rem 0.9rem}header.site-header .brand{font-size:1rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem}header.site-header .header-lang{width:34px;height:34px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
+@media (max-width:640px){header.site-header nav{gap:0.3rem;padding:0.75rem 0.9rem}header.site-header .brand{font-size:1rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem}header.site-header .header-lang{width:34px;height:34px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-trust{width:34px;height:34px;padding:0;justify-content:center}header.site-header .header-trust .header-trust-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
 header.site-header .header-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
 header.site-header .header-icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-icon-btn svg{width:18px;height:18px}
@@ -201,6 +205,7 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
     ${showPostsLink() ? `<a class="nav-link" href="/blog/">${navIconHtml(NAV_ICONS.posts)}<span class="nav-txt">${postsLabel(SITE_LANG)}</span></a>` : ""}
     <a class="nav-link" href="/explore/">${navIconHtml(NAV_ICONS.explore)}<span class="nav-txt">${exploreLabel(SITE_LANG)}</span></a>
     <div class="header-right">
+      ${trustLinkHtml({ href: "/trust/", label: t(SITE_LANG, "trust.label"), ariaLabel: t(SITE_LANG, "trust.aria") })}
       ${headerActionsHtml(deriveHeaderContext(layout.root))}
     </div>
   </nav>
@@ -220,7 +225,7 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
 <footer class="site-footer">
   <div class="container">
     <nav class="footer-eco" aria-label="Ecosistema Portaless">
-      <a href="/trust/default">TrustScore</a>
+      <a href="/trust/">TrustScore</a>
       <span class="sep" aria-hidden="true">·</span>
       <a href="/explore/">Explore</a>
       <span class="sep" aria-hidden="true">·</span>

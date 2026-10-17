@@ -8,6 +8,10 @@
     "notice": "This page is only available in one language.",
     "noticeCta": "See the site in Spanish"
   },
+  "trust": {
+    "label": "TrustScore",
+    "aria": "Site Trust Score"
+  },
   "nav": {
     "home": "Home",
     "posts": "Publications",

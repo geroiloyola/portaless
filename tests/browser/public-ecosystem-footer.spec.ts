@@ -105,10 +105,25 @@ test("footer del ecosistema: TrustScore · Explore · Powered by Portaless", asy
   await page.goto(BIO_URL);
 
   const footer = page.locator("footer.site-footer");
-  await expect(footer.getByRole("link", { name: "TrustScore" })).toHaveAttribute("href", /\/trust\/default$/);
+  await expect(footer.getByRole("link", { name: "TrustScore" })).toHaveAttribute("href", /\/trust\/$/);
   await expect(footer.getByRole("link", { name: "Explore" })).toHaveAttribute("href", /\/explore\/$/);
   await expect(footer.getByRole("link", { name: "Powered by Portaless" })).toHaveAttribute("href", /github\.com/);
   await expect(footer).toContainText("Open Source, Modular, Agent-Ready & Zero-Hosting");
+});
+
+test("el TrustScore vive en el header, al lado de Share, apuntando al hub /trust/", async ({ page }) => {
+  await page.goto(BIO_URL);
+
+  const trust = page.locator("header.site-header a.header-trust");
+  await expect(trust).toBeVisible();
+  await expect(trust).toHaveAttribute("href", /\/trust\/$/);
+  await expect(trust).toHaveAttribute("aria-label", "TrustScore del sitio");
+  await expect(trust.locator(".header-trust-icon svg")).toHaveCount(1);
+
+  // Va ANTES del share (que sigue pegado al borde derecho).
+  const trustBox = (await trust.boundingBox())!;
+  const shareBox = (await page.locator("header.site-header [data-portaless-share]").boundingBox())!;
+  expect(trustBox.x).toBeLessThan(shareBox.x);
 });
 
 test("Explore existe y lista paginas publicadas (sin links rotos)", async ({ page }) => {

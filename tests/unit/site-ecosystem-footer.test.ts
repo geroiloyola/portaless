@@ -22,12 +22,14 @@ describe("footer del ecosistema Portaless", () => {
     expect(footerSrc).toContain('aria-label="Ecosistema Portaless"');
   });
 
-  it("TrustScore apunta al siteId real, nunca a /trust/ vacio (eso muestra error)", () => {
-    // El source tiene "}trust/default" (el "/" del inicio lo aporta
-    // BASE_URL en runtime), por eso se busca "trust/<id>" y se prohíbe
-    // que termine el template justo ahi.
-    expect(footerSrc).toContain(`trust/${SITE_ID}`);
-    expect(footerSrc).not.toMatch(/trust\/`/);
+  it("TrustScore apunta al hub /trust/, que resuelve el siteId real por defecto", () => {
+    // Antes apuntaba a /trust/default, que da 404 en el deploy estatico (no hay
+    // functions/). El hub /trust/ existe en dist y cae al siteId real cuando la
+    // URL no trae uno (ver src/pages/trust/index.astro).
+    expect(footerSrc).toContain("trust/");
+    expect(footerSrc).not.toContain("trust/default");
+    const trustPage = readFileSync(join(root, "src/pages/trust/index.astro"), "utf8");
+    expect(trustPage).toContain(`: "${SITE_ID}"`);
   });
 
   it("Explore apunta a una pagina que existe -- sin links rotos", () => {
@@ -59,7 +61,7 @@ describe("paridad static <-> runtime (functions/paginas/[slug].js)", () => {
     expect(shellSrc).toContain(">TrustScore<");
     expect(shellSrc).toContain(">Explore<");
     expect(shellSrc).toContain("Powered by Portaless");
-    expect(shellSrc).toContain(`trust/${SITE_ID}`);
+    expect(shellSrc).toContain('href="/trust/"');
     expect(shellSrc).toContain("/explore/");
     expect(shellSrc).not.toContain("Hecho con");
   });

@@ -48,12 +48,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   // siteId se lee de la URL real en el navegador: la Function sirve este
   // shell para /trust/<siteId> (Accept text/html), asi que el ultimo
-  // segmento del pathname es el siteId. Si alguien abre /trust/ a
-  // secas no hay siteId -- se muestra el estado de error en vez de
-  // pedir GET /trust/ (que devolveria este mismo HTML).
+  // segmento del pathname es el siteId. Si alguien abre /trust/ a secas (el
+  // hub del header y del footer), se cae al siteId por defecto del sitio
+  // ("default", el unico que existe hoy) en vez de mostrar un error -- asi el
+  // enlace universal del header nunca termina en una pantalla de error.
   const pathParts = window.location.pathname.split("/").filter(Boolean);
   const lastSegment = decodeURIComponent(pathParts[pathParts.length - 1] ?? "");
-  const siteId = lastSegment && lastSegment !== "trust" ? lastSegment : "";
+  const siteId = lastSegment && lastSegment !== "trust" ? lastSegment : "default";
 
   document.getElementById("st-site-id").textContent = siteId;
   document.title = `Site Trust Score — ${siteId}`;

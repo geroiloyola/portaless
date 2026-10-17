@@ -8,6 +8,10 @@
     "notice": "Esta página solo está disponible en un idioma.",
     "noticeCta": "Ver el sitio en inglés"
   },
+  "trust": {
+    "label": "TrustScore",
+    "aria": "TrustScore del sitio"
+  },
   "nav": {
     "home": "Inicio",
     "posts": "Publicaciones",

@@ -9,12 +9,11 @@
 //      la promesa del producto en cuatro palabras, exactamente. Es la
 //      linea que hace creible el "Powered by" de la fila 1.
 //
-// NOTA (SITE_ID): /trust/<siteId> necesita el id del sitio y ese valor
-// vive en SITE_ID de packages/dashboard/src/skin-engine/site-skin-store.
-// Ese modulo importa openSqlite, asi que NO se importa aqui (tiraria un
-// driver de base de datos al build estatico). Se duplica el string y
-// tests/unit/site-ecosystem-footer.test.ts lo amarra al SITE_ID real.
-const trustHref = `${import.meta.env.BASE_URL}trust/default`;
+// NOTA (SITE_ID): el hub /trust/ resuelve el siteId por defecto del sitio
+// ("default", el unico que existe hoy) cuando la URL no trae uno, asi que el
+// enlace funciona en el deploy estatico sin conocer el id. El endpoint JSON
+// sigue siendo /trust/<siteId> (functions/).
+const trustHref = `${import.meta.env.BASE_URL}trust/`;
 const exploreHref = `${import.meta.env.BASE_URL}explore/`;
 const repoHref = "https://github.com/geroiloyola/portaless";
 ---

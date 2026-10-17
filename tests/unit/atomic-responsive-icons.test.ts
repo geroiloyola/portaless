@@ -18,6 +18,7 @@ import {
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
+  trustLinkHtml,
 } from "../../src/lib/atomic-responsive-icons";
 import {
   ICON_DIRECTIONS,
@@ -26,6 +27,7 @@ import {
   ICON_NEWSPAPER,
   ICON_SEARCH,
   ICON_SHARE_IOS,
+  ICON_SHIELD,
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
@@ -201,6 +203,39 @@ describe("langNoticeHtml -- aviso de idioma honesto (patron Airbnb)", () => {
     const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
     expect(cssSrc).toContain(".header-lang-notice");
     expect(shellSrc).toContain(".header-lang-notice{");
+  });
+});
+
+describe("trustLinkHtml -- TrustScore en el header (sexto item universal)", () => {
+  it("es un enlace con clase header-trust, el icono escudo y la etiqueta", () => {
+    const html = trustLinkHtml({ href: "/trust/", label: "TrustScore", ariaLabel: "Site Trust Score" });
+    expect(html).toContain('class="header-trust"');
+    expect(html).toContain('href="/trust/"');
+    expect(html).toContain('aria-label="Site Trust Score"');
+    expect(html).toContain(ICON_SHIELD);
+    expect(html).toContain('class="header-trust-icon"');
+    expect(html).toContain("TrustScore");
+  });
+
+  it("el header Astro y el shell runtime lo emiten desde la MISMA fuente", () => {
+    expect(headerSrc).toContain("trustLinkHtml({");
+    expect(shellSrc).toContain("trustLinkHtml({");
+  });
+
+  it("va en el grupo derecho, antes de las acciones (share)", () => {
+    const groupIdx = headerSrc.indexOf('class="header-right"');
+    const trustIdx = headerSrc.indexOf("trustLinkHtml({");
+    const actionsIdx = headerSrc.indexOf("headerActionsHtml(context, base)");
+    expect(trustIdx).toBeGreaterThan(groupIdx);
+    expect(actionsIdx).toBeGreaterThan(trustIdx);
+  });
+
+  it("el CSS del header-trust esta en ambas superficies (y en movil icon-only)", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toContain(".header-trust");
+    expect(cssSrc).toContain(".header-trust-icon");
+    expect(shellSrc).toContain(".header-trust{");
+    expect(shellSrc).toContain(".header-trust .header-trust-text{");
   });
 });
 

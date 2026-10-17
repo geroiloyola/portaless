@@ -309,6 +309,39 @@ header.site-header .header-lang-notice-link {
   white-space: nowrap;
 }
 
+/* TrustScore del sitio en el header (sexto item universal, al lado de Share).
+   Pill con icono escudo + etiqueta; en movil queda icon-only, como el resto. */
+header.site-header .header-trust {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+header.site-header .header-trust:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+header.site-header .header-trust-icon {
+  display: inline-flex;
+}
+
+header.site-header .header-trust-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+header.site-header .header-trust-text {
+  white-space: nowrap;
+}
+
 /* Navegacion del header: el icono esta en el DOM pero oculto en DESKTOP (solo
    el texto, como siempre). El texto nunca se quita del DOM, asi el nombre
    accesible se conserva en los dos modos. Ningun cambio de color/estilo base:
@@ -380,6 +413,25 @@ header.site-header .nav-ico {
   }
 
   header.site-header .header-lang .header-lang-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  header.site-header .header-trust {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  header.site-header .header-trust .header-trust-text {
     position: absolute;
     width: 1px;
     height: 1px;

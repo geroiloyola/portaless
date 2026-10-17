@@ -37,9 +37,16 @@ test("movil: menu por iconos, con el compartir intacto a la derecha", async ({ p
   await expect(share).toBeVisible();
   await expect(page.locator("[data-portaless-share]")).toHaveCount(1);
 
+  // El TrustScore tambien es icon-only en movil, y va antes del share.
+  const trust = page.locator("header.site-header a.header-trust");
+  await expect(trust.locator(".header-trust-icon svg")).toBeVisible();
+  await expect(trust).toHaveAttribute("href", /\/trust\/$/);
+
   const langBox = (await lang.boundingBox())!;
+  const trustBox = (await trust.boundingBox())!;
   const shareBox = (await share.boundingBox())!;
-  expect(langBox.x).toBeLessThan(shareBox.x);
+  expect(langBox.x).toBeLessThan(trustBox.x);
+  expect(trustBox.x).toBeLessThan(shareBox.x);
 
   // El icono de Explorar navega de verdad.
   await page.locator("header.site-header a.nav-link[href='/explore/']").click();
