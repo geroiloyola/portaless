@@ -22,6 +22,7 @@
 // footer runtime mientras el build decia AGPL.
 import {
   ICON_DIRECTIONS,
+  ICON_LANGUAGES,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
   ICON_VOLUME_2,
@@ -78,6 +79,20 @@ export function headerActionsHtml(context: HeaderContext, base = "/"): string {
   // runtime -- ninguno de los dos se toca aqui.
   const share = `<button type="button" class="header-icon-btn" data-portaless-share aria-label="Compartir este enlace" title="Compartir este enlace">${ICON_SHARE_IOS}</button>`;
   return `<div class="header-actions">${cart}${volume}${directions}${share}</div>`;
+}
+
+// Selector de idioma del header: vive en el grupo derecho (junto a los
+// iconos) y lleva un icono de "idiomas" para que se lea como una accion
+// (cambiar de idioma), no como otra entrada del menu. UNA sola fuente para
+// el header Astro y el shell runtime; el texto/href/aria los resuelve cada
+// superficie con su locale (t(...) en el build, SITE_LANG en el runtime).
+export function langSwitcherHtml(input: {
+  href: string;
+  hreflang: string;
+  ariaLabel: string;
+  text: string;
+}): string {
+  return `<a class="header-lang" href="${input.href}" hreflang="${input.hreflang}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${input.text}</span></a>`;
 }
 
 // Listener delegado del control de volumen (Atomic Icons Responsive),

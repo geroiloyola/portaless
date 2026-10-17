@@ -4,6 +4,7 @@ import { homeLabel, postsLabel, exploreLabel, SITE_LANG } from "../lib/site-lang
 import { localePath, otherLocale, t, type Locale } from "../lib/i18n";
 import {
   headerActionsHtml,
+  langSwitcherHtml,
   type HeaderContext,
 } from "../lib/atomic-responsive-icons";
 
@@ -46,15 +47,22 @@ const otherHref = `${base.replace(/\/$/, "")}${localePath(other, alternatePath)}
     )}
     <a href={`${base}explore/`}>{exploreLabel(locale)}</a>
     {commerceEnabled && <a href={`${base}tienda/`}>Tienda</a>}
-    <a
-      class="header-lang"
-      href={otherHref}
-      hreflang={other}
-      aria-label={t(locale, "home.otherLocaleAria")}
-    >{t(locale, "home.otherLocaleName")}</a>
-    <!-- Atomic Icons Responsive: share siempre; icono principal segun
-         contexto. El HTML sale de UNA sola fuente compartida con el
-         shell runtime (src/lib/atomic-responsive-icons.ts). -->
-    <Fragment set:html={headerActionsHtml(context, base)} />
+    <!-- Grupo derecho: selector de idioma (con icono, se lee como accion) y
+         el rincon de iconos. Empujado a la derecha con margin-left:auto, para
+         que el idioma quede alineado a la derecha y no entre las etiquetas. -->
+    <div class="header-right">
+      <Fragment
+        set:html={langSwitcherHtml({
+          href: otherHref,
+          hreflang: other,
+          ariaLabel: t(locale, "home.otherLocaleAria"),
+          text: t(locale, "home.otherLocaleName"),
+        })}
+      />
+      <!-- Atomic Icons Responsive: share siempre; icono principal segun
+           contexto. El HTML sale de UNA sola fuente compartida con el
+           shell runtime (src/lib/atomic-responsive-icons.ts). -->
+      <Fragment set:html={headerActionsHtml(context, base)} />
+    </div>
   </nav>
 </header>

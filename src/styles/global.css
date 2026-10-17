@@ -246,6 +246,48 @@ header.site-header .header-actions {
   margin-left: auto;
 }
 
+/* Grupo derecho del header: el selector de idioma va junto a los iconos, no
+   entre las etiquetas del menu. margin-left:auto lo empuja al borde derecho. */
+header.site-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* Selector de idioma: pill accionable (icono de idiomas + nombre del otro
+   idioma). Se lee como un control, no como otra entrada del menu. */
+header.site-header .header-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+header.site-header .header-lang:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+header.site-header .header-lang-icon {
+  display: inline-flex;
+}
+
+header.site-header .header-lang-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+header.site-header .header-lang-text {
+  white-space: nowrap;
+}
+
 header.site-header .header-icon-btn {
   display: inline-flex;
   align-items: center;

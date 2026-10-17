@@ -34,6 +34,7 @@ import { localePath, otherLocale, t } from "../../src/lib/i18n.ts";
 import {
   deriveHeaderContext,
   headerActionsHtml,
+  langSwitcherHtml,
   VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
@@ -81,6 +82,10 @@ header.site-header{border-bottom:1px solid var(--panel-border)}
 header.site-header nav{display:flex;gap:1.5rem;align-items:center;max-width:860px;margin:0 auto;padding:1rem 1.25rem}
 header.site-header .brand{font-weight:700;font-size:1.1rem;color:var(--text)}
 header.site-header .header-actions{display:flex;align-items:center;gap:0.3rem;margin-left:auto}
+header.site-header .header-right{display:flex;align-items:center;gap:0.6rem;margin-left:auto}
+header.site-header .header-lang{display:inline-flex;align-items:center;gap:0.4rem;padding:0.32rem 0.7rem;border:1px solid var(--panel-border);border-radius:999px;color:var(--text);font-size:0.85rem;line-height:1;text-decoration:none}
+header.site-header .header-lang:hover{border-color:var(--accent);color:var(--accent)}
+header.site-header .header-lang-icon svg{width:16px;height:16px}
 header.site-header .header-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
 header.site-header .header-icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-icon-btn svg{width:18px;height:18px}
@@ -189,8 +194,10 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
     <a href="/">${homeLabel(SITE_LANG)}</a>
     ${showPostsLink() ? `<a href="/blog/">${postsLabel(SITE_LANG)}</a>` : ""}
     <a href="/explore/">${exploreLabel(SITE_LANG)}</a>
-    <a class="header-lang" href="${localePath(otherLocale(SITE_LANG), "/")}" hreflang="${otherLocale(SITE_LANG)}" aria-label="${t(SITE_LANG, "home.otherLocaleAria")}">${t(SITE_LANG, "home.otherLocaleName")}</a>
-    ${headerActionsHtml(deriveHeaderContext(layout.root))}
+    <div class="header-right">
+      ${langSwitcherHtml({ href: localePath(otherLocale(SITE_LANG), "/"), hreflang: otherLocale(SITE_LANG), ariaLabel: t(SITE_LANG, "home.otherLocaleAria"), text: t(SITE_LANG, "home.otherLocaleName") })}
+      ${headerActionsHtml(deriveHeaderContext(layout.root))}
+    </div>
   </nav>
 </header>
 <main class="container">

@@ -14,9 +14,11 @@ import { join } from "node:path";
 import {
   deriveHeaderContext,
   headerActionsHtml,
+  langSwitcherHtml,
 } from "../../src/lib/atomic-responsive-icons";
 import {
   ICON_DIRECTIONS,
+  ICON_LANGUAGES,
   ICON_SHARE_IOS,
   ICON_SHOPPING_CART,
   ICON_VOLUME_2,
@@ -107,6 +109,55 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
 
   it("respeta el prefijo base de rutas (import.meta.env.BASE_URL)", () => {
     expect(headerActionsHtml("shop", "/sub/")).toContain('href="/sub/tienda/"');
+  });
+});
+
+describe("langSwitcherHtml -- el selector de idioma como accion", () => {
+  it("es un enlace con clase header-lang, hreflang y aria-label", () => {
+    const html = langSwitcherHtml({
+      href: "/es/",
+      hreflang: "es",
+      ariaLabel: "Read this page in Spanish",
+      text: "Español",
+    });
+    expect(html).toContain('class="header-lang"');
+    expect(html).toContain('href="/es/"');
+    expect(html).toContain('hreflang="es"');
+    expect(html).toContain('aria-label="Read this page in Spanish"');
+    expect(html).toContain('title="Read this page in Spanish"');
+    expect(html).toContain("Español");
+  });
+
+  it("trae el icono de idiomas para que se lea como un control", () => {
+    const html = langSwitcherHtml({ href: "/es/", hreflang: "es", ariaLabel: "x", text: "Español" });
+    expect(html).toContain(ICON_LANGUAGES);
+    expect(html).toContain('class="header-lang-icon"');
+    // el icono es decorativo: el nombre accesible lo da el aria-label
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it("el idioma vive en el grupo DERECHO junto a los iconos, no entre las etiquetas", () => {
+    expect(headerSrc).toContain("langSwitcherHtml({");
+    expect(headerSrc).toContain('<div class="header-right">');
+    // el switcher va dentro del grupo derecho, antes de las acciones
+    const groupIdx = headerSrc.indexOf('class="header-right"');
+    expect(groupIdx).toBeGreaterThan(-1);
+    expect(headerSrc.indexOf("langSwitcherHtml({")).toBeGreaterThan(groupIdx);
+    expect(headerSrc.indexOf("headerActionsHtml(context, base)")).toBeGreaterThan(groupIdx);
+  });
+
+  it("el shell runtime emite el mismo switcher con la MISMA fuente", () => {
+    expect(shellSrc).toContain("langSwitcherHtml({");
+    expect(shellSrc).toContain('<div class="header-right">');
+  });
+
+  it("el CSS alinea el grupo derecho (margin-left:auto) y pinta el pill", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toContain(".header-right");
+    expect(cssSrc).toContain(".header-lang");
+    expect(cssSrc).toContain(".header-lang-icon");
+    expect(shellSrc).toContain(".header-right{");
+    expect(shellSrc).toContain(".header-lang{");
   });
 });
 

@@ -39,6 +39,24 @@ test("header dice Publicaciones (nunca Blog) y trae el indice si hay posts", asy
   await expect(page.locator("header.site-header a.header-icon-btn[href='/tienda/']")).toHaveCount(0);
 });
 
+test("el selector de idioma es un control accionable, alineado a la derecha", async ({ page }) => {
+  await page.goto(BIO_URL);
+
+  // Vive en el grupo derecho del header, no entre las etiquetas del menu.
+  const lang = page.locator("header.site-header .header-right a.header-lang");
+  await expect(lang).toBeVisible();
+  await expect(lang).toHaveAttribute("hreflang", "en");
+
+  // Trae el icono de idiomas: se lee como accion, no como una palabra suelta.
+  await expect(lang.locator(".header-lang-icon svg")).toHaveCount(1);
+  await expect(lang.locator(".header-lang-text")).toHaveText("English");
+
+  // El grupo derecho arranca a la derecha del ultimo enlace del menu.
+  const exploreBox = await page.locator("header.site-header a[href='/explore/']").boundingBox();
+  const langBox = await lang.boundingBox();
+  expect(langBox!.x).toBeGreaterThan(exploreBox!.x + exploreBox!.width);
+});
+
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {
   await page.goto("/paginas/lanzamiento/");
 
