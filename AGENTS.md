@@ -59,7 +59,7 @@ must know.
 | Dashboard + Skin System | ✅ Functional |
 | Authentication (login, 2FA, OAuth) | ✅ Functional |
 | Permissions Center | ✅ Functional |
-| MCP server (14 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap) |
+| MCP server (12 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap) |
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
 | SiteTrustScore (4 sources) | ✅ Functional |
 | Protocol APW resolver (v1.3, 110/110 test vectors) | ✅ Functional |
@@ -151,7 +151,7 @@ packages/
   plugin-sdk/                 # MIT SDK for third-party plugin authors
   trust-layer/                # AI agent ID + SiteTrustScore + pay-per-crawl
   apw-resolver/               # Protocol APW reference implementation
-  mcp-server/                 # Native MCP server (14 tools)
+  mcp-server/                 # Native MCP server (12 tools)
   auth/                       # Login, roles, 2FA, OAuth, persistence
 functions/                    # Cloudflare Pages Functions (middlewares, APIs)
 server/                       # Self-hosted Node runtime (mirrors functions/)

@@ -1,8 +1,16 @@
 # Agentes de IA vía MCP — Especificación
 
+> **Documento de diseño histórico.** Narra la construcción inicial del MCP
+> server (los 6 commits originales). El **estado actual** vive en
+> [`AGENT.md`](../../AGENT.md) y en el código: `packages/mcp-server/src/server.ts`
+> es la fuente de verdad del número de tools, y hoy son **12**, no 7 — la tabla
+> de abajo se conserva como historia, no como inventario vigente. El conteo está
+> fijado por `tests/unit/mcp-tool-count.test.ts`, que falla si un doc publica
+> otro número.
+
 ## Estado real
 
-**IMPLEMENTADO end-to-end.** `packages/mcp-server/` deja de ser un stub desde el plan de 6 commits documentado en este archivo (commits `b64705b3` a `05078aa2`, mas 3 fixes posteriores). Tiene servidor base (`server.ts`), capa de permisos (`permissions/`), capa de auditoria doble (`audit/`), y **7 tools reales** registradas sobre `McpServer` del SDK oficial: `query_usage_log`, `list_page_components`, `create_page`, `update_page`, `grant_capability`, `revoke_permission`, `list_installed_plugins`.
+**IMPLEMENTADO end-to-end.** `packages/mcp-server/` deja de ser un stub desde el plan de 6 commits documentado en este archivo (commits `b64705b3` a `05078aa2`, mas 3 fixes posteriores). Tiene servidor base (`server.ts`), capa de permisos (`permissions/`), capa de auditoria doble (`audit/`), y **12 tools reales** registradas sobre `McpServer` del SDK oficial: `query_usage_log`, `list_page_components`, `list_themes`, `list_installed_plugins`, `create_page`, `update_page`, `insert_block`, `update_block`, `delete_block`, `apply_theme`, `grant_capability`, `revoke_permission`.
 
 Este documento reemplaza la version anterior (que describia el paquete como "unicamente README.md y package.json, sin logica de servidor MCP real") con el estado verificado del codigo real, confirmado archivo por archivo esta sesion.
 
@@ -27,17 +35,25 @@ El mcp-server no es un atajo que le da a un agente más poder del que tendría u
 
 El mcp-server no introduce un sistema de permisos nuevo. Reutiliza el que ya existía, y su trabajo es forzar que ningún agente lo evada.
 
-## Las 7 tools reales, con estado de implementación
+## Las tools reales, con estado de implementación
+
+Las 7 primeras son las del diseño inicial (con su commit). Las 5 siguientes se
+sumaron después; `server.ts` es la fuente de verdad y hoy el total es **12**.
 
 | Tool | Capacidad requerida | Backend real | Commit |
 |---|---|---|---|
 | `query_usage_log` | Ninguna (ledger ya público) | `UsageLedgerStore` real de trust-layer | `b64705b3` |
-| `list_page_components` | Ninguna (catálogo informativo) | `ELEMENT_TYPES` — sincronizado manualmente con `elementPalette`, incluye los 4 tipos de link-en-bio | `de874b84` |
+| `list_page_components` | Ninguna (catálogo informativo) | `ELEMENT_TYPES` — sincronizado con `elementPalette`, incluye los 4 tipos de link-en-bio | `de874b84` |
 | `create_page` | `content:write` | `PageStore.save()` real, guarda como borrador | `da599e3e` (fix de los 4 ElementType nuevos) |
 | `update_page` | `content:write` / `content:read` | `PageStore.load()` + `PageStore.save()` reales | — |
 | `grant_capability` | `site:admin` | `PermissionStore.setGrant()` real | `05078aa2` |
 | `revoke_permission` | `site:admin` | `PermissionStore.setGrant()` real (revocación) | `05078aa2` |
 | `list_installed_plugins` | Ninguna (catálogo informativo) | `PluginRegistryStore` real, expone `trustScore`/`trustScoreVotes`/`sourceType` | `05078aa2` |
+| `insert_block` | `content:write` | muta un nodo por `nodeId` (o padre + índice + slot) sobre `PageStore` | — |
+| `update_block` | `content:write` | ídem, actualización de un nodo | — |
+| `delete_block` | `content:write` | ídem, borrado de un nodo | — |
+| `apply_theme` | `content:write` | aplica un theme pack a la página | — |
+| `list_themes` | Ninguna (catálogo informativo) | catálogo de theme packs disponibles | — |
 
 **Nota de riesgo explícita, ya documentada en el propio código**: `grant_capability`/`revoke_permission` requieren `site:admin`, la capacidad de mayor riesgo del catálogo — un agente con `site:admin` puede conceder o revocar permisos a otros subjects, incluido él mismo. Es la tool que debería tener más fricción en la práctica, según el comentario inline de `grant-capability.ts`.
 
@@ -48,7 +64,7 @@ Cada invocación de tool pasa por `recordToolInvocation()`, que registra el even
 1. **Auditoría local** (`AuditLogStore`, hoy `InMemoryAuditLogStore` en `index.ts` — sin factory D1/SQLite propia todavía, ver "Pendiente" más abajo).
 2. **Ledger público del Trust Layer** (`UsageLedgerStore` real, vía `createUsageLedgerStore(env)`), el mismo que expone `GET /.well-known/portaless-usage-log.json` para requests HTTP normales desde v0.0.9.3.
 
-Esto significa que el uso de las 7 tools por parte de cualquier agente ya queda registrado en el mismo ledger auditable públicamente que usa el resto de Portaless — no un log aislado sin trazabilidad externa.
+Esto significa que el uso de las tools por parte de cualquier agente ya queda registrado en el mismo ledger auditable públicamente que usa el resto de Portaless — no un log aislado sin trazabilidad externa.
 
 ## Qué NO debe hacer el mcp-server (se mantiene, ya verificado en el código)
 
@@ -77,10 +93,10 @@ El cliente stdio local (Claude Desktop, Cursor) no envía headers por invocació
 | Persistencia de páginas (`createPageStore`) | Conectado. `create_page`/`update_page` lo consumen directo, mismo store que `src/pages/admin/editor.astro`. |
 | `PluginRegistryStore` con factory D1/SQLite propia | Conectado. `index.ts` usa `createPluginRegistryStore(env)`, no memoria fija. |
 | `UsageLedgerStore` con factory real | Conectado. `index.ts` usa `createUsageLedgerStore(env)`, no un stub get/increment. |
-| Auditoría doble (local + ledger público) | Conectada vía `recordToolInvocation()` en las 7 tools. |
+| Auditoría doble (local + ledger público) | Conectada vía `recordToolInvocation()` en cada tool. |
 | Auditoría local (`AuditLogStore`) con factory D1/SQLite propia | **Pendiente** — hoy solo `InMemoryAuditLogStore`, se resetea entre procesos. |
 | Identidad de agente por invocación (Opción B) | **Implementada para transporte HTTP**: bearer token verificado por invocación (`mcp_agent_tokens`, emitido/revocado desde `/admin/api/mcp-agents`). Sobre stdio se mantiene Opción A (identidad fija por proceso) — limitación del SDK, no de este repo. |
-| `identity-atproto` para DIDs de agentes | El paquete ya no es stub (v0.0.9.10: resolucion de handles AT + puente de reputacion APW), pero los DIDs de agentes MCP **no** se resuelven via AT: la identidad de agente sigue siendo token/entorno — no bloquea las 7 tools ya activas. |
+| `identity-atproto` para DIDs de agentes | El paquete ya no es stub (v0.0.9.10: resolucion de handles AT + puente de reputacion APW), pero los DIDs de agentes MCP **no** se resuelven via AT: la identidad de agente sigue siendo token/entorno — no bloquea las tools ya activas. |
 | `packages/mcp-server/src/permissions/` | Lógica real: guard central `requireCapability()`/`withCapability()`, resolvers de identidad (`agent-identity.ts`) y store de tokens de agentes (`agent-token-store.ts`, D1/SQLite/memoria). No existe lógica de cuota de tokens (nunca la hubo — la fila previa lo decía como "pendiente de verificación"). |
 
 ## Próximo paso recomendado
