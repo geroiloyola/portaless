@@ -1,0 +1,8 @@
+---
+// /en/proyecciones (version ingles). La primaria (espanol) vive en /proyecciones/.
+import ProjectionsPage from "../../components/ProjectionsPage.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<ProjectionsPage locale="en" alternateHref={`${base}proyecciones/`} alternateHreflang="es" />

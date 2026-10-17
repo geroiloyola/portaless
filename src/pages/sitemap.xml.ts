@@ -58,6 +58,7 @@ export const GET: APIRoute = async ({ site }) => {
     { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
     { path: "/es/explore/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
     { path: "/proyecciones/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
+    { path: "/en/proyecciones/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
     { path: "/docs/", changefreq: "monthly", priority: 0.8 },
     ...DOC_ENTRIES.map((doc) => ({
       path: `/docs/${doc.slug}/`,

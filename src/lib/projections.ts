@@ -91,7 +91,36 @@ export function containsUrl(text: string, url: string): boolean {
 }
 
 /** Las cinco proyecciones, en el orden con que VISION.md las enumera. */
-export function projectionsFor(canon: Canon, ctx: ProjectionContext): Projection[] {
+export type ProjectionLocale = "es" | "en";
+
+// Etiquetas por idioma. `channel` queda fuera a proposito: es un identificador
+// tecnico (HTML, RSS 2.0, APW, POSSE) que no se traduce. El resto del modulo es
+// puro; el locale solo elige este mapa.
+const PROJECTION_COPY: Record<ProjectionLocale, Record<string, { title: string; note: string }>> = {
+  es: {
+    page: { title: "Página", note: "Renderizada desde el canon por el build de Astro. Es la proyección que abre una persona." },
+    feed: { title: "Feed", note: "Un lector de feeds abre el permalink canónico, nunca una copia." },
+    manifest: { title: "Manifiesto", note: "Firmado por request (Ed25519) en un nodo con identidad. En el demo estático no existe: se muestra la forma, no un archivo." },
+    index: { title: "Índice", note: "Los dos listados publican la MISMA URL canónica; si uno cambia, el índice se reconstruye desde el canon." },
+    platform: { title: "Otra plataforma", note: "El plugin posse-syndicator publica este espejo y enlaza de vuelta al canon. Requiere content:read y network:fetch en el Centro de Permisos." },
+    postsHeading: "Publicaciones",
+  },
+  en: {
+    page: { title: "Page", note: "Rendered from the canon by the Astro build. It is the projection a person opens." },
+    feed: { title: "Feed", note: "A feed reader opens the canonical permalink, never a copy." },
+    manifest: { title: "Manifest", note: "Signed per request (Ed25519) on a node with identity. It does not exist in the static demo: the shape is shown, not a file." },
+    index: { title: "Index", note: "Both listings publish the SAME canonical URL; if one changes, the index is rebuilt from the canon." },
+    platform: { title: "Another platform", note: "The posse-syndicator plugin publishes this mirror and links back to the canon. It requires content:read and network:fetch in the Permissions Center." },
+    postsHeading: "Publications",
+  },
+};
+
+export function projectionsFor(
+  canon: Canon,
+  ctx: ProjectionContext,
+  locale: ProjectionLocale = "es",
+): Projection[] {
+  const copy = PROJECTION_COPY[locale] ?? PROJECTION_COPY.es;
   const url = canonicalUrl(canon, ctx);
   const title = oneLine(canon.title);
   const description = oneLine(canon.description);
@@ -101,13 +130,13 @@ export function projectionsFor(canon: Canon, ctx: ProjectionContext): Projection
   //    comparar -- es el mismo dato -- asi que coincide por construccion.
   const page: Projection = {
     id: "page",
-    title: "Página",
+    title: copy.page.title,
     channel: "HTML",
     state: "live",
     href: `${rel}${canon.path}/`,
     derived: `${title}\n${url}`,
     match: true,
-    note: "Renderizada desde el canon por el build de Astro. Es la proyección que abre una persona.",
+    note: copy.page.note,
   };
 
   // 2. Feed (RSS 2.0): mismo builder que /rss.xml.
@@ -120,13 +149,13 @@ export function projectionsFor(canon: Canon, ctx: ProjectionContext): Projection
   });
   const feed: Projection = {
     id: "feed",
-    title: "Feed",
+    title: copy.feed.title,
     channel: "RSS 2.0",
     state: "live",
     href: joinSiteUrl(ctx.siteUrl, ctx.base, "/rss.xml"),
     derived: feedXml.match(/<item>[\s\S]*?<\/item>/)?.[0] ?? "",
     match: containsCanon(feedXml, canon, url),
-    note: "Un lector de feeds abre el permalink canónico, nunca una copia.",
+    note: copy.feed.note,
   };
 
   // 3. Manifiesto (APW): firmado por request en un nodo con identidad. Se
@@ -135,18 +164,18 @@ export function projectionsFor(canon: Canon, ctx: ProjectionContext): Projection
   const manifest = buildSiteManifest(ctx.siteId);
   const manifestProjection: Projection = {
     id: "manifest",
-    title: "Manifiesto",
+    title: copy.manifest.title,
     channel: "APW · /.well-known",
     state: "node",
     href: joinSiteUrl(ctx.siteUrl, ctx.base, "/.well-known/apw-manifest.jws"),
     derived: JSON.stringify(manifest, null, 2),
     match: null,
-    note: "Firmado por request (Ed25519) en un nodo con identidad. En el demo estático no existe: se muestra la forma, no un archivo.",
+    note: copy.manifest.note,
   };
 
   // 4. Indice (llms.txt + sitemap.xml): los dos listados publican la misma URL.
   const sections: LlmsTxtSection[] = [
-    { heading: "Publicaciones", links: [{ title, url, note: description }] },
+    { heading: copy.postsHeading, links: [{ title, url, note: description }] },
   ];
   const llms = buildLlmsTxt({
     siteName: ctx.siteName,
@@ -161,25 +190,25 @@ export function projectionsFor(canon: Canon, ctx: ProjectionContext): Projection
   const sitemapEntry = sitemap.match(/<url>[\s\S]*?<\/url>/)?.[0] ?? "";
   const index: Projection = {
     id: "index",
-    title: "Índice",
+    title: copy.index.title,
     channel: "llms.txt + sitemap.xml",
     state: "live",
     href: joinSiteUrl(ctx.siteUrl, ctx.base, "/llms.txt"),
     derived: [llmsLine, sitemapEntry].filter(Boolean).join("\n"),
     match: containsCanon(llms, canon, url) && containsUrl(sitemap, url),
-    note: "Los dos listados publican la MISMA URL canónica; si uno cambia, el índice se reconstruye desde el canon.",
+    note: copy.index.note,
   };
 
   // 5. Otra plataforma (POSSE): el espejo que siempre enlaza de vuelta.
   const platform: Projection = {
     id: "platform",
-    title: "Otra plataforma",
+    title: copy.platform.title,
     channel: "POSSE · Bluesky / Mastodon",
     state: "node",
     href: `${rel}/admin/permissions/`,
     derived: `${title} — ${url}`,
     match: null,
-    note: "El plugin posse-syndicator publica este espejo y enlaza de vuelta al canon. Requiere content:read y network:fetch en el Centro de Permisos.",
+    note: copy.platform.note,
   };
 
   return [page, feed, manifestProjection, index, platform];

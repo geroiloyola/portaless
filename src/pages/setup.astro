@@ -2,13 +2,18 @@
 // /setup -- primer arranque de Portaless self-hosted (ADR-002).
 // Pagina estatica: todo el estado viene de GET /api/setup/status y el alta del
 // primer admin va a POST /api/setup/complete. No muestra codigos ni secretos.
+//
+// Bilingue (es/en) sin backend: el texto vive en un diccionario inline y un
+// script elige el idioma por navigator.language (en -> ingles, resto -> espanol)
+// con un boton para cambiarlo. La pagina no tiene header publico, asi que el
+// selector de idioma del sitio no aplica aqui.
 ---
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>Configurar Portaless</title>
+    <title data-i18n="title">Configurar Portaless</title>
     <style>
       body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 3rem auto; padding: 0 1rem; color: #1f2933; }
       label { display: block; margin-top: 1rem; font-weight: 600; }
@@ -17,33 +22,99 @@
       .warning { background: #fff7e6; border: 1px solid #f0b429; padding: .8rem; margin: 1rem 0; }
       .error { color: #b42318; margin-top: 1rem; min-height: 1.2em; }
       [hidden] { display: none; }
+      .lang { float: right; margin: 0; width: auto; padding: .3rem .7rem; font-size: .8rem; }
     </style>
   </head>
   <body>
-    <h1>Configurar Portaless</h1>
-    <p id="loading">Comprobando el estado de la instalacion...</p>
-    <p id="unavailable" hidden>La configuracion inicial no esta disponible en esta instalacion.</p>
+    <button type="button" class="lang" id="lang-toggle">English</button>
+    <h1 data-i18n="h1">Configurar Portaless</h1>
+    <p id="loading" data-i18n="loading">Comprobando el estado de la instalacion...</p>
+    <p id="unavailable" data-i18n="unavailable" hidden>La configuracion inicial no esta disponible en esta instalacion.</p>
     <div id="key-warning" class="warning" hidden>
-      Esta instalacion genero la clave de cifrado dentro del volumen de datos. Para mayor separacion de seguridad,
-      configura <code>PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY</code> como secreto de tu plataforma y respaldala por separado.
+      <span data-i18n="keyWarning">Esta instalacion genero la clave de cifrado dentro del volumen de datos. Para mayor separacion de seguridad, configura <code>PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY</code> como secreto de tu plataforma y respaldala por separado.</span>
     </div>
     <form id="setup-form" hidden>
-      <p>Ingresa el codigo que aparece en los logs del servidor o en <code>SETUP_CODE.txt</code>.</p>
-      <label>Codigo de configuracion <input name="code" autocomplete="one-time-code" required /></label>
-      <label>Usuario admin <input name="username" autocomplete="username" minlength="3" maxlength="32" required /></label>
-      <label>Contrasena <input name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
-      <label>Confirmar contrasena <input name="confirm" type="password" autocomplete="new-password" minlength="12" required /></label>
-      <button type="submit">Crear administrador</button>
+      <p data-i18n="codeHint">Ingresa el codigo que aparece en los logs del servidor o en <code>SETUP_CODE.txt</code>.</p>
+      <label><span data-i18n="labelCode">Codigo de configuracion</span> <input name="code" autocomplete="one-time-code" required /></label>
+      <label><span data-i18n="labelUser">Usuario admin</span> <input name="username" autocomplete="username" minlength="3" maxlength="32" required /></label>
+      <label><span data-i18n="labelPassword">Contrasena</span> <input name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
+      <label><span data-i18n="labelConfirm">Confirmar contrasena</span> <input name="confirm" type="password" autocomplete="new-password" minlength="12" required /></label>
+      <button type="submit" data-i18n="submit">Crear administrador</button>
       <p id="error" class="error" role="alert"></p>
     </form>
     <script>
       const $ = (id) => document.getElementById(id);
-      const messages = {
-        invalid_setup_code: "Codigo invalido o vencido. Si se agoto, reinicia el servidor para generar uno nuevo.",
-        setup_disabled: "La configuracion ya se completo.",
-        invalid_username: "Usuario de 3 a 32 caracteres: letras, numeros, punto, guion o guion bajo.",
-        weak_password: "La contrasena debe tener al menos 12 caracteres.",
+
+      // Diccionario bilingue. El idioma se elige por navigator.language (en ->
+      // ingles, resto -> espanol) y el boton lo cambia; se recuerda en
+      // localStorage. El contenido dinamico (mensajes de error) usa el mismo
+      // diccionario a traves de MESSAGES.
+      const I18N = {
+        es: {
+          title: "Configurar Portaless",
+          h1: "Configurar Portaless",
+          loading: "Comprobando el estado de la instalacion...",
+          unavailable: "La configuracion inicial no esta disponible en esta instalacion.",
+          keyWarning:
+            "Esta instalacion genero la clave de cifrado dentro del volumen de datos. Para mayor separacion de seguridad, configura PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY como secreto de tu plataforma y respaldala por separado.",
+          codeHint: "Ingresa el codigo que aparece en los logs del servidor o en SETUP_CODE.txt.",
+          labelCode: "Codigo de configuracion",
+          labelUser: "Usuario admin",
+          labelPassword: "Contrasena",
+          labelConfirm: "Confirmar contrasena",
+          submit: "Crear administrador",
+          toggle: "English",
+          mismatch: "Las contrasenas no coinciden.",
+          generic: "No se pudo completar la configuracion.",
+          invalid_setup_code: "Codigo invalido o vencido. Si se agoto, reinicia el servidor para generar uno nuevo.",
+          setup_disabled: "La configuracion ya se completo.",
+          invalid_username: "Usuario de 3 a 32 caracteres: letras, numeros, punto, guion o guion bajo.",
+          weak_password: "La contrasena debe tener al menos 12 caracteres.",
+        },
+        en: {
+          title: "Set up Portaless",
+          h1: "Set up Portaless",
+          loading: "Checking the installation status...",
+          unavailable: "Initial setup is not available in this installation.",
+          keyWarning:
+            "This installation generated the encryption key inside the data volume. For stronger separation, set PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY as a platform secret and back it up separately.",
+          codeHint: "Enter the code shown in the server logs or in SETUP_CODE.txt.",
+          labelCode: "Setup code",
+          labelUser: "Admin username",
+          labelPassword: "Password",
+          labelConfirm: "Confirm password",
+          submit: "Create administrator",
+          toggle: "Español",
+          mismatch: "The passwords do not match.",
+          generic: "Could not complete the setup.",
+          invalid_setup_code: "Invalid or expired code. If it ran out, restart the server to generate a new one.",
+          setup_disabled: "Setup is already complete.",
+          invalid_username: "Username of 3 to 32 characters: letters, numbers, dot, hyphen or underscore.",
+          weak_password: "The password must be at least 12 characters.",
+        },
       };
+
+      const LANG_KEY = "portaless-setup-lang";
+      let lang =
+        localStorage.getItem(LANG_KEY) ||
+        ((navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es");
+      const t = (key) => I18N[lang][key] ?? I18N.es[key] ?? key;
+
+      function applyLang() {
+        document.documentElement.lang = lang;
+        document.title = t("title");
+        for (const el of document.querySelectorAll("[data-i18n]")) {
+          el.textContent = t(el.getAttribute("data-i18n"));
+        }
+        $("lang-toggle").textContent = t("toggle");
+      }
+
+      $("lang-toggle").addEventListener("click", () => {
+        lang = lang === "es" ? "en" : "es";
+        localStorage.setItem(LANG_KEY, lang);
+        applyLang();
+      });
+
       async function init() {
         try {
           const res = await fetch("/api/setup/status", { cache: "no-store" });
@@ -58,10 +129,11 @@
           $("loading").hidden = true;
         }
       }
+
       $("setup-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        if (form.get("password") !== form.get("confirm")) return ($("error").textContent = "Las contrasenas no coinciden.");
+        if (form.get("password") !== form.get("confirm")) return ($("error").textContent = t("mismatch"));
         $("error").textContent = "";
         const res = await fetch("/api/setup/complete", {
           method: "POST",
@@ -71,8 +143,11 @@
         const body = await res.json().catch(() => ({}));
         if (res.ok && body.success) return location.replace(body.redirect || "/admin/login");
         if (body.error === "setup_disabled") return location.replace("/admin/login");
-        $("error").textContent = messages[body.error] || "No se pudo completar la configuracion.";
+        const msg = I18N[lang][body.error] ?? I18N.es[body.error];
+        $("error").textContent = msg || t("generic");
       });
+
+      applyLang();
       init();
     </script>
   </body>

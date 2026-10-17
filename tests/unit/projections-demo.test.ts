@@ -144,3 +144,22 @@ describe("la demo esta enlazada y sin links rotos", () => {
     expect(readFileSync(join(root, "src/pages/sitemap.xml.ts"), "utf8")).toContain('"/proyecciones/"');
   });
 });
+
+describe("proyecciones: metadata por locale (i18n)", () => {
+  it("locale 'es' (default) mantiene los titulos en espanol", () => {
+    const titles = projectionsFor(canon(), CTX).map((p) => p.title);
+    expect(titles).toEqual(["Página", "Feed", "Manifiesto", "Índice", "Otra plataforma"]);
+  });
+
+  it("locale 'en' traduce titulos y notas (el channel tecnico no se traduce)", () => {
+    const ps = projectionsFor(canon(), CTX, "en");
+    expect(ps.map((p) => p.title)).toEqual(["Page", "Feed", "Manifest", "Index", "Another platform"]);
+    expect(ps[0].channel).toBe("HTML"); // identificador tecnico, sin traducir
+    expect(ps[0].note).toContain("Rendered from the canon");
+    expect(ps[2].note).toContain("Signed per request");
+  });
+
+  it("los cinco ids no cambian entre locales (mismo contrato)", () => {
+    expect(projectionsFor(canon(), CTX, "en").map((p) => p.id)).toEqual([...PROJECTION_IDS]);
+  });
+});

@@ -13,7 +13,7 @@ A lightweight, open source, modular CMS — built to be published without paid h
 
 [Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless/) · [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
-> **New here?** [`VISION.md`](./docs/VISION.md) is where the project says what it must become — and what it refuses to become. It carries no status, versions or dates, so it does not go stale. What exists **today** is this README and [`ROADMAP.md`](./ROADMAP.md).
+> **New here?** Start with [`docs/START_HERE.md`](./docs/START_HERE.md) — the three-free-accounts path (GitHub + an AI with MCP + Cloudflare) from zero to a verifiable site you edit with an agent. Then [`VISION.md`](./docs/VISION.md) is where the project says what it must become — and what it refuses to become. It carries no status, versions or dates, so it does not go stale. What exists **today** is this README and [`ROADMAP.md`](./ROADMAP.md).
 
 </div>
 

@@ -116,6 +116,24 @@ test("beta es bilingue: el switcher lleva a la MISMA pagina en el otro idioma", 
   );
 });
 
+test("proyecciones es bilingue: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
+  await page.goto("/proyecciones/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  await expect(page.locator("h1")).toContainText("Un canon, cinco proyecciones");
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
+    "href",
+    /\/en\/proyecciones\/$/
+  );
+
+  await page.goto("/en/proyecciones/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("h1")).toContainText("One canon, five projections");
+  await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
+    "href",
+    /\/proyecciones\/$/
+  );
+});
+
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {
   await page.goto("/paginas/lanzamiento/");
 

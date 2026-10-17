@@ -1,0 +1,231 @@
+---
+// Un canon, cinco proyecciones (ROADMAP fase 13, §13.4) -- vista compartida.
+// El texto vive en COPY por locale; las rutas /proyecciones (es) y
+// /en/proyecciones (en) renderizan la misma vista. La metadata de cada
+// proyeccion (titulo/nota) la resuelve projectionsFor(canon, ctx, locale).
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { getSiteUrl } from "../lib/seo";
+import { publishedPosts } from "../lib/llms-txt";
+import {
+  canonicalUrl,
+  markdownUrl,
+  projectionsFor,
+  type Canon,
+  type ProjectionContext,
+  type ProjectionLocale,
+} from "../lib/projections";
+import type { Locale } from "../lib/i18n";
+
+interface Props {
+  locale: Locale;
+  alternateHref?: string;
+  alternateHreflang?: Locale;
+}
+const { locale, alternateHref, alternateHreflang } = Astro.props;
+
+const COPY: Record<Locale, Record<string, string>> = {
+  es: {
+    title: "Un canon, cinco proyecciones — Portaless",
+    h1: "Un canon, cinco proyecciones",
+    intro:
+      "El sitio tiene <strong>un</strong> estado canónico y todo lo que publica hacia afuera es una <strong>proyección</strong> derivada de él. Cuando una proyección y el canon no coinciden, gana el canon y la proyección se reconstruye. Esta página no lo afirma: lo deriva y lo compara.",
+    empty: "Todavía no hay ninguna publicación, así que no hay canon que proyectar.",
+    canonKicker: "El canon (fuente de verdad)",
+    canonPage: "Página canónica",
+    canonDate: "Fecha",
+    projectionsH2: "Las cinco proyecciones",
+    hint:
+      "Cada tarjeta muestra el valor <em>realmente derivado</em> de este canon y si coincide con él. <code>requiere nodo</code> significa que esa salida se firma o se publica en tiempo de request: en este demo estático no existe y por eso no se marcaría en verde.",
+    viewOutput: "Ver la salida",
+    whyH2: "Por qué importa",
+    whyBody:
+      "Si Bluesky borra el espejo, si el feed se cae o si una plataforma sube el precio, el canon sigue intacto y cada proyección se reconstruye desde <code>{source}</code>. La versión en texto del mismo artículo vive en <a href=\"{md}\">{md}</a>.",
+    matchTrue: "coincide",
+    matchFalse: "no coincide — gana el canon",
+    matchNull: "requiere nodo",
+    dateLocale: "es-CL",
+  },
+  en: {
+    title: "One canon, five projections — Portaless",
+    h1: "One canon, five projections",
+    intro:
+      "The site has <strong>one</strong> canonical state and everything it publishes outward is a <strong>projection</strong> derived from it. When a projection and the canon disagree, the canon wins and the projection is rebuilt. This page does not assert that: it derives and compares it.",
+    empty: "There is no publication yet, so there is no canon to project.",
+    canonKicker: "The canon (source of truth)",
+    canonPage: "Canonical page",
+    canonDate: "Date",
+    projectionsH2: "The five projections",
+    hint:
+      "Each card shows the value <em>actually derived</em> from this canon and whether it matches. <code>requires node</code> means that output is signed or published at request time: it does not exist in this static demo, so it is not painted green.",
+    viewOutput: "View the output",
+    whyH2: "Why it matters",
+    whyBody:
+      "If Bluesky deletes the mirror, if the feed goes down or a platform raises its price, the canon stays intact and every projection is rebuilt from <code>{source}</code>. The text version of the same article lives at <a href=\"{md}\">{md}</a>.",
+    matchTrue: "matches",
+    matchFalse: "does not match — the canon wins",
+    matchNull: "requires node",
+    dateLocale: "en-US",
+  },
+};
+const c = COPY[locale];
+
+const base = import.meta.env.BASE_URL;
+const siteUrl = getSiteUrl(Astro.site);
+const siteName = process.env.PORTALESS_SITE_NAME || "Portaless";
+const summary = process.env.PORTALESS_SITE_DESCRIPTION || "Sitio construido con Portaless";
+const siteId = (() => {
+  try {
+    return new URL(siteUrl).host;
+  } catch {
+    return "default";
+  }
+})();
+
+const canonPost = publishedPosts(await getCollection("posts"))[0];
+
+const ctx: ProjectionContext = { siteUrl, base, siteName, summary, siteId };
+const canon: Canon | null = canonPost
+  ? {
+      kind: "post",
+      id: canonPost.id,
+      source: `src/content/posts/${canonPost.id}.md`,
+      title: canonPost.data.title,
+      description: canonPost.data.description ?? "",
+      pubDate: canonPost.data.pubDate,
+      path: `/blog/${canonPost.id}`,
+    }
+  : null;
+
+const projections = canon ? projectionsFor(canon, ctx, locale as ProjectionLocale) : [];
+const canonUrl = canon ? canonicalUrl(canon, ctx) : "";
+const canonMarkdown = canon ? markdownUrl(canon, ctx) : "";
+
+const matchLabel = (match: boolean | null) =>
+  match === true ? c.matchTrue : match === false ? c.matchFalse : c.matchNull;
+
+const whyBody = c.whyBody
+  .replace("{source}", canon?.source ?? "")
+  .replaceAll("{md}", canonMarkdown);
+---
+
+<BaseLayout
+  title={c.title}
+  lang={locale}
+  languageAlternate={alternateHref ? { hreflang: alternateHreflang ?? "en", href: alternateHref } : undefined}
+>
+  <h1>{c.h1}</h1>
+  <p set:html={c.intro} />
+
+  {!canon && <p class="empty-state">{c.empty}</p>}
+
+  {canon && (
+    <>
+      <section class="canon" aria-label={c.canonKicker}>
+        <p class="canon-kicker">{c.canonKicker}</p>
+        <h2>{canon.title}</h2>
+        <p class="canon-source"><code>{canon.source}</code></p>
+        <dl class="canon-meta">
+          <dt>{c.canonPage}</dt>
+          <dd><a href={canonUrl}>{canonUrl}</a></dd>
+          <dt>{c.canonDate}</dt>
+          <dd><time datetime={canon.pubDate.toISOString()}>{canon.pubDate.toLocaleDateString(c.dateLocale)}</time></dd>
+        </dl>
+      </section>
+
+      <h2>{c.projectionsH2}</h2>
+      <p class="proj-hint" set:html={c.hint} />
+
+      <div class="proj-grid">
+        {projections.map((projection) => (
+          <article class={`proj proj-${projection.state}`}>
+            <header class="proj-head">
+              <h3>{projection.title}</h3>
+              <span class="proj-channel">{projection.channel}</span>
+            </header>
+            <p class="proj-state" data-match={String(projection.match)}>
+              {matchLabel(projection.match)}
+            </p>
+            <pre class="proj-value"><code>{projection.derived}</code></pre>
+            <p class="proj-note">{projection.note}</p>
+            <p class="proj-links">
+              <a href={projection.href}>{c.viewOutput}</a>
+            </p>
+          </article>
+        ))}
+      </div>
+
+      <section class="canon-close">
+        <h2>{c.whyH2}</h2>
+        <p set:html={whyBody} />
+      </section>
+    </>
+  )}
+</BaseLayout>
+
+<style>
+  .canon {
+    border: 1px solid var(--panel-border, #e4e6c3);
+    border-left: 4px solid var(--accent, #c5d86d);
+    border-radius: var(--radius-card, 16px);
+    padding: var(--space-5, 24px);
+    background: var(--panel-bg, #fff);
+    margin: var(--space-5, 24px) 0;
+  }
+  .canon-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-text, #5a6b24);
+  }
+  .canon h2 { margin: var(--space-2, 8px) 0; }
+  .canon-source { margin: 0 0 var(--space-3, 12px); color: var(--muted, #6e6653); }
+  .canon-meta { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1, 4px) var(--space-3, 12px); margin: 0; }
+  .canon-meta dt { font-weight: 600; }
+  .canon-meta dd { margin: 0; overflow-wrap: anywhere; }
+
+  .proj-hint { color: var(--muted, #6e6653); max-width: 70ch; }
+
+  .proj-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-4, 16px);
+    margin: var(--space-4, 16px) 0;
+  }
+  .proj {
+    border: 1px solid var(--panel-border, #e4e6c3);
+    border-radius: var(--radius-card, 16px);
+    padding: var(--space-4, 16px);
+    background: var(--panel-bg, #fff);
+    display: flex;
+    flex-direction: column;
+  }
+  .proj-node { border-style: dashed; }
+  .proj-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2, 8px); }
+  .proj-head h3 { margin: 0; }
+  .proj-channel { font-size: 0.75rem; color: var(--muted, #6e6653); text-align: right; }
+  .proj-state { margin: var(--space-2, 8px) 0; font-weight: 700; font-size: 0.85rem; }
+  .proj-state[data-match="true"] { color: var(--accent-text, #5a6b24); }
+  .proj-state[data-match="false"] { color: var(--accent-2, #f05d23); }
+  .proj-state[data-match="null"] { color: var(--muted, #6e6653); }
+  .proj-value {
+    margin: 0;
+    padding: var(--space-3, 12px);
+    background: var(--panel-border, #e4e6c3);
+    border-radius: var(--radius-input, 8px);
+    overflow-x: auto;
+    font-size: 0.8rem;
+    flex: 1;
+  }
+  .proj-value code { white-space: pre; }
+  .proj-note { font-size: 0.85rem; color: var(--muted, #6e6653); }
+  .proj-links { margin: 0; }
+
+  .canon-close {
+    border-top: 1px solid var(--panel-border, #e4e6c3);
+    margin-top: var(--space-6, 32px);
+    padding-top: var(--space-4, 16px);
+  }
+</style>

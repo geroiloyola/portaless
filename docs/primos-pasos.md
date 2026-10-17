@@ -86,7 +86,38 @@ En **Apariencia** elegís un skin (catálogo, portafolio, lanzamiento…)
 o cambiás el color de acento a mano. El cambio se refleja en el panel,
 en el editor y en la página publicada, todo desde el mismo lugar.
 
-## Paso 6 — Poné tu sitio en internet (opcional, hoy con un límite honesto)
+## Paso 6 — Conectá tu agente de IA (opcional, 3 minutos)
+
+Portaless trae un **servidor MCP**: la misma interfaz que usan los editores de
+IA (ChatGPT, Claude, Mistral, Perplexity, Cursor…) para crear y editar páginas.
+El agente no recibe más poder que el que vos le concedés, y cada uso queda
+registrado.
+
+Con Portaless corriendo (Paso 1), levantá el servidor MCP:
+
+```bash
+# Transporte HTTP (recomendado): identidad por invocación vía token
+MCP_AGENT_KEY=tu-clave PORTALESS_SQLITE_PATH=./portaless.db npm run mcp:http
+# -> escucha en http://127.0.0.1:8788/mcp
+
+# o transporte stdio (para un cliente de escritorio como Claude Desktop o Cursor)
+MCP_AGENT_KEY=tu-clave PORTALESS_SQLITE_PATH=./portaless.db npm run mcp
+```
+
+Después, en tu cliente de IA:
+
+- **Clientes stdio** (Claude Desktop, Cursor): apuntá la config de MCP a
+  `npm run mcp` dentro de este repo.
+- **Clientes HTTP**: apuntá a `http://127.0.0.1:8788/mcp` con un header
+  `Authorization: Bearer <token>` que emitís desde el panel
+  (`POST /admin/api/mcp-agents`).
+
+Listo: pedile a tu agente *"creá una landing con un hero, tres características y
+un formulario de contacto"*. Escribe un borrador, vos aprobás y publicás. Sin
+terminal, sin código. El modelo de seguridad completo está en
+[`architecture/mcp-agents.md`](./architecture/mcp-agents.md).
+
+## Paso 7 — Poné tu sitio en internet (opcional, hoy con un límite honesto)
 
 Hasta acá todo funciona **en tu computadora**. Para que el mundo lo vea:
 
