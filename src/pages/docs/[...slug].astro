@@ -1,0 +1,79 @@
+---
+// Detalle de un doc. El contenido es el Markdown de docs/ renderizado por
+// Astro (fuente unica); los enlaces relativos ya vienen reescritos por el
+// plugin remark (src/lib/remark-docs-links.mjs). Shell + tema oscuro del
+// ecosistema, con sidebar y marca de idioma.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import DocsSidebar from "../../components/DocsSidebar.astro";
+import { getCollection, render } from "astro:content";
+import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
+import { DOC_ENTRIES } from "../../lib/docs-nav.mjs";
+import type { Locale } from "../../lib/i18n";
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+  return docs.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const meta = DOC_ENTRIES.find((d) => d.slug === entry.id);
+const lang = (meta?.lang ?? "en") as Locale;
+const pageTheme = ecosystemPageTheme();
+const base = import.meta.env.BASE_URL;
+const mdHref = `${base.replace(/\/$/, "")}/docs/${entry.id}.md`;
+---
+<BaseLayout
+  title={`${meta?.title ?? entry.id} — Portaless Docs`}
+  description={meta?.title}
+  pageTheme={pageTheme}
+  markdownUrl={mdHref}
+>
+  <div class="docs-layout">
+    <DocsSidebar current={entry.id} locale={lang} />
+    <article class="docs-content">
+      <p class="docs-top">
+        <span class="docs-lang">{lang}</span>
+        <a class="docs-md" href={mdHref}>Markdown</a>
+      </p>
+      <Content />
+    </article>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  main.container { max-width: 1080px; }
+  .docs-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 44px; align-items: start; }
+  @media (max-width: 760px) { .docs-layout { grid-template-columns: 1fr; } }
+
+  .docs-top { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; }
+  .docs-lang {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted, #6e6653); border: 1px solid var(--panel-border, #2c231a);
+    border-radius: 999px; padding: 2px 8px;
+  }
+  .docs-md { font-size: 0.8rem; }
+
+  .docs-content { max-width: 72ch; line-height: 1.7; }
+  .docs-content h1 { margin-top: 0; }
+  .docs-content h2 { margin-top: 2em; border-bottom: 1px solid var(--panel-border, #2c231a); padding-bottom: 0.3em; }
+  .docs-content h3 { margin-top: 1.6em; }
+  .docs-content p, .docs-content li { color: var(--text, #f7f7f2); }
+  .docs-content a { color: var(--accent-text, #c5d86d); }
+  .docs-content code {
+    font-family: var(--font-mono); font-size: 0.86em;
+    background: var(--panel-bg, #171310); border: 1px solid var(--panel-border, #2c231a);
+    border-radius: 5px; padding: 0.1em 0.35em;
+  }
+  .docs-content pre {
+    background: var(--panel-bg, #171310); border: 1px solid var(--panel-border, #2c231a);
+    border-radius: var(--radius-card, 16px); padding: 16px; overflow-x: auto;
+  }
+  .docs-content pre code { background: none; border: 0; padding: 0; }
+  .docs-content table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+  .docs-content th, .docs-content td { border: 1px solid var(--panel-border, #2c231a); padding: 8px 10px; text-align: left; }
+  .docs-content blockquote {
+    margin: 1.4em 0; padding: 0.2em 1em; border-left: 3px solid var(--accent, #c5d86d);
+    color: var(--muted, #6e6653);
+  }
+</style>

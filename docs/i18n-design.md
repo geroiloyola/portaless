@@ -86,3 +86,8 @@ wins. This decides the model:
 - The default locale is `en` at `/`; the site chrome elsewhere still uses
   `SITE_LANG` (es). Unifying them is a follow-up, noted here so it is not
   mistaken for a finished state.
+- **The `/docs/` site is not localized**: each document lives in one language
+  (its own), so the sidebar and the page header **declare that language** per
+  document (`src/lib/docs-nav.mjs`) instead of pretending to a locale that does
+  not exist. Docs are a projection of the Markdown in `docs/`, not a translated
+  catalogue.

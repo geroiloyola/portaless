@@ -77,6 +77,8 @@ try {
   await shot(page, `${base}/explore/`, "public-explore.png", { fullPage: true });
   await shot(page, `${base}/es/explore/`, "public-explore-es.png", { fullPage: true });
   await shot(page, `${base}/proyecciones/`, "public-proyecciones.png", { fullPage: true });
+  await shot(page, `${base}/docs/`, "public-docs.png", { fullPage: true });
+  await shot(page, `${base}/docs/protocol-apw/`, "public-docs-detail.png", { fullPage: true });
 
   console.log("[captura] dashboard / editor / trust...");
   await shot(page, `${base}/admin/`, "admin-dashboard.png", {

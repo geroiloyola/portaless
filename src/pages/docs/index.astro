@@ -1,0 +1,68 @@
+---
+// Landing de /docs/: tarjetas por seccion. El contenido de cada doc sigue
+// siendo el Markdown de docs/ (fuente unica); esta pagina solo lo cataloga con
+// el shell y el tema oscuro del ecosistema (docs/i18n-design.md).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
+import { DOC_GROUPS, DOC_ENTRIES } from "../../lib/docs-nav.mjs";
+
+const base = import.meta.env.BASE_URL;
+const pageTheme = ecosystemPageTheme();
+---
+<BaseLayout
+  title="Documentation — Portaless"
+  description="Guías, referencia y conceptos de Portaless: instalación, self-hosting, autores de plugins, Protocol APW y la arquitectura del kernel."
+  pageTheme={pageTheme}
+>
+  <h1>Documentation</h1>
+  <p class="docs-intro">
+    {DOC_ENTRIES.length} documentos, agrupados como en la documentación oficial: primeros pasos,
+    guías, referencia y conceptos. El contenido es el Markdown del repositorio — el sitio es una
+    proyección de esa única fuente.
+  </p>
+
+  {DOC_GROUPS.map((group) => (
+    <section class="docs-section">
+      <h2>{group.title.en}</h2>
+      <div class="docs-cards">
+        {group.docs.map((doc) => (
+          <a class="docs-card" href={`${base}docs/${doc.slug}/`}>
+            <h3>{doc.title}</h3>
+            <span class="docs-lang">{doc.lang}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+</BaseLayout>
+
+<style>
+  .docs-intro { color: var(--muted, #6e6653); max-width: 70ch; }
+  .docs-section { margin-top: 40px; }
+  .docs-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+  .docs-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--panel-border, #2c231a);
+    border-radius: var(--radius-card, 16px);
+    padding: 18px 20px;
+    background: var(--panel-bg, #171310);
+    text-decoration: none;
+    color: inherit;
+  }
+  .docs-card:hover { border-color: var(--accent, #c5d86d); }
+  .docs-card h3 { margin: 0; font-size: 1rem; }
+  .docs-lang {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted, #6e6653);
+    border: 1px solid var(--panel-border, #2c231a);
+    border-radius: 999px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+  }
+</style>

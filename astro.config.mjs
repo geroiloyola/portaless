@@ -8,6 +8,10 @@ import { defineConfig } from "astro/config";
 // defecto de true a "jsx" -- fijarlo evita que el upgrade de Astro 4 a 7
 // (ver package.json) altere silenciosamente el espaciado del HTML generado
 // en paginas ya publicadas.
+//
+// Los docs NO usan plugins del procesador de Markdown (Astro 7 ya no trae
+// remark): src/lib/docs-loader.mjs reescribe los enlaces relativos ANTES de
+// guardar el body (docs/i18n-design.md).
 export default defineConfig({
   output: "static",
   site: process.env.PORTALESS_SITE_URL || "https://tu-usuario.github.io",

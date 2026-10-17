@@ -18,6 +18,7 @@ import { getCollection } from "astro:content";
 import { getSiteUrl } from "../lib/seo";
 import { buildLlmsTxt, joinSiteUrl, publishedPosts } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, readContentPolicy } from "../lib/content-policy";
+import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 
 interface PageJson {
   slug?: string;
@@ -49,10 +50,19 @@ export const GET: APIRoute = async ({ site }) => {
 
   const policy = readContentPolicy();
 
+  // Docs: enlazados a su version .md (texto plano), igual que los posts. Es el
+  // Markdown de docs/ (fuente unica), con los enlaces ya resueltos.
+  const docLinks = DOC_ENTRIES.map((doc) => ({
+    title: doc.title,
+    url: url(`/docs/${doc.slug}.md`),
+    note: doc.lang === "es" ? "Documentación (español)" : "Documentation (English)",
+  }));
+
   const body = buildLlmsTxt({
     siteName: process.env.PORTALESS_SITE_NAME || "Portaless",
     summary: process.env.PORTALESS_SITE_DESCRIPTION || "Sitio construido con Portaless",
     sections: [
+      { heading: "Documentation", links: docLinks },
       { heading: "Posts", links: postLinks },
       { heading: "Páginas", links: pageLinks },
     ],

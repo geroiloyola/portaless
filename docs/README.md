@@ -1,5 +1,7 @@
 # Portaless documentation index
 
+> These documents are also published as a site at **`/docs/`** (grouped as Getting started, Guides, Reference and Concepts). The site is a **projection** of the Markdown in `docs/` — the files below are the single source, and only a curated subset is published (`src/lib/docs-nav.mjs`); the rest stays on GitHub.
+
 > As of October 2026, **canonical documentation is English**. Spanish originals are preserved intact as `*_es.md` archives (nothing was deleted); where an archive and the English file disagree, the English file wins. Some deeper design/history documents remain Spanish-only (marked below) — translations are welcome as contributions.
 
 ## Start here

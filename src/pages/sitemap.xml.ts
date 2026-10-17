@@ -16,6 +16,7 @@ import { getCollection } from "astro:content";
 import { getSiteUrl } from "../lib/seo";
 import { publishedPosts } from "../lib/llms-txt";
 import { buildSitemapXml, type SitemapEntry } from "../lib/sitemap";
+import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 
 const pageModules = import.meta.glob<{ default: { slug?: string } }>("../content/pages/*.json", { eager: true });
 
@@ -51,6 +52,12 @@ export const GET: APIRoute = async ({ site }) => {
     { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
     { path: "/es/explore/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
     { path: "/proyecciones/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
+    { path: "/docs/", changefreq: "monthly", priority: 0.8 },
+    ...DOC_ENTRIES.map((doc) => ({
+      path: `/docs/${doc.slug}/`,
+      changefreq: "monthly" as const,
+      priority: 0.6,
+    })),
     ...posts.map((post) => ({
       path: `/blog/${post.id}/`,
       lastmod: post.data.pubDate,
