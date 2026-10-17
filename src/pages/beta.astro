@@ -7,6 +7,10 @@
 // que ROADMAP.md aplica a quien lee el codigo, ahora aplicado a quien
 // llega por primera vez.
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+// Base de Astro: los enlaces internos escritos a mano tienen que pasar por
+// BASE_URL, o en un deploy con subpath (GitHub Pages /portaless/) quedan 404.
+const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout title="Beta publico — Portaless" description="Portaless esta en su primer Beta publico: que esta listo, que no, y como instalarlo en 10 minutos.">
@@ -22,7 +26,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         tambien te decimos, sin adornos, lo que todavía no esta listo.
       </p>
       <p class="beta-actions">
-        <a class="beta-btn" href="/paginas/link-in-bio/">Ver el sitio de ejemplo</a>
+        <a class="beta-btn" href={`${base}paginas/link-in-bio/`}>Ver el sitio de ejemplo</a>
         <a class="beta-btn beta-btn-ghost" href="https://geroiloyola.github.io/portaless/">Demo completa ↗</a>
       </p>
     </header>

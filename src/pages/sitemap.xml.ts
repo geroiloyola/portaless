@@ -48,6 +48,7 @@ export const GET: APIRoute = async ({ site }) => {
   const entries: SitemapEntry[] = [
     { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
     { path: "/es/", lastmod: latest, changefreq: "weekly", priority: 0.9 },
+    { path: "/beta/", lastmod: latest, changefreq: "monthly", priority: 0.9 },
     { path: "/blog/", lastmod: latest, changefreq: "weekly", priority: 0.6 },
     { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
     { path: "/es/explore/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
