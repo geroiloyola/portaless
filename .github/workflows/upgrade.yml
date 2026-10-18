@@ -51,7 +51,10 @@ jobs:
             npm install >/dev/null 2>&1 || true
             cp /tmp/make-db-snapshot.mjs scripts/make-db-snapshot.mjs
             node node_modules/tsx/dist/cli.mjs scripts/make-db-snapshot.mjs "/tmp/upgrade/$tag.db"
-            git checkout --quiet -
+            # El script copiado es untracked en el arbol del tag: limpiarlo
+            # antes de volver, o `git checkout -` aborta.
+            rm -f scripts/make-db-snapshot.mjs
+            git checkout --quiet -f -
           done
 
       - name: Migrar cada base a HEAD y verificar
