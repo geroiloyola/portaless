@@ -367,7 +367,7 @@ const Columns: ElementDefinition<ColumnsProps> = {
     { key: "count", label: "Numero de columnas", kind: "select", options: ["2", "3"], optionLabels: { "2": "2 columnas", "3": "3 columnas" } },
     { key: "gap", label: "Espaciado", kind: "number" },
   ],
-  renderHTML: (p, children = "") => `<div class="ae-columns" style="display:grid;grid-template-columns:repeat(${p.count},1fr);gap:${Number(p.gap) >= 24 ? space(5) : space(4)};align-items:start;">${children}</div>`,
+  renderHTML: (p, children = "") => `<div class="ae-columns" style="--cols:${p.count};--ae-gap:${Number(p.gap) >= 24 ? space(5) : space(4)};--ae-min:16rem;">${children}</div>`,
 };
 
 interface ProductGridProps { source: "medusa" | "manual"; columns: number; limit: number; }
@@ -379,24 +379,24 @@ const ProductGrid: ElementDefinition<ProductGridProps> = {
     { key: "columns", label: "Columnas", kind: "number" },
     { key: "limit", label: "Maximo de productos", kind: "number" },
   ],
-  renderHTML: (p) => `<div class="ae-product-grid" data-source="${esc(p.source)}" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Vista previa del editor - el catalogo real de ${esc(p.source)} se carga en el build de produccion</div></div>`,
+  renderHTML: (p) => `<div class="ae-product-grid" data-source="${esc(p.source)}" style="--cols:${p.columns};--ae-gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Vista previa del editor - el catalogo real de ${esc(p.source)} se carga en el build de produccion</div></div>`,
   renderHTMLAsync: async (p) => {
     if (p.source !== "medusa") {
-      return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Origen "manual" seleccionado - agrega tus productos editando el JSON de la pagina.</div></div>`;
+      return `<div class="ae-product-grid" style="--cols:${p.columns};--ae-gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Origen "manual" seleccionado - agrega tus productos editando el JSON de la pagina.</div></div>`;
     }
     try {
       const { isCommerceEnabled, fetchProducts, formatPrice } = await import(/* @vite-ignore */ "../../../../src/commerce/medusa-client");
       const enabled = await isCommerceEnabled();
       if (!enabled) {
-        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Modulo de comercio desactivado. Define ENABLE_COMMERCE=true y src/commerce/config.ts para mostrar productos reales aqui.</div></div>`;
+        return `<div class="ae-product-grid" style="--cols:${p.columns};--ae-gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Modulo de comercio desactivado. Define ENABLE_COMMERCE=true y src/commerce/config.ts para mostrar productos reales aqui.</div></div>`;
       }
       const products = (await fetchProducts()).slice(0, p.limit);
       if (products.length === 0) {
-        return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Tu tienda Medusa/Mercur no tiene productos publicados todavia.</div></div>`;
+        return `<div class="ae-product-grid" style="--cols:${p.columns};--ae-gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Tu tienda Medusa/Mercur no tiene productos publicados todavia.</div></div>`;
       }
       const prefix = ((p as any).base && (p as any).base !== "/") ? (p as any).base.replace(/\/$/, "") : "";
       const cards = products.map((product: any) => `<a href="${prefix}${productUrlPath(product.handle)}" style="display:block;border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};overflow:hidden;text-decoration:none;color:inherit;">${product.thumbnail ? `<img src="${esc(product.thumbnail)}" alt="${esc(product.title)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" />` : ""}<div style="padding:${space(3)};"><h4 style="margin:0 0 ${space(1)};font-size:14px;">${esc(product.title)}</h4><p style="margin:0;font-weight:700;color:var(--accent-text, #5A6B24);">${esc(formatPrice(product))}</p></div></a>`).join("");
-      return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};">${cards}</div>`;
+      return `<div class="ae-product-grid" style="--cols:${p.columns};--ae-gap:${space(4)};">${cards}</div>`;
     } catch (err) {
       return `<div class="ae-product-grid" style="border:1px dashed var(--danger-fg, #B3372C);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--danger-fg, #B3372C);">Error cargando productos: ${esc((err as Error).message)}</div>`;
     }
@@ -761,9 +761,9 @@ const Gallery: ElementDefinition<GalleryProps> = {
     // masonry con multi-column de CSS: sin JS, sin JS que mantener, y el
     // orden de lectura sigue siendo el del DOM (column-flow, no reordenacion).
     if (variant === "masonry") {
-      return `<div class="ae-gallery" style="column-count:${esc(p.columns)};column-gap:${space(4)};">${cells}</div>`;
+      return `<div class="ae-gallery ae-gallery--masonry" style="--cols:${esc(p.columns)};--ae-gap:${space(4)};">${cells}</div>`;
     }
-    return `<div class="ae-gallery" style="display:grid;grid-template-columns:repeat(${esc(p.columns)},1fr);gap:${space(3)};">${cells}</div>`;
+    return `<div class="ae-gallery" style="--cols:${esc(p.columns)};--ae-gap:${space(3)};">${cells}</div>`;
   },
 };
 

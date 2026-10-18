@@ -312,3 +312,41 @@ describe("el panel de propiedades usa optionLabels", () => {
     expect(src).toContain("optionEl.textContent = field.optionLabels?.[opt] ?? opt;");
   });
 });
+
+// --- 4. Grillas: el layout vive en la hoja del core, no inline ---------------
+// Un estilo inline no admite media queries, asi que un `repeat(N,1fr)` inline
+// no puede ser responsive: en un movil de 375px deja N columnas de ~100px. El
+// elemento declara --cols (lo que QUIERE) y la hoja intrinseca decide cuantas
+// caben (auto-fit + minmax con max(min, (100%-gaps)/N)).
+
+describe("grillas responsivas por hoja, no inline", () => {
+  it("ningun atomo emite grid-template-columns:repeat(N,1fr) inline", () => {
+    const offenders: string[] = [];
+    for (const m of REGISTRY_SRC.matchAll(/grid-template-columns:\s*repeat\(([^)]*)\)/g)) {
+      if (/auto-fit|auto-fill/.test(m[1])) continue; // intrinseco: permitido
+      offenders.push(m[0]);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("ningun atomo emite column-count inline (masonry usa column-width en la hoja)", () => {
+    expect(REGISTRY_SRC).not.toMatch(/column-count:\s*[^;"]/);
+  });
+
+  it("los grids declaran --cols y la hoja del core trae el layout intrinseco", () => {
+    expect(REGISTRY_SRC).toContain("--cols:");
+    const css = readFileSync("packages/atomic-elements/src/styles/elements.css", "utf-8");
+    for (const cls of [".ae-columns", ".ae-product-grid", ".ae-gallery"]) {
+      expect(css, cls).toContain(cls);
+    }
+    expect(css).toContain("auto-fit");
+    expect(css).toContain("max(var(--ae-min");
+    expect(css).toContain("column-width");
+  });
+
+  it("la hoja la cargan build, editor y shell runtime (paridad de las 3 superficies)", () => {
+    expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("styles/elements.css");
+    expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("styles/elements.css");
+    expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("ELEMENTS_CSS_PATH");
+  });
+});

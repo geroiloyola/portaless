@@ -140,7 +140,8 @@ describe("Gallery", () => {
       columns: 2,
       radius: 12,
     } as never);
-    expect(html).toContain("repeat(2,1fr)");
+    // El layout de la grilla vive en elements.css; el inline solo declara --cols.
+    expect(html).toContain("--cols:2");
     expect(html).toContain('src="https://example.com/a.jpg"');
     expect(html).toContain('src="https://example.com/b.jpg"');
     expect(html).not.toContain("javascript:");

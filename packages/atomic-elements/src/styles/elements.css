@@ -1,0 +1,51 @@
+/* Layout de los elementos con grilla — hoja del CORE (no de una skin).
+ *
+ * El elemento declara lo que QUIERE (--cols: cuantas columnas pide, --ae-gap:
+ * el espaciado, --ae-min: el ancho minimo de una tarjeta); esta hoja decide
+ * cuantas CABEN segun el ancho REAL del contenedor. Es una grilla INTRINSECA
+ * (auto-fit + minmax con un minimo que es max(min, (100% - gaps)/N)), asi que:
+ *   - en un desktop ancho muestra las N columnas pedidas;
+ *   - en un movil angosto envuelve a 2 (o a 1 si --ae-min es grande);
+ *   - NO usa media queries, y por eso tambien responde al canvas angosto del
+ *     editor (usa 100% del contenedor, no del viewport).
+ * El estilo inline solo fija las variables: no puede tener media queries, y el
+ * layout no tiene por que estar duplicado en cada elemento.
+ */
+
+.ae-columns,
+.ae-product-grid,
+.ae-gallery {
+  display: grid;
+  gap: var(--ae-gap, 1rem);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      max(var(--ae-min, 9rem), calc((100% - (var(--cols, 3) - 1) * var(--ae-gap, 1rem)) / var(--cols, 3))),
+      1fr
+    )
+  );
+  align-items: start;
+  min-width: 0;
+}
+
+/* Un hijo con contenido ancho (imagen, palabra larga) desborda la pista y
+   provoca scroll horizontal; min-width:0 lo evita. */
+.ae-columns > *,
+.ae-product-grid > *,
+.ae-gallery > * {
+  min-width: 0;
+}
+
+/* Galeria masonry: column-width INTRINSECO (cuantas columnas caben lo decide
+   el ancho) con column-count como tope. Antes era column-count fijo. */
+.ae-gallery--masonry {
+  display: block;
+  column-width: var(--ae-min, 12rem);
+  column-count: var(--cols, 3);
+  column-gap: var(--ae-gap, 1rem);
+}
+
+.ae-gallery--masonry > * {
+  break-inside: avoid;
+  margin-bottom: var(--ae-gap, 1rem);
+}

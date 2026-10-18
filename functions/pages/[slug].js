@@ -47,6 +47,9 @@ import {
 } from "../../packages/atomic-elements/src/themes/theme-pack.ts";
 
 const GLOBAL_CSS_PATH = fileURLToPath(new URL("../../src/styles/global.css", import.meta.url));
+const ELEMENTS_CSS_PATH = fileURLToPath(
+  new URL("../../packages/atomic-elements/src/styles/elements.css", import.meta.url)
+);
 
 // Paridad con el build estatico (BaseLayout/Header/Footer de Astro): el
 // header solo anuncia las publicaciones si el sitio tiene alguna, y la
@@ -117,6 +120,20 @@ function globalCss() {
     cachedGlobalCss = CSS_FALLBACK;
   }
   return cachedGlobalCss;
+}
+
+// Layout de las grillas del core (intrinseco). Mismo archivo que importa
+// BaseLayout en el build; el shell lo lee del disco (paridad build <-> runtime).
+let cachedElementsCss = null;
+
+function elementsCss() {
+  if (cachedElementsCss !== null) return cachedElementsCss;
+  try {
+    cachedElementsCss = fs.readFileSync(ELEMENTS_CSS_PATH, "utf8");
+  } catch {
+    cachedElementsCss = "";
+  }
+  return cachedElementsCss;
 }
 
 const PAGE_CSS = `
@@ -194,7 +211,8 @@ ${description ? `<meta name="description" content="${description}" />` : ""}
 <script>${SHARE_LISTENER_SCRIPT}</script>
 <script>${VOLUME_LISTENER_SCRIPT}</script>
 <script type="application/ld+json">${jsonLd}</script>
-<style>${globalCss()}</style>
+<style>${globalCss()}
+${elementsCss()}</style>
 <style>${PAGE_CSS}</style>
 </head>
 <body>

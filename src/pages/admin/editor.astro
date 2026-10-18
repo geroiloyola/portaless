@@ -23,6 +23,9 @@
 // /admin/api/product-preview con la sesion del admin vive aqui.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import "../../../packages/atomic-elements/src/editor/editor-styles.css";
+// El canvas renderiza los elementos con el mismo registry: necesita el layout
+// de las grillas del core (ae-columns / ae-product-grid / ae-gallery).
+import "../../../packages/atomic-elements/src/styles/elements.css";
 ---
 <BaseLayout title="Editor Visual — Portaless Admin">
   <div class="pc-page-header">

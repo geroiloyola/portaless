@@ -66,6 +66,9 @@ const rssUrl = `${base}/rss.xml`;
 const analyticsUrl = `${base}/api/analytics`;
 import "../styles/fonts.css";
 import "../styles/global.css";
+// Layout de los elementos con grilla (intrinseco, sin media queries): una sola
+// hoja del core, compartida con el shell runtime y el editor.
+import "../../packages/atomic-elements/src/styles/elements.css";
 import Header from "../components/Header.astro";
 import { SITE_LANG } from "../lib/site-lang";
 import { isLocale } from "../lib/i18n";
