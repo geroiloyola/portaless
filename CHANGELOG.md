@@ -17,6 +17,24 @@ maintained in English only.)
 > and gets its own tag when it ships. This is **not** called “Beta”: the ROADMAP
 > gates that name on exit criteria that are still open.
 
+## Migration (how to update a deployment without losing data)
+
+Portaless versions are semver. **Before updating any deployment, check the data
+contract and back up.** The core is fail-closed: a database newer than the code
+refuses to start (it never degrades the schema silently).
+
+| Deployment | Update |
+|---|---|
+| **Self-host / Docker** | `npm run doctor` (or `docker compose exec portaless npm run doctor`) → if the DB is behind, `npm run migrate` (backup first, into `<dataDir>/backups/`). Docker: pin the image tag, `docker compose pull && docker compose up -d`; the server migrates on boot after `applySchema`. Rollback = restore the backup and go back to the previous tag. |
+| **Cloudflare Pages (D1)** | Deploy the new tag, then `wrangler d1 migrations apply <DB_NAME> --remote`. |
+| **GitHub Pages (static)** | No database; update by merging the new tag (the `update-upstream` workflow opens a PR “Update to vX”). |
+
+Rules: run `doctor` before `migrate`; never edit `schema_migrations` by hand; a
+migration that fails rolls back its transaction and the boot aborts (the backup
+is intact). `layoutVersion` on content and `engines.portaless` on plugin
+manifests are the forward-compatibility guards (both fall back safely / fail
+closed).
+
 ## Unreleased
 
 - **Data contract: numbered forward migrations, a `doctor`, automatic backup and fail-closed startup.** Until now `schema.sql` was re-applied in full on every boot and each store self-migrated with scattered `ALTER TABLE … ADD COLUMN` — working, but with no record, order, backup or protection against a database *newer* than the code. New `packages/persistence-migrations/`: a `schema_migrations(version, name, applied_at)` table, a `SCHEMA_VERSION` (baseline **v1**; the full shape stays in `schema.sql`, so v1 carries no SQL and future changes append v2, v3…), `pendingFrom()` and `assertCompatible()` — which **fails closed** when the DB is ahead of the code (the same fail-safe as variants/themes). The SQLite runner backs up first (via better-sqlite3's backup API, into `<dataDir>/backups/`), wraps each migration in a transaction, is idempotent and supports `--dry-run`. `npm run migrate` and `npm run doctor` (reports DB version vs code, missing critical tables and pre-versioned databases; exits 1 when incompatible). Wired into self-host: `server/first-run.mjs` migrates after `applySchema`, so Docker/`npm start` update safely on boot. D1 uses `wrangler d1 migrations apply` (documented). **Honest scope**: the existing per-store `ALTER TABLE`s remain as the legacy safety net for pre-versioned databases (they are a no-op once `schema_migrations` exists); moving them into numbered migrations is a mechanical follow-up. Tests: `migrations.test.ts` (pure logic + real SQLite: baseline, idempotence, dry-run, fail-closed, backup). Verified: vitest 200 files / 1839 passed, build 70 pages, validate-manifests OK, `npx playwright test` 58/58, and `npm run migrate`/`doctor` exercised by hand.

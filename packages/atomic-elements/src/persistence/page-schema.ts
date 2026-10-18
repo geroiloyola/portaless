@@ -44,6 +44,12 @@ export function validatePageLayout(
     : (t: string) => coreTypes.has(t);
 
   if (layout.version !== "0.1") errors.push(`Versión de esquema no soportada: ${layout.version}`);
+  // layoutVersion: contrato de datos del CONTENIDO. Solo se valida el FORMATO;
+  // una version mayor a la conocida no es error (el render usa el fallback
+  // seguro, igual que un tema desconocido), pero si un valor invalido.
+  if (layout.layoutVersion !== undefined && (!Number.isInteger(layout.layoutVersion) || layout.layoutVersion < 1)) {
+    errors.push(`"layoutVersion" debe ser un entero >= 1 (recibido: ${JSON.stringify(layout.layoutVersion)}).`);
+  }
   if (!layout.slug) errors.push('Falta "slug" en la página.');
   if (!Array.isArray(layout.root)) errors.push('"root" debe ser un arreglo de elementos.');
   if (layout.status !== undefined && layout.status !== "draft" && layout.status !== "published") {

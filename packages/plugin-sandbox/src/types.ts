@@ -46,6 +46,13 @@ export interface PluginManifest {
   entry: string;                       // Ruta al codigo del plugin dentro de su paquete.
   requestedCapabilities: CapabilityRequest[];
   runtime: "javascript" | "wasm";
+  /**
+   * Compatibilidad declarada con el core. Opcional: si falta, el plugin se
+   * trata como compatible (fallback seguro). `portaless` es un rango semver
+   * minimo (^, ~, >=, <=, >, <, = y `||`); el core RECHAZA un plugin cuyo
+   * rango no incluya su version (fail-closed, nunca "instalar y ver").
+   */
+  engines?: { portaless?: string };
 }
 
 /** El subconjunto de capacidades que un administrador realmente concedio. */

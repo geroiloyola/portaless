@@ -26,6 +26,14 @@ export interface PageLayout {
    */
   locale?: string;
   /**
+   * Version del LAYOUT de la pagina (contrato de datos del contenido, distinto
+   * de `version` = version del esquema). Opcional y aditivo: si falta, se trata
+   * como la version 1 (mismo fallback seguro que variantes y temas: un dato que
+   * no conocemos NO rompe el render). Una version mayor a la que este codigo
+   * entiende se maneja con el fallback, nunca con un crash.
+   */
+  layoutVersion?: number;
+  /**
    * Estado de publicacion nativo. Opcional por compatibilidad hacia atras con
    * el layout JSON ya persistido en D1/SQLite (que no lo trae): si falta, se
    * trata como "published". El gate de publicacion real es el publish filter

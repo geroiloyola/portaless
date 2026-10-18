@@ -223,6 +223,12 @@ export interface PluginManifest {
   entry: string;
   requestedCapabilities: CapabilityRequest[];
   runtime: "javascript" | "wasm";
+  /**
+   * Compatibilidad declarada con el core. Opcional (sin declarar = compatible).
+   * `portaless` es un rango semver minimo (^, ~, >=, <=, >, <, =, `||`). El core
+   * rechaza un plugin cuyo rango no incluya su version.
+   */
+  engines?: { portaless?: string };
 }
 
 /** The subset of capabilities an administrator actually granted. */
@@ -231,6 +237,46 @@ export type GrantedCapabilities = Set<CapabilityId>;
 export interface ManifestValidationResult {
   valid: boolean;
   errors: string[];
+}
+
+/**
+ * ¿La version del core satisface el rango declarado en `engines.portaless`?
+ * Matcher semver minimo y SIN dependencia: soporta `^`, `~`, `>=`, `<=`, `>`,
+ * `<`, `=` y `||`. Un rango sin declarar (o vacio) es compatible (fallback
+ * seguro); un rango con sintaxis desconocida es INCOMPATIBLE (fail-closed).
+ * El core usa la misma funcion (paridad fijada por tests/unit/plugin-sdk-parity).
+ */
+export function isEngineCompatible(range: string | undefined, version: string): boolean {
+  const r = String(range ?? "").trim();
+  const v = String(version ?? "").trim();
+  if (!r) return true;
+  const parse = (s: string) => s.replace(/^[^0-9]*/, "").split(".").map((n) => Number(n) || 0);
+  const [maj, min, pat] = parse(v);
+  const cmp = (a: number[], b: number[]): number => {
+    for (let i = 0; i < 3; i++) {
+      const d = (a[i] ?? 0) - (b[i] ?? 0);
+      if (d !== 0) return d;
+    }
+    return 0;
+  };
+  for (const part of r.split("||").map((s) => s.trim()).filter(Boolean)) {
+    const m = part.match(/^(\^|~|>=|<=|>|<|=)?\s*v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$/);
+    if (!m) return false;
+    const op = m[1] ?? "=";
+    const target = [Number(m[2]), Number(m[3] ?? 0), Number(m[4] ?? 0)];
+    const c = cmp([maj, min, pat], target);
+    const ok =
+      op === "=" ? c === 0 :
+      op === ">=" ? c >= 0 :
+      op === "<=" ? c <= 0 :
+      op === ">" ? c > 0 :
+      op === "<" ? c < 0 :
+      op === "^" ? c >= 0 && maj === target[0] :
+      op === "~" ? c >= 0 && maj === target[0] && min === target[1] :
+      false;
+    if (ok) return true;
+  }
+  return false;
 }
 
 /**
@@ -245,6 +291,14 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
 
   if (!manifest.name) errors.push('Falta "name" en el manifiesto.');
   if (!manifest.entry) errors.push('Falta "entry" en el manifiesto.');
+
+  if (manifest.engines !== undefined) {
+    if (typeof manifest.engines !== "object" || manifest.engines === null) {
+      errors.push('"engines" debe ser un objeto (ej. { "portaless": "^0.0.10" }).');
+    } else if (manifest.engines.portaless !== undefined && (typeof manifest.engines.portaless !== "string" || !manifest.engines.portaless.trim())) {
+      errors.push('"engines.portaless" debe ser un rango semver no vacio.');
+    }
+  }
 
   const requested = Array.isArray(manifest.requestedCapabilities) ? manifest.requestedCapabilities : null;
   if (!requested) {

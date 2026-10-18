@@ -12,6 +12,12 @@ import {
   RISK_LABELS as CORE_RISK_LABELS,
 } from "../../packages/plugin-sandbox/src/capabilities/capability-registry";
 import { validateManifest as coreValidate } from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
+import {
+  CORE_VERSION,
+  isEngineCompatible as coreIsEngineCompatible,
+} from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { PLUGIN_MANIFEST_TYP as CORE_PLUGIN_MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
 import type { PluginManifest } from "../../packages/plugin-sandbox/src/types";
 
@@ -87,5 +93,35 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
   it("PLUGIN_MANIFEST_TYP coincide con el typ del core (ERRATA E-15)", () => {
     expect(sdk.PLUGIN_MANIFEST_TYP).toBe(CORE_PLUGIN_MANIFEST_TYP);
     expect(sdk.PLUGIN_MANIFEST_TYP).toBe("apw-plugin-manifest+jws");
+  });
+
+  it("isEngineCompatible da el mismo veredicto en SDK y core", () => {
+    const cases: Array<[string | undefined, string]> = [
+      [undefined, "0.0.10"],
+      ["", "0.0.10"],
+      ["^0.0.10", "0.0.10"],
+      ["^0.0.9", "0.0.10"],
+      ["^1.0.0", "0.0.10"],
+      ["~0.0.10", "0.0.10"],
+      [">=0.0.5", "0.0.10"],
+      ["<=0.0.10", "0.0.10"],
+      ["0.0.10", "0.0.10"],
+      [">1.0.0", "0.0.10"],
+      ["^0.0.1 || ^0.0.10", "0.0.10"],
+      ["no-es-un-rango", "0.0.10"],
+    ];
+    for (const [range, version] of cases) {
+      expect(sdk.isEngineCompatible(range, version), `${range} @ ${version}`).toBe(
+        coreIsEngineCompatible(range, version),
+      );
+    }
+    // y el veredicto esperado (fail-closed en sintaxis desconocida)
+    expect(coreIsEngineCompatible("no-es-un-rango", "0.0.10")).toBe(false);
+    expect(coreIsEngineCompatible(undefined, "0.0.10")).toBe(true);
+  });
+
+  it("CORE_VERSION sigue a package.json (no deriva en silencio)", () => {
+    const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf8"));
+    expect(CORE_VERSION).toBe(pkg.version);
   });
 });
