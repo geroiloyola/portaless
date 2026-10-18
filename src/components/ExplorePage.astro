@@ -11,7 +11,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
 import { ecosystemPageTheme } from "../lib/ecosystem-theme";
-import { contentPageHref } from "../lib/content-pages";
+import { contentPageHref } from "../lib/routes";
 import type { Locale } from "../lib/i18n";
 import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
 
@@ -137,13 +137,13 @@ const demoProfiles = pages.filter((p) => kindOf(p) === "profile");
 // que estos destacados apuntan a la ruta interna. "Architecture" no tiene un
 // doc exacto publicado; se apunta al doc de arquitectura del ecosistema.
 const DOC_HREF: Record<string, string> = {
-  "Install in 10 minutes": `${base}docs/start-in-10-minutes/`,
+  "Install in 10 minutes": `${base}docs/first-steps/`,
   "Self-hosting": `${base}docs/self-hosting/`,
   "Protocol APW": `${base}docs/protocol-apw/`,
   Architecture: `${base}docs/ecosystem-boundaries/`,
 };
 
-const trustHref = `${base}trust/default`;
+const trustHref = `${base}trust/`;
 const repoHref = "https://github.com/geroiloyola/portaless";
 const buildAsOf = new Date().toISOString();
 const windowDays = 30;

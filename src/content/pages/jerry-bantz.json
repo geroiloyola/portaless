@@ -55,7 +55,7 @@
           },
           {
             "label": "Ver el registro de confianza (TrustScore)",
-            "url": "/trust/default",
+            "url": "/trust/",
             "icon": "shield-check",
             "enabled": true
           }

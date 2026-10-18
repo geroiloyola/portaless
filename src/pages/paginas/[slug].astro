@@ -1,29 +1,33 @@
 ---
 // REDIRECCION (Fase 3): para CADA slug de contenido se emite un HTML meta-refresh
-// en la URL LEGADA de /paginas que apunta a la ruta nueva (contentPageHref). Es
-// la unica capa posible en GitHub Pages (sin functions/); en Cloudflare Pages y
-// self-host el 301 real vive en functions/_middleware.js.
-// La URL es RELATIVA (../pages/...) para respetar cualquier base de deploy.
+// en la URL LEGADA de /paginas que apunta a la ruta nueva. Es la unica capa
+// posible en GitHub Pages (sin functions/); en Cloudflare Pages y self-host el
+// 301 real vive en functions/_middleware.js. El destino conserva el BASE de
+// Astro (import.meta.env.BASE_URL) para funcionar bajo /portaless/.
 import { loadContentPages, versionHref } from "../../lib/content-pages";
 import { contentPageHref } from "../../lib/routes";
 import { isDraft } from "../../../packages/deploy-engine/src/draft-filter";
 
+const base = import.meta.env.BASE_URL;
+
 export async function getStaticPaths() {
+  const baseUrl = import.meta.env.BASE_URL;
   return loadContentPages()
     .filter((page) => !isDraft(page.primary.layout))
     .map((page) => ({
       params: { slug: page.slug },
-      props: { destination: versionHref(page.primary, "/"), slug: page.slug },
+      props: { destination: versionHref(page.primary, baseUrl), slug: page.slug },
     }));
 }
 
 const { destination, slug } = Astro.props as { destination: string; slug: string };
+const canonical = contentPageHref(slug, undefined, base);
 ---
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>{`Page moved: /pages/${slug}/`}</title>
-    <link rel="canonical" href={contentPageHref(slug, undefined, "/")} />
+    <link rel="canonical" href={canonical} />
     <meta http-equiv="refresh" content={`0;url=${destination}`} />
     <style>body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 30rem; }</style>
   </head>

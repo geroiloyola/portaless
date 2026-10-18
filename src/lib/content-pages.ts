@@ -78,12 +78,13 @@ export function groupContentPages(
   return out.sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
-/** Ruta base-relativa de una version (la primaria sin prefijo, la traduccion con el suyo). */
-export function contentPageHref(version: PageVersion, base = "/"): string {
-  return versionHref(version, base);
-}
-
-/** Ruta de una version: delega en el modulo unico de rutas. */
+/**
+ * Ruta base-relativa de una version (la primaria sin prefijo, la traduccion con
+ * el suyo). Se llama `versionHref` a proposito: el modulo unico de rutas
+ * (src/lib/routes.ts) ya exporta un `contentPageHref(slug, locale, base)` con
+ * OTRA firma. Tener dos funciones con el mismo nombre y distinta firma fue el
+ * bug que mando las tarjetas de Explore a /pages// -- no se repite.
+ */
 export function versionHref(version: PageVersion, base = "/"): string {
   return routeHref(version.slug, version.primary ? undefined : version.locale, base);
 }

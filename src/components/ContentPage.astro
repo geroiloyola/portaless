@@ -12,7 +12,7 @@ import PageRenderer from "../../packages/atomic-elements/astro-integration/PageR
 import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
 import SeoHead from "./SeoHead.astro";
 import { getSiteUrl } from "../lib/seo";
-import { contentPageHref, type ContentPage, type PageVersion } from "../lib/content-pages";
+import { versionHref, type ContentPage, type PageVersion } from "../lib/content-pages";
 import {
   BUILTIN_THEMES,
   resolveThemePack,
@@ -34,17 +34,17 @@ const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.the
 const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
 const headerContext = deriveHeaderContext(layout.root);
 
-const canonicalUrl = `${siteUrl}${contentPageHref(version, base)}`;
+const canonicalUrl = `${siteUrl}${versionHref(version, base)}`;
 // hreflang de TODAS las versiones de esta misma pagina (incluida la actual).
 const alternates = page.versions.map((v) => ({
   hreflang: v.locale,
-  href: `${siteUrl}${contentPageHref(v, base)}`,
+  href: `${siteUrl}${versionHref(v, base)}`,
 }));
 // La version en OTRO idioma, si existe: es el selector del header. Si no hay,
 // el header muestra el aviso (no un enlace a otro sitio).
 const other = page.versions.find((v) => v.locale !== version.locale);
 const languageAlternate = other
-  ? { hreflang: other.locale, href: contentPageHref(other, base) }
+  ? { hreflang: other.locale, href: versionHref(other, base) }
   : undefined;
 
 const pageTitle = layout.title ?? layout.slug;

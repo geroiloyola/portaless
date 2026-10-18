@@ -18,7 +18,7 @@ import { publishedPosts } from "../lib/llms-txt";
 import { buildSitemapXml, type SitemapEntry } from "../lib/sitemap";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 import { ROUTES } from "../lib/routes";
-import { contentPageHref, loadContentPages } from "../lib/content-pages";
+import { loadContentPages, versionHref } from "../lib/content-pages";
 
 async function collectCommerceEntries(): Promise<SitemapEntry[]> {
   try {
@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ site }) => {
   // Una entrada por VERSION de cada pagina de contenido (primaria + traducciones).
   const contentPageEntries = loadContentPages().flatMap((page) =>
     page.versions.map((version) => ({
-      path: contentPageHref(version, "/"),
+      path: versionHref(version, "/"),
       changefreq: "monthly" as const,
       priority: 0.8,
     })),

@@ -27,7 +27,7 @@
         "buttonStyle": "solid",
         "links": [
           { "label": "Mi blog", "url": "/blog/", "icon": "blog", "enabled": true },
-          { "label": "Portafolio de proyectos", "url": "/paginas/portafolio/", "icon": "store", "enabled": true }
+          { "label": "Portafolio de proyectos", "url": "/pages/portafolio/", "icon": "store", "enabled": true }
         ]
       }
     },

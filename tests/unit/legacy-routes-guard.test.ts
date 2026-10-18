@@ -31,11 +31,6 @@ const ALLOWED = [
   "functions/_middleware.js",
   // tests de redirects (cada fila del mapa) y los actualizados en fase 2
   "tests/",
-  // contenido demo (sus enlaces internos son URLs legadas: los cubren los
-  // redirects de Fase 3, y el usuario decidio NO tocar los campos JSON)
-  "src/content/pages/",
-  "src/content/home.json",
-  "src/content/home.es.json",
 ];
 
 function isAllowed(rel: string): boolean {

@@ -72,7 +72,7 @@
             "description": "Prensado en vinilo naranja traslúcido de 180 gramos. Incluye libreto de 16 páginas con arte exclusivo y código de descarga digital.",
             "price": "$35.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=600&q=80",
-            "url": "/tienda/",
+            "url": "/es/shop/",
             "buttonLabel": "Comprar en la tienda",
             "badge": "Edición Limitada (500 copias)"
           }
@@ -85,7 +85,7 @@
             "description": "Algodón orgánico 100% pesado con serigrafía durable de alta definición en pecho y fechas del tour en la espalda.",
             "price": "$25.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
-            "url": "/tienda/",
+            "url": "/es/shop/",
             "buttonLabel": "Comprar en la tienda",
             "badge": "Merch Oficial"
           }

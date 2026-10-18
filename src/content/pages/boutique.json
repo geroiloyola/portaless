@@ -36,7 +36,7 @@
             "description": "Corte desestructurado, lana merino 100% hilada a mano y botones de asta natural. Confección en taller local.",
             "price": "$180.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
-            "url": "/tienda/chaqueta-lana",
+            "url": "/es/shop/",
             "buttonLabel": "Comprar en Tienda",
             "badge": "Hecho a mano"
           }
@@ -49,7 +49,7 @@
             "description": "Algodón orgánico encerado de 18 oz con asas de cuero de curtición vegetal y costuras reforzadas de alta durabilidad.",
             "price": "$45.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80",
-            "url": "/tienda/tote-canvas",
+            "url": "/es/shop/",
             "buttonLabel": "Comprar en Tienda",
             "badge": "Bestseller"
           }
@@ -62,7 +62,7 @@
             "description": "Pieza única torneada en gres chamotado con pantalla de lino crudo y casquillo de latón macizo.",
             "price": "$95.00 USD",
             "imageUrl": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
-            "url": "/tienda/lampara-ceramica",
+            "url": "/es/shop/",
             "buttonLabel": "Comprar en Tienda",
             "badge": "Pieza única"
           }

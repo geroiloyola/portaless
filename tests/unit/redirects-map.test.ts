@@ -111,13 +111,13 @@ describe("redirects runtime self-host (una fila por cada regla del mapa)", () =>
 // slug de contenido del build.
 // ---------------------------------------------------------------------------
 describe("redirects estaticos (dist/): meta-refresh con canonical", () => {
-  it("las raices del sistema son archivos EMITIDOS en dist/ con URL relativa (su fuente vive en public/)", () => {
+  it("las raices del sistema son archivos con URL RELATIVA (fuente en public/, copiada a dist/)", () => {
     for (const case_ of [
       { dir: join(repo, "public", "tienda"), dest: "../es/shop/" },
-      { dir: join(repo, "public", "en", "tienda"), dest: "../shop/" },
-      { dir: join(repo, "public", "en", "beta"), dest: "../beta/" },
+      { dir: join(repo, "public", "en", "tienda"), dest: "../../shop/" },
+      { dir: join(repo, "public", "en", "beta"), dest: "../../beta/" },
       { dir: join(repo, "public", "proyecciones"), dest: "../es/projections/" },
-      { dir: join(repo, "public", "en", "proyecciones"), dest: "../projections/" },
+      { dir: join(repo, "public", "en", "proyecciones"), dest: "../../projections/" },
     ]) {
       const src = readFileSync(join(case_.dir, "index.html"), "utf8");
       expect(src.toLowerCase()).toContain("http-equiv=\"refresh\"");

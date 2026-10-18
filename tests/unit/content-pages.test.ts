@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   parsePagePath,
   groupContentPages,
-  contentPageHref,
+  versionHref,
   CONTENT_PRIMARY_LOCALE,
   type PageVersion,
 } from "../../src/lib/content-pages";
@@ -60,17 +60,17 @@ describe("groupContentPages", () => {
   });
 });
 
-describe("contentPageHref", () => {
+describe("versionHref", () => {
   const primary: PageVersion = { slug: "bio", locale: "es", primary: true, layout: layout("bio") };
   const en: PageVersion = { slug: "bio", locale: "en", primary: false, layout: layout("bio", "en") };
 
   it("la primaria va sin prefijo; la traduccion con su locale", () => {
-    expect(contentPageHref(primary, "/")).toBe("/pages/bio/");
-    expect(contentPageHref(en, "/")).toBe("/en/pages/bio/");
+    expect(versionHref(primary, "/")).toBe("/pages/bio/");
+    expect(versionHref(en, "/")).toBe("/en/pages/bio/");
   });
 
   it("respeta el base de Astro", () => {
-    expect(contentPageHref(primary, "/portaless/")).toBe("/portaless/pages/bio/");
-    expect(contentPageHref(en, "/portaless/")).toBe("/portaless/en/pages/bio/");
+    expect(versionHref(primary, "/portaless/")).toBe("/portaless/pages/bio/");
+    expect(versionHref(en, "/portaless/")).toBe("/portaless/en/pages/bio/");
   });
 });

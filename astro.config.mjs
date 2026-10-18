@@ -27,5 +27,8 @@ export default defineConfig({
   output: "static",
   site: process.env.PORTALESS_SITE_URL || "https://tu-usuario.github.io",
   base: process.env.PORTALESS_BASE_PATH || "/",
+  // outDir alterno para builds de verificacion (el sweep de enlaces construye
+  // con la base de produccion sin pisar el dist/ que usa Playwright).
+  outDir: process.env.PORTALESS_OUT_DIR || "./dist",
   compressHTML: true,
 });
