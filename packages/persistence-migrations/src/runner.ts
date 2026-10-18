@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { openSqlite } from "../../sqlite-driver/src/open.ts";
-import { assertCompatible, pendingFrom, schemaVersion } from "./index.ts";
+import { MIGRATIONS, assertCompatible, pendingFrom, schemaVersion, type Migration } from "./index.ts";
 
 const CREATE_TABLE = `CREATE TABLE IF NOT EXISTS schema_migrations (
   version INTEGER PRIMARY KEY,
@@ -49,6 +49,54 @@ async function backupDatabase(db: any, sqlitePath: string, from: number, opts: M
   return dest;
 }
 
+/** Columnas de una tabla (portable: `pragma_table_info` existe en SQLite y D1). */
+function tableColumns(db: any, table: string): string[] {
+  try {
+    return (db.prepare("SELECT name FROM pragma_table_info(?)").all(table) as Array<{ name: string }>).map((r) => r.name);
+  } catch {
+    return [];
+  }
+}
+
+function applyColumnsFor(db: any, migration: Migration): void {
+  for (const { table, column, type } of migration.addColumns ?? []) {
+    const columns = tableColumns(db, table);
+    // Tabla ausente: la crea el STORE con todas sus columnas (schema.sql no la
+    // trae). No es un error: el store usa CREATE TABLE IF NOT EXISTS completo.
+    if (columns.length === 0) continue;
+    if (!columns.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
+}
+
+/**
+ * Aplica SOLO las columnas de TODAS las migraciones a una conexion ya abierta,
+ * de forma idempotente. Lo usa el runner (por migracion) y sirve para migrar
+ * una conexion en memoria (tests) sin pasar por un archivo.
+ */
+export function applyColumnMigrations(db: any): void {
+  for (const migration of MIGRATIONS) applyColumnsFor(db, migration);
+}
+
+function applyMigration(db: any, migration: Migration): void {
+  for (const statement of migration.statements) db.exec(statement);
+  applyColumnsFor(db, migration);
+}
+
+/**
+ * Registra las migraciones hasta `version` como aplicadas (INSERT OR IGNORE).
+ * Lo usa `applySchema`: schema.sql es la forma ACTUAL, asi que una base nueva
+ * queda al dia (no "pendiente") sin correr ALTERs sobre tablas que ya tienen
+ * todas las columnas.
+ */
+export function stampMigrations(db: any, version: number = schemaVersion()): void {
+  db.exec(CREATE_TABLE);
+  const insert = db.prepare("INSERT OR IGNORE INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)");
+  const now = new Date().toISOString();
+  for (const migration of MIGRATIONS) {
+    if (migration.version <= version) insert.run(migration.version, migration.name, now);
+  }
+}
+
 export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {}): Promise<MigrateResult> {
   if (!existsSync(sqlitePath)) {
     // Base nueva: no hay nada que migrar. `schema.sql` la crea al arrancar y el
@@ -72,7 +120,7 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
     for (const migration of pending) {
       db.exec("BEGIN");
       try {
-        for (const statement of migration.statements) db.exec(statement);
+        applyMigration(db, migration);
         db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)").run(
           migration.version,
           migration.name,

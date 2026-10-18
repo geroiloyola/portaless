@@ -31,7 +31,6 @@ export const ARTIFACTS_TABLE_DDL =
   "code_hash TEXT NOT NULL, total_bytes INTEGER NOT NULL, chunk_count INTEGER NOT NULL, " +
   "created_at TEXT NOT NULL, manifest_json TEXT, PRIMARY KEY (publisher, name, version))";
 
-const ARTIFACTS_ALTER_MANIFEST_DDL = "ALTER TABLE plugin_artifacts ADD COLUMN manifest_json TEXT";
 
 export const ARTIFACT_CHUNKS_TABLE_DDL =
   "CREATE TABLE IF NOT EXISTS plugin_artifact_chunks (" +
@@ -170,11 +169,6 @@ export class D1PluginArtifactStore implements PluginArtifactStore {
     return (this.ready ??= (async () => {
       await this.db.prepare(ARTIFACTS_TABLE_DDL).bind().run();
       await this.db.prepare(ARTIFACT_CHUNKS_TABLE_DDL).bind().run();
-      try {
-        await this.db.prepare(ARTIFACTS_ALTER_MANIFEST_DDL).bind().run();
-      } catch {
-        // Columna ya existe (tabla creada con DDL nuevo o ya migrada).
-      }
     })());
   }
 
@@ -266,11 +260,6 @@ export class SqlitePluginArtifactStore implements PluginArtifactStore {
     this.db = db;
     this.db.exec(ARTIFACTS_TABLE_DDL);
     this.db.exec(ARTIFACT_CHUNKS_TABLE_DDL);
-    try {
-      this.db.exec(ARTIFACTS_ALTER_MANIFEST_DDL);
-    } catch {
-      // Columna ya existe (tabla creada con DDL nuevo o ya migrada).
-    }
   }
 
   async put(input: PutArtifactInput): Promise<PluginArtifactMeta> {

@@ -14,6 +14,8 @@ import { didKeyId, isDidKeyId, parseDidKeyId } from "../../packages/apw-resolver
 import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
 import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
 import type { ApwKeyPair } from "../../packages/apw-resolver/src/did-apw/types";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 
 const state = vi.hoisted(() => ({ identity: null as any, log: null as any }));
 vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
@@ -255,6 +257,7 @@ if (sqliteAvailable) {
       insertKey.run(currentKid, SITE, JSON.stringify(currentPair.publicKeyJwk), "x", "y", "2026-02-01T00:00:00.000Z", null);
       insertKey.run(oldKid, SITE, JSON.stringify(oldPair.publicKeyJwk), null, null, "2026-01-01T00:00:00.000Z", "2026-02-01T00:00:00.000Z");
 
+      applyColumnMigrations(b.db); // columnas de las migraciones numeradas (base vieja)
       const keys = await b.identity.listKeys(SITE);
       expect(keys.map((k) => [k.kid, k.keyId, k.keySequence])).toEqual([
         [oldKid, `${DID}#key-1`, 1],

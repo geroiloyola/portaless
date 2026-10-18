@@ -5,6 +5,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 import {
   InMemoryPluginArtifactStore,
   SqlitePluginArtifactStore,
@@ -157,6 +159,7 @@ describe("tope y validaciones", () => {
     const sqlitePath = join(tmp, "legacy-sqlite.db");
     const preSqlite = new Database(sqlitePath);
     preSqlite.exec(legacyDdl);
+    applyColumnMigrations(preSqlite); // columnas de las migraciones numeradas (base vieja)
     preSqlite.close();
 
     const sqliteStore = await SqlitePluginArtifactStore.open(sqlitePath);
@@ -166,6 +169,7 @@ describe("tope y validaciones", () => {
 
     const d1Db = new Database(join(tmp, "legacy-d1.db"));
     d1Db.exec(legacyDdl);
+    applyColumnMigrations(d1Db); // la migracion v3 agrega manifest_json
     const d1Store = new D1PluginArtifactStore(fakeD1(d1Db));
     await d1Store.put({ publisher: "did:apw:pub.example", name: "legacy-p", version: "1.0.0", code: bytes(16), manifest });
     expect((await d1Store.getMeta("did:apw:pub.example", "legacy-p", "1.0.0"))?.manifest).toEqual(manifest);

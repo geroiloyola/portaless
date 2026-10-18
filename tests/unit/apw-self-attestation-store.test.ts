@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 import { SqliteSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/stores/sqlite-site-trust-store.ts";
 import { InMemorySiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 
@@ -37,6 +39,7 @@ describe("self guarda su JWS junto a la fila (5.3)", () => {
       site_id TEXT NOT NULL, category TEXT NOT NULL, declared_value INTEGER NOT NULL,
       evidence_url TEXT, declared_by TEXT NOT NULL, declared_at TEXT NOT NULL,
       PRIMARY KEY (site_id, category))`);
+    applyColumnMigrations(db); // columnas de las migraciones numeradas (base vieja)
     const store = new SqliteSiteTrustScoreStore(db);
     await store.recordSelfEvaluation({ ...base, declaredValue: true, declaredAt: "2026-10-02T00:00:00.000Z", attestationJws: "a.b.c", attestationJti: "j1" });
     const snap = await store.getSnapshot("default");

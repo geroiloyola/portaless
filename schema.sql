@@ -303,6 +303,8 @@ CREATE TABLE IF NOT EXISTS site_trust_self_evaluations (
   evidence_url TEXT,
   declared_by TEXT NOT NULL,
   declared_at TEXT NOT NULL,
+  attestation_jws TEXT,
+  attestation_jti TEXT,
   PRIMARY KEY (site_id, category)
 );
 

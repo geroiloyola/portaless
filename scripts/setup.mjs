@@ -89,6 +89,11 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
 
   const db = new Database(sqlitePath);
   db.exec(schemaSql);
+  // schema.sql es la forma ACTUAL: estampa las migraciones hasta la version del
+  // codigo, asi una base nueva queda "al dia" (no pendiente). Ver
+  // packages/persistence-migrations.
+  const { stampMigrations } = await import("../packages/persistence-migrations/src/runner.ts");
+  stampMigrations(db);
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
   db.close();
 

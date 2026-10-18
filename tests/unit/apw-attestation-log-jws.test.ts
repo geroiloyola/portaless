@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 import {
   SqliteAttestationLogStore,
   InMemoryAttestationLogStore,
@@ -36,6 +38,7 @@ describe("historial guarda el JWS de la atestacion (E-9)", () => {
       site_id TEXT NOT NULL, seq INTEGER NOT NULL, entry_jws TEXT NOT NULL, entry_hash TEXT NOT NULL,
       prev_hash TEXT, att_hash TEXT NOT NULL, kid TEXT NOT NULL, ts TEXT NOT NULL, PRIMARY KEY (site_id, seq))`);
     db.prepare("INSERT INTO site_attestation_log VALUES ('default', 1, 'e', 'h', NULL, 'old', 'k', 't')").run();
+    applyColumnMigrations(db); // columnas de las migraciones numeradas (base vieja)
     const store = new SqliteAttestationLogStore(db);
     await store.append(await entry(2, "x.y.z"));
     const rows = await store.list("default", 1, 10);

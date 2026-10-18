@@ -36,7 +36,6 @@ import type {
   EscrowTransactionOutcome,
 } from "../site-trust-score";
 import {
-  ATTESTATION_COLUMN_MIGRATIONS,
   ATTESTATION_INDEXES,
   DUPLICATE_ATTESTATION_JTI,
   isDuplicateColumnError,
@@ -169,13 +168,6 @@ export class D1SiteTrustScoreStore implements SiteTrustScoreStore {
   private ensureAttestationSchema(): Promise<void> {
     if (!this.attestationSchema) {
       this.attestationSchema = (async () => {
-        for (const sql of ATTESTATION_COLUMN_MIGRATIONS) {
-          try {
-            await this.db.prepare(sql).bind().run();
-          } catch (err) {
-            if (!isDuplicateColumnError(err)) throw err;
-          }
-        }
         for (const sql of ATTESTATION_INDEXES) await this.db.prepare(sql).bind().run();
       })();
       this.attestationSchema.catch(() => {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 import { InMemoryUsageLedgerStore, recordAgentAccess } from "../../packages/trust-layer/src/ledger/log-writer";
 import { SqliteUsageLedgerStore } from "../../packages/trust-layer/src/ledger/sqlite-log-store";
 import type { UsageLogPeriod } from "../../packages/trust-layer/src/ledger/log-schema";
@@ -30,6 +32,7 @@ describe("ledger readerDid (E-9)", () => {
       policy_violations_detected INTEGER NOT NULL DEFAULT 0, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,
       PRIMARY KEY (period, operator_key_id));`);
     db.prepare("INSERT INTO usage_ledger VALUES ('2026-09','old',NULL,3,0,3,0,0,'t','t')").run();
+    applyColumnMigrations(db); // columnas de las migraciones numeradas (base vieja)
     const store = new SqliteUsageLedgerStore(db);
     const before = await store.get("2026-09");
     expect(before?.agents[0]).toMatchObject({ operatorKeyId: "old", requestsTotal: 3 });

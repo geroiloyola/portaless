@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
+
 import { SqliteAdapter } from "../../packages/apw-resolver/src/did-apw/sql-adapter";
 import {
   SqlReadPolicyStore,
@@ -120,6 +122,7 @@ describe("public_overrides (A.6)", () => {
       )`
     ).run();
     db.prepare("INSERT INTO site_trust_read_policies (site_id, enabled, updated_at, updated_by) VALUES ('default', 1, 't', 'admin')").run();
+    applyColumnMigrations(db); // columnas de las migraciones numeradas (base vieja)
 
     const store = new SqlReadPolicyStore(new SqliteAdapter(db));
     const rec = await store.get("default");

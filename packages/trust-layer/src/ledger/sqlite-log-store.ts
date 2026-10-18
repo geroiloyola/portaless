@@ -56,10 +56,6 @@ export class SqliteUsageLedgerStore implements UsageLedgerStore {
       policy_violations_detected INTEGER NOT NULL DEFAULT 0, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,
       reader_did TEXT,
       PRIMARY KEY (period, operator_key_id));`);
-    const columns = this.db.prepare("PRAGMA table_info(usage_ledger)").all() as Array<{ name: string }>;
-    if (!columns.some((c) => c.name === "reader_did")) {
-      this.db.exec("ALTER TABLE usage_ledger ADD COLUMN reader_did TEXT");
-    }
   }
 
   async get(period: string): Promise<UsageLogPeriod | null> {

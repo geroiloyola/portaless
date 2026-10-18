@@ -48,6 +48,7 @@ import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
+import { migrationStatus } from "../packages/persistence-migrations/src/gate.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
@@ -104,8 +105,41 @@ function scheduleAutoEmit(context, env, operatorKeyId) {
   // self-host: el runtime no expone waitUntil; el task sigue su curso solo.
 }
 
+let migrationsCheckedAt = 0;
+let migrationsBlock = null;
+
+/** Gate de migraciones cacheado (10s). Devuelve una Response 503 o null. */
+async function migrationsGate(env) {
+  const now = Date.now();
+  if (now - migrationsCheckedAt < 10_000) return migrationsBlock;
+  migrationsCheckedAt = now;
+  migrationsBlock = null;
+  try {
+    const status = await migrationStatus(env);
+    if (status && (status.pending || status.newer)) {
+      migrationsBlock = new Response(
+        JSON.stringify({
+          error: status.newer ? "database_newer_than_code" : "pending_database_migrations",
+          message: status.newer
+            ? `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: actualiza el codigo antes de servir.`
+            : `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: corre las migraciones (npm run migrate, o wrangler d1 migrations apply en Cloudflare).`,
+        }),
+        { status: 503, headers: { "content-type": "application/json" } },
+      );
+    }
+  } catch {
+    /* sin base o error de lectura: no bloquear (el arranque ya es fail-closed) */
+  }
+  return migrationsBlock;
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
+  // GATE de migraciones (fail-closed): si la base esta detras del codigo (o
+  // adelante), 503 en vez de dejar que una columna ausente rompa una query a
+  // mitad de camino. Se cachea 10s para no leer la base en cada request.
+  const migrationsBlock = await migrationsGate(env);
+  if (migrationsBlock) return migrationsBlock;
   // REDIRECTS de las URLs legadas (Fase 3): 301 en el punto de entrada comun.
   // El mapa es FIJO (src/lib/routes.ts, LEGACY_ROUTES) y no tiene open redirect:
   // matching por tabla, slug validado, query preservado. En GitHub Pages (sin

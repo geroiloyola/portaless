@@ -40,15 +40,6 @@ const USERS_DDL = `
   )
 `;
 
-const USERS_ADD_COLUMNS_DDL = [
-  "ALTER TABLE users ADD COLUMN email TEXT",
-  "ALTER TABLE users ADD COLUMN provider TEXT",
-  "ALTER TABLE users ADD COLUMN totp_secret TEXT",
-  "ALTER TABLE users ADD COLUMN totp_enabled_at TEXT",
-  "ALTER TABLE users ADD COLUMN oauth_provider TEXT",
-  "ALTER TABLE users ADD COLUMN oauth_subject TEXT",
-];
-
 const USERS_OAUTH_INDEX_DDL =
   "CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject)";
 
@@ -101,13 +92,8 @@ export class D1UsersStore implements UsersStore {
   private ensure() {
     return (this.ready ??= (async () => {
       await this.db.prepare(USERS_DDL).bind().run();
-      for (const alter of USERS_ADD_COLUMNS_DDL) {
-        try {
-          await this.db.prepare(alter).bind().run();
-        } catch (err) {
-          if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
-        }
-      }
+      // Las columnas agregadas a bases viejas viven en la migracion numerada v3
+      // (packages/persistence-migrations); el runner corre en el arranque.
       await this.db.prepare(USERS_OAUTH_INDEX_DDL).bind().run();
     })());
   }

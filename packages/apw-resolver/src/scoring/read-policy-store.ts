@@ -68,6 +68,7 @@ export const READ_POLICIES_DDL = `CREATE TABLE IF NOT EXISTS site_trust_read_pol
     min_r05 REAL NOT NULL DEFAULT 5.0 CHECK (min_r05 >= 1 AND min_r05 <= 7),
     min_r05_weight REAL NOT NULL DEFAULT 2.0 CHECK (min_r05_weight >= 0),
     on_fail TEXT NOT NULL DEFAULT '403' CHECK (on_fail IN ('401', '402', '403')),
+    public_overrides TEXT,
     updated_at TEXT NOT NULL,
     updated_by TEXT NOT NULL
   )`;
@@ -182,7 +183,6 @@ const UPSERT_SQL = `INSERT INTO site_trust_read_policies
     updated_by = excluded.updated_by`;
 
 /** A.6: la columna del override se agrega sola a bases creadas antes de existir. */
-const ADD_PUBLIC_OVERRIDES_COLUMN_SQL = "ALTER TABLE site_trust_read_policies ADD COLUMN public_overrides TEXT";
 
 function isDuplicateColumnError(err: unknown): boolean {
   return /duplicate column/i.test(String((err as Error)?.message));
@@ -197,11 +197,6 @@ export class SqlReadPolicyStore implements ReadPolicyStore {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
         await this.sql.run(READ_POLICIES_DDL);
-        try {
-          await this.sql.run(ADD_PUBLIC_OVERRIDES_COLUMN_SQL);
-        } catch (err) {
-          if (!isDuplicateColumnError(err)) throw err;
-        }
       })();
       this.schemaReady.catch(() => {
         this.schemaReady = null;

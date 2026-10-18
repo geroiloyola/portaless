@@ -132,16 +132,6 @@ export interface SiteTrustSnapshot {
 /** Lo lanzan recordAgentVerification / recordEscrowReport si el jti ya existe para ese emisor. */
 export const DUPLICATE_ATTESTATION_JTI = "duplicate_attestation_jti";
 
-/** Columnas nuevas para bases anteriores a E-4/E-5. En una base nueva el ALTER falla con "duplicate column" y se ignora. */
-export const ATTESTATION_COLUMN_MIGRATIONS = [
-  "ALTER TABLE site_trust_agent_verifications ADD COLUMN attestation_jws TEXT",
-  "ALTER TABLE site_trust_agent_verifications ADD COLUMN attestation_jti TEXT",
-  "ALTER TABLE site_trust_escrow_reports ADD COLUMN attestation_jws TEXT",
-  "ALTER TABLE site_trust_escrow_reports ADD COLUMN attestation_jti TEXT",
-  "ALTER TABLE site_trust_self_evaluations ADD COLUMN attestation_jws TEXT",
-  "ALTER TABLE site_trust_self_evaluations ADD COLUMN attestation_jti TEXT",
-];
-
 export const ATTESTATION_INDEXES = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_site_trust_agent_jti ON site_trust_agent_verifications(agent_key_id, attestation_jti) WHERE attestation_jti IS NOT NULL",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_site_trust_escrow_jti ON site_trust_escrow_reports(escrow_provider, attestation_jti) WHERE attestation_jti IS NOT NULL",

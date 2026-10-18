@@ -172,10 +172,6 @@ const KEYS_TABLE_DDL = `CREATE TABLE IF NOT EXISTS site_identity_keys (
 // Para bases creadas por el PR #71 (sin key_id / key_sequence). En una base
 // nueva el CREATE TABLE ya las trae y el ALTER falla con "duplicate column",
 // que se ignora.
-const KEYS_ADD_COLUMNS_DDL = [
-  "ALTER TABLE site_identity_keys ADD COLUMN key_id TEXT",
-  "ALTER TABLE site_identity_keys ADD COLUMN key_sequence INTEGER",
-];
 
 const KEYS_INDEX_DDL = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_site_identity_keys_active ON site_identity_keys(site_id) WHERE valid_to IS NULL",
@@ -236,13 +232,6 @@ export class SqlSiteIdentityStore implements SiteIdentityStore {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
         await this.sql.run(KEYS_TABLE_DDL);
-        for (const alter of KEYS_ADD_COLUMNS_DDL) {
-          try {
-            await this.sql.run(alter);
-          } catch (err) {
-            if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
-          }
-        }
         for (const ddl of KEYS_INDEX_DDL) await this.sql.run(ddl);
       })();
       this.schemaReady.catch(() => {

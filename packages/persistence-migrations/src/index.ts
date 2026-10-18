@@ -24,10 +24,54 @@ export interface Migration {
   name: string;
   /** Statements idempotentes. Vacio en el baseline (lo cubre schema.sql). */
   statements: string[];
+  /**
+   * Columnas a agregar de forma IDEMPOTENTE (el runner chequea la columna con
+   * `pragma_table_info` antes de ALTER ... ADD COLUMN). Es como se consolidan
+   * los `ALTER TABLE` que antes vivian dispersos en cada store.
+   */
+  addColumns?: Array<{ table: string; column: string; type: string }>;
 }
+
+/** Columnas historicas (consolidadas desde los stores, ver v2/v3). */
+const IDENTITY_AND_ATTESTATION_COLUMNS = [
+  { table: "site_identity_keys", column: "key_id", type: "TEXT" },
+  { table: "site_identity_keys", column: "key_sequence", type: "INTEGER" },
+  { table: "site_attestation_log", column: "att_jws", type: "TEXT" },
+  { table: "site_trust_agent_verifications", column: "attestation_jti", type: "TEXT" },
+  { table: "site_trust_agent_verifications", column: "attestation_jws", type: "TEXT" },
+  { table: "site_trust_escrow_reports", column: "attestation_jti", type: "TEXT" },
+  { table: "site_trust_escrow_reports", column: "attestation_jws", type: "TEXT" },
+  { table: "site_trust_self_evaluations", column: "attestation_jti", type: "TEXT" },
+  { table: "site_trust_self_evaluations", column: "attestation_jws", type: "TEXT" },
+  { table: "site_trust_read_policies", column: "public_overrides", type: "TEXT" },
+  { table: "usage_ledger", column: "reader_did", type: "TEXT" },
+  { table: "authorized_escrow_providers", column: "public_key_jwk", type: "TEXT" },
+];
+
+const USER_AND_PLUGIN_COLUMNS = [
+  { table: "users", column: "email", type: "TEXT" },
+  { table: "users", column: "provider", type: "TEXT" },
+  { table: "users", column: "totp_secret", type: "TEXT" },
+  { table: "users", column: "totp_enabled_at", type: "TEXT" },
+  { table: "users", column: "oauth_provider", type: "TEXT" },
+  { table: "users", column: "oauth_subject", type: "TEXT" },
+  { table: "plugin_artifacts", column: "manifest_json", type: "TEXT" },
+];
 
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "baseline", statements: [] },
+  {
+    version: 2,
+    name: "identity_and_attestation_columns",
+    statements: [],
+    addColumns: IDENTITY_AND_ATTESTATION_COLUMNS,
+  },
+  {
+    version: 3,
+    name: "user_and_plugin_columns",
+    statements: [],
+    addColumns: USER_AND_PLUGIN_COLUMNS,
+  },
 ];
 
 /** Version del schema que ESTE codigo espera (el maximo de MIGRATIONS). */

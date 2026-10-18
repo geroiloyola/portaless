@@ -25,6 +25,7 @@ import { InMemoryUsersStore } from "../../packages/auth/src/users-store";
 import { verifyPassword } from "../../packages/auth/src/password";
 import { AuthService } from "../../packages/auth/src/auth-service";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
+import { migrateSqlite } from "../../packages/persistence-migrations/src/runner";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => { while (cleanup.length) cleanup.pop()!(); });
@@ -170,6 +171,7 @@ describe("SqliteUsersStore (base vieja de 4 columnas)", () => {
   it("agrega las columnas nuevas solas y conserva la fila existente", async () => {
     const path = tempDbPath();
     await seedLegacyUsersTable(path);
+    await migrateSqlite(path); // las columnas nuevas las aplica la migracion v3
     const store = await SqliteUsersStore.open(path);
 
     const legacy = await store.findByUsername("legacy-admin");
@@ -203,6 +205,7 @@ describe("D1UsersStore (D1 fake sobre better-sqlite3)", () => {
   it("migra una base vieja de 4 columnas sin perder la fila existente", async () => {
     const path = tempDbPath();
     await seedLegacyUsersTable(path);
+    await migrateSqlite(path); // las columnas nuevas las aplica la migracion v3
     const db = await openSqlite(path);
     const store = new D1UsersStore(fakeD1(db));
 

@@ -61,13 +61,7 @@ export class D1UsageLedgerStore implements UsageLedgerStore {
 
   async put(period: string, data: UsageLogPeriod): Promise<void> {
     for (const agent of data.agents) {
-      try {
-        await this.upsert(period, agent);
-      } catch (err) {
-        if (!MISSING_COLUMN_RE.test(String((err as Error)?.message ?? err))) throw err;
-        await this.db.prepare("ALTER TABLE usage_ledger ADD COLUMN reader_did TEXT").bind().run().catch(() => undefined);
-        await this.upsert(period, agent);
-      }
+      await this.upsert(period, agent);
     }
   }
 }

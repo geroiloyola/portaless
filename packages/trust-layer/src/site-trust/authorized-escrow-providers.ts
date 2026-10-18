@@ -87,7 +87,6 @@ export interface D1DatabaseLike {
 
 export const INVALID_PUBLIC_KEY_JWK = "invalid_public_key_jwk";
 
-const ADD_PUBLIC_KEY_COLUMN_SQL = "ALTER TABLE authorized_escrow_providers ADD COLUMN public_key_jwk TEXT";
 const SET_PUBLIC_KEY_SQL = "UPDATE authorized_escrow_providers SET public_key_jwk = ? WHERE provider_id = ?";
 
 function isDuplicateColumnError(err: unknown): boolean {
@@ -201,11 +200,6 @@ export class D1AuthorizedEscrowProvidersStore implements AuthorizedEscrowProvide
   private ensureSchema(): Promise<void> {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
-        try {
-          await this.db.prepare(ADD_PUBLIC_KEY_COLUMN_SQL).bind().run();
-        } catch (err) {
-          if (!isDuplicateColumnError(err)) throw err;
-        }
       })();
       this.schemaReady.catch(() => {
         this.schemaReady = null;
@@ -304,14 +298,10 @@ export class SqliteAuthorizedEscrowProvidersStore implements AuthorizedEscrowPro
         display_name TEXT NOT NULL,
         active INTEGER NOT NULL DEFAULT 1,
         authorized_at TEXT NOT NULL,
-        authorized_by TEXT NOT NULL
+        authorized_by TEXT NOT NULL,
+        public_key_jwk TEXT
       );
     `);
-    try {
-      this.db.exec(ADD_PUBLIC_KEY_COLUMN_SQL);
-    } catch (err) {
-      if (!isDuplicateColumnError(err)) throw err;
-    }
   }
 
   async isAuthorized(providerId: string, apiKeyHash: string): Promise<boolean> {

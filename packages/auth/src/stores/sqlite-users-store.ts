@@ -51,17 +51,9 @@ const USERS_DDL = `
   );
 `;
 
-// Para bases creadas antes de v0.0.9.10 (solo 4 columnas). En una base
-// nueva el CREATE TABLE ya las trae y el ALTER falla con "duplicate
-// column", que se ignora.
-const USERS_ADD_COLUMNS_DDL = [
-  "ALTER TABLE users ADD COLUMN email TEXT",
-  "ALTER TABLE users ADD COLUMN provider TEXT",
-  "ALTER TABLE users ADD COLUMN totp_secret TEXT",
-  "ALTER TABLE users ADD COLUMN totp_enabled_at TEXT",
-  "ALTER TABLE users ADD COLUMN oauth_provider TEXT",
-  "ALTER TABLE users ADD COLUMN oauth_subject TEXT",
-];
+// Las columnas agregadas a bases creadas antes de v0.0.9.10 viven ahora en la
+// migracion numerada v3 (packages/persistence-migrations/src/index.ts). El
+// CREATE TABLE de arriba ya las trae para una base nueva.
 
 const USERS_OAUTH_INDEX_DDL =
   "CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject)";
@@ -110,13 +102,9 @@ export class SqliteUsersStore implements UsersStore {
     }
     this.db = db;
     this.db.exec(USERS_DDL);
-    for (const alter of USERS_ADD_COLUMNS_DDL) {
-      try {
-        this.db.exec(alter);
-      } catch (err) {
-        if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
-      }
-    }
+    // Las columnas que antes se agregaban con ALTER TABLE dispersos viven ahora
+    // en la migracion numerada v3 (packages/persistence-migrations). El runner
+    // corre en el arranque (server/first-run.mjs) antes de abrir los stores.
     this.db.exec(USERS_OAUTH_INDEX_DDL);
   }
 

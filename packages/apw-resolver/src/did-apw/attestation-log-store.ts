@@ -69,9 +69,7 @@ const TABLE_DDL = `CREATE TABLE IF NOT EXISTS site_attestation_log (
 
 const INDEX_DDL = 'CREATE UNIQUE INDEX IF NOT EXISTS idx_site_attestation_log_att ON site_attestation_log(site_id, att_hash)';
 
-/** Para bases creadas antes de E-9. En una base nueva falla con "duplicate column" y se ignora. */
-export const ATTESTATION_LOG_ADD_COLUMNS = ['ALTER TABLE site_attestation_log ADD COLUMN att_jws TEXT'];
-
+/** Columnas nuevas para bases creadas antes de E-9: viven en la migracion numerada v2. */
 export const ATTESTATION_LOG_DDL = [TABLE_DDL, INDEX_DDL];
 
 const COLUMNS = 'site_id, seq, entry_jws, entry_hash, prev_hash, att_hash, kid, ts, att_jws';
@@ -99,13 +97,6 @@ export class SqlAttestationLogStore implements AttestationLogStore {
     if (!this.schemaReady) {
       this.schemaReady = (async () => {
         await this.sql.run(TABLE_DDL);
-        for (const alter of ATTESTATION_LOG_ADD_COLUMNS) {
-          try {
-            await this.sql.run(alter);
-          } catch (err) {
-            if (!/duplicate column/i.test(String((err as Error)?.message))) throw err;
-          }
-        }
         await this.sql.run(INDEX_DDL);
       })();
       this.schemaReady.catch(() => {

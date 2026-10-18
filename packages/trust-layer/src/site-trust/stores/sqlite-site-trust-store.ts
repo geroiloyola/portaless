@@ -30,7 +30,6 @@ import type {
   EscrowTransactionOutcome,
 } from "../site-trust-score";
 import {
-  ATTESTATION_COLUMN_MIGRATIONS,
   ATTESTATION_INDEXES,
   DUPLICATE_ATTESTATION_JTI,
   isDuplicateColumnError,
@@ -157,6 +156,8 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
         evidence_url TEXT,
         declared_by TEXT NOT NULL,
         declared_at TEXT NOT NULL,
+        attestation_jws TEXT,
+        attestation_jti TEXT,
         PRIMARY KEY (site_id, category)
       );
       CREATE TABLE IF NOT EXISTS site_trust_agent_verifications (
@@ -166,6 +167,8 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
         detail_json TEXT,
         agent_key_id TEXT NOT NULL,
         verified_at TEXT NOT NULL,
+        attestation_jws TEXT,
+        attestation_jti TEXT,
         PRIMARY KEY (site_id, category, agent_key_id, verified_at)
       );
       CREATE TABLE IF NOT EXISTS site_trust_community_votes (
@@ -186,16 +189,11 @@ export class SqliteSiteTrustScoreStore implements SiteTrustScoreStore {
         escrow_provider TEXT NOT NULL,
         amount_currency TEXT,
         reported_at TEXT NOT NULL,
+        attestation_jws TEXT,
+        attestation_jti TEXT,
         PRIMARY KEY (site_id, escrow_provider, reported_at)
       );
     `);
-    for (const sql of ATTESTATION_COLUMN_MIGRATIONS) {
-      try {
-        this.db.exec(sql);
-      } catch (err) {
-        if (!isDuplicateColumnError(err)) throw err;
-      }
-    }
     for (const sql of ATTESTATION_INDEXES) this.db.exec(sql);
   }
 
