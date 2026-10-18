@@ -2,11 +2,11 @@
 // idioma) y el compartir se queda DONDE ESTA (ultimo, pegado a la derecha).
 // En desktop nada cambia: se ve el texto y los iconos quedan ocultos. Se cubren
 // las dos superficies del header: una pagina estatica (home) y el shell runtime
-// (/paginas/...), que comparten la misma fuente (NAV_ICONS/navIconHtml).
+// (/pages/...), que comparten la misma fuente (NAV_ICONS/navIconHtml).
 import { test, expect, type Page } from "@playwright/test";
 
 const HOME_URL = "/";
-const RUNTIME_URL = "/paginas/jerry-bantz/";
+const RUNTIME_URL = "/pages/jerry-bantz/";
 
 async function navTxtHidden(page: Page, href: string): Promise<boolean> {
   return page.evaluate((h) => {

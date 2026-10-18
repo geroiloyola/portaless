@@ -19,9 +19,9 @@
 import { LOCALES, localePath, type Locale } from "./i18n";
 
 export const ROUTES = {
-  PAGES: "/paginas",
-  SHOP: "/tienda",
-  PROJECTIONS: "/proyecciones",
+  PAGES: "/pages",
+  SHOP: "/shop",
+  PROJECTIONS: "/projections",
   BETA: "/beta",
   DOCS: "/docs",
   EXPLORE: "/explore",
@@ -42,7 +42,7 @@ export function systemHref(name: RouteName, locale: Locale = "en", base = "/"): 
 /**
  * Ruta de una pagina de contenido del usuario. Sin locale = version PRIMARIA
  * (idioma de autoria, ruta sin prefijo); con locale = una traduccion bajo su
- * prefijo, ej. contentPagePath("bio", "es") -> "/es/paginas/bio/".
+ * prefijo, ej. contentPagePath("bio", "es") -> "/es/pages/bio/".
  */
 export function contentPagePath(slug: string, locale?: Locale): string {
   // Un slug puede anidar segmentos (a/b); los segmentos de traversal se
@@ -78,35 +78,35 @@ const SLUG = "[A-Za-z0-9][A-Za-z0-9._-]{0,79}";
 
 export const LEGACY_ROUTES: LegacyRedirect[] = [
   // Contenido del usuario: /paginas/:slug/ y /<locale>/paginas/:slug/
-  // (incluye /en/paginas/... de la demo anterior: /en -> sin prefijo).
+  // /en/paginas era la version ingles anterior -> la canonica (sin prefijo).
   {
     from: new RegExp(`^/(${LOCALE_SEGMENT})/paginas/(${SLUG})/?$`),
     to: (m) => {
       const locale = m[1];
       const slug = m[2];
-      return locale === "en" ? `/paginas/${slug}/` : `/${locale}/paginas/${slug}/`;
+      return locale === "en" ? `/pages/${slug}/` : `/${locale}/pages/${slug}/`;
     },
   },
   {
     from: new RegExp(`^/paginas/(${SLUG})/?$`),
-    to: (m) => `/paginas/${m[1]}/`,
+    to: (m) => `/pages/${m[1]}/`,
   },
-  // tienda: la raiz vieja era espanol (=> /es/tienda/); un handle va a /tienda/:handle/
-  { from: /^\/tienda\/?$/, to: () => "/es/tienda/" },
+  // tienda: la raiz vieja era espanol (=> /es/shop/); un handle va a /shop/:handle/
+  { from: /^\/tienda\/?$/, to: () => "/es/shop/" },
   {
     from: new RegExp(`^/tienda/(${SLUG})/?$`),
-    to: (m) => `/tienda/${m[1]}/`,
+    to: (m) => `/shop/${m[1]}/`,
   },
   // /en/tienda (version ingles anterior) -> la raiz nueva (ingles sin prefijo)
-  { from: /^\/en\/tienda\/?$/, to: () => "/tienda/" },
-  // proyecciones: la vieja raiz era espanol (=> /es/proyecciones/); /en -> canonica
-  { from: /^\/proyecciones\/?$/, to: () => "/es/proyecciones/" },
-  { from: /^\/en\/proyecciones\/?$/, to: () => "/proyecciones/" },
+  { from: /^\/en\/tienda\/?$/, to: () => "/shop/" },
+  // proyecciones: la vieja raiz era espanol (=> /es/projections/); /en -> canonica
+  { from: /^\/proyecciones\/?$/, to: () => "/es/projections/" },
+  { from: /^\/en\/proyecciones\/?$/, to: () => "/projections/" },
   // beta: /en/beta -> canonica (/beta ahora es ingles, sin prefijo)
   { from: /^\/en\/beta\/?$/, to: () => "/beta/" },
   // docs renombrado
-  { from: /^\/docs\/primos-pasos\/?$/, to: () => "/docs/primos-pasos/" },
-  { from: /^\/docs\/primos-pasos\.md$/, to: () => "/docs/primos-pasos.md" },
+  { from: /^\/docs\/primos-pasos\/?$/, to: () => "/docs/first-steps/" },
+  { from: /^\/docs\/primos-pasos\.md$/, to: () => "/docs/first-steps.md" },
 ];
 
 /** Resuelve una URL legada a su destino nuevo. @returns null si no hay redirect. */

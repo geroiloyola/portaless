@@ -1,6 +1,6 @@
 // Enlaces y assets internos escritos a mano en superficies PUBLICAS (.astro)
 // tienen que pasar por import.meta.env.BASE_URL. Astro NO reescribe los strings
-// literales, asi que un `href="/paginas/x/"` funciona en dev (base "/") y da 404
+// literales, asi que un `href="/pages/x/"` funciona en dev (base "/") y da 404
 // en un deploy con subpath (GitHub Pages /portaless/). El bug de beta.astro:25
 // ("Ver el sitio de ejemplo") fue exactamente eso: el fix previo cubria el
 // pipeline de contenido JSON, pero este archivo escrito a mano quedo afuera.

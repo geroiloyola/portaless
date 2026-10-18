@@ -1,0 +1,9 @@
+---
+// /projections (version canonica en ingles: DEFAULT_LOCALE = "en").
+// La version en espanol vive en /es/projections/.
+import ProjectionsPage from "../components/ProjectionsPage.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<ProjectionsPage locale="en" alternateHref={`${base}es/projections/`} alternateHreflang="es" />

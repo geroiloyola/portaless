@@ -7,7 +7,7 @@
 // pocas lineas, y si la base no esta disponible delega con next() al
 // archivo que emite el build (src/pages/api/analytics.ts).
 //
-// Mismo patron que functions/llms.txt.js y functions/paginas/[slug].js:
+// Mismo patron que functions/llms.txt.js y functions/pages/[slug].js:
 // hosting con funciones (self-host, Cloudflare Pages) lee la base;
 // GitHub Pages se queda con el build, donde el operador puede fijar la
 // config con PORTALESS_ANALYTICS_* antes de construir.

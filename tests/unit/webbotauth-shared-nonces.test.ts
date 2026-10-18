@@ -47,7 +47,7 @@ async function buildSignedRequest(
   privateKey: CryptoKey,
   opts: { nonce: string; created?: number; expires?: number; url?: string }
 ): Promise<Request> {
-  const url = opts.url ?? "https://mysite.example/paginas/foo";
+  const url = opts.url ?? "https://mysite.example/pages/foo";
   const created = opts.created ?? Math.floor(Date.now() / 1000);
   const expires = opts.expires ?? created + 300;
   const agentHeader = `"${OPERATOR_ORIGIN}"`;

@@ -24,15 +24,15 @@ const BASE = buildLlmsTxt({
   summary: "Resumen",
   sections: [
     { heading: "Posts", links: [{ title: "Hola", url: "https://a.com/blog/hola.md" }] },
-    { heading: "Páginas", links: [{ title: "Términos", url: "https://a.com/paginas/terminos" }] },
+    { heading: "Páginas", links: [{ title: "Términos", url: "https://a.com/pages/terminos" }] },
   ],
   optional: [{ title: "Feed RSS del blog", url: "https://a.com/rss.xml" }],
 });
 
-const toUrl = (slug: string) => `https://a.com/paginas/${slug}`;
+const toUrl = (slug: string) => `https://a.com/pages/${slug}`;
 
 describe("listedPageSlugs", () => {
-  it("extrae los slugs ya listados en /paginas/<slug>", () => {
+  it("extrae los slugs ya listados en /pages/<slug>", () => {
     expect([...listedPageSlugs(BASE)]).toEqual(["terminos"]);
     expect([...listedPageSlugs("# S\n")]).toEqual([]);
   });
@@ -44,7 +44,7 @@ describe("appendLlmsTxtSection", () => {
       heading: "Páginas del editor",
       links: [{ title: "Contacto", url: toUrl("contacto"), note: "Formulario" }],
     });
-    expect(out).toContain("## Páginas del editor\n\n- [Contacto](https://a.com/paginas/contacto): Formulario\n\n## Optional");
+    expect(out).toContain("## Páginas del editor\n\n- [Contacto](https://a.com/pages/contacto): Formulario\n\n## Optional");
     expect(out.trimEnd().endsWith("## Optional")).toBe(false);
     expect(out.endsWith("## Optional\n\n- [Feed RSS del blog](https://a.com/rss.xml)\n")).toBe(true);
   });
@@ -70,10 +70,10 @@ describe("mergeDbPagesIntoLlmsTxt", () => {
       ],
       toUrl
     );
-    expect(out).toContain("- [Contacto](https://a.com/paginas/contacto): Escribime");
-    expect(out).toContain("- [sin-titulo](https://a.com/paginas/sin-titulo)");
+    expect(out).toContain("- [Contacto](https://a.com/pages/contacto): Escribime");
+    expect(out).toContain("- [sin-titulo](https://a.com/pages/sin-titulo)");
     // Dedupe: "terminos" ya lo listaba el build, no se repite.
-    expect(out.match(/\/paginas\/terminos/g)?.length).toBe(1);
+    expect(out.match(/\/pages\/terminos/g)?.length).toBe(1);
     // Sin titulo usa el slug como texto del link.
     expect(out).toContain("- [sin-titulo]");
   });
@@ -90,7 +90,7 @@ describe("mergeDbPagesIntoLlmsTxt", () => {
       [{ slug: "", title: "x" }, { slug: "a", title: "A" }, { slug: "a", title: "A de nuevo" }],
       toUrl
     );
-    expect(out.match(/paginas\/a\)/g)?.length).toBe(1);
+    expect(out.match(/pages\/a\)/g)?.length).toBe(1);
     expect(out).not.toContain("A de nuevo");
   });
 });
@@ -142,7 +142,7 @@ describe("GET /llms.txt (runtime dinamico)", () => {
     expect(res.headers.get("content-type")).toContain("text/plain");
     const text = await res.text();
     expect(text).toContain("## Posts"); // lo del build queda igual
-    expect(text).toContain("- [Pagina Desde La Base](https://a.com/paginas/desde-la-base): Descripcion dinamica");
+    expect(text).toContain("- [Pagina Desde La Base](https://a.com/pages/desde-la-base): Descripcion dinamica");
     expect(text).toContain("## Optional");
   });
 
@@ -173,6 +173,6 @@ describe("GET /llms.txt (runtime dinamico)", () => {
   it("usa el origen pedido si no hay PORTALESS_SITE_URL", async () => {
     const { context } = ctx({ env: { PORTALESS_SQLITE_PATH: DB }, url: "https://otro.test/llms.txt" });
     const res = await onRequestGet(context);
-    expect(await res.text()).toContain("(https://otro.test/paginas/desde-la-base)");
+    expect(await res.text()).toContain("(https://otro.test/pages/desde-la-base)");
   });
 });

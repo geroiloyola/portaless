@@ -5,7 +5,7 @@
 // footer TrustScore · Explore · Powered by Portaless.
 import { test, expect } from "@playwright/test";
 
-const BIO_URL = "/paginas/jerry-bantz/";
+const BIO_URL = "/pages/jerry-bantz/";
 
 test("el boton compartir copia la URL al portapapeles y avisa", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -22,7 +22,7 @@ test("el boton compartir copia la URL al portapapeles y avisa", async ({ page, c
 
   await expect(page.getByRole("status")).toHaveText("Enlace copiado");
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain("/paginas/jerry-bantz/");
+  expect(copied).toContain("/pages/jerry-bantz/");
 });
 
 test("header dice Publicaciones (nunca Blog) y trae el indice si hay posts", async ({ page }) => {
@@ -36,7 +36,7 @@ test("header dice Publicaciones (nunca Blog) y trae el indice si hay posts", asy
   // el compartir en el rincon del header.
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
   await expect(page.locator("header.site-header [data-portaless-volume]")).toHaveCount(0);
-  await expect(page.locator("header.site-header a.header-icon-btn[href='/tienda/']")).toHaveCount(0);
+  await expect(page.locator("header.site-header a.header-icon-btn[href='/shop/']")).toHaveCount(0);
 });
 
 test("el selector de idioma es un control accionable, alineado a la derecha (en el home)", async ({ page }) => {
@@ -79,79 +79,79 @@ test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto 
 });
 
 test("una pagina con traduccion: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
-  // /paginas/ejemplo-atomic-elements/ es espanol y tiene version en ingles:
-  // el switcher va a esa version (misma pagina), nunca al home.
-  await page.goto("/paginas/ejemplo-atomic-elements/");
+  // La primaria (espanol) vive en /pages/ejemplo-atomic-elements/ y su ingles
+  // en /en/pages/... -- el idioma de autoria es la ruta principal, sin prefijo.
+  await page.goto("/pages/ejemplo-atomic-elements/");
 
   const pill = page.locator("header.site-header .header-right a.header-lang");
-  await expect(pill).toHaveAttribute("href", /\/en\/paginas\/ejemplo-atomic-elements\/$/);
+  await expect(pill).toHaveAttribute("href", /\/en\/pages\/ejemplo-atomic-elements\/$/);
   await expect(pill).toHaveAttribute("hreflang", "en");
   // Sin aviso: hay traduccion real.
   await expect(page.locator("header.site-header .header-lang-notice")).toHaveCount(0);
 
   // Y la version en ingles vuelve a la espanola.
-  await page.goto("/en/paginas/ejemplo-atomic-elements/");
+  await page.goto("/en/pages/ejemplo-atomic-elements/");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/paginas\/ejemplo-atomic-elements\/$/
+    /\/pages\/ejemplo-atomic-elements\/$/
   );
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
 test("beta es bilingue: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
-  await page.goto("/beta/");
+  await page.goto("/es/beta/");
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await expect(page.locator("h1")).toContainText("Sitios verificables");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/en\/beta\/$/
+    /\/beta\/$/
   );
 
-  await page.goto("/en/beta/");
+  await page.goto("/beta/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("h1")).toContainText("Verifiable sites");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/beta\/$/
+    /\/es\/beta\/$/
   );
 });
 
 test("proyecciones es bilingue: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
-  await page.goto("/proyecciones/");
+  await page.goto("/es/projections/");
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await expect(page.locator("h1")).toContainText("Un canon, cinco proyecciones");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/en\/proyecciones\/$/
+    /\/projections\/$/
   );
 
-  await page.goto("/en/proyecciones/");
+  await page.goto("/projections/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("h1")).toContainText("One canon, five projections");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/proyecciones\/$/
+    /\/es\/projections\/$/
   );
 });
 
 test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {
-  await page.goto("/paginas/lanzamiento/");
+  await page.goto("/pages/lanzamiento/");
 
   await expect(page.locator("header.site-header [data-portaless-volume]")).toBeVisible();
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
 test("Atomic Icons Responsive: pagina de shop lleva el carrito al rincon", async ({ page }) => {
-  await page.goto("/paginas/link-in-bio/");
+  await page.goto("/pages/link-in-bio/");
 
-  const cart = page.locator("header.site-header a.header-icon-btn[href='/tienda/']");
+  const cart = page.locator("header.site-header a.header-icon-btn[href='/shop/']");
   await expect(cart).toBeVisible();
   await expect(cart).toHaveAttribute("aria-label", "Ir a la tienda");
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
 test("Atomic Icons Responsive: pagina con mapa lleva icono de como llegar", async ({ page }) => {
-  await page.goto("/paginas/ejemplo-atomic-elements/");
+  await page.goto("/pages/ejemplo-atomic-elements/");
 
   const dir = page.locator("header.site-header a.header-icon-btn[href='#ae-map']");
   await expect(dir).toBeVisible();

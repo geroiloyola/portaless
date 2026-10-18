@@ -28,7 +28,7 @@ async function ed25519() {
   };
 }
 
-const entry = (slug: string): PagesDocumentEntry => ({ kind: "page", slug, title: slug, url: `https://example.com/paginas/${slug}/`, publishedAt: "2026-10-01T00:00:00.000Z" });
+const entry = (slug: string): PagesDocumentEntry => ({ kind: "page", slug, title: slug, url: `https://example.com/pages/${slug}/`, publishedAt: "2026-10-01T00:00:00.000Z" });
 
 describe("documento firmado de páginas", () => {
   it("idempotente y ordenado: mismo conjunto, mismos bytes", () => {

@@ -4,7 +4,7 @@
 // BaseLayout pide siempre. En self-host y Cloudflare Pages lo reemplaza en
 // runtime functions/api/analytics.js, que lee la tabla site_settings (lo que el
 // admin configuro en /admin/analytics) -- mismo patron de fallback que
-// functions/paginas/[slug].js.
+// functions/pages/[slug].js.
 //
 // Configuracion en build via variables de entorno (para el operador que no
 // tiene functions, o que quiere la config fija antes de publicar):

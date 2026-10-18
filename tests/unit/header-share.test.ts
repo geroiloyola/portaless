@@ -18,7 +18,7 @@ import { headerActionsHtml } from "../../src/lib/atomic-responsive-icons";
 
 const root = join(__dirname, "../..");
 const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
-const shellSrc = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
+const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
 const profileHtml = elementRegistry.ProfileHeader.renderHTML({
   avatarUrl: "/avatars/jerry-bantz.svg",

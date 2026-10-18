@@ -19,7 +19,7 @@ describe("isPublicBotRoute", () => {
   });
 
   it("no deja pasar contenido ni admin", () => {
-    for (const path of ["/", "/blog/hola/", "/blog/hola", "/paginas/inicio", "/admin/", "/llms.txt.bak", "/robots.txt/x", "/blog.md"]) {
+    for (const path of ["/", "/blog/hola/", "/blog/hola", "/pages/inicio", "/admin/", "/llms.txt.bak", "/robots.txt/x", "/blog.md"]) {
       expect(isPublicBotRoute(path), path).toBe(false);
     }
   });

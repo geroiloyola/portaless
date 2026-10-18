@@ -1,0 +1,9 @@
+---
+// /shop (indice, version canonica en ingles: DEFAULT_LOCALE = "en").
+// La version en espanol vive en /es/shop/.
+import StoreIndexPage from "../../components/StoreIndexPage.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<StoreIndexPage locale="en" alternateHref={`${base}es/shop/`} alternateHreflang="es" />

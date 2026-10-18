@@ -131,17 +131,18 @@ describe("URLs del canon", () => {
 });
 
 describe("la demo esta enlazada y sin links rotos", () => {
-  it("existe la pagina /proyecciones/", () => {
-    expect(existsSync(join(root, "src/pages/proyecciones.astro"))).toBe(true);
+  it("existen las dos versiones (/projections/ y /es/projections/)", () => {
+    expect(existsSync(join(root, "src/pages/projections.astro"))).toBe(true);
+    expect(existsSync(join(root, "src/pages/es/projections.astro"))).toBe(true);
   });
 
   it("Explore y el post enlazan a la demo", () => {
-    expect(readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8")).toContain("proyecciones/");
-    expect(readFileSync(join(root, "src/pages/blog/[...slug].astro"), "utf8")).toContain("proyecciones/");
+    expect(readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8")).toContain("projections/");
+    expect(readFileSync(join(root, "src/pages/blog/[...slug].astro"), "utf8")).toContain("projections/");
   });
 
-  it("el sitemap lista /proyecciones/", () => {
-    expect(readFileSync(join(root, "src/pages/sitemap.xml.ts"), "utf8")).toContain('"/proyecciones/"');
+  it("el sitemap lista /es/", () => {
+    expect(readFileSync(join(root, "src/pages/sitemap.xml.ts"), "utf8")).toContain('"/es/"');
   });
 });
 

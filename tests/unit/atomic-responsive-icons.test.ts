@@ -40,7 +40,7 @@ const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "
 // La logica de la pagina de contenido vive en el componente compartido
 // (lo usan la ruta primaria y la de traduccion).
 const slugPageSrc = readFileSync(join(root, "src/components/ContentPage.astro"), "utf8");
-const shellSrc = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
+const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
 describe("deriveHeaderContext -- derivacion del icono principal", () => {
   it("sin contexto (bio, servicios, portafolio...) devuelve null", () => {
@@ -85,13 +85,13 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
     expect(html).toContain('aria-label="Compartir este enlace"');
     expect(html).toContain(ICON_SHARE_IOS);
     expect(html).not.toContain("data-portaless-volume");
-    expect(html).not.toContain("/tienda/");
+    expect(html).not.toContain("/shop/");
     expect(html).not.toContain('cx="18" cy="5"');
   });
 
-  it("shop: carrito primero (a /tienda/) y share al lado", () => {
+  it("shop: carrito primero (a /shop/) y share al lado", () => {
     const html = headerActionsHtml("shop");
-    expect(html).toContain('href="/tienda/"');
+    expect(html).toContain('href="/shop/"');
     expect(html).toContain('aria-label="Ir a la tienda"');
     expect(html).toContain(ICON_SHOPPING_CART);
     expect(html).toContain("data-portaless-share");
@@ -119,7 +119,7 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
   });
 
   it("respeta el prefijo base de rutas (import.meta.env.BASE_URL)", () => {
-    expect(headerActionsHtml("shop", "/sub/")).toContain('href="/sub/tienda/"');
+    expect(headerActionsHtml("shop", "/sub/")).toContain('href="/sub/shop/"');
   });
 });
 
@@ -158,7 +158,7 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
   });
 
   it("el shell runtime emite el AVISO de idioma con la MISMA fuente", () => {
-    // El shell sirve /paginas/*, que no estan localizadas: no lleva el switcher
+    // El shell sirve /pages/*, que no estan localizadas: no lleva el switcher
     // sino el aviso honesto.
     expect(shellSrc).toContain("langNoticeHtml(");
     expect(shellSrc).toContain('<div class="header-right">');
@@ -391,11 +391,11 @@ describe("share iOS + control de volumen", () => {
 
     const localHtml = elementRegistry.ProductCard.renderHTML({
       title: "Merch Oficial",
-      url: "/tienda/polera",
+      url: "/shop/polera",
       buttonLabel: "Comprar",
     });
     expect(localHtml).not.toContain("sponsored");
-    expect(localHtml).toContain('href="/tienda/polera"');
+    expect(localHtml).toContain('href="/shop/polera"');
   });
 
   it("el listener de volumen habla con YouTube y Vimeo via postMessage, sin handlers inline", () => {

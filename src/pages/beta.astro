@@ -1,9 +1,9 @@
 ---
-// /beta (version primaria, espanol). La version en ingles vive en /en/beta/.
-// Ambas renderizan la vista compartida BetaPage (sin duplicar el texto).
+// /beta (version canonica en ingles: DEFAULT_LOCALE = "en").
+// La version en espanol vive en /es/beta/.
 import BetaPage from "../components/BetaPage.astro";
 
 const base = import.meta.env.BASE_URL;
 ---
 
-<BetaPage locale="es" alternateHref={`${base}en/beta/`} alternateHreflang="en" />
+<BetaPage locale="en" alternateHref={`${base}es/beta/`} alternateHreflang="es" />

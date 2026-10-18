@@ -53,7 +53,7 @@ interface SignedRequestOptions {
 }
 
 async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> {
-  const url = "https://mysite.example/paginas/foo";
+  const url = "https://mysite.example/pages/foo";
   const created = opts.created ?? Math.floor(Date.now() / 1000);
   const expires = opts.expires ?? created + 300;
   const agentHeader = `"${OPERATOR_ORIGIN}"`;
@@ -162,7 +162,7 @@ describe("verifyWebBotAuthRequest (middleware) -- ML-DSA", () => {
       }),
     });
 
-    const url = "https://mysite.example/paginas/foo";
+    const url = "https://mysite.example/pages/foo";
     const created = Math.floor(Date.now() / 1000);
     const paramsLine =
       `(${DEFAULT_COMPONENTS});created=${created};expires=${created + 300}` +

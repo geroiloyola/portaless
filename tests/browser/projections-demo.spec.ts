@@ -5,7 +5,7 @@
 // dicen "requiere nodo", nunca verde.
 import { test, expect } from "@playwright/test";
 
-const DEMO_URL = "/proyecciones/";
+const DEMO_URL = "/es/projections/";
 
 test("la demo muestra el canon y sus cinco proyecciones", async ({ page }) => {
   await page.goto(DEMO_URL);

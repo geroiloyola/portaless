@@ -121,10 +121,10 @@ export interface DbPageEntry {
   description?: string;
 }
 
-/** Slug de /paginas/<slug> ya presentes en un llms.txt (para no duplicar). */
+/** Slug de /pages/<slug> ya presentes en un llms.txt (para no duplicar). */
 export function listedPageSlugs(llmsTxt: string): Set<string> {
   const slugs = new Set<string>();
-  const pattern = /\/paginas\/([^)\s/]+)\)/g;
+  const pattern = /\/pages\/([^)\s/]+)\)/g;
   for (const match of llmsTxt.matchAll(pattern)) slugs.add(decodeURIComponent(match[1]));
   return slugs;
 }

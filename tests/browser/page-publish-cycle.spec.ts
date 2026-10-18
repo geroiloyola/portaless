@@ -3,14 +3,14 @@
 // el cambio en self-host sin terminal y sin rebuild.
 //
 // El server de browser tests (scripts/browser-test-server.mjs) sirve las
-// functions REALES del repo (incluida functions/paginas/[slug].js) sobre
+// functions REALES del repo (incluida functions/pages/[slug].js) sobre
 // un SQLite temporal + el build dist/ -- es decir, el flujo real de
 // self-host, no un mock. workers: 1 y orden serial a proposito: el
 // ultimo test borra la pagina que creo para no dejar filas sueltas.
 //
 // Flujo cubierto:
 //   1. login y PUT /admin/pages/:slug (mismo endpoint que el editor);
-//   2. la URL publica /paginas/<slug> sirve el contenido al instante;
+//   2. la URL publica /pages/<slug> sirve el contenido al instante;
 //   3. segundo PUT (edicion) + recarga -> before/after visible sin
 //      publish ni rebuild;
 //   4. /admin/editor: boton "Publicar" y el link "Ver pagina publica"
@@ -68,7 +68,7 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await putPage(page, layout(TITLE_V1, "Hola desde el editor"));
 
   // 2. La URL publica la sirve el runtime al instante (sin publish).
-  await page.goto(`/paginas/${SLUG}`);
+  await page.goto(`/pages/${SLUG}`);
   await expect(page).toHaveTitle(TITLE_V1);
   await expect(page.locator("h1", { hasText: "Hola desde el editor" })).toBeVisible();
   await expect(page.locator("article.ae-page")).toBeVisible();
@@ -86,7 +86,7 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await page.click("#btn-save");
   const viewLink = page.locator("#editor-view-public");
   await expect(viewLink).toBeVisible();
-  await expect(viewLink).toHaveAttribute("href", `/paginas/${SLUG}`);
+  await expect(viewLink).toHaveAttribute("href", `/pages/${SLUG}`);
   await expect(page.locator(".editor-save-status")).toContainText("guardada y publicada");
 
   // 5. Page manager: la pagina figura con titulo y links.
@@ -95,7 +95,7 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await expect(row).toBeVisible();
   await expect(row).toContainText(TITLE_V2);
   await expect(row.locator("a", { hasText: "Editar" })).toHaveAttribute("href", `/admin/editor?slug=${SLUG}`);
-  await expect(row.locator("a", { hasText: "Ver" })).toHaveAttribute("href", `/paginas/${SLUG}`);
+  await expect(row.locator("a", { hasText: "Ver" })).toHaveAttribute("href", `/pages/${SLUG}`);
 
   // Borrar desde el manager (confirm() aceptado) cierra el ciclo inverso.
   page.once("dialog", (dialog) => dialog.accept());
@@ -103,11 +103,11 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await expect(page.locator("tr", { hasText: SLUG })).toHaveCount(0);
 
   // La URL publica deja de servirla: 404 estatico del build.
-  const gone = await page.goto(`/paginas/${SLUG}`);
+  const gone = await page.goto(`/pages/${SLUG}`);
   expect(gone?.status()).toBe(404);
 
   // 6. La pagina estatica de src/content sigue intacta.
-  const staticPage = await page.goto("/paginas/ejemplo-atomic-elements");
+  const staticPage = await page.goto("/pages/ejemplo-atomic-elements");
   expect(staticPage?.status()).toBe(200);
   await expect(page.locator("article.ae-page")).toBeVisible();
 });

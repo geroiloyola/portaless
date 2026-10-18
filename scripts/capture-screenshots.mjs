@@ -54,7 +54,7 @@ try {
   const ctx = await browser.newContext({ viewport: VIEWPORT });
   const page = await ctx.newPage();
 
-  // Sembrar /paginas/link-in-bio en la DB via el mismo PUT del editor
+  // Sembrar /pages/link-in-bio en la DB via el mismo PUT del editor
   // (ademas del build estatico) -- el demo y las capturas sirven la
   // pagina desde la base, como en self-host con Phase 0.5.
   await login(page, base);
@@ -67,21 +67,21 @@ try {
     });
     return r.status;
   }, linkInBio);
-  if (putStatus !== 200) throw new Error(`PUT seed /paginas/link-in-bio fallo: HTTP ${putStatus}`);
+  if (putStatus !== 200) throw new Error(`PUT seed /pages/link-in-bio fallo: HTTP ${putStatus}`);
 
   console.log("[captura] publicas...");
   await shot(page, `${base}/`, "public-home.png", { fullPage: true });
   await shot(page, `${base}/es/`, "public-home-es.png", { fullPage: true });
-  await shot(page, `${base}/paginas/link-in-bio`, "public-link-in-bio.png", { fullPage: true });
+  await shot(page, `${base}/pages/link-in-bio`, "public-link-in-bio.png", { fullPage: true });
   await shot(page, `${base}/blog/`, "public-blog.png", { fullPage: true });
   await shot(page, `${base}/explore/`, "public-explore.png", { fullPage: true });
   await shot(page, `${base}/es/explore/`, "public-explore-es.png", { fullPage: true });
-  await shot(page, `${base}/proyecciones/`, "public-proyecciones.png", { fullPage: true });
+  await shot(page, `${base}/projections/`, "public-projections.png", { fullPage: true });
   await shot(page, `${base}/docs/`, "public-docs.png", { fullPage: true });
   await shot(page, `${base}/docs/protocol-apw/`, "public-docs-detail.png", { fullPage: true });
   // Pagina de contenido con traduccion: el switcher lleva a la MISMA pagina en
   // el otro idioma (no al home).
-  await shot(page, `${base}/paginas/ejemplo-atomic-elements/`, "public-page-translated.png", { fullPage: true });
+  await shot(page, `${base}/pages/ejemplo-atomic-elements/`, "public-page-translated.png", { fullPage: true });
 
   // Header en MOVIL: el menu pasa a iconos (Inicio, Publicaciones, Explorar,
   // idioma) y el compartir se queda a la derecha. Captura del viewport (no

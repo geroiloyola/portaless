@@ -65,12 +65,12 @@ describe("contentPageHref", () => {
   const en: PageVersion = { slug: "bio", locale: "en", primary: false, layout: layout("bio", "en") };
 
   it("la primaria va sin prefijo; la traduccion con su locale", () => {
-    expect(contentPageHref(primary, "/")).toBe("/paginas/bio/");
-    expect(contentPageHref(en, "/")).toBe("/en/paginas/bio/");
+    expect(contentPageHref(primary, "/")).toBe("/pages/bio/");
+    expect(contentPageHref(en, "/")).toBe("/en/pages/bio/");
   });
 
   it("respeta el base de Astro", () => {
-    expect(contentPageHref(primary, "/portaless/")).toBe("/portaless/paginas/bio/");
-    expect(contentPageHref(en, "/portaless/")).toBe("/portaless/en/paginas/bio/");
+    expect(contentPageHref(primary, "/portaless/")).toBe("/portaless/pages/bio/");
+    expect(contentPageHref(en, "/portaless/")).toBe("/portaless/en/pages/bio/");
   });
 });

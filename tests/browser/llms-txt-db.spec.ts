@@ -4,13 +4,13 @@
 // flujo real de self-host, no un mock.
 //
 // Criterio: una pagina creada desde el editor (PUT /admin/pages/:slug,
-// la misma tabla que usa el visitor en /paginas/<slug>) aparece listada
+// la misma tabla que usa el visitor en /pages/<slug>) aparece listada
 // en /llms.txt en el request siguiente, sin publish ni rebuild, y el
 // contenido del build (posts y paginas estaticas) sigue intacto.
 //
 // Nota: en GitHub Pages no hay functions, asi que /llms.txt es el archivo
 // del build y solo lista src/content/pages/*.json -- mismo limite
-// documentado que /paginas/[slug]. Este spec cubre el camino con base.
+// documentado que /pages/[slug]. Este spec cubre el camino con base.
 
 import { test, expect, type Page } from "@playwright/test";
 import { login } from "./helpers";
@@ -65,7 +65,7 @@ test("una pagina de la base aparece en /llms.txt sin publish ni rebuild", async 
 
   // La pagina de la base, en su propia seccion, con la URL publica.
   expect(text).toContain("## Páginas del editor");
-  expect(text).toContain(`- [${TITLE}](http://127.0.0.1:4173/paginas/${SLUG})`);
+  expect(text).toContain(`- [${TITLE}](http://127.0.0.1:4173/pages/${SLUG})`);
   expect(text).toContain("Creada desde el editor, listada para agentes.");
 
   // El contenido del build sigue listado (el merge no reemplaza nada).

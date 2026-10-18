@@ -1,6 +1,6 @@
 // Paridad de emision del tema por pagina entre los DOS caminos de render:
 // src/layouts/BaseLayout.astro (build estatico, usado por
-// src/pages/paginas/[slug].astro) y functions/paginas/[slug].js (runtime,
+// src/pages/pages/[slug].astro) y functions/pages/[slug].js (runtime,
 // pagina servida desde la base). Mismo patron que
 // site-ecosystem-footer.test.ts: se leen las fuentes y se fija el contrato
 // con el que deben coincidir, mas la resolucion real del contenido JSON.
@@ -27,7 +27,7 @@ import type { PageLayout } from "../../packages/atomic-elements/src/types";
 const root = join(__dirname, "../..");
 const baseLayout = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
 const slugRoute = readFileSync(join(root, "src/components/ContentPage.astro"), "utf8");
-const runtimeFn = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
+const runtimeFn = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
 describe("BaseLayout (build estatico) emite el tema", () => {
   it("declara pageTheme en Props y lo pega en <html> como data-theme-pack + style", () => {
@@ -59,7 +59,7 @@ describe("pagina estatica [slug].astro resuelve el tema", () => {
   });
 });
 
-describe("shell runtime functions/paginas/[slug].js emite el tema", () => {
+describe("shell runtime functions/pages/[slug].js emite el tema", () => {
   it("importa los mismos helpers puros desde theme-pack", () => {
     expect(runtimeFn).toMatch(/from "\.\.\/\.\.\/packages\/atomic-elements\/src\/themes\/theme-pack\.ts"/);
     expect(runtimeFn).toContain("BUILTIN_THEMES");

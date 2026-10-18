@@ -14,7 +14,7 @@
         "title": "Own your site. Answer the machines. Extend it safely.",
         "subtitle": "Portaless is a self-hosted publishing system: your content, your identity, your rules — with a written policy for the automated readers that now consume the public web.",
         "ctaLabel": "Start in 10 minutes",
-        "ctaHref": "/en/beta"
+        "ctaHref": "/beta"
       }
     },
     {
@@ -83,7 +83,7 @@
         "title": "Ready when you are.",
         "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes.",
         "ctaLabel": "Start in 10 minutes",
-        "ctaHref": "/en/beta"
+        "ctaHref": "/beta"
       }
     }
   ]

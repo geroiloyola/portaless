@@ -49,7 +49,7 @@ async function buildSignedRequest(
   privateKey: CryptoKey,
   opts: { nonce: string; url?: string }
 ): Promise<Request> {
-  const url = opts.url ?? "https://mysite.example/paginas/foo";
+  const url = opts.url ?? "https://mysite.example/pages/foo";
   const created = Math.floor(Date.now() / 1000);
   const expires = created + 300;
   const agentHeader = `"${OPERATOR_ORIGIN}"`;
@@ -133,7 +133,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
   });
 
   it("sin ENABLE_TRUST_LAYER=true pasa al siguiente sin verificar nada", async () => {
-    const request = new Request("https://mysite.example/paginas/foo", {
+    const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "curl/8.0" },
     });
     const { context, next } = makeContext(request, { ...env, ENABLE_TRUST_LAYER: "false" });
@@ -155,7 +155,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
   });
 
   it("una UA de navegador sin firma pasa al siguiente", async () => {
-    const request = new Request("https://mysite.example/paginas/foo", {
+    const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "Mozilla/5.0 (Macintosh) Safari/605.1.15" },
     });
     const { context, next } = makeContext(request, env);
@@ -164,7 +164,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
   });
 
   it("UA automatizada sin firma: 403 unsigned_automated_request con policy_url", async () => {
-    const request = new Request("https://mysite.example/paginas/foo", {
+    const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "Mozilla/5.0 (compatible; GPTBot/1.0)" },
     });
     const { context, next } = makeContext(request, env);
@@ -177,7 +177,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
   });
 
   it("firma invalida: 401 verification_failed y el ledger registra la violacion", async () => {
-    const request = new Request("https://mysite.example/paginas/foo", {
+    const request = new Request("https://mysite.example/pages/foo", {
       headers: {
         "user-agent": "Mozilla/5.0 (compatible; GPTBot/1.0)",
         "Signature-Agent": `"${OPERATOR_ORIGIN}"`,

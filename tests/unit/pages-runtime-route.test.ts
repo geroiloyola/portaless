@@ -1,4 +1,4 @@
-// functions/paginas/[slug].js — Phase 0.5: servir /paginas/<slug> desde
+// functions/pages/[slug].js — Phase 0.5: servir /pages/<slug> desde
 // la base al instante. Cubre: hit en la base -> 200 HTML con title,
 // contenido renderizado, tokens del skin y canonical; miss -> delega al
 // build estatico via context.next(); layout corrupto (tipo de elemento
@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applySchema } from "../../scripts/setup.mjs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import { onRequestGet } from "../../functions/paginas/[slug].js";
+import { onRequestGet } from "../../functions/pages/[slug].js";
 import type { PageLayout } from "../../packages/atomic-elements/src/types";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-paginas-route-"));
@@ -47,7 +47,7 @@ afterAll(() => {
 function ctx(slug: string, options: { env?: Record<string, unknown>; nextBody?: string } = {}) {
   let nextCalled = 0;
   const context = {
-    request: new Request(`http://x.test/paginas/${slug}`),
+    request: new Request(`http://x.test/pages/${slug}`),
     env: options.env ?? env,
     params: { slug },
     data: {},
@@ -59,7 +59,7 @@ function ctx(slug: string, options: { env?: Record<string, unknown>; nextBody?: 
   return { context, nextCalls: () => nextCalled };
 }
 
-describe("GET /paginas/:slug (runtime dinamico)", () => {
+describe("GET /pages/:slug (runtime dinamico)", () => {
   it("hit en la base: 200 HTML con title, contenido y tokens del skin", async () => {
     const { context } = ctx("desde-la-base");
     const res = await onRequestGet(context);
@@ -72,7 +72,7 @@ describe("GET /paginas/:slug (runtime dinamico)", () => {
     expect(html).toContain('class="ae-page"');
     expect(html).toContain('href="/api/site-skin"');
     expect(html).toMatch(/--accent:\s*#C5D86D/); // global.css o fallback inline
-    expect(html).toContain('rel="canonical" href="http://x.test/paginas/desde-la-base"');
+    expect(html).toContain('rel="canonical" href="http://x.test/pages/desde-la-base"');
     expect(html).toContain("application/ld+json");
   });
 

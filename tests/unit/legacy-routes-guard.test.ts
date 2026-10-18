@@ -34,9 +34,7 @@ const ALLOWED = [
   "src/lib/routes.ts",
   "astro.config.mjs",
   "functions/_middleware.js",
-  "server/",
-  // tests de redirects (cada fila del mapa) y los que se renombran/actualizan
-  // durante la FASE 2 (se retiran de la lista a medida que se corrigen)
+  // tests de redirects (cada fila del mapa) y los actualizados en fase 2
   "tests/",
   "packages/atomic-elements/docs/",
   "docs/design/",
@@ -46,14 +44,11 @@ const ALLOWED = [
   "docs/protocol-apw/STARTER-KIT.md",
   "docs/self-hosting.md",
   "scripts/capture-screenshots.mjs",
-  // FASE 2 (a corregir con el renombre): contenido demo y vistas del motor
+  // contenido demo (sus enlaces internos son URLs legadas: los cubren los
+  // redirects de Fase 3, y el usuario decidio NO tocar los campos JSON)
   "src/content/pages/",
   "src/content/home.json",
   "src/content/home.es.json",
-  "src/pages/",
-  "packages/onboarding/",
-  "packages/atomic-elements/src/",
-  "functions/",
 ];
 
 function isAllowed(rel: string): boolean {

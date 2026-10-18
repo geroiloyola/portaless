@@ -76,7 +76,7 @@ describe("buildJsonLd", () => {
       { "@type": "PropertyValue", name: "contentKind", value: "commerce" },
       { "@type": "PropertyValue", name: "contentKind", value: "editorial" },
     ]);
-    expect(webPage.url).toBe("https://mi-sitio.example/paginas/tienda");
+    expect(webPage.url).toBe("https://mi-sitio.example/pages/tienda");
     expect(webPage.description).toBe("desc");
   });
 
@@ -132,13 +132,13 @@ describe("buildJsonLd", () => {
     expect(graph).toHaveLength(3);
     const list = graph[2];
     expect(list["@type"]).toBe("ItemList");
-    expect(list["@id"]).toBe("https://mi-sitio.example/paginas/inicio#productlist");
+    expect(list["@id"]).toBe("https://mi-sitio.example/pages/inicio#productlist");
     expect(list.numberOfItems).toBe(2);
     expect(list.itemListElement[0].item).toMatchObject({
       "@type": "Product",
       name: "Camiseta",
       description: "Algodon",
-      url: "https://mi-sitio.example/tienda/camiseta",
+      url: "https://mi-sitio.example/shop/camiseta",
       image: "https://cdn.example/camiseta.png",
       offers: { priceCurrency: "usd", price: 19.99, availability: "https://schema.org/InStock" },
     });
@@ -190,7 +190,7 @@ describe("buildJsonLd", () => {
       )
     );
     expect(graph).toHaveLength(3);
-    expect(graph[2]["@id"]).toBe("https://mi-sitio.example/paginas/inicio#productlist-1");
+    expect(graph[2]["@id"]).toBe("https://mi-sitio.example/pages/inicio#productlist-1");
   });
 
   it("busca ProductGrid tambien dentro de children y columnSlots (nodos anidados)", async () => {

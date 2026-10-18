@@ -40,7 +40,7 @@
 //
 // Aplicacion: MCP apply_theme escribe PageLayout.theme; el emisor es
 // src/layouts/BaseLayout.astro (build estatico) y
-// functions/paginas/[slug].js (runtime), ambos via themeStyleDecl().
+// functions/pages/[slug].js (runtime), ambos via themeStyleDecl().
 
 // ---------------------------------------------------------------------------
 // Contrato

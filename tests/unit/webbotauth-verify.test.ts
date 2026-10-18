@@ -56,7 +56,7 @@ interface SignedRequestOptions {
 
 async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> {
   const method = opts.method ?? "GET";
-  const url = opts.url ?? "https://mysite.example/paginas/foo";
+  const url = opts.url ?? "https://mysite.example/pages/foo";
   const created = opts.created ?? Math.floor(Date.now() / 1000);
   const expires = opts.expires ?? created + 300;
   const agentHeader = opts.signatureAgentHeader ?? `"${OPERATOR_ORIGIN}"`;
@@ -134,7 +134,7 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     const signer = await signerFromJWK(jwk as never);
     mockDirectoryOnce(publicKeyX, signer.keyid);
 
-    const request = new Request("https://mysite.example/paginas/foo", {
+    const request = new Request("https://mysite.example/pages/foo", {
       headers: { "Signature-Agent": `"${OPERATOR_ORIGIN}"` },
     });
     const created = new Date();

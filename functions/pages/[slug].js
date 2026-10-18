@@ -161,7 +161,7 @@ function renderShell(layout, bodyHtml, request) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
   const origin = new URL(request.url).origin;
-  const canonical = `${origin}/paginas/${encodeURIComponent(layout.slug)}`;
+  const canonical = `${origin}/pages/${encodeURIComponent(layout.slug)}`;
   // Tema por pagina (paridad con BaseLayout.astro). Solo los builtins: la
   // pagina servida desde la base tampoco consulta la tabla theme_packs
   // aqui (el catalogo efectivo se arma en el MCP); un nombre que no

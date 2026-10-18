@@ -21,27 +21,27 @@ describe("buildSitemapXml", () => {
       { path: "/", lastmod: new Date("2026-09-01T00:00:00Z"), changefreq: "weekly", priority: 1 },
       { path: "/blog/hola/", lastmod: new Date("2026-08-15T00:00:00Z"), changefreq: "monthly", priority: 0.7 },
       { path: "/explore/", lastmod: new Date("2026-09-01T00:00:00Z"), changefreq: "weekly", priority: 0.8 },
-      { path: "/paginas/inicio", changefreq: "monthly", priority: 0.8 },
+      { path: "/pages/inicio", changefreq: "monthly", priority: 0.8 },
     ]);
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')).toBe(true);
     expect(xml).toContain("<loc>https://a.com/repo/</loc>\n    <lastmod>2026-09-01</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>");
     expect(xml).toContain("<loc>https://a.com/repo/blog/hola/</loc>\n    <lastmod>2026-08-15</lastmod>");
     expect(xml).toContain("<loc>https://a.com/repo/explore/</loc>\n    <lastmod>2026-09-01</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>");
-    expect(xml).toContain("<loc>https://a.com/repo/paginas/inicio</loc>\n    <changefreq>monthly</changefreq>");
+    expect(xml).toContain("<loc>https://a.com/repo/pages/inicio</loc>\n    <changefreq>monthly</changefreq>");
     expect(xml.trimEnd().endsWith("</urlset>")).toBe(true);
   });
 
   it("no inventa lastmod cuando no hay fecha", () => {
-    const xml = buildSitemapXml("https://a.com", "/", [{ path: "/paginas/x" }]);
+    const xml = buildSitemapXml("https://a.com", "/", [{ path: "/pages/x" }]);
     expect(xml).not.toContain("<lastmod>");
   });
 
   it("escapa el loc y deduplica", () => {
     const xml = buildSitemapXml("https://a.com", "/", [
-      { path: "/tienda/a&b" },
-      { path: "/tienda/a&b" },
+      { path: "/shop/a&b" },
+      { path: "/shop/a&b" },
     ]);
-    expect(xml).toContain("<loc>https://a.com/tienda/a&amp;b</loc>");
+    expect(xml).toContain("<loc>https://a.com/shop/a&amp;b</loc>");
     expect(xml.match(/<url>/g)).toHaveLength(1);
   });
 

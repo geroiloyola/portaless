@@ -21,7 +21,7 @@ describe("resolveInternalUrl", () => {
     expect(resolveInternalUrl("/blog/", "/portaless/")).toBe("/portaless/blog/");
     expect(resolveInternalUrl("/trust/default", "/portaless/")).toBe("/portaless/trust/default");
     expect(resolveInternalUrl("/avatars/jerry-bantz.svg", "/portaless/")).toBe("/portaless/avatars/jerry-bantz.svg");
-    expect(resolveInternalUrl("/tienda/chaqueta", "/portaless/")).toBe("/portaless/tienda/chaqueta");
+    expect(resolveInternalUrl("/shop/chaqueta", "/portaless/")).toBe("/portaless/shop/chaqueta");
   });
 
   it("es idempotente: si la URL ya tiene el prefijo no lo duplica", () => {

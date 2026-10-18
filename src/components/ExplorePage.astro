@@ -11,6 +11,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
 import { ecosystemPageTheme } from "../lib/ecosystem-theme";
+import { contentPageHref } from "../lib/content-pages";
 import type { Locale } from "../lib/i18n";
 import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
 
@@ -193,7 +194,7 @@ const notesJson = JSON.stringify(c.status);
       <h2>{c.chips.demoPages}</h2>
       <div class="explore-grid">
         {demoPages.map((page) => (
-          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -207,7 +208,7 @@ const notesJson = JSON.stringify(c.status);
       <h2>{c.chips.demoShops}</h2>
       <div class="explore-grid">
         {demoShops.map((page) => (
-          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -221,7 +222,7 @@ const notesJson = JSON.stringify(c.status);
       <h2>{c.chips.demoProfiles}</h2>
       <div class="explore-grid">
         {demoProfiles.map((page) => (
-          <a class="explore-card" href={`${base}paginas/${page.slug}/`}>
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -248,7 +249,7 @@ const notesJson = JSON.stringify(c.status);
   <section id="how">
     <h2>{c.howHeading}</h2>
     <div class="explore-grid">
-      <a class="explore-card" href={`${base}proyecciones/`}>
+      <a class="explore-card" href={`${base}projections/`}>
         <h3>{c.howTitle}</h3>
         <p>{c.howNote}</p>
       </a>

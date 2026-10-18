@@ -50,12 +50,12 @@ describe("footer del ecosistema Portaless", () => {
   });
 });
 
-// El shell de functions/paginas/[slug].js DUPLICA header/footer (es lo
+// El shell de functions/pages/[slug].js DUPLICA header/footer (es lo
 // que servia "licencia MIT" mientras Astro decia AGPL -- bug ya
 // ocurrido). Paridad obligatoria: las dos superficies tienen que decir
 // exactamente lo mismo.
-describe("paridad static <-> runtime (functions/paginas/[slug].js)", () => {
-  const shellSrc = readFileSync(join(root, "functions/paginas/[slug].js"), "utf8");
+describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
+  const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
   it("el footer runtime dice TrustScore · Explore · Powered by Portaless", () => {
     expect(shellSrc).toContain(">TrustScore<");

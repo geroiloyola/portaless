@@ -5,8 +5,8 @@
 // renders y SEO, y la EQUIVALENCIA con el modulo del core esta fijada por un
 // test de paridad (tests/unit/routes-mirror-parity.test.ts). Si alguno de los
 // dos cambia y no el otro, ese test falla.
-export const PAGE_URL_SEGMENT = "paginas";
-export const SHOP_URL_SEGMENT = "tienda";
+export const PAGE_URL_SEGMENT = "pages";
+export const SHOP_URL_SEGMENT = "shop";
 
 /** Ruta de la tienda del sitio (la raiz, base-relativa). */
 export const SHOP_PATH = `/${SHOP_URL_SEGMENT}/`;
