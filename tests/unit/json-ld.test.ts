@@ -80,6 +80,25 @@ describe("buildJsonLd", () => {
     expect(webPage.description).toBe("desc");
   });
 
+  it("respeta el base de Astro y el idioma del documento", async () => {
+    const jsonLd = await buildJsonLd(
+      layout({ slug: "bio" }),
+      { ...site, base: "/portaless/", inLanguage: "en" }
+    );
+    const [organization, webPage] = graphOf(jsonLd);
+    expect(organization["@id"]).toBe("https://mi-sitio.example/portaless#organization");
+    expect(organization.url).toBe("https://mi-sitio.example/portaless");
+    expect(webPage["@id"]).toBe("https://mi-sitio.example/portaless/pages/bio#webpage");
+    expect(webPage.url).toBe("https://mi-sitio.example/portaless/pages/bio");
+    expect(webPage.inLanguage).toBe("en");
+    expect(webPage.isPartOf).toEqual({ "@id": "https://mi-sitio.example/portaless#organization" });
+  });
+
+  it("sin base, las URLs son las del origen (comportamiento historico)", async () => {
+    const webPage = graphOf(await buildJsonLd(layout({ slug: "/" }), site))[1];
+    expect(webPage.url).toBe("https://mi-sitio.example/");
+  });
+
   it("description: layout.description > primer Paragraph (max 300) > title", async () => {
     const withDescription = graphOf(
       await buildJsonLd(layout({ description: " explicita ", root: [node({ type: "Paragraph", props: { text: "ignored" } })] }), site)

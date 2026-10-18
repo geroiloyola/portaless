@@ -141,6 +141,28 @@ describe("barrido del estatico con base /portaless/", () => {
     expect(offenders, `meta-refresh relativo mal resuelto:\n${offenders.join("\n")}`).toEqual([]);
   });
 
+  it("el JSON-LD de las paginas de contenido lleva el base", () => {
+    const offenders: string[] = [];
+    const baseNoSlash = BASE.replace(/\/$/, "");
+    for (const page of pages) {
+      const m = page.html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+      if (!m) continue;
+      const ld = JSON.parse(m[1]);
+      const graph = (ld["@graph"] ?? []) as Array<Record<string, unknown>>;
+      for (const item of graph) {
+        for (const value of [item.url, item["@id"]].filter(Boolean) as string[]) {
+          if (!value.startsWith("https://")) continue;
+          const path = new URL(value).pathname;
+          // Toda URL del propio sitio en el @graph debe estar bajo el base.
+          if (path !== baseNoSlash && !path.startsWith(`${baseNoSlash}/`)) {
+            offenders.push(`${page.urlPath}: ${value}`);
+          }
+        }
+      }
+    }
+    expect([...new Set(offenders)], `JSON-LD sin base:\n${offenders.slice(0, 10).join("\n")}`).toEqual([]);
+  });
+
   it("las tarjetas de Explore apuntan a /portaless/pages/<slug>/ (no a /pages//)", () => {
     for (const path of ["/portaless/explore/", "/portaless/es/explore/"]) {
       const page = pages.find((p) => p.urlPath === path);

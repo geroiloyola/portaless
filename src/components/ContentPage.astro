@@ -49,7 +49,7 @@ const languageAlternate = other
 
 const pageTitle = layout.title ?? layout.slug;
 const pageDescription = layout.description ?? "";
-const siteInfo = { name: pageTitle, url: siteUrl };
+const siteInfo = { name: pageTitle, url: siteUrl, base, inLanguage: version.locale };
 ---
 
 <BaseLayout

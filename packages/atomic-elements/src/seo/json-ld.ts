@@ -20,6 +20,18 @@ export interface SiteInfo {
   logoUrl?: string;
   sameAs?: string[];
   /**
+   * Idioma del documento para el WebPage JSON-LD (`inLanguage`). Opcional: si
+   * falta se cae a "es" (comportamiento historico). El sitio pasa el locale real
+   * de la version (en/es) desde BaseLayout/ContentPage.
+   */
+  inLanguage?: string;
+  /**
+   * Base de Astro (ej. "/portaless/") para construir las URLs absolutas del
+   * @graph bajo un subpath. Opcional: si falta, las URLs son las del origen
+   * (comportamiento historico).
+   */
+  base?: string;
+  /**
    * Opcional a proposito: un sitio existente que no declare este campo
    * sigue funcionando igual -- buildJsonLd() y el Trust Layer deben
    * tratar un content_kinds ausente como "no declarado", nunca como
@@ -144,13 +156,20 @@ function formatPriceForProduct(product: any, currency: string = DEFAULT_CURRENCY
  * usarse el valor de retorno directo de la llamada.
  */
 export async function buildJsonLd(layout: PageLayout, site: SiteInfo): Promise<Record<string, unknown>> {
-  const pageUrl = new URL(layout.slug === "" || layout.slug === "/" ? "/" : pageUrlPath(layout.slug), site.url).toString();
+  // Raiz del sitio CON el base de Astro (ej. https://host/portaless). Sin base
+  // declarado, `root === site.url` y el resultado es identico al historico. El
+  // pageUrl se arma concatenando el base (no con `new URL(path, root)`, que
+  // descartaria el path del base).
+  const base = (site.base ?? "/").replace(/\/+$/, "");
+  const origin = site.url.replace(/\/+$/, "");
+  const root = `${origin}${base}`;
+  const pageUrl = `${root}${layout.slug === "" || layout.slug === "/" ? "/" : pageUrlPath(layout.slug)}`;
 
   const organization: Record<string, unknown> = {
     "@type": "Organization",
-    "@id": `${site.url}#organization`,
+    "@id": `${root}#organization`,
     name: site.name,
-    url: site.url,
+    url: root,
     ...(site.logoUrl ? { logo: site.logoUrl } : {}),
     ...(site.sameAs?.length ? { sameAs: site.sameAs } : {}),
     ...(site.contentKinds?.length
@@ -170,8 +189,8 @@ export async function buildJsonLd(layout: PageLayout, site: SiteInfo): Promise<R
     url: pageUrl,
     name: layout.title,
     description: extractDescription(layout),
-    isPartOf: { "@id": `${site.url}#organization` },
-    inLanguage: "es",
+    isPartOf: { "@id": `${root}#organization` },
+    inLanguage: site.inLanguage ?? "es",
   };
 
   const graph: unknown[] = [organization, webPage];
@@ -225,7 +244,7 @@ export function buildProductJsonLd(
   currency: string,
   site: SiteInfo
 ): Record<string, unknown> {
-  const productUrl = new URL(productUrlPath(product.handle), site.url).toString();
+  const productUrl = `${site.url.replace(/\/+$/, "")}${(site.base ?? "/").replace(/\/+$/, "")}${productUrlPath(product.handle)}`;
   const numericPrice = parseFloat(priceText.replace(/[^0-9.,]/g, "").replace(",", "."));
 
   return {
