@@ -17,6 +17,7 @@ import { getSiteUrl } from "../lib/seo";
 import { publishedPosts } from "../lib/llms-txt";
 import { buildSitemapXml, type SitemapEntry } from "../lib/sitemap";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
+import { ROUTES } from "../lib/routes";
 import { contentPageHref, loadContentPages } from "../lib/content-pages";
 
 async function collectCommerceEntries(): Promise<SitemapEntry[]> {
@@ -27,7 +28,7 @@ async function collectCommerceEntries(): Promise<SitemapEntry[]> {
     return products
       .filter((product: any) => typeof product?.handle === "string" && product.handle.length > 0)
       .map((product: any) => ({
-        path: `/tienda/${encodeURIComponent(product.handle)}`,
+        path: `${ROUTES.SHOP}/${encodeURIComponent(product.handle)}`,
         changefreq: "weekly" as const,
         priority: 0.7,
       }));

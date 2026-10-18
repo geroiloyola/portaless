@@ -30,6 +30,7 @@ import {
   joinSiteUrl,
   mergeDbPagesIntoLlmsTxt,
 } from "../src/lib/llms-txt.ts";
+import { ROUTES } from "../src/lib/routes.ts";
 
 const MAX_DB_PAGES = 200;
 
@@ -69,7 +70,7 @@ export async function onRequestGet(context) {
   const siteUrl = env.PORTALESS_SITE_URL || new URL(request.url).origin;
   const basePath = env.PORTALESS_BASE_PATH || "/";
   const merged = mergeDbPagesIntoLlmsTxt(text, pages, (slug) =>
-    joinSiteUrl(siteUrl, basePath, `/paginas/${slug}`)
+    joinSiteUrl(siteUrl, basePath, `${ROUTES.PAGES}/${slug}`)
   );
 
   return new Response(merged, {

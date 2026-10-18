@@ -1,4 +1,5 @@
 import type { ElementDefinition, ElementType } from "../types";
+import { productUrlPath } from "../seo/urls";
 import {
   ICON_CIRCLE_QUESTION_MARK,
   ICON_CIRCLE_USER_ROUND,
@@ -394,7 +395,7 @@ const ProductGrid: ElementDefinition<ProductGridProps> = {
         return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};"><div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);grid-column:1/-1;">Tu tienda Medusa/Mercur no tiene productos publicados todavia.</div></div>`;
       }
       const prefix = ((p as any).base && (p as any).base !== "/") ? (p as any).base.replace(/\/$/, "") : "";
-      const cards = products.map((product: any) => `<a href="${prefix}/tienda/${esc(product.handle)}" style="display:block;border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};overflow:hidden;text-decoration:none;color:inherit;">${product.thumbnail ? `<img src="${esc(product.thumbnail)}" alt="${esc(product.title)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" />` : ""}<div style="padding:${space(3)};"><h4 style="margin:0 0 ${space(1)};font-size:14px;">${esc(product.title)}</h4><p style="margin:0;font-weight:700;color:var(--accent-text, #5A6B24);">${esc(formatPrice(product))}</p></div></a>`).join("");
+      const cards = products.map((product: any) => `<a href="${prefix}${productUrlPath(product.handle)}" style="display:block;border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};overflow:hidden;text-decoration:none;color:inherit;">${product.thumbnail ? `<img src="${esc(product.thumbnail)}" alt="${esc(product.title)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;" loading="lazy" />` : ""}<div style="padding:${space(3)};"><h4 style="margin:0 0 ${space(1)};font-size:14px;">${esc(product.title)}</h4><p style="margin:0;font-weight:700;color:var(--accent-text, #5A6B24);">${esc(formatPrice(product))}</p></div></a>`).join("");
       return `<div class="ae-product-grid" style="display:grid;grid-template-columns:repeat(${p.columns},1fr);gap:${space(4)};">${cards}</div>`;
     } catch (err) {
       return `<div class="ae-product-grid" style="border:1px dashed var(--danger-fg, #B3372C);border-radius:${radiusMedia()};padding:${space(5)};text-align:center;color:var(--danger-fg, #B3372C);">Error cargando productos: ${esc((err as Error).message)}</div>`;

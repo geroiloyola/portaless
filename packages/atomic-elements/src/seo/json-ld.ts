@@ -1,4 +1,5 @@
 import type { PageLayout, ElementNode } from "../types";
+import { pageUrlPath, productUrlPath } from "./urls";
 
 /**
  * Vocabulario cerrado de tipos de contenido que un sitio puede declarar
@@ -143,7 +144,7 @@ function formatPriceForProduct(product: any, currency: string = DEFAULT_CURRENCY
  * usarse el valor de retorno directo de la llamada.
  */
 export async function buildJsonLd(layout: PageLayout, site: SiteInfo): Promise<Record<string, unknown>> {
-  const pageUrl = new URL(layout.slug === "" || layout.slug === "/" ? "/" : `/paginas/${layout.slug}`, site.url).toString();
+  const pageUrl = new URL(layout.slug === "" || layout.slug === "/" ? "/" : pageUrlPath(layout.slug), site.url).toString();
 
   const organization: Record<string, unknown> = {
     "@type": "Organization",
@@ -224,7 +225,7 @@ export function buildProductJsonLd(
   currency: string,
   site: SiteInfo
 ): Record<string, unknown> {
-  const productUrl = new URL(`/tienda/${product.handle}`, site.url).toString();
+  const productUrl = new URL(productUrlPath(product.handle), site.url).toString();
   const numericPrice = parseFloat(priceText.replace(/[^0-9.,]/g, "").replace(",", "."));
 
   return {

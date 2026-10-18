@@ -16,6 +16,7 @@
 // verifica, porque validatePageLayout NO valida props).
 
 import type { PageLayout, ElementNode, ElementType } from "../../atomic-elements/src/types";
+import { SHOP_PATH } from "../../atomic-elements/src/seo/urls.ts";
 
 export interface IntentInput {
   siteName: string;
@@ -97,7 +98,7 @@ function buildRoot(templateId: TemplateId, name: string, intent: string, domain?
         n("Hero", { title: name, subtitle: intent, bgColor: "#111827" }),
         n("Heading", { text: "Productos destacados", level: "h2", align: "left" }),
         n("ProductGrid", { source: "medusa", columns: 3, limit: 6 }),
-        n("Button", { label: "Ver toda la tienda", href: "/tienda", variant: "outline" }),
+        n("Button", { label: "Ver toda la tienda", href: SHOP_PATH, variant: "outline" }),
       ];
     case "link-in-bio":
       return [

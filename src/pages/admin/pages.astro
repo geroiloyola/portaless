@@ -13,7 +13,8 @@
 // secas). Mismo patron client-side de authorized-agents.astro:
 // fetch desde el <script>, estados display, redirect a login en 401.
 //
-// "Ver" apunta a /paginas/<slug>: en self-host esa URL la sirve la base
+// "Ver" apunta a `${ROUTES.PAGES}/<slug>` (la ruta de contenido del sitio): en
+// self-host esa URL la sirve la base
 // al instante; en hosting estatico (GitHub Pages) la pagina aparece
 // despues de `npm run publish` -- el link no distingue, el ROADMAP lo
 // documenta como limite honesto.
@@ -101,6 +102,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  import { ROUTES } from "../../lib/routes";
   const loadingEl = document.getElementById("pm-loading")!;
   const errorEl = document.getElementById("pm-load-error")!;
   const emptyEl = document.getElementById("pm-empty")!;
@@ -177,7 +179,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     tdActions.appendChild(edit);
 
     const view = document.createElement("a");
-    view.href = `/paginas/${encodeURIComponent(page.slug)}`;
+    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
     view.target = "_blank";
     view.rel = "noopener";
     view.textContent = "Ver ↗";

@@ -13,7 +13,8 @@
 // espanol expone su ingles en /en/... y viceversa -- el idioma "de casa" de
 // cada pagina es el de su archivo primario, no una constante global.
 import type { PageLayout } from "../../packages/atomic-elements/src/types";
-import { DEFAULT_LOCALE, isLocale, type Locale } from "./i18n";
+import { isLocale, type Locale } from "./i18n";
+import { contentPageHref as routeHref } from "./routes";
 import { SITE_LANG } from "./site-lang";
 
 /** Idioma por defecto de una pagina de contenido sin declararlo (el del sitio). */
@@ -79,10 +80,12 @@ export function groupContentPages(
 
 /** Ruta base-relativa de una version (la primaria sin prefijo, la traduccion con el suyo). */
 export function contentPageHref(version: PageVersion, base = "/"): string {
-  const b = base.replace(/\/$/, "");
-  return version.primary
-    ? `${b}/paginas/${version.slug}/`
-    : `${b}/${version.locale}/paginas/${version.slug}/`;
+  return versionHref(version, base);
+}
+
+/** Ruta de una version: delega en el modulo unico de rutas. */
+export function versionHref(version: PageVersion, base = "/"): string {
+  return routeHref(version.slug, version.primary ? undefined : version.locale, base);
 }
 
 /** Carga todas las paginas de contenido del build. */

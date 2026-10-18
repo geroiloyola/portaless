@@ -5,8 +5,8 @@
 // toast). Ademas, el icono PRINCIPAL del rincon se deriva del contenido
 // de la pagina que el visitante esta viendo -- sin configuracion manual:
 //
-//   - root contiene ProductGrid/StoreBlock -> carrito, que lleva a
-//     /tienda/ (la pagina de tienda del sitio; existe siempre)
+//   - root contiene ProductGrid/StoreBlock -> carrito, que lleva a la
+//     SHOP del sitio (la pagina de tienda del sitio; existe siempre)
 //   - root contiene Video -> control de volumen que silencia y
 //     des-silencia los iframes embebidos de la pagina (YouTube via los
 //     comandos postMessage del IFrame API, con enablejsapi=1 en el
@@ -20,6 +20,9 @@
 // BaseLayout) y el shell runtime de functions/paginas/[slug].js SIN
 // duplicar la logica -- la clase de bug que ya hizo decir "MIT" al
 // footer runtime mientras el build decia AGPL.
+//
+// Rutas: la UNICA fuente es src/lib/routes.ts -- nunca segmentos a mano.
+import { ROUTES } from "./routes";
 import {
   ICON_DIRECTIONS,
   ICON_HOUSE,
@@ -69,7 +72,7 @@ function firstContext(nodes: readonly unknown[]): HeaderContext {
 export function headerActionsHtml(context: HeaderContext, base = "/"): string {
   const cart =
     context === "shop"
-      ? `<a class="header-icon-btn" href="${base}tienda/" aria-label="Ir a la tienda" title="Tienda">${ICON_SHOPPING_CART}</a>`
+      ? `<a class="header-icon-btn" href="${base}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda" title="Tienda">${ICON_SHOPPING_CART}</a>`
       : "";
   const volume =
     context === "video"

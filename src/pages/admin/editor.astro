@@ -106,6 +106,7 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
   import type { ResolvedCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
   import { resolveCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
   import { elementRegistry, elementPalette } from "../../../packages/atomic-elements/src/elements/registry";
+  import { ROUTES } from "../../lib/routes";
 
   const loadingEl = document.getElementById("editor-loading")!;
   const errorEl = document.getElementById("editor-load-error")!;
@@ -280,7 +281,7 @@ import "../../../packages/atomic-elements/src/editor/editor-styles.css";
         saveStatusEl.textContent = "Página guardada y publicada. ";
         const viewLink = document.createElement("a");
         viewLink.id = "editor-view-public";
-        viewLink.href = `/paginas/${encodeURIComponent(slug)}`;
+        viewLink.href = `${ROUTES.PAGES}/${encodeURIComponent(slug)}`;
         viewLink.target = "_blank";
         viewLink.rel = "noopener";
         viewLink.textContent = "Ver página pública ↗";

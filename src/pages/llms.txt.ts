@@ -19,6 +19,7 @@ import { getSiteUrl } from "../lib/seo";
 import { buildLlmsTxt, joinSiteUrl, publishedPosts } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, readContentPolicy } from "../lib/content-policy";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
+import { ROUTES } from "../lib/routes";
 
 interface PageJson {
   slug?: string;
@@ -44,7 +45,7 @@ export const GET: APIRoute = async ({ site }) => {
     .filter((page): page is PageJson & { slug: string } => typeof page?.slug === "string" && page.slug.length > 0)
     .map((page) => ({
       title: page.title ?? page.slug,
-      url: url(`/paginas/${page.slug}`),
+      url: url(`${ROUTES.PAGES}/${page.slug}`),
       note: page.description,
     }));
 
