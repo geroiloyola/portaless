@@ -49,3 +49,18 @@
   break-inside: avoid;
   margin-bottom: var(--ae-gap, 1rem);
 }
+
+/* Objetivos tactiles: con puntero grueso (dedo) los CTA/enlaces de accion
+   miden al menos 44x44px (WCAG 2.5.5 Target Size). NO aplica a enlaces inline
+   dentro de un parrafo, solo a los controles de accion de los elementos. */
+@media (pointer: coarse) {
+  .ae-hero-cta,
+  .ae-link-list a,
+  .ae-directions-btn,
+  .ae-product-card a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

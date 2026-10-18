@@ -349,4 +349,23 @@ describe("grillas responsivas por hoja, no inline", () => {
     expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("styles/elements.css");
     expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("ELEMENTS_CSS_PATH");
   });
+
+  it("FeatureGrid usa min(100%, ...) en el minmax (no desborda en 320px)", () => {
+    const m = REGISTRY_SRC.match(/grid-template-columns:repeat\(auto-fit,\s*minmax\(([^,]+),/);
+    expect(m, "FeatureGrid con auto-fit+minmax").toBeTruthy();
+    expect(m![1]).toContain("min(100%"); // nunca fija un ancho mayor que el viewport
+  });
+});
+
+// --- 5. Objetivos tactiles (WCAG 2.5.5) --------------------------------------
+describe("objetivos tactiles de 44px con puntero grueso", () => {
+  it("la hoja define min-height:44px para los CTA en @media (pointer: coarse)", () => {
+    const css = readFileSync("packages/atomic-elements/src/styles/elements.css", "utf-8");
+    const block = css.match(/@media\s*\(pointer:\s*coarse\)\s*\{([\s\S]*?)\n\}/);
+    expect(block, "@media (pointer: coarse)").toBeTruthy();
+    expect(block![1]).toContain("min-height: 44px");
+    for (const cls of [".ae-hero-cta", ".ae-link-list a", ".ae-directions-btn"]) {
+      expect(block![1], cls).toContain(cls);
+    }
+  });
 });

@@ -939,10 +939,11 @@ const FeatureGrid: ElementDefinition<FeatureGridProps> = {
       .join("");
     const heading = p.title ? `<h2 style="margin:0 0 ${space(5)};text-align:center;">${esc(p.title)}</h2>` : "";
     const empty = `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
-    // auto-fit + minmax: la grilla es RESPONSIVE por si misma (envuelve en
-    // pantallas angostas) sin media queries ni JS, y en pantallas anchas
-    // muestra todas las tarjetas en una fila.
-    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:${space(4)};">${cards || empty}</div></section>`;
+    // auto-fit + minmax con `min(100%, 15rem)`: la grilla es RESPONSIVE por si
+    // misma (envuelve en pantallas angostas) sin media queries ni JS, y el
+    // `min(100%, ...)` evita el desborde en pantallas muy chicas (320px), donde
+    // un minmax de 220px fijo no cabe. La densidad de la tarjeta usa clamp().
+    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 15rem), 1fr));gap:clamp(${space(3)}, 2.5vw, ${space(5)});">${cards || empty}</div></section>`;
   },
 };
 
