@@ -19,6 +19,8 @@
     "preview": "astro preview",
     "setup": "tsx scripts/setup.mjs",
     "setup:d1": "tsx scripts/setup-d1.mjs",
+    "migrate": "tsx scripts/migrate.mjs",
+    "doctor": "tsx scripts/doctor.mjs",
     "mcp": "tsx packages/mcp-server/src/index.ts",
     "mcp:http": "PORTALESS_MCP_TRANSPORT=http tsx packages/mcp-server/src/index.ts",
     "test:browser": "playwright test",

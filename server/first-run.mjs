@@ -77,6 +77,14 @@ async function defaultApplySchema(sqlitePath) {
   return applySchema(sqlitePath, { quiet: true });
 }
 
+// Migraciones numeradas (contrato de datos): corre DESPUES de aplicar
+// schema.sql (que crea la forma completa) y registra/aplica los deltas. En una
+// base mas nueva que el codigo, migrateSqlite lanza (fail-closed).
+async function defaultMigrate(sqlitePath) {
+  const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+  return migrateSqlite(sqlitePath);
+}
+
 export function createFirstRunService(options = {}) {
   const env = options.env || process.env;
   const sqlitePath = resolve(options.sqlitePath || env.PORTALESS_SQLITE_PATH || "/data/portaless.db");
@@ -88,6 +96,7 @@ export function createFirstRunService(options = {}) {
   const openUsersStore = options.usersStoreFactory || defaultUsersStoreFactory;
   const createAdmin = options.ensureInitialAdmin || defaultEnsureInitialAdmin;
   const applySchema = options.applySchema || defaultApplySchema;
+  const migrate = options.migrate || defaultMigrate;
 
   let state = null;
   let keySource = null;
@@ -125,6 +134,7 @@ export function createFirstRunService(options = {}) {
     state.siteIdentityKeySource = keySource;
 
     await applySchema(sqlitePath);
+    await migrate(sqlitePath);
     const users = await countUsers();
 
     if (users > 0 || state.setup.consumed) {
