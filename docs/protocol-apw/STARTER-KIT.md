@@ -191,7 +191,7 @@ A **node** is a bigger choice: running one lets you *publish* your own
 *participate* in the network (witness peers, run a Portaless Index aggregator).
 That is a Portaless deployment, not a protocol step; start at
 [`../self-hosting.md`](../self-hosting.md) and the install guide
-[`../primos-pasos.md`](../primos-pasos.md). **Honest limit:** the discovery
+[`../first-steps.md`](../first-steps.md). **Honest limit:** the discovery
 endpoint that would let nodes find each other is deliberately **not opened**
 until there are real peers — with one operator there is nothing to discover, and
 the network's exit criterion (an independent implementer publishing valid

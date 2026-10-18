@@ -10,10 +10,10 @@ Portaless está diseñado para desacoplar la creación de sitios de la tiranía 
 
 | Caso de Uso | Ruta de Referencia | Componentes Clave | Propósito y Reto Técnico Resuelto |
 |---|---|---|---|
-| **1. Creador de Contenido / Influencer** | `/paginas/jerry-bantz/`, `/paginas/link-in-bio/` | `ProfileHeader`, `LinkList`, `SocialIcons`, `ProductCard` (afiliado) | Despliegue estático ultrarrápido, alternativa soberana a Beacons/Linktree. Cero costo de hosting y propiedad de la audiencia vía AT Protocol. |
-| **2. Músico & Venta de Merchandise** | `/paginas/musica-merch/` | `Hero`, `Video` (YouTube/Vimeo), `LinkList` (Spotify/Apple Music), `Columns`, `ProductCard` (físico/vinilo) | Fusión de reproductor multimedia con ecommerce ligero de inventario reducido. Soporta picos masivos de tráfico en lanzamientos sin saturar el servidor. |
-| **3. Discoteca o Eventos (Ticketing)** | `/paginas/club-evento/` | `Hero`, `Columns`, `ProductCard` (entradas por niveles), `Map` (OpenStreetMap), `FAQ` | Venta de entradas con entrega digital de código QR, aforo estricto, botón interactivo «Cómo llegar» hacia OSRM/Google Maps y checkout optimizado para móviles. |
-| **4. Tienda Boutique de Productos Físicos** | `/paginas/boutique/`, `/tienda/` | `Hero`, `Columns`, `ProductCard`, `Testimonial`, `Form` | Alternativa sin suscripción a Shopify para marcas de diseño, moda y artesanía. Fichas de producto con soporte para enlaces locales (Medusa) o afiliados externos. |
+| **1. Creador de Contenido / Influencer** | `/pages/jerry-bantz/`, `/pages/link-in-bio/` | `ProfileHeader`, `LinkList`, `SocialIcons`, `ProductCard` (afiliado) | Despliegue estático ultrarrápido, alternativa soberana a Beacons/Linktree. Cero costo de hosting y propiedad de la audiencia vía AT Protocol. |
+| **2. Músico & Venta de Merchandise** | `/pages/musica-merch/` | `Hero`, `Video` (YouTube/Vimeo), `LinkList` (Spotify/Apple Music), `Columns`, `ProductCard` (físico/vinilo) | Fusión de reproductor multimedia con ecommerce ligero de inventario reducido. Soporta picos masivos de tráfico en lanzamientos sin saturar el servidor. |
+| **3. Discoteca o Eventos (Ticketing)** | `/pages/club-evento/` | `Hero`, `Columns`, `ProductCard` (entradas por niveles), `Map` (OpenStreetMap), `FAQ` | Venta de entradas con entrega digital de código QR, aforo estricto, botón interactivo «Cómo llegar» hacia OSRM/Google Maps y checkout optimizado para móviles. |
+| **4. Tienda Boutique de Productos Físicos** | `/pages/boutique/`, `/shop/` | `Hero`, `Columns`, `ProductCard`, `Testimonial`, `Form` | Alternativa sin suscripción a Shopify para marcas de diseño, moda y artesanía. Fichas de producto con soporte para enlaces locales (Medusa) o afiliados externos. |
 
 ---
 
@@ -60,7 +60,7 @@ concretas, verificadas por `tests/unit/demo-pages-links.test.ts`:
 
 - Nada de `example.com` ni de dominios que no resuelvan (p. ej.
   `tienda.portaless.com`): para lo interno, una ruta del propio sitio
-  (`/tienda/`, `/paginas/portafolio/`).
+  (`/shop/`, `/pages/portafolio/`).
 - Nada de raíces peladas de plataformas (`instagram.com/`, `youtube.com/`,
   `open.spotify.com/`, `music.apple.com/`, `bandcamp.com/`, `tiktok.com/@`):
   un perfil concreto, o se quita.
@@ -101,5 +101,5 @@ Portaless adopta la filosofía **POSSE**: *Publish on Own Site, Syndicate Everyw
 
 ## 4.1 El principio hecho visible: un canon, cinco proyecciones (fase 13, §13.4)
 
-`docs/VISION.md` enuncia el principio ("One canon, many projections") y `/proyecciones/` lo hace visible en el demo: toma **una** publicación canónica y muestra sus cinco salidas — página, feed, manifiesto, entrada de índice y post en otra plataforma — y la página no las afirma: las **deriva** con los mismos generadores que usan `/rss.xml`, `/llms.txt` y `/sitemap.xml` (`src/lib/projections.ts`) y compara si cada una sigue llevando el título y la URL canónica del canon. La regla "gana el canon" es una función (`containsCanon()`): una proyección que no lleve este canon no coincide y se reconstruye desde él. Lo que solo existe en un nodo (el manifiesto APW firmado por request y el espejo POSSE) se marca `requiere nodo` en vez de pintarse en verde — la misma honestidad que el ranking degradado de `/explore/`. La demo está enlazada desde Explore y desde cada post, que es donde vive el canon.
+`docs/VISION.md` enuncia el principio ("One canon, many projections") y `/projections/` lo hace visible en el demo: toma **una** publicación canónica y muestra sus cinco salidas — página, feed, manifiesto, entrada de índice y post en otra plataforma — y la página no las afirma: las **deriva** con los mismos generadores que usan `/rss.xml`, `/llms.txt` y `/sitemap.xml` (`src/lib/projections.ts`) y compara si cada una sigue llevando el título y la URL canónica del canon. La regla "gana el canon" es una función (`containsCanon()`): una proyección que no lleve este canon no coincide y se reconstruye desde él. Lo que solo existe en un nodo (el manifiesto APW firmado por request y el espejo POSSE) se marca `requiere nodo` en vez de pintarse en verde — la misma honestidad que el ranking degradado de `/explore/`. La demo está enlazada desde Explore y desde cada post, que es donde vive el canon.
 

@@ -9,7 +9,7 @@ propuesta original. La propuesta original sugería
 ## Qué existe hoy
 
 - Cliente de solo lectura contra la Storefront API de Medusa/Mercur.
-- Páginas `/tienda` y `/tienda/[handle]` generadas condicionalmente si
+- Páginas `/shop` y `/shop/[handle]` generadas condicionalmente si
   `ENABLE_COMMERCE=true`.
 - **No** procesa pagos, carrito ni checkout — por diseño, delega esos
   flujos a la instancia externa de Medusa/Mercur.

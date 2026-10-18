@@ -62,8 +62,8 @@ Portaless is in its **first public Beta**. What that means honestly:
 - **Ready today**: the full edit→publish cycle from the browser (17-element catalog, 6 skins), `did:apw` cryptographic identity with key rotation, SiteTrustScore (4 sources), external witnesses, the Portaless Index aggregator with calibrated weights and inter-node sync, plugin sandboxing, an MIT-licensed [plugin SDK](./packages/plugin-sdk/) (with a [plugin-author guide](./docs/plugin-author-guide.md)), signed community attestations, a recomputable ranking defined in the spec (V-16), and the open [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) with independently checkable [test vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md) that run as an **executable conformance suite** (110/110 cases over 11 vectors) plus a [starter kit](./docs/protocol-apw/STARTER-KIT.md) for implementers who never saw this code.
 - **Not ready yet**: the final GitHub-Pages publish step still needs a terminal; Cloudflare Pages OAuth in the wizard is “coming soon”; the plugin installer exists but is **behind a flag, off by default**, and six capability backends still answer an explicit `501` (`content:*`, `storage:*` and `agent:identify` are real); discovery across nodes has a shipped mechanism but **no public endpoint, because there are no peers to federate with**; this Beta has a **single maintainer**, so it is **invite-only** — no public sign-up until a second maintainer with real merge permissions exists ([the recorded decision](./SECURITY.md#bus-factor-single-maintainer-risk)); and the roadmap's exit criterion — a person outside the project installing Portaless unaided, with their site appearing in an Index node that is not the author's — has **not been met yet**. “Beta” is the honest name for that stage, not a marketing number.
 - **Where it is going**: [`docs/VISION.md`](./docs/VISION.md), which carries no status and no dates on purpose. What is missing today, item by item, is [`ROADMAP.md`](./ROADMAP.md) — organized by *who* has to resolve each piece: Portaless, or a third party.
-- **The core does not sell hosting or assisted install.** That is the providers' business (Cloudum, or any Portaless provider that appears). What the core gives you is that your site belongs to you and that a third party can verify it. A free install is roughly 30 minutes following tutorials; a 5-minute assisted install is bought from a provider. The honest prerequisite list — GitHub, Cloudflare, an MCP client — is in [`docs/primos-pasos.md`](./docs/primos-pasos.md).
-- **Install in 10 minutes** (Docker + browser, non-technical guide with screenshots): [`docs/primos-pasos.md`](./docs/primos-pasos.md). Announcement page on the demo: [geroiloyola.github.io/portaless/beta](https://geroiloyola.github.io/portaless/beta). The transparency standard for first-time visitors is the same one this repo uses for readers of the code: see [`ROADMAP.md`](./ROADMAP.md) (“Real status by module”).
+- **The core does not sell hosting or assisted install.** That is the providers' business (Cloudum, or any Portaless provider that appears). What the core gives you is that your site belongs to you and that a third party can verify it. A free install is roughly 30 minutes following tutorials; a 5-minute assisted install is bought from a provider. The honest prerequisite list — GitHub, Cloudflare, an MCP client — is in [`docs/first-steps.md`](./docs/first-steps.md).
+- **Install in 10 minutes** (Docker + browser, non-technical guide with screenshots): [`docs/first-steps.md`](./docs/first-steps.md). Announcement page on the demo: [geroiloyola.github.io/portaless/beta](https://geroiloyola.github.io/portaless/beta). The transparency standard for first-time visitors is the same one this repo uses for readers of the code: see [`ROADMAP.md`](./ROADMAP.md) (“Real status by module”).
 
 ---
 
@@ -151,7 +151,7 @@ This project explicitly documents what's implemented versus what's a pending ske
 
 ## Installation
 
-> **Non-technical?** The step-by-step guide with screenshots (Docker + browser only, ~10 minutes) is [`docs/primos-pasos.md`](./docs/primos-pasos.md) (Spanish). The sections below are the developer-grade version.
+> **Non-technical?** The step-by-step guide with screenshots (Docker + browser only, ~10 minutes) is [`docs/first-steps.md`](./docs/first-steps.md) (Spanish). The sections below are the developer-grade version.
 
 ### Prerequisites
 
@@ -257,7 +257,7 @@ All environment variables are optional — Portaless works out of the box, servi
 
 | Variable | Module | Description |
 |---|---|---|
-| `ENABLE_COMMERCE` | Commerce | `true` to enable `/tienda` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
+| `ENABLE_COMMERCE` | Commerce | `true` to enable `/shop` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
 | `ENABLE_TRUST_LAYER` | Trust Layer | `true` to enable AI agent verification in `functions/_middleware.js` (Cloudflare Pages and self-hosted Node) |
 | `IP_HASH_SALT` | SiteTrustScore (community votes) | **Required for community voting.** Salt used to hash the voter's IP before it is stored. Without it, `POST /trust/:siteId/vote` responds `500 server_misconfigured` and the vote is disabled — there is deliberately no fallback salt |
 | `PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY` | Deployment OAuth, pay-per-crawl | Secret of at least 32 characters used to encrypt infrastructure credentials at rest (deployment tokens and the settlement provider's API token). Required to activate a pay-per-crawl provider |

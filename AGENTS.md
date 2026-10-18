@@ -37,7 +37,7 @@ Read in this order — **do not read them all**:
 |---|---|
 | To understand what the product is and where it's going | `docs/VISION.md` |
 | To know what's real today (per module) | `ROADMAP.md` (short) or `AGENT.md` (long) |
-| To install locally (Docker + browser, ~10 minutes) | `docs/primos-pasos.md` (Spanish) |
+| To install locally (Docker + browser, ~10 minutes) | `docs/first-steps.md` (Spanish) |
 | To deploy to GitHub Pages | `docs/DEPLOY_GITHUB_PAGES.md` |
 | To deploy to Cloudflare Pages (needed for Trust Layer) | `docs/DEPLOY_CLOUDFLARE_PAGES.md` |
 | To self-host (Node/Docker/Railway/Render) | `docs/self-hosting.md` |
@@ -69,8 +69,8 @@ must know.
 | Commerce (Medusa/Mercur) | ✅ Catalog read-only; no own checkout |
 | Cloud Images (APW-signed PNG sidecars) | 🟡 Cryptographic base done; R2 storage + moderation pending |
 | Federation (signed pages doc + hardened peer reader) | 🟡 Mechanism done; no public endpoint (no peers yet) |
-| Content pages localization | ✅ Bilingual (`/paginas/<slug>/` + `/<locale>/paginas/<slug>/`) |
-| System pages bilingual | 🟡 `/beta` and `/tienda` done; `/setup` (no public header) and `/proyecciones` (needs lib localization) pending |
+| Content pages localization | ✅ Bilingual (`/pages/<slug>/` + `/<locale>/pages/<slug>/`) |
+| System pages bilingual | ✅ `/beta`, `/shop`, `/projections` (English canónica + `/es/...` Spanish); `/setup` carries its own bilingualtion) pending |
 
 ## What to read before proposing a new feature
 

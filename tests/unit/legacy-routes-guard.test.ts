@@ -24,11 +24,6 @@ const ALLOWED = [
   // historial e historico documentado
   "CHANGELOG.md",
   "CHANGELOG_es.md",
-  // FASE 4 (a corregir con la actualizacion de docs): prosa de las raices
-  "README.md",
-  "ROADMAP.md",
-  "AGENT.md",
-  "AGENTS.md",
   "docs/roadmap/ROADMAP-ARCHIVE.md",
   // el mapa de redirects (narran las URLs legadas: es su trabajo)
   "src/lib/routes.ts",
@@ -36,14 +31,6 @@ const ALLOWED = [
   "functions/_middleware.js",
   // tests de redirects (cada fila del mapa) y los actualizados en fase 2
   "tests/",
-  "packages/atomic-elements/docs/",
-  "docs/design/",
-  "docs/architecture/",
-  "docs/i18n-design.md",
-  "docs/COMMERCE_SETUP.md",
-  "docs/protocol-apw/STARTER-KIT.md",
-  "docs/self-hosting.md",
-  "scripts/capture-screenshots.mjs",
   // contenido demo (sus enlaces internos son URLs legadas: los cubren los
   // redirects de Fase 3, y el usuario decidio NO tocar los campos JSON)
   "src/content/pages/",

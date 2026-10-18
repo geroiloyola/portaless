@@ -23,7 +23,7 @@ Necesitas una instancia de **Medusa** (self-hosted o gestionada) o de
    publishable key y el ID de región.
 3. Define la variable de entorno `ENABLE_COMMERCE=true` en tu plataforma
    de despliegue (GitHub Actions o Cloudflare Pages).
-4. Vuelve a desplegar. La ruta `/tienda` listará los productos que
+4. Vuelve a desplegar. La ruta `/shop` listará los productos que
    devuelva tu instancia de Medusa/Mercur en tiempo de build.
 
 ## Qué SÍ hace este módulo
@@ -46,5 +46,5 @@ Meter lógica de pagos y checkout dentro del mismo sitio estático que
 sirve tu blog reintroduce justamente el problema de acoplamiento que este
 proyecto busca evitar (ver el análisis de WooCommerce en el whitepaper de
 Portaless). Mantener el comercio como un servicio externo, consumido solo
-por su API pública, es lo que permite que `/tienda` se pueda desactivar
+por su API pública, es lo que permite que `/shop` se pueda desactivar
 por completo sin afectar en nada al resto del sitio.

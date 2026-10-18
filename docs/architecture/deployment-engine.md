@@ -28,7 +28,7 @@ por el admin self-hosted, mismo patron que `scripts/setup.mjs` y
 
 1. Lee todas las paginas de `PageStore` (SQLite self-hosted) via `list()` +
    `load()`, y las vuelca a `src/content/pages/*.json` -- el formato que
-   `src/pages/paginas/[slug].astro` ya sabe leer via `import.meta.glob`.
+   `src/pages/pages/[slug].astro` ya sabe leer via `import.meta.glob`.
    **Salvaguarda**: por defecto excluye cualquier slug que termine en
    `-draft` (los borradores que genera el Paso 1 del Wizard) -- nunca se
    publica un borrador sin revisar. Ver `packages/deploy-engine/src/draft-filter.ts`.

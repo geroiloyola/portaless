@@ -1,6 +1,6 @@
 # Portaless self-hosted
 
-> ¿No sos técnico? La guía de 10 minutos con capturas (Docker + navegador) es [`primos-pasos.md`](./primos-pasos.md). Esta página es la versión corta para operadores.
+> ¿No sos técnico? La guía de 10 minutos con capturas (Docker + navegador) es [`first-steps.md`](./first-steps.md). Esta página es la versión corta para operadores.
 
 Portaless corre como un único contenedor Node 24 con SQLite en un volumen persistente montado en `/data`.
 

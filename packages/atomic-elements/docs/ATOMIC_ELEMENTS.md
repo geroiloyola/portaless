@@ -25,7 +25,7 @@ probar el editor de inmediato sin paso de build.
 
 1. El editor (navegador) produce un `PageLayout` (JSON) — ver `src/types.ts`.
 2. Ese mismo JSON se guarda como archivo en `src/content/pages/*.json`.
-3. La ruta `src/pages/paginas/[slug].astro` lo lee en build time y lo pasa a
+3. La ruta `src/pages/pages/[slug].astro` lo lee en build time y lo pasa a
    `PageRenderer.astro`, que llama a `renderPage()` — **el mismo motor que
    usa el editor en el navegador** — para generar el HTML final estático.
 

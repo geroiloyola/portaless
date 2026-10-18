@@ -49,7 +49,7 @@ MCP** (ChatGPT, Claude, Mistral, Perplexity, Cursor, …) becomes your editor.
 Your site is live at `https://<you>.github.io/<repo>/`.
 Full guide: [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md).
 
-> Non-technical and prefer Docker + a browser? [`primos-pasos.md`](./primos-pasos.md)
+> Non-technical and prefer Docker + a browser? [`first-steps.md`](./first-steps.md)
 > walks the local install with screenshots (Spanish).
 
 ### 2. Add Cloudflare Pages (dynamic layer + trust, ~5 minutes)
@@ -132,7 +132,7 @@ The agent writes a draft; you approve and publish. No terminal, no code.
 
 | I want to… | Read |
 |---|---|
-| Install locally with Docker + browser | [`primos-pasos.md`](./primos-pasos.md) (Spanish) |
+| Install locally with Docker + browser | [`first-steps.md`](./first-steps.md) (Spanish) |
 | Deploy the static site | [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md) |
 | Deploy the dynamic site (trust layer, login) | [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md) |
 | Self-host (Node/Docker/Railway/Render) | [`self-hosting.md`](./self-hosting.md) |

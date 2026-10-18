@@ -70,7 +70,7 @@ familias comparten `font-family` fallback del sistema.
   iOS: caja + flecha) **siempre**; el icono **principal** se deriva del
   contenido de la página que el visitante está viendo (preorden del árbol
   de elementos, sin configuración manual): `ProductGrid`/`StoreBlock` →
-  **carrito** que lleva a `/tienda/`; `Video` → **control de volumen** que
+  **carrito** que lleva a `/shop/`; `Video` → **control de volumen** que
   silencia/des-silencia los iframes embebidos (YouTube vía los comandos
   `postMessage` del IFrame API —el embed lleva `enablejsapi=1`—; Vimeo vía
   su protocolo `method`/`value`, best-effort; el estado se refleja en
@@ -159,7 +159,7 @@ precedencia exactas:
   una regla `:root[data-theme-pack]` perdería el empate por orden en
   sistemas en modo oscuro. Un atributo inline gana a **cualquier** regla de
   hoja, siempre, sin `!important`. Ambos emisores — `BaseLayout.astro` (build)
-  y `functions/paginas/[slug].js` (runtime) — hacen lo mismo, con paridad
+  y `functions/pages/[slug].js` (runtime) — hacen lo mismo, con paridad
   fijada por test.
 - **Aplicación**: tool MCP `apply_theme` (escribe `PageLayout.theme`,
   `null` lo borra; `content:read` + `content:write` + auditoría, membership
@@ -180,7 +180,7 @@ precedencia exactas:
   ambientales (fondo con degradado, capa de puntos, titular en degradado, hover)
   viven en `global.css` bajo `[data-theme-pack="portaless-nocturno"]` — CSS-only,
   sin `!important`, respetando `prefers-reduced-motion`. Las **plantillas demo**
-  (`/paginas/*`) no lo heredan: conservan su propio look para mostrar la
+  (`/pages/*`) no lo heredan: conservan su propio look para mostrar la
   variedad de temas.
 
 ## 6. Accesibilidad
@@ -208,7 +208,7 @@ precedencia exactas:
 | Chrome público | `src/components/{Header,Footer}.astro`, `src/pages/explore.astro` |
 | Contrato de temas por página | `packages/atomic-elements/src/themes/theme-pack.ts` |
 | Store de temas instalados | `packages/atomic-elements/src/persistence/theme-pack-store*.ts` |
-| Emisores (build / runtime) | `src/layouts/BaseLayout.astro`, `functions/paginas/[slug].js` |
+| Emisores (build / runtime) | `src/layouts/BaseLayout.astro`, `functions/pages/[slug].js` |
 | Tools MCP | `packages/mcp-server/src/tools/{list-themes,apply-theme}.ts` |
 
 ## 8. Tests que fijan esta guía

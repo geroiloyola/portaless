@@ -119,12 +119,12 @@ states coverage and links to what is really there.
 A content page (`src/content/pages/*.json`) declares its language through the
 **file name**, not a mandatory field:
 
-- `<slug>.json` → the **primary** version, at `/paginas/<slug>/`;
-- `<slug>.<locale>.json` → a **translation**, at `/<locale>/paginas/<slug>/`.
+- `<slug>.json` → the **primary** version, at `/pages/<slug>/`;
+- `<slug>.<locale>.json` → a **translation**, at `/<locale>/pages/<slug>/`.
 
 `src/lib/content-pages.ts` groups the files by slug (`parsePagePath` /
 `groupContentPages`), and the two routes (`paginas/[slug].astro` for the primary,
-`[locale]/paginas/[slug].astro` for the translations) render the shared
+`[locale]/pages/[slug].astro` for the translations) render the shared
 `ContentPage.astro`. A page with a translation gets the **switcher pill** to the
 *same page* in the other language (its `languageAlternate`), `hreflang`
 alternates for every version, and its own `<html lang>`; a page without one gets
@@ -134,7 +134,7 @@ prefixed URLs are its translations — so a Spanish-authored page exposes Englis
 at `/en/…` and vice versa. This is what makes the language control *translate the
 current view* instead of dropping the reader at another page.
 
-Known limit: the runtime shell (`functions/paginas/[slug].js`, which serves
+Known limit: the runtime shell (`functions/pages/[slug].js`, which serves
 pages edited from the panel and stored in D1) does not carry the translation
 mapping yet, so on a node a panel-edited page shows the notice; the static build
 (the demo, and any static host) resolves the versions from the files.

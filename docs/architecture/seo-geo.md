@@ -10,7 +10,7 @@
 
 ## Integracion pendiente
 
-En src/pages/paginas/[slug].astro agregar JsonLd + SeoHead con getSiteUrl/buildCanonicalUrl. Verificar `site` en astro.config.mjs.
+En src/pages/pages/[slug].astro agregar JsonLd + SeoHead con getSiteUrl/buildCanonicalUrl. Verificar `site` en astro.config.mjs.
 
 ## Nota sobre GEO
 

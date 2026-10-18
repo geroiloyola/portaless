@@ -71,10 +71,10 @@ interface ElementPack {
 
 | Modo | Nodo `requiresEdgeEval` | Dónde corre |
 |---|---|---|
-| `"static"` (build) | Emite un placeholder fijo (`data-portaless-edge="<type>"` + nodeId) con fallback honesto en `<noscript>`. **Los bytes premium nunca entran en `dist/`.** | `astro build` / `src/pages/paginas/[slug].astro` |
-| `"request"` (runtime) | El host lo resuelve vía el sandbox (`runPluginInProduction` / patrón `host-bridge` de commerce) tras el gate del propio plugin, e inlinea el HTML real. | `functions/paginas/[slug].js` |
+| `"static"` (build) | Emite un placeholder fijo (`data-portaless-edge="<type>"` + nodeId) con fallback honesto en `<noscript>`. **Los bytes premium nunca entran en `dist/`.** | `astro build` / `src/pages/pages/[slug].astro` |
+| `"request"` (runtime) | El host lo resuelve vía el sandbox (`runPluginInProduction` / patrón `host-bridge` de commerce) tras el gate del propio plugin, e inlinea el HTML real. | `functions/pages/[slug].js` |
 
-Esto replica exactamente cómo `/paginas/[slug]` ya funciona (dinámico si hay function, fallback estático si no) y satisface la regla dura:
+Esto replica exactamente cómo `/pages/[slug]` ya funciona (dinámico si hay function, fallback estático si no) y satisface la regla dura:
 
 > **Regla dura (a)**: el contenido premium se renderiza **en el borde a request time**, nunca se commitea como HTML estático — los bytes estáticos premium son públicos en el repo y en cada deploy, así que ningún paywall puede protegerlos.
 
@@ -87,7 +87,7 @@ El renderer **estático** de un nodo `requiresEdgeEval` recibe **solo `{ type, n
 - El placeholder se construye sin acceder a `node.props` para los nodos edge-eval, en modo static.
 - Los secretos viven solo en `pages.layout_json` (DB) — fuera de git y fuera de `dist/`.
 - El editor los lee por el endpoint autenticado que ya existe (`GET/PUT /admin/pages/:slug`).
-- `secretProps` documenta qué claves son sensibles para que el host pueda auditarlas, y un test/aserción de build verifica que ningún `dist/paginas/**/*.html` contenga el marcador que un valor sensible produciría.
+- `secretProps` documenta qué claves son sensibles para que el host pueda auditarlas, y un test/aserción de build verifica que ningún `dist/pages/**/*.html` contenga el marcador que un valor sensible produciría.
 
 **Regla dura (b)**, complementaria y ya decidida en el ROADMAP: el proveedor de billing lo elige el **operador** vía plugin con capability tokens; el núcleo no lleva billing.
 

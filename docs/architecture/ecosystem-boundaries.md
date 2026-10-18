@@ -37,7 +37,7 @@ licencias, ni Obligations legales, ni garantias.
 | | Recents | Dashboard unificado de actividad reciente | `packages/dashboard/` |
 | | Videos | Hub audiovisual: el elemento `Video` ya existe (embed); el canal, el collector y el ranking, no | `packages/atomic-elements/src/elements/registry.ts:244` |
 | | Music | Consolidador de streaming; **hoy no existe codigo** — solo enlaces estaticos en los JSON de ejemplo | — |
-| | Shop | Comercio **de solo lectura**: catalogo Medusa/Mercur y tarjetas de afiliado. **Checkout y pagos no viven aqui** | `src/commerce/`, `packages/commerce-plugin/`, `src/pages/tienda/` |
+| | Shop | Comercio **de solo lectura**: catalogo Medusa/Mercur y tarjetas de afiliado. **Checkout y pagos no viven aqui** | `src/commerce/`, `packages/commerce-plugin/`, `src/pages/shop/` |
 | | Explore | Descubrimiento. **Hoy es local**: globa `src/content/pages/*.json` del propio repo. La capa federada es trabajo futuro | `src/pages/explore.astro:21` |
 | **Confianza** | Veraciers | Identidad, voto y calibracion. **La tabla de votos ya existe** con escala 1–5, comentario libre y fecha; lo que falta es la atribucion criptografica y la pagina publica de cada uno — mientras tanto `"92 Veraciers activos"` sigue siendo un string literal (ver 2.3) | `schema.sql:319`, `src/pages/trust/index.astro:119,128` |
 
