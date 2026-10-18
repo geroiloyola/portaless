@@ -1,0 +1,65 @@
+# Test de upgrade: toma una base de cada tag PUBLICADO, la migra con el codigo
+# de HEAD y verifica que los datos siguen intactos y el sitio arranca.
+#
+# Por que existe: la migracion mas fuerte no es "corre", es "deja el sitio
+# arrancable con lo que ya habia". Los primeros operadores seran los primeros
+# en actualizar, asi que este es el contrato que se protege.
+#
+# Como funciona: por cada tag `v*`, se hace checkout del tag, se siembra una
+# base con SU schema (copiando el script de snapshot de HEAD, porque los tags
+# viejos no lo traen) y se guarda en /tmp. Al final, con HEAD, se migra cada
+# base y se corre scripts/verify-upgrade.mjs (misma verificacion que
+# tests/unit/upgrade.test.ts, para que CI y local prueben LO MISMO).
+#
+# Hoy hay un solo tag (v0.0.10) y la migracion es el baseline v1, asi que el
+# test es un smoke. Se vuelve estricto a partir de la primera migracion v2+.
+
+name: Upgrade tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Preparar
+        run: |
+          set -euo pipefail
+          cp scripts/make-db-snapshot.mjs /tmp/make-db-snapshot.mjs
+          mkdir -p /tmp/upgrade
+          echo "TAGS=$(git tag --list 'v*' --sort=-v:refname | tr '\n' ' ')" >> "$GITHUB_ENV"
+
+      - name: Sembrar una base por cada tag publicado
+        run: |
+          set -euo pipefail
+          if [ -z "${TAGS// /}" ]; then echo "Sin tags publicados: nada que probar."; exit 0; fi
+          npm install
+          for tag in $TAGS; do
+            echo "== snapshot $tag =="
+            git checkout --quiet "$tag"
+            npm install >/dev/null 2>&1 || true
+            cp /tmp/make-db-snapshot.mjs scripts/make-db-snapshot.mjs
+            node node_modules/tsx/dist/cli.mjs scripts/make-db-snapshot.mjs "/tmp/upgrade/$tag.db"
+            git checkout --quiet -
+          done
+
+      - name: Migrar cada base a HEAD y verificar
+        run: |
+          set -euo pipefail
+          if [ -z "${TAGS// /}" ]; then exit 0; fi
+          npm install
+          for tag in $TAGS; do
+            echo "== migrar $tag -> HEAD =="
+            node node_modules/tsx/dist/cli.mjs scripts/verify-upgrade.mjs "/tmp/upgrade/$tag.db"
+          done
