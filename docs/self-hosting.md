@@ -45,6 +45,51 @@ No hace falta `RAILWAY_RUN_UID=0`: el entrypoint ajusta el dueño de `/data` y c
 
 Los discos persistentes requieren un plan pago. Con plan free, Render rechaza el Blueprint.
 
+## Actualizar (sin perder datos)
+
+El contrato de datos es explícito: la base registra su versión en
+`schema_migrations`, el core **se niega a arrancar** si la base es más nueva que
+el código, y **nunca degrada el schema en silencio**. Antes de actualizar:
+
+```bash
+# 1. Diagnóstico: ¿en qué versión está la base y qué espera el código?
+npm run doctor            # o: docker compose exec portaless npm run doctor
+
+# 2. Si la base está atrás, migrar (hace BACKUP primero):
+npm run migrate           # --dry-run para ver qué haría, sin tocar nada
+```
+
+El backup queda en `<dataDir>/backups/db-vN-<fecha>.sqlite`. En Docker, además,
+el servidor migra solo al arrancar (después de aplicar `schema.sql`), así que
+actualizar es:
+
+```bash
+docker compose pull       # con el tag de imagen fijado
+docker compose up -d
+```
+
+**Rollback**: restaurá el backup sobre el volumen y volvé al tag de imagen
+anterior. Si una migración falla, su transacción se revierte y el arranque
+corta (el backup queda intacto).
+
+Para Cloudflare D1: `wrangler d1 migrations apply <DB_NAME> --remote`.
+Ver también la sección **Migration** del [`CHANGELOG`](../CHANGELOG.md).
+
+## Backup
+
+Todo lo que el dueño escribe vive en dos lugares:
+
+- **Base SQLite** (`/data/portaless.db`): páginas del editor, skin, política de
+  acceso de agentes, claves de identidad cifradas, ledger. Respaldá el archivo
+  (o dejá que `npm run migrate` lo copie a `/data/backups/` antes de cada
+  migración).
+- **Clave de cifrado** (`PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY`): **aparte del
+  volumen**. Sin ella, el backup de la base no sirve para descifrar la
+  identidad del sitio.
+
+El contenido en archivos (`src/content/**`, `public/**`) es parte del repositorio:
+se respalda con git.
+
 ## Variables
 
 | Variable | Default | Uso |

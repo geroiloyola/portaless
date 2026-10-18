@@ -1,0 +1,51 @@
+# Copia este archivo a `.github/workflows/update-upstream.yml` de TU repositorio
+# (un fork de Portaless) para actualizarte a la ultima version con un click.
+#
+# Que hace: al correrlo a mano (Actions -> Update upstream -> Run workflow),
+# busca el tag publicado mas reciente del upstream, crea una rama y abre un PR
+# "Update to vX" contra tu `main`. Vos revisas el diff y dejas que el CI sea el
+# filtro. No mergea solo.
+#
+# Tu contenido vive en `src/content/**` y `public/**`: para que una
+# actualizacion no lo pise, agregalo a tu `.gitattributes` con `merge=ours`.
+
+name: Update upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream:
+        description: "Repositorio upstream (owner/name)"
+        required: true
+        default: "geroiloyola/portaless"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Traer el tag mas reciente y abrir el PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM: ${{ inputs.upstream }}
+        run: |
+          set -euo pipefail
+          git remote add upstream "https://github.com/$UPSTREAM.git" 2>/dev/null || true
+          git fetch --tags upstream
+          git fetch upstream main
+          TAG=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          if [ -z "$TAG" ]; then echo "El upstream no tiene tags publicados todavia."; exit 0; fi
+          BRANCH="update/$TAG"
+          git checkout -b "$BRANCH" upstream/main
+          git push -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Update to $TAG" \
+            --body "Actualizacion al tag **$TAG** del upstream (\`$UPSTREAM\`).
+
+          Revisa el diff (tu contenido vive en \`src/content/**\` y \`public/**\`) y deja que el CI sea el filtro. Antes de mergear, mira la seccion **Migration** del CHANGELOG por si hay cambios de datos."

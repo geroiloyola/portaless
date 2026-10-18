@@ -21,3 +21,22 @@ para las partes dinámicas de Portaless (por ejemplo, el servidor MCP o el
 sandboxing de plugins vía Dynamic Workers descritos en el whitepaper),
 sin cambiar de proveedor. Es la ruta recomendada si planeas escalar más
 allá de un sitio puramente estático.
+
+## D1: esquema y migraciones
+
+En Cloudflare los datos viven en **D1**. La primera vez aplica el esquema; al
+actualizar, aplica las migraciones numeradas (el contrato de datos que también
+usa el self-host):
+
+```bash
+# Primera vez (o al regenerar el esquema):
+npx wrangler d1 execute <DB_NAME> --file=schema.sql --remote
+
+# Actualizar a un tag nuevo: aplica las migraciones numeradas.
+npx wrangler d1 migrations apply <DB_NAME> --remote
+```
+
+El core es fail-closed: si la base quedara más nueva que el código, el arranque
+se niega en lugar de degradar el schema. La sección **Migration** del
+[`CHANGELOG`](../CHANGELOG.md) resume el flujo por tipo de despliegue.
+

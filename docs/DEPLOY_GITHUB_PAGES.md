@@ -28,3 +28,17 @@ Si quieres usar tu propio dominio en vez de `*.github.io`:
 Este es exactamente el patrón de "hosting delegado" descrito en el
 documento del Protocol APW: tu dominio es tuyo, el hosting lo provee GitHub
 gratis, y puedes migrarlo a otro proveedor cambiando solo los registros DNS.
+
+## Actualizar (no hay base de datos)
+
+GitHub Pages sirve solo el sitio estático: **no hay base que migrar**, así que
+actualizar es traer los cambios del upstream. En un fork, copiá
+[`examples/update-upstream.yml`](../examples/update-upstream.yml) a
+`.github/workflows/` de tu repo: un botón manual (**Actions → Update upstream →
+Run workflow**) abre un PR *"Update to vX"* desde el tag publicado más reciente
+del upstream. Revisás el PR, corre el CI como filtro, y mergeás.
+
+Si el contenido y el código viven en el mismo repo, el merge puede tocar tus
+archivos: mantené tu contenido en `src/content/**` y `public/**` y protegelos en
+tu `.gitattributes` con `merge=ours` para que una actualización no los pise.
+
