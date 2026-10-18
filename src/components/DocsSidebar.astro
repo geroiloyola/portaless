@@ -12,30 +12,57 @@ interface Props {
 const { current, locale = "en" } = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
-<nav class="docs-nav" aria-label="Documentation">
-  {DOC_GROUPS.map((group) => (
-    <div class="docs-nav-group">
-      <h3 class="docs-nav-title">{group.title[locale]}</h3>
-      <ul>
-        {group.docs.map((doc) => (
-          <li>
-            <a
-              href={`${base}docs/${doc.slug}/`}
-              class:list={["docs-nav-link", { "docs-nav-link--current": current === doc.slug }]}
-              aria-current={current === doc.slug ? "page" : undefined}
-            >
-              <span>{doc.title}</span>
-              <span class="docs-lang">{doc.lang}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  ))}
-</nav>
+<div class="docs-nav-wrap">
+  <!-- Colapsable SIN JS (patron checkbox): en movil el nav arranca oculto y el
+       label lo abre; en desktop el nav se muestra siempre y el label desaparece.
+       No uso <details> porque su contenido cerrado se oculta con
+       ::details-content (content-visibility), que NO se puede forzar visible
+       por CSS en todos los navegadores. -->
+  <input type="checkbox" id="docs-nav-toggle" class="docs-nav-toggle" />
+  <label for="docs-nav-toggle" class="docs-nav-summary">Documentación</label>
+  <nav class="docs-nav" aria-label="Documentation">
+    {DOC_GROUPS.map((group) => (
+      <div class="docs-nav-group">
+        <h3 class="docs-nav-title">{group.title[locale]}</h3>
+        <ul>
+          {group.docs.map((doc) => (
+            <li>
+              <a
+                href={`${base}docs/${doc.slug}/`}
+                class:list={["docs-nav-link", { "docs-nav-link--current": current === doc.slug }]}
+                aria-current={current === doc.slug ? "page" : undefined}
+              >
+                <span>{doc.title}</span>
+                <span class="docs-lang">{doc.lang}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </nav>
+</div>
 
 <style>
-  .docs-nav { font-size: 0.9rem; }
+  .docs-nav-wrap { margin-bottom: 18px; }
+
+  /* El checkbox esta oculto pero sigue siendo enfocable (teclado). */
+  .docs-nav-toggle { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  .docs-nav-summary {
+    display: inline-block;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 8px 12px;
+    border: 1px solid var(--panel-border, #2c231a);
+    border-radius: var(--radius-input, 8px);
+    color: var(--text, #f7f7f2);
+  }
+
+  /* Movil (default): oculto hasta que el label lo abre. */
+  .docs-nav { display: none; font-size: 0.9rem; margin-top: 14px; }
+  .docs-nav-toggle:checked ~ .docs-nav { display: block; }
+
   .docs-nav-group { margin-bottom: 22px; }
   .docs-nav-title {
     margin: 0 0 8px;
@@ -66,5 +93,13 @@ const base = import.meta.env.BASE_URL;
     border: 1px solid var(--panel-border, #2c231a);
     border-radius: 999px;
     padding: 1px 6px;
+  }
+
+  @media (min-width: 761px) {
+    .docs-nav-summary { display: none; }
+    .docs-nav-toggle { display: none; }
+    /* Desktop: el nav se muestra siempre (gana por orden de fuente al default
+       de movil, misma especificidad). */
+    .docs-nav { display: block; margin-top: 0; }
   }
 </style>

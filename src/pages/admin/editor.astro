@@ -40,6 +40,14 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
   <div id="editor-toolbar" class="editor-toolbar">
     <span id="editor-slug-label" class="editor-slug-label"></span>
     <div class="editor-toolbar-actions">
+      <label class="editor-canvas-width">
+        <span>Vista</span>
+        <select id="editor-canvas-width" aria-label="Ancho de la vista previa">
+          <option value="desktop">Escritorio</option>
+          <option value="tablet">Tablet</option>
+          <option value="mobile">Móvil</option>
+        </select>
+      </label>
       <button id="btn-export" class="btn">Exportar JSON</button>
       <button id="btn-save" class="btn primary">Publicar</button>
     </div>
@@ -272,6 +280,17 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
       fetchProductPreview,
       elementCatalog,
     });
+
+    // Selector de ancho de la vista previa: fija data-canvas-width en el canvas
+    // y las grillas del core (intrinsecas) responden al ancho real. Editar
+    // movil como ciudadano de primera, sin adivinar.
+    const canvasWidthEl = document.getElementById("editor-canvas-width") as HTMLSelectElement | null;
+    const applyCanvasWidth = () => {
+      const canvas = rootEl.querySelector(".ae-canvas");
+      if (canvas && canvasWidthEl) canvas.setAttribute("data-canvas-width", canvasWidthEl.value);
+    };
+    applyCanvasWidth();
+    canvasWidthEl?.addEventListener("change", applyCanvasWidth);
 
     saveBtn.addEventListener("click", async () => {
       try {

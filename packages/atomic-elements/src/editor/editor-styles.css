@@ -116,6 +116,11 @@
   background: var(--panel-bg); border: 1px dashed var(--panel-border); border-radius: 16px;
   padding: 20px; display: flex; flex-direction: column; gap: 14px;
 }
+/* Selector de ancho de la vista previa (editor.astro): las grillas del core son
+   intrinsecas y responden al ancho del canvas, asi que esto muestra el layout
+   real de cada breakpoint. */
+.ae-canvas[data-canvas-width="tablet"] { max-width: 480px; }
+.ae-canvas[data-canvas-width="mobile"] { max-width: 375px; }
 .ae-canvas.ae-drop-active { border-color: var(--accent, #C5D86D); }
 .ae-canvas:empty::before {
   content: "Arrastra elementos de la izquierda aqui";
@@ -147,3 +152,7 @@
   .ae-drop-indicator { animation: none; }
   .ae-palette-item, .ae-toolbar-link { transition: none; }
 }
+
+/* Selector de ancho de la vista previa (barra del editor). */
+.editor-canvas-width { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted, #6E6653); }
+.editor-canvas-width select { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--panel-border, #E4E6C3); background: var(--panel-bg, #FFF); color: var(--text, #261C15); }
