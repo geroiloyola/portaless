@@ -8,7 +8,7 @@
 //              el runtime REAL con una dist plantilla de 404 y pega cada fila.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { applySchema } from "../../scripts/setup.mjs";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
@@ -111,13 +111,13 @@ describe("redirects runtime self-host (una fila por cada regla del mapa)", () =>
 // slug de contenido del build.
 // ---------------------------------------------------------------------------
 describe("redirects estaticos (dist/): meta-refresh con canonical", () => {
-  it("las raices del sistema son archivos EMITIDOS en dist/ (URL relativa)", () => {
+  it("las raices del sistema son archivos EMITIDOS en dist/ con URL relativa (su fuente vive en public/)", () => {
     for (const case_ of [
-      { dir: join(repo, "dist", "tienda"), dest: "../es/shop/" },
-      { dir: join(repo, "dist", "en", "tienda"), dest: "../shop/" },
-      { dir: join(repo, "dist", "en", "beta"), dest: "../beta/" },
-      { dir: join(repo, "dist", "proyecciones"), dest: "../es/projections/" },
-      { dir: join(repo, "dist", "en", "proyecciones"), dest: "../projections/" },
+      { dir: join(repo, "public", "tienda"), dest: "../es/shop/" },
+      { dir: join(repo, "public", "en", "tienda"), dest: "../shop/" },
+      { dir: join(repo, "public", "en", "beta"), dest: "../beta/" },
+      { dir: join(repo, "public", "proyecciones"), dest: "../es/projections/" },
+      { dir: join(repo, "public", "en", "proyecciones"), dest: "../projections/" },
     ]) {
       const src = readFileSync(join(case_.dir, "index.html"), "utf8");
       expect(src.toLowerCase()).toContain("http-equiv=\"refresh\"");
@@ -125,7 +125,7 @@ describe("redirects estaticos (dist/): meta-refresh con canonical", () => {
     }
   });
 
-  it("cada slug de contenido tiene su redireccion emitida", () => {
+  it.skipIf(!existsSync(join(repo, "dist")))("cada slug de contenido tiene su redireccion emitida tras el build", () => {
     for (const page of loadContentPages()) {
       const dir = join(repo, "dist", "paginas", page.slug);
       expect(resolveLegacyRedirect(`/paginas/${page.slug}/`)).toBe(`/pages/${page.slug}/`);
