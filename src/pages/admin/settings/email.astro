@@ -1,0 +1,247 @@
+---
+// Panel de email transaccional (TASK 5). Requiere sesion valida -- protegido
+// por functions/admin/_middleware.js. Escribe site_settings via
+// PUT /admin/api/email (mismo patron que analytics.astro).
+//
+// Delegacion Ciega: aca el dueno decide QUE plantillas estan aprobadas y con
+// que proveedor. Un plugin solo puede pedir una plantilla aprobada; el `from`
+// lo inyecta el core. El dueno nunca expone su proveedor a un plugin.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+
+const PROVIDER_HINTS: Record<string, string> = {
+  none: "Sin proveedor: email:send responde EMAIL_BACKEND_NOT_CONFIGURED (los plugins no pueden enviar).",
+  webhook: "Webhook transaccional: Portaless hace POST JSON { from, to, subject, text }. Conecta Resend, Mailgun, SES o tu servicio con un endpoint interno.",
+  smtp: "SMTP directo: host, puerto (587 STARTTLS / 465 TLS), usuario y contraseña. Portaless habla SMTP sin dependencias.",
+};
+---
+
+<BaseLayout title="Email — Portaless Admin">
+  <div class="em-page-header">
+    <h1 class="em-page-title">Email transaccional</h1>
+    <p class="em-page-subtitle">
+      El remitente del sitio y las plantillas que los plugins pueden enviar.
+      Un plugin solo aporta <code>{"{ template, to, data }"}</code>: el asunto, el
+      cuerpo y el <code>from</code> los controla el sitio.
+    </p>
+  </div>
+
+  <div id="em-loading" class="em-loading">Cargando configuración…</div>
+  <div id="em-load-error" class="em-load-error" style="display:none;"></div>
+
+  <div id="em-root" style="display:none;">
+    <form id="em-form" class="em-form">
+      <h2 class="em-form-title">Proveedor</h2>
+      <label class="em-field">
+        <span>Proveedor</span>
+        <select id="em-provider"></select>
+      </label>
+      <p class="em-hint" id="em-provider-hint"></p>
+
+      <label class="em-field" id="em-url-field">
+        <span>URL del webhook</span>
+        <input type="text" id="em-url" maxlength="300" placeholder="https://hooks.tuservicio.com/send" autocomplete="off" />
+      </label>
+      <label class="em-field" id="em-host-field">
+        <span>Host SMTP</span>
+        <input type="text" id="em-host" maxlength="200" placeholder="smtp.tuproveedor.com" autocomplete="off" />
+      </label>
+      <label class="em-field" id="em-port-field">
+        <span>Puerto SMTP</span>
+        <input type="number" id="em-port" min="1" max="65535" placeholder="587" />
+      </label>
+      <label class="em-field" id="em-user-field">
+        <span>Usuario SMTP (opcional)</span>
+        <input type="text" id="em-username" maxlength="200" autocomplete="off" />
+      </label>
+      <label class="em-field" id="em-token-field">
+        <span id="em-token-label">Token / contraseña</span>
+        <input type="password" id="em-token" maxlength="400" autocomplete="new-password" />
+      </label>
+
+      <h2 class="em-form-title">Remitente del sitio</h2>
+      <p class="em-hint">El <code>from</code> de todo email que salga del sitio. Los plugins nunca lo eligen.</p>
+      <label class="em-field">
+        <span>From</span>
+        <input type="text" id="em-from" maxlength="254" placeholder="noreply@tudominio.com" autocomplete="off" />
+      </label>
+
+      <h2 class="em-form-title">Plantillas aprobadas</h2>
+      <p class="em-hint">
+        Solo estas plantillas se pueden enviar. Usa <code>{"{{var}}"}</code> para interpolar los datos que pasa el plugin.
+      </p>
+      <div id="em-templates"></div>
+      <button type="button" id="em-add-template" class="em-add-btn">+ Agregar plantilla</button>
+
+      <div class="em-actions">
+        <button type="submit" class="em-save-btn">Guardar</button>
+      </div>
+      <p id="em-msg" class="em-msg" style="display:none;"></p>
+    </form>
+  </div>
+
+  <style>
+    .em-page-header { margin-bottom: 28px; }
+    .em-page-title { margin: 0 0 6px; font-size: 1.4rem; }
+    .em-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 640px; }
+    .em-loading, .em-load-error { color: var(--portaless-muted); font-size: 0.9rem; }
+    .em-load-error { color: var(--danger-fg, #B3372C); }
+    .em-form {
+      max-width: 720px; margin-bottom: 24px; padding: 20px 24px;
+      border: 1px solid var(--portaless-border); border-radius: 12px; background: var(--panel-bg, #fff);
+    }
+    .em-form-title { margin: 18px 0 10px; font-size: 1.05rem; }
+    .em-form-title:first-of-type { margin-top: 0; }
+    .em-field { display: block; margin-bottom: 14px; }
+    .em-field span { display: block; font-size: 0.8rem; color: var(--portaless-muted); margin-bottom: 5px; }
+    .em-field select, .em-field input {
+      width: 100%; max-width: 420px; padding: 8px 10px;
+      border: 1px solid var(--portaless-border); border-radius: 8px;
+      background: var(--portaless-bg); color: var(--portaless-fg); font-size: 0.9rem; font-family: inherit;
+    }
+    .em-hint { margin: 0 0 14px; font-size: 0.8rem; color: var(--portaless-muted); line-height: 1.5; }
+    .em-template {
+      border: 1px solid var(--portaless-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    }
+    .em-template-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .em-template-head input { max-width: 260px; }
+    .em-remove-btn { border: 1px solid var(--portaless-border); background: transparent; color: var(--danger-fg, #B3372C); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; }
+    .em-template textarea {
+      width: 100%; min-height: 64px; padding: 8px 10px; border: 1px solid var(--portaless-border); border-radius: 8px;
+      background: var(--portaless-bg); color: var(--portaless-fg); font-family: inherit; font-size: 0.88rem; box-sizing: border-box;
+    }
+    .em-add-btn { border: 1px dashed var(--portaless-border); background: transparent; color: var(--portaless-fg); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem; }
+    .em-actions { margin-top: 18px; }
+    .em-save-btn { border: none; background: var(--portaless-accent); color: #261C15; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+    .em-msg { margin: 12px 0 0; font-size: 0.85rem; }
+    .em-msg.em-ok { color: var(--success-fg, #4A6B1F); }
+    .em-msg.em-err { color: var(--danger-fg, #B3372C); }
+  </style>
+</BaseLayout>
+
+<script define:vars={{ PROVIDER_HINTS }}>
+  const $ = (id) => document.getElementById(id);
+  const loading = $("em-loading");
+  const loadError = $("em-load-error");
+  const root = $("em-root");
+  const providerSelect = $("em-provider");
+  const providerHint = $("em-provider-hint");
+  const urlField = $("em-url-field");
+  const hostField = $("em-host-field");
+  const portField = $("em-port-field");
+  const userField = $("em-user-field");
+  const tokenField = $("em-token-field");
+  const tokenLabel = $("em-token-label");
+  const templatesEl = $("em-templates");
+  const msg = $("em-msg");
+
+  const PROVIDERS = ["none", "webhook", "smtp"];
+
+  function showMsg(text, ok) {
+    msg.textContent = text;
+    msg.className = `em-msg ${ok ? "em-ok" : "em-err"}`;
+    msg.style.display = "block";
+  }
+
+  function syncProviderFields() {
+    const kind = providerSelect.value;
+    providerHint.textContent = PROVIDER_HINTS[kind] || "";
+    urlField.style.display = kind === "webhook" ? "" : "none";
+    hostField.style.display = kind === "smtp" ? "" : "none";
+    portField.style.display = kind === "smtp" ? "" : "none";
+    userField.style.display = kind === "smtp" ? "" : "none";
+    tokenField.style.display = kind === "none" ? "none" : "";
+    tokenLabel.textContent = kind === "smtp" ? "Contraseña SMTP" : "Token Bearer (opcional)";
+  }
+
+  function templateRow(t = { id: "", subject: "", body: "" }) {
+    const wrap = document.createElement("div");
+    wrap.className = "em-template";
+    wrap.innerHTML = `
+      <div class="em-template-head">
+        <input type="text" class="em-t-id" placeholder="order_confirmation" maxlength="64" />
+        <button type="button" class="em-remove-btn">Quitar</button>
+      </div>
+      <input type="text" class="em-t-subject" placeholder="Asunto (puede usar {{orderId}})" maxlength="200" style="width:100%;max-width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid var(--portaless-border);border-radius:8px;background:var(--portaless-bg);color:var(--portaless-fg);font-family:inherit;box-sizing:border-box;" />
+      <textarea class="em-t-body" placeholder="Cuerpo en texto ({{var}})"></textarea>
+    `;
+    wrap.querySelector(".em-t-id").value = t.id || "";
+    wrap.querySelector(".em-t-subject").value = t.subject || "";
+    wrap.querySelector(".em-t-body").value = t.body || "";
+    wrap.querySelector(".em-remove-btn").addEventListener("click", () => wrap.remove());
+    templatesEl.appendChild(wrap);
+  }
+
+  function collectTemplates() {
+    return Array.from(templatesEl.querySelectorAll(".em-template")).map((el) => ({
+      id: el.querySelector(".em-t-id").value.trim(),
+      subject: el.querySelector(".em-t-subject").value,
+      body: el.querySelector(".em-t-body").value,
+    })).filter((t) => t.id || t.subject || t.body);
+  }
+
+  function fill(settings) {
+    for (const p of PROVIDERS) {
+      const o = document.createElement("option");
+      o.value = p;
+      o.textContent = p;
+      providerSelect.appendChild(o);
+    }
+    const provider = settings.provider || { kind: "none" };
+    providerSelect.value = provider.kind || "none";
+    $("em-url").value = provider.url || "";
+    $("em-host").value = provider.host || "";
+    $("em-port").value = provider.port || "";
+    $("em-username").value = provider.username || "";
+    $("em-token").value = provider.token || "";
+    $("em-from").value = settings.from || "";
+    templatesEl.innerHTML = "";
+    (settings.templates || []).forEach(templateRow);
+    syncProviderFields();
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/admin/api/email", { credentials: "same-origin" });
+      if (res.status === 401) return location.replace("/admin/login");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      fill(await res.json());
+      loading.style.display = "none";
+      root.style.display = "";
+    } catch (err) {
+      loading.style.display = "none";
+      loadError.style.display = "";
+      loadError.textContent = `No se pudo cargar la configuración de email (${err.message}).`;
+    }
+  }
+
+  providerSelect.addEventListener("change", syncProviderFields);
+  $("em-add-template").addEventListener("click", () => templateRow());
+
+  $("em-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const kind = providerSelect.value;
+    const provider = { kind };
+    if (kind === "webhook") {
+      provider.url = $("em-url").value.trim();
+      provider.token = $("em-token").value;
+    } else if (kind === "smtp") {
+      provider.host = $("em-host").value.trim();
+      provider.port = Number($("em-port").value);
+      provider.username = $("em-username").value.trim();
+      provider.token = $("em-token").value;
+    }
+    const payload = { provider, from: $("em-from").value.trim(), templates: collectTemplates() };
+    const res = await fetch("/admin/api/email", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 401) return location.replace("/admin/login");
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return showMsg(body.message || "No se pudo guardar.", false);
+    showMsg("Guardado.", true);
+  });
+
+  load();
+</script>
