@@ -12,6 +12,17 @@ import { defineConfig } from "astro/config";
 // Los docs NO usan plugins del procesador de Markdown (Astro 7 ya no trae
 // remark): src/lib/docs-loader.mjs reescribe los enlaces relativos ANTES de
 // guardar el body (docs/i18n-design.md).
+//
+// REDIRECTS de las URLs legadas (Fase 3). El mapa unico vive en
+// src/lib/routes.ts (LEGACY_ROUTES); la misma tabla cubre:
+//   1. este build estatico: las redirecciones EMITIDAS son paginas meta-refresh
+//      con canonical (lo unico posible en GitHub Pages). Las rutas estaticas de
+//      contenido estan en src/pages/paginas/[slug].astro y
+//      [locale]/paginas/[slug].astro; las raices del sistema son archivos dans
+//      public/ con URL relativa (funcionan bajo cualquier base).
+//   2. 301 reales en functions/_middleware.js (Cloudflare Pages),
+//   3. el runtime Node de server/ (ejecuta el mismo middleware).
+// /beta/ conserva su URL pero ahora es ingles (DEFAULT_LOCALE): aceptado.
 export default defineConfig({
   output: "static",
   site: process.env.PORTALESS_SITE_URL || "https://tu-usuario.github.io",

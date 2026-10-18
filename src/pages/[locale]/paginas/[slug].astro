@@ -1,0 +1,38 @@
+---
+// REDIRECCION (Fase 3): las TRADUCCIONES (los archivos <slug>.<locale>.json) que
+// antes vivian bajo cada locale/paginas ahora viven bajo el mismo locale en
+// /<locale>/pages/.
+import { loadContentPages, versionHref } from "../../../lib/content-pages";
+import { contentPageHref } from "../../../lib/content-pages";
+import { isDraft } from "../../../../packages/deploy-engine/src/draft-filter";
+
+export async function getStaticPaths() {
+  const out: Array<{ params: { locale: string; slug: string }; props: { destination: string; slug: string; locale: string } }> = [];
+  for (const page of loadContentPages()) {
+    if (isDraft(page.primary.layout)) continue;
+    for (const version of page.versions) {
+      if (version.primary) continue;
+      out.push({
+        params: { locale: version.locale, slug: version.slug },
+        props: { destination: versionHref(version, "/"), slug: version.slug, locale: version.locale },
+      });
+    }
+  }
+  return out;
+}
+
+const { destination, slug, locale } = Astro.props as { destination: string; slug: string; locale: string };
+const canonical = contentPageHref(slug, locale);
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{`Page moved: /${locale}/pages/${slug}/`}</title>
+    <link rel="canonical" href={canonical} />
+    <meta http-equiv="refresh" content={`0;url=${destination}`} />
+    <style>body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 30rem; }</style>
+  </head>
+  <body>
+    <p>This page moved to <a href={destination}>{destination}</a>.</p>
+  </body>
+</html>

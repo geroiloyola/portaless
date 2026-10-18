@@ -104,7 +104,10 @@ export const LEGACY_ROUTES: LegacyRedirect[] = [
   { from: /^\/en\/proyecciones\/?$/, to: () => "/projections/" },
   // beta: /en/beta -> canonica (/beta ahora es ingles, sin prefijo)
   { from: /^\/en\/beta\/?$/, to: () => "/beta/" },
-  // docs renombrado
+  // docs renombrado: el archivo y su slug en el hub (/docs/start-in-10-minutes
+  // era el slug del archivo docs/first-steps.md antes del renombre).
+  { from: /^\/docs\/start-in-10-minutes\/?$/, to: () => "/docs/first-steps/" },
+  { from: /^\/docs\/start-in-10-minutes\.md$/, to: () => "/docs/first-steps.md" },
   { from: /^\/docs\/primos-pasos\/?$/, to: () => "/docs/first-steps/" },
   { from: /^\/docs\/primos-pasos\.md$/, to: () => "/docs/first-steps.md" },
 ];

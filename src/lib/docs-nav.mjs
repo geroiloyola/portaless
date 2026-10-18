@@ -20,7 +20,7 @@ export const DOC_GROUPS = [
     id: "getting-started",
     title: { en: "Getting started", es: "Primeros pasos" },
     docs: [
-      { slug: "start-in-10-minutes", title: "Start in 10 minutes", file: "docs/first-steps.md", lang: "es" },
+      { slug: "first-steps", title: "Start in 10 minutes", file: "docs/first-steps.md", lang: "es" },
       { slug: "install", title: "Install (GitHub Pages)", file: "docs/DEPLOY_GITHUB_PAGES.md", lang: "es" },
       { slug: "self-hosting", title: "Self-hosting", file: "docs/self-hosting.md", lang: "es" },
     ],

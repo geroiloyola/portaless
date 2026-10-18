@@ -47,6 +47,7 @@ import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
+import { resolveLegacyRedirect } from "../src/lib/routes.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
@@ -105,6 +106,19 @@ function scheduleAutoEmit(context, env, operatorKeyId) {
 
 export async function onRequest(context) {
   const { request, env, next } = context;
+  // REDIRECTS de las URLs legadas (Fase 3): 301 en el punto de entrada comun.
+  // El mapa es FIJO (src/lib/routes.ts, LEGACY_ROUTES) y no tiene open redirect:
+  // matching por tabla, slug validado, query preservado. En GitHub Pages (sin
+  // functions/) el build static emite las paginas meta-refresh equivalentes.
+  const url = new URL(request.url);
+  const basePath = (env.PORTALESS_BASE_PATH || "/").replace(/\/+$/, "");
+  const sitePath = url.pathname.startsWith(basePath)
+    ? url.pathname.slice(basePath.length) || "/"
+    : url.pathname;
+  const legacyDestination = resolveLegacyRedirect(sitePath);
+  if (legacyDestination) {
+    return Response.redirect(`${url.origin}${basePath}${legacyDestination}${url.search}`, 301);
+  }
   if (env.ENABLE_TRUST_LAYER !== "true") return next();
   if (isPublicBotRoute(new URL(request.url).pathname)) return next();
 
