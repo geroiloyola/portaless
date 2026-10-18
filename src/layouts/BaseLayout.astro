@@ -155,6 +155,6 @@ import { VOLUME_LISTENER_SCRIPT } from "../lib/atomic-responsive-icons";
     <main class="container">
       <slot />
     </main>
-    <Footer />
+    <Footer locale={isLocale(lang) ? lang : SITE_LANG} />
   </body>
 </html>

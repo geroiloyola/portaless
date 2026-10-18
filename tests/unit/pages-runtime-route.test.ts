@@ -86,7 +86,7 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
     expect(html).toContain(">Publicaciones<");
     expect(html).not.toMatch(/>Blog</);
     expect(html).toContain(">TrustScore<");
-    expect(html).toContain(">Explore<");
+    expect(html).toContain(">Explorar<"); // footer i18n: SITE_LANG=es
     expect(html).toContain("Powered by Portaless");
     expect(html).not.toContain("Hecho con");
     expect(html).toContain("[data-portaless-share]");

@@ -6,6 +6,10 @@
 //      openSqlite y no puede entrar al build estatico -- este test es lo
 //      que evita que se desincronice.
 //   3. Explore apunta a una pagina que existe en el repo.
+//
+// Desde TAREA 2 (i18n build-time) el texto del footer NO vive quemado en los
+// componentes: sale del diccionario (src/i18n) via t(). Este test verifica que
+// las claves existan y que ambas superficies (build y runtime) las usen.
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -13,13 +17,20 @@ import { SITE_ID } from "../../packages/dashboard/src/skin-engine/site-skin-stor
 
 const root = join(__dirname, "../..");
 const footerSrc = readFileSync(join(root, "src/components/Footer.astro"), "utf8");
+const en = JSON.parse(readFileSync(join(root, "src/i18n/en.json"), "utf8"));
+const es = JSON.parse(readFileSync(join(root, "src/i18n/es.json"), "utf8"));
 
 describe("footer del ecosistema Portaless", () => {
-  it("dice TrustScore · Explore · Powered by Portaless", () => {
-    expect(footerSrc).toContain(">TrustScore<");
-    expect(footerSrc).toContain(">Explore<");
-    expect(footerSrc).toContain("Powered by Portaless");
-    expect(footerSrc).toContain('aria-label="Ecosistema Portaless"');
+  it("dice TrustScore · Explore · Powered by Portaless (via diccionario)", () => {
+    for (const locale of [en, es]) {
+      expect(locale.footer.trust).toBe("TrustScore");
+      expect(locale.footer.explore).toBeTruthy();
+      expect(locale.footer.poweredBy).toBe("Powered by Portaless");
+      expect(locale.footer.ecoAria).toBeTruthy();
+    }
+    for (const key of ["footer.trust", "footer.explore", "footer.poweredBy", "footer.ecoAria"]) {
+      expect(footerSrc, key).toContain(`"${key}"`);
+    }
   });
 
   it("TrustScore apunta al hub /trust/, que resuelve el siteId real por defecto", () => {
@@ -38,7 +49,10 @@ describe("footer del ecosistema Portaless", () => {
   });
 
   it("la fila 2 dice exactamente el posicionamiento del producto", () => {
-    expect(footerSrc).toContain("Open Source, Modular, Agent-Ready & Zero-Hosting");
+    const promise = "Open Source, Modular, Agent-Ready & Zero-Hosting";
+    expect(en.footer.promise).toBe(promise);
+    expect(es.footer.promise).toBe(promise);
+    expect(footerSrc).toContain('"footer.promise"');
   });
 
   it("el hub de descubrimiento usa el filtro de publicacion canónico", () => {
@@ -58,9 +72,9 @@ describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
   const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
   it("el footer runtime dice TrustScore · Explore · Powered by Portaless", () => {
-    expect(shellSrc).toContain(">TrustScore<");
-    expect(shellSrc).toContain(">Explore<");
-    expect(shellSrc).toContain("Powered by Portaless");
+    for (const key of ["footer.trust", "footer.explore", "footer.poweredBy", "footer.ecoAria"]) {
+      expect(shellSrc, key).toContain(`"${key}"`);
+    }
     expect(shellSrc).toContain('href="/trust/"');
     expect(shellSrc).toContain("/explore/");
     expect(shellSrc).not.toContain("Hecho con");
@@ -72,9 +86,9 @@ describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
     expect(shellSrc).not.toMatch(/>Blog</);
   });
 
-  it("ambas superficies dicen el posicionamiento exacto, letra por letra", () => {
+  it("ambas superficies leen el posicionamiento de la MISMA clave", () => {
     for (const src of [footerSrc, shellSrc]) {
-      expect(src).toContain("Open Source, Modular, Agent-Ready & Zero-Hosting");
+      expect(src).toContain('"footer.promise"');
     }
   });
 });

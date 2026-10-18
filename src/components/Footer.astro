@@ -9,25 +9,37 @@
 //      la promesa del producto en cuatro palabras, exactamente. Es la
 //      linea que hace creible el "Powered by" de la fila 1.
 //
+// El texto de UI sale del diccionario (src/i18n) via t(): no hay strings
+// quemados. "TrustScore"/"Explore"/"Powered by Portaless" son nombres de
+// producto y no se traducen (misma cadena en ambos locales), pero pasan por la
+// misma via para que un TMS los vea.
+//
 // NOTA (SITE_ID): el hub /trust/ resuelve el siteId por defecto del sitio
 // ("default", el unico que existe hoy) cuando la URL no trae uno, asi que el
 // enlace funciona en el deploy estatico sin conocer el id. El endpoint JSON
 // sigue siendo /trust/<siteId> (functions/).
+import { t, type Locale } from "../lib/i18n";
+import { SITE_LANG } from "../lib/site-lang";
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = SITE_LANG } = Astro.props;
 const trustHref = `${import.meta.env.BASE_URL}trust/`;
 const exploreHref = `${import.meta.env.BASE_URL}explore/`;
 const repoHref = "https://github.com/geroiloyola/portaless";
 ---
 <footer class="site-footer">
   <div class="container">
-    <nav class="footer-eco" aria-label="Ecosistema Portaless">
-      <a href={trustHref}>TrustScore</a>
+    <nav class="footer-eco" aria-label={t(locale, "footer.ecoAria")}>
+      <a href={trustHref}>{t(locale, "footer.trust")}</a>
       <span class="sep" aria-hidden="true">·</span>
-      <a href={exploreHref}>Explore</a>
+      <a href={exploreHref}>{t(locale, "footer.explore")}</a>
       <span class="sep" aria-hidden="true">·</span>
-      <a href={repoHref} target="_blank" rel="noopener noreferrer">Powered by Portaless</a>
+      <a href={repoHref} target="_blank" rel="noopener noreferrer">{t(locale, "footer.poweredBy")}</a>
     </nav>
     <p class="footer-note">
-      Open Source, Modular, Agent-Ready & Zero-Hosting
+      {t(locale, "footer.promise")}
     </p>
   </div>
 </footer>

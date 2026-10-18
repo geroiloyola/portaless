@@ -238,15 +238,15 @@ ${elementsCss()}</style>
 </main>
 <footer class="site-footer">
   <div class="container">
-    <nav class="footer-eco" aria-label="Ecosistema Portaless">
-      <a href="/trust/">TrustScore</a>
+    <nav class="footer-eco" aria-label="${t(SITE_LANG, "footer.ecoAria")}">
+      <a href="/trust/">${t(SITE_LANG, "footer.trust")}</a>
       <span class="sep" aria-hidden="true">·</span>
-      <a href="/explore/">Explore</a>
+      <a href="/explore/">${t(SITE_LANG, "footer.explore")}</a>
       <span class="sep" aria-hidden="true">·</span>
-      <a href="https://github.com/geroiloyola/portaless" target="_blank" rel="noopener noreferrer">Powered by Portaless</a>
+      <a href="https://github.com/geroiloyola/portaless" target="_blank" rel="noopener noreferrer">${t(SITE_LANG, "footer.poweredBy")}</a>
     </nav>
     <p class="footer-note">
-      Open Source, Modular, Agent-Ready & Zero-Hosting
+      ${t(SITE_LANG, "footer.promise")}
     </p>
   </div>
 </footer>

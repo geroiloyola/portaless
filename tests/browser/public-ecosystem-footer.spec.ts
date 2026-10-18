@@ -164,7 +164,9 @@ test("footer del ecosistema: TrustScore · Explore · Powered by Portaless", asy
 
   const footer = page.locator("footer.site-footer");
   await expect(footer.getByRole("link", { name: "TrustScore" })).toHaveAttribute("href", /\/trust\/$/);
-  await expect(footer.getByRole("link", { name: "Explore" })).toHaveAttribute("href", /\/explore\/$/);
+  // El footer esta i18n: en una pagina es el label es "Explorar" (igual que el
+  // header), en una en es "Explore". El href es el contrato estable.
+  await expect(footer.getByRole("link", { name: /^(Explore|Explorar)$/ })).toHaveAttribute("href", /\/explore\/$/);
   await expect(footer.getByRole("link", { name: "Powered by Portaless" })).toHaveAttribute("href", /github\.com/);
   await expect(footer).toContainText("Open Source, Modular, Agent-Ready & Zero-Hosting");
 });

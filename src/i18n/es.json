@@ -19,5 +19,12 @@
   },
   "cta": {
     "start": "Empezá en {{minutes}} minutos"
+  },
+  "footer": {
+    "ecoAria": "Ecosistema Portaless",
+    "trust": "TrustScore",
+    "explore": "Explorar",
+    "poweredBy": "Powered by Portaless",
+    "promise": "Open Source, Modular, Agent-Ready & Zero-Hosting"
   }
 }
