@@ -24,7 +24,11 @@
 import type { CapabilityId, CapabilityHostBridge } from "../types";
 import { createPageStore } from "../../../atomic-elements/src/persistence/store-factory";
 import { createPluginStorageStore } from "../registry/plugin-storage";
+import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "../registry/plugin-email-quota";
 import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-factory";
+import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
+import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../dashboard/src/site-settings/email-config";
+import { sendEmail } from "./email-send";
 
 export interface CapabilityError extends Error {
   code: string;
@@ -156,6 +160,64 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
         .slice(0, limit);
       return { agents, periodsCovered, generatedAt: new Date().toISOString() };
     },
+    // email:send -- DELEGACION CIEGA. El plugin solo aporta { template, to, data };
+    // el core decide que plantillas estan aprobadas, inyecta el `from` del sitio
+    // y aplica la cuota diaria por plugin. Nunca texto libre en nombre del dueno.
+    emailSend: async (pluginName, payload) => {
+      const args = (payload ?? {}) as { template?: unknown; to?: unknown; data?: unknown };
+      if (!isEmailTemplateId(args.template)) {
+        throw capabilityError("INVALID_ARGS", "email:send requiere { template: string, to: string, data?: object }.");
+      }
+      if (!isEmailAddress(args.to)) {
+        throw capabilityError("INVALID_ARGS", "email:send: 'to' debe ser un email valido.");
+      }
+      if (args.data !== undefined && (typeof args.data !== "object" || args.data === null || Array.isArray(args.data))) {
+        throw capabilityError("INVALID_ARGS", "email:send: 'data' debe ser un objeto.");
+      }
+
+      const settingsStore = await createSiteSettingsStore(env);
+      const settings = await parseEmailSettings(settingsStore);
+      if (settings.provider.kind === "none") {
+        throw capabilityError(
+          "EMAIL_BACKEND_NOT_CONFIGURED",
+          "El sitio no tiene proveedor de email configurado (panel /admin/settings/email).",
+        );
+      }
+      if (!settings.from) {
+        throw capabilityError(
+          "EMAIL_FROM_NOT_CONFIGURED",
+          "El sitio no tiene remitente configurado (el core inyecta el `from`; configuralo en /admin/settings/email).",
+        );
+      }
+      const template = settings.templates.find((t) => t.id === args.template);
+      if (!template) {
+        throw capabilityError(
+          "EMAIL_TEMPLATE_NOT_APPROVED",
+          `La plantilla '${args.template}' no esta aprobada por el dueno del sitio.`,
+        );
+      }
+
+      const limit = Number(env.PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT) > 0
+        ? Number(env.PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT)
+        : DEFAULT_DAILY_EMAIL_LIMIT;
+      const quota = await createPluginEmailQuotaStore(env);
+      const day = utcDay();
+      const consumed = await quota.consume(pluginName, day, limit);
+      if (!consumed.allowed) {
+        throw capabilityError(
+          "EMAIL_QUOTA_EXCEEDED",
+          `Cuota diaria de email agotada para el plugin '${pluginName}' (${limit}/dia).`,
+        );
+      }
+
+      const { subject, text } = renderEmailTemplate(template, (args.data ?? {}) as Record<string, unknown>);
+      try {
+        await sendEmail(settings.provider, { from: settings.from, to: args.to, subject, text });
+      } catch (err) {
+        throw capabilityError("EMAIL_SEND_FAILED", (err as Error)?.message ?? "el envio de email fallo.");
+      }
+      return { sent: true, template: template.id, remainingToday: Math.max(0, limit - consumed.count) };
+    },
   };
 }
 
@@ -167,16 +229,16 @@ export interface CapabilityBackendSpec {
   withPlugin: boolean;
 }
 
-// Decision registrada (ROADMAP §14.2 item 3): `site:admin` y `email:send` NO se
-// conectan aqui mientras no exista un caso de uso concreto y revisado.
+// Decision registrada (ROADMAP §14.2 item 3): `site:admin` NO se conecta aqui
+// mientras no exista un caso de uso concreto y revisado.
 //   - site:admin ("modificar configuracion global del sitio") es la capacidad de
 //     mayor riesgo; el panel admin con step-up ya cubre la necesidad del dueno,
 //     y ningun documento define que operaciones expondria a un plugin. Sin esa
 //     definicion, conectarla seria inventar superficie de ataque.
-//   - email:send tiene un transporte server (packages/auth/src/email-sender.ts)
-//     que su propio encabezado declara que NO es el puente de plugins; dejaria a
-//     un plugin enviando email COMO el sitio (vector de spam) y necesita diseno
-//     de cuota/rate-limit por plugin y una decision de identidad de remitente.
+// `email:send` YA se conecta (TASK 5) con el modelo de Delegacion Ciega: el
+// plugin solo puede pedir una PLANTILLA aprobada por el dueno (nunca texto
+// libre), el `from` lo inyecta el core desde el dominio verificado del sitio, y
+// hay cuota diaria por plugin. Ver email-config.ts y plugin-email-quota.ts.
 // El resto (media:*, commerce:*) necesita proveedor externo o namespace propio.
 
 /** Las capacidades que HOY tienen backend real. Una nueva se agrega aqui. */
@@ -186,6 +248,7 @@ export const CAPABILITY_BACKENDS: CapabilityBackendSpec[] = [
   { id: "storage:read", method: "storageRead", withPlugin: true },
   { id: "storage:write", method: "storageWrite", withPlugin: true },
   { id: "agent:identify", method: "agentIdentify", withPlugin: false },
+  { id: "email:send", method: "emailSend", withPlugin: true },
 ];
 
 export function hasCapabilityBackend(id: CapabilityId | string): boolean {

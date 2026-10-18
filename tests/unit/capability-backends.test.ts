@@ -148,17 +148,20 @@ describe("dispatchCapability: enruta por id al handler correcto", () => {
 });
 
 describe("CAPABILITY_BACKENDS es la fuente de verdad de que tiene backend", () => {
-  it("incluye content:*/storage:*/agent:identify y excluye las que siguen en 501", () => {
+  it("incluye content:*/storage:*/agent:identify/email:send y excluye las que siguen en 501", () => {
     expect(hasCapabilityBackend("storage:read")).toBe(true);
     expect(hasCapabilityBackend("storage:write")).toBe(true);
     expect(hasCapabilityBackend("content:read")).toBe(true);
     expect(hasCapabilityBackend("agent:identify")).toBe(true);
+    expect(hasCapabilityBackend("email:send")).toBe(true);
     expect(hasCapabilityBackend("media:read")).toBe(false);
-    expect(hasCapabilityBackend("email:send")).toBe(false);
+    expect(hasCapabilityBackend("commerce:read")).toBe(false);
+    expect(hasCapabilityBackend("site:admin")).toBe(false);
     expect(CAPABILITY_BACKENDS.map((b) => b.id).sort()).toEqual([
       "agent:identify",
       "content:read",
       "content:write",
+      "email:send",
       "storage:read",
       "storage:write",
     ]);

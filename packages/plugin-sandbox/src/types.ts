@@ -79,7 +79,7 @@ export type GrantedCapabilities = Set<CapabilityId>;
 export interface CapabilityHostBridge {
   mediaRead?(payload: { path: string }): Promise<unknown>;
   mediaWrite?(payload: { path: string; data: unknown }): Promise<unknown>;
-  emailSend?(payload: { to: string; subject: string; body: string }): Promise<unknown>;
+  emailSend?(pluginName: string, payload: { template: string; to: string; data?: Record<string, unknown> }): Promise<unknown>;
   commerceRead?(payload: Record<string, unknown>): Promise<unknown>;
   commerceCheckout?(payload: Record<string, unknown>): Promise<unknown>;
   storageRead?(pluginName: string, payload: { key: string }): Promise<unknown>;

@@ -133,7 +133,7 @@ export async function onRequestPost(context) {
   } catch (err) {
     const code = err && err.code;
     const status =
-      code === "NOT_CONFIGURED"
+      code === "NOT_CONFIGURED" || code === "EMAIL_BACKEND_NOT_CONFIGURED" || code === "EMAIL_FROM_NOT_CONFIGURED"
         ? 501
         : code === "PAGE_NOT_FOUND"
           ? 404
@@ -141,7 +141,13 @@ export async function onRequestPost(context) {
             ? 400
             : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
               ? 413
-              : 500;
+              : code === "EMAIL_TEMPLATE_NOT_APPROVED"
+                ? 403
+                : code === "EMAIL_QUOTA_EXCEEDED"
+                  ? 429
+                  : code === "EMAIL_SEND_FAILED"
+                    ? 502
+                    : 500;
     return new Response(JSON.stringify({ error: err.message || "Error interno.", ...(code ? { code } : {}) }), {
       status,
       headers: { "Content-Type": "application/json" },
