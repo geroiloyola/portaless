@@ -133,7 +133,10 @@ export async function onRequestPost(context) {
   } catch (err) {
     const code = err && err.code;
     const status =
-      code === "NOT_CONFIGURED" || code === "EMAIL_BACKEND_NOT_CONFIGURED" || code === "EMAIL_FROM_NOT_CONFIGURED"
+      code === "NOT_CONFIGURED" ||
+      code === "EMAIL_BACKEND_NOT_CONFIGURED" ||
+      code === "EMAIL_FROM_NOT_CONFIGURED" ||
+      code === "EMAIL_QUOTA_BACKEND_UNAVAILABLE"
         ? 501
         : code === "PAGE_NOT_FOUND"
           ? 404

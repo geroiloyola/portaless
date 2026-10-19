@@ -8,8 +8,8 @@ import { join } from "node:path";
 import { createCapabilityHostBridge } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
 import {
   createPluginEmailQuotaStore,
+  EmailQuotaStoreUnavailable,
   InMemoryPluginEmailQuotaStore,
-  __resetPluginEmailQuotaStoreForTests,
 } from "../../packages/plugin-sandbox/src/registry/plugin-email-quota";
 import {
   EMAIL_KEYS,
@@ -24,7 +24,6 @@ import { applySchema } from "../../scripts/setup.mjs";
 const cleanup: string[] = [];
 afterEach(() => {
   vi.restoreAllMocks();
-  __resetPluginEmailQuotaStoreForTests();
   while (cleanup.length) rmSync(cleanup.pop()!, { recursive: true, force: true });
 });
 
@@ -193,5 +192,13 @@ describe("R4: la cuota no penaliza envios que fallaron", () => {
     await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
     await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
     expect(await q.count("p", day)).toBe(2);
+  });
+});
+
+// R5: sin backend de BD la cuota no es global -> fail-closed. El handler mapea
+// EmailQuotaStoreUnavailable a EMAIL_QUOTA_BACKEND_UNAVAILABLE (bridge -> 501).
+describe("R5: cuota fail-closed sin backend persistente", () => {
+  it("createPluginEmailQuotaStore sin DB ni SQLite lanza (no cae a InMemory)", async () => {
+    await expect(createPluginEmailQuotaStore({})).rejects.toBeInstanceOf(EmailQuotaStoreUnavailable);
   });
 });

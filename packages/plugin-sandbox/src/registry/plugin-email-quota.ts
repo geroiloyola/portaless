@@ -12,6 +12,13 @@
 import { openSqlite } from "../../../sqlite-driver/src/open";
 import { PLUGIN_EMAIL_QUOTA_DDL } from "../../../persistence-migrations/src/ddl";
 
+/**
+ * Limite diario por defecto (50/dia por plugin). Es un DEFAULT, no un tope
+ * duro: el operador puede subirlo con `PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT`.
+ * Decision registrada (review R5): la var es de tuning operativo, no un bypass
+ * -- el limite real lo fija el dueno del sitio, que es quien confia en sus
+ * plugins; bajarlo o subirlo es su prerrogativa.
+ */
 export const DEFAULT_DAILY_EMAIL_LIMIT = 50;
 
 // La DDL vive en UN solo lugar (packages/persistence-migrations/src/ddl.ts) y la
@@ -157,21 +164,32 @@ export class InMemoryPluginEmailQuotaStore implements PluginEmailQuotaStore {
   }
 }
 
-let cachedInMemoryStore: InMemoryPluginEmailQuotaStore | null = null;
-
-export function __resetPluginEmailQuotaStoreForTests(): void {
-  cachedInMemoryStore = null;
-}
-
 export interface PluginEmailQuotaStoreEnv {
   DB?: any;
   PORTALESS_SQLITE_PATH?: string;
 }
 
+/**
+ * Sin backend persistente la cuota NO es global (cada isolate de Workers tendria
+ * su propio contador y se reiniciaria a cada reciclado). Fail-closed: se rehusa
+ * enviar antes que enviar sin control de spam.
+ */
+export class EmailQuotaStoreUnavailable extends Error {
+  constructor(
+    message = "Sin backend de base de datos (binding D1 ni PORTALESS_SQLITE_PATH): la cuota de email no puede aplicarse.",
+  ) {
+    super(message);
+    this.name = "EmailQuotaStoreUnavailable";
+  }
+}
+
+/**
+ * Resuelve el store de cuota: D1 -> SQLite. Sin backend persistente LANZA
+ * (fail-closed, ver EmailQuotaStoreUnavailable). El InMemory solo existe para
+ * tests, que lo instancian directo -- no se cae a el en produccion.
+ */
 export async function createPluginEmailQuotaStore(env: PluginEmailQuotaStoreEnv = {}): Promise<PluginEmailQuotaStore> {
   if (env.DB) return new D1PluginEmailQuotaStore(env.DB);
   if (env.PORTALESS_SQLITE_PATH) return SqlitePluginEmailQuotaStore.open(env.PORTALESS_SQLITE_PATH);
-  console.warn("createPluginEmailQuotaStore: sin DB ni PORTALESS_SQLITE_PATH — usando InMemory (no persiste entre reinicios).");
-  if (!cachedInMemoryStore) cachedInMemoryStore = new InMemoryPluginEmailQuotaStore();
-  return cachedInMemoryStore;
+  throw new EmailQuotaStoreUnavailable();
 }

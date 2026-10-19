@@ -220,7 +220,13 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       const limit = Number(env.PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT) > 0
         ? Number(env.PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT)
         : DEFAULT_DAILY_EMAIL_LIMIT;
-      const quota = await createPluginEmailQuotaStore(env);
+      let quota;
+      try {
+        quota = await createPluginEmailQuotaStore(env);
+      } catch (err) {
+        // R5: sin backend persistente la cuota no es global -> fail-closed.
+        throw capabilityError("EMAIL_QUOTA_BACKEND_UNAVAILABLE", (err as Error)?.message ?? "cuota de email sin backend.");
+      }
       const day = utcDay();
       const consumed = await quota.consume(pluginName, day, limit);
       if (!consumed.allowed) {
