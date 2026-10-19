@@ -85,6 +85,18 @@ describe("C04 disposable staging fixture", () => {
     expect(fixture.services.smtpMessages[0]).toContain(fixture.synthetic.secretMarker);
   });
 
+  it("seed de contenedor prepara SQLite sintético sin abrir listeners en el host", async () => {
+    const fixture = await createDisposableStaging({ rootDir: tempRoot(), startFakes: false });
+    fixtures.push(fixture);
+    expect(existsSync(fixture.dbPath)).toBe(true);
+    expect(fixture.services.webhookUrl).toBeNull();
+    expect(fixture.services.smtpPort).toBeUndefined();
+    expect(await (await createUsersStore(fixture.env)).findByUsername(fixture.synthetic.adminUser)).toMatchObject({
+      email: "staging-admin@example.invalid",
+      role: "admin",
+    });
+  });
+
   it("cleanup por ID borra solo la fixture propia y deja intacto un recurso vecino", async () => {
     const rootDir = tempRoot();
     const fixture = await createDisposableStaging({ rootDir, seed: false });

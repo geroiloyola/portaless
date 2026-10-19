@@ -24,6 +24,8 @@
     "stamp:d1": "tsx scripts/stamp-d1.mjs",
     "staging:create": "node node_modules/tsx/dist/cli.mjs scripts/staging/create.mjs",
     "staging:destroy": "node scripts/staging/destroy.mjs",
+    "staging:docker:create": "node --import tsx scripts/staging/docker.mjs create",
+    "staging:docker:destroy": "node --import tsx scripts/staging/docker.mjs destroy",
     "mcp": "tsx packages/mcp-server/src/index.ts",
     "mcp:http": "PORTALESS_MCP_TRANSPORT=http tsx packages/mcp-server/src/index.ts",
     "test:browser": "playwright test",

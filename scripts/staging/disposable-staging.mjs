@@ -18,6 +18,7 @@ const ID_RE = /^[a-f0-9]{24}$/;
 // restaurar la contraseña; sigue siendo una cuenta efímera dentro del staging.
 export const STAGING_ADMIN_USER = "admin";
 export const STAGING_ADMIN_PASSWORD = "Synthetic-Staging-Only-42!";
+export const STAGING_ADMIN_EMAIL = "staging-admin@example.invalid";
 export const STAGING_VIEWER_USER = "staging-viewer";
 export const STAGING_VIEWER_PASSWORD = "Synthetic-Viewer-Only-37!";
 export const STAGING_PUBLIC_MARKER = "PORTALESS_PUBLIC_STAGING_MARKER_7E191C";
@@ -129,7 +130,11 @@ async function assertOwnedStage(stageDir, expectedId, rootReal) {
  * `rootDir` se expone para pruebas que crean su propio tmp-root; los CLIs no
  * aceptan un path arbitrario y usan el directorio temporal del sistema.
  */
-export async function createDisposableStaging({ rootDir = join(tmpdir(), "portaless-disposable-staging"), seed = true } = {}) {
+export async function createDisposableStaging({
+  rootDir = join(tmpdir(), "portaless-disposable-staging"),
+  seed = true,
+  startFakes = true,
+} = {}) {
   await mkdir(rootDir, { recursive: true, mode: 0o700 });
   const rootReal = await realpath(rootDir);
   const id = randomBytes(12).toString("hex");
@@ -146,8 +151,10 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
   let smtpPort;
   let closed = false;
   try {
-    webhookPort = await listenLoopback(webhook.server, "webhook");
-    smtpPort = await listenLoopback(smtp.server, "SMTP");
+    if (startFakes) {
+      webhookPort = await listenLoopback(webhook.server, "webhook");
+      smtpPort = await listenLoopback(smtp.server, "SMTP");
+    }
     const dbPath = join(stageReal, "data", "portaless.sqlite");
     const encryptionKey = randomBytes(32).toString("base64");
     const syntheticToken = `STAGING-WEBHOOK-${id}`;
@@ -166,13 +173,15 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
 
       const { createUsersStore } = await import(join(root, "packages/auth/src/store-factory.ts"));
       const users = await createUsersStore(env);
-      await users.createUser(STAGING_ADMIN_USER, STAGING_ADMIN_PASSWORD, "admin");
+      await users.createUser(STAGING_ADMIN_USER, STAGING_ADMIN_PASSWORD, "admin", STAGING_ADMIN_EMAIL);
       await users.createUser(STAGING_VIEWER_USER, STAGING_VIEWER_PASSWORD, "viewer");
+      await users.close?.();
 
       const { createSiteIdentityStore } = await import(join(root, "packages/apw-resolver/src/did-apw/store-factory.ts"));
       const { generateApwDid } = await import(join(root, "packages/apw-resolver/src/did-apw/generate.ts"));
       const identityStore = await createSiteIdentityStore(env);
       await identityStore.create("default", await generateApwDid(`staging-${id}.example.invalid`), STAGING_ADMIN_USER);
+      await identityStore.close?.();
 
       const { createPageStore } = await import(join(root, "packages/atomic-elements/src/persistence/store-factory.ts"));
       const pages = await createPageStore(env);
@@ -188,6 +197,7 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
         version: "0.1", slug: "staging-private", title: STAGING_ARCHIVE_MARKER,
         status: "private", root: [{ id: "private", type: "Paragraph", props: { text: STAGING_ARCHIVE_MARKER } }],
       });
+      await pages.close?.();
 
       const { createSiteSettingsStore } = await import(join(root, "packages/dashboard/src/site-settings/site-settings-store.ts"));
       const { emailSettingsToValues, sanitizeEmailInput } = await import(join(root, "packages/email-transport/src/config.ts"));
@@ -202,6 +212,7 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
         ...emailSettingsToValues(settings.settings),
         "staging.synthetic_secret": syntheticToken,
       });
+      await siteSettings.close?.();
       await writeFile(join(stageReal, "workspace", ".airchive-synthetic.md"), `${STAGING_ARCHIVE_MARKER}\n`, { mode: 0o600, flag: "wx" });
       await writeFile(join(stageReal, "workspace", ".env.synthetic"), `${STAGING_SECRET_MARKER}=${syntheticToken}\n`, { mode: 0o600, flag: "wx" });
     }
@@ -233,7 +244,7 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
         secretMarker: STAGING_SECRET_MARKER,
       },
       services: {
-        webhookUrl: `http://127.0.0.1:${webhookPort}/capture`,
+        webhookUrl: webhookPort ? `http://127.0.0.1:${webhookPort}/capture` : null,
         webhookRequests: webhook.requests,
         smtpPort,
         smtpMessages: smtp.messages,
@@ -251,8 +262,8 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
   }
 }
 
-/** Destruye SOLO una fixture con ID válido y ownership marker coincidente. */
-export async function destroyDisposableStaging({ id, rootDir = join(tmpdir(), "portaless-disposable-staging") } = {}) {
+/** Devuelve la ruta de una fixture solo tras validar ID, confinamiento y marker. */
+export async function locateDisposableStaging({ id, rootDir = join(tmpdir(), "portaless-disposable-staging") } = {}) {
   if (typeof id !== "string" || !ID_RE.test(id)) throw new Error("Invalid staging ID; cleanup requires the generated 24-hex ID.");
   const rootReal = await realpath(rootDir);
   const prefix = `stage-${id}-`;
@@ -263,6 +274,12 @@ export async function destroyDisposableStaging({ id, rootDir = join(tmpdir(), "p
   }
   const target = join(rootReal, matches[0].name);
   await assertOwnedStage(target, id, rootReal);
+  return target;
+}
+
+/** Destruye SOLO una fixture con ID válido y ownership marker coincidente. */
+export async function destroyDisposableStaging({ id, rootDir = join(tmpdir(), "portaless-disposable-staging") } = {}) {
+  const target = await locateDisposableStaging({ id, rootDir });
   await rm(target, { recursive: true, force: false, maxRetries: 0 });
 }
 
