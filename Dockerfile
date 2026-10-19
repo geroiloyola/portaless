@@ -19,6 +19,7 @@ COPY packages ./packages
 RUN npm ci
 COPY . .
 RUN npm run build \
+  && node scripts/prune-build-inputs.mjs /app \
   && npm prune --omit=dev \
   && node scripts/verify-private-artifacts.mjs /app --skip-node-modules
 

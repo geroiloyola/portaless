@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pruneBuildInputs } from "../../scripts/prune-build-inputs.mjs";
 
 describe("private distribution boundary", () => {
   it("excludes private archive/runtime paths from Docker contexts", () => {
@@ -29,6 +30,24 @@ describe("private distribution boundary", () => {
       expect(() => execFileSync("node", [verifier, artifact, "--marker", "PUBLIC_MARKER"])).toThrow();
     } finally {
       fs.rmSync(artifact, { recursive: true, force: true });
+    }
+  });
+
+  it("removes build-only docs, page/post sources and Astro cache from runtime image", () => {
+    const app = fs.mkdtempSync(path.join(os.tmpdir(), "portaless-runtime-prune-"));
+    try {
+      for (const relative of [".astro/content/private.json", "docs/private.md", "src/content/pages/private.json", "src/content/posts/draft.md", "src/pages/index.astro"]) {
+        const filename = path.join(app, relative);
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
+        fs.writeFileSync(filename, "synthetic-private-content");
+      }
+      pruneBuildInputs(app);
+      for (const relative of [".astro", "docs", "src/content/pages", "src/content/posts"]) {
+        expect(fs.existsSync(path.join(app, relative)), relative).toBe(false);
+      }
+      expect(fs.existsSync(path.join(app, "src/pages/index.astro"))).toBe(true);
+    } finally {
+      fs.rmSync(app, { recursive: true, force: true });
     }
   });
 });

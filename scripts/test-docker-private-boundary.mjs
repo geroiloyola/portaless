@@ -38,6 +38,9 @@ try {
   writeFixture(`private-${id}.db`, marker);
   writeFixture(`private-${id}.pem`, marker);
   writeFixture(`backups/private-${id}.sqlite`, marker);
+  writeFixture(`src/content/pages/private-docker-${id}.json`, JSON.stringify({ slug: `private-docker-${id}`, status: "private", title: marker }));
+  writeFixture(`src/content/posts/private-docker-${id}.md`, `---\ntitle: Private\npubDate: 2026-01-01\ndraft: true\n---\n${marker}`);
+  writeFixture(`docs/private-docker-${id}.md`, marker);
 
   execFileSync("docker", ["build", "-t", tag, ROOT], { stdio: "inherit" });
   execFileSync("docker", [
