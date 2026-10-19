@@ -113,13 +113,40 @@ describe("email:send -- delegacion ciega", () => {
     await expect(bridge.emailSend!("p", { template: "spam_masivo", to: "a@b.cl" })).rejects.toMatchObject({ code: "EMAIL_TEMPLATE_NOT_APPROVED" });
   });
 
-  it("happy path: inyecta el `from` del sitio (el plugin no lo elige) y devuelve remainingToday", async () => {
+  it("fail-closed: RECHAZA campos no permitidos (from/cc/bcc) en vez de ignorarlos", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const bridge = await seededBridge(tempDb());
+    const injected = [
+      { from: "spam@otro.cl" },
+      { cc: "x@y.cl" },
+      { bcc: "z@y.cl" },
+      { reply_to: "r@y.cl" },
+      { sender: "s@y.cl" },
+      { foo: "bar" },
+    ];
+    for (const extra of injected) {
+      await expect(
+        bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl", ...extra }),
+      ).rejects.toMatchObject({ code: "INVALID_ARGS" });
+    }
+    // Un intento de inyeccion NO llega a la red.
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("fail-closed: un payload que no es objeto se rechaza", async () => {
+    const bridge = await seededBridge(tempDb());
+    for (const bad of ["hola", [], null, 42]) {
+      await expect(bridge.emailSend!("p", bad as never)).rejects.toMatchObject({ code: "INVALID_ARGS" });
+    }
+  });
+
+  it("happy path: inyecta el `from` del sitio (el plugin no lo aporta) y devuelve remainingToday", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
     const bridge = await seededBridge(tempDb());
-    const result = await bridge.emailSend!("mi-plugin", { template: "order_confirmation", to: "cliente@ejemplo.cl", data: { orderId: 7 }, from: "spam@otro.cl" } as never);
+    const result = await bridge.emailSend!("mi-plugin", { template: "order_confirmation", to: "cliente@ejemplo.cl", data: { orderId: 7 } });
     expect(result).toMatchObject({ sent: true, template: "order_confirmation" });
     const sent = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
-    expect(sent.from).toBe("noreply@mitiendita.cl"); // del sitio, NO el que intento el plugin
+    expect(sent.from).toBe("noreply@mitiendita.cl"); // del sitio, siempre
     expect(sent.to).toBe("cliente@ejemplo.cl");
     expect(sent.subject).toBe("Pedido 7 confirmado");
   });

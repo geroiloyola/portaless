@@ -164,7 +164,27 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
     // el core decide que plantillas estan aprobadas, inyecta el `from` del sitio
     // y aplica la cuota diaria por plugin. Nunca texto libre en nombre del dueno.
     emailSend: async (pluginName, payload) => {
-      const args = (payload ?? {}) as { template?: unknown; to?: unknown; data?: unknown };
+      // Whitelist ESTRICTA de claves de nivel superior (fail-closed): el plugin
+      // SOLO aporta { template, to, data }. Cualquier otra clave -- en especial
+      // `from`, `cc`, `bcc`, `reply_to`, `sender` -- se RECHAZA con INVALID_ARGS,
+      // no se ignora: el remitente y el enrutamiento los fija el CORE (Delegacion
+      // Ciega). Rechazar (y no solo sobreescribir) hace visible el intento de
+      // inyeccion en vez de devolver un exito que el plugin malinterpretaria.
+      if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+        throw capabilityError(
+          "INVALID_ARGS",
+          "email:send requiere un objeto { template: string, to: string, data?: object }.",
+        );
+      }
+      const args = payload as Record<string, unknown>;
+      const allowedKeys = new Set(["template", "to", "data"]);
+      const forbidden = Object.keys(args).filter((k) => !allowedKeys.has(k));
+      if (forbidden.length > 0) {
+        throw capabilityError(
+          "INVALID_ARGS",
+          `email:send: campos no permitidos (${forbidden.join(", ")}). Solo se acepta { template, to, data }; el 'from' y el enrutamiento los fija el sitio.`,
+        );
+      }
       if (!isEmailTemplateId(args.template)) {
         throw capabilityError("INVALID_ARGS", "email:send requiere { template: string, to: string, data?: object }.");
       }

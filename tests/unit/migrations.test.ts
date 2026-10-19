@@ -195,3 +195,29 @@ describe("gate de migraciones", () => {
     expect(status?.newer).toBe(true);
   });
 });
+
+// v4: el sprint de email:send agrega su tabla por el estandar de migraciones
+// (no por ALTER manual ni solo por schema.sql), asi queda en el libro mayor.
+describe("migracion v4: capacidad email:send", () => {
+  it("declara plugin_email_quota (el rate limit vive en la base)", () => {
+    const v4 = MIGRATIONS.find((m) => m.version === 4);
+    expect(v4).toMatchObject({ version: 4, name: "email_capabilities" });
+    expect(v4!.statements.join("\n")).toContain("plugin_email_quota");
+  });
+
+  it("migrateSqlite en una base v3 crea plugin_email_quota (idempotente)", async () => {
+    const path = tempDb();
+    await applySchema(path, { quiet: true });
+    const db = await openSqlite(path);
+    db.exec("DROP TABLE IF EXISTS plugin_email_quota");
+    db.prepare("DELETE FROM schema_migrations WHERE version >= 4").run();
+    db.close();
+    const result = await migrateSqlite(path);
+    expect(result.applied).toContain("email_capabilities");
+    const check = await openSqlite(path);
+    expect(
+      check.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'plugin_email_quota'").get(),
+    ).toBeTruthy();
+    check.close();
+  });
+});

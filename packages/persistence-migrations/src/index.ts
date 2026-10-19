@@ -58,6 +58,20 @@ const USER_AND_PLUGIN_COLUMNS = [
   { table: "plugin_artifacts", column: "manifest_json", type: "TEXT" },
 ];
 
+/**
+ * v4 -- capacidad `email:send` (TASK 5). Tablas nuevas del sprint de email:
+ *   - `plugin_email_quota` (cuota diaria por plugin: el rate limit en la base).
+ *   - `site_settings` (config del sitio, incluida la de email) ya existia desde
+ *     la Fase 6, asi que es baseline (v1); NO se re-crea aca.
+ * Idempotentes (CREATE TABLE IF NOT EXISTS): una base nueva ya las tiene por
+ * `schema.sql` y esto es no-op; una base vieja las crea al migrar.
+ */
+const EMAIL_CAPABILITY_STATEMENTS = [
+  "CREATE TABLE IF NOT EXISTS plugin_email_quota (" +
+    "plugin_id TEXT NOT NULL, day TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, " +
+    "PRIMARY KEY (plugin_id, day))",
+];
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "baseline", statements: [] },
   {
@@ -71,6 +85,11 @@ export const MIGRATIONS: readonly Migration[] = [
     name: "user_and_plugin_columns",
     statements: [],
     addColumns: USER_AND_PLUGIN_COLUMNS,
+  },
+  {
+    version: 4,
+    name: "email_capabilities",
+    statements: EMAIL_CAPABILITY_STATEMENTS,
   },
 ];
 
