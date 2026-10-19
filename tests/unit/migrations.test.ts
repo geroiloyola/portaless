@@ -167,6 +167,13 @@ describe("gate de migraciones", () => {
     expect(await migrationStatus({})).toBeNull();
   });
 
+  it("path inexistente -> null y NO crea el archivo (R8)", async () => {
+    const path = join(tempDb(), "no-existe.sqlite");
+    expect(existsSync(path)).toBe(false);
+    expect(await migrationStatus({ PORTALESS_SQLITE_PATH: path })).toBeNull();
+    expect(existsSync(path)).toBe(false); // el gate no debe crear una DB vacia
+  });
+
   it("base al dia -> pending=false, newer=false", async () => {
     const path = tempDb();
     await applySchema(path, { quiet: true });
@@ -175,11 +182,21 @@ describe("gate de migraciones", () => {
     expect(status).toMatchObject({ pending: false, newer: false, codeVersion: schemaVersion() });
   });
 
-  it("base pre-versionada -> pending=true (el middleware responde 503)", async () => {
+  it("R1: base pre-versionada inicializada -> NO bloquea (schema.sql es la forma actual)", async () => {
     const path = tempDb();
     await applySchema(path, { quiet: true });
     const db = await openSqlite(path);
-    db.exec("DROP TABLE schema_migrations"); // base vieja sin libro mayor
+    db.exec("DROP TABLE schema_migrations"); // base creada por schema.sql, sin libro mayor
+    db.close();
+    const status = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
+    expect(status).toMatchObject({ pending: false, newer: false });
+  });
+
+  it("libro mayor atrasado -> pending=true (el middleware responde 503)", async () => {
+    const path = tempDb();
+    await applySchema(path, { quiet: true });
+    const db = await openSqlite(path);
+    db.prepare("DELETE FROM schema_migrations WHERE version >= 2").run(); // libro en v1
     db.close();
     const status = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
     expect(status?.pending).toBe(true);
@@ -189,11 +206,53 @@ describe("gate de migraciones", () => {
     const path = tempDb();
     await applySchema(path, { quiet: true });
     const db = await openSqlite(path);
-    db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)");
     db.prepare("INSERT INTO schema_migrations VALUES (?,?,?)").run(schemaVersion() + 9, "future", "t");
     db.close();
     const status = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
     expect(status?.newer).toBe(true);
+  });
+
+  // R1: el path de Cloudflare (D1) no puede tumbar un sitio sano.
+  describe("D1 (Cloudflare)", () => {
+    function d1Mock(tables: string[], ledgerRows: Array<[number, string, string]> | null) {
+      return {
+        prepare(sql: string) {
+          const table = /name = \?/.test(sql) ? "probe" : "ledger";
+          return {
+            bind: (_name: string) => ({
+              first: async () =>
+                tables.includes(_name) || (_name === "schema_migrations" && ledgerRows !== null) ? { name: _name } : null,
+            }),
+            first: async () => {
+              if (table === "ledger") {
+                if (ledgerRows === null) throw new Error("no such table: schema_migrations");
+                return { v: ledgerRows.length ? Math.max(...ledgerRows.map((r) => r[0])) : null };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    }
+
+    it("D1 inicializada SIN libro -> no bloquea (pre-versionada)", async () => {
+      const status = await migrationStatus({ DB: d1Mock(["users", "pages"], null) });
+      expect(status).toMatchObject({ pending: false, newer: false });
+    });
+
+    it("D1 vacia SIN libro -> null", async () => {
+      expect(await migrationStatus({ DB: d1Mock([], null) })).toBeNull();
+    });
+
+    it("D1 con libro atrasado -> pending=true", async () => {
+      const status = await migrationStatus({ DB: d1Mock(["users"], [[1, "baseline", "t"]]) });
+      expect(status?.pending).toBe(true);
+    });
+
+    it("D1 con libro al dia -> pending=false", async () => {
+      const status = await migrationStatus({ DB: d1Mock(["users"], [[schemaVersion(), "x", "t"]]) });
+      expect(status).toMatchObject({ pending: false, newer: false });
+    });
   });
 });
 

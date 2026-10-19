@@ -5,7 +5,16 @@
 //
 // Fail-closed: una base MAS NUEVA que el codigo tambien bloquea (no se degrada
 // el schema). Sin base configurada (hosting estatico) no hay gate.
-import { openSqlite } from "../../sqlite-driver/src/open.ts";
+//
+// IMPORTANTE (R1): una base PRE-VERSIONADA (tablas de app creadas por
+// schema.sql, pero SIN tabla `schema_migrations`) NO se bloquea. `schema.sql`
+// es la forma ACTUAL del schema y se aplica entero al crear la base, asi que
+// una base sin libro mayor esta al dia por construccion -- bloquearla tumbaria
+// todo despliegue de Cloudflare (donde el operador aplica schema.sql via
+// wrangler y nunca corre el runner self-host). El `doctor` avisa que conviene
+// estampar el libro (scripts/stamp-d1.mjs) para que el gate tenga version real.
+// El gate SOLO bloquea cuando el libro existe y esta atras (pending) o adelante
+// (newer): ahi si hay una divergencia verificable.
 import { schemaVersion } from "./index.ts";
 
 export interface MigrationStatus {
@@ -20,6 +29,8 @@ export interface MigrationGateEnv {
   PORTALESS_SQLITE_PATH?: string;
 }
 
+const APP_TABLES = ["users", "pages"];
+
 function hasTable(db: any, name: string): boolean {
   try {
     return Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name));
@@ -28,42 +39,77 @@ function hasTable(db: any, name: string): boolean {
   }
 }
 
-/** Lee la version de la base. @returns null si no hay base (hosting estatico). */
+async function d1HasTable(db: any, name: string): Promise<boolean> {
+  try {
+    const row = await db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+      .bind(name)
+      .first();
+    return Boolean(row);
+  } catch {
+    return false;
+  }
+}
+
+/** Una base pre-versionada inicializada cuenta como "al dia" (no bloquea). */
+function upToDate(codeVersion: number): MigrationStatus {
+  return { dbVersion: codeVersion, codeVersion, pending: false, newer: false };
+}
+
+/**
+ * Lee el estado del contrato de datos. @returns null si no hay base (hosting
+ * estatico) o si la base esta vacia (nada que proteger).
+ */
 export async function migrationStatus(env: MigrationGateEnv): Promise<MigrationStatus | null> {
   const codeVersion = schemaVersion();
-  let dbVersion: number;
 
   if (env.DB) {
+    if (!(await d1HasTable(env.DB, "schema_migrations"))) {
+      const initialized = (await d1HasTable(env.DB, "users")) || (await d1HasTable(env.DB, "pages"));
+      return initialized ? upToDate(codeVersion) : null;
+    }
+    let dbVersion: number;
     try {
       const row = await env.DB.prepare("SELECT MAX(version) AS v FROM schema_migrations").first();
       dbVersion = Number(row?.v ?? 0);
     } catch {
-      dbVersion = 0; // tabla ausente: base pre-versionada
+      dbVersion = 0;
     }
-  } else if (env.PORTALESS_SQLITE_PATH) {
+    return { dbVersion, codeVersion, pending: dbVersion < codeVersion, newer: dbVersion > codeVersion };
+  }
+
+  if (env.PORTALESS_SQLITE_PATH) {
+    // R8: si el archivo no existe, NO abrir SQLite -- `new Database(path)` lo
+    // crearia vacio como efecto colateral de un simple chequeo.
+    const { existsSync } = await import("node:fs");
+    if (!existsSync(env.PORTALESS_SQLITE_PATH)) return null;
+
     let db: any;
     try {
-      db = await openSqlite(env.PORTALESS_SQLITE_PATH);
+      db = await openSqliteLazy(env.PORTALESS_SQLITE_PATH);
     } catch {
       return null; // sin SQLite (workerd sin D1): no hay gate
     }
     try {
-      // Una base SIN libro mayor y SIN tablas de app es una base nueva/vacia
-      // (p.ej. un test, o el primer arranque antes de applySchema): no hay nada
-      // que proteger. El gate solo aplica a una base de app inicializada.
-      if (!hasTable(db, "schema_migrations") && !hasTable(db, "users") && !hasTable(db, "pages")) {
-        return null;
+      if (!hasTable(db, "schema_migrations")) {
+        const initialized = APP_TABLES.some((t) => hasTable(db, t));
+        return initialized ? upToDate(codeVersion) : null;
       }
       const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
-      dbVersion = Number(row?.v ?? 0);
+      const dbVersion = Number(row?.v ?? 0);
+      return { dbVersion, codeVersion, pending: dbVersion < codeVersion, newer: dbVersion > codeVersion };
     } catch {
-      dbVersion = 0;
+      return null;
     } finally {
       db.close();
     }
-  } else {
-    return null;
   }
 
-  return { dbVersion, codeVersion, pending: dbVersion < codeVersion, newer: dbVersion > codeVersion };
+  return null;
+}
+
+/** Import perezoso del driver SQLite (no arrastra better-sqlite3 al bundle edge). */
+async function openSqliteLazy(path: string): Promise<any> {
+  const { openSqlite } = await import("../../sqlite-driver/src/open.ts");
+  return openSqlite(path);
 }

@@ -72,7 +72,7 @@ docker compose up -d
 anterior. Si una migración falla, su transacción se revierte y el arranque
 corta (el backup queda intacto).
 
-Para Cloudflare D1: `wrangler d1 migrations apply <DB_NAME> --remote`.
+Para Cloudflare D1: aplica el esquema (`wrangler d1 execute <DB> --remote --file=schema.sql`) y estampa el libro mayor con `scripts/stamp-d1.mjs` (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`).
 Ver también la sección **Migration** del [`CHANGELOG`](../CHANGELOG.md).
 
 ## Backup
