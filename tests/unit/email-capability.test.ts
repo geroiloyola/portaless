@@ -18,7 +18,7 @@ import {
   parseEmailSettings,
   renderEmailTemplate,
   sanitizeEmailInput,
-} from "../../packages/dashboard/src/site-settings/email-config";
+} from "../../packages/email-transport/src/config";
 import { createSiteSettingsStore } from "../../packages/dashboard/src/site-settings/site-settings-store";
 import { applySchema } from "../../scripts/setup.mjs";
 

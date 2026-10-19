@@ -23,7 +23,7 @@ import {
   emailSettingsToValues,
   parseEmailSettings,
   sanitizeEmailInput,
-} from "../../../packages/dashboard/src/site-settings/email-config.ts";
+} from "../../../packages/email-transport/src/config.ts";
 
 const AVAILABLE = ["none", "webhook", "smtp"];
 

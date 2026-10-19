@@ -17,7 +17,7 @@
 //   - EHLO multilinea se parsea correctamente (250-... / 250 fin).
 //   - Timeout con clearTimeout (no dispara sobre un socket ya cerrado).
 
-import type { EmailProviderSettings } from "../../../dashboard/src/site-settings/email-config";
+import type { EmailProviderSettings } from "./config";
 
 export interface OutgoingEmail {
   from: string;

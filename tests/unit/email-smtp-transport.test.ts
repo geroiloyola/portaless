@@ -5,8 +5,8 @@
 // servidor lo anuncia, y sin credenciales no lo exige).
 import { afterEach, describe, expect, it } from "vitest";
 import net from "node:net";
-import { dotStuff, normalizeHeader, sendEmail } from "../../packages/plugin-sandbox/src/capabilities/email-send";
-import { renderEmailTemplate } from "../../packages/dashboard/src/site-settings/email-config";
+import { dotStuff, normalizeHeader, sendEmail } from "../../packages/email-transport/src/send";
+import { renderEmailTemplate } from "../../packages/email-transport/src/config";
 
 interface FakeServer {
   port: number;

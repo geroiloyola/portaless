@@ -27,8 +27,8 @@ import { createPluginStorageStore } from "../registry/plugin-storage";
 import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "../registry/plugin-email-quota";
 import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-factory";
 import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
-import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../dashboard/src/site-settings/email-config";
-import { sendEmail } from "./email-send";
+import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
+import { sendEmail } from "../../../email-transport/src/send";
 
 export interface CapabilityError extends Error {
   code: string;

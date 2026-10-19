@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { applySchema } from "../../scripts/setup.mjs";
 import * as adminEmail from "../../functions/admin/api/email";
 import { createSiteSettingsStore } from "../../packages/dashboard/src/site-settings/site-settings-store";
-import { parseEmailSettings } from "../../packages/dashboard/src/site-settings/email-config";
+import { parseEmailSettings } from "../../packages/email-transport/src/config";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-admin-email-"));
 const DB = join(tmp, "portaless.db");

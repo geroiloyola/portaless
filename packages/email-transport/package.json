@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/email-transport",
+  "version": "0.0.1",
+  "description": "Contrato y transporte de email transaccional de Portaless: modelo tipado del proveedor/plantillas y envio (webhook/SMTP) con el `from` del sitio inyectado por el core.",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "src/index.ts",
+  "dependencies": {}
+}
