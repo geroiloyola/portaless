@@ -129,20 +129,31 @@ Verified in the repository at the time of writing:
 - `scripts/publish-site.mjs` reads a self-hosted SQLite `PageStore`, writes
   publishable layouts under `src/content/pages/`, runs `npm run build`, and
   publishes the `dist/` files through the GitHub API. It requires a terminal,
-  SQLite and configured GitHub credentials.
-- `packages/deploy-engine/src/draft-filter.ts` filters `status: "draft"` and
-  legacy `-draft` slugs in that CLI path.
+  SQLite and configured GitHub credentials; C08 still needs a clean staging
+  exporter and stale-artifact removal.
+- `packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()` is the
+  central public-projection policy used by static content routes, listings,
+  feeds, sitemaps, `llms.txt`, the Node page route and the publish CLI. It
+  excludes draft, private, legacy `-draft` and unknown states; layouts with no
+  status retain the legacy published behavior.
+- The Node dynamic public page route now returns a generic 404 `no-store` for a
+  database draft/private row and does not fall through to stale static HTML.
+- MCP `create_page` always creates drafts; MCP/plugin content reads omit
+  non-public pages, and writes cannot publish or modify public/private pages.
+  Authenticated admin UI is the explicit publication/privatization control.
 - GitHub Pages serves static output and does not execute Portaless Functions.
 - `packages/mcp-server/` is a separate Node process. Its HTTP transport binds
   to loopback by default; it is not an HTTP endpoint automatically supplied by
   GitHub Pages or Cloudflare Pages.
 - `.gitignore` excludes `.airchive/`, but this alone is not a public-export,
-  Docker-image or endpoint confidentiality guarantee.
+  Docker-image or endpoint confidentiality guarantee. C09 still needs to
+  exclude private paths from container/distribution build contexts.
 
-Known gap: the dynamic page route `functions/pages/[slug].js` currently loads a
-layout from `PageStore` and renders it without a `status === "published"` check.
-The target contract above therefore describes required behavior, not the current
-security guarantee. See `ROADMAP.md` for the live status and remediation.
+Remaining work: C07 must add an authenticated private preview that cannot
+fallback to public bytes; C08 must build a clean allowlisted projection and
+remove stale published artifacts; C09 must harden packaging. These requirements
+are not complete until their tests prove that a synthetic private marker is
+absent from every public surface and artifact.
 
 ## Non-goals for this contract
 

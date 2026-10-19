@@ -1,5 +1,5 @@
 ---
-// Detalle de cada post. Solo se generan los publicados (draft !== true):
+// Detalle de cada post. Solo se generan los publicables (no draft/private):
 // antes getStaticPaths generaba tambien los borradores, que no aparecian en
 // los listados (index.astro y blog/index.astro ya filtraban) pero quedaban
 // accesibles por URL directa. Mismo criterio que /llms.txt y /blog/<id>.md
@@ -9,9 +9,14 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
 import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
+import { isPubliclyPublishable } from "../../../packages/deploy-engine/src/draft-filter";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("posts", ({ data }) => data.draft !== true);
+  const posts = await getCollection("posts", ({ id, data }) => isPubliclyPublishable({
+    slug: id,
+    draft: data.draft,
+    visibility: data.private ? "private" : "public",
+  }));
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },

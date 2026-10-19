@@ -16,6 +16,7 @@ import type { AgentIdentityResolver, AgentInvocationContext } from "../permissio
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { deleteNode } from "./node-ops";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const TOOL_NAME = "delete_block";
 const READ_CAPABILITY_ID = "content:read";
@@ -57,6 +58,18 @@ export function registerDeleteBlockTool(server: McpServer, deps: RegisterDeleteB
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+      if (existing.status === "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "private_content_access_denied" }, null, 2) }],
+          isError: true,
+        };
+      }
+      if (isPubliclyPublishable(existing)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "published_page_requires_admin_approval", message: "MCP no modifica una pagina publicada. Crea una propuesta borrador y pide a un admin que la revise y publique." }, null, 2) }],
+          isError: true,
+        };
+      }
       const result = deleteNode(existing.root, nodeId);
       if (!result.ok) {
         return {

@@ -31,6 +31,7 @@ import {
   mergeDbPagesIntoLlmsTxt,
 } from "../src/lib/llms-txt.ts";
 import { ROUTES } from "../src/lib/routes.ts";
+import { isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
 
 const MAX_DB_PAGES = 200;
 
@@ -43,6 +44,7 @@ async function loadDbPages(env) {
     const layout = await store.load(slug);
     if (!layout) continue;
     if (!validatePageLayout(layout).valid) continue;
+    if (!isPubliclyPublishable(layout)) continue;
     pages.push({ slug: layout.slug || slug, title: layout.title, description: layout.description });
   }
   return pages;

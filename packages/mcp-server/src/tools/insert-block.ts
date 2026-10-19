@@ -22,6 +22,7 @@ import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-s
 import { insertNode } from "./node-ops";
 import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
 import type { ElementNode } from "../../../atomic-elements/src/types";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const TOOL_NAME = "insert_block";
 const READ_CAPABILITY_ID = "content:read";
@@ -81,6 +82,20 @@ export function registerInsertBlockTool(server: McpServer, deps: RegisterInsertB
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+
+      if (existing.status === "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "private_content_access_denied" }, null, 2) }],
+          isError: true,
+        };
+      }
+
+      if (isPubliclyPublishable(existing)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "published_page_requires_admin_approval", message: "MCP no modifica una pagina publicada. Crea una propuesta borrador y pide a un admin que la revise y publique." }, null, 2) }],
+          isError: true,
+        };
+      }
 
       // Autoridad de membership sobre el nodo a insertar -- v0.0.9.11.
       const typeError = checkNodeTypes([node as ElementNode], toolCatalog(deps.elementCatalog));

@@ -104,7 +104,7 @@ describe("createPortalessMcpServer -- integracion con el SDK real (InMemoryTrans
 
     const result = await client.callTool({
       name: "create_page",
-      arguments: { slug: "equipo", title: "Equipo", root: [], draftMode: true },
+      arguments: { slug: "equipo", title: "Equipo", root: [] },
     });
 
     expect(result.isError).toBeFalsy();

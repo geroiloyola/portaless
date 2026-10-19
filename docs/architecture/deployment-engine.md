@@ -36,9 +36,11 @@ por el admin self-hosted, mismo patron que `scripts/setup.mjs` y
 1. Lee todas las paginas de `PageStore` (SQLite self-hosted) via `list()` +
    `load()`, y las vuelca a `src/content/pages/*.json` -- el formato que
    `src/pages/pages/[slug].astro` ya sabe leer via `import.meta.glob`.
-   **Salvaguarda**: por defecto excluye cualquier slug que termine en
-   `-draft` (los borradores que genera el Paso 1 del Wizard) -- nunca se
-   publica un borrador sin revisar. Ver `packages/deploy-engine/src/draft-filter.ts`.
+    **Salvaguarda**: la politica central `isPubliclyPublishable()` excluye
+    `status: draft`, `status: private`, estados desconocidos y el sufijo legacy
+    `-draft`. No existe un flag CLI para saltarse la politica. Ver
+    `packages/deploy-engine/src/draft-filter.ts`. El exportador aun debe migrar
+    a un staging limpio y retirar artefactos antiguos (C08 del MVP).
 2. Corre `astro build` de verdad (proceso Node real).
 3. Sube el contenido completo de `dist/` a un repositorio de GitHub Pages
    usando la Git Data API (blob + tree + commit + ref), no la Contents API

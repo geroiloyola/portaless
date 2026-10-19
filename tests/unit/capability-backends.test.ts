@@ -16,6 +16,9 @@ import {
 import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
 import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory";
 import type { CapabilityError } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { applySchema } from "../../scripts/setup.mjs";
+import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import type { PageLayout } from "../../packages/atomic-elements/src/types";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-cap-backends-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
@@ -72,6 +75,32 @@ describe("createCapabilityHostBridge: content (validacion de forma)", () => {
   it("pagina inexistente -> PAGE_NOT_FOUND, no NOT_CONFIGURED (el backend existe, la pagina no)", async () => {
     const bridge = createCapabilityHostBridge({ PORTALESS_SQLITE_PATH: join(tmp, "pages.sqlite") });
     await expect(bridge.contentRead!({ slug: "no-existe-jamas" })).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
+  });
+
+  it("C06: content:read oculta draft/private y content:write no publica ni sobrescribe published", async () => {
+    const dbPath = join(tmp, "publication-policy.sqlite");
+    await applySchema(dbPath, { quiet: true });
+    const env = { PORTALESS_SQLITE_PATH: dbPath };
+    const pageStore = await createPageStore(env);
+    const layout = (slug: string, status: PageLayout["status"]): PageLayout => ({
+      version: "0.1", slug, title: slug, status, root: [],
+    });
+    await pageStore.save(layout("publica", "published"));
+    await pageStore.save(layout("borrador", "draft"));
+    await pageStore.save(layout("privada", "private"));
+    const bridge = createCapabilityHostBridge(env);
+
+    expect(await bridge.contentRead!({ slug: "publica" })).toMatchObject({ status: "published" });
+    await expect(bridge.contentRead!({ slug: "borrador" })).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
+    await expect(bridge.contentRead!({ slug: "privada" })).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
+    await expect(bridge.contentWrite!(layout("nueva-publicada", "published"))).rejects.toMatchObject({
+      code: "PUBLICATION_REQUIRES_ADMIN_APPROVAL",
+    });
+    await expect(bridge.contentWrite!(layout("publica", "draft"))).rejects.toMatchObject({
+      code: "PUBLICATION_REQUIRES_ADMIN_APPROVAL",
+    });
+    await expect(bridge.contentWrite!(layout("nueva-draft", "draft"))).resolves.toMatchObject({ success: true });
+    pageStore.close?.();
   });
 });
 

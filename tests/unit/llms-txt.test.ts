@@ -82,6 +82,8 @@ describe("publishedPosts", () => {
     const posts = [
       { id: "viejo", data: { pubDate: new Date("2026-01-01"), draft: false } },
       { id: "borrador", data: { pubDate: new Date("2026-09-01"), draft: true } },
+      { id: "privado", data: { pubDate: new Date("2026-08-01"), draft: false, private: true } },
+      { id: "future-draft", data: { pubDate: new Date("2026-07-01"), draft: false } },
       { id: "nuevo", data: { pubDate: new Date("2026-06-01"), draft: false } },
     ];
     expect(publishedPosts(posts).map((p) => p.id)).toEqual(["nuevo", "viejo"]);

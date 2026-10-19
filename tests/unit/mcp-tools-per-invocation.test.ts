@@ -132,7 +132,7 @@ describe("grant_capability -- identidad por invocacion", () => {
 });
 
 describe("create_page -- identidad por invocacion", () => {
-  async function setup() {
+  async function setup(existingPage: Record<string, unknown> | null = null) {
     const { tokenA, tokenB, resolveAgent } = await seededTokens();
     const permissionStore = new InMemoryPermissionStore();
     await permissionStore.setGrant({
@@ -147,7 +147,7 @@ describe("create_page -- identidad por invocacion", () => {
         saved.push(layout);
         return layout;
       },
-      load: async () => null,
+      load: async (slug: string) => (existingPage?.slug === slug ? existingPage : null),
     };
     const { store: auditLog, entries } = fakeAuditLog();
     const { server, tools } = fakeMcpServer();
@@ -165,7 +165,6 @@ describe("create_page -- identidad por invocacion", () => {
     slug: "nosotros",
     title: "Nosotros",
     root: [],
-    draftMode: true,
   };
 
   it("agente-A crea pagina (borrador) y audita como A; agente-B sin content:write es denegado como B", async () => {
@@ -182,6 +181,16 @@ describe("create_page -- identidad por invocacion", () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ agentKeyId: AGENT_A.agentKeyId, outcome: "success" });
+  });
+
+  it("create_page no puede sobrescribir un slug existente (PageStore.save es upsert)", async () => {
+    const existing = { version: "0.1", slug: "nosotros", title: "Canon publicado", status: "published", root: [] };
+    const { handler, tokenA, saved, entries } = await setup(existing);
+    const result = await handler(pageArgs, extraA(tokenA)) as { content: Array<{ text: string }>; isError?: boolean };
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toMatchObject({ saved: false, error: "page_already_exists" });
+    expect(saved).toHaveLength(0);
+    expect(entries).toHaveLength(0);
   });
 });
 

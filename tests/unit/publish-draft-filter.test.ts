@@ -1,80 +1,78 @@
-// v0.0.9.29 -- salvaguarda: nunca publicar un borrador del Wizard sin revisar.
-// v0.0.9.10 -- se agrega excludeDraftPages, que ademas del sufijo legacy
-// "-draft" excluye los PageLayout con status:"draft" nativo (PageLayout.status).
+// C06: una sola politica fail-closed para todas las proyecciones publicas.
 import { describe, it, expect } from "vitest";
-import { excludeDrafts, excludeDraftPages, isDraft } from "../../packages/deploy-engine/src/draft-filter";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  excludeDrafts,
+  excludeDraftPages,
+  isDraft,
+  isPubliclyPublishable,
+  publicationExclusionReason,
+} from "../../packages/deploy-engine/src/draft-filter";
 
-describe("excludeDrafts", () => {
-  it("excluye por defecto los slugs que terminan en -draft", () => {
-    const r = excludeDrafts(["index", "mi-sitio-draft", "blog"], false);
-    expect(r.slugs).toEqual(["index", "blog"]);
-    expect(r.skipped).toBe(1);
+describe("publication policy", () => {
+  it("mantiene published/legacy-sin-status y excluye draft/private/legacy draft", () => {
+    expect(isPubliclyPublishable({ slug: "legacy" })).toBe(true);
+    expect(isPubliclyPublishable({ slug: "publica", status: "published" })).toBe(true);
+    expect(isPubliclyPublishable({ slug: "draft", status: "draft" })).toBe(false);
+    expect(isPubliclyPublishable({ slug: "privada", status: "private" })).toBe(false);
+    expect(isPubliclyPublishable({ slug: "privada", visibility: "private" })).toBe(false);
+    expect(isPubliclyPublishable({ slug: "future-draft" })).toBe(false);
   });
 
-  it("con includeDrafts=true no excluye nada", () => {
-    const r = excludeDrafts(["index", "mi-sitio-draft"], true);
-    expect(r.slugs).toEqual(["index", "mi-sitio-draft"]);
-    expect(r.skipped).toBe(0);
+  it("estado desconocido y slug vacio fallan cerrado", () => {
+    expect(publicationExclusionReason({ slug: "x", status: "scheduled" })).toBe("invalid_status");
+    expect(isPubliclyPublishable({ slug: "" })).toBe(false);
   });
 
-  it("no excluye slugs que solo contienen 'draft' en otra posicion", () => {
-    const r = excludeDrafts(["draft-notes", "borrador"], false);
-    expect(r.slugs).toEqual(["draft-notes", "borrador"]);
-    expect(r.skipped).toBe(0);
+  it("excludeDrafts ya no tiene bypass includeDrafts", () => {
+    expect(excludeDrafts(["index", "story-draft", "draft-notes", "private" ])).toEqual({
+      slugs: ["index", "draft-notes", "private"],
+      skipped: 1,
+    });
   });
 
-  it("no excluye nada si la lista esta vacia", () => {
-    const r = excludeDrafts([], false);
-    expect(r.slugs).toEqual([]);
-    expect(r.skipped).toBe(0);
-  });
-});
-
-describe("isDraft", () => {
-  it("true para slug con sufijo -draft (legacy)", () => {
-    expect(isDraft({ slug: "mi-pagina-draft" })).toBe(true);
-  });
-
-  it("true para status 'draft' nativo", () => {
-    expect(isDraft({ slug: "mi-pagina", status: "draft" })).toBe(true);
-  });
-
-  it("false para status 'published'", () => {
-    expect(isDraft({ slug: "mi-pagina", status: "published" })).toBe(false);
-  });
-
-  it("false para pagina sin status y sin sufijo (layout legacy ya publicado)", () => {
-    expect(isDraft({ slug: "mi-pagina" })).toBe(false);
-  });
-});
-
-describe("excludeDraftPages (status-aware, la que usa publish-site.mjs)", () => {
-  it("excluye por sufijo legacy -draft y por status 'draft'", () => {
+  it("filtra PageLayout draft, private, legacy y estado desconocido", () => {
     const pages = [
       { slug: "index", status: "published" },
-      { slug: "borrador-viejo-draft" },
-      { slug: "borrador-nuevo", status: "draft" },
-      { slug: "blog", status: "published" },
+      { slug: "legacy-published" },
+      { slug: "draft", status: "draft" },
+      { slug: "private", status: "private" },
+      { slug: "legacy-draft" },
+      { slug: "future", status: "scheduled" },
     ];
-    const r = excludeDraftPages(pages, false);
-    expect(r.pages.map((p) => p.slug)).toEqual(["index", "blog"]);
-    expect(r.skipped).toBe(2);
+    expect(excludeDraftPages(pages)).toEqual({
+      pages: [pages[0], pages[1]],
+      skipped: 4,
+    });
   });
 
-  it("con includeDrafts=true no excluye nada", () => {
-    const pages = [
-      { slug: "index", status: "published" },
-      { slug: "borrador-nuevo", status: "draft" },
-    ];
-    const r = excludeDraftPages(pages, true);
-    expect(r.pages).toHaveLength(2);
-    expect(r.skipped).toBe(0);
+  it("isDraft conserva significado estrecho (draft/legacy), privado no es borrador", () => {
+    expect(isDraft({ slug: "x", status: "draft" })).toBe(true);
+    expect(isDraft({ slug: "x-draft" })).toBe(true);
+    expect(isDraft({ slug: "x", status: "private" })).toBe(false);
   });
 
-  it("trata un layout legacy sin status como publicado", () => {
-    const pages = [{ slug: "contacto" }];
-    const r = excludeDraftPages(pages, false);
-    expect(r.pages.map((p) => p.slug)).toEqual(["contacto"]);
-    expect(r.skipped).toBe(0);
+  it("las superficies publicas conocidas consumen la politica central", () => {
+    const root = join(__dirname, "../..");
+    const policyConsumers = [
+      ["src/pages/pages/[slug].astro", "loadContentPages"],
+      ["src/pages/[locale]/pages/[slug].astro", "loadContentPages"],
+      ["src/pages/paginas/[slug].astro", "isPubliclyPublishable"],
+      ["src/pages/[locale]/paginas/[slug].astro", "isPubliclyPublishable"],
+      ["src/pages/sitemap.xml.ts", "loadContentPages"],
+      ["src/pages/llms.txt.ts", "isPubliclyPublishable"],
+      ["src/pages/rss.xml.ts", "publishedPosts"],
+      ["src/pages/blog/index.astro", "publishedPosts"],
+      ["src/pages/blog/[...slug].astro", "isPubliclyPublishable"],
+      ["src/pages/blog/[...slug].md.ts", "publishedPosts"],
+      ["src/components/ExplorePage.astro", "isPubliclyPublishable"],
+      ["functions/pages/[slug].js", "isPubliclyPublishable"],
+      ["functions/llms.txt.js", "isPubliclyPublishable"],
+      ["scripts/publish-site.mjs", "excludeDraftPages"],
+    ] as const;
+    for (const [path, marker] of policyConsumers) {
+      expect(readFileSync(join(root, path), "utf8"), path).toContain(marker);
+    }
   });
 });

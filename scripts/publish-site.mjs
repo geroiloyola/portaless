@@ -12,7 +12,6 @@
 //
 // Uso:
 //   npm run publish
-//   npm run publish -- --include-drafts
 //   npm run publish -- --repo=mi-repo-custom
 
 import { execSync } from "node:child_process";
@@ -27,7 +26,6 @@ import { excludeDraftPages } from "../packages/deploy-engine/src/draft-filter.ts
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
-const includeDrafts = args.includes("--include-drafts");
 const repoArg = args.find((a) => a.startsWith("--repo="))?.slice("--repo=".length) ?? null;
 
 function walk(dir, distDir, out) {
@@ -62,10 +60,10 @@ async function main() {
     const layout = await pageStore.load(slug);
     if (layout) allLayouts.push(layout);
   }
-  const { pages: publishable, skipped } = excludeDraftPages(allLayouts, includeDrafts);
+  const { pages: publishable, skipped } = excludeDraftPages(allLayouts);
   const slugs = publishable.map((p) => p.slug);
   if (skipped > 0) {
-    console.log(`   Omitiendo ${skipped} borrador(es) (*-draft o status='draft'). Usa --include-drafts para publicarlos igual.`);
+    console.log(`   Omitiendo ${skipped} pagina(s) privadas, draft o con estado desconocido (politica fail-closed).`);
   }
   if (slugs.length === 0) {
     console.error("No hay ninguna pagina publicable en PageStore. Nada que compilar.");

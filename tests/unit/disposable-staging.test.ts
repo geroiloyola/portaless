@@ -50,8 +50,9 @@ describe("C04 disposable staging fixture", () => {
     const pages = await createPageStore(fixture.env);
     const slugs = await pages.list();
     expect(slugs).toContain(`staging-public-${fixture.id}`);
-    expect(slugs).toContain(`staging-draft-${fixture.id}`);
-    expect((await pages.load(`staging-draft-${fixture.id}`))?.root[0]).toMatchObject({
+    expect(slugs).toContain("staging-draft");
+    expect(slugs).toContain("staging-private");
+    expect((await pages.load("staging-draft"))?.root[0]).toMatchObject({
       props: { text: STAGING_DRAFT_MARKER },
     });
 

@@ -29,6 +29,7 @@ import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-fa
 import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
 import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
 import { sendEmail } from "../../../email-transport/src/send";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 export interface CapabilityError extends Error {
   code: string;
@@ -76,14 +77,25 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       if (typeof slug !== "string") throw notConfigured("content:read requiere { slug: string }");
       const pageStore = await createPageStore(env);
       const layout = await pageStore.load(slug);
-      if (!layout) throw capabilityError("PAGE_NOT_FOUND", `Pagina '${slug}' no encontrada.`);
+      if (!layout || !isPubliclyPublishable(layout)) throw capabilityError("PAGE_NOT_FOUND", `Pagina '${slug}' no encontrada.`);
       return layout;
     },
     contentWrite: async (payload) => {
       const slug = (payload as { slug?: unknown })?.slug;
       if (typeof slug !== "string") throw notConfigured("content:write requiere un PageLayout completo con slug.");
       const pageStore = await createPageStore(env);
-      await pageStore.save(payload as never);
+      const layout = payload as { status?: unknown; [key: string]: unknown };
+      if (layout.status !== "draft") {
+        throw capabilityError("PUBLICATION_REQUIRES_ADMIN_APPROVAL", "content:write de plugin solo guarda draft; un admin publica desde el panel.");
+      }
+      const existing = await pageStore.load(slug);
+      if (existing?.status === "private") {
+        throw capabilityError("PRIVATE_CONTENT_ACCESS_DENIED", "Los plugins no pueden leer o modificar paginas privadas.");
+      }
+      if (existing && isPubliclyPublishable(existing)) {
+        throw capabilityError("PUBLICATION_REQUIRES_ADMIN_APPROVAL", "Un plugin no puede reemplazar contenido publicado; crea una propuesta no publica para revision.");
+      }
+      await pageStore.save(layout as never);
       return { success: true };
     },
     storageRead: async (pluginName, payload) => {

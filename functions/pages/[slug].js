@@ -29,6 +29,7 @@ import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter.ts";
 import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
 import { isMultilingual, t } from "../../src/lib/i18n.ts";
 import {
@@ -275,6 +276,16 @@ export async function onRequestGet(context) {
   }
 
   if (!layout) return next();
+
+  // Fail-closed: una fila draft/private de la DB tiene precedencia sobre
+  // cualquier HTML estatico antiguo. No caer a next(), que podria servir una
+  // proyeccion anterior y filtrar el contenido.
+  if (!isPubliclyPublishable(layout)) {
+    return new Response("Not Found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
 
   const validation = validatePageLayout(layout);
   if (!validation.valid) {

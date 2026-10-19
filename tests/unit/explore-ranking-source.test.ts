@@ -26,6 +26,6 @@ describe("Explore: estado degradado honesto", () => {
 
   it("mantiene el filtro de publicacion canonico (no muestra borradores)", () => {
     expect(src).toContain("draft-filter");
-    expect(src).toContain("isDraft");
+    expect(src).toContain("isPubliclyPublishable");
   });
 });

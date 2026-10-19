@@ -177,8 +177,12 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
         status: "published", root: [{ id: "pub", type: "Paragraph", props: { text: STAGING_PUBLIC_MARKER } }],
       });
       await pages.save({
-        version: "0.1", slug: `staging-draft-${id}`, title: STAGING_DRAFT_MARKER,
+        version: "0.1", slug: "staging-draft", title: STAGING_DRAFT_MARKER,
         status: "draft", root: [{ id: "draft", type: "Paragraph", props: { text: STAGING_DRAFT_MARKER } }],
+      });
+      await pages.save({
+        version: "0.1", slug: "staging-private", title: STAGING_ARCHIVE_MARKER,
+        status: "private", root: [{ id: "private", type: "Paragraph", props: { text: STAGING_ARCHIVE_MARKER } }],
       });
 
       const { createSiteSettingsStore } = await import(join(root, "packages/dashboard/src/site-settings/site-settings-store.ts"));

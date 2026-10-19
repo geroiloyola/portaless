@@ -38,6 +38,20 @@ beforeAll(async () => {
     theme: "2pac-dark",
     root: [{ id: "n1", type: "Paragraph", props: { text: "Tema aplicado en runtime." } }],
   } as unknown as PageLayout);
+  await store.save({
+    version: "0.1",
+    slug: "secreto-draft-runtime",
+    title: "MARCADOR-BORRADOR-PRIVADO",
+    status: "draft",
+    root: [{ id: "secret", type: "Paragraph", props: { text: "CUERPO-BORRADOR-PRIVADO" } }],
+  } as unknown as PageLayout);
+  await store.save({
+    version: "0.1",
+    slug: "secreto-private-runtime",
+    title: "MARCADOR-PRIVADO-PRIVADO",
+    status: "private",
+    root: [{ id: "secret", type: "Paragraph", props: { text: "CUERPO-PRIVADO-PRIVADO" } }],
+  } as unknown as PageLayout);
 });
 
 afterAll(() => {
@@ -138,6 +152,20 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
 
     const store = await createPageStore(env);
     await store.remove("corrupta");
+  });
+
+  it.each([
+    ["secreto-draft-runtime", "MARCADOR-BORRADOR-PRIVADO", "CUERPO-BORRADOR-PRIVADO"],
+    ["secreto-private-runtime", "MARCADOR-PRIVADO-PRIVADO", "CUERPO-PRIVADO-PRIVADO"],
+  ])("draft/private %s -> 404 sin contenido y sin fallback estatico", async (slug, titleMarker, bodyMarker) => {
+    const { context, nextCalls } = ctx(slug);
+    const res = await onRequestGet(context);
+    const body = await res.text();
+    expect(res.status).toBe(404);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(body).not.toContain(titleMarker);
+    expect(body).not.toContain(bodyMarker);
+    expect(nextCalls()).toBe(0); // no servir HTML estatico viejo despues de denegar
   });
 
   it("slug con traversal no toca la base: next()", async () => {

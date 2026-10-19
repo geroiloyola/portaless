@@ -5,10 +5,10 @@
 //
 // Principio del whitepaper (ver docs/architecture/mcp-agents.md):
 // "toda escritura de un agente se guarda como borrador, nunca se
-// publica directo". PageLayout ahora tiene `status` nativo
-// ("draft"/"published"), asi que draftMode=true (default) marca
-// status="draft" y el slug queda limpio. Publicar es llamar a
-// update_page con status="published" una vez que un humano lo aprueba.
+// publica directo". PageLayout tiene `status` nativo
+// ("draft"/"published"/"private"); esta tool fuerza `draft`
+// status="draft" y el slug queda limpio. Esta tool NO ofrece una opcion para
+// publicar; un admin debe aprobar/promover la pagina desde el panel.
 //
 // NOTA (legacy): hasta v0.0.9.10 el borrador se marcaba con un sufijo
 // "-draft" en el slug, y el publish filter (deploy-engine/draft-filter)
@@ -41,7 +41,6 @@ const inputSchema = {
   title: z.string().min(1),
   description: z.string().optional(),
   root: z.array(elementNodeSchema).describe("Arbol de bloques -- usar solo ElementType listados por list_page_components."),
-  draftMode: z.boolean().default(true).describe("Si true (default), guarda con status='draft' hasta aprobacion humana (publicar via update_page con status='published')."),
 };
 
 export interface RegisterCreatePageToolDeps {
@@ -59,15 +58,15 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
   server.registerTool(
     TOOL_NAME,
     {
-      title: "Crear una pagina nueva (borrador por defecto)",
+      title: "Crear una pagina nueva (siempre borrador)",
       description:
-        "Crea un PageLayout y lo guarda via PageStore real. Por defecto (draftMode=true) el " +
-        "status queda en 'draft', para que un humano revise el contenido antes de publicarlo " +
-        "con update_page y status='published'. Requiere la capacidad 'content:write' concedida " +
+        "Crea un PageLayout y lo guarda via PageStore real con status='draft'. Solo un admin " +
+        "puede aprobar y publicar desde el panel; MCP no publica directamente. Requiere " +
+        "la capacidad 'content:write' concedida " +
         "en el Centro de Permisos.",
       inputSchema,
     },
-    async ({ slug, title, description, root, draftMode }, extra?: AgentInvocationContext) => {
+    async ({ slug, title, description, root }, extra?: AgentInvocationContext) => {
       const agent = await deps.resolveAgent(extra);
       await requireCapability(deps.permissionStore, agent, CAPABILITY_ID);
 
@@ -82,12 +81,21 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
         };
       }
 
+      // PageStore.save is an UPSERT. Sin esta comprobacion, create_page con un
+      // slug existente podia reemplazar un canon publicado y bajarlo a draft.
+      if (await deps.pageStore.load(slug)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "page_already_exists", message: `Ya existe una pagina con slug '${slug}'. Usa update_page solo si es un draft; las publicadas requieren el flujo de revision del owner.` }, null, 2) }],
+          isError: true,
+        };
+      }
+
       const layout: PageLayout = {
         version: "0.1",
         slug,
         title,
         description,
-        status: draftMode ? "draft" : "published",
+        status: "draft",
         root: root as ElementNode[],
       };
 
@@ -103,7 +111,7 @@ export function registerCreatePageTool(server: McpServer, deps: RegisterCreatePa
           {
             type: "text",
             text: JSON.stringify(
-              { saved: true, slug, status: layout.status, note: draftMode ? "Guardado como borrador (status='draft'). Un humano lo publica con update_page + status='published'." : "Guardado como publicado (status='published')." },
+              { saved: true, slug, status: layout.status, note: "Guardado como borrador. Un admin lo revisa y publica desde el panel." },
               null,
               2
             ),
