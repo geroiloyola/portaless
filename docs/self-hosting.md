@@ -75,6 +75,27 @@ corta (el backup queda intacto).
 Para Cloudflare D1: aplica el esquema (`wrangler d1 execute <DB> --remote --file=schema.sql`) y estampa el libro mayor con `scripts/stamp-d1.mjs` (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`).
 Ver también la sección **Migration** del [`CHANGELOG`](../CHANGELOG.md).
 
+## Email transaccional
+
+Los plugins con la capacidad `email:send` (y cualquier flujo que necesite enviar
+correo) usan un proveedor que configura el dueño en **`/admin/settings/email`**:
+
+- **Webhook** (recomendado): Portaless hace `POST` JSON `{ from, to, subject, text }`
+  a una URL tuya; detrás conectás Resend, Mailgun, SES o tu servicio. La URL debe
+  ser pública (se rechazan hosts internos/metadata — SSRF).
+- **SMTP**: host, puerto (587 STARTTLS / 465 TLS), usuario y contraseña. El
+  cliente exige STARTTLS si hay credenciales (nunca manda la password en claro).
+- **`none`**: apaga el envío; `email:send` responde `501`.
+
+El **`from`** lo inyecta el core desde el panel: el plugin nunca lo elige
+(delegación ciega). Hay una **cuota diaria por plugin** (default 50/día,
+`PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT`); la cuota vive en la base
+(`plugin_email_quota`) y, sin backend de base de datos, el envío se **rechaza**
+(fail-closed) en vez de no contar.
+
+La credencial es **write-only**: la API nunca la devuelve y el panel no la
+pre-carga (dejar el campo vacío la conserva).
+
 ## Backup
 
 Todo lo que el dueño escribe vive en dos lugares:

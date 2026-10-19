@@ -64,7 +64,7 @@ must know.
 | SiteTrustScore (4 sources) | ✅ Functional |
 | Protocol APW resolver (v1.3, 110/110 test vectors) | ✅ Functional |
 | Plugin SDK (MIT, v0.1.0) | ✅ Shipped |
-| Plugin sandboxing (4 adapters, 6/12 capability backends real) | ✅ Core wired; 6 capabilities still return explicit `501` by design |
+| Plugin sandboxing (4 adapters, 7/12 capability backends real) | ✅ Core wired; 5 capabilities still return explicit `501` by design |
 | Plugin installer (HTTP) | 🟡 Behind a flag, off by default (external sandbox review pending) |
 | Commerce (Medusa/Mercur) | ✅ Catalog read-only; no own checkout |
 | Cloud Images (APW-signed PNG sidecars) | 🟡 Cryptographic base done; R2 storage + moderation pending |

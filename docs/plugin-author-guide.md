@@ -76,8 +76,9 @@ request does nothing either. Ask for the minimum.
 | `content:read` / `content:write` | ✅ real (`PageStore`) |
 | `storage:read` / `storage:write` | ✅ real (per-plugin store, namespace + quotas) |
 | `agent:identify` | ✅ real (read-only: the Trust Layer usage ledger, public fields only) |
+| `email:send` | ✅ real (blind delegation: you send `{ template, to, data }`; the site's `from` and the per-plugin daily quota are the core's) |
 | `network:fetch` | ✅ real (`fetchAllowed`, host-allowlisted) |
-| everything else (`media:*`, `email:send`, `commerce:*`, `site:admin`) | ⛔ answers `501 NOT_CONFIGURED` when granted — a real, separate step |
+| everything else (`media:*`, `commerce:*`, `site:admin`) | ⛔ answers `501 NOT_CONFIGURED` when granted — a real, separate step |
 
 A `501` is **not** a denial and **not** a fake success: the capability *is*
 granted, the host just has no implementation yet. Design around the ones that
@@ -176,12 +177,13 @@ that is **off by default**:
 
 - The **HTTPS installer is behind a flag, off by default**, and is not announced,
   until the external sandbox review closes (ROADMAP Phase 14 exit criteria).
-- **6 of 12 capabilities have no backend** and answer `501` (§3). Two of them
-  (`site:admin`, `email:send`) are a **recorded decision, not a gap**: they stay
-  `501` until a concrete, reviewed use case exists (`site:admin` has no defined
-  operation set for a plugin; `email:send` would let a plugin mail as the site
-  and needs a per-plugin quota design first). `media:*` and `commerce:checkout`
-  need an external provider or a per-plugin media namespace.
+- **5 of 12 capabilities have no backend** and answer `501` (§3). `site:admin`
+  is a **recorded decision, not a gap** (it has no defined operation set for a
+  plugin). `media:*` and `commerce:checkout` need an external provider or a
+  per-plugin media namespace. `email:send` **shipped**: you send only
+  `{ template, to, data }` for a template the site owner approved; the core
+  injects the `from` and enforces a per-plugin daily quota (default 50/day), and
+  rejects any `from`/`cc`/`bcc` in the payload.
 - Real **edge execution** (Cloudflare/Deno) needs `PORTALESS_CLOUDFLARE_*` /
   `PORTALESS_DENO_*` credentials; without them the runtime falls back to
   `isolated-vm` (Node self-host only).
