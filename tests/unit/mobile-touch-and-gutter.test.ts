@@ -44,6 +44,16 @@ describe("objetivos tactiles 44x44 (WCAG 2.5.5)", () => {
     expect(globalCss).toMatch(/footer\.site-footer \.footer-eco a \{[\s\S]*?min-height: 44px;/);
   });
 
+  // R9: el header movil ENVUELVE a 2 filas (no comprime los 44px). Documentado
+  // como trade-off aceptado: 44px WCAG > header de una sola fila.
+  it("el header movil envuelve a 2 filas en vez de encoger los objetivos", () => {
+    const mobile = globalCss.slice(globalCss.indexOf("@media (max-width: 640px)"));
+    expect(mobile).toContain("flex-wrap: wrap");
+    expect(mobile).toContain("row-gap");
+    expect(mobile).toContain("flex: 0 0 auto"); // no se encogen
+    expect(globalCss).toContain("Trade-off aceptado (review R9)");
+  });
+
   it("Button y Hero CTA declaran el objetivo tactil inline (min 44x44 + centrado)", () => {
     expect(registry).toContain("min-height:44px;min-width:44px;");
     expect(registry).toMatch(/TOUCH_TARGET/);
