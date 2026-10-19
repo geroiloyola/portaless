@@ -4,8 +4,9 @@
 # y ci.yml filtra por rama base (los PRs apilados contra agentic /
 # deploy-manifest quedaban sin checks).
 #
-# Node 24 es obligatorio: isolated-vm@7 (sandbox de plugins) exige
-# node >= 24. Node 22 corre como informativo (no bloquea).
+# Node 24 es obligatorio: package.json declara engines.node >=24 y
+# isolated-vm@7 requiere el runtime soportado. No ejecutar un matrix Node 22
+# continue-on-error que parezca una validacion valida cuando nunca es blocker.
 # La prueba de que nada depende de node:sqlite la da el paso de grep, no la
 # version de Node.
 #
@@ -33,11 +34,10 @@ jobs:
     name: vitest tests/unit (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: ${{ matrix.node == '22' }}
     strategy:
       fail-fast: false
       matrix:
-        node: ["24", "22"]
+        node: ["24"]
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +66,6 @@ jobs:
     name: Smoke npm run setup (SQLite, Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

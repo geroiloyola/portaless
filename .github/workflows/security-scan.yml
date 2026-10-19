@@ -3,27 +3,46 @@ name: Security Scan
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   schedule:
     - cron: "0 6 * * 1"
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          cache: npm
+      - name: Instalar dependencias reproducibles
+        run: npm ci --no-audit --no-fund
+      - name: Buscar secretos en diff e historial
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2, SHA fijado
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
       # npm audit sale con codigo != 0 si hay vulnerabilidades; la decision la toma
       # check-npm-audit.mjs contra .github/audit-allowlist.json (excepciones con
       # motivo y vencimiento). Cualquier high/critical no listada rompe el job.
       - name: npm audit (high/critical, con allowlist)
         run: |
-          npm audit --json > audit.json || true
+          set +e
+          npm audit --json > audit.json
+          audit_exit=$?
+          set -e
+          echo "npm audit exit code: $audit_exit (la policy checker distingue advisories permitidas de errores de audit)"
           node .github/scripts/check-npm-audit.mjs audit.json
       - name: Verificar version de isolated-vm (GHSA-864f-rcv7-6rh4)
         run: |
-          echo "Verificando que isolated-vm, si esta instalado, no sea <=7.0.0..."
+          echo "Verificando que isolated-vm no sea <=7.0.0..."
           node -e "
             try {
               const pkg = require('./node_modules/isolated-vm/package.json');
@@ -35,6 +54,7 @@ jobs:
               }
               console.log('isolated-vm@' + pkg.version + ' OK.');
             } catch (e) {
-              console.log('isolated-vm no instalado, omitiendo verificacion.');
+              console.error('No se pudo verificar isolated-vm despues de npm ci:', e.message);
+              process.exit(1);
             }
           "

@@ -109,6 +109,24 @@ Continuous integration must block changes when these fail:
 
 An audit result must not be silenced with `|| true` unless there is a documented, scoped, reviewed exception with an expiration date.
 
+The checked-in workflows install from the lockfile with `npm ci`; `Security Scan`
+runs on pull requests and pushes to `main`, checks the installed sandbox runtime,
+audits dependencies against the time-bounded allowlist, and scans fetched Git
+history for secrets. These workflows do **not** configure GitHub merge rules by
+themselves. A repository owner must require the relevant status checks through
+branch protection/rulesets. That GitHub setting is external to this repository
+and must be verified in repository settings before claiming failed checks block
+merges.
+
+The repository workflows implement these checks (`Unit Tests`, `Full Tests`,
+`Sandbox E2E Tests`, `Upgrade tests`, `Security Scan`, and `.github/workflows/ci.yml`).
+**A workflow existing does not make it a merge gate.** Repository rulesets/branch
+protection must require the applicable status checks on `main`. That GitHub
+setting is outside this repository and must be verified in the repository
+settings before claiming that failed checks block merges. The security scan
+uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version check,
+and a pinned Gitleaks action over fetched history.
+
 ## Scope and limitations
 
 This policy describes the project's process and security expectations; it is not a security guarantee nor a certification. Final security also depends on configuration, the infrastructure provider, dependencies, installed plugins, and the deployment's operational controls.
