@@ -19,10 +19,14 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Run tests
         run: npm test
+      - name: Verificar exportación pública con marcadores privados sintéticos
+        run: node --import tsx scripts/test-public-export.mjs
       - name: Build del sitio
         run: npm run build
       - name: Validar manifiestos de plugins
         run: node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts
+      - name: Verificar frontera del paquete fuente contra .airchive sintético
+        run: node scripts/verify-npm-source-boundary.mjs
 
   # ADR-004: construye la imagen real y recorre el primer arranque completo:
   # arranque -> /api/setup/status -> setup con el codigo -> reinicio -> setup bloqueado.
@@ -31,8 +35,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Construir imagen
-        run: docker build -t portaless:ci .
+      - name: Construir imagen y probar exclusión de marcadores privados sintéticos
+        run: node scripts/test-docker-private-boundary.mjs portaless:ci
       - name: Arrancar contenedor
         run: docker run -d --name portaless -p 3000:3000 -v portaless-data:/data portaless:ci
       - name: Esperar /healthz

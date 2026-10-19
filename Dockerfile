@@ -18,7 +18,9 @@ COPY package.json package-lock.json ./
 COPY packages ./packages
 RUN npm ci
 COPY . .
-RUN npm run build && npm prune --omit=dev
+RUN npm run build \
+  && npm prune --omit=dev \
+  && node scripts/verify-private-artifacts.mjs /app --skip-node-modules
 
 FROM node:24-bookworm-slim AS runner
 ENV NODE_ENV=production \
@@ -30,6 +32,7 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=builder --chown=node:node /app ./
 RUN mkdir -p /data && chown node:node /data
+RUN node scripts/verify-private-artifacts.mjs /app --skip-node-modules
 VOLUME ["/data"]
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
