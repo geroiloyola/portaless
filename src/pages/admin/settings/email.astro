@@ -55,8 +55,14 @@ const PROVIDER_HINTS: Record<string, string> = {
       </label>
       <label class="em-field" id="em-token-field">
         <span id="em-token-label">Token / contraseña</span>
-        <input type="password" id="em-token" maxlength="400" autocomplete="new-password" />
+        <input type="password" id="em-token" maxlength="400" autocomplete="new-password" placeholder="Sin cambios" />
       </label>
+      <p class="em-hint" id="em-token-hint" style="margin-top:-6px;">
+        Por seguridad la credencial guardada no se muestra. Dejá el campo vacío para conservarla.
+        <label style="display:inline-flex;gap:6px;align-items:center;margin-left:6px;">
+          <input type="checkbox" id="em-clear-token" /> Borrar la credencial guardada
+        </label>
+      </p>
 
       <h2 class="em-form-title">Remitente del sitio</h2>
       <p class="em-hint">El <code>from</code> de todo email que salga del sitio. Los plugins nunca lo eligen.</p>
@@ -131,6 +137,7 @@ const PROVIDER_HINTS: Record<string, string> = {
   const userField = $("em-user-field");
   const tokenField = $("em-token-field");
   const tokenLabel = $("em-token-label");
+  const tokenHint = $("em-token-hint");
   const templatesEl = $("em-templates");
   const msg = $("em-msg");
 
@@ -150,6 +157,7 @@ const PROVIDER_HINTS: Record<string, string> = {
     portField.style.display = kind === "smtp" ? "" : "none";
     userField.style.display = kind === "smtp" ? "" : "none";
     tokenField.style.display = kind === "none" ? "none" : "";
+    if (tokenHint) tokenHint.style.display = kind === "none" ? "none" : "";
     tokenLabel.textContent = kind === "smtp" ? "Contraseña SMTP" : "Token Bearer (opcional)";
   }
 
@@ -192,7 +200,10 @@ const PROVIDER_HINTS: Record<string, string> = {
     $("em-host").value = provider.host || "";
     $("em-port").value = provider.port || "";
     $("em-username").value = provider.username || "";
-    $("em-token").value = provider.token || "";
+    // El GET no devuelve el token (write-only): nunca se pre-carga.
+    $("em-token").value = "";
+    $("em-token").placeholder = settings.hasCredential ? "Sin cambios (hay una guardada)" : "Sin credencial";
+    $("em-clear-token").checked = false;
     $("em-from").value = settings.from || "";
     templatesEl.innerHTML = "";
     (settings.templates || []).forEach(templateRow);
@@ -223,13 +234,16 @@ const PROVIDER_HINTS: Record<string, string> = {
     const provider = { kind };
     if (kind === "webhook") {
       provider.url = $("em-url").value.trim();
-      provider.token = $("em-token").value;
     } else if (kind === "smtp") {
       provider.host = $("em-host").value.trim();
       provider.port = Number($("em-port").value);
       provider.username = $("em-username").value.trim();
-      provider.token = $("em-token").value;
     }
+    // Token write-only: solo se manda si el operador escribio uno nuevo; si no,
+    // el backend conserva el guardado (o lo borra si se marco la casilla).
+    const tokenValue = $("em-token").value;
+    if (tokenValue) provider.token = tokenValue;
+    else if ($("em-clear-token").checked) provider.clearCredential = true;
     const payload = { provider, from: $("em-from").value.trim(), templates: collectTemplates() };
     const res = await fetch("/admin/api/email", {
       method: "PUT",
