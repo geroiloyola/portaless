@@ -81,6 +81,13 @@
   --space-7: calc(var(--space-unit) * 12);
   --space-8: calc(var(--space-unit) * 16);
 
+  /* Gutter lateral del sitio: respira en movil (5vw) pero no crece sin fin en
+     desktop (tope --space-6 = 24px). Es una COMPOSICION de la escala de
+     espaciado, no un pixel magico: 5vw resuelve a 16px en un movil de 320px
+     (dentro de [--space-3, --space-6]) y a 24px+ en desktop, donde el clamp lo
+     fija. Un solo punto de verdad para .container y el header. */
+  --gutter: clamp(var(--space-3), 5vw, var(--space-6));
+
   /* Tipografia por ROL: el Hero deja de emitir 2.2rem a mano y el Heading deja
      de depender de la cascada h1/h2/h3 del tema para decidir su tamano visual.
      --fs-title es el clamp que hoy aplica a h2. */
@@ -212,7 +219,7 @@ a:hover { text-decoration: underline; }
 .container {
   max-width: 860px;
   margin: 0 auto;
-  padding: 2rem 1.25rem;
+  padding: 2rem var(--gutter);
 }
 
 header.site-header {
@@ -225,7 +232,7 @@ header.site-header nav {
   align-items: center;
   max-width: 860px;
   margin: 0 auto;
-  padding: 1rem 1.25rem;
+  padding: 1rem var(--gutter);
 }
 
 header.site-header .brand {
@@ -298,7 +305,7 @@ header.site-header .header-lang-notice {
   gap: 0.4rem;
   max-width: 860px;
   margin: 0 auto;
-  padding: 0 1.25rem 0.7rem;
+  padding: 0 var(--gutter) 0.7rem;
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--muted);
@@ -358,7 +365,13 @@ header.site-header .nav-ico {
 @media (max-width: 640px) {
   header.site-header nav {
     gap: 0.3rem;
-    padding: 0.75rem 0.9rem;
+    padding: 0.75rem var(--gutter);
+    /* Los controles miden 44px (WCAG 2.5.5) y NO se encogen (flex-shrink:0).
+       Con marca + 3 enlaces + idioma + TrustScore + Share no entran en una fila
+       de 375px, asi que el nav ENVUELVE a una segunda fila en vez de comprimir
+       los objetivos tactiles por debajo del minimo. */
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
   }
 
   header.site-header .brand {
@@ -366,12 +379,16 @@ header.site-header .nav-ico {
     margin-right: 0.1rem;
   }
 
+  /* Objetivo tactil 44x44 (WCAG 2.5.5): en movil el menu es icon-only, asi que
+     cada entrada es un control tactil y cumple el minimo. flex:0 0 auto impide
+     que el flex lo encoja. */
   header.site-header .nav-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     color: var(--text);
   }
@@ -403,11 +420,12 @@ header.site-header .nav-ico {
 
   header.site-header .header-right {
     gap: 0.3rem;
+    flex: 0 0 auto;
   }
 
   header.site-header .header-lang {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     justify-content: center;
   }
@@ -425,8 +443,8 @@ header.site-header .nav-ico {
   }
 
   header.site-header .header-trust {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     justify-content: center;
   }
@@ -448,8 +466,9 @@ header.site-header .header-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
@@ -493,6 +512,11 @@ footer.site-footer .footer-eco {
 
 footer.site-footer .footer-eco a {
   color: var(--text);
+  /* Objetivo tactil: los enlaces del footer son controles de accion; en movil
+     cumplen el minimo 44x44 (WCAG 2.5.5) centrando el texto. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 footer.site-footer .footer-eco .sep {

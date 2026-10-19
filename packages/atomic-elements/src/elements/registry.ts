@@ -140,6 +140,13 @@ const BUTTON_SIZES: Record<ElementSize, string> = {
   lg: `${space(4)} ${space(6)}`,
 };
 
+// Objetivo tactil minimo (WCAG 2.5.5 Target Size): todo control de accion mide
+// al menos 44x44px y CENTRA su contenido. No es un pixel magico: es el minimo
+// de la norma, por eso vive como constante compartida y no disperso. El tamano
+// `sm` (padding 8px 16px ~ 36px de alto) lo necesita de verdad; `md`/`lg` ya lo
+// superan por padding, pero la garantia es explicita.
+const TOUCH_TARGET = "display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;";
+
 function esc(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
@@ -196,7 +203,7 @@ const Hero: ElementDefinition<HeroProps> = {
     // (global.css, [data-theme-pack="portaless-nocturno"]), no el elemento.
     if (variant === "spotlight") {
       const cta = p.ctaLabel && p.ctaHref
-        ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}" style="display:inline-block;margin-top:${space(6)};padding:${BUTTON_SIZES.lg};border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;">${esc(p.ctaLabel)}</a>`
+        ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}" style="${TOUCH_TARGET}margin-top:${space(6)};padding:${BUTTON_SIZES.lg};border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;">${esc(p.ctaLabel)}</a>`
         : "";
       return `<section class="ae-hero ae-hero--spotlight" style="text-align:center;padding:${space(8)} ${space(5)} ${space(6)};"><h1 class="ae-hero-spotlight-title" style="font-size:${titleSize};line-height:1.05;margin:0 0 ${space(4)};">${esc(p.title)}</h1><p style="opacity:.85;margin:0 auto;max-width:640px;font-size:1.15rem;line-height:1.6;">${esc(p.subtitle)}</p>${cta}</section>`;
     }
@@ -355,7 +362,7 @@ const ButtonEl: ElementDefinition<ButtonProps> = {
       color = "var(--accent-text, #5A6B24)";
       border = "none";
     }
-    return `<a href="${esc(p.href)}" style="display:inline-block;padding:${BUTTON_SIZES[size]};border-radius:var(--radius-button, 8px);background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
+    return `<a href="${esc(p.href)}" style="${TOUCH_TARGET}padding:${BUTTON_SIZES[size]};border-radius:var(--radius-button, 8px);background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
   },
 };
 
@@ -939,11 +946,12 @@ const FeatureGrid: ElementDefinition<FeatureGridProps> = {
       .join("");
     const heading = p.title ? `<h2 style="margin:0 0 ${space(5)};text-align:center;">${esc(p.title)}</h2>` : "";
     const empty = `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
-    // auto-fit + minmax con `min(100%, 15rem)`: la grilla es RESPONSIVE por si
+    // auto-fit + minmax con `min(100%, 280px)`: la grilla es RESPONSIVE por si
     // misma (envuelve en pantallas angostas) sin media queries ni JS, y el
-    // `min(100%, ...)` evita el desborde en pantallas muy chicas (320px), donde
-    // un minmax de 220px fijo no cabe. La densidad de la tarjeta usa clamp().
-    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 15rem), 1fr));gap:clamp(${space(3)}, 2.5vw, ${space(5)});">${cards || empty}</div></section>`;
+    // `min(100%, ...)` evita el desborde en pantallas muy chicas (320px / iPhone
+    // SE), donde un minmax de 280px fijo no cabe. El gap usa clamp() para que la
+    // densidad escale con el viewport sin pixeles magicos.
+    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:clamp(${space(3)}, 2.5vw, ${space(5)});">${cards || empty}</div></section>`;
   },
 };
 

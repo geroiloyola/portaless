@@ -42,7 +42,7 @@ describe("FeatureGrid", () => {
     expect(html).toContain("Vos sos dueno del estado.");
     expect(html).toContain("Identidad");
     expect(html).toContain("<svg"); // los iconos
-    expect(html).toContain("repeat(auto-fit, minmax(min(100%, 15rem), 1fr))"); // responsive, sin desborde
+    expect(html).toContain("repeat(auto-fit, minmax(min(100%, 280px), 1fr))"); // responsive, sin desborde
   });
 
   it("sin items muestra el estado vacio honesto (no una grilla rota)", () => {

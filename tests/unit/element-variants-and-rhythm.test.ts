@@ -364,6 +364,7 @@ describe("objetivos tactiles de 44px con puntero grueso", () => {
     const block = css.match(/@media\s*\(pointer:\s*coarse\)\s*\{([\s\S]*?)\n\}/);
     expect(block, "@media (pointer: coarse)").toBeTruthy();
     expect(block![1]).toContain("min-height: 44px");
+    expect(block![1]).toContain("min-width: 44px");
     for (const cls of [".ae-hero-cta", ".ae-link-list a", ".ae-directions-btn"]) {
       expect(block![1], cls).toContain(cls);
     }

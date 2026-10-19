@@ -76,6 +76,40 @@ test.describe("movil 375x812", () => {
     await page.locator(".docs-nav-summary").click();
     await expect(page.locator(".docs-nav")).toBeVisible();
   });
+
+  test("controles del header y el footer cumplen 44x44 (WCAG 2.5.5)", async ({ page }) => {
+    await page.goto("/pages/ejemplo-atomic-elements/");
+    const controls = [
+      "header.site-header a.nav-link[href='/explore/']",
+      "header.site-header .header-icon-btn",
+      "header.site-header .header-trust",
+      "header.site-header .header-lang",
+    ];
+    for (const sel of controls) {
+      const box = await page.locator(sel).first().boundingBox();
+      if (!box) continue; // el control puede no existir en esta pagina
+      expect(Math.round(box.width), `${sel} ancho`).toBeGreaterThanOrEqual(44);
+      expect(Math.round(box.height), `${sel} alto`).toBeGreaterThanOrEqual(44);
+    }
+    for (const link of await page.locator("footer.site-footer .footer-eco a").all()) {
+      const box = await link.boundingBox();
+      if (box) expect(Math.round(box.height), "footer link").toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
+// iPhone SE (320px): el peor caso del FeatureGrid (minmax 280px fijo desbordaba).
+test.describe("movil chico 320x568 (iPhone SE)", () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  for (const path of ["/", "/pages/servicios/", "/pages/portafolio/"]) {
+    test(`${path} no desborda a 320px`, async ({ page }) => {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      const overflow = await horizontalOverflow(page);
+      expect(overflow, `${path} desborda ${overflow}px`).toBeLessThanOrEqual(1);
+    });
+  }
 });
 
 test.describe("desktop", () => {
