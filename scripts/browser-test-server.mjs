@@ -11,11 +11,15 @@ import {
   destroyDisposableStagingSync,
   STAGING_ADMIN_PASSWORD,
   STAGING_ADMIN_USER,
+  STAGING_VIEWER_PASSWORD,
+  STAGING_VIEWER_USER,
 } from "./staging/disposable-staging.mjs";
 
 export const BROWSER_TEST_PORT = Number(process.env.PORTALESS_BROWSER_TEST_PORT || 4173);
 export const BROWSER_TEST_ADMIN_USER = STAGING_ADMIN_USER;
 export const BROWSER_TEST_ADMIN_PASSWORD = STAGING_ADMIN_PASSWORD;
+export const BROWSER_TEST_VIEWER_USER = STAGING_VIEWER_USER;
+export const BROWSER_TEST_VIEWER_PASSWORD = STAGING_VIEWER_PASSWORD;
 export const BROWSER_TEST_BASE_URL = `http://127.0.0.1:${BROWSER_TEST_PORT}`;
 
 const rootDir = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -62,7 +66,7 @@ export async function startBrowserTestServer() {
   process.once("SIGTERM", onSignal);
 
   try {
-    fixture = await createDisposableStaging();
+    fixture = await createDisposableStaging({ rootDir: process.env.PORTALESS_BROWSER_STAGING_ROOT });
     activeFixtureId = fixture.id;
     activeFixtureRoot = fixture.rootDir;
     if (signalRequested) {

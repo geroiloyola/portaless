@@ -49,7 +49,7 @@ describe("C04 disposable staging fixture", () => {
     expect(await users.findByUsername(fixture.synthetic.adminUser)).toMatchObject({ role: "admin" });
     const pages = await createPageStore(fixture.env);
     const slugs = await pages.list();
-    expect(slugs).toContain(`staging-public-${fixture.id}`);
+    expect(slugs).toContain("staging-public");
     expect(slugs).toContain("staging-draft");
     expect(slugs).toContain("staging-private");
     expect((await pages.load("staging-draft"))?.root[0]).toMatchObject({

@@ -147,6 +147,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     tr.appendChild(tdStatus);
 
     const tdActions = document.createElement("td");
+    const preview = document.createElement("a");
+    preview.href = `/admin/preview/pages/${encodeURIComponent(page.slug)}`;
+    preview.target = "_blank";
+    preview.rel = "noopener noreferrer";
+    preview.textContent = "Vista previa";
+    const view = document.createElement("a");
+    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
+    view.target = "_blank";
+    view.rel = "noopener";
+    view.textContent = "Ver ↗";
 
     const changeStatus = document.createElement("button");
     changeStatus.type = "button";
@@ -173,8 +183,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         badge.className = `pm-badge pm-badge--${status}`;
         badge.textContent = statusLabel(status);
         changeStatus.textContent = status === "published" ? "Hacer privada" : "Publicar";
-        if (status === "published" && !view.isConnected) tdActions.appendChild(view);
-        if (status !== "published") view.remove();
+        if (status === "published") {
+          preview.remove();
+          if (!view.isConnected) tdActions.appendChild(view);
+        } else {
+          view.remove();
+          if (!preview.isConnected) tdActions.appendChild(preview);
+        }
       })().catch((err) => { changeStatus.disabled = false; showMsg(`No se pudo cambiar la publicación: ${(err as Error).message}`); });
     });
     tdActions.appendChild(changeStatus);
@@ -184,12 +199,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     edit.textContent = "Editar";
     tdActions.appendChild(edit);
 
-    const view = document.createElement("a");
-    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
-    view.target = "_blank";
-    view.rel = "noopener";
-    view.textContent = "Ver ↗";
-    if (status === "published") tdActions.appendChild(view);
+    if (status !== "published") tdActions.appendChild(preview);
+    else tdActions.appendChild(view);
 
     const del = document.createElement("button");
     del.type = "button";

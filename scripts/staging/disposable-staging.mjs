@@ -18,6 +18,8 @@ const ID_RE = /^[a-f0-9]{24}$/;
 // restaurar la contraseña; sigue siendo una cuenta efímera dentro del staging.
 export const STAGING_ADMIN_USER = "admin";
 export const STAGING_ADMIN_PASSWORD = "Synthetic-Staging-Only-42!";
+export const STAGING_VIEWER_USER = "staging-viewer";
+export const STAGING_VIEWER_PASSWORD = "Synthetic-Viewer-Only-37!";
 export const STAGING_PUBLIC_MARKER = "PORTALESS_PUBLIC_STAGING_MARKER_7E191C";
 export const STAGING_DRAFT_MARKER = "PORTALESS_PRIVATE_DRAFT_MARKER_2A810D";
 export const STAGING_ARCHIVE_MARKER = "PORTALESS_PRIVATE_ARCHIVE_MARKER_5B0F31";
@@ -163,7 +165,9 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
       await applySchema(dbPath, { quiet: true });
 
       const { createUsersStore } = await import(join(root, "packages/auth/src/store-factory.ts"));
-      await (await createUsersStore(env)).createUser(STAGING_ADMIN_USER, STAGING_ADMIN_PASSWORD, "admin");
+      const users = await createUsersStore(env);
+      await users.createUser(STAGING_ADMIN_USER, STAGING_ADMIN_PASSWORD, "admin");
+      await users.createUser(STAGING_VIEWER_USER, STAGING_VIEWER_PASSWORD, "viewer");
 
       const { createSiteIdentityStore } = await import(join(root, "packages/apw-resolver/src/did-apw/store-factory.ts"));
       const { generateApwDid } = await import(join(root, "packages/apw-resolver/src/did-apw/generate.ts"));
@@ -173,7 +177,7 @@ export async function createDisposableStaging({ rootDir = join(tmpdir(), "portal
       const { createPageStore } = await import(join(root, "packages/atomic-elements/src/persistence/store-factory.ts"));
       const pages = await createPageStore(env);
       await pages.save({
-        version: "0.1", slug: `staging-public-${id}`, title: "Synthetic public staging page",
+        version: "0.1", slug: "staging-public", title: "Synthetic public staging page",
         status: "published", root: [{ id: "pub", type: "Paragraph", props: { text: STAGING_PUBLIC_MARKER } }],
       });
       await pages.save({

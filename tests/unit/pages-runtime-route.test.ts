@@ -134,7 +134,7 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
     expect(await res.text()).toBe("STATIC-FALLBACK");
   });
 
-  it("layout corrupto (tipo desconocido) en la base: next() en vez de 500", async () => {
+  it("layout corrupto en DB configurada: 503 no-store, nunca fallback al HTML estatico", async () => {
     // Escritura cruda: los stores validan al guardar (save lanza), este
     // caso simula una fila legacy/hand-crafted con elemento desconocido.
     const { default: Database } = await import("better-sqlite3");
@@ -147,8 +147,10 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
 
     const { context, nextCalls } = ctx("corrupta");
     const res = await onRequestGet(context);
-    expect(nextCalls()).toBe(1);
-    expect(await res.text()).toBe("STATIC-FALLBACK");
+    expect(res.status).toBe(503);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(nextCalls()).toBe(0);
+    expect(await res.text()).not.toContain("ElementoInventado");
 
     const store = await createPageStore(env);
     await store.remove("corrupta");
@@ -175,16 +177,20 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
     expect(await res.text()).toBe("STATIC-FALLBACK");
   });
 
-  it("si la base falla (env roto), la pagina publica nunca es 500", async () => {
+  it("si la DB configurada falla, 503 no-store sin fallback a una proyeccion vieja", async () => {
     const brokenEnv = { PORTALESS_SQLITE_PATH: join(tmp, "no", "mkdirs", "x.db") };
-    // openSqlite lanza si el directorio no existe -> el catch delega.
     const { context, nextCalls } = ctx("cualquiera", { env: brokenEnv });
     const res = await onRequestGet(context);
-    expect(nextCalledSafe(nextCalls)).toBe(true);
+    expect(res.status).toBe(503);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(nextCalls()).toBe(0);
+  });
+
+  it("sin configuracion de DB (deploy estatico) delega al HTML del build", async () => {
+    const { context, nextCalls } = ctx("cualquiera", { env: {} });
+    const res = await onRequestGet(context);
+    expect(res.status).toBe(404);
+    expect(nextCalls()).toBe(1);
     expect(await res.text()).toBe("STATIC-FALLBACK");
   });
 });
-
-function nextCalledSafe(nextCalls: () => number): boolean {
-  return nextCalls() >= 1;
-}
