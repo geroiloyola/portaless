@@ -29,6 +29,8 @@ export interface QuotaConsumeResult {
 export interface PluginEmailQuotaStore {
   /** Consume un email del dia. Atomico: no supera `limit`. */
   consume(pluginId: string, day: string, limit: number): Promise<QuotaConsumeResult>;
+  /** Devuelve un email consumido (p.ej. si el transporte fallo). Nunca baja de 0. */
+  release(pluginId: string, day: string): Promise<number>;
   /** Conteo actual (diagnostico/doctor). */
   count(pluginId: string, day: string): Promise<number>;
 }
@@ -68,6 +70,14 @@ export class SqlitePluginEmailQuotaStore implements PluginEmailQuotaStore {
     return Number(row?.count ?? 0);
   }
 
+  async release(pluginId: string, day: string): Promise<number> {
+    assertPluginId(pluginId);
+    this.db
+      .prepare("UPDATE plugin_email_quota SET count = count - 1 WHERE plugin_id = ? AND day = ? AND count > 0")
+      .run(pluginId, day);
+    return this.count(pluginId, day);
+  }
+
   close(): void {
     this.db.close();
   }
@@ -105,6 +115,16 @@ export class D1PluginEmailQuotaStore implements PluginEmailQuotaStore {
       .first();
     return Number(row?.count ?? 0);
   }
+
+  async release(pluginId: string, day: string): Promise<number> {
+    assertPluginId(pluginId);
+    await this.ensure();
+    await this.db
+      .prepare("UPDATE plugin_email_quota SET count = count - 1 WHERE plugin_id = ? AND day = ? AND count > 0")
+      .bind(pluginId, day)
+      .run();
+    return this.count(pluginId, day);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +145,15 @@ export class InMemoryPluginEmailQuotaStore implements PluginEmailQuotaStore {
 
   async count(pluginId: string, day: string): Promise<number> {
     return this.map.get(`${pluginId}\u0000${day}`) ?? 0;
+  }
+
+  async release(pluginId: string, day: string): Promise<number> {
+    assertPluginId(pluginId);
+    const key = `${pluginId}\u0000${day}`;
+    const current = this.map.get(key) ?? 0;
+    const next = Math.max(0, current - 1);
+    this.map.set(key, next);
+    return next;
   }
 }
 

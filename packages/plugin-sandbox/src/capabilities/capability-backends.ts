@@ -234,6 +234,10 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       try {
         await sendEmail(settings.provider, { from: settings.from, to: args.to, subject, text });
       } catch (err) {
+        // R4: si el transporte falla (proveedor caido), el email NO salio: se
+        // devuelve el cupo del dia para que el operador reintente sin quemar su
+        // cuota. La cuota solo debe penalizar envios REALES.
+        await quota.release(pluginName, day).catch(() => undefined);
         throw capabilityError("EMAIL_SEND_FAILED", (err as Error)?.message ?? "el envio de email fallo.");
       }
       return { sent: true, template: template.id, remainingToday: Math.max(0, limit - consumed.count) };

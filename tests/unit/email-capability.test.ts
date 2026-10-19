@@ -165,3 +165,33 @@ describe("email:send -- delegacion ciega", () => {
     await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" })).rejects.toMatchObject({ code: "EMAIL_SEND_FAILED" });
   });
 });
+
+// R4: la cuota solo debe penalizar envios REALES. Si el transporte falla, el
+// cupo del dia se devuelve (el operador puede reintentar).
+describe("R4: la cuota no penaliza envios que fallaron", () => {
+  it("release devuelve el cupo y nunca baja de 0", async () => {
+    const q = new InMemoryPluginEmailQuotaStore();
+    await q.consume("p", "2026-10-18", 5);
+    expect(await q.release("p", "2026-10-18")).toBe(0);
+    expect(await q.release("p", "2026-10-18")).toBe(0); // no negativo
+  });
+
+  it("un envio fallido no consume cuota: el reintento cabe", async () => {
+    const dbPath = tempDb();
+    const bridge = await seededBridge(dbPath, { PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT: "2" });
+    const q = await createPluginEmailQuotaStore({ PORTALESS_SQLITE_PATH: dbPath });
+    const day = new Date().toISOString().slice(0, 10);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
+    await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" })).rejects.toMatchObject({
+      code: "EMAIL_SEND_FAILED",
+    });
+    expect(await q.count("p", day)).toBe(0); // el fallo no consumio
+
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
+    await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
+    expect(await q.count("p", day)).toBe(2);
+  });
+});
