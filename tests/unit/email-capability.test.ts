@@ -14,6 +14,7 @@ import {
 import {
   EMAIL_KEYS,
   emailSettingsToValues,
+  isSafeEmailUrl,
   parseEmailSettings,
   renderEmailTemplate,
   sanitizeEmailInput,
@@ -200,5 +201,26 @@ describe("R4: la cuota no penaliza envios que fallaron", () => {
 describe("R5: cuota fail-closed sin backend persistente", () => {
   it("createPluginEmailQuotaStore sin DB ni SQLite lanza (no cae a InMemory)", async () => {
     await expect(createPluginEmailQuotaStore({})).rejects.toBeInstanceOf(EmailQuotaStoreUnavailable);
+  });
+});
+
+// R7: isSafeEmailUrl bloquea hosts internos/reservados (SSRF). No cubre
+// DNS-rebinding (defense-in-depth); el admin es el unico que configura esto.
+describe("R7: SSRF en la URL del webhook", () => {
+  it("rechaza loopback, privadas, link-local/metadata y esquemas no http(s)", () => {
+    const bad = [
+      "http://localhost/send", "http://127.0.0.1/send", "http://0.0.0.0/send",
+      "http://10.1.2.3/send", "http://172.16.0.1/send", "http://192.168.1.1/send",
+      "http://169.254.169.254/latest/meta-data/", "http://100.64.0.1/send",
+      "http://[::1]/send", "http://[fe80::1]/send", "http://[fd00::1]/send",
+      "http://foo.internal/send", "http://svc.local/send", "ftp://hooks.example.com/x",
+      "not-a-url",
+    ];
+    for (const url of bad) expect(isSafeEmailUrl(url), url).toBe(false);
+  });
+
+  it("acepta una URL publica https/http", () => {
+    expect(isSafeEmailUrl("https://hooks.example.com/send")).toBe(true);
+    expect(isSafeEmailUrl("http://api.resend.com/emails")).toBe(true);
   });
 });
