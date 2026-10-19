@@ -14,6 +14,7 @@
 | [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
+| [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
 
 ## Protocol APW and Portaless Index — [`protocol-apw/`](./protocol-apw/)
 
