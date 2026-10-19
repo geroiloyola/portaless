@@ -10,15 +10,14 @@
 // schema-additions/plugin-email-quota.sql (schema.sql lo regenera).
 
 import { openSqlite } from "../../../sqlite-driver/src/open";
+import { PLUGIN_EMAIL_QUOTA_DDL } from "../../../persistence-migrations/src/ddl";
 
 export const DEFAULT_DAILY_EMAIL_LIMIT = 50;
 
-export const PLUGIN_EMAIL_QUOTA_DDL =
-  "CREATE TABLE IF NOT EXISTS plugin_email_quota (" +
-  "plugin_id TEXT NOT NULL, " +
-  "day TEXT NOT NULL, " +
-  "count INTEGER NOT NULL DEFAULT 0, " +
-  "PRIMARY KEY (plugin_id, day))";
+// La DDL vive en UN solo lugar (packages/persistence-migrations/src/ddl.ts) y la
+// comparten el store y la migracion numerada. Se re-exporta por compatibilidad
+// con quien la importe desde aca.
+export { PLUGIN_EMAIL_QUOTA_DDL };
 
 export interface QuotaConsumeResult {
   allowed: boolean;

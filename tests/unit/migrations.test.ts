@@ -2,7 +2,7 @@
 // Pure logic (version/pending/fail-closed) + runner SQLite real (backup,
 // transaccion, idempotencia, dry-run). Sin DB externa: archivo temporal.
 import { afterEach, describe, expect, it } from "vitest";
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -12,6 +12,7 @@ import {
   pendingFrom,
   schemaVersion,
 } from "../../packages/persistence-migrations/src/index";
+import { PLUGIN_EMAIL_QUOTA_DDL } from "../../packages/persistence-migrations/src/ddl";
 import { currentVersion, migrateSqlite } from "../../packages/persistence-migrations/src/runner";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
 import { applySchema } from "../../scripts/setup.mjs";
@@ -219,5 +220,31 @@ describe("migracion v4: capacidad email:send", () => {
       check.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'plugin_email_quota'").get(),
     ).toBeTruthy();
     check.close();
+  });
+});
+
+// R6: la DDL de plugin_email_quota vive en UNA sola fuente
+// (packages/persistence-migrations/src/ddl.ts) que comparten el store y la
+// migracion; el schema-additions que alimenta schema.sql no puede divergir.
+describe("R6: DDL de plugin_email_quota en una sola fuente", () => {
+  const normalize = (sql: string) =>
+    sql
+      .replace(/--[^\n]*/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\s*([(),])\s*/g, "$1")
+      .trim()
+      .replace(/;+$/, "");
+
+  it("la constante y schema-additions/plugin-email-quota.sql coinciden", () => {
+    const root = join(__dirname, "../..");
+    const file = readFileSync(join(root, "schema-additions/plugin-email-quota.sql"), "utf8");
+    const create = file.match(/CREATE TABLE[\s\S]*?\)\s*;/);
+    expect(create, "CREATE TABLE en el addendum").toBeTruthy();
+    expect(normalize(create![0])).toBe(normalize(PLUGIN_EMAIL_QUOTA_DDL));
+  });
+
+  it("la migracion v4 usa la MISMA constante (no una copia inline)", () => {
+    const v4 = MIGRATIONS.find((m) => m.version === 4);
+    expect(v4!.statements).toContain(PLUGIN_EMAIL_QUOTA_DDL);
   });
 });

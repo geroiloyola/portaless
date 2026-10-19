@@ -19,6 +19,8 @@
 // Modulo PURO (sin I/O, sin SQLite): lo importan el runner, el doctor y los
 // tests, y tambien `functions/` y `server/`.
 
+import { PLUGIN_EMAIL_QUOTA_DDL } from "./ddl";
+
 export interface Migration {
   version: number;
   name: string;
@@ -65,12 +67,13 @@ const USER_AND_PLUGIN_COLUMNS = [
  *     la Fase 6, asi que es baseline (v1); NO se re-crea aca.
  * Idempotentes (CREATE TABLE IF NOT EXISTS): una base nueva ya las tiene por
  * `schema.sql` y esto es no-op; una base vieja las crea al migrar.
+ *
+ * La DDL se importa de `./ddl.ts` (fuente unica compartida con el store). Una
+ * vez que esta migracion se libere, su SQL queda CONGELADO (es historia del
+ * libro mayor): cualquier cambio futuro va en una migracion nueva (v5+), no
+ * editando esta.
  */
-const EMAIL_CAPABILITY_STATEMENTS = [
-  "CREATE TABLE IF NOT EXISTS plugin_email_quota (" +
-    "plugin_id TEXT NOT NULL, day TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, " +
-    "PRIMARY KEY (plugin_id, day))",
-];
+const EMAIL_CAPABILITY_STATEMENTS = [PLUGIN_EMAIL_QUOTA_DDL];
 
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "baseline", statements: [] },
