@@ -126,11 +126,14 @@ second simultaneous canonical writer.
 
 Verified in the repository at the time of writing:
 
-- `scripts/publish-site.mjs` reads a self-hosted SQLite `PageStore`, writes
-  publishable layouts under `src/content/pages/`, runs `npm run build`, and
-  publishes the `dist/` files through the GitHub API. It requires a terminal,
-  SQLite and configured GitHub credentials; C08 still needs a clean staging
-  exporter and stale-artifact removal.
+- `scripts/publish-site.mjs` reads a self-hosted SQLite `PageStore`, creates a
+  temporary build tree from an explicit Astro-input allowlist (no `functions/`,
+  `server/`, tests or arbitrary root files), restores only policy-approved
+  repository pages/posts and curated public docs, blocks source fixtures
+  shadowed by private DB slugs, overlays publishable PageStore layouts, and
+  publishes the generated `dist/` tree through the GitHub API. The destination tree is
+  complete, so old artifacts are withdrawn; ref updates are non-force. It
+  requires a terminal, SQLite and configured GitHub credentials.
 - `packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()` is the
   central public-projection policy used by static content routes, listings,
   feeds, sitemaps, `llms.txt`, the Node page route and the publish CLI. It
@@ -145,15 +148,17 @@ Verified in the repository at the time of writing:
 - `packages/mcp-server/` is a separate Node process. Its HTTP transport binds
   to loopback by default; it is not an HTTP endpoint automatically supplied by
   GitHub Pages or Cloudflare Pages.
-- `.gitignore` excludes `.airchive/`, but this alone is not a public-export,
-  Docker-image or endpoint confidentiality guarantee. C09 still needs to
-  exclude private paths from container/distribution build contexts.
+- `.gitignore`, the temporary public-build filter and `.dockerignore` exclude
+  `.airchive/`; Docker context rules also exclude runtime DBs, backups, env files
+  and private key material. The source archive/package boundary follows the
+  repository ignore rules. These rules do not make an explicitly tracked secret
+  safe to publish.
 
-Remaining work: C07 must add an authenticated private preview that cannot
-fallback to public bytes; C08 must build a clean allowlisted projection and
-remove stale published artifacts; C09 must harden packaging. These requirements
-are not complete until their tests prove that a synthetic private marker is
-absent from every public surface and artifact.
+Remaining work includes revision-bound approval before publication, Cloudum
+hosting/synchronization and measured workload limits. C07–C09 establish the
+preview, clean-export and packaging boundaries, but do not prove confidentiality
+for secrets deliberately committed or placed in an explicitly public asset
+directory.
 
 ## Non-goals for this contract
 

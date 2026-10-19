@@ -3,9 +3,9 @@
 > **Contrato actualizado:** [`canonical-node-and-public-projections.md`](./canonical-node-and-public-projections.md)
 > define el nodo canónico privado como local **o** alojado en un servicio privado
 > como Cloudum. Este documento describe el flujo de publicación que existe hoy;
-> no implica que Cloudum, la aprobación desde UI, la exportación aislada de
-> `.airchive/` o la sincronización del nodo estén implementados. El `publish`
-> actual es un CLI self-hosted y requiere terminal.
+> no implica que Cloudum, la aprobación desde UI o la sincronización del nodo
+> estén implementados. El `publish` actual es un CLI self-hosted y requiere
+> terminal.
 
 ## Decision de arquitectura
 
@@ -33,19 +33,24 @@ por el admin self-hosted, mismo patron que `scripts/setup.mjs` y
 
 ## Que hace `npm run publish`
 
-1. Lee todas las paginas de `PageStore` (SQLite self-hosted) via `list()` +
-   `load()`, y las vuelca a `src/content/pages/*.json` -- el formato que
-   `src/pages/pages/[slug].astro` ya sabe leer via `import.meta.glob`.
-    **Salvaguarda**: la politica central `isPubliclyPublishable()` excluye
-    `status: draft`, `status: private`, estados desconocidos y el sufijo legacy
-    `-draft`. No existe un flag CLI para saltarse la politica. Ver
-    `packages/deploy-engine/src/draft-filter.ts`. El exportador aun debe migrar
-    a un staging limpio y retirar artefactos antiguos (C08 del MVP).
-2. Corre `astro build` de verdad (proceso Node real).
+1. Lee las paginas de `PageStore` (SQLite self-hosted) via `list()` + `load()`.
+   La politica central `isPubliclyPublishable()` excluye `draft`, `private`,
+   estados desconocidos y el sufijo legacy `-draft`; no hay flag para saltarla.
+2. Construye un directorio temporal desde una allowlist de inputs Astro
+   (`src/`, `public/`, código fuente de `packages/`, metadatos npm requeridos y
+   los docs declarados en `docs-nav.mjs`); no copia `functions/`, `server/`,
+   tests, `.airchive/`, DBs, backups ni archivos raíz desconocidos. Vuelve a
+   incluir solo páginas/posts fuente publicables; un slug privado de PageStore
+   bloquea cualquier fixture equivalente, y los layouts públicos de PageStore
+   sustituyen la primaria fuente. Ejecuta `astro build` ahí; el árbol canónico
+   no se modifica, al proceso hijo solo pasan variables de build allowlisted y
+   solo `dist/` forma la proyección.
 3. Sube el contenido completo de `dist/` a un repositorio de GitHub Pages
    usando la Git Data API (blob + tree + commit + ref), no la Contents API
    archivo por archivo -- evita el limite practico de requests en sitios
-   con varias paginas. Ver `packages/deploy-engine/src/github-static-publish.ts`.
+   con varias paginas. Cada publicación crea un árbol completo sin `base_tree`,
+   por lo que los artefactos que ya no están en `dist/` se retiran; el ref avanza
+   sin force-push. Ver `packages/deploy-engine/src/github-static-publish.ts`.
 4. Crea el repositorio si no existe (por defecto `{usuario}.github.io`,
    convencion de GitHub Pages de usuario) y activa Pages si no estaba
    activado (idempotente).
