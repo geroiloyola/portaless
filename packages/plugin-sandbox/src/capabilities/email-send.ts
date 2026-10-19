@@ -5,6 +5,17 @@
 //
 // Fail-closed: cualquier fallo (HTTP no-2xx, SMTP no-250, timeout) lanza; nunca
 // un "exito" que no envio nada.
+//
+// Endurecimiento (R2/R10, review):
+//   - Dot-stuffing en el cuerpo de DATA (RFC 5321 §4.5.2): una linea que empieza
+//     con "." se duplica, si no termina DATA antes de tiempo (inyeccion SMTP).
+//   - Los valores interpolados de `data` (que vienen del PLUGIN, no confiables)
+//     se limpian de CR/LF en email-config.renderEmailTemplate; aca ademas se
+//     normalizan los headers por defensa en profundidad.
+//   - STARTTLS solo si el servidor lo anuncia; si hay credenciales y no hay
+//     STARTTLS, se RECHAZA (nunca mandar la password en claro).
+//   - EHLO multilinea se parsea correctamente (250-... / 250 fin).
+//   - Timeout con clearTimeout (no dispara sobre un socket ya cerrado).
 
 import type { EmailProviderSettings } from "../../../dashboard/src/site-settings/email-config";
 
@@ -35,26 +46,38 @@ export async function sendViaWebhook(provider: EmailProviderSettings, message: O
 }
 
 // ---------------------------------------------------------------------------
-// SMTP: cliente minimo (EHLO + STARTTLS opcional + AUTH LOGIN + DATA). Sin
-// dependencias. Cubre el caso comun (puerto 587 STARTTLS / 465 TLS implicito).
+// Helpers puros (exportados para test unitario)
 // ---------------------------------------------------------------------------
-function smtpLine(s: string): string {
-  return s.replace(/\r?\n/g, "\r\n");
+
+/** Quita CR/LF de un valor que va a un header (defensa en profundidad). */
+export function normalizeHeader(value: string): string {
+  return String(value).replace(/[\r\n]+/g, " ").trim();
 }
 
-async function smtpConversation(provider: EmailProviderSettings, message: OutgoingEmail): Promise<void> {
-  const net = await import("node:net");
-  const tls = await import("node:tls");
-  const host = provider.host as string;
-  const port = provider.port as number;
-  const implicitTls = port === 465;
+/**
+ * Normaliza a CRLF y aplica dot-stuffing: toda linea que empiece con "." se
+ * prefija con otro "." (RFC 5321 §4.5.2). Sin esto, una linea "." del cuerpo
+ * termina DATA antes de tiempo.
+ */
+export function dotStuff(text: string): string {
+  return String(text).replace(/\r?\n/g, "\r\n").replace(/(^|\r\n)\./g, "$1..");
+}
 
-  const socket: any = implicitTls
-    ? tls.connect({ host, port, servername: host })
-    : net.connect({ host, port });
-  socket.setTimeout(15000, () => socket.destroy(new EmailSendError("SMTP: timeout")));
+// ---------------------------------------------------------------------------
+// SMTP: cliente minimo (EHLO + STARTTLS opcional + AUTH LOGIN + DATA).
+// ---------------------------------------------------------------------------
+interface SmtpIo {
+  command(line: string, expect: number): Promise<string[]>;
+  readReply(): Promise<string[]>;
+}
 
+/** Envuelve un socket y devuelve lectura/escritura de respuestas SMTP. */
+function attachReader(socket: any): SmtpIo {
   let buffer = "";
+  // Lineas YA completas que llegaron antes de que el consumidor las pidiera.
+  // Sin este buffer, una respuesta multilinea en un mismo chunk perdia lineas
+  // (el while de `data` corria antes de que readReply pidiera la siguiente).
+  const pending: string[] = [];
   const waiters: Array<(line: string) => void> = [];
   socket.setEncoding("utf8");
   socket.on("data", (chunk: string) => {
@@ -65,69 +88,109 @@ async function smtpConversation(provider: EmailProviderSettings, message: Outgoi
       buffer = buffer.slice(idx + 2);
       const w = waiters.shift();
       if (w) w(line);
+      else pending.push(line);
     }
   });
 
-  const readLine = () => new Promise<string>((resolve, reject) => {
-    const onErr = (e: Error) => reject(e);
-    socket.once("error", onErr);
-    waiters.push((line) => {
-      socket.off("error", onErr);
-      resolve(line);
+  const readLine = () =>
+    new Promise<string>((resolve, reject) => {
+      const buffered = pending.shift();
+      if (buffered !== undefined) {
+        resolve(buffered);
+        return;
+      }
+      const onErr = (e: Error) => reject(e);
+      socket.once("error", onErr);
+      waiters.push((line) => {
+        socket.off("error", onErr);
+        resolve(line);
+      });
     });
-  });
 
-  const command = async (line: string, expect: number): Promise<string> => {
+  // Una respuesta SMTP puede ser multilinea: "250-foo" ... "250 fin". La linea
+  // TERMINAL es la que tiene codigo + espacio (o solo el codigo).
+  const readReply = async (): Promise<string[]> => {
+    const lines: string[] = [];
+    for (;;) {
+      const line = await readLine();
+      lines.push(line);
+      if (/^\d{3}([ ]|$)/.test(line)) return lines;
+    }
+  };
+
+  const command = async (line: string, expect: number): Promise<string[]> => {
     socket.write(`${line}\r\n`);
-    const reply = await readLine();
-    const code = Number(reply.slice(0, 3));
-    if (code !== expect) throw new EmailSendError(`SMTP: "${line.split(" ")[0]}" -> ${reply}`);
+    const reply = await readReply();
+    const code = Number(reply[0].slice(0, 3));
+    if (code !== expect) throw new EmailSendError(`SMTP: "${line.split(" ")[0]}" -> ${reply.join(" | ")}`);
     return reply;
   };
 
+  return { command, readReply };
+}
+
+function hasCapability(reply: string[], capability: string): boolean {
+  return reply.some((line) => line.toUpperCase().includes(capability));
+}
+
+async function smtpConversation(provider: EmailProviderSettings, message: OutgoingEmail): Promise<void> {
+  const net = await import("node:net");
+  const tls = await import("node:tls");
+  const host = provider.host as string;
+  const port = provider.port as number;
+  const implicitTls = port === 465;
+  const hasCredentials = Boolean(provider.username && provider.token);
+
+  const base: any = implicitTls ? tls.connect({ host, port, servername: host }) : net.connect({ host, port });
+  let socket: any = base;
+
+  const timer = setTimeout(() => socket.destroy(new EmailSendError("SMTP: timeout")), 15000);
+
   try {
-    await readLine(); // banner 220
-    await command("EHLO portaless", 250);
+    let io = attachReader(base);
+    await io.readReply(); // banner 220
+    let caps = await io.command("EHLO portaless", 250);
+
     if (!implicitTls) {
-      await command("STARTTLS", 220);
-      const secured = tls.connect({ socket, servername: host });
-      // A partir de aca se escribe sobre el socket TLS.
-      socket.write = secured.write.bind(secured);
-      secured.setEncoding("utf8");
-      secured.on("data", (chunk: string) => {
-        buffer += chunk;
-        let idx: number;
-        while ((idx = buffer.indexOf("\r\n")) !== -1) {
-          const line = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 2);
-          const w = waiters.shift();
-          if (w) w(line);
-        }
-      });
-      await command("EHLO portaless", 250);
+      if (hasCapability(caps, "STARTTLS")) {
+        await io.command("STARTTLS", 220);
+        const secured: any = tls.connect({ socket: base, servername: host });
+        await new Promise<void>((resolve, reject) => {
+          secured.once("secureConnect", () => resolve());
+          secured.once("error", reject);
+        });
+        socket = secured;
+        io = attachReader(secured);
+        caps = await io.command("EHLO portaless", 250);
+      } else if (hasCredentials) {
+        throw new EmailSendError("SMTP: el servidor no ofrece STARTTLS; se rehusa enviar credenciales en claro.");
+      }
     }
-    if (provider.username && provider.token) {
-      await command("AUTH LOGIN", 334);
-      await command(Buffer.from(provider.username).toString("base64"), 334);
-      await command(Buffer.from(provider.token).toString("base64"), 235);
+
+    if (hasCredentials) {
+      await io.command("AUTH LOGIN", 334);
+      await io.command(Buffer.from(provider.username as string).toString("base64"), 334);
+      await io.command(Buffer.from(provider.token as string).toString("base64"), 235);
     }
-    await command(`MAIL FROM:<${message.from}>`, 250);
-    await command(`RCPT TO:<${message.to}>`, 250);
-    await command("DATA", 354);
+
+    await io.command(`MAIL FROM:<${normalizeHeader(message.from)}>`, 250);
+    await io.command(`RCPT TO:<${normalizeHeader(message.to)}>`, 250);
+    await io.command("DATA", 354);
     const body = [
-      `From: ${message.from}`,
-      `To: ${message.to}`,
-      `Subject: ${message.subject}`,
+      `From: ${normalizeHeader(message.from)}`,
+      `To: ${normalizeHeader(message.to)}`,
+      `Subject: ${normalizeHeader(message.subject)}`,
       "MIME-Version: 1.0",
       'Content-Type: text/plain; charset="utf-8"',
       "",
-      message.text,
+      dotStuff(message.text),
     ].join("\r\n");
-    socket.write(`${smtpLine(body)}\r\n.\r\n`);
-    const done = await readLine();
-    if (Number(done.slice(0, 3)) !== 250) throw new EmailSendError(`SMTP: DATA -> ${done}`);
-    await command("QUIT", 221).catch(() => undefined);
+    socket.write(`${body}\r\n.\r\n`);
+    const done = await io.readReply();
+    if (Number(done[0].slice(0, 3)) !== 250) throw new EmailSendError(`SMTP: DATA -> ${done[0]}`);
+    await io.command("QUIT", 221).catch(() => undefined);
   } finally {
+    clearTimeout(timer);
     socket.end?.();
     socket.destroy?.();
   }

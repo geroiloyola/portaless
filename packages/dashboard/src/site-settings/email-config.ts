@@ -144,6 +144,12 @@ export function sanitizeEmailInput(input: unknown): EmailValidation {
       rejected.push(`template ${entry.id}: falta el asunto.`);
       continue;
     }
+    if (/[\r\n]/.test(entry.subject)) {
+      // Un asunto multilinea es inyeccion de headers SMTP: se rechaza, no se
+      // recorta (fail-closed).
+      rejected.push(`template ${entry.id}: el asunto no puede tener saltos de linea.`);
+      continue;
+    }
     if (typeof entry.body !== "string" || !entry.body.trim()) {
       rejected.push(`template ${entry.id}: falta el cuerpo.`);
       continue;
@@ -185,11 +191,16 @@ export function emailSettingsToValues(settings: EmailSettings): Record<string, s
   };
 }
 
-/** Interpolacion `{{var}}` pura. Var ausente -> cadena vacia (nunca 'undefined'). */
+/**
+ * Interpolacion `{{var}}` pura. Var ausente -> cadena vacia (nunca 'undefined').
+ * Los valores vienen de `data` del PLUGIN (no confiables): se limpian de CR/LF
+ * para que no puedan inyectar headers SMTP ni terminar el cuerpo DATA.
+ */
 export function renderEmailTemplate(
   template: EmailTemplate,
   data: Record<string, unknown> = {},
 ): { subject: string; text: string } {
-  const interpolate = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (_m, name: string) => String(data[name] ?? ""));
+  const interpolate = (s: string) =>
+    s.replace(/\{\{(\w+)\}\}/g, (_m, name: string) => String(data[name] ?? "").replace(/[\r\n]+/g, " "));
   return { subject: interpolate(template.subject), text: interpolate(template.body) };
 }
