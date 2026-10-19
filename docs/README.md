@@ -52,6 +52,7 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 ## Operations and history
 
 - [`self-hosting.md`](./self-hosting.md) · [`self-hosting-verification.md`](./self-hosting-verification.md) (ES) — self-host guides.
+- [`testing/disposable-staging.md`](./testing/disposable-staging.md) (English) — isolated local staging fixture, synthetic data and ownership-checked cleanup.
 - [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md) · [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md) · [`COMMERCE_SETUP.md`](./COMMERCE_SETUP.md) (ES) — deployment/commerce setup.
 - [`roadmap/ROADMAP-ARCHIVE.md`](./roadmap/ROADMAP-ARCHIVE.md) (ES) — PR-by-PR roadmap history (#1..#75).
 - [`roadmap/v0.0.9.30-estado.md`](./roadmap/v0.0.9.30-estado.md) (ES) — historical release-state note.
