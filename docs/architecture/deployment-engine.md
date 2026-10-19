@@ -1,5 +1,12 @@
 # Motor de Despliegue: control plane self-hosted + vidriera estatica
 
+> **Contrato actualizado:** [`canonical-node-and-public-projections.md`](./canonical-node-and-public-projections.md)
+> define el nodo canónico privado como local **o** alojado en un servicio privado
+> como Cloudum. Este documento describe el flujo de publicación que existe hoy;
+> no implica que Cloudum, la aprobación desde UI, la exportación aislada de
+> `.airchive/` o la sincronización del nodo estén implementados. El `publish`
+> actual es un CLI self-hosted y requiere terminal.
+
 ## Decision de arquitectura
 
 Portaless (el editor, el sandbox, el MCP server, la identidad `did:apw`, los
