@@ -173,7 +173,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         layout.status = nextStatus;
         const putRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, {
           method: "PUT",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "if-match": loadRes.headers.get("etag") || "",
+          },
           body: JSON.stringify(layout),
           credentials: "same-origin",
         });

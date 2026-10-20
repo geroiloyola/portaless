@@ -90,7 +90,27 @@ export async function onRequestPut(context) {
   }
 
   const pageStore = await createPageStore(env);
-  await pageStore.save(layout);
+  const ifMatch = request.headers?.get?.("if-match");
+  const ifNoneMatch = request.headers?.get?.("if-none-match");
+  if ((!ifMatch && ifNoneMatch !== "*") || (ifMatch && ifNoneMatch)) {
+    return new Response(JSON.stringify({ error: "revision_precondition_required", message: "Envía If-Match con la revisión cargada, o If-None-Match: * al crear." }), {
+      status: 428,
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
+    });
+  }
+  const expectedRevisionId = ifMatch ? ifMatch.replace(/^W\//, "").replace(/^"|"$/g, "") : null;
+  let revision;
+  try {
+    revision = await pageStore.save(layout, { expectedRevisionId, actor: user.username });
+  } catch (error) {
+    if (error?.message === "revision_conflict") {
+      return new Response(JSON.stringify({ error: "revision_conflict", message: "La página cambió desde que la cargaste. Recárgala y aplica de nuevo tus cambios." }), {
+        status: 409,
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
+      });
+    }
+    throw error;
+  }
 
   // Fase 10: el feed de actividad se alimenta en el punto de escritura (un
   // solo escritor, sin backfill). emitActivity nunca lanza.
@@ -101,9 +121,9 @@ export async function onRequestPut(context) {
     detail: typeof layout.title === "string" && layout.title ? layout.title : null,
   });
 
-  return new Response(JSON.stringify({ ok: true, slug: layout.slug }), {
+  return new Response(JSON.stringify({ ok: true, slug: layout.slug, ...revision }), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", etag: `"${revision.revisionId}"`, "cache-control": "no-store" },
   });
 }
 
@@ -128,7 +148,11 @@ export async function onRequestGet(context) {
 
   return new Response(JSON.stringify(layout), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(layout.revisionId ? { etag: `"${layout.revisionId}"` } : {}),
+      "cache-control": "no-store",
+    },
   });
 }
 
