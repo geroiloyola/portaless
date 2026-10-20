@@ -29,16 +29,13 @@ import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
+import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history.ts";
 import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter.ts";
-import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
-import { isMultilingual, t } from "../../src/lib/i18n.ts";
+import { SITE_LANG } from "../../src/lib/site-lang.ts";
+import { t } from "../../src/lib/i18n.ts";
+import { renderPublicHeaderHtml } from "../../src/lib/public-shell.ts";
 import {
   deriveHeaderContext,
-  headerActionsHtml,
-  langNoticeHtml,
-  NAV_ICONS,
-  navIconHtml,
-  trustLinkHtml,
   VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
@@ -140,6 +137,8 @@ function elementsCss() {
 
 const PAGE_CSS = `
 .ae-page{display:flex;flex-direction:column;gap:20px;max-width:900px;margin:0 auto}
+.public-revision-history{max-width:900px;margin:3rem auto 0;padding-top:1.5rem;border-top:1px solid var(--panel-border);overflow-wrap:anywhere}
+.public-revision-history li{margin:1.25rem 0}.public-revision-history code{overflow-wrap:anywhere}
 `.trim();
 
 // Boton "Compartir" de las paginas bio (ProfileHeader) -- MISMO cuerpo
@@ -176,7 +175,7 @@ function esc(value) {
   );
 }
 
-export function renderShell(layout, bodyHtml, request, { preview = false } = {}) {
+export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null } = {}) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
   const origin = new URL(request.url).origin;
@@ -204,6 +203,16 @@ export function renderShell(layout, bodyHtml, request, { preview = false } = {})
     ? '<meta name="robots" content="noindex, nofollow, noarchive" />'
     : `<link rel="canonical" href="${esc(canonical)}" />`;
   const jsonLdScript = preview ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
+  const headerHtml = renderPublicHeaderHtml({
+    base: "/",
+    locale: SITE_LANG,
+    hasPosts: showPostsLink(),
+    commerceEnabled: false,
+    context: deriveHeaderContext(layout.root),
+  });
+  const historyHtml = !preview && revisionHistory
+    ? `<section class="public-revision-history" aria-labelledby="revision-history-title"><h2 id="revision-history-title">Historial público de revisiones</h2><p>Los cambios se comparan entre revisiones aprobadas. No implican que un cambio haya causado un resultado de reputación.</p><ol>${revisionHistory.revisions.map((revision) => `<li><h3>Revisión ${revision.revisionNo}: ${esc(revision.title)}</h3><p><time datetime="${esc(revision.publishedAt)}">${esc(revision.publishedAt)}</time></p><p><code>${esc(revision.contentHash)}</code></p>${revision.changedPaths.length ? `<p>Cambios verificables: ${esc(revision.changedPaths.join(", "))}</p>` : "<p>Primera revisión pública registrada.</p>"}${revision.reputation.status === "observed" ? `<ul>${revision.reputation.observations.map((observation) => `<li><time datetime="${esc(observation.observedAt)}">${esc(observation.observedAt)}</time> — ${esc(observation.source)}; reglas ${esc(observation.rulesVersion)}${observation.sampleSize !== null ? `; muestra ${observation.sampleSize}` : ""}${observation.weight !== null ? `; peso ${observation.weight}` : ""}<pre><code>${esc(JSON.stringify(observation.calculation, null, 2))}</code></pre></li>`).join("")}</ul>` : "<p>Reputación ligada a esta revisión: sin datos.</p>"}</li>`).join("")}</ol><a href="/revisions/${esc(revisionHistory.publicationId)}/index.json">Consultar y verificar el historial completo (JSON)</a></section>`
+    : "";
   return `<!doctype html>
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
@@ -222,26 +231,10 @@ ${elementsCss()}</style>
 <style>${PAGE_CSS}</style>
 </head>
 <body>
-<header class="site-header">
-  <div class="site-header-row">
-  <nav class="site-nav" aria-label="${SITE_LANG === "es" ? "Navegación principal" : "Primary navigation"}">
-    <a class="brand nav-home" href="/" aria-label="${homeLabel(SITE_LANG)} — Portaless">Portaless</a>
-    ${showPostsLink() ? `<a class="nav-link" href="/blog/">${navIconHtml(NAV_ICONS.posts)}<span class="nav-txt">${postsLabel(SITE_LANG)}</span></a>` : ""}
-    <a class="nav-link" href="/explore/">${navIconHtml(NAV_ICONS.explore)}<span class="nav-txt">${exploreLabel(SITE_LANG)}</span></a>
-  </nav>
-  <div class="header-right" role="group" aria-label="${SITE_LANG === "es" ? "Acciones del sitio" : "Site actions"}">
-      ${trustLinkHtml({ href: "/trust/", label: t(SITE_LANG, "trust.label"), ariaLabel: t(SITE_LANG, "trust.aria") })}
-      ${headerActionsHtml(deriveHeaderContext(layout.root))}
-  </div>
-  </div>
-  ${
-    isMultilingual()
-      ? langNoticeHtml({ text: t(SITE_LANG, "lang.notice") })
-      : ""
-  }
-</header>
+${headerHtml}
 <main class="container">
 <article class="ae-page">${bodyHtml}</article>
+${historyHtml}
 </main>
 <footer class="site-footer">
   <div class="container">
@@ -271,8 +264,9 @@ export async function onRequestGet(context) {
   }
 
   let layout = null;
+  let pageStore = null;
   try {
-    const pageStore = await createPageStore(env);
+    pageStore = await createPageStore(env);
     layout = await pageStore.load(slug);
   } catch {
     // En un deploy puramente estatico no hay binding/path y la Function delega
@@ -318,7 +312,11 @@ export async function onRequestGet(context) {
     });
   }
 
-  return new Response(renderShell(layout, bodyHtml, request), {
+  const revisions = layout.publicationId
+    ? await pageStore.listPublicRevisionsByPublicationId?.(layout.publicationId).catch(() => [])
+    : [];
+  const revisionHistory = projectPublicRevisionHistory(revisions ?? []);
+  return new Response(renderShell(layout, bodyHtml, request, { revisionHistory }), {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
 }

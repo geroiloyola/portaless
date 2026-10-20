@@ -33,9 +33,11 @@ import {
   ICON_VOLUME_2,
 } from "../../packages/atomic-elements/src/elements/icons";
 import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
+import { renderPublicHeaderHtml } from "../../src/lib/public-shell";
 
 const root = join(__dirname, "../..");
 const headerSrc = readFileSync(join(root, "src/components/Header.astro"), "utf8");
+const publicShellSrc = readFileSync(join(root, "src/lib/public-shell.ts"), "utf8");
 const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
 // La logica de la pagina de contenido vive en el componente compartido
 // (lo usan la ruta primaria y la de traduccion).
@@ -148,20 +150,30 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
   });
 
   it("el idioma vive en el grupo DERECHO junto a los iconos, no entre las etiquetas", () => {
-    expect(headerSrc).toContain("langSwitcherHtml({");
-    expect(headerSrc).toContain('<div class="header-right" role="group"');
-    // el switcher va dentro del grupo derecho, antes de las acciones
-    const groupIdx = headerSrc.indexOf('class="header-right"');
-    expect(groupIdx).toBeGreaterThan(-1);
-    expect(headerSrc.indexOf("langSwitcherHtml({")).toBeGreaterThan(groupIdx);
-    expect(headerSrc.indexOf("headerActionsHtml(context, base)")).toBeGreaterThan(groupIdx);
+    expect(headerSrc).toContain("renderPublicHeaderHtml({");
+    const html = renderPublicHeaderHtml({
+      base: "/base/",
+      locale: "es",
+      hasPosts: true,
+      commerceEnabled: false,
+      context: null,
+      languageAlternate: { hreflang: "en", href: "/base/en/" },
+    });
+    expect(html).toContain('<nav class="site-nav"');
+    const navEnd = html.indexOf("</nav>");
+    const actionsStart = html.indexOf('<div class="header-right"');
+    expect(actionsStart).toBeGreaterThan(navEnd);
+    expect(html.indexOf('class="header-lang"')).toBeGreaterThan(actionsStart);
+    expect(html.indexOf('class="header-actions"')).toBeGreaterThan(actionsStart);
   });
 
   it("el shell runtime emite el AVISO de idioma con la MISMA fuente", () => {
     // El shell sirve /pages/*, que no estan localizadas: no lleva el switcher
     // sino el aviso honesto.
-    expect(shellSrc).toContain("langNoticeHtml(");
-    expect(shellSrc).toContain('<div class="header-right" role="group"');
+    expect(shellSrc).toContain("renderPublicHeaderHtml({");
+    expect(shellSrc).toContain("hasPosts: showPostsLink()");
+    expect(shellSrc).toContain("deriveHeaderContext(layout.root)");
+    expect(renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: false, commerceEnabled: false })).toContain("header-lang-notice");
   });
 
   it("el CSS alinea el grupo derecho (margin-left:auto) y pinta el pill", () => {
@@ -194,11 +206,15 @@ describe("langNoticeHtml -- aviso de idioma honesto (patron Airbnb)", () => {
   });
 
   it("el header dibuja el switcher SOLO con alternatePath, y el aviso sin el", () => {
-    // La condicion es el dato real (alternatePath), no una suposicion.
-    expect(headerSrc).toContain("const showSwitcher = multi && isLocalized");
-    expect(headerSrc).toContain("const showNotice = multi && !isLocalized");
-    expect(headerSrc).toContain("langNoticeHtml({");
-    expect(headerSrc).toContain('t(locale, "lang.notice")');
+    // El contrato vive en el renderer compartido; alternatePath es el dato real.
+    expect(publicShellSrc).toContain("const localized = Boolean(languageAlternate) || Boolean(alternatePath)");
+    expect(publicShellSrc).toContain("const showSwitcher = isMultilingual() && localized");
+    expect(publicShellSrc).toContain("const showNotice = isMultilingual() && !localized");
+    expect(publicShellSrc).toContain("langNoticeHtml({ text: t(locale, \"lang.notice\") })");
+    expect(renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: false, commerceEnabled: false }))
+      .toContain('class="header-lang-notice"');
+    expect(renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: false, commerceEnabled: false, alternatePath: "/" }))
+      .toContain('class="header-lang"');
   });
 
   it("el CSS del aviso esta en ambas superficies", () => {
@@ -220,14 +236,16 @@ describe("trustLinkHtml -- TrustScore en el header (sexto item universal)", () =
   });
 
   it("el header Astro y el shell runtime lo emiten desde la MISMA fuente", () => {
-    expect(headerSrc).toContain("trustLinkHtml({");
-    expect(shellSrc).toContain("trustLinkHtml({");
+    expect(headerSrc).toContain("renderPublicHeaderHtml({");
+    expect(shellSrc).toContain("renderPublicHeaderHtml({");
+    expect(publicShellSrc).toContain("trustLinkHtml({");
   });
 
   it("va en el grupo derecho, antes de las acciones (share)", () => {
-    const groupIdx = headerSrc.indexOf('class="header-right"');
-    const trustIdx = headerSrc.indexOf("trustLinkHtml({");
-    const actionsIdx = headerSrc.indexOf("headerActionsHtml(context, base)");
+    const html = renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: false, commerceEnabled: false });
+    const groupIdx = html.indexOf('class="header-right"');
+    const trustIdx = html.indexOf('class="header-trust"');
+    const actionsIdx = html.indexOf('class="header-actions"');
     expect(trustIdx).toBeGreaterThan(groupIdx);
     expect(actionsIdx).toBeGreaterThan(trustIdx);
   });
@@ -256,22 +274,17 @@ describe("nav movil por iconos -- una sola fuente", () => {
     expect(html).toContain(ICON_HOUSE);
   });
 
-  it("Header.astro unifica marca e Inicio y conserva nombres accesibles en los otros links", () => {
-    expect(headerSrc).toContain('class="brand nav-home"');
-    expect(headerSrc).toContain('aria-label={`${homeLabel(locale)} — Portaless`}');
-    expect(headerSrc).not.toContain("navIconHtml(NAV_ICONS.home)");
-    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.posts)");
-    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.explore)");
-    // el texto no se quita del DOM: se oculta visualmente en movil via CSS
-    expect(headerSrc).toContain('<span class="nav-txt">');
-  });
-
-  it("el shell runtime unifica marca e Inicio y mantiene iconos accesibles en los otros links", () => {
-    expect(shellSrc).toContain('class="brand nav-home"');
-    expect(shellSrc).toContain("homeLabel(SITE_LANG)");
-    expect(shellSrc).not.toContain("navIconHtml(NAV_ICONS.home)");
-    expect(shellSrc).toContain("navIconHtml(NAV_ICONS.explore)");
-    expect(shellSrc).toContain('<span class="nav-txt">');
+  it("Header.astro y el shell usan el contrato compartido de marca, nav y acciones", () => {
+    expect(headerSrc).toContain("renderPublicHeaderHtml({");
+    expect(headerSrc).toContain("hasPosts: publicPosts.length > 0");
+    expect(shellSrc).toContain("renderPublicHeaderHtml({");
+    const html = renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: true, commerceEnabled: false });
+    expect(html).toContain('<a class="brand nav-home" href="/" aria-label="Home — Portaless">Portaless</a>');
+    expect(html).toContain('class="nav-ico"');
+    expect(html).toContain('<span class="nav-txt">Publications</span>');
+    expect(html).toContain('<span class="nav-txt">Explore</span>');
+    expect(html.match(/class="brand nav-home"/g)).toHaveLength(1);
+    expect(html).not.toContain('class="nav-link" href="/"');
   });
 
   it("el modo iconos es SOLO movil (media query en ambos CSS, desktop con texto)", () => {
@@ -311,7 +324,8 @@ describe("nav movil por iconos -- una sola fuente", () => {
 
 describe("rincon del header -- wiring estatico y runtime", () => {
   it("Header.astro usa la fuente unica y expone la prop de contexto", () => {
-    expect(headerSrc).toContain("headerActionsHtml(context, base)");
+    expect(headerSrc).toContain("renderPublicHeaderHtml({");
+    expect(publicShellSrc).toContain("headerActionsHtml(context, base)");
     expect(headerSrc).toContain("context?: HeaderContext");
   });
 
@@ -329,7 +343,8 @@ describe("rincon del header -- wiring estatico y runtime", () => {
 
   it("el shell runtime deriva con la MISMA funcion y emite el mismo rincon", () => {
     expect(shellSrc).toContain("deriveHeaderContext(layout.root)");
-    expect(shellSrc).toContain("headerActionsHtml(deriveHeaderContext(layout.root))");
+    expect(shellSrc).toContain("context: deriveHeaderContext(layout.root)");
+    expect(publicShellSrc).toContain("headerActionsHtml(context, base)");
     expect(shellSrc).toContain("VOLUME_LISTENER_SCRIPT");
   });
 

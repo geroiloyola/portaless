@@ -112,6 +112,53 @@ test.describe("movil chico 320x568 (iPhone SE)", () => {
   }
 });
 
+test.describe("Docs en 320x480", () => {
+  test.use({ viewport: { width: 320, height: 480 } });
+
+  test("conserva el articulo, limita el overflow al documento y permite abrir el sidebar con teclado", async ({ page }) => {
+    await page.goto("/docs/protocol-apw/");
+    await expect(page.locator(".docs-content h1")).toBeVisible();
+
+    const geometry = await page.evaluate(() => {
+      const article = document.querySelector(".docs-content") as HTMLElement;
+      return {
+        documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        articleLeft: article.getBoundingClientRect().left,
+        articleRight: article.getBoundingClientRect().right,
+        viewportWidth: document.documentElement.clientWidth,
+        narrowBlocks: Array.from(document.querySelectorAll(".docs-content pre, .docs-content table")).map((node) => {
+          const block = node as HTMLElement;
+          const rect = block.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            clientWidth: block.clientWidth,
+            scrollWidth: block.scrollWidth,
+            overflowX: getComputedStyle(block).overflowX,
+          };
+        }),
+      };
+    });
+    expect(geometry.documentOverflow).toBeLessThanOrEqual(1);
+    expect(geometry.articleLeft).toBeGreaterThanOrEqual(0);
+    expect(geometry.articleRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    for (const block of geometry.narrowBlocks) {
+      expect(block.left).toBeGreaterThanOrEqual(0);
+      expect(block.right).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+      if (block.scrollWidth > block.clientWidth) expect(block.overflowX).toBe("auto");
+    }
+
+    const summary = page.locator(".docs-nav-summary");
+    const summaryBox = await summary.boundingBox();
+    expect(summaryBox).not.toBeNull();
+    expect(Math.round(summaryBox!.height)).toBeGreaterThanOrEqual(44);
+    await page.locator("#docs-nav-toggle").focus();
+    await page.keyboard.press("Space");
+    await expect(page.locator(".docs-nav")).toBeVisible();
+    await expect(summary).toHaveCSS("outline-style", "solid");
+  });
+});
+
 test.describe("desktop", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 

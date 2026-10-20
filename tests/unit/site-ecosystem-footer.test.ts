@@ -70,6 +70,7 @@ describe("footer del ecosistema Portaless", () => {
 // exactamente lo mismo.
 describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
   const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
+  const publicShellSrc = readFileSync(join(root, "src/lib/public-shell.ts"), "utf8");
 
   it("el footer runtime dice TrustScore · Explore · Powered by Portaless", () => {
     for (const key of ["footer.trust", "footer.explore", "footer.poweredBy", "footer.ecoAria"]) {
@@ -81,9 +82,10 @@ describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
   });
 
   it("el header runtime usa el vocabulario de site-lang, nunca Blog", () => {
-    expect(shellSrc).toContain("postsLabel(SITE_LANG)");
+    expect(shellSrc).toContain("renderPublicHeaderHtml({");
+    expect(publicShellSrc).toContain("postsLabel(locale)");
     expect(shellSrc).toContain("SITE_LANG");
-    expect(shellSrc).not.toMatch(/>Blog</);
+    expect(publicShellSrc).not.toMatch(/>Blog</);
   });
 
   it("ambas superficies leen el posicionamiento de la MISMA clave", () => {

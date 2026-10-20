@@ -37,6 +37,16 @@ import {
 
 export type HeaderContext = "shop" | "video" | "map" | null;
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]!);
+}
+
 // Forma minima del nodo del arbol de PageLayout.root: solo se leen
 // type/children (las props no participan en la decision).
 interface ContextNode {
@@ -71,7 +81,7 @@ function firstContext(nodes: readonly unknown[]): HeaderContext {
 export function headerActionsHtml(context: HeaderContext, base = "/"): string {
   const cart =
     context === "shop"
-      ? `<a class="header-icon-btn" href="${base}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda" title="Tienda">${ICON_SHOPPING_CART}</a>`
+      ? `<a class="header-icon-btn" href="${escapeHtml(base)}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda" title="Tienda">${ICON_SHOPPING_CART}</a>`
       : "";
   const volume =
     context === "video"
@@ -99,7 +109,10 @@ export function langSwitcherHtml(input: {
   ariaLabel: string;
   text: string;
 }): string {
-  return `<a class="header-lang" href="${input.href}" hreflang="${input.hreflang}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${input.text}</span></a>`;
+  const href = escapeHtml(input.href);
+  const hreflang = escapeHtml(input.hreflang);
+  const ariaLabel = escapeHtml(input.ariaLabel);
+  return `<a class="header-lang" href="${href}" hreflang="${hreflang}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${escapeHtml(input.text)}</span></a>`;
 }
 
 // Aviso de idioma (patron Airbnb: "Some info is shown in its original
@@ -113,9 +126,9 @@ export function langSwitcherHtml(input: {
 export function langNoticeHtml(input: { text: string; ctaLabel?: string; href?: string }): string {
   const cta =
     input.ctaLabel && input.href
-      ? ` <a class="header-lang-notice-link" href="${input.href}">${input.ctaLabel}</a>`
+      ? ` <a class="header-lang-notice-link" href="${escapeHtml(input.href)}">${escapeHtml(input.ctaLabel)}</a>`
       : "";
-  return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${input.text}</span>${cta}</p>`;
+  return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${escapeHtml(input.text)}</span>${cta}</p>`;
 }
 
 // TrustScore en el header: el score DEL SITIO (no de una persona dentro de el),
@@ -124,7 +137,7 @@ export function langNoticeHtml(input: { text: string; ctaLabel?: string; href?: 
 // visualmente (misma regla que el resto del menu) y queda el icono. UNA fuente
 // para el header Astro y el shell runtime.
 export function trustLinkHtml(input: { href: string; label: string; ariaLabel: string }): string {
-  return `<a class="header-trust" href="${input.href}" aria-label="${input.ariaLabel}" title="${input.ariaLabel}"><span class="header-trust-icon" aria-hidden="true">${ICON_SHIELD}</span><span class="header-trust-text">${input.label}</span></a>`;
+  return `<a class="header-trust" href="${escapeHtml(input.href)}" aria-label="${escapeHtml(input.ariaLabel)}" title="${escapeHtml(input.ariaLabel)}"><span class="header-trust-icon" aria-hidden="true">${ICON_SHIELD}</span><span class="header-trust-text">${escapeHtml(input.label)}</span></a>`;
 }
 
 // Iconos de navegacion para MOVIL (CSS los muestra solo bajo el breakpoint; en
