@@ -59,9 +59,9 @@ npm run doctor            # o: docker compose exec portaless npm run doctor
 npm run migrate           # --dry-run para ver qué haría, sin tocar nada
 ```
 
-El backup queda en `<dataDir>/backups/db-vN-<fecha>.sqlite`. En Docker, además,
-el servidor migra solo al arrancar (después de aplicar `schema.sql`), así que
-actualizar es:
+El backup queda en `<dataDir>/backups/db-vN-<fecha>.sqlite`. En Docker, el
+primer arranque crea una DB con `schema.sql`; las DB existentes aplican solo
+deltas numerados después del backup. Para actualizar:
 
 ```bash
 docker compose pull       # con el tag de imagen fijado

@@ -28,6 +28,45 @@ function tempDb(): string {
   return join(dir, "portaless.db");
 }
 
+async function makeHistoricalDb(path: string, version: number): Promise<void> {
+  await applySchema(path, { quiet: true });
+  const db = new Database(path);
+  try {
+    db.exec("DROP INDEX IF EXISTS idx_users_oauth");
+    db.exec("DROP INDEX IF EXISTS idx_site_identity_keys_seq");
+    db.exec("DROP INDEX IF EXISTS idx_site_trust_agent_jti");
+    db.exec("DROP INDEX IF EXISTS idx_site_trust_escrow_jti");
+    const oldColumns = [
+      ...(version < 2 ? [
+        ["site_identity_keys", "key_id"], ["site_identity_keys", "key_sequence"],
+        ["site_attestation_log", "att_jws"],
+        ["site_trust_agent_verifications", "attestation_jti"], ["site_trust_agent_verifications", "attestation_jws"],
+        ["site_trust_escrow_reports", "attestation_jti"], ["site_trust_escrow_reports", "attestation_jws"],
+        ["site_trust_self_evaluations", "attestation_jti"], ["site_trust_self_evaluations", "attestation_jws"],
+        ["usage_ledger", "reader_did"], ["authorized_escrow_providers", "public_key_jwk"],
+      ] : []),
+      ...(version < 3 ? [
+        ["users", "email"], ["users", "provider"], ["users", "totp_secret"], ["users", "totp_enabled_at"],
+        ["users", "oauth_provider"], ["users", "oauth_subject"], ["plugin_artifacts", "manifest_json"],
+      ] : []),
+    ];
+    for (const [table, column] of oldColumns) {
+      const columns = db.prepare("SELECT name FROM pragma_table_info(?)").all(table).map((row: any) => row.name);
+      if (columns.includes(column)) db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+    }
+    if (version < 4) db.exec("DROP TABLE IF EXISTS plugin_email_quota");
+    db.exec("DELETE FROM schema_migrations WHERE version > " + Number(version));
+    db.prepare("INSERT OR REPLACE INTO users (username,password_hash,role,created_at) VALUES (?,?,?,?)")
+      .run("historical-admin", "preserved-hash", "admin", "2020-01-01T00:00:00.000Z");
+    db.prepare("INSERT OR REPLACE INTO pages (slug,layout_json,updated_at,updated_by) VALUES (?,?,?,?)")
+      .run("historical-page", JSON.stringify({ title: "Keep me" }), "2020-01-02T00:00:00.000Z", "historical-admin");
+    db.prepare("INSERT OR REPLACE INTO site_skin (site_id,skin,tokens_json,updated_at) VALUES (?,?,?,?)")
+      .run("default", "base", JSON.stringify({ accent: "#abc123" }), "2020-01-03T00:00:00.000Z");
+  } finally {
+    db.close();
+  }
+}
+
 describe("migraciones: logica pura", () => {
   it("el baseline es v1 y schemaVersion es el maximo", () => {
     expect(MIGRATIONS[0]).toMatchObject({ version: 1, name: "baseline" });
@@ -60,9 +99,9 @@ describe("migraciones: runner SQLite", () => {
     db.close();
   });
 
-  it("applySchema estampa las migraciones hasta la version del codigo", async () => {
+  it("DB nueva: bootstrap baseline, ejecuta deltas y no crea backup de pre-upgrade", async () => {
     const path = tempDb();
-    await applySchema(path, { quiet: true }); // schema.sql es la forma ACTUAL
+    await applySchema(path, { quiet: true });
     const db = await openSqlite(path);
     expect(currentVersion(db)).toBe(schemaVersion());
     db.close();
@@ -70,6 +109,7 @@ describe("migraciones: runner SQLite", () => {
     const result = await migrateSqlite(path);
     expect(result.applied).toEqual([]);
     expect(result.from).toBe(schemaVersion());
+    expect(existsSync(join(resolve(path, ".."), "backups"))).toBe(false);
   });
 
   it("idempotente: re-ejecutar no aplica nada", async () => {
@@ -122,6 +162,76 @@ describe("migraciones: runner SQLite", () => {
     expect(result.backupPath).toBeTruthy();
     expect(existsSync(result.backupPath!)).toBe(true);
     expect(readdirSync(join(resolve(path, ".."), "backups")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("upgrade histórico y recuperación", () => {
+  it("migra desde v1 con backup previo y conserva usuarios, páginas y configuración", async () => {
+    const path = tempDb();
+    await makeHistoricalDb(path, 1);
+
+    const result = await migrateSqlite(path);
+    expect(result.from).toBe(1);
+    expect(result.to).toBe(schemaVersion());
+    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities"]);
+    expect(result.backupPath).toBeTruthy();
+
+    const upgraded = await openSqlite(path);
+    expect(currentVersion(upgraded)).toBe(schemaVersion());
+    expect(upgraded.prepare("SELECT username,password_hash FROM users WHERE username='historical-admin'").get()).toMatchObject({
+      username: "historical-admin",
+      password_hash: "preserved-hash",
+    });
+    expect(JSON.parse(upgraded.prepare("SELECT layout_json FROM pages WHERE slug='historical-page'").get().layout_json).title).toBe("Keep me");
+    expect(JSON.parse(upgraded.prepare("SELECT tokens_json FROM site_skin WHERE site_id='default'").get().tokens_json).accent).toBe("#abc123");
+    upgraded.close();
+
+    const backup = await openSqlite(result.backupPath!);
+    expect(currentVersion(backup)).toBe(1);
+    expect(backup.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
+    expect(backup.prepare("SELECT name FROM pragma_table_info('users') WHERE name='email'").get()).toBeUndefined();
+    expect(backup.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='plugin_email_quota'").get()).toBeUndefined();
+    backup.close();
+  });
+
+  it("si v3 falla, revierte ese delta; restaura el backup y completa el upgrade", async () => {
+    const path = tempDb();
+    await makeHistoricalDb(path, 2);
+    const db = await openSqlite(path);
+    db.exec(`CREATE TRIGGER fail_version_three BEFORE INSERT ON schema_migrations
+      WHEN NEW.version = 3 BEGIN SELECT RAISE(ABORT, 'injected v3 failure'); END`);
+    db.close();
+
+    await expect(migrateSqlite(path)).rejects.toThrow("injected v3 failure");
+    const backupPath = join(resolve(path, ".."), "backups");
+    const backupFile = readdirSync(backupPath)
+      .filter((name) => name.startsWith("db-v2-"))
+      .map((name) => join(backupPath, name))
+      .find((file) => existsSync(file));
+    expect(backupFile).toBeTruthy();
+
+    const failed = await openSqlite(path);
+    expect(currentVersion(failed)).toBe(2);
+    expect(failed.prepare("SELECT name FROM pragma_table_info('users') WHERE name='email'").get()).toBeUndefined();
+    expect(failed.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
+    failed.close();
+
+    const restoredPath = join(resolve(path, ".."), "restored.db");
+    copyFileSync(backupFile!, restoredPath);
+    const restored = await openSqlite(restoredPath);
+    expect(currentVersion(restored)).toBe(2);
+    expect(restored.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
+    restored.exec("DROP TRIGGER fail_version_three");
+    restored.close();
+
+    const recovered = await migrateSqlite(restoredPath);
+    expect(recovered.from).toBe(2);
+    expect(recovered.to).toBe(schemaVersion());
+    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities"]);
+    const finalDb = await openSqlite(restoredPath);
+    expect(currentVersion(finalDb)).toBe(schemaVersion());
+    expect(finalDb.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
+    finalDb.close();
   });
 });
 

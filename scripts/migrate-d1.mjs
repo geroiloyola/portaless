@@ -3,7 +3,7 @@
 // and write each ledger row only after its SQL has completed successfully.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -105,14 +105,18 @@ export async function migrateD1(options) {
     return { from, to: schemaVersion(), applied: pending.map((migration) => migration.name), backupPath: null, dryRun: true };
   }
 
-  const backupDir = options.backupDir ?? join(process.cwd(), "backups", "d1");
-  mkdirSync(backupDir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = join(backupDir, `${options.db}-${timestamp}.sql`);
-  const exportArgs = ["wrangler", "d1", "export", options.db, options.mode, `--output=${backupPath}`];
-  if (options.config) exportArgs.push("-c", options.config);
-  if (options.persistTo && options.mode === "--local") exportArgs.push("--persist-to", options.persistTo);
-  execFileSync("npx", exportArgs, { encoding: "utf8", stdio: "inherit" });
+  let backupPath = null;
+  if (!options.skipBackup) {
+    const backupDir = options.backupDir ?? join(process.cwd(), "backups", "d1");
+    mkdirSync(backupDir, { recursive: true });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    backupPath = join(backupDir, `${options.db}-${timestamp}.sql`);
+    const exportArgs = ["wrangler", "d1", "export", options.db, options.mode, `--output=${backupPath}`];
+    if (options.config) exportArgs.push("-c", options.config);
+    if (options.persistTo && options.mode === "--local") exportArgs.push("--persist-to", options.persistTo);
+    execFileSync("npx", exportArgs, { encoding: "utf8", stdio: "inherit" });
+    if (!existsSync(backupPath)) throw new Error(`wrangler no produjo el backup esperado: ${backupPath}`);
+  }
 
   const workDir = resolve(join(tmpdir(), `portaless-d1-migrate-${process.pid}-${Date.now()}`));
   mkdirSync(workDir, { recursive: true });

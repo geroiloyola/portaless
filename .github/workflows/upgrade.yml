@@ -7,12 +7,10 @@
 #
 # Como funciona: por cada tag `v*`, se hace checkout del tag, se siembra una
 # base con SU schema (copiando el script de snapshot de HEAD, porque los tags
-# viejos no lo traen) y se guarda en /tmp. Al final, con HEAD, se migra cada
-# base y se corre scripts/verify-upgrade.mjs (misma verificacion que
-# tests/unit/upgrade.test.ts, para que CI y local prueben LO MISMO).
-#
-# Hoy hay un solo tag (v0.0.10) y la migracion es el baseline v1, asi que el
-# test es un smoke. Se vuelve estricto a partir de la primera migracion v2+.
+# viejos no lo traen), se reduce a un ledger/esquema histórico v1 y se guarda en
+# /tmp. Al final, con HEAD, se migra cada base y `verify-upgrade.mjs` confirma
+# backup, ledger, columnas requeridas y datos persistidos. El test unitario local
+# corre además un fallo inyectado en v3, restaura el backup y reintenta.
 
 name: Upgrade tests
 

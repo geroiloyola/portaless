@@ -43,7 +43,7 @@ async function main() {
       console.log("  estado: DB vacía, todavía no hay esquema Portaless.");
       return;
     }
-    console.log(`  ledger: ${status.legacy ? "ausente (legacy verificado por columnas)" : `schema v${status.dbVersion}`}`);
+    console.log(`  ledger: ${status.legacy ? "ausente (DB sin versionar)" : `schema v${status.dbVersion}`}`);
 
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name);
     const missing = REQUIRED_TABLES.filter((t) => !tables.includes(t));

@@ -85,7 +85,7 @@ async function main() {
   }
 
   const { migrateD1 } = await import("./migrate-d1.mjs");
-  const migration = await migrateD1(opts);
+  const migration = await migrateD1({ ...opts, skipBackup: existingTables === 0 });
   if (migration.backupPath) console.log(`      Backup previo: ${migration.backupPath}`);
 
   console.log("\n[2/3] Creando admin inicial si no existe ningun usuario ...");

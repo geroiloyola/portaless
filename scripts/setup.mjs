@@ -109,7 +109,7 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
         throw err;
       }
       db.close();
-      await migrateSqlite(sqlitePath);
+      await migrateSqlite(sqlitePath, { skipBackup: true });
     } else {
       db.close();
       // Una base existente nunca recibe el schema actual a ciegas. La ruta de

@@ -38,6 +38,8 @@ export interface MigrateResult {
 
 export interface MigrateOptions {
   dryRun?: boolean;
+  /** Internal bootstrap path: schema.sql just created this DB, so there is no pre-upgrade state to back up. */
+  skipBackup?: boolean;
   /** Directorio del backup. Default: <dirname(sqlitePath)>/backups */
   backupDir?: string;
   now?: () => Date;
@@ -181,7 +183,7 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
       return { from, to: schemaVersion(), applied: pending.map((m) => m.name), backupPath: null, dryRun: true };
     }
 
-    const backupPath = await backupDatabase(db, sqlitePath, from, opts);
+    const backupPath = opts.skipBackup ? null : await backupDatabase(db, sqlitePath, from, opts);
     const applied: string[] = [];
     for (const migration of pending) {
       db.exec("BEGIN");
