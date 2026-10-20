@@ -187,6 +187,17 @@ describe("functions/admin/login.js", () => {
 });
 
 describe("functions/admin/login-mfa.js", () => {
+  it("rechaza completar MFA desde un origen distinto", async () => {
+    const request = new Request("https://x.test/admin/login-mfa", {
+      method: "POST",
+      headers: { origin: "https://attacker.example", "content-type": "application/json" },
+      body: JSON.stringify({ challengeToken: "synthetic", code: "000000" }),
+    });
+    const response = await loginMfa.onRequestPost(context(request));
+    expect(response!.status).toBe(403);
+    expect(response!.headers.get("cache-control")).toBe("no-store");
+  });
+
   async function challengeForCarol(): Promise<string> {
     await seedUsers();
     const res = await login.onRequestPost(
