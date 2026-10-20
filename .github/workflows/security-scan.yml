@@ -46,8 +46,8 @@ jobs:
           node -e "
             try {
               const pkg = require('./node_modules/isolated-vm/package.json');
-              const [major, minor] = pkg.version.split('.').map(Number);
-              const vulnerable = (major === 6 && minor < 2) || (major === 7 && minor < 1) || major < 6;
+              const [major, minor, patch] = pkg.version.split('.').map(Number);
+              const vulnerable = major < 6 || (major === 6 && minor < 2) || (major === 7 && minor === 0 && patch === 0);
               if (vulnerable) {
                 console.error('isolated-vm@' + pkg.version + ' es VULNERABLE a GHSA-864f-rcv7-6rh4. Actualiza a 6.2.0 o 7.0.1+.');
                 process.exit(1);

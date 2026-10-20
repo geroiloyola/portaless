@@ -31,6 +31,18 @@ function docker(args, { capture = false } = {}) {
     : { cwd: ROOT, stdio: "inherit" });
 }
 
+function emitContainerLogs(names) {
+  for (const name of names) {
+    try {
+      const output = docker(["logs", "--tail", "100", name], { capture: true });
+      if (output.trim()) console.error(`[staging:docker] logs ${name}:\n${output}`);
+    } catch (error) {
+      const output = String(error?.stderr ?? error?.message ?? "").trim();
+      if (output) console.error(`[staging:docker] logs ${name} unavailable: ${output}`);
+    }
+  }
+}
+
 function reserveLoopbackPort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -261,6 +273,7 @@ async function create({ image: requestedImage, checkOnly }) {
       destroy: `npm run staging:docker:destroy -- ${id}`,
     }, null, 2));
   } catch (error) {
+    emitContainerLogs([owner.app, owner.webhook, owner.smtp]);
     try {
       removeOwnedDockerResources(owner);
       await destroyDisposableStaging({ id });
