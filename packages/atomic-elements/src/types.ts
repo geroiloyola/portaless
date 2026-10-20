@@ -41,6 +41,13 @@ export interface PageLayout {
    * excluye `draft`, `private`, sufijo legacy `-draft` y estados desconocidos.
    */
   status?: "draft" | "published" | "private";
+  /** Stable identity of this publication; assigned by PageStore on first save. */
+  publicationId?: string;
+  /** Opaque immutable revision identity; also used as the optimistic-lock token. */
+  revisionId?: string;
+  revisionNo?: number;
+  /** SHA-256 of canonical public content (status and revision metadata excluded). */
+  contentHash?: string;
   /**
    * Tema por PAGINA (theme pack). Opcional: si falta o el nombre no
    * resuelve en el catalogo (builtin ∪ instalado), la pagina usa el skin

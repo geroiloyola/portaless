@@ -30,9 +30,14 @@ function layout() {
 
 async function putPage(page: Page): Promise<void> {
   const res = await page.evaluate(async ({ slug, json }) => {
+    const current = await fetch(`/admin/pages/${encodeURIComponent(slug)}`);
+    const currentEtag = current.ok ? current.headers.get("etag") : null;
     const r = await fetch(`/admin/pages/${encodeURIComponent(slug)}`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(currentEtag ? { "if-match": currentEtag } : { "if-none-match": "*" }),
+      },
       body: JSON.stringify(json),
     });
     return r.status;

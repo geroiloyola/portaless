@@ -33,6 +33,7 @@ import {
   writePublicPageLayouts,
 } from "./public-build-stage.mjs";
 import { DOC_ENTRIES } from "../src/lib/docs-nav.mjs";
+import { writePublicRevisionHistories } from "./public-revision-export.mjs";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
@@ -97,6 +98,7 @@ async function main() {
     copyPublicSourcePages(ROOT, stageRoot, databaseOwnedPrivateSlugs, isPubliclyPublishable);
     copyPublicSourcePosts(ROOT, stageRoot, isPubliclyPublishable);
     writePublicPageLayouts(stageRoot, publishable, { clear: false });
+    await writePublicRevisionHistories(stageRoot, publishable, pageStore);
     const distDir = path.join(stageRoot, "dist");
     const buildEnv = createPublicBuildEnv(process.env, distDir);
     execFileSync("npm", ["run", "build"], { cwd: stageRoot, stdio: "inherit", env: buildEnv });

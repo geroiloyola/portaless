@@ -52,11 +52,14 @@ describe("public build stage", () => {
       "workspace/.ssh/id_ed25519",
       "credentials.json",
       "src/content/pages/old-page.json",
+      "src/content/revision-history/unapproved.json",
+      "public/revisions/unapproved/index.json",
       "packages/example/private.key",
     ]) {
       expect(isExcludedFromPublicBuild(pathName), pathName).toBe(true);
     }
     expect(isExcludedFromPublicBuild("src/pages/index.astro")).toBe(false);
+    expect(isExcludedFromPublicBuild("src/pages/docs/[...slug].astro")).toBe(false);
   });
 
   it("copies a clean project subset and replaces page fixtures with approved layouts", () => {

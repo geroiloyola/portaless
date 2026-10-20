@@ -135,6 +135,8 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
   // los endpoints existentes functions/admin/pages/[slug].js e index.js
   // -- NO contra una ruta /api/ nueva.
   class HttpPageStore implements PageStore {
+    private revisions = new Map<string, string>();
+
     async load(pageSlug: string): Promise<PageLayout | null> {
       const res = await fetch(`/admin/pages/${encodeURIComponent(pageSlug)}`);
 
@@ -146,13 +148,20 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
       if (!res.ok) {
         throw new Error(`No se pudo cargar la página (HTTP ${res.status}).`);
       }
+      const revision = res.headers.get("etag")?.replace(/^W\//, "").replace(/^"|"$/g, "");
+      if (revision) this.revisions.set(pageSlug, revision);
       return res.json();
     }
 
-    async save(layout: PageLayout): Promise<void> {
+    async save(layout: PageLayout) {
       const res = await fetch(`/admin/pages/${encodeURIComponent(layout.slug)}`, {
         method: "PUT",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          ...(this.revisions.has(layout.slug)
+            ? { "if-match": `"${this.revisions.get(layout.slug)}"` }
+            : { "if-none-match": "*" }),
+        },
         body: JSON.stringify(layout),
       });
 
@@ -171,6 +180,9 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
         }
         throw new Error(message);
       }
+      const revision = res.headers.get("etag")?.replace(/^W\//, "").replace(/^"|"$/g, "");
+      if (revision) this.revisions.set(layout.slug, revision);
+      return res.json();
     }
 
     async list(): Promise<string[]> {

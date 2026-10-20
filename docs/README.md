@@ -44,6 +44,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status table — some predate the module implementations.
 
 - [`architecture/canonical-node-and-public-projections.md`](./architecture/canonical-node-and-public-projections.md) (English) — target contract for the private canonical node, approved public projections, local/Cloudum handover, and public revision evidence. Explicitly distinguishes target behavior from current implementation.
+- [`architecture/public-revision-history.md`](./architecture/public-revision-history.md) (English) — implemented PageStore revision IDs, approved history/export/import and the unsigned/APW no-data limits.
 - [`decisions/`](./decisions/README.md) (English) — accepted architecture decisions and their known risks/conditions for reconsideration.
 
 - `REPO_STRUCTURE_MAP.md` (ES) — why the real repo structure differs from the original proposal (stub claims corrected).

@@ -21,7 +21,7 @@ describe("gutter fluido derivado del sistema de diseno", () => {
 
   it(".container y el header usan var(--gutter), no un 1.25rem magico", () => {
     expect(globalCss).toMatch(/\.container \{[\s\S]*?padding: 2rem var\(--gutter\);/);
-    expect(globalCss).toMatch(/header\.site-header nav \{[\s\S]*?padding: 1rem var\(--gutter\);/);
+    expect(globalCss).toMatch(/header\.site-header \.site-header-row \{[\s\S]*?padding: 1rem var\(--gutter\);/);
     // El gutter de las dos superficies ya no es un literal.
     expect(globalCss).not.toMatch(/padding: (1rem|2rem) 1\.25rem/);
   });
@@ -44,14 +44,15 @@ describe("objetivos tactiles 44x44 (WCAG 2.5.5)", () => {
     expect(globalCss).toMatch(/footer\.site-footer \.footer-eco a \{[\s\S]*?min-height: 44px;/);
   });
 
-  // R9: el header movil ENVUELVE a 2 filas (no comprime los 44px). Documentado
-  // como trade-off aceptado: 44px WCAG > header de una sola fila.
-  it("el header movil envuelve a 2 filas en vez de encoger los objetivos", () => {
+  // C20: la barra nav permanece en una sola fila; las acciones contextuales
+  // pasan a una fila exterior y mantienen sus objetivos táctiles.
+  it("la navegación móvil no envuelve y las acciones viven fuera de la barra", () => {
+    expect(globalCss).toMatch(/nav\.site-nav\s*\{[^}]*flex-wrap:\s*nowrap/);
     const mobile = globalCss.slice(globalCss.indexOf("@media (max-width: 640px)"));
-    expect(mobile).toContain("flex-wrap: wrap");
-    expect(mobile).toContain("row-gap");
-    expect(mobile).toContain("flex: 0 0 auto"); // no se encogen
-    expect(globalCss).toContain("Trade-off aceptado (review R9)");
+    expect(mobile).toContain("flex-direction: column");
+    expect(mobile).toContain("header-right");
+    expect(globalCss).toContain("flex: 0 0 auto");
+    expect(globalCss).not.toContain("Trade-off aceptado (review R9)");
   });
 
   it("Button y Hero CTA declaran el objetivo tactil inline (min 44x44 + centrado)", () => {
@@ -88,5 +89,6 @@ describe("paridad static <-> runtime (functions/pages/[slug].js)", () => {
   it("el shell runtime tambien aplica 44x44 a los controles", () => {
     expect(shellCss).toContain("width:44px;height:44px"); // nav-link/lang/trust/icon-btn
     expect(shellCss).toContain("min-height:44px"); // footer links
+    expect(shellCss).toContain("flex-wrap:nowrap"); // single-row nav contract
   });
 });

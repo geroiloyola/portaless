@@ -3,7 +3,7 @@
 // dot-stuffing (una linea "." terminaba DATA). Se prueba contra un servidor
 // SMTP fake real sobre node:net (sin TLS: el cliente solo hace STARTTLS si el
 // servidor lo anuncia, y sin credenciales no lo exige).
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import net from "node:net";
 import { dotStuff, normalizeHeader, sendEmail, smtpCommandFailure } from "../../packages/email-transport/src/send";
 import { renderEmailTemplate } from "../../packages/email-transport/src/config";
@@ -20,6 +20,7 @@ function fakeSmtpServer(opts: {
   rejectCommand?: string;
   oversizedEhlo?: boolean;
   dropAfterData?: boolean;
+  stallStartTls?: boolean;
 } = {}): Promise<FakeServer> {
   const messages: string[] = [];
   const commands: string[] = [];
@@ -29,7 +30,9 @@ function fakeSmtpServer(opts: {
     let buf = "";
     let dataBuf = "";
     let inData = false;
+    let upgrading = false;
     socket.on("data", (chunk: string) => {
+      if (upgrading) return;
       if (inData) {
         dataBuf += chunk;
         const end = dataBuf.indexOf("\r\n.\r\n");
@@ -61,6 +64,10 @@ function fakeSmtpServer(opts: {
           if (opts.advertiseStartTls) lines.push("250-STARTTLS");
           lines.push("250 AUTH LOGIN");
           socket.write(lines.join("\r\n") + "\r\n");
+        } else if (cmd === "STARTTLS" && opts.stallStartTls) {
+          upgrading = true;
+          socket.write("220 Ready for TLS\r\n");
+          return;
         } else if (cmd === "MAIL" || cmd === "RCPT") {
           if (cmd === opts.rejectCommand) {
             socket.write("550 synthetic-private-reply-secret\r\n");
@@ -121,6 +128,23 @@ describe("helpers SMTP (puros)", () => {
 });
 
 describe("sendEmail via SMTP (servidor fake real)", () => {
+  it("termina si STARTTLS acepta pero el handshake nunca responde", async () => {
+    const srv = await fakeSmtpServer({ advertiseStartTls: true, stallStartTls: true });
+    servers.push(srv);
+    const nativeTimeout = globalThis.setTimeout;
+    const timer = vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: any, ms: number, ...args: any[]) =>
+      nativeTimeout(fn, ms === 15_000 ? 100 : ms, ...args)) as any);
+    try {
+      await expect(sendEmail(
+        { kind: "smtp", host: "127.0.0.1", port: srv.port, username: "u", token: "secret" },
+        { from: "a@b.cl", to: "c@d.cl", subject: "x", text: "y" },
+      )).rejects.toMatchObject({ deliveryOutcome: "rejected" });
+      expect(srv.messages).toHaveLength(0);
+    } finally {
+      timer.mockRestore();
+    }
+  }, 3000);
+
   it("EHLO multilinea + envio: DATA llega con dot-stuffing y headers limpios", async () => {
     const srv = await fakeSmtpServer();
     servers.push(srv);

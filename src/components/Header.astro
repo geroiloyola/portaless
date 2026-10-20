@@ -1,17 +1,9 @@
 ---
 import { getCollection } from "astro:content";
-import { homeLabel, postsLabel, exploreLabel, SITE_LANG } from "../lib/site-lang";
+import { SITE_LANG, type Locale } from "../lib/site-lang";
 import { publishedPosts } from "../lib/llms-txt";
-import { isMultilingual, localePath, otherLocales, t, type Locale } from "../lib/i18n";
-import {
-  headerActionsHtml,
-  langNoticeHtml,
-  langSwitcherHtml,
-  NAV_ICONS,
-  navIconHtml,
-  trustLinkHtml,
-  type HeaderContext,
-} from "../lib/atomic-responsive-icons";
+import { renderPublicHeaderHtml } from "../lib/public-shell";
+import type { HeaderContext } from "../lib/atomic-responsive-icons";
 
 interface Props {
   // Atomic Icons Responsive: el rincon derecho adapta su icono principal
@@ -34,94 +26,19 @@ interface Props {
   languageAlternate?: { hreflang: string; href: string };
 }
 const { context = null, locale = SITE_LANG, alternatePath, languageAlternate } = Astro.props;
-
 const base = import.meta.env.BASE_URL;
-const baseNoSlash = base.replace(/\/$/, "");
 const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
 // El indice de publicaciones solo se anuncia si hay algo que leer: si el sitio
 // no tiene ninguna publicacion no-borrador, el link desaparece en vez de mandar
 // al visitante a un indice vacio.
 const publicPosts = publishedPosts(await getCollection("posts"));
-
-// El control de idioma depende del DATO REAL, no de una suposicion:
-//   - sitio multi-locale y ESTA pagina tiene version en otro locale (home y
-//     Explore via alternatePath; las paginas de contenido via languageAlternate)
-//     -> pill que enlaza a la MISMA pagina en el otro idioma.
-//   - sitio multi-locale y pagina SIN traduccion -> aviso honesto (no se finge
-//     traduccion, y NO se enlaza a otro sitio: la traduccion automatica es
-//     GATED).
-//   - sitio de un solo locale -> ninguno de los dos (no hay nada que ofrecer).
-const multi = isMultilingual();
-const others = otherLocales(locale);
-const isLocalized =
-  Boolean(languageAlternate) || (typeof alternatePath === "string" && alternatePath.length > 0);
-const showSwitcher = multi && isLocalized && others.length > 0;
-const showNotice = multi && !isLocalized && others.length > 0;
-const other = others[0] ?? locale;
-const otherHref =
-  languageAlternate?.href ?? `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`;
-const otherHreflang = languageAlternate?.hreflang ?? other;
-// TrustScore del sitio: sexto item universal, al lado de Share. Apunta a
-// /trust/ (hub publico que existe en el deploy estatico; resuelve el siteId
-// por defecto). Ver src/components/Footer.astro.
-const trustHref = `${base}trust/`;
 ---
-<header class="site-header">
-  <nav>
-    <a class="brand" href={base}>Portaless</a>
-    <!-- Cada enlace lleva su icono (visible solo en movil) y su texto (visible
-         solo en desktop). El texto SIEMPRE esta en el DOM: en movil se oculta
-         visualmente, asi el nombre accesible se conserva. -->
-    <a class="nav-link" href={base}>
-      <Fragment set:html={navIconHtml(NAV_ICONS.home)} />
-      <span class="nav-txt">{homeLabel(locale)}</span>
-    </a>
-    {publicPosts.length > 0 && (
-      <a class="nav-link" href={`${base}blog/`}>
-        <Fragment set:html={navIconHtml(NAV_ICONS.posts)} />
-        <span class="nav-txt">{postsLabel(locale)}</span>
-      </a>
-    )}
-    <a class="nav-link" href={`${base}explore/`}>
-      <Fragment set:html={navIconHtml(NAV_ICONS.explore)} />
-      <span class="nav-txt">{exploreLabel(locale)}</span>
-    </a>
-    {commerceEnabled && (
-      <a class="nav-link" href={`${base}tienda/`}>
-        <Fragment set:html={navIconHtml(NAV_ICONS.shop)} />
-        <span class="nav-txt">Tienda</span>
-      </a>
-    )}
-    <!-- Grupo derecho: selector de idioma (con icono, se lee como accion) y
-         el rincon de iconos. Empujado a la derecha con margin-left:auto, para
-         que el idioma quede alineado a la derecha y no entre las etiquetas. -->
-    <div class="header-right">
-      {showSwitcher && (
-        <Fragment
-          set:html={langSwitcherHtml({
-            href: otherHref,
-            hreflang: otherHreflang,
-            ariaLabel: t(locale, "home.otherLocaleAria"),
-            text: t(locale, "home.otherLocaleName"),
-          })}
-        />
-      )}
-      <!-- TrustScore del sitio, al lado de Share: la prueba de confianza
-           verificable deja de vivir solo en el footer. -->
-      <Fragment
-        set:html={trustLinkHtml({
-          href: trustHref,
-          label: t(locale, "trust.label"),
-          ariaLabel: t(locale, "trust.aria"),
-        })}
-      />
-      <!-- Atomic Icons Responsive: share siempre; icono principal segun
-           contexto. El HTML sale de UNA sola fuente compartida con el
-           shell runtime (src/lib/atomic-responsive-icons.ts). -->
-      <Fragment set:html={headerActionsHtml(context, base)} />
-    </div>
-  </nav>
-  {showNotice && (
-    <Fragment set:html={langNoticeHtml({ text: t(locale, "lang.notice") })} />
-  )}
-</header>
+<Fragment set:html={renderPublicHeaderHtml({
+  base,
+  locale,
+  hasPosts: publicPosts.length > 0,
+  commerceEnabled,
+  context,
+  alternatePath,
+  languageAlternate,
+})} />

@@ -96,7 +96,9 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       if (existing && isPubliclyPublishable(existing)) {
         throw capabilityError("PUBLICATION_REQUIRES_ADMIN_APPROVAL", "Un plugin no puede reemplazar contenido publicado; crea una propuesta no publica para revision.");
       }
-      await pageStore.save(layout as never);
+      // The bridge read is the precondition for this invocation. A concurrent
+      // owner publication/private transition must invalidate this draft write.
+      await pageStore.save(layout as never, { expectedRevisionId: existing?.revisionId ?? null });
       return { success: true };
     },
     storageRead: async (pluginName, payload) => {

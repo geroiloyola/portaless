@@ -19,6 +19,7 @@ import {
   themeStyleDecl,
 } from "../../packages/atomic-elements/src/themes/theme-pack";
 import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
+import type { PublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history";
 
 interface Props {
   page: ContentPage;
@@ -50,6 +51,10 @@ const languageAlternate = other
 const pageTitle = layout.title ?? layout.slug;
 const pageDescription = layout.description ?? "";
 const siteInfo = { name: pageTitle, url: siteUrl, base, inLanguage: version.locale };
+const revisionHistoryModules = import.meta.glob<{ default: PublicRevisionHistory }>("../content/revision-history/*.json", { eager: true });
+const revisionHistory = layout.publicationId
+  ? Object.values(revisionHistoryModules).map((module) => module.default).find((history) => history.publicationId === layout.publicationId)
+  : undefined;
 ---
 
 <BaseLayout
@@ -67,4 +72,48 @@ const siteInfo = { name: pageTitle, url: siteUrl, base, inLanguage: version.loca
   />
   <JsonLd slot="head" layout={layout} site={siteInfo} />
   <PageRenderer layout={layout} />
+  {revisionHistory && (
+    <section class="public-revision-history" aria-labelledby="revision-history-title">
+      <h2 id="revision-history-title">Historial público de revisiones</h2>
+      <p>Los cambios se comparan entre revisiones aprobadas. No implican que un cambio haya causado un resultado de reputación.</p>
+      <ol>
+        {revisionHistory.revisions.map((revision) => (
+          <li>
+            <h3>Revisión {revision.revisionNo}: {revision.title}</h3>
+            <p><time datetime={revision.publishedAt}>{new Date(revision.publishedAt).toLocaleString(version.locale)}</time></p>
+            <p><code>{revision.contentHash}</code></p>
+            {revision.changedPaths.length > 0
+              ? <p>Cambios verificables: {revision.changedPaths.join(", ")}</p>
+              : <p>{revision.parentRevisionId ? "Sin cambios en el contenido respecto a la revisión pública anterior." : "Primera revisión pública registrada."}</p>}
+            {revision.reputation.status === "no_data"
+              ? <p>Reputación ligada a esta revisión: sin datos.</p>
+              : (
+                <div>
+                  <h4>Evidencia asociada a esta revisión</h4>
+                  <ul>
+                    {revision.reputation.observations.map((observation) => (
+                      <li>
+                        <time datetime={observation.observedAt}>{new Date(observation.observedAt).toLocaleString(version.locale)}</time>
+                        {" — "}{observation.source}; reglas {observation.rulesVersion}
+                        {observation.sampleSize !== null && `; muestra ${observation.sampleSize}`}
+                        {observation.weight !== null && `; peso ${observation.weight}`}
+                        <pre><code>{JSON.stringify(observation.calculation, null, 2)}</code></pre>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </li>
+        ))}
+      </ol>
+      <a href={`${base}revisions/${revisionHistory.publicationId}/index.json`}>Consultar y verificar el historial completo (JSON)</a>
+    </section>
+  )}
 </BaseLayout>
+
+<style is:global>
+  .public-revision-history { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--panel-border); overflow-wrap: anywhere; }
+  .public-revision-history li { margin: 1.25rem 0; }
+  .public-revision-history code { overflow-wrap: anywhere; }
+  .public-revision-history pre { max-width: 100%; overflow-x: auto; }
+</style>

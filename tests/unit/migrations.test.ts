@@ -173,7 +173,7 @@ describe("upgrade histórico y recuperación", () => {
     const result = await migrateSqlite(path);
     expect(result.from).toBe(1);
     expect(result.to).toBe(schemaVersion());
-    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities"]);
+    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence"]);
     expect(result.backupPath).toBeTruthy();
 
     const upgraded = await openSqlite(path);
@@ -183,6 +183,8 @@ describe("upgrade histórico y recuperación", () => {
       password_hash: "preserved-hash",
     });
     expect(JSON.parse(upgraded.prepare("SELECT layout_json FROM pages WHERE slug='historical-page'").get().layout_json).title).toBe("Keep me");
+    expect(upgraded.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='page_revisions'").get()).toBeTruthy();
+    expect(upgraded.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='page_revision_evidence'").get()).toBeTruthy();
     expect(JSON.parse(upgraded.prepare("SELECT tokens_json FROM site_skin WHERE site_id='default'").get().tokens_json).accent).toBe("#abc123");
     upgraded.close();
 
@@ -227,7 +229,7 @@ describe("upgrade histórico y recuperación", () => {
     const recovered = await migrateSqlite(restoredPath);
     expect(recovered.from).toBe(2);
     expect(recovered.to).toBe(schemaVersion());
-    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities"]);
+    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence"]);
     const finalDb = await openSqlite(restoredPath);
     expect(currentVersion(finalDb)).toBe(schemaVersion());
     expect(finalDb.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();

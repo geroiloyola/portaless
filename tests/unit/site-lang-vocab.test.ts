@@ -6,9 +6,11 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SITE_LANG, postsLabel } from "../../src/lib/site-lang";
+import { renderPublicHeaderHtml } from "../../src/lib/public-shell";
 
 const root = join(__dirname, "../..");
 const headerSrc = readFileSync(join(root, "src/components/Header.astro"), "utf8");
+const publicShellSrc = readFileSync(join(root, "src/lib/public-shell.ts"), "utf8");
 const blogIndexSrc = readFileSync(join(root, "src/pages/blog/index.astro"), "utf8");
 const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
 
@@ -37,8 +39,15 @@ describe("vocabulario por audiencia (site-lang)", () => {
   it("el header anuncia las publicaciones solo si hay, y nunca dice Blog", () => {
     expect(headerSrc).toContain("publishedPosts(await getCollection(\"posts\"))");
     expect(headerSrc).toContain("publicPosts.length > 0");
-    expect(headerSrc).toContain("postsLabel(locale)");
-    expect(headerSrc).not.toMatch(/>Blog</);
+    expect(headerSrc).toContain("renderPublicHeaderHtml({");
+    expect(publicShellSrc).toContain("postsLabel(locale)");
+    expect(publicShellSrc).not.toMatch(/>Blog</);
+    expect(renderPublicHeaderHtml({ base: "/", locale: "es", hasPosts: true, commerceEnabled: false }))
+      .toContain('<span class="nav-txt">Publicaciones</span>');
+    expect(renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: true, commerceEnabled: false }))
+      .toContain('<span class="nav-txt">Publications</span>');
+    expect(renderPublicHeaderHtml({ base: "/", locale: "es", hasPosts: false, commerceEnabled: false }))
+      .not.toContain("/blog/");
   });
 
   it("el indice de publicaciones ya no se titula Blog", () => {

@@ -42,6 +42,7 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 
 - `REPO_STRUCTURE_MAP.md` (ES) — why the real repo structure differs from the original proposal (stub claims corrected).
 - [`canonical-node-and-public-projections.md`](./canonical-node-and-public-projections.md) (EN) — target contract for local/Cloudum private canonical nodes, allowlisted public Git projections, revision history and restore/handover.
+- [`public-revision-history.md`](./public-revision-history.md) (EN) — PageStore revision identities, ETag concurrency, approved-only projection/import and the current no-data/APW boundary.
 - `site-trust-score.md`, `authentication.md`, `licensing-boundaries.md`, `ecosystem-boundaries.md`, `content-layer.md`, `persistence.md`, `deployment-engine.md`, `identity-atproto.md`, `cloud-images.md`, `mcp-agents.md`, `commerce-plugin.md`, `creator-sites-agentic-workflow.md`, `server-side-role-checks.md`, `seo-geo.md` (ES) — per-area design docs.
 
 ## Operations and history

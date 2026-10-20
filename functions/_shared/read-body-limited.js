@@ -20,7 +20,9 @@ export async function readBodyLimited(request, maxBytes) {
       if (done) break;
       total += value.byteLength;
       if (total > maxBytes) {
-        await reader.cancel().catch(() => undefined);
+        // A cloned Request is a tee: cancellation can wait for the unread
+        // original branch forever. Start cancellation without blocking 413.
+        void reader.cancel().catch(() => undefined);
         throw new RequestBodyTooLargeError();
       }
       chunks.push(value);
@@ -52,7 +54,7 @@ export async function assertBodySizeLimited(request, maxBytes) {
       if (done) return;
       total += value.byteLength;
       if (total > maxBytes) {
-        await reader.cancel().catch(() => undefined);
+        void reader.cancel().catch(() => undefined);
         throw new RequestBodyTooLargeError();
       }
     }

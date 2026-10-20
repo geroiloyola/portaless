@@ -260,11 +260,20 @@ async function smtpConversation(provider: EmailProviderSettings, message: Outgoi
       if (hasCapability(caps, "STARTTLS")) {
         await io.command("STARTTLS", 220);
         const secured: any = tls.connect({ socket: base, ...(servername ? { servername } : {}) });
-        await new Promise<void>((resolve, reject) => {
-          secured.once("secureConnect", () => resolve());
-          secured.once("error", reject);
-        });
         socket = secured;
+        await new Promise<void>((resolve, reject) => {
+          const cleanup = () => {
+            secured.off("secureConnect", ready);
+            secured.off("error", failed);
+            secured.off("close", closed);
+          };
+          const ready = () => { cleanup(); resolve(); };
+          const failed = (error: Error) => { cleanup(); reject(error); };
+          const closed = () => failed(new EmailSendError("SMTP TLS handshake closed before completion."));
+          secured.once("secureConnect", ready);
+          secured.once("error", failed);
+          secured.once("close", closed);
+        });
         io = attachReader(secured);
         caps = await io.command("EHLO portaless", 250);
       } else if (hasCredentials || provider.requireStartTls) {

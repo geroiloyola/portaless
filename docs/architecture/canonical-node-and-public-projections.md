@@ -88,9 +88,13 @@ show the input evidence and scoring version, and say “no data” when it has n
 evidence. A commit diff can show what changed; it cannot prove that the change
 caused a reputation change.
 
-The public revision manifest and its verifier are **not yet established by this
-document**. Their wire format, signing model, retention policy and compatibility
-with APW are implementation decisions to make in the revision-history phase.
+Portaless now has an initial, unsigned public revision projection for PageStore
+pages. Its exact semantics, import path and APW boundary are documented in
+[`public-revision-history.md`](./public-revision-history.md). It is a
+Portaless-owned format, not an APW normative artifact; hashes provide content
+comparison, not authorship or tamper-proof storage. Page-level reputation remains
+`no_data` until a real source can identify the exact content revision it
+evaluated.
 
 ## Local and Cloudum modes
 

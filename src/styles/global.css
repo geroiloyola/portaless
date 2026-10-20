@@ -226,16 +226,30 @@ header.site-header {
   border-bottom: 1px solid var(--panel-border);
 }
 
-header.site-header nav {
+header.site-header .site-header-row {
   display: flex;
-  gap: 1.5rem;
   align-items: center;
   max-width: 860px;
   margin: 0 auto;
   padding: 1rem var(--gutter);
+  gap: 1rem;
+  min-width: 0;
+}
+
+header.site-header nav.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 header.site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  white-space: nowrap;
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--text);
@@ -359,28 +373,27 @@ header.site-header .nav-ico {
   justify-content: center;
 }
 
-/* MOVIL (solo movil): el menu pasa a iconos. Portaless + Inicio + Publicaciones
-   + Explorar (o Tienda) + idioma + compartir; el compartir NO se mueve (sigue
-   ultimo, pegado a la derecha). El texto se oculta VISUALMENTE, no se borra. */
+/* MOVIL: la navegación es una única fila icon-only; el enlace de marca ES el
+   enlace a Inicio. Selector de idioma, TrustScore y acciones contextuales
+   permanecen visibles en una fila de utilidades fuera de la barra nav. */
 @media (max-width: 640px) {
-  header.site-header nav {
-    gap: 0.3rem;
+  header.site-header .site-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
     padding: 0.75rem var(--gutter);
-    /* Los controles miden 44px (WCAG 2.5.5) y NO se encogen (flex-shrink:0).
-       Con marca + 3 enlaces + idioma + TrustScore + Share no entran en una fila
-       de 375px, asi que el nav ENVUELVE a una segunda fila en vez de comprimir
-       los objetivos tactiles por debajo del minimo.
-       Trade-off aceptado (review R9): en 375px el header pasa de ~68px (1 fila)
-       a ~118px (2 filas, acciones a la derecha). 44px de objetivo tactil gana
-       sobre un header de una sola fila compacta; no se baja el minimo para
-       recuperar la fila. En pantallas >=641px sigue siendo 1 fila. */
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
+  }
+
+  header.site-header nav.site-nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: clamp(2px, 1vw, 6px);
   }
 
   header.site-header .brand {
-    font-size: 1rem;
-    margin-right: 0.1rem;
+    flex: 0 1 auto;
+    min-width: 44px;
+    font-size: 0.95rem;
   }
 
   /* Objetivo tactil 44x44 (WCAG 2.5.5): en movil el menu es icon-only, asi que
@@ -425,6 +438,9 @@ header.site-header .nav-ico {
   header.site-header .header-right {
     gap: 0.3rem;
     flex: 0 0 auto;
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
   }
 
   header.site-header .header-lang {

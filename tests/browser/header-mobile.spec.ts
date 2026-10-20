@@ -1,8 +1,5 @@
-// Header en MOVIL: el menu pasa a iconos (Inicio, Publicaciones, Explorar,
-// idioma) y el compartir se queda DONDE ESTA (ultimo, pegado a la derecha).
-// En desktop nada cambia: se ve el texto y los iconos quedan ocultos. Se cubren
-// las dos superficies del header: una pagina estatica (home) y el shell runtime
-// (/pages/...), que comparten la misma fuente (NAV_ICONS/navIconHtml).
+// Contrato del header móvil: una sola fila de navegación; marca = Inicio, y
+// acciones contextuales quedan en su propia fila fuera de la barra nav.
 import { test, expect, type Page } from "@playwright/test";
 
 const HOME_URL = "/";
@@ -18,19 +15,28 @@ async function navTxtHidden(page: Page, href: string): Promise<boolean> {
   }, href);
 }
 
-test("movil: menu por iconos, con el compartir intacto a la derecha", async ({ page }) => {
+test("movil: una sola fila de nav; marca/inicio unificados y acciones fuera de la barra", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(HOME_URL);
 
-  // Los tres destinos muestran su icono y ocultan el texto (solo visualmente).
-  for (const href of ["/", "/blog/", "/explore/"]) {
+  const nav = page.locator("header.site-header nav.site-nav");
+  const brandHome = nav.locator("a.brand.nav-home");
+  await expect(brandHome).toHaveAttribute("href", "/");
+  await expect(brandHome).toHaveAccessibleName(/Portaless|Inicio/i);
+  await expect(nav.locator("a.nav-link[href='/']")).toHaveCount(0);
+
+  // Publicaciones/Explorar mantienen icono visible y texto accesible.
+  for (const href of ["/blog/", "/explore/"]) {
     const link = page.locator(`header.site-header a.nav-link[href='${href}']`);
     await expect(link).toBeVisible();
     await expect(link.locator(".nav-ico svg")).toBeVisible();
     expect(await navTxtHidden(page, href), `${href} nav-txt oculto en movil`).toBe(true);
   }
 
-  // El idioma es icon-only y el compartir sigue visible, a su derecha.
+  // Los controles contextuales son visibles, pero no cuentan como entradas nav.
+  const utilities = page.locator("header.site-header .header-right");
+  await expect(utilities).toBeVisible();
+  expect(await nav.locator(".header-right").count()).toBe(0);
   const lang = page.locator("header.site-header .header-lang");
   await expect(lang.locator(".header-lang-icon svg")).toBeVisible();
   const share = page.locator("header.site-header [data-portaless-share]");
@@ -42,11 +48,11 @@ test("movil: menu por iconos, con el compartir intacto a la derecha", async ({ p
   await expect(trust.locator(".header-trust-icon svg")).toBeVisible();
   await expect(trust).toHaveAttribute("href", /\/trust\/$/);
 
-  const langBox = (await lang.boundingBox())!;
-  const trustBox = (await trust.boundingBox())!;
-  const shareBox = (await share.boundingBox())!;
-  expect(langBox.x).toBeLessThan(trustBox.x);
-  expect(trustBox.x).toBeLessThan(shareBox.x);
+  const navBoxes = await nav.locator(":scope > a").evaluateAll((links) =>
+    links.map((link) => (link as HTMLElement).getBoundingClientRect()),
+  );
+  expect(new Set(navBoxes.map((box) => Math.round(box.y))).size).toBe(1);
+  expect(await nav.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
   // El icono de Explorar navega de verdad.
   await page.locator("header.site-header a.nav-link[href='/explore/']").click();
@@ -57,10 +63,12 @@ test("movil: el shell runtime emite el mismo menu por iconos", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(RUNTIME_URL);
 
-  await expect(page.locator("header.site-header a.nav-link[href='/'] .nav-ico svg")).toBeVisible();
+  await expect(page.locator("header.site-header nav.site-nav a.brand.nav-home")).toHaveAttribute("href", "/");
+  await expect(page.locator("header.site-header nav.site-nav a.nav-link[href='/']")).toHaveCount(0);
   await expect(page.locator("header.site-header a.nav-link[href='/explore/'] .nav-ico svg")).toBeVisible();
   expect(await navTxtHidden(page, "/explore/")).toBe(true);
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
+  expect(await page.locator("header.site-header nav.site-nav .header-right").count()).toBe(0);
 });
 
 test("desktop: el menu sigue siendo texto, sin iconos", async ({ page }) => {

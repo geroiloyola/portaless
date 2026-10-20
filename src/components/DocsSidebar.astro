@@ -44,13 +44,15 @@ const base = import.meta.env.BASE_URL;
 </div>
 
 <style>
-  .docs-nav-wrap { margin-bottom: 18px; }
+  .docs-nav-wrap { min-width: 0; margin-bottom: 18px; }
 
   /* El checkbox esta oculto pero sigue siendo enfocable (teclado). */
   .docs-nav-toggle { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
   .docs-nav-summary {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     cursor: pointer;
     font-weight: 700;
     padding: 8px 12px;
@@ -58,12 +60,16 @@ const base = import.meta.env.BASE_URL;
     border-radius: var(--radius-input, 8px);
     color: var(--text, #f7f7f2);
   }
+  .docs-nav-toggle:focus-visible + .docs-nav-summary {
+    outline: 2px solid var(--accent, #c5d86d);
+    outline-offset: 2px;
+  }
 
   /* Movil (default): oculto hasta que el label lo abre. */
   .docs-nav { display: none; font-size: 0.9rem; margin-top: 14px; }
   .docs-nav-toggle:checked ~ .docs-nav { display: block; }
 
-  .docs-nav-group { margin-bottom: 22px; }
+  .docs-nav-group { min-width: 0; margin-bottom: 22px; }
   .docs-nav-title {
     margin: 0 0 8px;
     font-size: 0.72rem;
@@ -77,11 +83,14 @@ const base = import.meta.env.BASE_URL;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    min-height: 44px;
     padding: 6px 10px;
     border-radius: var(--radius-input, 8px);
     color: var(--text, #f7f7f2);
     text-decoration: none;
   }
+  .docs-nav-link > span:first-child { min-width: 0; overflow-wrap: anywhere; }
   .docs-nav-link:hover { background: var(--panel-bg, #171310); }
   .docs-nav-link--current { background: var(--panel-bg, #171310); border-left: 3px solid var(--accent, #c5d86d); }
   .docs-lang {

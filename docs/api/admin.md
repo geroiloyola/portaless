@@ -120,7 +120,8 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 
 | Endpoint | Method | Notes |
 |---|---|---|
-| `/admin/pages` , `/admin/pages/[slug]` | `GET/PUT` | Page CRUD via the real `PageStore` (D1/SQLite); server-side `canWrite(role)`. Admin may set `status: draft`, `published` or `private`; public exposure is governed by the shared publication filter. |
+| `/admin/pages` , `/admin/pages/[slug]` | `GET/PUT` | Page CRUD via the real `PageStore` (D1/SQLite); server-side `canWrite(role)`. `GET` returns an `ETag`; `PUT` requires `If-Match` for an existing revision or `If-None-Match: *` to create, and answers `409` on a stale write. Admin may set `status: draft`, `published` or `private`; public exposure is governed by the shared publication filter. |
+| `/admin/api/revisions/import` | `POST` | Admin-only import of `portaless-public-revision-history/v1`; validates each content hash and approved parent chain, preserves IDs/timestamps, and refuses to overwrite an existing publication. The public format is unsigned and is not an APW normative artifact. |
 | `/admin/preview/pages/[slug]` | `GET` | Admin-only HTML preview for a non-public DB page; `private, no-store`, `X-Robots-Tag: noindex`, no canonical, and never falls through to the static public route |
 | `/admin/permissions` | `GET/PUT` | Permissions Center: grant/revoke capabilities, including `trust:read-governance-bypass` for `reader` subjects (DID validated server-side) |
 | `/admin/plugins/[pluginId]/vote` | `POST` | Community `trustScore` vote (1–5) |

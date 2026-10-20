@@ -100,6 +100,8 @@ describe("createCapabilityHostBridge: content (validacion de forma)", () => {
       code: "PUBLICATION_REQUIRES_ADMIN_APPROVAL",
     });
     await expect(bridge.contentWrite!(layout("nueva-draft", "draft"))).resolves.toMatchObject({ success: true });
+    await expect(bridge.contentWrite!({ ...layout("nueva-draft", "draft"), title: "Second plugin edit" })).resolves.toMatchObject({ success: true });
+    expect((await pageStore.load("nueva-draft"))?.title).toBe("Second plugin edit");
     pageStore.close?.();
   });
 });

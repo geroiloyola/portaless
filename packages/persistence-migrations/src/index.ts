@@ -62,6 +62,51 @@ const USER_AND_PLUGIN_COLUMNS = [
   { table: "plugin_artifacts", column: "manifest_json", type: "TEXT" },
 ];
 
+const PAGE_REVISION_COLUMNS = [
+  { table: "pages", column: "publication_id", type: "TEXT" },
+  { table: "pages", column: "revision_id", type: "TEXT" },
+  { table: "pages", column: "revision_no", type: "INTEGER" },
+  { table: "pages", column: "content_hash", type: "TEXT" },
+];
+
+const PAGE_REVISION_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS page_revisions (
+    revision_id TEXT PRIMARY KEY,
+    publication_id TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    revision_no INTEGER NOT NULL,
+    parent_revision_id TEXT,
+    content_hash TEXT NOT NULL,
+    layout_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    created_by TEXT,
+    approved_at TEXT,
+    approved_by TEXT,
+    UNIQUE (publication_id, revision_no)
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_page_revisions_public_history ON page_revisions (publication_id, approved_at, revision_no)",
+  "CREATE TRIGGER IF NOT EXISTS page_revisions_no_update BEFORE UPDATE ON page_revisions BEGIN SELECT RAISE(ABORT, 'page_revision_immutable'); END",
+  "CREATE TRIGGER IF NOT EXISTS page_revisions_no_delete BEFORE DELETE ON page_revisions BEGIN SELECT RAISE(ABORT, 'page_revision_immutable'); END",
+];
+
+const PAGE_REVISION_EVIDENCE_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS page_revision_evidence (
+    evidence_id TEXT PRIMARY KEY,
+    revision_id TEXT NOT NULL,
+    observed_at TEXT NOT NULL,
+    source TEXT NOT NULL,
+    rules_version TEXT NOT NULL,
+    sample_size INTEGER,
+    weight REAL,
+    calculation_json TEXT NOT NULL,
+    proof_json TEXT,
+    recorded_at TEXT NOT NULL
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_page_revision_evidence_revision ON page_revision_evidence (revision_id, observed_at, evidence_id)",
+  "CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_update BEFORE UPDATE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END",
+  "CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_delete BEFORE DELETE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END",
+];
+
 /**
  * v4 -- capacidad `email:send` (TASK 5). Tablas nuevas del sprint de email:
  *   - `plugin_email_quota` (cuota diaria por plugin: el rate limit en la base).
@@ -97,6 +142,19 @@ export const MIGRATIONS: readonly Migration[] = [
     statements: EMAIL_CAPABILITY_STATEMENTS,
     createsTables: { plugin_email_quota: ["plugin_id", "day", "count"] },
   },
+  {
+    version: 5,
+    name: "page_revision_history",
+    statements: PAGE_REVISION_STATEMENTS,
+    addColumns: PAGE_REVISION_COLUMNS,
+    createsTables: { page_revisions: ["revision_id", "publication_id", "slug", "revision_no", "parent_revision_id", "content_hash", "layout_json", "created_at", "created_by", "approved_at", "approved_by"] },
+  },
+  {
+    version: 6,
+    name: "page_revision_evidence",
+    statements: PAGE_REVISION_EVIDENCE_STATEMENTS,
+    createsTables: { page_revision_evidence: ["evidence_id", "revision_id", "observed_at", "source", "rules_version", "sample_size", "weight", "calculation_json", "proof_json", "recorded_at"] },
+  },
 ];
 
 /**
@@ -111,7 +169,9 @@ export const REQUIRED_SCHEMA_COLUMNS: Readonly<Record<string, readonly string[]>
   auth_mfa_challenges: ["token", "username", "role", "expires_at", "failed_attempts"],
   auth_rate_limits: ["bucket", "window_start", "count"],
   permission_grants: ["subject_type", "subject_id", "capability_id", "granted", "granted_at", "granted_by"],
-  pages: ["slug", "layout_json", "updated_at", "updated_by"],
+  pages: ["slug", "layout_json", "updated_at", "updated_by", "publication_id", "revision_id", "revision_no", "content_hash"],
+  page_revisions: ["revision_id", "publication_id", "slug", "revision_no", "parent_revision_id", "content_hash", "layout_json", "created_at", "created_by", "approved_at", "approved_by"],
+  page_revision_evidence: ["evidence_id", "revision_id", "observed_at", "source", "rules_version", "sample_size", "weight", "calculation_json", "proof_json", "recorded_at"],
   site_identity: ["site_id", "did", "domain", "public_key_jwk", "private_key_jwk_encrypted", "private_key_encryption_iv", "key_algorithm", "created_at", "created_by"],
   capability_bridge_tokens: ["token", "plugin_name", "granted_capabilities_json", "issued_at", "expires_at"],
   webbotauth_nonces: ["nonce", "expires_at"],

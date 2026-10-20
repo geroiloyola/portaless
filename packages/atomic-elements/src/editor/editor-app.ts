@@ -65,10 +65,12 @@ export class AtomicElementsEditor {
   private root: HTMLElement;
   private productPreview: ProductPreviewLoader | null = null;
   private catalog: ResolvedCatalog;
+  private persistedRevisionId: string | null;
 
   constructor(private options: EditorAppOptions) {
     this.history = new EditorHistory(options.initialPage);
     this.store = options.store;
+    this.persistedRevisionId = options.initialPage.revisionId ?? null;
     this.root = options.container;
     this.catalog = options.elementCatalog ?? coreCatalog(elementRegistry, elementPalette);
     if (options.fetchProductPreview) {
@@ -213,7 +215,14 @@ export class AtomicElementsEditor {
   }
 
   async save(): Promise<void> {
-    await this.store.save(this.page);
+    const revision = await this.store.save(this.page, { expectedRevisionId: this.persistedRevisionId });
+    if (revision?.revisionId) {
+      this.persistedRevisionId = revision.revisionId;
+      Object.assign(this.page, {
+        publicationId: revision.publicationId, revisionId: revision.revisionId,
+        revisionNo: revision.revisionNo, contentHash: revision.contentHash,
+      });
+    }
   }
 
   exportJSON(): string {

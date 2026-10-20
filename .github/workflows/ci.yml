@@ -25,6 +25,10 @@ jobs:
         run: npm run build
       - name: Validar manifiestos de plugins
         run: node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts
+      - name: Instalar Chromium para las regresiones del navegador
+        run: npx playwright install --with-deps chromium
+      - name: Verificar flujos reales y layout público
+        run: npx playwright test
       - name: Verificar frontera del paquete fuente contra .airchive sintético
         run: node scripts/verify-npm-source-boundary.mjs
 

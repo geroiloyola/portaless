@@ -73,10 +73,13 @@ Core cannot claim that a host operator is unable to read an attached volume.
   revision/evidence records. The public Git repository alone is not a signed
   identity or proof of authorship.
 
-The manifest format, signatures, retention and APW integration are pending
-implementation decisions. Until specified and independently verified, the MVP
-must not market the history as tamper-proof or as an immutable reputation
-ledger.
+The initial manifest is `portaless-public-revision-history/v1` and is unsigned.
+It exports approved PageStore revisions, their content hashes and changed paths;
+the admin import preserves public IDs and timestamps after hash validation. It
+is not APW normative data, not proof of authorship, and not a tamper-proof
+ledger. Page-specific reputation evidence remains `no_data`: current APW
+observations are about the site DID, not a content revision. See
+[`architecture/public-revision-history.md`](../architecture/public-revision-history.md).
 
 ## 4. Hosting, restore and resource budget
 

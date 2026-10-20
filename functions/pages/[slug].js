@@ -29,16 +29,13 @@ import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
+import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history.ts";
 import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter.ts";
-import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
-import { isMultilingual, t } from "../../src/lib/i18n.ts";
+import { SITE_LANG } from "../../src/lib/site-lang.ts";
+import { t } from "../../src/lib/i18n.ts";
+import { renderPublicHeaderHtml } from "../../src/lib/public-shell.ts";
 import {
   deriveHeaderContext,
-  headerActionsHtml,
-  langNoticeHtml,
-  NAV_ICONS,
-  navIconHtml,
-  trustLinkHtml,
   VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
@@ -85,9 +82,10 @@ const CSS_FALLBACK = `
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);line-height:1.6}
 a{color:var(--accent-text);text-decoration:none}a:hover{text-decoration:underline}
 .container{max-width:860px;margin:0 auto;padding:2rem var(--gutter)}
-header.site-header{border-bottom:1px solid var(--panel-border)}
-header.site-header nav{display:flex;gap:1.5rem;align-items:center;max-width:860px;margin:0 auto;padding:1rem var(--gutter)}
-header.site-header .brand{font-weight:700;font-size:1.1rem;color:var(--text)}
+ header.site-header{border-bottom:1px solid var(--panel-border)}
+ header.site-header .site-header-row{display:flex;align-items:center;max-width:860px;margin:0 auto;padding:1rem var(--gutter);gap:1rem;min-width:0}
+ header.site-header nav.site-nav{display:flex;align-items:center;gap:1.5rem;flex:1 1 auto;min-width:0;flex-wrap:nowrap}
+ header.site-header .brand{display:inline-flex;align-items:center;min-height:44px;white-space:nowrap;font-weight:700;font-size:1.1rem;color:var(--text)}
 header.site-header .header-actions{display:flex;align-items:center;gap:0.3rem;margin-left:auto}
 header.site-header .header-right{display:flex;align-items:center;gap:0.6rem;margin-left:auto}
 header.site-header .header-lang{display:inline-flex;align-items:center;gap:0.4rem;padding:0.32rem 0.7rem;border:1px solid var(--panel-border);border-radius:999px;color:var(--text);font-size:0.85rem;line-height:1;text-decoration:none}
@@ -99,7 +97,7 @@ header.site-header .header-trust{display:inline-flex;align-items:center;gap:0.4r
 header.site-header .header-trust:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-trust-icon svg{width:16px;height:16px}
 header.site-header .nav-ico{display:none;align-items:center;justify-content:center}
-@media (max-width:640px){header.site-header nav{gap:0.3rem;padding:0.75rem var(--gutter);flex-wrap:wrap;row-gap:0.35rem}header.site-header .brand{font-size:1rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem;flex:0 0 auto}header.site-header .header-lang{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-trust{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-trust .header-trust-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
+@media (max-width:640px){header.site-header .site-header-row{flex-direction:column;align-items:stretch;gap:0.25rem;padding:0.75rem var(--gutter)}header.site-header nav.site-nav{width:100%;justify-content:space-between;gap:clamp(2px,1vw,6px)}header.site-header .brand{flex:0 1 auto;min-width:44px;font-size:0.95rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem;flex:0 0 auto;width:100%;justify-content:flex-end;margin-left:0}header.site-header .header-lang{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-trust{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-trust .header-trust-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
 header.site-header .header-icon-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;padding:0;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
 header.site-header .header-icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-icon-btn svg{width:18px;height:18px}
@@ -139,6 +137,9 @@ function elementsCss() {
 
 const PAGE_CSS = `
 .ae-page{display:flex;flex-direction:column;gap:20px;max-width:900px;margin:0 auto}
+.public-revision-history{max-width:900px;margin:3rem auto 0;padding-top:1.5rem;border-top:1px solid var(--panel-border);overflow-wrap:anywhere}
+.public-revision-history li{margin:1.25rem 0}.public-revision-history code{overflow-wrap:anywhere}
+.public-revision-history pre{max-width:100%;overflow-x:auto}
 `.trim();
 
 // Boton "Compartir" de las paginas bio (ProfileHeader) -- MISMO cuerpo
@@ -175,7 +176,7 @@ function esc(value) {
   );
 }
 
-export function renderShell(layout, bodyHtml, request, { preview = false } = {}) {
+export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null } = {}) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
   const origin = new URL(request.url).origin;
@@ -203,6 +204,16 @@ export function renderShell(layout, bodyHtml, request, { preview = false } = {})
     ? '<meta name="robots" content="noindex, nofollow, noarchive" />'
     : `<link rel="canonical" href="${esc(canonical)}" />`;
   const jsonLdScript = preview ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
+  const headerHtml = renderPublicHeaderHtml({
+    base: "/",
+    locale: SITE_LANG,
+    hasPosts: showPostsLink(),
+    commerceEnabled: false,
+    context: deriveHeaderContext(layout.root),
+  });
+  const historyHtml = !preview && revisionHistory
+    ? `<section class="public-revision-history" aria-labelledby="revision-history-title"><h2 id="revision-history-title">Historial público de revisiones</h2><p>Los cambios se comparan entre revisiones aprobadas. No implican que un cambio haya causado un resultado de reputación.</p><ol>${revisionHistory.revisions.map((revision) => `<li><h3>Revisión ${revision.revisionNo}: ${esc(revision.title)}</h3><p><time datetime="${esc(revision.publishedAt)}">${esc(revision.publishedAt)}</time></p><p><code>${esc(revision.contentHash)}</code></p>${revision.changedPaths.length ? `<p>Cambios verificables: ${esc(revision.changedPaths.join(", "))}</p>` : revision.parentRevisionId ? "<p>Sin cambios en el contenido respecto a la revisión pública anterior.</p>" : "<p>Primera revisión pública registrada.</p>"}${revision.reputation.status === "observed" ? `<ul>${revision.reputation.observations.map((observation) => `<li><time datetime="${esc(observation.observedAt)}">${esc(observation.observedAt)}</time> — ${esc(observation.source)}; reglas ${esc(observation.rulesVersion)}${observation.sampleSize !== null ? `; muestra ${observation.sampleSize}` : ""}${observation.weight !== null ? `; peso ${observation.weight}` : ""}<pre><code>${esc(JSON.stringify(observation.calculation, null, 2))}</code></pre></li>`).join("")}</ul>` : "<p>Reputación ligada a esta revisión: sin datos.</p>"}</li>`).join("")}</ol><a href="/revisions/${esc(revisionHistory.publicationId)}/index.json">Consultar y verificar el historial completo (JSON)</a></section>`
+    : "";
   return `<!doctype html>
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
@@ -221,25 +232,10 @@ ${elementsCss()}</style>
 <style>${PAGE_CSS}</style>
 </head>
 <body>
-<header class="site-header">
-  <nav>
-    <a class="brand" href="/">Portaless</a>
-    <a class="nav-link" href="/">${navIconHtml(NAV_ICONS.home)}<span class="nav-txt">${homeLabel(SITE_LANG)}</span></a>
-    ${showPostsLink() ? `<a class="nav-link" href="/blog/">${navIconHtml(NAV_ICONS.posts)}<span class="nav-txt">${postsLabel(SITE_LANG)}</span></a>` : ""}
-    <a class="nav-link" href="/explore/">${navIconHtml(NAV_ICONS.explore)}<span class="nav-txt">${exploreLabel(SITE_LANG)}</span></a>
-    <div class="header-right">
-      ${trustLinkHtml({ href: "/trust/", label: t(SITE_LANG, "trust.label"), ariaLabel: t(SITE_LANG, "trust.aria") })}
-      ${headerActionsHtml(deriveHeaderContext(layout.root))}
-    </div>
-  </nav>
-  ${
-    isMultilingual()
-      ? langNoticeHtml({ text: t(SITE_LANG, "lang.notice") })
-      : ""
-  }
-</header>
+${headerHtml}
 <main class="container">
 <article class="ae-page">${bodyHtml}</article>
+${historyHtml}
 </main>
 <footer class="site-footer">
   <div class="container">
@@ -269,8 +265,9 @@ export async function onRequestGet(context) {
   }
 
   let layout = null;
+  let pageStore = null;
   try {
-    const pageStore = await createPageStore(env);
+    pageStore = await createPageStore(env);
     layout = await pageStore.load(slug);
   } catch {
     // En un deploy puramente estatico no hay binding/path y la Function delega
@@ -316,7 +313,11 @@ export async function onRequestGet(context) {
     });
   }
 
-  return new Response(renderShell(layout, bodyHtml, request), {
+  const revisions = layout.publicationId
+    ? await pageStore.listPublicRevisionsByPublicationId?.(layout.publicationId).catch(() => [])
+    : [];
+  const revisionHistory = projectPublicRevisionHistory(revisions ?? []);
+  return new Response(renderShell(layout, bodyHtml, request, { revisionHistory }), {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
 }

@@ -40,6 +40,8 @@ export const REQUIRED_TABLES = [
   "auth_rate_limits",
   "permission_grants",
   "pages",
+  "page_revisions",
+  "page_revision_evidence",
   "site_identity",
   "capability_bridge_tokens",
   "webbotauth_nonces",
