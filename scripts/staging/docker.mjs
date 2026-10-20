@@ -4,7 +4,7 @@
 // available to the containers. Cleanup requires the generated fixture ID and
 // both the C04 filesystem marker and Docker resource labels.
 import { randomBytes } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -25,7 +25,13 @@ const DOCKER_MARKER_FILE = ".portaless-docker-staging-owner.json";
 const DOCKER_MARKER_KIND = "portaless-docker-staging-v1";
 const PREFIX = "portaless-stage";
 
-function docker(args, { capture = false } = {}) {
+function docker(args, { capture = false, includeStderr = false } = {}) {
+  if (includeStderr) {
+    const result = spawnSync("docker", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(result.stderr || `docker ${args.join(" ")} failed`);
+    return `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  }
   return execFileSync("docker", args, capture
     ? { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
     : { cwd: ROOT, stdio: "inherit" });
@@ -53,7 +59,7 @@ function emitContainerLogs(names) {
       } catch {}
     }
     try {
-      const output = docker(["logs", "--tail", "100", name], { capture: true });
+      const output = docker(["logs", "--tail", "100", name], { capture: true, includeStderr: true });
       if (output.trim()) console.error(`[staging:docker] logs ${name}:\n${output}`);
     } catch (error) {
       const output = String(error?.stderr ?? error?.message ?? "").trim();
