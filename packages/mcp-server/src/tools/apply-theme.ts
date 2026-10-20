@@ -22,6 +22,7 @@ import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import type { ThemePack } from "../../../atomic-elements/src/themes/theme-pack";
 import { BUILTIN_THEMES, resolveThemePack } from "../../../atomic-elements/src/themes/theme-pack";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const TOOL_NAME = "apply_theme";
 const READ_CAPABILITY_ID = "content:read";
@@ -71,6 +72,20 @@ export function registerApplyThemeTool(server: McpServer, deps: RegisterApplyThe
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+
+      if (existing.status === "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "private_content_access_denied", message: "MCP no accede a paginas privadas; el owner debe autorizar el contexto por un mecanismo separado." }, null, 2) }],
+          isError: true,
+        };
+      }
+
+      if (isPubliclyPublishable(existing)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "published_page_requires_admin_approval", message: "MCP no modifica una pagina publicada. Crea una propuesta borrador y pide a un admin que la revise y publique." }, null, 2) }],
+          isError: true,
+        };
+      }
 
       const catalog = deps.themes ?? [...BUILTIN_THEMES];
       if (theme !== null && !resolveThemePack(catalog, theme)) {
