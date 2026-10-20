@@ -137,6 +137,7 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 | `/admin/settlement` | `GET/PUT` | Pay-per-crawl provider configuration |
 | `/admin/api/agents` | `GET/PUT/DELETE` | Agent access policy, operable from the panel (ROADMAP.md phase 12). `GET` returns the **effective** policy plus its `source` (`store` / `asset` / `default`), who wrote it and when, and `writable` for the session role. `PUT` persists the operator override in `agent_access_policy` (server-side `canWrite(role)`, server-fixed `site`); rejects an invalid rule or a `charge` with no positive `price_usd`. `DELETE` drops the override and returns what remains. Precedence: store > asset (`/.well-known/portaless-content-policy.json`) > default. No step-up, unlike `PUT /admin/permissions`: this edits the owner's own content policy, is reversible, and grants no capability |
 | `/admin/api/product-preview` | `GET` | Medusa/Mercur product preview for the visual editor |
+| `/admin/api/ai-provider` | `GET` | Admin-only OpenAI-compatible provider status (C32). Reads `PORTALESS_OPENAI_API_KEY` / `PORTALESS_OPENAI_BASE_URL` / `PORTALESS_OPENAI_MODEL` server-side and returns `{ enabled, profile, errors }`; the profile exposes the endpoint/model/capabilities and never the API key. |
 
 ## Account, OAuth, wizard
 

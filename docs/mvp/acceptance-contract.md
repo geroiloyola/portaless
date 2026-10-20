@@ -194,6 +194,7 @@ The expanded MVP is not complete until all are evidenced:
 
 ## Evidence and related documents
 
+- Interoperability evidence registry and status: [`docs/testing/interop-evidence.json`](../testing/interop-evidence.json) and [`testing/INTEROPERABILITY.md`](../testing/INTEROPERABILITY.md).
 - Current code: [`deployment-engine.md`](../architecture/deployment-engine.md),
   [`mcp-agents.md`](../architecture/mcp-agents.md),
   [`self-hosting.md`](../self-hosting.md),

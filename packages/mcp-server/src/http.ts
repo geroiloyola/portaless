@@ -26,8 +26,9 @@ import {
   createMcpAgentTokenStore,
   type McpAgentTokenStoreFactoryEnv,
 } from "./permissions/agent-token-store.js";
+import { MCP_HTTP_PATH } from "./metadata.js";
 
-export const MCP_HTTP_PATH = "/mcp";
+export { MCP_HTTP_PATH } from "./metadata.js";
 
 export interface StartMcpHttpServerOptions extends McpStoreDeps {
   env: McpAgentTokenStoreFactoryEnv;

@@ -33,7 +33,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 | Document | What it covers |
 |---|---|
 | [`api/README.md`](./api/README.md) | Surface overview, auth model, 60-second end-to-end verification recipe |
-| [`api/well-known.md`](./api/well-known.md) | The 7 public `/.well-known/*` endpoints + `GET /trust/:siteId`, response shapes, pagination, error codes |
+| [`api/well-known.md`](./api/well-known.md) | The 8 public `/.well-known/*` endpoints + `GET /trust/:siteId`, response shapes, pagination, error codes |
 | [`api/admin.md`](./api/admin.md) | Admin API catalog (witness record, Index sync/subjects, reader-conduct emit, SiteTrustScore management, …) |
 
 ## Architecture — [`architecture/`](./architecture/)
