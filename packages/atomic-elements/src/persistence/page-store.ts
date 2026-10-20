@@ -24,6 +24,9 @@ export interface PageStore {
   listPublicRevisionsByPublicationId?(publicationId: string): Promise<PublicPageRevision[]>;
   importPublicRevisionHistory?(history: unknown): Promise<PageLayout>;
   recordPublicRevisionEvidence?(evidence: PageRevisionEvidence): Promise<void>;
+  saveProposal?(layout: PageLayout, expectedBaseRevisionId: string, actor: string): Promise<PageRevisionMetadata>;
+  approveRevision?(slug: string, revisionId: string, actor: string): Promise<PageRevisionMetadata>;
+  listPendingRevisions?(slug: string): Promise<PageProposal[]>;
 }
 
 export interface PageSaveOptions {
@@ -54,6 +57,17 @@ export interface PageRevisionEvidence {
   weight: number | null;
   calculation: Record<string, unknown>;
   proof: Record<string, unknown> | null;
+}
+
+export interface PageProposal {
+  publicationId: string;
+  revisionId: string;
+  revisionNo: number;
+  baseRevisionId: string;
+  contentHash: string;
+  createdAt: string;
+  createdBy: string | null;
+  layout: PageLayout;
 }
 
 export interface PublicPageRevision extends Omit<PageRevisionMetadata, "approvedBy"> {

@@ -10,7 +10,7 @@
 
 ## Estado real
 
-**IMPLEMENTADO end-to-end.** `packages/mcp-server/` deja de ser un stub desde el plan de 6 commits documentado en este archivo (commits `b64705b3` a `05078aa2`, mas 3 fixes posteriores). Tiene servidor base (`server.ts`), capa de permisos (`permissions/`), capa de auditoria doble (`audit/`), y **12 tools reales** registradas sobre `McpServer` del SDK oficial: `query_usage_log`, `list_page_components`, `list_themes`, `list_installed_plugins`, `create_page`, `update_page`, `insert_block`, `update_block`, `delete_block`, `apply_theme`, `grant_capability`, `revoke_permission`.
+**Implementado end-to-end para tools existentes.** `packages/mcp-server/` tiene servidor base (`server.ts`), capa de permisos (`permissions/`), auditoría local + ledger agregado (`audit/`), y 19 tools sobre `McpServer`, incluidas cuatro de contexto y tres para proponer, listar y aprobar revisiones exactas. La lectura de páginas privadas/borradores requiere `mcp:private-context:read`; publicar una revisión exacta requiere `content:publish`. El manager `/admin/pages` muestra los diffs pendientes y permite al usuario aprobar por ID de revisión exacto; la API admin correspondiente requiere sesión y rol admin.
 
 Este documento reemplaza la version anterior (que describia el paquete como "unicamente README.md y package.json, sin logica de servidor MCP real") con el estado verificado del codigo real, confirmado archivo por archivo esta sesion.
 
@@ -95,6 +95,8 @@ El servidor soporta dos transportes (elegidos por `PORTALESS_MCP_TRANSPORT`), y 
 
 `PORTALESS_MCP_TRANSPORT=http` levanta un servidor self-host con `StreamableHTTPServerTransport` stateless en `/mcp` (default `127.0.0.1:8788`, configurable con `PORTALESS_MCP_HTTP_PORT`/`PORTALESS_MCP_HTTP_HOST`). Cada petición porta el header `Authorization: Bearer <token>`; el token crudo viaja como `authInfo` hasta el handler de cada tool, que lo verifica contra `McpAgentTokenStore` **por invocación** (`createBearerTokenAgentIdentityResolver`). Solo el hash sha256 del token se persiste (tabla `mcp_agent_tokens`, patrón idéntico a `authorized_escrow_providers.api_key_hash`); el plaintext se emite **una sola vez** desde `POST /admin/api/mcp-agents` (rol admin; `GET` lista, `PATCH` revoca) y la emisión rota — un solo token activo por `agentKeyId`. Dos tokens distintos son dos identidades con permisos y auditoría separados; revocar un token corta ese acceso sin reiniciar nada.
 
+El endpoint valida el `Host`, rechaza `Origin` salvo que esté configurado en `PORTALESS_MCP_HTTP_ALLOWED_ORIGINS` y autentica cada POST antes de inicializar el transporte o exponer tools. Requiere `PORTALESS_MCP_HTTP_ALLOWED_HOSTS` al escuchar en una interfaz no loopback. Los defaults son 120 requests/min/IP, 32 solicitudes concurrentes, body de 1 MiB, timeout de headers de 10 s y timeout de request de 30 s; `PORTALESS_MCP_HTTP_REQUESTS_PER_MINUTE`, `PORTALESS_MCP_HTTP_MAX_CONCURRENT` y `PORTALESS_MCP_HTTP_MAX_BODY_BYTES` permiten ajustar los tres primeros. El límite por IP es local a cada proceso. Para persistencia, configura `DB` (D1) o `PORTALESS_SQLITE_PATH`; sin uno de ellos, el servidor falla al iniciar en lugar de usar auditoría volátil. `mcp_audit_events` es append-only y almacena identidad, tool, permiso, resultado, código de error y referencias de objeto/revisión, nunca argumentos, contenido, tokens ni mensajes de excepción.
+
 Honestidad sobre el mecanismo: es un bearer token (secreto simétrico), **no** una verificación criptográfica tipo Web Bot Auth (firma Ed25519 por request) — esa diferencia se mantiene documentada.
 
 ### Opción A (única posible sobre stdio): identidad fija por proceso
@@ -111,11 +113,12 @@ El cliente stdio local (Claude Desktop, Cursor) no envía headers por invocació
 | `PluginRegistryStore` con factory D1/SQLite propia | Conectado. `index.ts` usa `createPluginRegistryStore(env)`, no memoria fija. |
 | `UsageLedgerStore` con factory real | Conectado. `index.ts` usa `createUsageLedgerStore(env)`, no un stub get/increment. |
 | Auditoría doble (local + ledger público) | Conectada vía `recordToolInvocation()` en cada tool. |
-| Auditoría local (`AuditLogStore`) con factory D1/SQLite propia | **Pendiente** — hoy solo `InMemoryAuditLogStore`, se resetea entre procesos. |
+| Auditoría local (`AuditLogStore`) con factory D1/SQLite propia | D1/SQLite persistente, append-only, migration v8. Los registros guardan metadatos allowlist; las excepciones se reducen a códigos genéricos y no se persiste contenido. |
+| Endurecimiento HTTP MCP | Host allowlist, Origin deny-by-default, límite por IP (por proceso) y mensajes de error externos genéricos. |
 | Identidad de agente por invocación (Opción B) | **Implementada para transporte HTTP**: bearer token verificado por invocación (`mcp_agent_tokens`, emitido/revocado desde `/admin/api/mcp-agents`). Sobre stdio se mantiene Opción A (identidad fija por proceso) — limitación del SDK, no de este repo. |
 | `identity-atproto` para DIDs de agentes | El paquete ya no es stub (v0.0.9.10: resolucion de handles AT + puente de reputacion APW), pero los DIDs de agentes MCP **no** se resuelven via AT: la identidad de agente sigue siendo token/entorno — no bloquea las tools ya activas. |
 | `packages/mcp-server/src/permissions/` | Lógica real: guard central `requireCapability()`/`withCapability()`, resolvers de identidad (`agent-identity.ts`) y store de tokens de agentes (`agent-token-store.ts`, D1/SQLite/memoria). No existe lógica de cuota de tokens (nunca la hubo — la fila previa lo decía como "pendiente de verificación"). |
 
 ## Próximo paso recomendado
 
-El trabajo pendiente de mayor impacto es una factory D1/SQLite propia para `AuditLogStore` (hoy en memoria, se resetea entre procesos) — mismo patrón ya aplicado a los otros 4 stores del mcp-server. Sobre identidad, los caminos naturales de evolución son: una UI en el Centro de Permisos para emitir/rotar/revocar tokens de agentes (hoy solo endpoint admin), y reemplazar el bearer token simétrico por verificación criptográfica por request estilo Web Bot Auth (firma Ed25519), cuando el ecosistema MCP cliente permita firmar cada llamada.
+El siguiente trabajo de evolución es ampliar el catálogo de operaciones privadas autorizadas, manteniendo IDs explícitos y sin exponer lectura genérica de archivos/secretos. Sobre identidad, siguen pendientes una UI para emitir/rotar/revocar tokens y la firma criptográfica por request estilo Web Bot Auth.

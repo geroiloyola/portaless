@@ -32,7 +32,7 @@ licencias, ni Obligations legales, ni garantias.
 | | Sandbox | Aislamiento real (`isolated-vm` + adaptadores edge), manifiesto, registro, capability bridge | `packages/plugin-sandbox/` |
 | | Autenticacion | Login, MFA/TOTP, recuperacion, OAuth, roles | `packages/auth/`, `functions/admin/login*.js` |
 | | Publicacion | Engine de despliegue (GitHub Pages), OAuth del sitio, cifrado de credenciales | `packages/deploy-engine/`, `functions/admin/api/oauth/github/` |
-| | **MCP server** | La superficie que los agentes consume para operar un sitio: 12 tools, stdio y HTTP, tokens por agente | `packages/mcp-server/` |
+| | **MCP server** | La superficie que los agentes consume para operar un sitio: 19 tools, stdio y HTTP, tokens por agente | `packages/mcp-server/` |
 | **Modulos** | Posts | Coleccion `.md` canonica, RSS, orden por fecha | `src/content/posts/`, `src/lib/rss.ts` |
 | | Recents | Dashboard unificado de actividad reciente | `packages/dashboard/` |
 | | Videos | Hub audiovisual: el elemento `Video` ya existe (embed); el canal, el collector y el ranking, no | `packages/atomic-elements/src/elements/registry.ts:244` |

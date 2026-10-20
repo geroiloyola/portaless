@@ -23,3 +23,17 @@ export const PLUGIN_EMAIL_QUOTA_DDL =
   "day TEXT NOT NULL, " +
   "count INTEGER NOT NULL DEFAULT 0, " +
   "PRIMARY KEY (plugin_id, day))";
+
+export const MCP_AUDIT_TABLE_DDL =
+  "CREATE TABLE IF NOT EXISTS mcp_audit_events (" +
+  "event_id TEXT PRIMARY KEY, timestamp TEXT NOT NULL, agent_key_id TEXT NOT NULL, " +
+  "tool_name TEXT NOT NULL, capability_id TEXT, outcome TEXT NOT NULL, error_code TEXT, " +
+  "subject_id TEXT, revision_id TEXT)";
+export const MCP_AUDIT_INDEX_DDL =
+  "CREATE INDEX IF NOT EXISTS idx_mcp_audit_events_timestamp ON mcp_audit_events(timestamp)";
+export const MCP_AUDIT_APPEND_ONLY_DDL =
+  "CREATE TRIGGER IF NOT EXISTS mcp_audit_events_no_update BEFORE UPDATE ON mcp_audit_events " +
+  "BEGIN SELECT RAISE(ABORT, 'mcp audit events are append-only'); END";
+export const MCP_AUDIT_NO_DELETE_DDL =
+  "CREATE TRIGGER IF NOT EXISTS mcp_audit_events_no_delete BEFORE DELETE ON mcp_audit_events " +
+  "BEGIN SELECT RAISE(ABORT, 'mcp audit events are append-only'); END";

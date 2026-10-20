@@ -35,7 +35,8 @@ import { coreCatalog } from "../../atomic-elements/src/elements/element-pack.js"
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
 import { createPluginRegistryStore } from "../../plugin-sandbox/src/registry/store-factory.js";
 import { createUsageLedgerStore } from "../../trust-layer/src/ledger/store-factory.js";
-import { InMemoryAuditLogStore } from "./audit/in-memory-audit-log-store.js";
+import { createSiteSkinStore } from "../../dashboard/src/skin-engine/site-skin-store.js";
+import { createMcpAuditLogStore } from "./audit/persistent-audit-log-store.js";
 import { createEnvAgentIdentityResolver } from "./permissions/agent-identity.js";
 
 function isHttpTransport(): boolean {
@@ -68,12 +69,13 @@ async function main(): Promise<void> {
   // [pluginId]/vote.js. Sin D1 ni SQLite configurado cae a memoria
   // (fallback interno de la factory) con seed de plugins conocidos.
   const pluginRegistry = await createPluginRegistryStore(env);
-  const auditLog = new InMemoryAuditLogStore();
+  const auditLog = await createMcpAuditLogStore(env);
   // UsageLedgerStore usa la factory real de trust-layer (D1 -> SQLite ->
   // memoria): el uso de las 7 tools MCP queda en el mismo ledger publico
   // que los requests HTTP normales via functions/_middleware.js
   // (GET /.well-known/portaless-usage-log.json, desde v0.0.9.3).
   const usageLedger = await createUsageLedgerStore(env);
+  const siteSkin = await createSiteSkinStore(env);
 
   // Catalogo de elementos (core ∪ element packs) resuelto UNA vez y compartido
   // por todas las tools -- es lo que hace visible un pack instalado en
@@ -101,12 +103,24 @@ async function main(): Promise<void> {
     themes = [...BUILTIN_THEMES];
   }
 
-  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger, elementCatalog, themes };
+  const deps: McpStoreDeps = { pageStore, permissionStore, pluginRegistry, auditLog, usageLedger, elementCatalog, themes, siteSkin };
 
   if (httpTransport) {
     const port = Number(process.env.PORTALESS_MCP_HTTP_PORT ?? 8788);
     const host = process.env.PORTALESS_MCP_HTTP_HOST ?? "127.0.0.1";
-    const running = await startMcpHttpServer({ ...deps, env, port, host });
+    const allowedHosts = process.env.PORTALESS_MCP_HTTP_ALLOWED_HOSTS?.split(",").map((value) => value.trim()).filter(Boolean);
+    const allowedOrigins = process.env.PORTALESS_MCP_HTTP_ALLOWED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean);
+    const running = await startMcpHttpServer({
+      ...deps,
+      env,
+      port,
+      host,
+      allowedHosts,
+      allowedOrigins,
+      requestsPerMinute: Number(process.env.PORTALESS_MCP_HTTP_REQUESTS_PER_MINUTE ?? 120),
+      maxConcurrentRequests: Number(process.env.PORTALESS_MCP_HTTP_MAX_CONCURRENT ?? 32),
+      maxRequestBodyBytes: Number(process.env.PORTALESS_MCP_HTTP_MAX_BODY_BYTES ?? 1024 * 1024),
+    });
     console.error(
       `[portaless-mcp-server] HTTP stateless escuchando en ${running.url} ` +
         `(identidad por invocacion via Authorization: Bearer -- tokens en /admin/api/mcp-agents)`

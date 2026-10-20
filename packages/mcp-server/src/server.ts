@@ -23,6 +23,7 @@ import type { PermissionStore } from "../../permissions/src/permission-store";
 import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
 import type { UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
+import type { SiteSkinStore } from "../../dashboard/src/skin-engine/site-skin-store";
 import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";
 import { registerUpdatePageTool } from "./tools/update-page";
@@ -36,6 +37,8 @@ import { registerListThemesTool } from "./tools/list-themes";
 import { registerApplyThemeTool } from "./tools/apply-theme";
 import { registerListInstalledPluginsTool } from "./tools/list-installed-plugins";
 import { registerQueryUsageLogTool } from "./tools/query-usage-log";
+import { registerSiteContextTools } from "./tools/site-context";
+import { registerRevisionProposalTools } from "./tools/revision-proposals";
 
 export const SERVER_NAME = "portaless-mcp-server";
 export const SERVER_VERSION = "0.0.1";
@@ -70,6 +73,7 @@ export interface CreatePortalessMcpServerDeps {
    * apply_theme para membership. Opcional: sin el, solo los builtins.
    */
   themes?: ThemePack[];
+  siteSkin?: SiteSkinStore;
 }
 
 /** Solo stores (sin resolver) -- lo que el servidor HTTP comparte entre peticiones. */
@@ -95,6 +99,23 @@ export function createPortalessMcpServer(deps: CreatePortalessMcpServerDeps): Mc
     auditLog: deps.auditLog,
     usageLedger: deps.usageLedger,
     resolveAgent: deps.resolveAgent,
+  });
+  registerSiteContextTools(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+    siteSkin: deps.siteSkin,
+    themes: deps.themes,
+  });
+  registerRevisionProposalTools(server, {
+    pageStore: deps.pageStore,
+    permissionStore: deps.permissionStore,
+    auditLog: deps.auditLog,
+    usageLedger: deps.usageLedger,
+    resolveAgent: deps.resolveAgent,
+    elementCatalog: deps.elementCatalog,
   });
 
   // Tools de contenido (requieren content:write / content:read, ver

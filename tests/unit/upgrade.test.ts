@@ -39,7 +39,7 @@ describe("upgrade: snapshot de un tag anterior -> migrar a HEAD", () => {
       cwd: root,
       encoding: "utf8",
     });
-    expect(out).toContain("v1 -> v6");
+    expect(out).toContain("v1 -> v8");
     expect(out).toContain("[upgrade] backup:");
     expect(out).toContain("[upgrade] OK");
   });

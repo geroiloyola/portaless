@@ -34,6 +34,13 @@ export interface StartMcpHttpServerOptions extends McpStoreDeps {
   /** 0 (default) = puerto efimero asignado por el SO; util en tests. */
   port?: number;
   host?: string;
+  /** Hostnames accepted in the Host header. Required for non-loopback binds. */
+  allowedHosts?: string[];
+  /** Exact browser Origins permitted to call the endpoint; empty by default. */
+  allowedOrigins?: string[];
+  requestsPerMinute?: number;
+  maxConcurrentRequests?: number;
+  maxRequestBodyBytes?: number;
 }
 
 export interface RunningMcpHttpServer {
@@ -47,14 +54,42 @@ export interface RunningMcpHttpServer {
 export async function startMcpHttpServer(
   options: StartMcpHttpServerOptions
 ): Promise<RunningMcpHttpServer> {
-  const { env, port = 0, host = "127.0.0.1", ...stores } = options;
+  const {
+    env, port = 0, host = "127.0.0.1", allowedHosts, allowedOrigins = [],
+    requestsPerMinute = 120, maxConcurrentRequests = 32, maxRequestBodyBytes = 1024 * 1024,
+    ...stores
+  } = options;
+  const loopback = host === "127.0.0.1" || host === "::1" || host === "localhost";
+  const hostAllowlist = (allowedHosts ?? (loopback ? [host, "localhost", "127.0.0.1", "::1"] : [])).map(normalizeHostname);
+  if (hostAllowlist.length === 0) throw new Error("MCP HTTP on a non-loopback interface requires an explicit allowedHosts allowlist.");
+  const originAllowlist = new Set(allowedOrigins.map((origin) => new URL(origin).origin));
+  const rateLimit = new IpRateLimiter(requestsPerMinute);
+  if (!Number.isInteger(maxConcurrentRequests) || maxConcurrentRequests < 1) throw new Error("maxConcurrentRequests must be a positive integer.");
+  if (!Number.isInteger(maxRequestBodyBytes) || maxRequestBodyBytes < 1) throw new Error("maxRequestBodyBytes must be a positive integer.");
 
   const tokenStore = await createMcpAgentTokenStore(env);
   const resolveAgent = createBearerTokenAgentIdentityResolver(tokenStore);
+  let activeRequests = 0;
 
   const httpServer = createHttpServer((req, res) => {
-    void handleRequest(req, res, stores, resolveAgent);
+    if (activeRequests >= maxConcurrentRequests) {
+      res.writeHead(503, { "content-type": "application/json", "retry-after": "1" });
+      res.end(JSON.stringify({ error: "server_busy" }));
+      return;
+    }
+    activeRequests += 1;
+    void handleRequest(req, res, stores, resolveAgent, tokenStore, hostAllowlist, originAllowlist, rateLimit, maxRequestBodyBytes)
+      .catch(() => {
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "internal_error" }));
+        } else if (!res.writableEnded) res.end();
+      })
+      .finally(() => { activeRequests -= 1; });
   });
+  httpServer.headersTimeout = 10_000;
+  httpServer.requestTimeout = 30_000;
+  httpServer.maxHeadersCount = 50;
 
   await new Promise<void>((ok, fail) => {
     httpServer.once("error", fail);
@@ -81,8 +116,30 @@ async function handleRequest(
   req: IncomingMessage,
   res: ServerResponse,
   stores: McpStoreDeps,
-  resolveAgent: Parameters<typeof createPortalessMcpServer>[0]["resolveAgent"]
+  resolveAgent: Parameters<typeof createPortalessMcpServer>[0]["resolveAgent"],
+  tokenStore: Awaited<ReturnType<typeof createMcpAgentTokenStore>>,
+  allowedHosts: string[],
+  allowedOrigins: Set<string>,
+  rateLimit: IpRateLimiter,
+  maxRequestBodyBytes: number,
 ): Promise<void> {
+  const rawHost = req.headers.host;
+  if (!rawHost || !allowedHosts.includes(normalizeHostname(rawHost))) {
+    res.writeHead(421, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "misdirected_request" }));
+    return;
+  }
+  const origin = req.headers.origin;
+  if (origin && (!allowedOrigins.has(origin) || origin === "null")) {
+    res.writeHead(403, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "origin_not_allowed" }));
+    return;
+  }
+  if (!rateLimit.allow(req.socket.remoteAddress ?? "unknown")) {
+    res.writeHead(429, { "content-type": "application/json", "retry-after": "60" });
+    res.end(JSON.stringify({ error: "rate_limited" }));
+    return;
+  }
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   if (url.pathname !== MCP_HTTP_PATH) {
     res.writeHead(404, { "content-type": "application/json" });
@@ -97,40 +154,79 @@ async function handleRequest(
     return;
   }
 
+  const contentLength = Number(req.headers["content-length"] ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > maxRequestBodyBytes) {
+    res.writeHead(413, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "request_too_large" }));
+    req.resume();
+    return;
+  }
+
   // Adjunta el bearer token crudo como req.auth: el transporte lo propaga
   // como extra.authInfo a cada tool, y el resolver lo VERIFICA por
-  // invocacion (unico punto de verdad -- aqui NO se verifica, para que la
-  // capa de herramientas sea la misma en tests directos y en produccion).
-  // Sin header: req.auth queda ausente y el resolver lanza
-  // AgentIdentityError(missing_token).
+  // invocacion. El endpoint autentica todas las peticiones POST, incluso
+  // initialize y tools/list; el resolver vuelve a verificar cada tool call.
   const rawBearer = extractBearerToken(req.headers.authorization);
-  if (rawBearer) {
-    (req as unknown as { auth?: { token: string; clientId: string; scopes: string[] } }).auth = {
-      token: rawBearer,
-      clientId: "",
-      scopes: [],
-    };
+  if (!rawBearer || !(await tokenStore.verify(rawBearer))) {
+    res.writeHead(401, { "content-type": "application/json", "www-authenticate": "Bearer" });
+    res.end(JSON.stringify({ error: "unauthorized" }));
+    return;
   }
+  (req as unknown as { auth?: { token: string; clientId: string; scopes: string[] } }).auth = {
+    token: rawBearer,
+    clientId: "",
+    scopes: [],
+  };
 
   // Server + transport nuevos por peticion (regla stateless del SDK).
   try {
     const server: McpServer = createPortalessMcpServer({ ...stores, resolveAgent });
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, maxRequestBodySize: maxRequestBodyBytes });
     await server.connect(transport);
     await transport.handleRequest(req, res);
     res.on("close", () => {
       transport.close().catch(() => {});
       server.close().catch(() => {});
     });
-  } catch (err) {
+  } catch {
     // Un fallo del transporte no debe quedar como 500 vacio: se loguea
     // antes de responder, para que el operador vea la causa real.
-    console.error("[portaless-mcp-server] Error manejando POST /mcp:", err);
+    console.error("[portaless-mcp-server] MCP HTTP request failed.");
     if (!res.headersSent) {
       res.writeHead(500, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "internal_error", message: String(err) }));
+      res.end(JSON.stringify({ error: "internal_error" }));
     } else if (!res.writableEnded) {
       res.end();
     }
+  }
+}
+
+function normalizeHostname(raw: string): string {
+  try {
+    const parsed = new URL(`http://${raw}`);
+    if (parsed.username || parsed.password || parsed.pathname !== "/") return "";
+    return parsed.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+class IpRateLimiter {
+  private readonly windows = new Map<string, { startedAt: number; count: number }>();
+  constructor(private readonly limit: number, private readonly windowMs = 60_000) {
+    if (!Number.isInteger(limit) || limit < 1) throw new Error("requestsPerMinute must be a positive integer.");
+  }
+  allow(ip: string): boolean {
+    const now = Date.now();
+    let window = this.windows.get(ip);
+    if (!window || now - window.startedAt >= this.windowMs) {
+      window = { startedAt: now, count: 0 };
+      this.windows.set(ip, window);
+    }
+    window.count += 1;
+    if (this.windows.size > 4096) {
+      for (const [key, value] of this.windows) if (now - value.startedAt >= this.windowMs) this.windows.delete(key);
+    }
+    return window.count <= this.limit;
   }
 }

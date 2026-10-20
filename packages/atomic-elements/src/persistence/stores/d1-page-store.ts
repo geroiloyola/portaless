@@ -7,7 +7,7 @@
 
 import type { PageLayout } from "../../types";
 import type { ResolvedCatalog } from "../../elements/element-pack";
-import type { PageRevisionEvidence, PageRevisionMetadata, PageSaveOptions, PageStore, PublicPageRevision } from "../page-store";
+import type { PageProposal, PageRevisionEvidence, PageRevisionMetadata, PageSaveOptions, PageStore, PublicPageRevision } from "../page-store";
 import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, pageContentHash, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
@@ -73,7 +73,10 @@ export class D1PageStore implements PageStore {
             WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
             .bind(metadata.revisionId, metadata.publicationId, layout.slug, metadata.revisionNo, metadata.parentRevisionId,
               metadata.contentHash, serialized, metadata.createdAt, options.actor ?? null, metadata.approvedAt,
-              metadata.approvedBy, layout.slug, metadata.revisionId),
+               metadata.approvedBy, layout.slug, metadata.revisionId),
+          ...(metadata.approvedAt ? [this.db.prepare(`INSERT INTO page_revision_approvals (revision_id, approved_at, approved_by)
+            SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
+            .bind(metadata.revisionId, metadata.approvedAt, metadata.approvedBy, layout.slug, metadata.revisionId)] : []),
         ])
       : await this.db.batch([
           this.db.prepare(`INSERT INTO pages (slug, layout_json, updated_at, updated_by, publication_id, revision_id, revision_no, content_hash)
@@ -86,7 +89,10 @@ export class D1PageStore implements PageStore {
             WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
             .bind(metadata.revisionId, metadata.publicationId, layout.slug, metadata.revisionNo, metadata.parentRevisionId,
               metadata.contentHash, serialized, metadata.createdAt, options.actor ?? null, metadata.approvedAt,
-              metadata.approvedBy, layout.slug, metadata.revisionId),
+               metadata.approvedBy, layout.slug, metadata.revisionId),
+          ...(metadata.approvedAt ? [this.db.prepare(`INSERT INTO page_revision_approvals (revision_id, approved_at, approved_by)
+            SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
+            .bind(metadata.revisionId, metadata.approvedAt, metadata.approvedBy, layout.slug, metadata.revisionId)] : []),
         ]);
     if (!results?.[0]?.meta?.changes) throw new Error("revision_conflict");
     return metadata;
@@ -108,8 +114,9 @@ export class D1PageStore implements PageStore {
   }
 
   async listPublicRevisionsByPublicationId(publicationId: string): Promise<PublicPageRevision[]> {
-    const { results } = await this.db.prepare(`SELECT * FROM page_revisions
-      WHERE publication_id = ? AND approved_at IS NOT NULL ORDER BY revision_no DESC`).bind(publicationId).all<any>();
+    const { results } = await this.db.prepare(`SELECT r.*, a.approved_at AS effective_approved_at, a.approved_by AS effective_approved_by
+      FROM page_revisions r JOIN page_revision_approvals a ON a.revision_id=r.revision_id
+      WHERE r.publication_id = ? ORDER BY r.revision_no DESC`).bind(publicationId).all<any>();
     return this.publicRevisionRows(results ?? []);
   }
 
@@ -136,6 +143,9 @@ export class D1PageStore implements PageStore {
           .bind(revision.revisionId, history.publicationId, history.slug, revision.revisionNo,
             revision.parentRevisionId, revision.contentHash, JSON.stringify(revision.layout),
             revision.createdAt, revision.publishedAt),
+        this.db.prepare(`INSERT INTO page_revision_approvals (revision_id, approved_at, approved_by)
+          SELECT ?, ?, NULL WHERE EXISTS (SELECT 1 FROM page_revisions WHERE revision_id=?)`)
+          .bind(revision.revisionId, revision.publishedAt, revision.revisionId),
         ...revision.reputation.observations.map((evidence) => this.evidenceInsertStatement(evidence)),
       ]),
     ];
@@ -145,16 +155,94 @@ export class D1PageStore implements PageStore {
 
   async recordPublicRevisionEvidence(evidence: PageRevisionEvidence): Promise<void> {
     validateRevisionEvidence(evidence);
-    const revision = await this.db.prepare("SELECT approved_at FROM page_revisions WHERE revision_id=?").bind(evidence.revisionId).first<{ approved_at: string | null }>();
+    const revision = await this.db.prepare("SELECT approved_at FROM page_revision_approvals WHERE revision_id=?").bind(evidence.revisionId).first<{ approved_at: string | null }>();
     if (!revision?.approved_at) throw new Error("revision_not_public");
     await this.evidenceInsertStatement(evidence).run();
+  }
+
+  async saveProposal(layout: PageLayout, expectedBaseRevisionId: string, actor: string): Promise<PageRevisionMetadata> {
+    const validation = validatePageLayout(layout, this.catalog);
+    if (!validation.valid) throw new Error("invalid_page_layout:" + validation.errors.join(";"));
+    const current = await this.load(layout.slug);
+    if (!current || !isPubliclyPublishable(current) || current.revisionId !== expectedBaseRevisionId) throw new Error("revision_conflict");
+    const pending = await this.db.prepare(`SELECT 1 AS hit FROM page_revisions
+      WHERE publication_id=? AND parent_revision_id=? AND NOT EXISTS
+        (SELECT 1 FROM page_revision_approvals a WHERE a.revision_id=page_revisions.revision_id) LIMIT 1`)
+      .bind(current.publicationId, expectedBaseRevisionId).first();
+    if (pending) throw new Error("revision_proposal_already_exists");
+    const built = await buildPageRevision({ ...layout, status: "draft" }, current, actor);
+    const metadata = { ...built.metadata, approvedAt: null, approvedBy: null };
+    const result = await this.db.prepare(`INSERT INTO page_revisions
+      (revision_id, publication_id, slug, revision_no, parent_revision_id, content_hash, layout_json, created_at, created_by, approved_at, approved_by)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL
+      WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=? AND publication_id=?)
+        AND NOT EXISTS (SELECT 1 FROM page_revisions r LEFT JOIN page_revision_approvals a ON a.revision_id=r.revision_id
+          WHERE r.publication_id=? AND r.parent_revision_id=? AND a.revision_id IS NULL)`)
+      .bind(metadata.revisionId, metadata.publicationId, layout.slug, metadata.revisionNo, expectedBaseRevisionId,
+        metadata.contentHash, JSON.stringify(built.layout), metadata.createdAt, actor, layout.slug, expectedBaseRevisionId,
+        metadata.publicationId, metadata.publicationId, expectedBaseRevisionId).run();
+    if (!(result.meta?.changes ?? 0)) throw new Error("revision_conflict");
+    return metadata;
+  }
+
+  async approveRevision(slug: string, revisionId: string, actor: string): Promise<PageRevisionMetadata> {
+    const revision = await this.db.prepare("SELECT * FROM page_revisions WHERE slug=? AND revision_id=?")
+      .bind(slug, revisionId).first<any>();
+    if (!revision) throw new Error("revision_not_found");
+    const alreadyApproved = await this.db.prepare("SELECT 1 AS hit FROM page_revision_approvals WHERE revision_id=?").bind(revisionId).first();
+    if (alreadyApproved) throw new Error("revision_already_approved");
+    const stored = JSON.parse(revision.layout_json) as PageLayout;
+    if (stored.status !== "draft") throw new Error("revision_not_approvable");
+    const validation = validatePageLayout(stored, this.catalog);
+    if (!validation.valid) throw new Error("invalid_page_layout:" + validation.errors.join(";"));
+    const current = await this.load(slug);
+    const isCurrentDraft = current?.revisionId === revisionId;
+    const isBasedOnCurrent = Boolean(revision.parent_revision_id && current?.revisionId === revision.parent_revision_id);
+    if (!isCurrentDraft && !isBasedOnCurrent) throw new Error("revision_conflict");
+    const approvedAt = new Date().toISOString();
+    const publishedLayout: PageLayout = { ...stored, status: "published" };
+    const results = await this.db.batch([
+      this.db.prepare(`UPDATE pages SET layout_json=?, updated_at=?, updated_by=?, publication_id=?, revision_id=?, revision_no=?, content_hash=?
+        WHERE slug=? AND revision_id=? AND EXISTS (SELECT 1 FROM page_revisions r
+          WHERE r.revision_id=? AND r.parent_revision_id IS ? AND NOT EXISTS
+            (SELECT 1 FROM page_revision_approvals a WHERE a.revision_id=r.revision_id))`)
+        .bind(JSON.stringify(publishedLayout), approvedAt, actor, revision.publication_id, revisionId,
+          revision.revision_no, revision.content_hash, slug, current?.revisionId ?? null, revisionId,
+          revision.parent_revision_id ?? null),
+      this.db.prepare(`INSERT INTO page_revision_approvals (revision_id, approved_at, approved_by)
+        SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
+        .bind(revisionId, approvedAt, actor, slug, revisionId),
+    ]);
+    if (!(results?.[0]?.meta?.changes ?? 0)) throw new Error("revision_conflict");
+    return {
+      publicationId: revision.publication_id,
+      revisionId,
+      revisionNo: Number(revision.revision_no),
+      contentHash: revision.content_hash,
+      parentRevisionId: revision.parent_revision_id,
+      createdAt: revision.created_at,
+      approvedAt,
+      approvedBy: actor,
+    };
+  }
+
+  async listPendingRevisions(slug: string): Promise<PageProposal[]> {
+    const { results } = await this.db.prepare(`SELECT r.* FROM page_revisions r
+      LEFT JOIN page_revision_approvals a ON a.revision_id=r.revision_id
+      WHERE r.slug=? AND r.parent_revision_id IS NOT NULL AND a.revision_id IS NULL ORDER BY r.revision_no DESC`).bind(slug).all<any>();
+    return (results ?? []).map((row: any) => ({
+      publicationId: row.publication_id, revisionId: row.revision_id, revisionNo: Number(row.revision_no),
+      baseRevisionId: row.parent_revision_id ?? "", contentHash: row.content_hash,
+      createdAt: row.created_at, createdBy: row.created_by, layout: JSON.parse(row.layout_json) as PageLayout,
+    }));
   }
 
   private async publicRevisionRows(rows: any[]): Promise<PublicPageRevision[]> {
     if (rows.length === 0) return [];
     const { results } = await this.db.prepare(`SELECT e.* FROM page_revision_evidence e
       JOIN page_revisions r ON r.revision_id=e.revision_id
-      WHERE r.publication_id=? AND r.approved_at IS NOT NULL ORDER BY e.observed_at, e.evidence_id`)
+      JOIN page_revision_approvals a ON a.revision_id=r.revision_id
+      WHERE r.publication_id=? ORDER BY e.observed_at, e.evidence_id`)
       .bind(rows[0].publication_id).all<any>();
     const byRevision = new Map<string, PageRevisionEvidence[]>();
     for (const evidence of this.mapEvidenceRows(results ?? [])) {
@@ -173,10 +261,10 @@ export class D1PageStore implements PageStore {
         // to a private or draft revision in the canonical database.
         parentRevisionId: rows[index + 1]?.revision_id ?? null,
         createdAt: row.created_at,
-        approvedAt: row.approved_at,
+        approvedAt: row.effective_approved_at ?? row.approved_at,
         slug: row.slug,
         title: layout.title,
-        layout,
+        layout: { ...layout, status: "published" },
         evidence: byRevision.get(row.revision_id) ?? [],
       };
     });
@@ -228,6 +316,9 @@ export class D1PageStore implements PageStore {
       this.db.prepare(`UPDATE pages SET layout_json=?, publication_id=?, revision_id=?, revision_no=?, content_hash=?
         WHERE slug=? AND revision_id IS NULL`)
         .bind(serialized, publicationId, revisionId, revisionNo, contentHash, slug),
+      ...(approvedAt ? [this.db.prepare(`INSERT INTO page_revision_approvals (revision_id, approved_at, approved_by)
+        SELECT ?, ?, 'legacy_publication' WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND revision_id=?)`)
+        .bind(revisionId, approvedAt, slug, revisionId)] : []),
     ]);
   }
 }

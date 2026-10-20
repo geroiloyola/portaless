@@ -10,6 +10,7 @@
 // error (sin bearer, token falso, ruta/metodo incorrectos).
 
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { request as httpRequest } from "node:http";
 import { startMcpHttpServer, MCP_HTTP_PATH } from "../../packages/mcp-server/src/http";
 import type { RunningMcpHttpServer } from "../../packages/mcp-server/src/http";
 import {
@@ -147,26 +148,25 @@ describe("startMcpHttpServer -- transporte stateless Opcion B", () => {
     expect(byId["ed25519:http-b"]).toBe(1);
   });
 
-  it("sin header Authorization: tool error missing_token con instruccion de uso", async () => {
+  it("sin header Authorization: rechaza la petición MCP completa", async () => {
     const { status, json } = await mcpPost(running.url, {
       jsonrpc: "2.0",
       id: 4,
       method: "tools/call",
       params: { name: "query_usage_log", arguments: {} },
     });
-    expect(status).toBe(200);
-    expect(json?.result?.isError).toBe(true);
-    expect(toolText(json)).toContain("Authorization: Bearer");
+    expect(status).toBe(401);
+    expect(json).toEqual({ error: "unauthorized" });
   });
 
-  it("con token desconocido: tool error invalid_token", async () => {
-    const { json } = await mcpPost(
+  it("con token desconocido: rechaza la petición antes del transporte", async () => {
+    const { status, json } = await mcpPost(
       running.url,
       { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "query_usage_log", arguments: {} } },
       { authorization: "Bearer pless_mcp_desconocido" }
     );
-    expect(json?.result?.isError).toBe(true);
-    expect(toolText(json)).toContain("no es valido");
+    expect(status).toBe(401);
+    expect(json).toEqual({ error: "unauthorized" });
   });
 
   it("ruta inexistente responde 404 con indicacion del path correcto", async () => {
@@ -179,5 +179,40 @@ describe("startMcpHttpServer -- transporte stateless Opcion B", () => {
     const res = await fetch(running.url);
     expect(res.status).toBe(405);
     expect(res.headers.get("allow")).toBe("POST");
+  });
+
+  it("rechaza Host no autorizado y Origenes no permitidos antes del transporte MCP", async () => {
+    const wrongHost = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+      const req = httpRequest({ hostname: "127.0.0.1", port: running.port, path: MCP_HTTP_PATH, headers: { host: "attacker.example" } }, (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => body += chunk);
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body }));
+      });
+      req.on("error", reject);
+      req.end();
+    });
+    expect(wrongHost.status).toBe(421);
+    expect(JSON.parse(wrongHost.body)).toEqual({ error: "misdirected_request" });
+
+    const wrongOrigin = await fetch(running.url, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify(INIT),
+    });
+    expect(wrongOrigin.status).toBe(403);
+    expect(await wrongOrigin.json()).toEqual({ error: "origin_not_allowed" });
+  });
+
+  it("limita el tamaño del body y revoca el bearer para peticiones posteriores", async () => {
+    const oversized = await mcpPost(running.url, { ...INIT, padding: "x".repeat(1024 * 1024) }, { authorization: `Bearer ${tokenA}` });
+    expect(oversized.status).toBe(413);
+    expect(oversized.json).toEqual({ error: "request_too_large" });
+
+    const tokenStore = await createMcpAgentTokenStore({});
+    await tokenStore.revoke("ed25519:http-b");
+    const revoked = await mcpPost(running.url, INIT, { authorization: `Bearer ${tokenB}` });
+    expect(revoked.status).toBe(401);
+    expect(revoked.json).toEqual({ error: "unauthorized" });
   });
 });

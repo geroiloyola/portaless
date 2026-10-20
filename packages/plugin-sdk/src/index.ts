@@ -49,10 +49,12 @@ export type CapabilityId =
   | "agent:identify"
   | "site:admin"
   | "billing:pay-per-crawl"
-  | "trust:read-governance-bypass";
+  | "trust:read-governance-bypass"
+  | "content:publish"
+  | "mcp:private-context:read";
 
-/** Capabilities a plugin manifest may request — excludes the two reserved ids. */
-export type PluginCapabilityId = Exclude<CapabilityId, "billing:pay-per-crawl" | "trust:read-governance-bypass">;
+/** Capabilities a plugin manifest may request — excludes reserved and MCP-only ids. */
+export type PluginCapabilityId = Exclude<CapabilityId, "billing:pay-per-crawl" | "trust:read-governance-bypass" | "content:publish" | "mcp:private-context:read">;
 
 /**
  * The capability ids a plugin may declare. `billing:pay-per-crawl` (settlement
@@ -187,6 +189,18 @@ export const capabilityRegistry: Record<CapabilityId, CapabilityDefinition> = {
     description: "Permite a un lector con DID verificado leer aunque no cumpla los umbrales de reputación de la política de lectura. No exime de Web Bot Auth ni de identidad APW.",
     risk: "alto",
   },
+  "content:publish": {
+    id: "content:publish", category: "Contenido",
+    label: "Publicar una revisión aprobada",
+    description: "Permite publicar una revisión exacta después de la aprobación de un administrador.",
+    risk: "alto",
+  },
+  "mcp:private-context:read": {
+    id: "mcp:private-context:read", category: "Contenido",
+    label: "Leer contexto privado por MCP",
+    description: "Permite al agente leer documentos privados identificados explícitamente y autorizados.",
+    risk: "alto",
+  },
 };
 
 export function listCapabilitiesByCategory(): Record<string, CapabilityDefinition[]> {
@@ -312,6 +326,10 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
     }
     if (req.id === "trust:read-governance-bypass") {
       errors.push('"trust:read-governance-bypass" no es una capacidad de plugins: se concede por DID de lector en el Centro de Permisos.');
+      continue;
+    }
+    if (req.id === "content:publish" || req.id === "mcp:private-context:read") {
+      errors.push(`"${req.id}" es una capacidad exclusiva de MCP y no puede solicitarse en manifiestos de plugins.`);
       continue;
     }
     if (req.id === "network:fetch" && (!req.allowedHosts || req.allowedHosts.length === 0)) {

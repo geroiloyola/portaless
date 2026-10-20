@@ -77,9 +77,9 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
     expect(sdk.RISK_LABELS).toEqual(CORE_RISK_LABELS);
   });
 
-  it("PLUGIN_CAPABILITY_IDS es el catalogo menos las dos capacidades reservadas", () => {
+  it("PLUGIN_CAPABILITY_IDS excluye las capacidades reservadas/MCP", () => {
     const expected = Object.keys(coreRegistry)
-      .filter((id) => id !== "billing:pay-per-crawl" && id !== "trust:read-governance-bypass")
+      .filter((id) => !["billing:pay-per-crawl", "trust:read-governance-bypass", "content:publish", "mcp:private-context:read"].includes(id))
       .sort();
     expect([...sdk.PLUGIN_CAPABILITY_IDS].sort()).toEqual(expected);
   });

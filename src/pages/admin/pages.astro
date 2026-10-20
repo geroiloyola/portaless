@@ -48,6 +48,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <tbody id="pm-tbody"></tbody>
   </table>
 
+  <section id="pm-proposals" class="pm-proposals" style="display:none;" aria-labelledby="pm-proposals-title">
+    <h2 id="pm-proposals-title">Propuestas de publicación</h2>
+    <div id="pm-proposal-list"></div>
+  </section>
+
   <style>
     .pm-page-header { margin-bottom: 24px; }
     .pm-page-title { margin: 0 0 6px; font-size: 1.4rem; }
@@ -99,6 +104,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       color: var(--portaless-accent); padding: 4px 10px; border-radius: var(--radius-button, 8px);
       cursor: pointer; font-size: 0.8rem; margin-right: 10px;
     }
+    .pm-proposals { margin-top: 2rem; max-width: 900px; }
+    .pm-proposal { border: 1px solid var(--portaless-border); border-radius: 12px; padding: 16px; margin: 12px 0; }
+    .pm-proposal h3 { margin: 0 0 8px; font-size: 1rem; }
+    .pm-proposal pre { max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 8px; background: var(--panel-bg); }
+    .pm-proposal-stale { color: var(--danger-fg, #B3372C); font-weight: 700; }
+    .pm-approve-btn { border: 0; background: var(--portaless-accent); color: #261C15; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .pm-approve-btn:disabled { opacity: .55; cursor: not-allowed; }
   </style>
 </BaseLayout>
 
@@ -109,6 +121,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const emptyEl = document.getElementById("pm-empty")!;
   const tableEl = document.getElementById("pm-table")!;
   const tbodyEl = document.getElementById("pm-tbody")!;
+  const proposalsSection = document.getElementById("pm-proposals")!;
+  const proposalList = document.getElementById("pm-proposal-list")!;
 
   const msgEl = document.createElement("p");
   msgEl.className = "pm-msg";
@@ -120,6 +134,60 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     msgEl.className = "pm-msg pm-err";
     msgEl.style.display = "block";
     window.setTimeout(() => { msgEl.style.display = "none"; }, 5000);
+  }
+
+  async function loadProposals(slug: string) {
+    const res = await fetch(`/admin/api/page-proposals?slug=${encodeURIComponent(slug)}`, { credentials: "same-origin" });
+    if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    for (const proposal of payload.proposals ?? []) {
+      proposalsSection.style.display = "";
+      const card = document.createElement("article");
+      card.className = "pm-proposal";
+      const heading = document.createElement("h3");
+      heading.textContent = `${slug} · revisión ${proposal.revisionNo}`;
+      card.appendChild(heading);
+      const meta = document.createElement("p");
+      meta.textContent = `Base ${proposal.baseRevisionId} · SHA-256 ${proposal.contentHash}`;
+      card.appendChild(meta);
+      if (proposal.stale) {
+        const stale = document.createElement("p");
+        stale.className = "pm-proposal-stale";
+        stale.textContent = "La página cambió desde esta propuesta. No se puede aprobar; crea una propuesta nueva.";
+        card.appendChild(stale);
+      }
+      const diff = document.createElement("pre");
+      diff.textContent = proposal.diff
+        ? JSON.stringify({ changes: proposal.diff, truncated: proposal.diffTruncated }, null, 2)
+        : "No se pudo calcular el diff para la revisión base.";
+      card.appendChild(diff);
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "pm-approve-btn";
+      approve.textContent = "Aprobar y publicar esta revisión";
+      approve.disabled = Boolean(proposal.stale || !proposal.diff);
+      approve.addEventListener("click", () => {
+        if (!window.confirm(`¿Aprobar y publicar exactamente la revisión ${proposal.revisionId}?`)) return;
+        approve.disabled = true;
+        void (async () => {
+          const approved = await fetch("/admin/api/page-proposals", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ slug, revisionId: proposal.revisionId }),
+          });
+          if (approved.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+          if (approved.status === 409) throw new Error("La página cambió. Recarga las propuestas.");
+          if (!approved.ok) throw new Error(`HTTP ${approved.status}`);
+          card.remove();
+          if (!proposalList.children.length) proposalsSection.style.display = "none";
+          showMsg(`Publicada la revisión exacta ${proposal.revisionId}.`);
+        })().catch((error) => { approve.disabled = false; showMsg(`No se pudo aprobar la revisión: ${(error as Error).message}`); });
+      });
+      card.appendChild(approve);
+      proposalList.appendChild(card);
+    }
   }
 
   function row(page: { slug: string; title: string; status?: string }): HTMLTableRowElement {
@@ -249,6 +317,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       }
       for (const page of pages) tbodyEl.appendChild(row(page));
       tableEl.style.display = "";
+      await Promise.all(pages.map((page) => loadProposals(page.slug).catch(() => {})));
     } catch (err) {
       loadingEl.style.display = "none";
       errorEl.textContent = `No se pudieron cargar las páginas: ${(err as Error).message}`;

@@ -69,7 +69,7 @@ Read this table first; every row links to the section that justifies it. A row i
 
 - `[x]` Visual editor (`/admin/editor`) with real block rendering, ProductGrid preview, drag-and-drop reorder, column nesting; 4 link-in-bio elements.
 - `[x]` Native SEO/GEO (JsonLd, SeoHead, canonical); AI discovery: `/llms.txt` (llmstxt.org v2), per-post markdown, single Trust-Layer-generated `robots.txt` with Content Signals, full sitemap; drafts 404.
-- `[x]` MCP server: 12 real tools over real D1/SQLite stores. Agent identity is now per-invocation on the HTTP transport (Option B, bearer tokens); stdio keeps the per-process env identity (Option A, SDK limitation).
+- `[x]` MCP server: 19 tools, bounded public context reads, explicit private-page read grant, exact-revision proposal/list/approve tools, per-invocation HTTP identity, and durable append-only audit (D1/SQLite). HTTP requires host allowlisting for non-loopback binds and enforces Origin/rate limits.
 - `[x]` Onboarding: 5-step wizard (intent templates, GitHub App OAuth with PKCE, one-time `did:apw` + admin-credentials export), deferred dashboard checklist (APW verification banner with exact TXT), terminal-less first-run `/setup` on the Node runtime.
 - `[x]` CI on Node 24 (`npm test` blocks), production `validateManifest()` on every manifest, coverage suite (baseline 47.43% lines; floors 45/44/46/40), setup smoke, `docker-smoke` job.
 - `[x]` Self-host ready: Node runtime for Pages Functions (routing, prefixed middleware, `env.ASSETS`, `/healthz`, no silent memory fallback), `better-sqlite3` everywhere, `engines.node >= 24`, Docker multi-stage + `docker-compose.yml` + `railway.json` + `render.yaml` (`/data` volume).

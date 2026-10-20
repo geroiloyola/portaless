@@ -87,7 +87,7 @@ jobs:
           node --input-type=module -e '
             import { capabilityRegistry, listCapabilitiesByCategory, validateManifest, PLUGIN_CAPABILITY_IDS } from "@portaless/plugin-sdk";
             const total = Object.keys(capabilityRegistry).length;
-            if (total !== 14) { console.error("registry size", total); process.exit(1); }
+            if (total !== 16) { console.error("registry size", total); process.exit(1); }
             if (PLUGIN_CAPABILITY_IDS.length !== 12) { console.error("plugin ids", PLUGIN_CAPABILITY_IDS.length); process.exit(1); }
             if (typeof listCapabilitiesByCategory() !== "object") { console.error("listCapabilitiesByCategory"); process.exit(1); }
             const ok = validateManifest({ name:"x", version:"1", entry:"i.js", requestedCapabilities:[{ id:"content:read", reason:"lee contenido" }], runtime:"javascript" });

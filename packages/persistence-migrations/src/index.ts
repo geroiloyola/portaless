@@ -19,7 +19,7 @@
 // Modulo PURO (sin I/O, sin SQLite): lo importan el runner, el doctor y los
 // tests, y tambien `functions/` y `server/`.
 
-import { PLUGIN_EMAIL_QUOTA_DDL } from "./ddl";
+import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL, PLUGIN_EMAIL_QUOTA_DDL } from "./ddl";
 
 export interface Migration {
   version: number;
@@ -107,6 +107,20 @@ const PAGE_REVISION_EVIDENCE_STATEMENTS = [
   "CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_delete BEFORE DELETE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END",
 ];
 
+const PAGE_REVISION_APPROVAL_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS page_revision_approvals (
+    revision_id TEXT PRIMARY KEY,
+    approved_at TEXT NOT NULL,
+    approved_by TEXT
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_page_revision_approvals_approved_at ON page_revision_approvals (approved_at, revision_id)",
+  "CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_update BEFORE UPDATE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END",
+  "CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_delete BEFORE DELETE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END",
+  "INSERT OR IGNORE INTO page_revision_approvals (revision_id, approved_at, approved_by) SELECT revision_id, approved_at, approved_by FROM page_revisions WHERE approved_at IS NOT NULL",
+];
+
+const MCP_AUDIT_EVENT_STATEMENTS = [MCP_AUDIT_TABLE_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_NO_DELETE_DDL];
+
 /**
  * v4 -- capacidad `email:send` (TASK 5). Tablas nuevas del sprint de email:
  *   - `plugin_email_quota` (cuota diaria por plugin: el rate limit en la base).
@@ -155,6 +169,18 @@ export const MIGRATIONS: readonly Migration[] = [
     statements: PAGE_REVISION_EVIDENCE_STATEMENTS,
     createsTables: { page_revision_evidence: ["evidence_id", "revision_id", "observed_at", "source", "rules_version", "sample_size", "weight", "calculation_json", "proof_json", "recorded_at"] },
   },
+  {
+    version: 7,
+    name: "page_revision_approvals",
+    statements: PAGE_REVISION_APPROVAL_STATEMENTS,
+    createsTables: { page_revision_approvals: ["revision_id", "approved_at", "approved_by"] },
+  },
+  {
+    version: 8,
+    name: "mcp_audit_events",
+    statements: MCP_AUDIT_EVENT_STATEMENTS,
+    createsTables: { mcp_audit_events: ["event_id", "timestamp", "agent_key_id", "tool_name", "capability_id", "outcome", "error_code", "subject_id", "revision_id"] },
+  },
 ];
 
 /**
@@ -172,10 +198,12 @@ export const REQUIRED_SCHEMA_COLUMNS: Readonly<Record<string, readonly string[]>
   pages: ["slug", "layout_json", "updated_at", "updated_by", "publication_id", "revision_id", "revision_no", "content_hash"],
   page_revisions: ["revision_id", "publication_id", "slug", "revision_no", "parent_revision_id", "content_hash", "layout_json", "created_at", "created_by", "approved_at", "approved_by"],
   page_revision_evidence: ["evidence_id", "revision_id", "observed_at", "source", "rules_version", "sample_size", "weight", "calculation_json", "proof_json", "recorded_at"],
+  page_revision_approvals: ["revision_id", "approved_at", "approved_by"],
   site_identity: ["site_id", "did", "domain", "public_key_jwk", "private_key_jwk_encrypted", "private_key_encryption_iv", "key_algorithm", "created_at", "created_by"],
   capability_bridge_tokens: ["token", "plugin_name", "granted_capabilities_json", "issued_at", "expires_at"],
   webbotauth_nonces: ["nonce", "expires_at"],
   mcp_agent_tokens: ["token_hash", "agent_key_id", "display_name", "created_at", "revoked"],
+  mcp_audit_events: ["event_id", "timestamp", "agent_key_id", "tool_name", "capability_id", "outcome", "error_code", "subject_id", "revision_id"],
   site_atproto_links: ["site_id", "handle", "added_at"],
   cloud_images: ["image_id", "content_hash", "content_type", "byte_length", "declared_origin", "site_id", "site_did", "key_id", "key_algorithm", "signed_at", "sidecar_json", "bytes", "created_by", "created_at"],
   site_skin: ["site_id", "skin", "tokens_json", "updated_at"],

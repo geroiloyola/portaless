@@ -288,6 +288,22 @@ CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_update
 CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_delete
   BEFORE DELETE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END;
 
+-- Approval is a separate immutable act; a revision snapshot is never edited
+-- when it is approved. v7 migration backfills pre-existing approved rows.
+CREATE TABLE IF NOT EXISTS page_revision_approvals (
+  revision_id TEXT PRIMARY KEY,
+  approved_at TEXT NOT NULL,
+  approved_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_page_revision_approvals_approved_at
+  ON page_revision_approvals (approved_at, revision_id);
+CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_update
+  BEFORE UPDATE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END;
+CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_delete
+  BEFORE DELETE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END;
+INSERT OR IGNORE INTO page_revision_approvals (revision_id, approved_at, approved_by)
+  SELECT revision_id, approved_at, approved_by FROM page_revisions WHERE approved_at IS NOT NULL;
+
 -- -----------------------------------------------------------------------------
 -- v0.0.9.4 -- Recuperacion de contrasena
 -- -----------------------------------------------------------------------------
@@ -684,6 +700,30 @@ CREATE TABLE IF NOT EXISTS mcp_agent_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_mcp_agent_tokens_agent_key_id
   ON mcp_agent_tokens(agent_key_id);
+
+-- v0.0.9.36 -- auditoría MCP durable, por invocación y append-only.
+CREATE TABLE IF NOT EXISTS mcp_audit_events (
+  event_id TEXT PRIMARY KEY,
+  timestamp TEXT NOT NULL,
+  agent_key_id TEXT NOT NULL,
+  tool_name TEXT NOT NULL,
+  capability_id TEXT,
+  outcome TEXT NOT NULL,
+  error_code TEXT,
+  subject_id TEXT,
+  revision_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_mcp_audit_events_timestamp
+  ON mcp_audit_events(timestamp);
+
+CREATE TRIGGER IF NOT EXISTS mcp_audit_events_no_update
+  BEFORE UPDATE ON mcp_audit_events
+  BEGIN SELECT RAISE(ABORT, 'mcp audit events are append-only'); END;
+
+CREATE TRIGGER IF NOT EXISTS mcp_audit_events_no_delete
+  BEFORE DELETE ON mcp_audit_events
+  BEGIN SELECT RAISE(ABORT, 'mcp audit events are append-only'); END;
 
 -- -----------------------------------------------------------------------------
 -- v0.0.9.27 -- Motor de Despliegue: OAuth de infraestructura (GitHub App)
