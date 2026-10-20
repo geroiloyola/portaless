@@ -19,7 +19,7 @@
 // aqui vive solo la transporte.
 
 import { isEmailAddress, normalizeEmailHost, normalizeWebhookUrl, type EmailProviderSettings } from "../../email-transport/src/config";
-import { EmailSendError, sendEmail } from "../../email-transport/src/send";
+import { EmailDeliveryUnknownError, EmailSendError, sendEmail } from "../../email-transport/src/send";
 
 export interface EmailMessage {
   to: string;
@@ -51,17 +51,25 @@ export class HttpWebhookEmailSender implements EmailSender {
     if (!url) throw new EmailSendError("webhook de email requiere destino público seguro; con credenciales, use HTTPS.");
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (this.token) headers.authorization = `Bearer ${this.token}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ to: message.to, subject: message.subject, text: message.text }),
-      redirect: "manual",
-      signal: AbortSignal.timeout(10_000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ to: message.to, subject: message.subject, text: message.text }),
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      throw new EmailDeliveryUnknownError("email webhook could not confirm acceptance; delivery outcome is unknown");
+    }
     if (res.status >= 300 && res.status < 400) {
       throw new EmailSendError("email webhook redirect rejected; redirects are disabled");
     }
-    if (!res.ok) throw new Error(`email webhook respondio HTTP ${res.status}`);
+    if (res.status >= 500) {
+      throw new EmailDeliveryUnknownError(`email webhook returned HTTP ${res.status}; prior acceptance cannot be ruled out`);
+    }
+    if (!res.ok) throw new EmailSendError(`email webhook rejected delivery with HTTP ${res.status}`);
   }
 }
 

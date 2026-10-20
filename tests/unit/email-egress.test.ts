@@ -41,6 +41,26 @@ describe("email destination normalization and egress", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ redirect: "manual" });
   });
 
+  it("classifies explicit 4xx rejection separately from 5xx and connection ambiguity", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("rejected", { status: 400 })));
+    await expect(sendViaWebhook(
+      { kind: "webhook", url: "https://hooks.example.test/send" },
+      { from: "sender@example.test", to: "recipient@example.test", subject: "Test", text: "Body" },
+    )).rejects.toMatchObject({ deliveryOutcome: "rejected" });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("unknown", { status: 503 })));
+    await expect(sendViaWebhook(
+      { kind: "webhook", url: "https://hooks.example.test/send" },
+      { from: "sender@example.test", to: "recipient@example.test", subject: "Test", text: "Body" },
+    )).rejects.toMatchObject({ deliveryOutcome: "unknown" });
+
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("connection closed"); }));
+    await expect(sendViaWebhook(
+      { kind: "webhook", url: "https://hooks.example.test/send" },
+      { from: "sender@example.test", to: "recipient@example.test", subject: "Test", text: "Body" },
+    )).rejects.toMatchObject({ deliveryOutcome: "unknown" });
+  });
+
   it("applies the same no-redirect policy to authentication webhooks", async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 307, headers: { location: "https://other.example.test/" } }));
     vi.stubGlobal("fetch", fetchMock);

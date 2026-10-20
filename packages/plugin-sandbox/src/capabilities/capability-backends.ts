@@ -28,8 +28,9 @@ import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "
 import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-factory";
 import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
 import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
-import { sendEmail } from "../../../email-transport/src/send";
+import { EmailSendError, sendEmail } from "../../../email-transport/src/send";
 import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
+import { emitActivity } from "../../../dashboard/src/activity/activity-store";
 
 export interface CapabilityError extends Error {
   code: string;
@@ -255,11 +256,26 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
         }
         await sendEmail(settings.provider, { from: settings.from, to: args.to, subject, text });
       } catch (err) {
-        // R4: si el transporte falla (proveedor caido), el email NO salio: se
-        // devuelve el cupo del dia para que el operador reintente sin quemar su
-        // cuota. La cuota solo debe penalizar envios REALES.
+        const outcomeUnknown = err instanceof EmailSendError && err.deliveryOutcome === "unknown";
+        if (outcomeUnknown) {
+          const deliveryAttemptId = globalThis.crypto.randomUUID();
+          await emitActivity(env, {
+            kind: "email.delivery.reconciliation_pending",
+            actor: "plugin",
+            subject: deliveryAttemptId,
+            detail: `plugin=${pluginName}; provider=${settings.provider.kind}; quota=${day}:reserved`,
+          });
+          const error = capabilityError(
+            "EMAIL_DELIVERY_UNKNOWN",
+            `El proveedor no confirmó si aceptó el correo. No reintentes a ciegas; reconcilia el intento ${deliveryAttemptId} con el proveedor.`,
+          );
+          (error as CapabilityError & { deliveryAttemptId?: string }).deliveryAttemptId = deliveryAttemptId;
+          throw error;
+        }
+
+        // A transport rejection is definitive, so return its reservation.
         await quota.release(pluginName, day).catch(() => undefined);
-        throw capabilityError("EMAIL_SEND_FAILED", (err as Error)?.message ?? "el envio de email fallo.");
+        throw capabilityError("EMAIL_SEND_REJECTED", (err as Error)?.message ?? "el proveedor rechazó el envio.");
       }
       return { sent: true, template: template.id, remainingToday: Math.max(0, limit - consumed.count) };
     },

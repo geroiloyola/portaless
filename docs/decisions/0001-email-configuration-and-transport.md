@@ -71,9 +71,12 @@ These are recorded limitations, not accepted security guarantees:
   does not prove domain ownership. A provider may enforce this; Portaless does
   not currently verify it. Do not label the address “verified” without that
   evidence.
-- An SMTP/webhook timeout can leave delivery outcome unknown (the provider may
-  have accepted the message before the response was lost). Quota release is not
-  proof that no message was delivered; delivery is not exactly-once.
+- **Resolved in C17 (honest outcome, not exactly-once):** definitive provider
+  rejection returns the plugin quota reservation; a timeout, connection loss or
+  provider 5xx after submission is `unknown`, retains the reservation, returns a
+  reconciliation attempt ID and appends an admin-only `activity_events` record.
+  Operators reconcile that ID against the provider's delivery log; Portaless
+  does not claim the message was or was not delivered.
 - `PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT` can be set above 50. Deployments must
   choose a value appropriate to their provider and reputation risk.
 

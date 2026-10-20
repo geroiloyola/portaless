@@ -21,6 +21,7 @@ import {
 } from "../../packages/email-transport/src/config";
 import { createSiteSettingsStore } from "../../packages/dashboard/src/site-settings/site-settings-store";
 import { applySchema } from "../../scripts/setup.mjs";
+import { openSqlite } from "../../packages/sqlite-driver/src/open";
 
 const cleanup: string[] = [];
 afterEach(() => {
@@ -159,10 +160,13 @@ describe("email:send -- delegacion ciega", () => {
     await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl", data: { orderId: 3 } })).rejects.toMatchObject({ code: "EMAIL_QUOTA_EXCEEDED" });
   });
 
-  it("EMAIL_SEND_FAILED si el proveedor responde no-2xx (nunca exito silencioso)", async () => {
+  it("EMAIL_DELIVERY_UNKNOWN si el proveedor devuelve 5xx (no afirma que no se envió)", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
     const bridge = await seededBridge(tempDb());
-    await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" })).rejects.toMatchObject({ code: "EMAIL_SEND_FAILED" });
+    await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" })).rejects.toMatchObject({
+      code: "EMAIL_DELIVERY_UNKNOWN",
+      deliveryAttemptId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
   });
 });
 
@@ -176,15 +180,15 @@ describe("R4: la cuota no penaliza envios que fallaron", () => {
     expect(await q.release("p", "2026-10-18")).toBe(0); // no negativo
   });
 
-  it("un envio fallido no consume cuota: el reintento cabe", async () => {
+  it("un rechazo definitivo devuelve la cuota y permite reintentar", async () => {
     const dbPath = tempDb();
     const bridge = await seededBridge(dbPath, { PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT: "2" });
     const q = await createPluginEmailQuotaStore({ PORTALESS_SQLITE_PATH: dbPath });
     const day = new Date().toISOString().slice(0, 10);
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rejected", { status: 400 }));
     await expect(bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" })).rejects.toMatchObject({
-      code: "EMAIL_SEND_FAILED",
+      code: "EMAIL_SEND_REJECTED",
     });
     expect(await q.count("p", day)).toBe(0); // el fallo no consumio
 
@@ -193,6 +197,33 @@ describe("R4: la cuota no penaliza envios que fallaron", () => {
     await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
     await bridge.emailSend!("p", { template: "order_confirmation", to: "a@b.cl" });
     expect(await q.count("p", day)).toBe(2);
+  });
+
+  it("una aceptación desconocida conserva la cuota y registra un intento para reconciliar", async () => {
+    const dbPath = tempDb();
+    const bridge = await seededBridge(dbPath, { PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT: "2" });
+    const q = await createPluginEmailQuotaStore({ PORTALESS_SQLITE_PATH: dbPath });
+    const day = new Date().toISOString().slice(0, 10);
+
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("socket closed"));
+    let deliveryAttemptId = "";
+    await bridge.emailSend!("reconcile-plugin", { template: "order_confirmation", to: "a@b.cl" }).catch((error: any) => {
+      expect(error.code).toBe("EMAIL_DELIVERY_UNKNOWN");
+      deliveryAttemptId = error.deliveryAttemptId;
+    });
+    expect(deliveryAttemptId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await q.count("reconcile-plugin", day)).toBe(1);
+
+    const db = await openSqlite(dbPath);
+    try {
+      const event = db.prepare("SELECT kind, actor, subject, detail FROM activity_events WHERE subject = ?").get(deliveryAttemptId);
+      expect(event).toMatchObject({ kind: "email.delivery.reconciliation_pending", actor: "plugin" });
+      expect(event.detail).toContain("reconcile-plugin");
+      expect(event.detail).toContain("quota=");
+      expect(event.detail).not.toContain("a@b.cl");
+    } finally {
+      db.close();
+    }
   });
 });
 
