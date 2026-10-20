@@ -6,7 +6,7 @@ for (let attempt = 0; attempt < 20; attempt++) {
     await sendEmail(
       {
         kind: "smtp",
-        host: "portaless-staging-smtp",
+        host: "portaless-stage-smtp",
         port: Number(process.env.PORTALESS_STAGING_SMTP_PORT ?? 2525),
         username: "synthetic-user",
         token: "synthetic-password",

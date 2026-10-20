@@ -13,11 +13,6 @@ import {
   createDisposableStaging,
   destroyDisposableStaging,
   locateDisposableStaging,
-  STAGING_ADMIN_EMAIL,
-  STAGING_ADMIN_USER,
-  STAGING_ARCHIVE_MARKER,
-  STAGING_DRAFT_MARKER,
-  STAGING_PUBLIC_MARKER,
 } from "./disposable-staging.mjs";
 
 const ROOT = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
@@ -78,22 +73,6 @@ function reserveLoopbackPort() {
       server.close((error) => error ? reject(error) : resolve(port));
     });
   });
-}
-
-async function waitFor(url, label, timeoutMs = 30_000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError;
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1500) });
-      if (response.ok) return response;
-      lastError = new Error(`${label}: HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`${label} no quedó listo: ${lastError?.message ?? "timeout"}`);
 }
 
 function readDockerOwner(stageDir, id) {
@@ -159,42 +138,14 @@ async function destroy(id) {
 }
 
 async function smoke(owner, inspectorToken) {
-  await waitFor(`http://127.0.0.1:${owner.appPort}/healthz`, "Portaless Docker runtime");
-  await waitFor(`http://127.0.0.1:${owner.webhookInspectorPort}/healthz`, "synthetic webhook");
-
-  const baseUrl = `http://127.0.0.1:${owner.appPort}`;
-  const publicPage = await fetch(`${baseUrl}/pages/staging-public/`);
-  if (!publicPage.ok || !(await publicPage.text()).includes(STAGING_PUBLIC_MARKER)) {
-    throw new Error("Docker runtime did not serve the synthetic public PageStore fixture.");
-  }
-  for (const slug of ["staging-draft", "staging-private"]) {
-    const response = await fetch(`${baseUrl}/pages/${slug}/`);
-    if (response.status !== 404) throw new Error(`Docker runtime exposed ${slug}: HTTP ${response.status}`);
-  }
-  const llms = await (await fetch(`${baseUrl}/llms.txt`)).text();
-  if (llms.includes(STAGING_DRAFT_MARKER) || llms.includes(STAGING_ARCHIVE_MARKER)) {
-    throw new Error("Docker runtime leaked a private marker through llms.txt.");
-  }
-
-  const reset = await fetch(`${baseUrl}/admin/password-reset/request`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username: STAGING_ADMIN_USER }),
-  });
-  if (!reset.ok || (await reset.json()).devToken) throw new Error("Password reset did not use the fake delivery backend.");
-  const inboxResponse = await fetch(`http://127.0.0.1:${owner.webhookInspectorPort}/messages`, {
-    headers: { "x-staging-inspector-token": inspectorToken },
-  });
-  if (!inboxResponse.ok) throw new Error("Could not inspect synthetic webhook inbox.");
-  const inbox = await inboxResponse.json();
-  const resetMessage = inbox.messages?.find((message) => message.to === STAGING_ADMIN_EMAIL);
-  if (!resetMessage || !resetMessage.text.includes("https://portaless-staging.example.invalid/admin/password-reset?token=")) {
-    throw new Error("Synthetic password-reset email was not delivered with a trusted URL.");
-  }
-
+  const httpChecks = docker([
+    "exec", "--env", `PORTALESS_STAGING_INSPECTOR_TOKEN=${inspectorToken}`,
+    owner.app, "node", "scripts/staging/docker-http-smoke.mjs",
+  ], { capture: true });
+  const checks = JSON.parse(httpChecks);
   const smtpProbe = docker(["exec", owner.app, "node", "--import", "tsx", "scripts/staging/docker-smtp-fail-closed-check.mjs"], { capture: true });
   if (!smtpProbe.includes("refused plaintext credentials")) throw new Error("Synthetic SMTP probe did not verify STARTTLS fail-closed behavior.");
-  return { publicPage: true, privateRoutes: "404", llms: "filtered", resetEmail: "fake webhook accepted", smtp: "plaintext credentials rejected" };
+  return { ...checks, smtp: "plaintext credentials rejected" };
 }
 
 async function create({ image: requestedImage, checkOnly }) {
