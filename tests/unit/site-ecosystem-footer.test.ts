@@ -60,7 +60,7 @@ describe("footer del ecosistema Portaless", () => {
     // ExplorePage.astro (dos proyecciones de locale), no en explore.astro.
     const exploreSrc = readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8");
     expect(exploreSrc).toContain("draft-filter");
-    expect(exploreSrc).toContain("isDraft");
+    expect(exploreSrc).toContain("isPubliclyPublishable");
   });
 });
 

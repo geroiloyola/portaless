@@ -44,16 +44,33 @@ sumaron después; `server.ts` es la fuente de verdad y hoy el total es **12**.
 |---|---|---|---|
 | `query_usage_log` | Ninguna (ledger ya público) | `UsageLedgerStore` real de trust-layer | `b64705b3` |
 | `list_page_components` | Ninguna (catálogo informativo) | `ELEMENT_TYPES` — sincronizado con `elementPalette`, incluye los 4 tipos de link-en-bio | `de874b84` |
-| `create_page` | `content:write` | `PageStore.save()` real, guarda como borrador | `da599e3e` (fix de los 4 ElementType nuevos) |
-| `update_page` | `content:write` / `content:read` | `PageStore.load()` + `PageStore.save()` reales | — |
+| `create_page` | `content:write` | `PageStore.save()` real, siempre guarda como borrador; no expone un flag para publicar | `da599e3e` (fix de los 4 ElementType nuevos) |
+| `update_page` | `content:write` / `content:read` | Lee y guarda drafts; rechaza status published y cambios a páginas publicadas/private | — |
 | `grant_capability` | `site:admin` | `PermissionStore.setGrant()` real | `05078aa2` |
 | `revoke_permission` | `site:admin` | `PermissionStore.setGrant()` real (revocación) | `05078aa2` |
 | `list_installed_plugins` | Ninguna (catálogo informativo) | `PluginRegistryStore` real, expone `trustScore`/`trustScoreVotes`/`sourceType` | `05078aa2` |
-| `insert_block` | `content:write` | muta un nodo por `nodeId` (o padre + índice + slot) sobre `PageStore` | — |
-| `update_block` | `content:write` | ídem, actualización de un nodo | — |
-| `delete_block` | `content:write` | ídem, borrado de un nodo | — |
+| `insert_block` | `content:write` | muta un nodo draft por `nodeId` (o padre + índice + slot); rechaza páginas publicadas/private | — |
+| `update_block` | `content:write` | ídem, actualización de un nodo draft | — |
+| `delete_block` | `content:write` | ídem, borrado de un nodo draft | — |
 | `apply_theme` | `content:write` | aplica un theme pack a la página | — |
 | `list_themes` | Ninguna (catálogo informativo) | catálogo de theme packs disponibles | — |
+
+### C06: frontera entre edición y publicación
+
+Las tools MCP no son una ruta de publicación. `create_page` siempre crea
+`status: "draft"`; `update_page` solo acepta mantener/poner un draft y rechaza
+un `status: "published"`; las tools de bloques rechazan mutar un layout
+publicado. Un admin autenticado promueve o privatiza desde `/admin/pages`.
+`content:read` de plugins/MCP solo devuelve páginas publicables; no es una
+capacidad para leer drafts, páginas privadas ni `.airchive/`. Un plugin con
+`content:write` solo puede guardar layouts draft nuevos y no puede sobrescribir
+una página publicada/private. La política de publicación compartida es
+`packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()`.
+
+Esto es una barrera fail-closed, no un sistema de revisiones: MCP todavía no
+puede proponer una revisión de una URL ya publicada manteniendo visible el
+contenido anterior. Ese flujo espera el modelo de revisiones/aprobaciones del
+MVP; hasta entonces, la edición de contenido publicado se hace desde el panel.
 
 **Nota de riesgo explícita, ya documentada en el propio código**: `grant_capability`/`revoke_permission` requieren `site:admin`, la capacidad de mayor riesgo del catálogo — un agente con `site:admin` puede conceder o revocar permisos a otros subjects, incluido él mismo. Es la tool que debería tener más fricción en la práctica, según el comentario inline de `grant-capability.ts`.
 

@@ -10,7 +10,17 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { openSqlite } from "../../sqlite-driver/src/open.ts";
-import { MIGRATIONS, assertCompatible, pendingFrom, schemaVersion, type Migration } from "./index.ts";
+import {
+  BASELINE_REQUIRED_COLUMNS,
+  MIGRATIONS,
+  REQUIRED_SCHEMA_COLUMNS,
+  SchemaContractError,
+  assertCompatible,
+  missingSchemaColumns,
+  pendingFrom,
+  schemaVersion,
+  type Migration,
+} from "./index.ts";
 
 const CREATE_TABLE = `CREATE TABLE IF NOT EXISTS schema_migrations (
   version INTEGER PRIMARY KEY,
@@ -28,16 +38,34 @@ export interface MigrateResult {
 
 export interface MigrateOptions {
   dryRun?: boolean;
+  /** Internal bootstrap path: schema.sql just created this DB, so there is no pre-upgrade state to back up. */
+  skipBackup?: boolean;
   /** Directorio del backup. Default: <dirname(sqlitePath)>/backups */
   backupDir?: string;
   now?: () => Date;
 }
 
-/** Version actual de la base (0 si no hay tabla / filas). */
+function hasMigrationLedger(db: any): boolean {
+  return Boolean(
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get("schema_migrations"),
+  );
+}
+
+/** Version actual de la base (0 si no hay tabla / filas). Esta lectura no crea ni modifica el ledger. */
 export function currentVersion(db: any): number {
-  db.exec(CREATE_TABLE);
+  if (!hasMigrationLedger(db)) return 0;
   const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
   return Number(row?.v ?? 0);
+}
+
+/** Registra una migracion que ya fue aplicada dentro de la transaccion del caller. */
+export function recordAppliedMigration(db: any, migration: Migration, appliedAt = new Date().toISOString()): void {
+  db.exec(CREATE_TABLE);
+  db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)").run(
+    migration.version,
+    migration.name,
+    appliedAt,
+  );
 }
 
 async function backupDatabase(db: any, sqlitePath: string, from: number, opts: MigrateOptions): Promise<string> {
@@ -55,6 +83,44 @@ function tableColumns(db: any, table: string): string[] {
     return (db.prepare("SELECT name FROM pragma_table_info(?)").all(table) as Array<{ name: string }>).map((r) => r.name);
   } catch {
     return [];
+  }
+}
+
+function schemaColumns(db: any): Record<string, string[]> {
+  const tables = new Set([
+    ...Object.keys(REQUIRED_SCHEMA_COLUMNS),
+    ...MIGRATIONS.flatMap((migration) => (migration.addColumns ?? []).map((item) => item.table)),
+  ]);
+  return Object.fromEntries([...tables].map((table) => [table, tableColumns(db, table)]));
+}
+
+function projectMigrations(actual: Record<string, string[]>, pending: Migration[]): Record<string, string[]> {
+  const projected = Object.fromEntries(Object.entries(actual).map(([table, columns]) => [table, [...columns]]));
+  for (const migration of pending) {
+    for (const { table, column } of migration.addColumns ?? []) {
+      if (table in projected && !projected[table].includes(column)) projected[table].push(column);
+    }
+    for (const [table, columns] of Object.entries(migration.createsTables ?? {})) {
+      projected[table] = [...new Set([...(projected[table] ?? []), ...columns])];
+    }
+  }
+  return projected;
+}
+
+function assertLedgerContiguous(db: any, version: number): void {
+  if (!hasMigrationLedger(db)) return;
+  const rows = db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+  const expected = new Map(MIGRATIONS.map((migration) => [migration.version, migration.name]));
+  const seen = new Set<number>();
+  for (const row of rows) {
+    const rowVersion = Number(row.version);
+    if (seen.has(rowVersion) || expected.get(rowVersion) !== row.name) {
+      throw new Error(`Ledger de migraciones invalido en version ${rowVersion} (${row.name}).`);
+    }
+    seen.add(rowVersion);
+  }
+  for (let v = 1; v <= version; v++) {
+    if (!seen.has(v)) throw new Error(`Ledger de migraciones incompleto: falta la version ${v} antes de ${version}.`);
   }
 }
 
@@ -82,21 +148,6 @@ function applyMigration(db: any, migration: Migration): void {
   applyColumnsFor(db, migration);
 }
 
-/**
- * Registra las migraciones hasta `version` como aplicadas (INSERT OR IGNORE).
- * Lo usa `applySchema`: schema.sql es la forma ACTUAL, asi que una base nueva
- * queda al dia (no "pendiente") sin correr ALTERs sobre tablas que ya tienen
- * todas las columnas.
- */
-export function stampMigrations(db: any, version: number = schemaVersion()): void {
-  db.exec(CREATE_TABLE);
-  const insert = db.prepare("INSERT OR IGNORE INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)");
-  const now = new Date().toISOString();
-  for (const migration of MIGRATIONS) {
-    if (migration.version <= version) insert.run(migration.version, migration.name, now);
-  }
-}
-
 export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {}): Promise<MigrateResult> {
   if (!existsSync(sqlitePath)) {
     // Base nueva: no hay nada que migrar. `schema.sql` la crea al arrancar y el
@@ -105,27 +156,43 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
   }
   const db = await openSqlite(sqlitePath);
   try {
+    const objects = db
+      .prepare("SELECT count(*) AS n FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'")
+      .get();
+    if (Number(objects?.n ?? 0) === 0) {
+      return { from: 0, to: 0, applied: [], backupPath: null, dryRun: Boolean(opts.dryRun) };
+    }
+
     const from = currentVersion(db);
     assertCompatible(from);
+    assertLedgerContiguous(db, from);
     const pending = pendingFrom(from);
     if (pending.length === 0) {
+      const schemaErrors = missingSchemaColumns(schemaColumns(db));
+      if (schemaErrors.length) throw new SchemaContractError(schemaErrors);
       return { from, to: from, applied: [], backupPath: null, dryRun: Boolean(opts.dryRun) };
     }
+
+    const actualSchema = schemaColumns(db);
+    const baselineErrors = missingSchemaColumns(actualSchema, BASELINE_REQUIRED_COLUMNS);
+    if (baselineErrors.length) throw new SchemaContractError(baselineErrors);
+
+    const projectedErrors = missingSchemaColumns(projectMigrations(actualSchema, pending));
+    if (projectedErrors.length) throw new SchemaContractError(projectedErrors);
     if (opts.dryRun) {
       return { from, to: schemaVersion(), applied: pending.map((m) => m.name), backupPath: null, dryRun: true };
     }
 
-    const backupPath = await backupDatabase(db, sqlitePath, from, opts);
+    const backupPath = opts.skipBackup ? null : await backupDatabase(db, sqlitePath, from, opts);
     const applied: string[] = [];
     for (const migration of pending) {
       db.exec("BEGIN");
       try {
+        // Si no existia ledger, el baseline se registra en la primera transaccion
+        // que aplica. Nunca se escribe al leer ni antes de respaldar.
+        db.exec(CREATE_TABLE);
         applyMigration(db, migration);
-        db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)").run(
-          migration.version,
-          migration.name,
-          (opts.now?.() ?? new Date()).toISOString(),
-        );
+        recordAppliedMigration(db, migration, (opts.now?.() ?? new Date()).toISOString());
         db.exec("COMMIT");
         applied.push(migration.name);
       } catch (err) {
@@ -133,6 +200,8 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
         throw err;
       }
     }
+    const schemaErrors = missingSchemaColumns(schemaColumns(db));
+    if (schemaErrors.length) throw new SchemaContractError(schemaErrors);
     return { from, to: schemaVersion(), applied, backupPath, dryRun: false };
   } finally {
     db.close();

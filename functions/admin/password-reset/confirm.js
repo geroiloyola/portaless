@@ -17,16 +17,24 @@ import {
   passwordEventContextFromRequest,
 } from "../../../packages/auth/src/password-event-store.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 const MIN_PASSWORD_LENGTH = 12;
+const MAX_PASSWORD_LENGTH = 1024;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 16 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -46,6 +54,12 @@ export async function onRequestPost(context) {
       JSON.stringify({ success: false, error: `La contraseña nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
+  }
+  if (newPassword.length > MAX_PASSWORD_LENGTH) {
+    return new Response(JSON.stringify({ success: false, error: `La contraseña nueva no puede superar ${MAX_PASSWORD_LENGTH} caracteres.` }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const usersStore = await createUsersStore(env);

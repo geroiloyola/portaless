@@ -73,7 +73,7 @@ request does nothing either. Ask for the minimum.
 
 | Capability | Backend today |
 | --- | --- |
-| `content:read` / `content:write` | ✅ real (`PageStore`) |
+| `content:read` / `content:write` | ✅ real (`PageStore`; read sees public pages only; write creates/updates drafts only. It cannot read private pages, publish, or overwrite a published page; an admin approves publication) |
 | `storage:read` / `storage:write` | ✅ real (per-plugin store, namespace + quotas) |
 | `agent:identify` | ✅ real (read-only: the Trust Layer usage ledger, public fields only) |
 | `email:send` | ✅ real (blind delegation: you send `{ template, to, data }`; the site's `from` and the per-plugin daily quota are the core's) |

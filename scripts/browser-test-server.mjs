@@ -1,75 +1,98 @@
-// Servidor para los tests de navegador (Playwright). Lo levanta
-// playwright.config.ts via webServer. Ver tests/browser/*.spec.ts.
-//
-// - Si falta dist/, corre `npm run build` una vez (la primera corrida es
-//   mas lenta; despues reutiliza el build).
-// - SQLite en test-results/browser-e2e/ (directorio ya ignorado por git),
-//   recreado limpio en cada arranque.
-// - Siembra: admin (usuario/contrasena constantes de TEST, nunca para
-//   produccion) y una identidad did:apw, para que las tres pantallas
-//   (/admin/security, /admin/wizard/rotate-identity, wizard paso 4)
-//   tengan estado deterministico sin importar el orden de los archivos.
-//
-// Uso manual: npx tsx scripts/browser-test-server.mjs  (luego abrir
-// http://127.0.0.1:4173/admin/login con admin / Browser-Test-Passw0rd!).
-
+// Runtime real para Playwright, sembrado exclusivamente con la fixture C04.
+// DB/archivo privado/servicios fake viven en un directorio temporal unico; no
+// se borra una ruta fija del repo ni se monta el home del operador. Se liga a
+// loopback y destruye su namespace al recibir SIGINT/SIGTERM.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  createDisposableStaging,
+  destroyDisposableStagingSync,
+  STAGING_ADMIN_PASSWORD,
+  STAGING_ADMIN_USER,
+  STAGING_VIEWER_PASSWORD,
+  STAGING_VIEWER_USER,
+} from "./staging/disposable-staging.mjs";
 
 export const BROWSER_TEST_PORT = Number(process.env.PORTALESS_BROWSER_TEST_PORT || 4173);
-export const BROWSER_TEST_ADMIN_USER = "admin";
-export const BROWSER_TEST_ADMIN_PASSWORD = "Browser-Test-Passw0rd!";
+export const BROWSER_TEST_ADMIN_USER = STAGING_ADMIN_USER;
+export const BROWSER_TEST_ADMIN_PASSWORD = STAGING_ADMIN_PASSWORD;
+export const BROWSER_TEST_VIEWER_USER = STAGING_VIEWER_USER;
+export const BROWSER_TEST_VIEWER_PASSWORD = STAGING_VIEWER_PASSWORD;
 export const BROWSER_TEST_BASE_URL = `http://127.0.0.1:${BROWSER_TEST_PORT}`;
 
-// Clave AES-GCM de TEST unica y descartable (base64 de 32 bytes). El
-// store de site_identity la exige para cifrar la clave privada.
-const TEST_IDENTITY_KEY = Buffer.from("0123456789abcdef0123456789abcdef").toString("base64");
-
 const rootDir = resolve(fileURLToPath(new URL("..", import.meta.url)));
+let activeFixtureId;
+let activeFixtureRoot;
+process.on("exit", () => {
+  if (!activeFixtureId) return;
+  try { destroyDisposableStagingSync({ id: activeFixtureId, rootDir: activeFixtureRoot }); } catch { /* best-effort; explicit staging:destroy remains available */ }
+});
 
 export async function startBrowserTestServer() {
   if (!existsSync(join(rootDir, "dist", "index.html"))) {
-    console.log("[browser-test-server] dist/ ausente -- corriendo npm run build (solo la primera vez)...");
+    console.log("[browser-test-server] dist/ ausente -- corriendo npm run build...");
     execFileSync("npm", ["run", "build"], { cwd: rootDir, stdio: "inherit" });
   }
 
-  const dataDir = join(rootDir, "test-results", "browser-e2e");
-  rmSync(dataDir, { recursive: true, force: true });
-  mkdirSync(dataDir, { recursive: true });
-  const sqlitePath = join(dataDir, "portaless.db");
-
-  const { applySchema } = await import(join(rootDir, "scripts/setup.mjs"));
-  await applySchema(sqlitePath, { quiet: true });
-
-  const env = {
-    PORTALESS_SQLITE_PATH: sqlitePath,
-    PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: TEST_IDENTITY_KEY,
+  let fixture;
+  let server;
+  let closing = false;
+  let startupComplete = false;
+  let signalRequested = false;
+  const cleanup = async () => {
+    if (closing) return;
+    closing = true;
+    if (server?.listening) {
+      server.closeAllConnections?.();
+      await new Promise((resolveClose) => server.close(() => resolveClose()));
+    }
+    if (fixture) await fixture.close();
+    activeFixtureId = undefined;
+    activeFixtureRoot = undefined;
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
   };
+  const onSignal = () => {
+    signalRequested = true;
+    if (!startupComplete) return; // startup observes this flag before returning
+    void cleanup().catch((error) => {
+      console.error("[browser-test-server] cleanup failed:", error.message);
+      process.exitCode = 1;
+    });
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
 
-  const { createUsersStore } = await import(join(rootDir, "packages/auth/src/store-factory.ts"));
-  await (await createUsersStore(env)).createUser(BROWSER_TEST_ADMIN_USER, BROWSER_TEST_ADMIN_PASSWORD, "admin");
+  try {
+    fixture = await createDisposableStaging({ rootDir: process.env.PORTALESS_BROWSER_STAGING_ROOT });
+    activeFixtureId = fixture.id;
+    activeFixtureRoot = fixture.rootDir;
+    if (signalRequested) {
+      await cleanup();
+      return null;
+    }
 
-  const { createSiteIdentityStore } = await import(join(rootDir, "packages/apw-resolver/src/did-apw/store-factory.ts"));
-  const { generateApwDid } = await import(join(rootDir, "packages/apw-resolver/src/did-apw/generate.ts"));
-  const identityStore = await createSiteIdentityStore(env);
-  const keyPair = await generateApwDid("browser-test.example");
-  await identityStore.create("default", keyPair, BROWSER_TEST_ADMIN_USER);
-
-  const { createSelfHostServer } = await import(join(rootDir, "server/node-runtime.mjs"));
-  const server = await createSelfHostServer({
-    rootDir,
-    functionsDir: join(rootDir, "functions"),
-    staticDir: join(rootDir, "dist"),
-    env,
-  });
-  await new Promise((ok, fail) => {
-    server.once("error", fail);
-    server.listen(BROWSER_TEST_PORT, "127.0.0.1", ok);
-  });
-  console.log(`[browser-test-server] listo en ${BROWSER_TEST_BASE_URL} (admin: ${BROWSER_TEST_ADMIN_USER} / ${BROWSER_TEST_ADMIN_PASSWORD})`);
-  return server;
+    const { createSelfHostServer } = await import(join(rootDir, "server/node-runtime.mjs"));
+    server = await createSelfHostServer({
+      rootDir,
+      functionsDir: join(rootDir, "functions"),
+      staticDir: join(rootDir, "dist"),
+      env: fixture.env,
+    });
+    await new Promise((ok, fail) => {
+      server.once("error", fail); // si el puerto pertenece a otro proceso, no lo toca
+      server.listen(BROWSER_TEST_PORT, "127.0.0.1", ok);
+    });
+    startupComplete = true;
+    console.log(`[browser-test-server] listo en ${BROWSER_TEST_BASE_URL} (staging id: ${fixture.id}; credenciales sintéticas no impresas)`);
+    if (signalRequested) await cleanup();
+    return server;
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

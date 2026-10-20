@@ -144,7 +144,7 @@ export async function onRequestPost(context) {
             ? 400
             : code === "STORAGE_VALUE_TOO_LARGE" || code === "STORAGE_TOO_MANY_KEYS" || code === "STORAGE_QUOTA_EXCEEDED"
               ? 413
-              : code === "EMAIL_TEMPLATE_NOT_APPROVED"
+              : code === "EMAIL_TEMPLATE_NOT_APPROVED" || code === "PRIVATE_CONTENT_ACCESS_DENIED" || code === "PUBLICATION_REQUIRES_ADMIN_APPROVAL"
                 ? 403
                 : code === "EMAIL_QUOTA_EXCEEDED"
                   ? 429

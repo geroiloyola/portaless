@@ -3,10 +3,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { postsLabel } from "../../lib/site-lang";
 import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
+import { publishedPosts } from "../../lib/llms-txt";
 
-const posts = (await getCollection("posts"))
-  .filter((p) => !p.data.draft)
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const posts = publishedPosts(await getCollection("posts"));
 
 const pageTheme = ecosystemPageTheme();
 ---

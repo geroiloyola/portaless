@@ -126,4 +126,14 @@ describe("sendEmail via SMTP (servidor fake real)", () => {
     ).rejects.toThrow(/STARTTLS/);
     expect(srv.messages.length).toBe(0); // nada se envio
   });
+
+  it("el auth sender puede exigir STARTTLS aunque el relay no use AUTH", async () => {
+    const srv = await fakeSmtpServer();
+    servers.push(srv);
+    await expect(sendEmail(
+      { kind: "smtp", host: "127.0.0.1", port: srv.port, requireStartTls: true },
+      { from: "a@b.cl", to: "c@d.cl", subject: "reset", text: "token secreto" },
+    )).rejects.toThrow(/no ofrece STARTTLS/);
+    expect(srv.messages).toHaveLength(0);
+  });
 });

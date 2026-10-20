@@ -35,7 +35,8 @@ describe("vocabulario por audiencia (site-lang)", () => {
   });
 
   it("el header anuncia las publicaciones solo si hay, y nunca dice Blog", () => {
-    expect(headerSrc).toContain("publishedPosts.length > 0");
+    expect(headerSrc).toContain("publishedPosts(await getCollection(\"posts\"))");
+    expect(headerSrc).toContain("publicPosts.length > 0");
     expect(headerSrc).toContain("postsLabel(locale)");
     expect(headerSrc).not.toMatch(/>Blog</);
   });

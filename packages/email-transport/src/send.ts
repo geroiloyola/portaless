@@ -162,8 +162,8 @@ async function smtpConversation(provider: EmailProviderSettings, message: Outgoi
         socket = secured;
         io = attachReader(secured);
         caps = await io.command("EHLO portaless", 250);
-      } else if (hasCredentials) {
-        throw new EmailSendError("SMTP: el servidor no ofrece STARTTLS; se rehusa enviar credenciales en claro.");
+      } else if (hasCredentials || provider.requireStartTls) {
+        throw new EmailSendError("SMTP: el servidor no ofrece STARTTLS; se rehusa enviar correo o credenciales en claro.");
       }
     }
 

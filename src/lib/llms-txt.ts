@@ -12,6 +12,7 @@
 // (Content-Signal: ai-input=no en robots.txt), el llms.txt NO lista
 // contenido; solo el H1, el resumen, un aviso y el link a la politica. Un
 // indice para LLMs no deberia ofrecer lo que el sitio no autoriza a usar.
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
 
 export interface LlmsTxtLink {
   title: string;
@@ -85,10 +86,14 @@ export function joinSiteUrl(siteUrl: string, base: string, path: string): string
   return `${site}${prefix}${suffix}`;
 }
 
-/** Deja solo los posts publicados (draft !== true), del mas nuevo al mas viejo. */
-export function publishedPosts<T extends { data: { draft?: boolean; pubDate: Date } }>(posts: T[]): T[] {
+/** Deja solo los posts publicables (no draft/private), del mas nuevo al mas viejo. */
+export function publishedPosts<T extends { id: string; data: { draft?: boolean; private?: boolean; pubDate: Date } }>(posts: T[]): T[] {
   return posts
-    .filter((post) => post.data.draft !== true)
+    .filter((post) => isPubliclyPublishable({
+      slug: post.id,
+      draft: post.data.draft,
+      visibility: post.data.private ? "private" : "public",
+    }))
     .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 }
 

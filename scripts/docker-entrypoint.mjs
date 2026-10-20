@@ -24,7 +24,15 @@ const dataDir = resolve(process.env.PORTALESS_DATA_DIR || dirname(sqlitePath));
 function chownTree(path) {
   const stat = lstatSync(path);
   if (stat.uid !== uid || stat.gid !== gid) chownSync(path, uid, gid);
-  if (stat.isDirectory()) for (const entry of readdirSync(path)) chownTree(join(path, entry));
+  if (stat.isDirectory()) {
+    for (const entry of readdirSync(path)) {
+      // Private archives may intentionally be root-only/unreadable by the app.
+      // They are not Portaless runtime state and must not be traversed or made
+      // accessible just because the entrypoint prepares /data ownership.
+      if (path === dataDir && (entry === "private-archive" || entry === ".airchive")) continue;
+      chownTree(join(path, entry));
+    }
+  }
 }
 
 const isRoot = typeof process.getuid === "function" && process.getuid() === 0;

@@ -16,6 +16,7 @@ import type { AgentIdentityResolver, AgentInvocationContext } from "../permissio
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { updateNodeProps } from "./node-ops";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const TOOL_NAME = "update_block";
 const READ_CAPABILITY_ID = "content:read";
@@ -62,6 +63,18 @@ export function registerUpdateBlockTool(server: McpServer, deps: RegisterUpdateB
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+      if (existing.status === "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "private_content_access_denied" }, null, 2) }],
+          isError: true,
+        };
+      }
+      if (isPubliclyPublishable(existing)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "published_page_requires_admin_approval", message: "MCP no modifica una pagina publicada. Crea una propuesta borrador y pide a un admin que la revise y publique." }, null, 2) }],
+          isError: true,
+        };
+      }
       const result = updateNodeProps(existing.root, nodeId, props);
       if (!result.ok) {
         return {

@@ -21,10 +21,12 @@ async function main() {
 
   const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
   const { schemaVersion, assertCompatible } = await import("../packages/persistence-migrations/src/index.ts");
+  const { migrationStatus } = await import("../packages/persistence-migrations/src/gate.ts");
 
   const result = await migrateSqlite(dbPath);
   console.log(`[upgrade] migrado: v${result.from} -> v${result.to} (${result.applied.join(", ") || "sin cambios"})`);
   if (result.backupPath) console.log(`[upgrade] backup: ${result.backupPath}`);
+  if (result.from < schemaVersion() && !result.backupPath) fail("el upgrade no creó backup previo");
 
   const { openSqlite } = await import("../packages/sqlite-driver/src/open.ts");
   const db = await openSqlite(dbPath);
@@ -41,6 +43,11 @@ async function main() {
     db.close();
   }
 
+  const status = await migrationStatus({ PORTALESS_SQLITE_PATH: dbPath });
+  if (!status || status.pending || status.newer || status.invalid || status.legacy) {
+    fail(`el contrato real no quedó verificado: ${JSON.stringify(status)}`);
+  }
+
   // El sitio arranca con los datos intactos: la pagina sembrada sigue ahi.
   const { createPageStore } = await import("../packages/atomic-elements/src/persistence/store-factory.ts");
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: dbPath });
@@ -48,7 +55,7 @@ async function main() {
   if (!page) fail("la pagina sembrada 'upgrade-marker' desaparecio");
   if (page.title !== "Marca de upgrade") fail(`la pagina cambio de titulo: ${page.title}`);
 
-  console.log("[upgrade] OK -- datos intactos, base compatible, sitio arrancable.");
+  console.log("[upgrade] OK -- backup, ledger, columnas y datos verificados; sitio arrancable.");
 }
 
 main().catch((error) => fail(error?.message ?? error));

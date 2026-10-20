@@ -99,4 +99,8 @@ export class D1RateLimitStore implements RateLimitStore {
       .first<{ count: number }>();
     return row ? Number(row.count) : 1;
   }
+
+  async clear(bucket: string, windowStart: number): Promise<void> {
+    await this.db.prepare("DELETE FROM auth_rate_limits WHERE bucket = ? AND window_start = ?").bind(bucket, windowStart).run();
+  }
 }

@@ -10,6 +10,10 @@ import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/s
 import { createPermissionStore } from "../../../../packages/permissions/src/store-factory.ts";
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
+import { createRateLimitStore } from "../../../../packages/auth/src/store-factory.ts";
+import { allowActionRequest } from "../../../../packages/auth/src/action-rate-limit.ts";
+import { clientIpFromHeaders } from "../../../../packages/auth/src/password-reset-rate-limit.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../../_shared/read-body-limited.js";
 import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
 
 function json(body, status = 200) {
@@ -32,10 +36,22 @@ export async function onRequestPost(context) {
     return json({ error: "forbidden", message: `El rol '${user.role}' no puede desinstalar plugins. Se requiere rol 'admin'.` }, 403);
   }
 
+  const rateLimits = await createRateLimitStore(env);
+  const allowed = await allowActionRequest(rateLimits, {
+    action: "plugin-install",
+    ip: clientIpFromHeaders(request.headers, env),
+    actor: user.username ?? user.email ?? "admin",
+    ipLimit: 10,
+    actorLimit: 5,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!allowed) return json({ error: "rate_limited" }, 429);
+
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 16 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return json({ error: "request_too_large" }, 413);
     return json({ error: "invalid_json_body" }, 400);
   }
 

@@ -20,13 +20,20 @@ const files = [{ path: "index.html", content: new TextEncoder().encode("<h1>hola
 
 describe("publishStaticSite", () => {
   it("publica sobre un repo ya existente con historial (parent sha)", async () => {
+    const requests: { key: string; body: any }[] = [];
     const fetchImpl = makeFetch({
       "GET /repos/user1/user1.github.io": () => jsonResponse(200, { default_branch: "main" }),
       "GET /repos/user1/user1.github.io/git/ref/heads/main": () => jsonResponse(200, { object: { sha: "parent-sha" } }),
       "POST /repos/user1/user1.github.io/git/blobs": () => jsonResponse(201, { sha: "blob-sha-1" }),
-      "POST /repos/user1/user1.github.io/git/trees": () => jsonResponse(201, { sha: "tree-sha" }),
+      "POST /repos/user1/user1.github.io/git/trees": (init) => {
+        requests.push({ key: "tree", body: JSON.parse(init.body) });
+        return jsonResponse(201, { sha: "tree-sha" });
+      },
       "POST /repos/user1/user1.github.io/git/commits": () => jsonResponse(201, { sha: "commit-sha" }),
-      "PATCH /repos/user1/user1.github.io/git/refs/heads/main": () => jsonResponse(200, {}),
+      "PATCH /repos/user1/user1.github.io/git/refs/heads/main": (init) => {
+        requests.push({ key: "ref", body: JSON.parse(init.body) });
+        return jsonResponse(200, {});
+      },
       "GET /repos/user1/user1.github.io/pages": () => jsonResponse(200, {}),
     }) as any;
 
@@ -39,6 +46,10 @@ describe("publishStaticSite", () => {
       branch: "main",
       repoCreated: false,
     });
+    expect(requests.find((request) => request.key === "tree")?.body).toEqual({
+      tree: [{ path: "index.html", mode: "100644", type: "blob", sha: "blob-sha-1" }],
+    });
+    expect(requests.find((request) => request.key === "ref")?.body).toEqual({ sha: "commit-sha", force: false });
   });
 
   it("crea el repositorio y la rama si no existen todavia", async () => {

@@ -5,11 +5,9 @@
 // login con OAuth en self-host/D1 reventaba con "not a function" (misma
 // clase de bug que el setPasswordByUsername que ya se habia arreglado).
 //
-// Cada store se prueba en dos escenarios de schema:
-//   1. base NUEVA (CREATE TABLE con las 10 columnas),
-//   2. base VIEJA de 4 columnas (pre-v0.0.9.10) con una fila existente:
-//      el store debe agregarse las columnas solas (ALTER TABLE) sin tocar
-//      los datos.
+// Cada store se prueba con schema nuevo y con una DB Portaless completa cuyo
+// users conserva la forma histórica de 4 columnas (pre-v0.0.9.10). El runner
+// aplica v3 antes de abrir el store y conserva la fila existente.
 // Ademas: integracion con AuthService real (confirmTotpEnrollment +
 // verifyStepUp con codigo TOTP calculado de verdad, y loginWithOAuth
 // creando/buscando usuarios via los metodos reales).
@@ -26,6 +24,7 @@ import { verifyPassword } from "../../packages/auth/src/password";
 import { AuthService } from "../../packages/auth/src/auth-service";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
 import { migrateSqlite } from "../../packages/persistence-migrations/src/runner";
+import { applySchema } from "../../scripts/setup.mjs";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => { while (cleanup.length) cleanup.pop()!(); });
@@ -36,19 +35,17 @@ function tempDbPath(): string {
   return join(dir, "portaless.db");
 }
 
-/** Base pre-v0.0.9.10: solo las 4 columnas originales + una fila ya existente. */
+/** DB Portaless completa con la tabla users de cuatro columnas + una fila. */
 async function seedLegacyUsersTable(dbPath: string): Promise<void> {
+  await applySchema(dbPath, { quiet: true });
   const legacy = await openSqlite(dbPath);
-  legacy.exec(`
-    CREATE TABLE users (
-      username TEXT PRIMARY KEY,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-    INSERT INTO users (username, password_hash, role, created_at)
-    VALUES ('legacy-admin', 'scrypt:old:hash', 'admin', '2026-01-01T00:00:00.000Z');
-  `);
+  legacy.exec("DROP INDEX IF EXISTS idx_users_oauth");
+  for (const column of ["email", "provider", "totp_secret", "totp_enabled_at", "oauth_provider", "oauth_subject"]) {
+    legacy.exec(`ALTER TABLE users DROP COLUMN ${column}`);
+  }
+  legacy.exec("DELETE FROM schema_migrations WHERE version >= 3");
+  legacy.prepare("INSERT OR REPLACE INTO users (username,password_hash,role,created_at) VALUES (?,?,?,?)")
+    .run("legacy-admin", "scrypt:old:hash", "admin", "2026-01-01T00:00:00.000Z");
   legacy.close();
 }
 
@@ -168,7 +165,7 @@ describe("SqliteUsersStore (base nueva)", () => {
 });
 
 describe("SqliteUsersStore (base vieja de 4 columnas)", () => {
-  it("agrega las columnas nuevas solas y conserva la fila existente", async () => {
+  it("runner aplica v3 a la DB histórica y conserva la fila existente", async () => {
     const path = tempDbPath();
     await seedLegacyUsersTable(path);
     await migrateSqlite(path); // las columnas nuevas las aplica la migracion v3

@@ -10,9 +10,8 @@
 # proteccion de main: si falla un solo test de cualquier parte, o si la
 # cobertura baja del minimo, no se mergea.
 #
-# Cobertura: @vitest/coverage-v8 se instala con --no-save para no tocar
-# package.json ni package-lock.json. La version DEBE coincidir con la de
-# vitest (hoy 5.0.2); si se actualiza vitest, actualizar COVERAGE_VERSION.
+# Cobertura: @vitest/coverage-v8 es una dependencia fijada por el lockfile;
+# vitest y coverage-v8 deben actualizarse juntos en package.json/lock.
 #
 # Umbrales (v0.0.9.31): linea de base re-medida tras el item de identidad
 # MCP por invocacion ~ lineas 72.9 / sentencias 71.6 / funciones 71.6 /
@@ -39,9 +38,6 @@ concurrency:
   group: full-tests-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  COVERAGE_VERSION: "5.0.2"
-
 jobs:
   all-tests:
     name: Todos los tests + cobertura (Node 24)
@@ -57,11 +53,6 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci --no-audit --no-fund
-
-      - name: Instalar isolated-vm (bindings nativos del sandbox) y coverage-v8
-        run: |
-          npm install --no-save isolated-vm@^7.0.1 --prefix packages/plugin-sandbox
-          npm install --no-save --no-audit --no-fund "@vitest/coverage-v8@${COVERAGE_VERSION}"
 
       - name: Correr todos los tests con cobertura
         run: >

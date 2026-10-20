@@ -6,20 +6,20 @@
 //
 // Tres estados, todos explicitos (patron NOT_CONFIGURED del repo):
 //   - PORTALESS_EMAIL_WEBHOOK_URL: POST JSON { to, subject, text } a la URL
-//     del operador. Proveedor-neutral: el operador conecta Resend, Mailgun,
-//     SendGrid, Postmark o su propio servicio con un endpoint interno.
-//     PORTALESS_EMAIL_WEBHOOK_TOKEN (opcional) se manda como Authorization:
-//     Bearer. Portaless no conoce ni depende de ningun proveedor.
-//   - PORTALESS_DEV_MODE=1 sin webhook: DevCaptureEmailSender -- NO envia
-//     nada, captura los mensajes en memoria y avisa por consola (mismo
-//     espiritu que el devToken del reset de contrasena: probar el flujo
-//     completo sin infraestructura de correo).
-//   - Ninguno de los dos: createEmailSender() LANZA
+//     del operador; PORTALESS_EMAIL_WEBHOOK_TOKEN es Bearer opcional.
+//   - PORTALESS_EMAIL_SMTP_HOST (+ PORT/PASSWORD/FROM): SMTP directo para
+//     self-host; default 587 negocia STARTTLS si el relay lo anuncia, 465 usa
+//     TLS implicito. Credenciales incompletas fallan cerrado.
+//   - PORTALESS_DEV_MODE=1 sin transporte: DevCaptureEmailSender -- NO envia.
+//   - Ninguno de los anteriores: createEmailSender() LANZA
 //     EmailBackendUnavailableError. Nunca un "exito" que no envio nada:
 //     el usuario esperaria un codigo que jamas llegaria.
 //
 // El envio real del codigo lo hace AuthService.requestEmailStepUpCode();
 // aqui vive solo la transporte.
+
+import { isEmailAddress, type EmailProviderSettings } from "../../email-transport/src/config";
+import { EmailSendError, sendEmail } from "../../email-transport/src/send";
 
 export interface EmailMessage {
   to: string;
@@ -32,7 +32,7 @@ export interface EmailSender {
 }
 
 export class EmailBackendUnavailableError extends Error {
-  constructor(message = "Sin backend de email:send configurado (PORTALESS_EMAIL_WEBHOOK_URL ni PORTALESS_DEV_MODE).") {
+  constructor(message = "Sin backend de email auth configurado (webhook, SMTP o PORTALESS_DEV_MODE).") {
     super(message);
     this.name = "EmailBackendUnavailableError";
   }
@@ -46,6 +46,7 @@ export class HttpWebhookEmailSender implements EmailSender {
   ) {}
 
   async send(message: EmailMessage): Promise<void> {
+    if (!isEmailAddress(message.to)) throw new EmailSendError("destinatario de email invalido.");
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (this.token) headers.authorization = `Bearer ${this.token}`;
     const res = await fetch(this.url, {
@@ -54,6 +55,16 @@ export class HttpWebhookEmailSender implements EmailSender {
       body: JSON.stringify({ to: message.to, subject: message.subject, text: message.text }),
     });
     if (!res.ok) throw new Error(`email webhook respondio HTTP ${res.status}`);
+  }
+}
+
+/** SMTP transport for self-hosted auth mail; credentials stay in environment variables. */
+export class SmtpEmailSender implements EmailSender {
+  constructor(private provider: EmailProviderSettings, private from: string) {}
+
+  async send(message: EmailMessage): Promise<void> {
+    if (!isEmailAddress(message.to)) throw new EmailSendError("destinatario de email invalido.");
+    await sendEmail(this.provider, { ...message, from: this.from });
   }
 }
 
@@ -86,6 +97,38 @@ export function createEmailSender(env?: Record<string, unknown> | null): EmailSe
       ? env.PORTALESS_EMAIL_WEBHOOK_TOKEN
       : undefined;
     return new HttpWebhookEmailSender(url.trim(), token);
+  }
+  const host = env?.PORTALESS_EMAIL_SMTP_HOST;
+  if (typeof host === "string" && host.trim()) {
+    if (env?.__PORTALESS_RUNTIME !== "node") {
+      throw new EmailBackendUnavailableError("SMTP directo requiere el runtime self-hosted de Node; usa un webhook en Cloudflare Pages.");
+    }
+    const rawPort = env?.PORTALESS_EMAIL_SMTP_PORT;
+    const port = rawPort === undefined || rawPort === "" ? 587 : Number(rawPort);
+    const username = typeof env?.PORTALESS_EMAIL_SMTP_USERNAME === "string"
+      ? env.PORTALESS_EMAIL_SMTP_USERNAME.trim()
+      : "";
+    const password = typeof env?.PORTALESS_EMAIL_SMTP_PASSWORD === "string"
+      ? env.PORTALESS_EMAIL_SMTP_PASSWORD
+      : "";
+    const from = typeof env?.PORTALESS_EMAIL_FROM === "string" ? env.PORTALESS_EMAIL_FROM.trim() : "";
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new EmailBackendUnavailableError("PORTALESS_EMAIL_SMTP_PORT debe ser un puerto valido (1-65535).");
+    }
+    if (Boolean(username) !== Boolean(password)) {
+      throw new EmailBackendUnavailableError("Configure juntos PORTALESS_EMAIL_SMTP_USERNAME y PORTALESS_EMAIL_SMTP_PASSWORD.");
+    }
+    if (!isEmailAddress(from)) {
+      throw new EmailBackendUnavailableError("PORTALESS_EMAIL_FROM debe ser un remitente valido para SMTP.");
+    }
+    const provider: EmailProviderSettings = {
+      kind: "smtp",
+      host: host.trim(),
+      port,
+      requireStartTls: port !== 465,
+      ...(username ? { username, token: password } : {}),
+    };
+    return new SmtpEmailSender(provider, from);
   }
   if (env?.PORTALESS_DEV_MODE === "1") return devCaptureEmailSender;
   throw new EmailBackendUnavailableError();

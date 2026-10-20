@@ -72,6 +72,7 @@ function seedLayout(): PageLayout {
     version: "0.1",
     slug: "nosotros",
     title: "Nosotros",
+    status: "draft",
     root: [
       { id: "h1", type: "Heading", props: { text: "Titulo" } },
       { id: "p1", type: "Paragraph", props: { text: "Parrafo" } },
@@ -211,5 +212,20 @@ describe("permisos de las tools de bloques", () => {
     const handler = tools.get("insert_block")!;
     const denial = await handler({ slug: "nosotros", index: 0, node: node("n") }, extra).catch((e) => e);
     expect(denial).toBeInstanceOf(CapabilityDeniedError);
+  });
+
+  it("C06: las tools granulares no modifican una pagina publica", async () => {
+    const h = await harness({ ...seedLayout(), status: "published" });
+    const results = await Promise.all([
+      h.insert({ slug: "nosotros", index: 0, node: node("x") }, h.extra),
+      h.update({ slug: "nosotros", nodeId: "h1", props: { text: "cambio" } }, h.extra),
+      h.remove({ slug: "nosotros", nodeId: "h1" }, h.extra),
+    ]);
+    for (const result of results) {
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text).error).toBe("published_page_requires_admin_approval");
+    }
+    expect(h.saved).toHaveLength(0);
+    expect(h.current()?.root[0].props.text).toBe("Titulo");
   });
 });

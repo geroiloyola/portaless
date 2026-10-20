@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_auth_mfa_challenges_expires ON auth_mfa_challenge
 
 -- Contadores de rate limit por ventana fija (window_start en ms desde epoch).
 -- bucket guarda SHA-256 de la IP o del username, nunca el valor en claro.
--- Usado por /admin/password-reset/request (5 por IP, 3 por usuario, por hora).
+-- Buckets SHA-256 de auth/action limits: reset, login, imágenes y plugins.
 
 CREATE TABLE IF NOT EXISTS auth_rate_limits (
   bucket TEXT NOT NULL,

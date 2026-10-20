@@ -1,27 +1,21 @@
-// Gate de migraciones: protege la integridad de los datos cuando el codigo
-// nuevo corre contra una base vieja (o al reves). El middleware lo consulta
-// antes de servir nada y responde 503 "Pending Database Migrations" en vez de
-// dejar que una columna ausente rompa una query a mitad de camino.
-//
-// Fail-closed: una base MAS NUEVA que el codigo tambien bloquea (no se degrada
-// el schema). Sin base configurada (hosting estatico) no hay gate.
-//
-// IMPORTANTE (R1): una base PRE-VERSIONADA (tablas de app creadas por
-// schema.sql, pero SIN tabla `schema_migrations`) NO se bloquea. `schema.sql`
-// es la forma ACTUAL del schema y se aplica entero al crear la base, asi que
-// una base sin libro mayor esta al dia por construccion -- bloquearla tumbaria
-// todo despliegue de Cloudflare (donde el operador aplica schema.sql via
-// wrangler y nunca corre el runner self-host). El `doctor` avisa que conviene
-// estampar el libro (scripts/stamp-d1.mjs) para que el gate tenga version real.
-// El gate SOLO bloquea cuando el libro existe y esta atras (pending) o adelante
-// (newer): ahi si hay una divergencia verificable.
-import { schemaVersion } from "./index.ts";
+// Gate de migraciones: contrasta ledger Y esquema real antes de servir.
+import {
+  BASELINE_REQUIRED_COLUMNS,
+  MIGRATIONS,
+  REQUIRED_SCHEMA_COLUMNS,
+  missingSchemaColumns,
+  schemaVersion,
+} from "./index.ts";
 
 export interface MigrationStatus {
   dbVersion: number;
   codeVersion: number;
   pending: boolean;
   newer: boolean;
+  invalid: boolean;
+  legacy: boolean;
+  schemaErrors: string[];
+  ledgerErrors: string[];
 }
 
 export interface MigrationGateEnv {
@@ -29,77 +23,151 @@ export interface MigrationGateEnv {
   PORTALESS_SQLITE_PATH?: string;
 }
 
-const APP_TABLES = ["users", "pages"];
+function makeStatus(
+  dbVersion: number,
+  codeVersion: number,
+  options: Partial<Pick<MigrationStatus, "legacy" | "schemaErrors" | "ledgerErrors" | "pending">> = {},
+): MigrationStatus {
+  const schemaErrors = options.schemaErrors ?? [];
+  const ledgerErrors = options.ledgerErrors ?? [];
+  const newer = dbVersion > codeVersion;
+  const pending = options.pending ?? (dbVersion < codeVersion || schemaErrors.length > 0 || ledgerErrors.length > 0);
+  return {
+    dbVersion,
+    codeVersion,
+    pending,
+    newer,
+    invalid: schemaErrors.length > 0 || ledgerErrors.length > 0,
+    legacy: options.legacy ?? false,
+    schemaErrors,
+    ledgerErrors,
+  };
+}
 
-function hasTable(db: any, name: string): boolean {
-  try {
-    return Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name));
-  } catch {
-    return false;
+function sqliteTableNames(db: any): string[] {
+  return db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    .all()
+    .map((row: { name: string }) => row.name);
+}
+
+function sqliteColumns(db: any, table: string): string[] {
+  return db.prepare("SELECT name FROM pragma_table_info(?)").all(table).map((row: { name: string }) => row.name);
+}
+
+function sqliteSchema(db: any): Record<string, string[]> {
+  const tableNames = sqliteTableNames(db);
+  const names = new Set(tableNames);
+  const tables = new Set([
+    ...Object.keys(REQUIRED_SCHEMA_COLUMNS),
+    ...MIGRATIONS.flatMap((migration) => (migration.addColumns ?? []).map((item) => item.table)),
+  ]);
+  return {
+    ...Object.fromEntries([...tables].map((table) => [table, names.has(table) ? sqliteColumns(db, table) : []])),
+    __portaless_has_tables: tableNames.length ? ["present"] : [],
+  };
+}
+
+function sqliteLedger(db: any): { present: boolean; version: number; errors: string[] } {
+  const exists = Boolean(
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get("schema_migrations"),
+  );
+  if (!exists) return { present: false, version: 0, errors: [] };
+  const rows = db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+  return validateLedger(rows);
+}
+
+function validateLedger(rows: Array<{ version: number; name: string }>): { present: true; version: number; errors: string[] } {
+  const expected = new Map(MIGRATIONS.map((migration) => [migration.version, migration.name]));
+  const errors: string[] = [];
+  const seen = new Set<number>();
+  for (const row of rows) {
+    const version = Number(row.version);
+    if (seen.has(version)) errors.push(`version ${version} duplicada`);
+    seen.add(version);
+    if (expected.get(version) !== row.name) errors.push(`version ${version} tiene nombre inesperado (${row.name})`);
   }
-}
-
-async function d1HasTable(db: any, name: string): Promise<boolean> {
-  try {
-    const row = await db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-      .bind(name)
-      .first();
-    return Boolean(row);
-  } catch {
-    return false;
+  const max = rows.reduce((value, row) => Math.max(value, Number(row.version)), 0);
+  for (const migration of MIGRATIONS) {
+    if (migration.version <= max && !seen.has(migration.version)) errors.push(`falta version ${migration.version} antes de ${max}`);
   }
+  return { present: true, version: max, errors };
 }
 
-/** Una base pre-versionada inicializada cuenta como "al dia" (no bloquea). */
-function upToDate(codeVersion: number): MigrationStatus {
-  return { dbVersion: codeVersion, codeVersion, pending: false, newer: false };
+async function d1TableNames(db: any): Promise<string[]> {
+  const result = await db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").all();
+  return (result.results ?? []).map((row: { name: string }) => row.name);
 }
 
-/**
- * Lee el estado del contrato de datos. @returns null si no hay base (hosting
- * estatico) o si la base esta vacia (nada que proteger).
- */
+async function d1Columns(db: any, table: string): Promise<string[]> {
+  const result = await db.prepare("SELECT name FROM pragma_table_info(?)").bind(table).all();
+  return (result.results ?? []).map((row: { name: string }) => row.name);
+}
+
+async function d1Schema(db: any): Promise<Record<string, string[]>> {
+  const tableNames = await d1TableNames(db);
+  const names = new Set(tableNames);
+  const tables = new Set([
+    ...Object.keys(REQUIRED_SCHEMA_COLUMNS),
+    ...MIGRATIONS.flatMap((migration) => (migration.addColumns ?? []).map((item) => item.table)),
+  ]);
+  const entries = await Promise.all(
+    [...tables].map(async (table) => [table, names.has(table) ? await d1Columns(db, table) : []] as const),
+  );
+  return {
+    ...Object.fromEntries(entries),
+    __portaless_has_tables: tableNames.length ? ["present"] : [],
+  };
+}
+
+async function d1Ledger(db: any): Promise<{ present: boolean; version: number; errors: string[] }> {
+  const names = new Set(await d1TableNames(db));
+  if (!names.has("schema_migrations")) return { present: false, version: 0, errors: [] };
+  const result = await db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all();
+  return validateLedger(result.results ?? []);
+}
+
+function resolveStatus(
+  schema: Record<string, string[]>,
+  ledger: { present: boolean; version: number; errors: string[] },
+  codeVersion: number,
+): MigrationStatus | null {
+  const actualTables = Object.values(schema).some((columns) => columns.length > 0);
+  if (!ledger.present && !actualTables) return null;
+
+  const schemaErrors = missingSchemaColumns(schema);
+  if (!ledger.present) {
+    // Solo el esquema completo autoriza adopción como actual. Una DB que aún
+    // carece de columnas de migración se presenta como pendiente, nunca como vN.
+    if (schemaErrors.length === 0) return makeStatus(0, codeVersion, { legacy: true, pending: false });
+    const baselineErrors = missingSchemaColumns(schema, BASELINE_REQUIRED_COLUMNS);
+    return makeStatus(0, codeVersion, {
+      legacy: true,
+      schemaErrors: baselineErrors.length ? baselineErrors : schemaErrors,
+    });
+  }
+
+  return makeStatus(ledger.version, codeVersion, {
+    schemaErrors,
+    ledgerErrors: ledger.errors,
+  });
+}
+
+/** Lee el ledger y el contrato de columnas. No modifica la DB; null solo si no hay DB configurada/vacía. */
 export async function migrationStatus(env: MigrationGateEnv): Promise<MigrationStatus | null> {
   const codeVersion = schemaVersion();
 
   if (env.DB) {
-    if (!(await d1HasTable(env.DB, "schema_migrations"))) {
-      const initialized = (await d1HasTable(env.DB, "users")) || (await d1HasTable(env.DB, "pages"));
-      return initialized ? upToDate(codeVersion) : null;
-    }
-    let dbVersion: number;
-    try {
-      const row = await env.DB.prepare("SELECT MAX(version) AS v FROM schema_migrations").first();
-      dbVersion = Number(row?.v ?? 0);
-    } catch {
-      dbVersion = 0;
-    }
-    return { dbVersion, codeVersion, pending: dbVersion < codeVersion, newer: dbVersion > codeVersion };
+    const [schema, ledger] = await Promise.all([d1Schema(env.DB), d1Ledger(env.DB)]);
+    return resolveStatus(schema, ledger, codeVersion);
   }
 
   if (env.PORTALESS_SQLITE_PATH) {
-    // R8: si el archivo no existe, NO abrir SQLite -- `new Database(path)` lo
-    // crearia vacio como efecto colateral de un simple chequeo.
     const { existsSync } = await import("node:fs");
     if (!existsSync(env.PORTALESS_SQLITE_PATH)) return null;
-
-    let db: any;
+    const db = await openSqliteLazy(env.PORTALESS_SQLITE_PATH);
     try {
-      db = await openSqliteLazy(env.PORTALESS_SQLITE_PATH);
-    } catch {
-      return null; // sin SQLite (workerd sin D1): no hay gate
-    }
-    try {
-      if (!hasTable(db, "schema_migrations")) {
-        const initialized = APP_TABLES.some((t) => hasTable(db, t));
-        return initialized ? upToDate(codeVersion) : null;
-      }
-      const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
-      const dbVersion = Number(row?.v ?? 0);
-      return { dbVersion, codeVersion, pending: dbVersion < codeVersion, newer: dbVersion > codeVersion };
-    } catch {
-      return null;
+      return resolveStatus(sqliteSchema(db), sqliteLedger(db), codeVersion);
     } finally {
       db.close();
     }

@@ -14,6 +14,7 @@
 | [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
+| [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
 
 ## Protocol APW and Portaless Index — [`protocol-apw/`](./protocol-apw/)
 
@@ -42,12 +43,16 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 
 Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status table — some predate the module implementations.
 
+- [`architecture/canonical-node-and-public-projections.md`](./architecture/canonical-node-and-public-projections.md) (English) — target contract for the private canonical node, approved public projections, local/Cloudum handover, and public revision evidence. Explicitly distinguishes target behavior from current implementation.
+- [`decisions/`](./decisions/README.md) (English) — accepted architecture decisions and their known risks/conditions for reconsideration.
+
 - `REPO_STRUCTURE_MAP.md` (ES) — why the real repo structure differs from the original proposal (stub claims corrected).
 - `site-trust-score.md`, `authentication.md`, `licensing-boundaries.md`, `ecosystem-boundaries.md`, `content-layer.md`, `persistence.md`, `deployment-engine.md`, `identity-atproto.md`, `cloud-images.md`, `mcp-agents.md`, `commerce-plugin.md`, `creator-sites-agentic-workflow.md`, `server-side-role-checks.md`, `seo-geo.md` (ES) — per-area design docs.
 
 ## Operations and history
 
 - [`self-hosting.md`](./self-hosting.md) · [`self-hosting-verification.md`](./self-hosting-verification.md) (ES) — self-host guides.
+- [`testing/disposable-staging.md`](./testing/disposable-staging.md) (English) — isolated local staging fixture, synthetic data and ownership-checked cleanup.
 - [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md) · [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md) · [`COMMERCE_SETUP.md`](./COMMERCE_SETUP.md) (ES) — deployment/commerce setup.
 - [`roadmap/ROADMAP-ARCHIVE.md`](./roadmap/ROADMAP-ARCHIVE.md) (ES) — PR-by-PR roadmap history (#1..#75).
 - [`roadmap/v0.0.9.30-estado.md`](./roadmap/v0.0.9.30-estado.md) (ES) — historical release-state note.

@@ -1,0 +1,11 @@
+# Architecture decision records
+
+This directory records accepted product and architecture decisions, including
+their scope, consequences, known risks and conditions for reconsideration.
+An ADR describes the decision at the time it was accepted; it does not claim
+that every implementation consequence is already complete. Current code status
+remains in [`ROADMAP.md`](../../ROADMAP.md).
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0001 — Email configuration and transport boundary](./0001-email-configuration-and-transport.md) | Keep email configuration in the shared `site_settings` KV store, quota in `plugin_email_quota`, use `email-transport` separately from auth email, and defer at-rest encryption for email credentials | Accepted; listed implementation risks remain |

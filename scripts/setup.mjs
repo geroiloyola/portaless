@@ -88,14 +88,45 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
   const schemaSql = readFileSync(schemaPath, "utf-8");
 
   const db = new Database(sqlitePath);
-  db.exec(schemaSql);
-  // schema.sql es la forma ACTUAL: estampa las migraciones hasta la version del
-  // codigo, asi una base nueva queda "al dia" (no pendiente). Ver
-  // packages/persistence-migrations.
-  const { stampMigrations } = await import("../packages/persistence-migrations/src/runner.ts");
-  stampMigrations(db);
-  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
-  db.close();
+  let tables;
+  try {
+    const existing = Number(
+      db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'").get().n,
+    );
+    if (existing === 0) {
+      // El schema maestro es el bootstrap de una base realmente nueva. El
+      // ledger recibe solo el baseline; las versiones posteriores se registran
+      // al aplicar cada delta, en orden y dentro de su propia transaccion.
+      const { MIGRATIONS } = await import("../packages/persistence-migrations/src/index.ts");
+      const { recordAppliedMigration, migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+      db.exec("BEGIN");
+      try {
+        db.exec(schemaSql);
+        recordAppliedMigration(db, MIGRATIONS[0]);
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+      db.close();
+      await migrateSqlite(sqlitePath, { skipBackup: true });
+    } else {
+      db.close();
+      // Una base existente nunca recibe el schema actual a ciegas. La ruta de
+      // upgrade lee su ledger, respalda y aplica solo migraciones numeradas.
+      const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+      await migrateSqlite(sqlitePath);
+    }
+
+    const check = new Database(sqlitePath, { readonly: true });
+    try {
+      tables = check.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
+    } finally {
+      check.close();
+    }
+  } finally {
+    try { db.close(); } catch {}
+  }
 
   const missing = REQUIRED_TABLES.filter((t) => !tables.includes(t));
   if (missing.length > 0) {

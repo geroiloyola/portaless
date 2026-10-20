@@ -332,7 +332,7 @@ describe("MCP -- element packs visibles y usables", () => {
     const { client, saved } = await connectedClientWithCatalog();
     const result = await client.callTool({
       name: "create_page",
-      arguments: { slug: "con-pack", title: "Con pack", root: [badgeNode()], draftMode: true },
+      arguments: { slug: "con-pack", title: "Con pack", root: [badgeNode()] },
     });
     expect(result.isError).toBeFalsy();
     const payload = JSON.parse((result.content as Array<{ text: string }>)[0].text);
@@ -349,7 +349,6 @@ describe("MCP -- element packs visibles y usables", () => {
         slug: "falso",
         title: "Falso",
         root: [{ id: "f1", type: "nope.Nope", props: {} }],
-        draftMode: true,
       },
     });
     expect(result.isError).toBe(true);
@@ -385,7 +384,7 @@ describe("MCP -- element packs visibles y usables", () => {
 
     const result = await client.callTool({
       name: "create_page",
-      arguments: { slug: "x", title: "X", root: [badgeNode()], draftMode: true },
+      arguments: { slug: "x", title: "X", root: [badgeNode()] },
     });
     expect(result.isError).toBe(true);
     expect(saved).toHaveLength(0);

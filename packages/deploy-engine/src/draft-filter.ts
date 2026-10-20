@@ -1,40 +1,24 @@
-// Salvaguarda del publish: por defecto, un borrador nunca se publica sin que
-// un humano lo revise y lo apruebe. Logica pura, extraida para poder testearla
-// sin depender de PageStore ni del filesystem -- mismo principio que
-// editor/tree-ops.ts y mcp-server/tools/node-ops.ts.
+// Politica canonica de publicacion. Toda superficie PUBLICA que consume
+// PageLayout (Astro, runtime, llms.txt, feeds y exportadores) consulta esta
+// decision. Admin puede leer/editar el PageStore; una URL publica no hereda
+// esos privilegios.
 //
-// DOS mecanismos, ambos excludos por defecto:
-// 1. LEGACY: slug terminado en "-draft" (ver functions/admin/api/wizard/
-//    generate-page.js y el viejo create_page del MCP, que marcaba el borrador
-//    con ese sufijo hasta v0.0.9.10). Esas paginas siguen existiendo y se
-//    excluyen igual; no se migran.
-// 2. NATIVO: `status: "draft"` en el PageLayout (PageLayout.status, agregado
-//    en v0.0.9.10). Es el mecanismo que usan create_page/update_page hoy.
-//
-// Un "borrador" es cualquier pagina que cumpla 1 o 2. `includeDrafts` (flag
-// --include-drafts del script) los publica igual a proposito.
+// Compatibilidad: layouts antiguos sin status siguen siendo publicados. Los
+// layouts nuevos deben declarar status; `private` y `draft` nunca se publican.
+// El sufijo `-draft` permanece como exclusion legacy.
+
+export interface PublicationCandidate {
+  slug: string;
+  status?: string;
+  draft?: boolean;
+  visibility?: string;
+}
+
+export type PublicationExclusionReason = "invalid_slug" | "legacy_draft_slug" | "private" | "draft" | "invalid_status";
 
 export interface ExcludeDraftsResult {
   slugs: string[];
   skipped: number;
-}
-
-/** Minimo que el filtro necesita saber de un layout para decidir. */
-export interface DraftAwarePage {
-  slug: string;
-  status?: string;
-}
-
-export function isDraft(page: DraftAwarePage): boolean {
-  return page.slug.endsWith("-draft") || page.status === "draft";
-}
-
-// Filtra una lista de slugs SOLO por el sufijo legacy "-draft". Se mantiene
-// para quien ya tenga los slugs a mano; el publish real usa excludeDraftPages.
-export function excludeDrafts(slugs: string[], includeDrafts: boolean): ExcludeDraftsResult {
-  if (includeDrafts) return { slugs, skipped: 0 };
-  const filtered = slugs.filter((s) => !s.endsWith("-draft"));
-  return { slugs: filtered, skipped: slugs.length - filtered.length };
 }
 
 export interface ExcludeDraftPagesResult<T> {
@@ -42,13 +26,36 @@ export interface ExcludeDraftPagesResult<T> {
   skipped: number;
 }
 
-// Filtra layouts por sufijo legacy "-draft" O status==="draft". Es la que usa
-// publish-site.mjs, que ya tiene los layouts cargados para volcarlos.
-export function excludeDraftPages<T extends DraftAwarePage>(
-  pages: T[],
-  includeDrafts: boolean
-): ExcludeDraftPagesResult<T> {
-  if (includeDrafts) return { pages, skipped: 0 };
-  const kept = pages.filter((p) => !isDraft(p));
+/** Razón fail-closed por la que una entrada no pertenece a ninguna proyección pública. */
+export function publicationExclusionReason(page: PublicationCandidate): PublicationExclusionReason | null {
+  if (typeof page?.slug !== "string" || !page.slug.trim()) return "invalid_slug";
+  if (page.slug.endsWith("-draft")) return "legacy_draft_slug";
+  if (page.visibility === "private" || page.status === "private") return "private";
+  if (page.draft === true || page.status === "draft") return "draft";
+  // Ausente = published para layouts historicos. Un estado nuevo/desconocido
+  // falla cerrado hasta que la politica lo entienda.
+  if (page.status !== undefined && page.status !== "published") return "invalid_status";
+  if (page.visibility !== undefined && page.visibility !== "public") return "private";
+  return null;
+}
+
+export function isPubliclyPublishable(page: PublicationCandidate): boolean {
+  return publicationExclusionReason(page) === null;
+}
+
+/** Compatibilidad semantica: distingue borrador/legacy de privado y estado invalido. */
+export function isDraft(page: PublicationCandidate): boolean {
+  return page.slug?.endsWith("-draft") === true || page.draft === true || page.status === "draft";
+}
+
+/** Filtra slugs legacy. Ya no existe un flag que permita publicar borradores. */
+export function excludeDrafts(slugs: string[]): ExcludeDraftsResult {
+  const filtered = slugs.filter((slug) => isPubliclyPublishable({ slug }));
+  return { slugs: filtered, skipped: slugs.length - filtered.length };
+}
+
+/** Unico filtro para paginas y layouts que salen a una superficie publica. */
+export function excludeDraftPages<T extends PublicationCandidate>(pages: T[]): ExcludeDraftPagesResult<T> {
+  const kept = pages.filter(isPubliclyPublishable);
   return { pages: kept, skipped: pages.length - kept.length };
 }

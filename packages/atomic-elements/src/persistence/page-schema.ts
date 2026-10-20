@@ -52,8 +52,8 @@ export function validatePageLayout(
   }
   if (!layout.slug) errors.push('Falta "slug" en la página.');
   if (!Array.isArray(layout.root)) errors.push('"root" debe ser un arreglo de elementos.');
-  if (layout.status !== undefined && layout.status !== "draft" && layout.status !== "published") {
-    errors.push(`"status" debe ser "draft" o "published" (recibido: ${JSON.stringify(layout.status)}).`);
+  if (layout.status !== undefined && layout.status !== "draft" && layout.status !== "published" && layout.status !== "private") {
+    errors.push(`"status" debe ser "draft", "published" o "private" (recibido: ${JSON.stringify(layout.status)}).`);
   }
   // v0.0.9.11: tema por pagina. Solo se valida el FORMATO (slug); el
   // membership contra el catalogo lo hace apply_theme al escribir, porque

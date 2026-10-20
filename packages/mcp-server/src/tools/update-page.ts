@@ -21,6 +21,7 @@ import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
 import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const TOOL_NAME = "update_page";
 const READ_CAPABILITY_ID = "content:read";
@@ -31,9 +32,9 @@ const inputSchema = {
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   status: z
-    .enum(["draft", "published"])
+    .enum(["draft", "private"])
     .optional()
-    .describe("Cambia el estado de publicacion. 'published' promueve un borrador (flujo de aprobacion humana)."),
+    .describe("Mantiene el contenido en estado no publico ('draft' o 'private'). MCP no puede publicar una pagina."),
   root: z.array(elementNodeSchema).optional().describe("Si se provee, reemplaza el arbol de bloques completo."),
 };
 
@@ -63,6 +64,12 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
     async ({ slug, title, description, status, root }, extra?: AgentInvocationContext) => {
       const agent = await deps.resolveAgent(extra);
       await requireCapability(deps.permissionStore, agent, READ_CAPABILITY_ID);
+      if (status !== undefined && status !== "draft" && status !== "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "publication_requires_admin_approval", message: "MCP solo puede mantener una pagina no publica; un admin publica desde el panel." }, null, 2) }],
+          isError: true,
+        };
+      }
       const existing = await deps.pageStore.load(slug);
       if (!existing) {
         return {
@@ -72,6 +79,20 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
       }
 
       await requireCapability(deps.permissionStore, agent, WRITE_CAPABILITY_ID);
+
+      if (existing.status === "private") {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "private_content_access_denied", message: "MCP no accede a paginas privadas; el owner debe autorizar el contexto por un mecanismo separado." }, null, 2) }],
+          isError: true,
+        };
+      }
+
+      if (isPubliclyPublishable(existing)) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ saved: false, error: "published_page_requires_admin_approval", message: "MCP no modifica una pagina publicada. Crea una propuesta borrador y pide a un admin que la revise y publique." }, null, 2) }],
+          isError: true,
+        };
+      }
 
       // Autoridad de membership sobre el nuevo arbol (si se provee) -- v0.0.9.11.
       if (root) {
@@ -88,7 +109,7 @@ export function registerUpdatePageTool(server: McpServer, deps: RegisterUpdatePa
         ...existing,
         title: title ?? existing.title,
         description: description ?? existing.description,
-        status: status ?? existing.status,
+        status: status ?? existing.status ?? "draft",
         root: (root as ElementNode[] | undefined) ?? existing.root,
       };
 

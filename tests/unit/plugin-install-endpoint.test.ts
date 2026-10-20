@@ -52,7 +52,11 @@ function env(withFlag: boolean) {
 
 function ctx(envv: Record<string, unknown>, body: unknown, user: unknown = { username: "admin", role: "admin" }) {
   return {
-    request: { json: async () => body },
+    request: new Request("https://portaless.example/admin/api/plugins/install", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.20" },
+      body: JSON.stringify(body),
+    }),
     data: user ? { user } : {},
     env: envv,
   } as any;

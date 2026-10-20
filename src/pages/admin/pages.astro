@@ -93,6 +93,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
     .pm-badge--draft { background: rgba(217, 160, 46, 0.16); color: #B8860B; }
     .pm-badge--published { background: rgba(46, 160, 90, 0.16); color: #2E9A5A; }
+    .pm-badge--private { background: rgba(120, 120, 120, 0.16); color: var(--muted); }
     .pm-pub-btn {
       border: 1px solid var(--portaless-border); background: transparent;
       color: var(--portaless-accent); padding: 4px 10px; border-radius: var(--radius-button, 8px);
@@ -123,7 +124,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   function row(page: { slug: string; title: string; status?: string }): HTMLTableRowElement {
     const tr = document.createElement("tr");
-    const status = page.status === "draft" ? "draft" : "published";
+    let status: string = ["draft", "published", "private"].includes(page.status || "")
+      ? page.status!
+      : page.status === undefined ? "published" : "private";
 
     const tdTitle = document.createElement("td");
     tdTitle.textContent = page.title;
@@ -138,52 +141,66 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const tdStatus = document.createElement("td");
     const badge = document.createElement("span");
     badge.className = `pm-badge pm-badge--${status}`;
-    badge.textContent = status === "draft" ? "Borrador" : "Publicado";
+    const statusLabel = (value: string) => value === "draft" ? "Borrador" : value === "private" ? "Privada" : "Publicada";
+    badge.textContent = statusLabel(status);
     tdStatus.appendChild(badge);
     tr.appendChild(tdStatus);
 
     const tdActions = document.createElement("td");
+    const preview = document.createElement("a");
+    preview.href = `/admin/preview/pages/${encodeURIComponent(page.slug)}`;
+    preview.target = "_blank";
+    preview.rel = "noopener noreferrer";
+    preview.textContent = "Vista previa";
+    const view = document.createElement("a");
+    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
+    view.target = "_blank";
+    view.rel = "noopener";
+    view.textContent = "Ver ↗";
 
-    if (status === "draft") {
-      const pub = document.createElement("button");
-      pub.type = "button";
-      pub.className = "pm-pub-btn";
-      pub.textContent = "Publicar";
-      pub.addEventListener("click", () => {
-        pub.disabled = true;
-        (async () => {
-          const loadRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, { credentials: "same-origin" });
-          if (loadRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
-          if (!loadRes.ok) throw new Error(`HTTP ${loadRes.status}`);
-          const layout = await loadRes.json();
-          layout.status = "published";
-          const putRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(layout),
-            credentials: "same-origin",
-          });
-          if (putRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
-          if (!putRes.ok) throw new Error(`HTTP ${putRes.status}`);
-          badge.className = "pm-badge pm-badge--published";
-          badge.textContent = "Publicado";
-          pub.remove();
-        })().catch((err) => { pub.disabled = false; showMsg(`No se pudo publicar: ${(err as Error).message}`); });
-      });
-      tdActions.appendChild(pub);
-    }
+    const changeStatus = document.createElement("button");
+    changeStatus.type = "button";
+    changeStatus.className = "pm-pub-btn";
+    changeStatus.textContent = status === "published" ? "Hacer privada" : "Publicar";
+    changeStatus.addEventListener("click", () => {
+      const nextStatus = status === "published" ? "private" : "published";
+      changeStatus.disabled = true;
+      (async () => {
+        const loadRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, { credentials: "same-origin" });
+        if (loadRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+        if (!loadRes.ok) throw new Error(`HTTP ${loadRes.status}`);
+        const layout = await loadRes.json();
+        layout.status = nextStatus;
+        const putRes = await fetch(`/admin/pages/${encodeURIComponent(page.slug)}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(layout),
+          credentials: "same-origin",
+        });
+        if (putRes.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+        if (!putRes.ok) throw new Error(`HTTP ${putRes.status}`);
+        status = nextStatus;
+        badge.className = `pm-badge pm-badge--${status}`;
+        badge.textContent = statusLabel(status);
+        changeStatus.textContent = status === "published" ? "Hacer privada" : "Publicar";
+        if (status === "published") {
+          preview.remove();
+          if (!view.isConnected) tdActions.appendChild(view);
+        } else {
+          view.remove();
+          if (!preview.isConnected) tdActions.appendChild(preview);
+        }
+      })().catch((err) => { changeStatus.disabled = false; showMsg(`No se pudo cambiar la publicación: ${(err as Error).message}`); });
+    });
+    tdActions.appendChild(changeStatus);
 
     const edit = document.createElement("a");
     edit.href = `/admin/editor?slug=${encodeURIComponent(page.slug)}`;
     edit.textContent = "Editar";
     tdActions.appendChild(edit);
 
-    const view = document.createElement("a");
-    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
-    view.target = "_blank";
-    view.rel = "noopener";
-    view.textContent = "Ver ↗";
-    tdActions.appendChild(view);
+    if (status !== "published") tdActions.appendChild(preview);
+    else tdActions.appendChild(view);
 
     const del = document.createElement("button");
     del.type = "button";

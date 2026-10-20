@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   parsePagePath,
   groupContentPages,
+  filterPublicContentPages,
   versionHref,
   CONTENT_PRIMARY_LOCALE,
   type PageVersion,
@@ -57,6 +58,21 @@ describe("groupContentPages", () => {
       "../content/pages/home.es.json": { default: layout("home", "es") },
     });
     expect(pages[0].primary.locale).toBe("en");
+  });
+});
+
+describe("filterPublicContentPages (C06)", () => {
+  it("no publica primarias private/draft ni traducciones no publicas", () => {
+    const grouped = groupContentPages({
+      "publica.json": { default: { ...layout("publica"), status: "published" } },
+      "publica.en.json": { default: { ...layout("publica", "en"), status: "private" } },
+      "borrador.json": { default: { ...layout("borrador"), status: "draft" } },
+      "privada.json": { default: { ...layout("privada"), status: "private" } },
+      "legacy.json": { default: layout("legacy") },
+    });
+    const pages = filterPublicContentPages(grouped);
+    expect(pages.map((page) => page.slug)).toEqual(["legacy", "publica"]);
+    expect(pages.find((page) => page.slug === "publica")?.versions.map((v) => v.locale)).toEqual(["es"]);
   });
 });
 

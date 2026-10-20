@@ -45,6 +45,8 @@ Read in this order — **do not read them all**:
 | To write a third-party plugin | `docs/plugin-author-guide.md` |
 | To read the API | `docs/api/README.md` |
 | To understand the docs site | `docs/README.md` |
+| To understand the accepted private-node/public-projection MVP contract | `docs/mvp/acceptance-contract.md` |
+| To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
 
 **If you are an AI agent editing code**: read `AGENT.md` after this file. It
 contains the real-state table, the golden rule, and the security risks you

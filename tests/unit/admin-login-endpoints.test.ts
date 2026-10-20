@@ -13,13 +13,16 @@ import { createHmac } from "node:crypto";
 vi.mock("../../packages/auth/src/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
+  const { InMemoryRateLimitStore } = await import("../../packages/auth/src/ephemeral-auth-store");
   const { sharedInMemoryMfaChallengeStore } = await import("../../packages/auth/src/ephemeral-auth-store");
   const users = new InMemoryUsersStore();
   const sessions = new InMemorySessionStore();
+  const rateLimits = new InMemoryRateLimitStore();
   return {
     createUsersStore: async () => users,
     createSessionStore: async () => sessions,
     createMfaChallengeStore: async () => sharedInMemoryMfaChallengeStore,
+    createRateLimitStore: async () => rateLimits,
     createPasswordResetStore: async () => ({ invalidateAllForUser: async () => {}, create: async () => ({ token: "x" }), consume: async () => null }),
   };
 });
@@ -96,6 +99,16 @@ describe("functions/admin/login.js", () => {
     expect(res!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
   });
 
+  it("rechaza cuerpos de login que exceden el límite antes de parsearlos", async () => {
+    const request = new Request("http://x.test/admin/login", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: `username=admin&password=${"x".repeat(17 * 1024)}`,
+    });
+    const res = await login.onRequestPost(context(request));
+    expect(res!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
+  });
+
   it("POST con password incorrecta redirige a /admin/login?error=1", async () => {
     await seedUsers();
     const res = await login.onRequestPost(
@@ -127,6 +140,23 @@ describe("functions/admin/login.js", () => {
       context(formRequest("https://x.test/admin/login", { username: "admin", password: "Admin-Pass-1!" }))
     );
     expect(res!.headers.get("set-cookie")).toContain("Secure");
+  });
+
+  it("limita fallos por usuario y mantiene el error uniforme incluso con contraseña correcta", async () => {
+    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    await users.createUser("login-bruteforce", "Correct-Password-123!", "admin");
+    for (let i = 0; i < 10; i++) {
+      const res = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+        username: "login-bruteforce",
+        password: "wrong-password",
+      })));
+      expect(res!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
+    }
+    const blockedCorrectPassword = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+      username: "login-bruteforce",
+      password: "Correct-Password-123!",
+    })));
+    expect(blockedCorrectPassword!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
   });
 
   it("usuario con 2FA: redirige a /admin/login-mfa con el challenge", async () => {

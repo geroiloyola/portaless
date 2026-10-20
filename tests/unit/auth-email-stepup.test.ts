@@ -20,6 +20,7 @@ import { InMemoryEmailStepUpStore, EMAIL_STEPUP_TTL_MS, EMAIL_STEPUP_MAX_ATTEMPT
 import {
   createEmailSender,
   EmailBackendUnavailableError,
+  SmtpEmailSender,
   clearCapturedEmails,
   getCapturedEmails,
   type EmailMessage,
@@ -85,6 +86,33 @@ describe("createEmailSender", () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(getCapturedEmails()).toEqual([{ to: "dev@example.com", subject: "s", text: "t" }]);
+  });
+
+  it("configura SMTP 587 con STARTTLS opcional anunciado y exige sender y par usuario/clave", () => {
+    expect(createEmailSender({
+      PORTALESS_EMAIL_SMTP_HOST: "smtp.example.test",
+      PORTALESS_EMAIL_FROM: "auth@example.test",
+      __PORTALESS_RUNTIME: "node",
+    })).toBeInstanceOf(SmtpEmailSender);
+    expect(() => createEmailSender({
+      PORTALESS_EMAIL_SMTP_HOST: "smtp.example.test",
+      PORTALESS_EMAIL_SMTP_USERNAME: "mailer",
+      PORTALESS_EMAIL_FROM: "auth@example.test",
+      __PORTALESS_RUNTIME: "node",
+    })).toThrow(/juntos/);
+    expect(() => createEmailSender({
+      PORTALESS_EMAIL_SMTP_HOST: "smtp.example.test",
+      PORTALESS_EMAIL_SMTP_PORT: "not-a-port",
+      PORTALESS_EMAIL_FROM: "auth@example.test",
+      __PORTALESS_RUNTIME: "node",
+    })).toThrow(/puerto valido/);
+  });
+
+  it("rechaza SMTP directo fuera del runtime self-hosted", () => {
+    expect(() => createEmailSender({
+      PORTALESS_EMAIL_SMTP_HOST: "smtp.example.test",
+      PORTALESS_EMAIL_FROM: "auth@example.test",
+    })).toThrow(/webhook en Cloudflare/);
   });
 
   it("sin webhook ni dev mode LANZA EmailBackendUnavailableError", () => {

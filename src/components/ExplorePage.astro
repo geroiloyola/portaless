@@ -6,12 +6,13 @@
 // No finge un ranking de red: el estado degradado honesto (fuente local, asOf,
 // ventana, filtros) vive en un <details>. La clasificacion de las paginas demo
 // es automatica por su arbol de elementos; el filtro de publicacion es el
-// canonico (isDraft de deploy-engine).
+// canonico (isPubliclyPublishable de deploy-engine).
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { isDraft } from "../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
 import { ecosystemPageTheme } from "../lib/ecosystem-theme";
 import { contentPageHref } from "../lib/routes";
+import { publishedPosts } from "../lib/llms-txt";
 import type { Locale } from "../lib/i18n";
 import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
 
@@ -108,12 +109,10 @@ const pageTheme = ecosystemPageTheme();
 const pageModules = import.meta.glob<{ default: PageLayout }>("../content/pages/*.json", { eager: true });
 const pages = Object.values(pageModules)
   .map((mod) => mod.default)
-  .filter((page) => !isDraft(page))
+  .filter(isPubliclyPublishable)
   .sort((a, b) => a.slug.localeCompare(b.slug));
 
-const posts = (await getCollection("posts"))
-  .filter((p) => !p.data.draft)
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const posts = publishedPosts(await getCollection("posts"));
 
 function flatten(nodes: ElementNode[]): ElementNode[] {
   return nodes.flatMap((n) => [

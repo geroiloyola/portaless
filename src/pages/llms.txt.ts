@@ -20,11 +20,14 @@ import { buildLlmsTxt, joinSiteUrl, publishedPosts } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, readContentPolicy } from "../lib/content-policy";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 import { ROUTES } from "../lib/routes";
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
 
 interface PageJson {
   slug?: string;
   title?: string;
   description?: string;
+  status?: string;
+  private?: boolean;
 }
 
 const pageModules = import.meta.glob<{ default: PageJson }>("../content/pages/*.json", { eager: true });
@@ -42,7 +45,13 @@ export const GET: APIRoute = async ({ site }) => {
 
   const pageLinks = Object.values(pageModules)
     .map((mod) => mod.default)
-    .filter((page): page is PageJson & { slug: string } => typeof page?.slug === "string" && page.slug.length > 0)
+    .filter((page): page is PageJson & { slug: string } =>
+      typeof page?.slug === "string" && isPubliclyPublishable({
+        slug: page.slug,
+        status: page.status,
+        visibility: page.private ? "private" : "public",
+      })
+    )
     .map((page) => ({
       title: page.title ?? page.slug,
       url: url(`${ROUTES.PAGES}/${page.slug}`),

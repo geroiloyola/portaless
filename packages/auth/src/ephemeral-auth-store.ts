@@ -3,8 +3,8 @@
 //     por completeMfaLogin(). Antes vivian en un Map del modulo, que en
 //     Cloudflare es distinto en cada isolate y en self-host se pierde al
 //     reiniciar.
-//   - RateLimitStore: contadores por ventana fija (usado por
-//     /admin/password-reset/request).
+//   - RateLimitStore: contadores por ventana fija para login, recuperación y
+//     acciones sensibles de escritura.
 //
 // Implementaciones persistentes en stores/d1-ephemeral-auth-store.ts y
 // stores/sqlite-ephemeral-auth-store.ts. Las de memoria quedan para tests y
@@ -38,6 +38,8 @@ export interface MfaChallengeStore {
 export interface RateLimitStore {
   /** Suma 1 al bucket en la ventana dada y devuelve el total. Borra ventanas anteriores. */
   hit(bucket: string, windowStart: number): Promise<number>;
+  /** Borra un bucket en la ventana actual, por ejemplo tras autenticación correcta. */
+  clear?(bucket: string, windowStart: number): Promise<void>;
 }
 
 export class InMemoryMfaChallengeStore implements MfaChallengeStore {
@@ -86,6 +88,11 @@ export class InMemoryRateLimitStore implements RateLimitStore {
     }
     e.count += 1;
     return e.count;
+  }
+
+  async clear(bucket: string, windowStart: number): Promise<void> {
+    const current = this.counts.get(bucket);
+    if (current?.windowStart === windowStart) this.counts.delete(bucket);
   }
 }
 

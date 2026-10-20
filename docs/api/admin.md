@@ -120,7 +120,8 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 
 | Endpoint | Method | Notes |
 |---|---|---|
-| `/admin/pages` , `/admin/pages/[slug]` | `GET/PUT` | Page CRUD via the real `PageStore` (D1/SQLite); server-side `canWrite(role)` |
+| `/admin/pages` , `/admin/pages/[slug]` | `GET/PUT` | Page CRUD via the real `PageStore` (D1/SQLite); server-side `canWrite(role)`. Admin may set `status: draft`, `published` or `private`; public exposure is governed by the shared publication filter. |
+| `/admin/preview/pages/[slug]` | `GET` | Admin-only HTML preview for a non-public DB page; `private, no-store`, `X-Robots-Tag: noindex`, no canonical, and never falls through to the static public route |
 | `/admin/permissions` | `GET/PUT` | Permissions Center: grant/revoke capabilities, including `trust:read-governance-bypass` for `reader` subjects (DID validated server-side) |
 | `/admin/plugins/[pluginId]/vote` | `POST` | Community `trustScore` vote (1–5) |
 | `/admin/api/plugins/run` | `POST` | Run a **registered + active** plugin through the production sandbox (`runPluginInProduction`): body `{ plugin, payload? }`; `{ manifest, code }` is resolved server-side from `PluginArtifactStore` (`plugin_artifacts` / `plugin_artifact_chunks`, checking `sha256Hex(code) === codeHash`; works on both workerd/D1 and Node/SQLite) and falls back to `PORTALESS_PLUGIN_DIR` on disk (default `packages/plugin-sandbox/examples`) only when no stored artifact exists (if neither has it on workerd, answers `503 plugin_source_backend_unavailable`); capabilities = Permissions Center ∩ manifest; `bridgeUrl` derived from the request origin. Edge execution requires `PORTALESS_CLOUDFLARE_*`/`PORTALESS_DENO_*` env credentials |
@@ -132,9 +133,9 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 
 | Endpoint | Notes |
 |---|---|
-| `/admin/login`, `/admin/login-mfa` | Session + MFA (TOTP) |
+| `/admin/login`, `/admin/login-mfa` | Session + MFA (TOTP); login attempts rate-limited by IP and normalized username |
 | `/admin/api/change-password`, `/admin/api/password-events` | Password lifecycle and event history |
-| `/admin/password-reset/request`, `/confirm` | Reset flow (rate-limited per IP + user, hashed buckets) |
+| `/admin/password-reset/request`, `/confirm` | Reset flow (rate-limited per IP + user, hashed buckets); request emails a one-use link when auth mail and `PORTALESS_PUBLIC_URL` are configured |
 | `/admin/api/oauth/github/*` | GitHub App OAuth for the onboarding wizard (PKCE, refresh) |
 | `/admin/api/wizard/*` | Onboarding wizard steps (admin status, page generation) |
 

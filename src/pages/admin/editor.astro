@@ -219,6 +219,7 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
       slug: pageSlug,
       title: "Borrador sin título",
       description: "",
+      status: "draft",
       root: [],
     };
   }
@@ -268,6 +269,11 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
     loadingEl.style.display = "none";
     toolbarEl.style.display = "";
     rootEl.style.display = "";
+    saveBtn.textContent = initialPage.status === "private"
+      ? "Guardar privado"
+      : initialPage.status === "draft"
+        ? "Guardar borrador"
+        : "Guardar y publicar";
 
     // v0.0.9.11: el catalogo (core ∪ packs) se resuelve ANTES de montar, para
     // que la paleta ya muestre los elementos de pack instalados.
@@ -295,18 +301,21 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
     saveBtn.addEventListener("click", async () => {
       try {
         await editor.save();
-        // Phase 0.5: guardar YA publica (self-host sirve /paginas/<slug>
-        // desde la base al instante). El link cierra el ciclo visible:
-        // guardar -> abrir la URL publica -> ver el cambio.
+        const savedLayout = JSON.parse(editor.exportJSON()) as PageLayout;
+        const isPublic = savedLayout.status === undefined || savedLayout.status === "published";
         saveStatusEl.style.display = "";
         saveStatusEl.className = "editor-save-status ok";
-        saveStatusEl.textContent = "Página guardada y publicada. ";
+        saveStatusEl.textContent = isPublic
+          ? "Página guardada y publicada. "
+          : savedLayout.status === "private" ? "Contenido privado guardado. " : "Borrador guardado. ";
         const viewLink = document.createElement("a");
-        viewLink.id = "editor-view-public";
-        viewLink.href = `${ROUTES.PAGES}/${encodeURIComponent(slug)}`;
+        viewLink.id = isPublic ? "editor-view-public" : "editor-preview-private";
+        viewLink.href = isPublic
+          ? `${ROUTES.PAGES}/${encodeURIComponent(slug)}`
+          : `/admin/preview/pages/${encodeURIComponent(slug)}`;
         viewLink.target = "_blank";
-        viewLink.rel = "noopener";
-        viewLink.textContent = "Ver página pública ↗";
+        viewLink.rel = "noopener noreferrer";
+        viewLink.textContent = isPublic ? "Ver página pública ↗" : "Vista previa privada ↗";
         saveStatusEl.appendChild(viewLink);
         window.setTimeout(() => {
           saveStatusEl.style.display = "none";

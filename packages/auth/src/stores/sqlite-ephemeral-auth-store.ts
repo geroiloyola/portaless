@@ -101,6 +101,10 @@ export class SqliteRateLimitStore implements RateLimitStore {
     return row ? Number(row.count) : 1;
   }
 
+  async clear(bucket: string, windowStart: number): Promise<void> {
+    this.db.prepare("DELETE FROM auth_rate_limits WHERE bucket = ? AND window_start = ?").run(bucket, windowStart);
+  }
+
   close(): void {
     this.db.close();
   }

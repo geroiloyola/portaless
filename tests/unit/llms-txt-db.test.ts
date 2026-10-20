@@ -113,6 +113,14 @@ beforeAll(async () => {
     description: "Descripcion dinamica",
     root: [{ id: "n1", type: "Heading", props: { text: "Hola", level: "h1", align: "center" } }],
   } as unknown as PageLayout);
+  await store.save({
+    version: "0.1", slug: "draft-no-index", title: "LLMS-DRAFT-MARKER", status: "draft",
+    root: [{ id: "x", type: "Paragraph", props: { text: "LLMS-DRAFT-BODY" } }],
+  } as unknown as PageLayout);
+  await store.save({
+    version: "0.1", slug: "private-no-index", title: "LLMS-PRIVATE-MARKER", status: "private",
+    root: [{ id: "x", type: "Paragraph", props: { text: "LLMS-PRIVATE-BODY" } }],
+  } as unknown as PageLayout);
 });
 
 afterAll(() => {
@@ -143,6 +151,8 @@ describe("GET /llms.txt (runtime dinamico)", () => {
     const text = await res.text();
     expect(text).toContain("## Posts"); // lo del build queda igual
     expect(text).toContain("- [Pagina Desde La Base](https://a.com/pages/desde-la-base): Descripcion dinamica");
+    expect(text).not.toContain("LLMS-DRAFT-MARKER");
+    expect(text).not.toContain("LLMS-PRIVATE-MARKER");
     expect(text).toContain("## Optional");
   });
 

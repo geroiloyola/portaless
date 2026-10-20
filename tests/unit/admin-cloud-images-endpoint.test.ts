@@ -59,10 +59,10 @@ function minimalPng(): Uint8Array {
 
 const PNG = minimalPng();
 
-function ctx(opts: { user?: { username: string; role: string } | null; body?: unknown; method?: string; env?: Record<string, unknown> } = {}) {
+function ctx(opts: { user?: { username: string; role: string } | null; body?: unknown; method?: string; env?: Record<string, unknown>; headers?: Record<string, string> } = {}) {
   const request = new Request("http://x.test/admin/api/cloud-images", {
     method: opts.method ?? "POST",
-    headers: opts.body !== undefined ? { "content-type": "application/json" } : {},
+    headers: { ...(opts.body !== undefined ? { "content-type": "application/json" } : {}), ...opts.headers },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
   return {
@@ -175,6 +175,25 @@ describe("POST /admin/api/cloud-images", () => {
     const body = await res.json();
     expect(body.deduplicated).toBe(true);
     expect(body.image.declaredOrigin).toBe("ai");
+  });
+
+  it("limita escrituras por admin y por IP", async () => {
+    const limitedAdmin = { username: "rate-limited-admin", role: "admin" };
+    const headers = { "cf-connecting-ip": "198.51.100.222" };
+    for (let i = 0; i < 10; i++) {
+      const res = await images.onRequestPost(ctx({
+        user: limitedAdmin,
+        body: { imageBase64: encodeBase64(PNG), declaredOrigin: "ai" },
+        headers,
+      }));
+      expect(res.status).toBeLessThan(400);
+    }
+    const blocked = await images.onRequestPost(ctx({
+      user: limitedAdmin,
+      body: { imageBase64: encodeBase64(PNG), declaredOrigin: "ai" },
+      headers,
+    }));
+    expect(blocked.status).toBe(429);
   });
 });
 

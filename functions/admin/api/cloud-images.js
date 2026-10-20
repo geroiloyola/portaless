@@ -35,9 +35,27 @@ import {
 } from "../../../packages/cloud-images/src/payload.ts";
 import { signCloudImage } from "../../../packages/cloud-images/src/sign.ts";
 import { embedPng, isPng } from "../../../packages/cloud-images/src/png.ts";
+import { createRateLimitStore } from "../../../packages/auth/src/store-factory.ts";
+import { allowActionRequest } from "../../../packages/auth/src/action-rate-limit.ts";
+import { clientIpFromHeaders } from "../../../packages/auth/src/password-reset-rate-limit.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 const SITE_ID = IMAGE_SITE_ID;
 const CONTENT_TYPE = "image/png";
+const MAX_UPLOAD_REQUEST_BYTES = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 32 * 1024;
+const UPLOAD_RATE_WINDOW_MS = 60 * 60 * 1000;
+
+async function allowImageWrite(request, env, user) {
+  const limits = await createRateLimitStore(env);
+  return allowActionRequest(limits, {
+    action: "cloud-image-write",
+    ip: clientIpFromHeaders(request.headers, env),
+    actor: user.username ?? user.email ?? "admin",
+    ipLimit: 20,
+    actorLimit: 10,
+    windowMs: UPLOAD_RATE_WINDOW_MS,
+  });
+}
 
 function canWrite(role) {
   return role === "admin";
@@ -71,8 +89,11 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, MAX_UPLOAD_REQUEST_BYTES));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ error: "request_too_large", message: "La solicitud excede el límite de carga." }, 413);
+    }
     return json({ error: "invalid_json_body", message: "El cuerpo debe ser JSON valido." }, 400);
   }
 
@@ -95,6 +116,10 @@ export async function onRequestPost(context) {
       { error: "unsupported_content_type", message: "v1 acepta solo image/png: el sidecar se embebe en un chunk pAPW del propio PNG." },
       400
     );
+  }
+
+  if (!(await allowImageWrite(request, env, user))) {
+    return json({ error: "rate_limited", message: "Se alcanzó el límite temporal de escrituras de imágenes." }, 429);
   }
 
   const store = await createCloudImageStore(env);
@@ -150,14 +175,21 @@ export async function onRequestDelete(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 8 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ error: "request_too_large", message: "La solicitud excede el límite de carga." }, 413);
+    }
     return json({ error: "invalid_json_body", message: "El cuerpo debe ser JSON valido." }, 400);
   }
 
   const imageId = typeof body?.imageId === "string" ? body.imageId : "";
   if (!imageId) {
     return json({ error: "invalid_image_id", message: "imageId es obligatorio." }, 400);
+  }
+
+  if (!(await allowImageWrite(request, env, user))) {
+    return json({ error: "rate_limited", message: "Se alcanzó el límite temporal de escrituras de imágenes." }, 429);
   }
 
   const store = await createCloudImageStore(env);

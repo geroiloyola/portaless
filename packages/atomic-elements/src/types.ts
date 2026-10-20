@@ -36,11 +36,11 @@ export interface PageLayout {
   /**
    * Estado de publicacion nativo. Opcional por compatibilidad hacia atras con
    * el layout JSON ya persistido en D1/SQLite (que no lo trae): si falta, se
-   * trata como "published". El gate de publicacion real es el publish filter
-   * (deploy-engine/draft-filter), que hoy excluye tanto los `-draft` de slug
-   * (legacy) como los `status: "draft"`.
+   * trata como "published" para compatibilidad historica. La politica central
+   * (deploy-engine/draft-filter) publica solo `published`/legacy-sin-status y
+   * excluye `draft`, `private`, sufijo legacy `-draft` y estados desconocidos.
    */
-  status?: "draft" | "published";
+  status?: "draft" | "published" | "private";
   /**
    * Tema por PAGINA (theme pack). Opcional: si falta o el nombre no
    * resuelve en el catalogo (builtin ∪ instalado), la pagina usa el skin

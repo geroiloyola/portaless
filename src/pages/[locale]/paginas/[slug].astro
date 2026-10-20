@@ -5,7 +5,7 @@
 // para que el stub funcione bajo /portaless/ (GitHub Pages), no solo en la raiz.
 import { loadContentPages, versionHref } from "../../../lib/content-pages";
 import { contentPageHref } from "../../../lib/routes";
-import { isDraft } from "../../../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "../../../../packages/deploy-engine/src/draft-filter";
 
 const base = import.meta.env.BASE_URL;
 
@@ -13,7 +13,7 @@ export async function getStaticPaths() {
   const baseUrl = import.meta.env.BASE_URL;
   const out: Array<{ params: { locale: string; slug: string }; props: { destination: string; slug: string; locale: string } }> = [];
   for (const page of loadContentPages()) {
-    if (isDraft(page.primary.layout)) continue;
+    if (!isPubliclyPublishable(page.primary.layout)) continue;
     for (const version of page.versions) {
       if (version.primary) continue;
       out.push({

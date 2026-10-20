@@ -16,6 +16,7 @@ import type { PageLayout } from "../../packages/atomic-elements/src/types";
 import { isLocale, type Locale } from "./i18n";
 import { contentPageHref as routeHref } from "./routes";
 import { SITE_LANG } from "./site-lang";
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
 
 /** Idioma por defecto de una pagina de contenido sin declararlo (el del sitio). */
 export const CONTENT_PRIMARY_LOCALE: Locale = isLocale(SITE_LANG) ? SITE_LANG : DEFAULT_LOCALE;
@@ -78,6 +79,16 @@ export function groupContentPages(
   return out.sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
+/** Proyeccion publica: page primaria publica y solo versiones publicas. */
+export function filterPublicContentPages(pages: ContentPage[]): ContentPage[] {
+  return pages
+    .filter((page) => isPubliclyPublishable(page.primary.layout))
+    .map((page) => ({
+      ...page,
+      versions: page.versions.filter((version) => isPubliclyPublishable(version.layout)),
+    }));
+}
+
 /**
  * Ruta base-relativa de una version (la primaria sin prefijo, la traduccion con
  * el suyo). Se llama `versionHref` a proposito: el modulo unico de rutas
@@ -94,5 +105,5 @@ export function loadContentPages(): ContentPage[] {
   const modules = import.meta.glob<{ default: PageLayout }>("../content/pages/*.json", {
     eager: true,
   });
-  return groupContentPages(modules);
+  return filterPublicContentPages(groupContentPages(modules));
 }

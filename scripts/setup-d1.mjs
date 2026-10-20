@@ -74,8 +74,19 @@ async function main() {
 
   console.log(`Portaless -- setup D1 (${opts.db}, ${opts.mode})`);
 
-  console.log("\n[1/3] Aplicando schema.sql ...");
-  wrangler(opts, [`--file=${join(rootDir, "schema.sql")}`]);
+  const existingTables = Number(
+    queryRows(opts, "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")[0]?.n ?? 0,
+  );
+  if (existingTables === 0) {
+    console.log("\n[1/3] Base nueva: aplicando schema.sql ...");
+    wrangler(opts, [`--file=${join(rootDir, "schema.sql")}`]);
+  } else {
+    console.log("\n[1/3] Base existente: no se reaplica schema.sql; se ejecutan deltas numerados.");
+  }
+
+  const { migrateD1 } = await import("./migrate-d1.mjs");
+  const migration = await migrateD1({ ...opts, skipBackup: existingTables === 0 });
+  if (migration.backupPath) console.log(`      Backup previo: ${migration.backupPath}`);
 
   console.log("\n[2/3] Creando admin inicial si no existe ningun usuario ...");
   const existing = Number(queryRows(opts, "SELECT count(*) AS n FROM users")[0]?.n ?? 0);

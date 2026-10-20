@@ -29,6 +29,7 @@ import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
+import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter.ts";
 import { SITE_LANG, postsLabel, homeLabel, exploreLabel } from "../../src/lib/site-lang.ts";
 import { isMultilingual, t } from "../../src/lib/i18n.ts";
 import {
@@ -174,7 +175,7 @@ function esc(value) {
   );
 }
 
-function renderShell(layout, bodyHtml, request) {
+export function renderShell(layout, bodyHtml, request, { preview = false } = {}) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
   const origin = new URL(request.url).origin;
@@ -198,6 +199,10 @@ function renderShell(layout, bodyHtml, request) {
     description: layout.description || undefined,
     url: canonical,
   }));
+  const discoveryMeta = preview
+    ? '<meta name="robots" content="noindex, nofollow, noarchive" />'
+    : `<link rel="canonical" href="${esc(canonical)}" />`;
+  const jsonLdScript = preview ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
   return `<!doctype html>
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
@@ -205,12 +210,12 @@ function renderShell(layout, bodyHtml, request) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${title}</title>
 ${description ? `<meta name="description" content="${description}" />` : ""}
-<link rel="canonical" href="${esc(canonical)}" />
+${discoveryMeta}
 <link rel="stylesheet" href="/api/site-skin" />
 <script>try{var t=localStorage.getItem("portaless-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <script>${SHARE_LISTENER_SCRIPT}</script>
 <script>${VOLUME_LISTENER_SCRIPT}</script>
-<script type="application/ld+json">${jsonLd}</script>
+${jsonLdScript}
 <style>${globalCss()}
 ${elementsCss()}</style>
 <style>${PAGE_CSS}</style>
@@ -268,18 +273,36 @@ export async function onRequestGet(context) {
     const pageStore = await createPageStore(env);
     layout = await pageStore.load(slug);
   } catch {
-    // Sin base de datos configurada (deploy estatico puro) o error de
-    // lectura: siempre cae al build estatico, nunca 500 en una pagina
-    // publica.
-    return next();
+    // En un deploy puramente estatico no hay binding/path y la Function delega
+    // al artefacto. Si el operador configuro una DB y falla la lectura, NO
+    // servir bytes estaticos posiblemente viejos/privados (C07 fail-closed).
+    const databaseConfigured = Boolean(env.DB || env.PORTALESS_DB || env.PORTALESS_SQLITE_PATH || env.PAGES_SQLITE_PATH);
+    if (!databaseConfigured) return next();
+    return new Response("Page temporarily unavailable", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
   }
 
   if (!layout) return next();
 
+  // Fail-closed: una fila draft/private de la DB tiene precedencia sobre
+  // cualquier HTML estatico antiguo. No caer a next(), que podria servir una
+  // proyeccion anterior y filtrar el contenido.
+  if (!isPubliclyPublishable(layout)) {
+    return new Response("Not Found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
   const validation = validatePageLayout(layout);
   if (!validation.valid) {
     console.error(`[paginas] layout corrupto en la base para "${slug}":`, validation.errors);
-    return next();
+    return new Response("Page temporarily unavailable", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
   }
 
   let bodyHtml;
@@ -287,7 +310,10 @@ export async function onRequestGet(context) {
     bodyHtml = await renderPage(layout);
   } catch (err) {
     console.error(`[paginas] error renderizando "${slug}":`, err);
-    return next();
+    return new Response("Page temporarily unavailable", {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
   }
 
   return new Response(renderShell(layout, bodyHtml, request), {

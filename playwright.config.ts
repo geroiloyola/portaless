@@ -5,7 +5,16 @@
 // estado (la rotacion de identidad cambia el did; el cambio de contrasena
 // cierra sesiones) -- paralelismo aqui seria no-determinista.
 import { defineConfig } from "@playwright/test";
-import { BROWSER_TEST_BASE_URL } from "./scripts/browser-test-server.mjs";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+// Namespace por ejecucion, no una carpeta estable dentro del repo. El teardown
+// solo borra subdirectorios que llevan el ownership marker de C04.
+const BROWSER_TEST_STAGING_ROOT = process.env.PORTALESS_BROWSER_STAGING_ROOT
+  ?? join(tmpdir(), `portaless-playwright-${randomBytes(12).toString("hex")}`);
+process.env.PORTALESS_BROWSER_STAGING_ROOT = BROWSER_TEST_STAGING_ROOT;
+const { BROWSER_TEST_BASE_URL } = await import("./scripts/browser-test-server.mjs");
 
 export default defineConfig({
   testDir: "tests/browser",
@@ -15,6 +24,7 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
+  globalTeardown: "./scripts/staging/playwright-teardown.mjs",
   use: {
     baseURL: BROWSER_TEST_BASE_URL,
     trace: "retain-on-failure",
@@ -25,6 +35,7 @@ export default defineConfig({
     // repo invoca "node node_modules/tsx/dist/cli.mjs ...").
     command: "node node_modules/tsx/dist/cli.mjs scripts/browser-test-server.mjs",
     url: `${BROWSER_TEST_BASE_URL}/admin/login`,
+    env: { PORTALESS_BROWSER_STAGING_ROOT: BROWSER_TEST_STAGING_ROOT },
     reuseExistingServer: false,
     timeout: 240_000, // la primera corrida puede incluir npm run build
   },

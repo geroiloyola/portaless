@@ -59,9 +59,9 @@ npm run doctor            # o: docker compose exec portaless npm run doctor
 npm run migrate           # --dry-run para ver qué haría, sin tocar nada
 ```
 
-El backup queda en `<dataDir>/backups/db-vN-<fecha>.sqlite`. En Docker, además,
-el servidor migra solo al arrancar (después de aplicar `schema.sql`), así que
-actualizar es:
+El backup queda en `<dataDir>/backups/db-vN-<fecha>.sqlite`. En Docker, el
+primer arranque crea una DB con `schema.sql`; las DB existentes aplican solo
+deltas numerados después del backup. Para actualizar:
 
 ```bash
 docker compose pull       # con el tag de imagen fijado
@@ -72,20 +72,57 @@ docker compose up -d
 anterior. Si una migración falla, su transacción se revierte y el arranque
 corta (el backup queda intacto).
 
-Para Cloudflare D1: aplica el esquema (`wrangler d1 execute <DB> --remote --file=schema.sql`) y estampa el libro mayor con `scripts/stamp-d1.mjs` (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`).
+Para Cloudflare D1: usa `npm run setup:d1 -- --db <DB> --remote` solo en una base vacía; las actualizaciones usan `npm run migrate:d1 -- --db <DB> --remote`, que exporta un backup y aplica deltas verificados (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`).
 Ver también la sección **Migration** del [`CHANGELOG`](../CHANGELOG.md).
 
 ## Email transaccional
 
-Los plugins con la capacidad `email:send` (y cualquier flujo que necesite enviar
-correo) usan un proveedor que configura el dueño en **`/admin/settings/email`**:
+Los plugins con la capacidad `email:send` usan el proveedor que configura el
+dueño en **`/admin/settings/email`**. La recuperación de contraseña usa un
+remitente de autenticación separado, configurado mediante variables de entorno:
 
 - **Webhook** (recomendado): Portaless hace `POST` JSON `{ from, to, subject, text }`
   a una URL tuya; detrás conectás Resend, Mailgun, SES o tu servicio. La URL debe
   ser pública (se rechazan hosts internos/metadata — SSRF).
 - **SMTP**: host, puerto (587 STARTTLS / 465 TLS), usuario y contraseña. El
-  cliente exige STARTTLS si hay credenciales (nunca manda la password en claro).
+  cliente negocia STARTTLS cuando el relay lo anuncia; en el remitente de
+  autenticación, cualquier puerto distinto de 465 exige STARTTLS aunque no haya
+  credenciales, para no enviar enlaces de recuperación en claro.
 - **`none`**: apaga el envío; `email:send` responde `501`.
+
+Para los correos de recuperación (y la abstracción auth EmailSender), configura
+el webhook o estas variables en el entorno del servidor —no en el repositorio ni
+en la base de datos—:
+
+```bash
+PORTALESS_PUBLIC_URL=https://tu-dominio.example
+PORTALESS_EMAIL_SMTP_HOST=smtp.tu-proveedor.example
+PORTALESS_EMAIL_SMTP_PORT=587       # default 587; 465 usa TLS implícito
+PORTALESS_EMAIL_SMTP_USERNAME=...
+PORTALESS_EMAIL_SMTP_PASSWORD=...
+PORTALESS_EMAIL_FROM=cuentas@tu-dominio.example
+```
+
+Se pueden usar en su lugar `PORTALESS_EMAIL_WEBHOOK_URL` y opcionalmente
+`PORTALESS_EMAIL_WEBHOOK_TOKEN`. `PORTALESS_PUBLIC_URL` debe ser HTTPS fuera de
+desarrollo; el enlace de reset no se construye desde el header Host de la
+request. Sin proveedor, remitente/destino o URL pública confiable, la solicitud
+de reset mantiene la respuesta genérica pero no emite un token inutilizable.
+SMTP directo funciona solo en el runtime self-hosted de Node; en Cloudflare Pages
+usa el webhook para delegar al servicio de correo.
+La entrega debe probarse con una cuenta destinataria controlada antes de
+habilitar el flujo en una instalación.
+
+Para enviar un mensaje de smoke test al destinatario controlado, configura las
+variables localmente y ejecuta:
+
+```bash
+npm run test:email -- --to=kilo@tu-dominio.example
+```
+
+El comando solo informa que el proveedor aceptó el mensaje; confirma también
+que llegó a la bandeja de entrada o spam. No pegues credenciales SMTP en el
+repositorio ni en tickets.
 
 El **`from`** lo inyecta el core desde el panel: el plugin nunca lo elige
 (delegación ciega). Hay una **cuota diaria por plugin** (default 50/día,

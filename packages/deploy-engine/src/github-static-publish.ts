@@ -149,6 +149,8 @@ export async function publishStaticSite(opts: PublishOptions): Promise<PublishRe
     treeEntries.push({ path: file.path, mode: "100644", type: "blob", sha });
   }
 
+  // A tree without base_tree is a complete public projection. Reusing the old
+  // tree would leave removed pages/assets (including newly private content) live.
   const treeRes = await gh(f, token, "POST", `/repos/${owner}/${repo}/git/trees`, { tree: treeEntries });
   if (treeRes.status !== 201) {
     throw new Error(`No se pudo crear el arbol (HTTP ${treeRes.status}): ${JSON.stringify(treeRes.json)}`);
@@ -167,7 +169,7 @@ export async function publishStaticSite(opts: PublishOptions): Promise<PublishRe
   if (parentSha) {
     const patch = await gh(f, token, "PATCH", `/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
       sha: commitSha,
-      force: true,
+      force: false,
     });
     if (patch.status !== 200) {
       throw new Error(`No se pudo actualizar la rama ${branch} (HTTP ${patch.status}): ${JSON.stringify(patch.json)}`);

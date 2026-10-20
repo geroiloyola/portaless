@@ -1,9 +1,9 @@
 # Autenticación / Roles de Usuario — Estado Real
 
-**Implementado**, en `packages/auth/` + `functions/admin/`. Diseño
-inicialmente simple (usuario/contraseña, dos roles) extendido en v0.0.9.4
-con verificación en 2 pasos (2FA/TOTP), recuperación de contraseña, e
-inicio de sesión con proveedores externos (OAuth/SSO).
+Implementado en `packages/auth/` + `functions/admin/`: usuario/contraseña,
+roles, MFA/TOTP, recuperación persistente y OAuth/SSO. La recuperación envía
+correo solo con un proveedor configurado; la entrega contra un relay del
+operador todavía requiere verificación en la instalación concreta.
 
 ## Qué existe hoy
 
@@ -29,19 +29,17 @@ inicio de sesión con proveedores externos (OAuth/SSO).
   `Set-Cookie: portaless_session=...; HttpOnly; SameSite=Strict;
   Max-Age=86400` (+ `Secure` si la request llego por HTTPS).
 
-  **NOTA CRÍTICA DE INTEGRACIÓN PENDIENTE (v0.0.9.4):** este archivo
-  todavía NO fue actualizado para manejar el caso `mfaRequired:true` --
-  si un usuario con 2FA activo intenta loguearse por este endpoint, el
-  comportamiento actual no está confirmado (podría tratarlo como error
-  genérico en vez de redirigir al segundo paso). Verificar y ajustar
-  antes de considerar 2FA protegido end-to-end en producción.
+   El endpoint también aplica límites persistentes por IP y nombre de usuario;
+   una contraseña correcta deriva al challenge MFA, y una respuesta correcta
+   limpia esos buckets de fallos.
 - `functions/admin/login-mfa.js` (v0.0.9.4, nuevo) — segundo paso de
   login: `POST /admin/login/mfa` con `{ challengeToken, code }`.
-- `functions/admin/password-reset/request.js` y `confirm.js` (v0.0.9.4,
-  nuevos) — flujo completo de recuperación de contraseña. El envío real
-  del email con el enlace de recuperación queda fuera de alcance --
-  `PORTALESS_DEV_MODE=1` devuelve el token directamente en la respuesta
-  para poder probar el flujo sin infraestructura de correo.
+- `functions/admin/password-reset/request.js` y `confirm.js` — flujo de
+  recuperación persistente y rate-limited. En producción, con email del usuario,
+  `PORTALESS_PUBLIC_URL` y un proveedor configurado, envía un enlace de un solo
+  uso; si la entrega falla, elimina el token no entregado. El endpoint conserva
+  una respuesta uniforme para evitar enumerar cuentas. `PORTALESS_DEV_MODE=1`
+  devuelve el token solo fuera de producción.
 - `functions/admin/oauth/[provider]/start.js` y `callback.js` (v0.0.9.4,
   nuevos) — flujo completo Authorization Code + PKCE + protección
   anti-CSRF vía `state`.
@@ -113,14 +111,14 @@ proveedor no está disponible -- `loadOAuthProviderConfig()` devuelve
 
 ## Limitaciones honestas que siguen pendientes
 
-- `functions/admin/login.js` no fue actualizado para el flujo de 2FA
-  (ver nota crítica arriba) -- **verificar antes de confiar en 2FA en
-  producción**.
-- `PasswordResetStore` solo tiene implementación en memoria -- los
-  tokens de recuperación pendientes se pierden si el proceso reinicia.
-- El envío real de emails de recuperación de contraseña no está
-  implementado -- solo la generación y validación del token.
-- `node:sqlite` requiere Node 22.5+.
+- No hay registro público ni invitación de operadores en Portaless; el Beta
+  continúa invite-only por la decisión de bus-factor de `SECURITY.md`.
+- El envío de reset/step-up no se ha verificado contra un relay real ni un
+  destinatario controlado en esta instalación. Los tests usan un webhook local
+  simulado y un SMTP falso.
+- No existe un modelo seller/tenant en Portaless. El commerce-plugin es un
+  catálogo Medusa/Mercur de una sola tienda configurada, sin checkout propio.
+- El runtime SQLite usa `better-sqlite3` sobre Node 24.
 - `canWrite(role)` no esta aplicado en todos los componentes del
   dashboard todavia (sí lo está en el único endpoint de escritura de
   páginas y en el endpoint de permisos, ver ROADMAP.md).

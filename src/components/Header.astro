@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import { homeLabel, postsLabel, exploreLabel, SITE_LANG } from "../lib/site-lang";
+import { publishedPosts } from "../lib/llms-txt";
 import { isMultilingual, localePath, otherLocales, t, type Locale } from "../lib/i18n";
 import {
   headerActionsHtml,
@@ -40,7 +41,7 @@ const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
 // El indice de publicaciones solo se anuncia si hay algo que leer: si el sitio
 // no tiene ninguna publicacion no-borrador, el link desaparece en vez de mandar
 // al visitante a un indice vacio.
-const publishedPosts = (await getCollection("posts")).filter((p) => !p.data.draft);
+const publicPosts = publishedPosts(await getCollection("posts"));
 
 // El control de idioma depende del DATO REAL, no de una suposicion:
 //   - sitio multi-locale y ESTA pagina tiene version en otro locale (home y
@@ -75,7 +76,7 @@ const trustHref = `${base}trust/`;
       <Fragment set:html={navIconHtml(NAV_ICONS.home)} />
       <span class="nav-txt">{homeLabel(locale)}</span>
     </a>
-    {publishedPosts.length > 0 && (
+    {publicPosts.length > 0 && (
       <a class="nav-link" href={`${base}blog/`}>
         <Fragment set:html={navIconHtml(NAV_ICONS.posts)} />
         <span class="nav-txt">{postsLabel(locale)}</span>
