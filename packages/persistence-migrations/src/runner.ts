@@ -33,11 +33,27 @@ export interface MigrateOptions {
   now?: () => Date;
 }
 
-/** Version actual de la base (0 si no hay tabla / filas). */
+function hasMigrationLedger(db: any): boolean {
+  return Boolean(
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get("schema_migrations"),
+  );
+}
+
+/** Version actual de la base (0 si no hay tabla / filas). Esta lectura no crea ni modifica el ledger. */
 export function currentVersion(db: any): number {
-  db.exec(CREATE_TABLE);
+  if (!hasMigrationLedger(db)) return 0;
   const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
   return Number(row?.v ?? 0);
+}
+
+/** Registra una migracion que ya fue aplicada dentro de la transaccion del caller. */
+export function recordAppliedMigration(db: any, migration: Migration, appliedAt = new Date().toISOString()): void {
+  db.exec(CREATE_TABLE);
+  db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)").run(
+    migration.version,
+    migration.name,
+    appliedAt,
+  );
 }
 
 async function backupDatabase(db: any, sqlitePath: string, from: number, opts: MigrateOptions): Promise<string> {
@@ -82,21 +98,6 @@ function applyMigration(db: any, migration: Migration): void {
   applyColumnsFor(db, migration);
 }
 
-/**
- * Registra las migraciones hasta `version` como aplicadas (INSERT OR IGNORE).
- * Lo usa `applySchema`: schema.sql es la forma ACTUAL, asi que una base nueva
- * queda al dia (no "pendiente") sin correr ALTERs sobre tablas que ya tienen
- * todas las columnas.
- */
-export function stampMigrations(db: any, version: number = schemaVersion()): void {
-  db.exec(CREATE_TABLE);
-  const insert = db.prepare("INSERT OR IGNORE INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)");
-  const now = new Date().toISOString();
-  for (const migration of MIGRATIONS) {
-    if (migration.version <= version) insert.run(migration.version, migration.name, now);
-  }
-}
-
 export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {}): Promise<MigrateResult> {
   if (!existsSync(sqlitePath)) {
     // Base nueva: no hay nada que migrar. `schema.sql` la crea al arrancar y el
@@ -105,6 +106,13 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
   }
   const db = await openSqlite(sqlitePath);
   try {
+    const objects = db
+      .prepare("SELECT count(*) AS n FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'")
+      .get();
+    if (Number(objects?.n ?? 0) === 0) {
+      return { from: 0, to: 0, applied: [], backupPath: null, dryRun: Boolean(opts.dryRun) };
+    }
+
     const from = currentVersion(db);
     assertCompatible(from);
     const pending = pendingFrom(from);
@@ -120,12 +128,11 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
     for (const migration of pending) {
       db.exec("BEGIN");
       try {
+        // Si no existia ledger, el baseline se registra en la primera transaccion
+        // que aplica. Nunca se escribe al leer ni antes de respaldar.
+        db.exec(CREATE_TABLE);
         applyMigration(db, migration);
-        db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)").run(
-          migration.version,
-          migration.name,
-          (opts.now?.() ?? new Date()).toISOString(),
-        );
+        recordAppliedMigration(db, migration, (opts.now?.() ?? new Date()).toISOString());
         db.exec("COMMIT");
         applied.push(migration.name);
       } catch (err) {

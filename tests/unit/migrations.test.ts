@@ -51,6 +51,15 @@ describe("migraciones: runner SQLite", () => {
     expect(result).toMatchObject({ from: 0, to: 0, applied: [] });
   });
 
+  it("leer currentVersion no crea ni altera schema_migrations", async () => {
+    const path = tempDb();
+    const db = new Database(path);
+    db.exec("CREATE TABLE legacy_marker (id TEXT PRIMARY KEY)");
+    expect(currentVersion(db)).toBe(0);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations'").get()).toBeUndefined();
+    db.close();
+  });
+
   it("applySchema estampa las migraciones hasta la version del codigo", async () => {
     const path = tempDb();
     await applySchema(path, { quiet: true }); // schema.sql es la forma ACTUAL
