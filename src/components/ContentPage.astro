@@ -18,7 +18,7 @@ import {
   resolveThemePack,
   themeStyleDecl,
 } from "../../packages/atomic-elements/src/themes/theme-pack";
-import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
+import { deriveHeaderContext, contextActionsHtml } from "../lib/atomic-responsive-icons";
 import type { PublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history";
 
 interface Props {
@@ -72,6 +72,7 @@ const revisionHistory = layout.publicationId
   />
   <JsonLd slot="head" layout={layout} site={siteInfo} />
   <PageRenderer layout={layout} />
+  <Fragment set:html={contextActionsHtml(headerContext, base)} />
   {revisionHistory && (
     <section class="public-revision-history" aria-labelledby="revision-history-title">
       <h2 id="revision-history-title">Historial público de revisiones</h2>

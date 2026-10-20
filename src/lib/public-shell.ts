@@ -6,7 +6,6 @@ import {
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
-  trustLinkHtml,
   type HeaderContext,
 } from "./atomic-responsive-icons";
 
@@ -32,7 +31,7 @@ function escapeHtml(value: unknown): string {
 
 /** One semantic header contract consumed by both Astro and the Node PageStore shell. */
 export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
-  const { locale, hasPosts, commerceEnabled, context = null, alternatePath, languageAlternate } = options;
+  const { locale, hasPosts, commerceEnabled, alternatePath, languageAlternate } = options;
   const base = options.base ?? "/";
   const baseNoSlash = base.replace(/\/+$/, "");
   const others = otherLocales(locale);
@@ -50,7 +49,7 @@ export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
       : "",
     `<a class="nav-link" href="${escapeHtml(`${base}explore/`)}">${navIconHtml(NAV_ICONS.explore)}<span class="nav-txt">${escapeHtml(exploreLabel(locale))}</span></a>`,
     commerceEnabled
-      ? `<a class="nav-link" href="${escapeHtml(`${base}tienda/`)}">${navIconHtml(NAV_ICONS.shop)}<span class="nav-txt">Tienda</span></a>`
+      ? `<a class="nav-link nav-link-commerce" href="${escapeHtml(`${base}tienda/`)}">${navIconHtml(NAV_ICONS.shop)}<span class="nav-txt">Tienda</span></a>`
       : "",
   ].join("");
   const actions = [
@@ -62,12 +61,7 @@ export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
           text: t(locale, "home.otherLocaleName"),
         })
       : "",
-    trustLinkHtml({
-      href: `${base}trust/`,
-      label: t(locale, "trust.label"),
-      ariaLabel: t(locale, "trust.aria"),
-    }),
-    headerActionsHtml(context, base),
+    headerActionsHtml(null, base),
   ].join("");
 
   return `<header class="site-header"><div class="site-header-row"><nav class="site-nav" aria-label="${escapeHtml(locale === "es" ? "Navegación principal" : "Primary navigation")}">${nav}</nav><div class="header-right" role="group" aria-label="${escapeHtml(locale === "es" ? "Acciones del sitio" : "Site actions")}">${actions}</div></div>${showNotice ? langNoticeHtml({ text: t(locale, "lang.notice") }) : ""}</header>`;

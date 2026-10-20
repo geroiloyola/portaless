@@ -36,6 +36,7 @@ import { t } from "../../src/lib/i18n.ts";
 import { renderPublicHeaderHtml } from "../../src/lib/public-shell.ts";
 import {
   deriveHeaderContext,
+  contextActionsHtml,
   VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
@@ -93,11 +94,8 @@ header.site-header .header-lang:hover{border-color:var(--accent);color:var(--acc
 header.site-header .header-lang-icon svg{width:16px;height:16px}
 header.site-header .header-lang-notice{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.4rem;max-width:860px;margin:0 auto;padding:0 var(--gutter) 0.7rem;font-size:0.8rem;line-height:1.4;color:var(--muted)}
 header.site-header .header-lang-notice-link{color:var(--accent-text);white-space:nowrap}
-header.site-header .header-trust{display:inline-flex;align-items:center;gap:0.4rem;padding:0.32rem 0.7rem;border:1px solid var(--panel-border);border-radius:999px;color:var(--text);font-size:0.85rem;line-height:1;text-decoration:none}
-header.site-header .header-trust:hover{border-color:var(--accent);color:var(--accent)}
-header.site-header .header-trust-icon svg{width:16px;height:16px}
 header.site-header .nav-ico{display:none;align-items:center;justify-content:center}
-@media (max-width:640px){header.site-header .site-header-row{flex-direction:column;align-items:stretch;gap:0.25rem;padding:0.75rem var(--gutter)}header.site-header nav.site-nav{width:100%;justify-content:space-between;gap:clamp(2px,1vw,6px)}header.site-header .brand{flex:0 1 auto;min-width:44px;font-size:0.95rem}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;border-radius:999px;color:var(--text)}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:0.3rem;flex:0 0 auto;width:100%;justify-content:flex-end;margin-left:0}header.site-header .header-lang{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-trust{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-trust .header-trust-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
+@media (max-width:640px){header.site-header .site-header-row{flex-direction:row;align-items:center;gap:0.2rem;padding:0.5rem var(--gutter)}header.site-header nav.site-nav{flex:1 1 auto;width:auto;justify-content:space-between;gap:2px}header.site-header .brand{flex:0 1 auto;min-width:44px;font-size:clamp(0.7rem,3.5vw,0.88rem)}header.site-header .nav-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;border-radius:999px;color:var(--text)}header.site-header .nav-link-commerce{display:none}header.site-header .nav-link:hover{color:var(--accent)}header.site-header .nav-link .nav-ico{display:inline-flex}header.site-header .nav-link .nav-ico svg{width:19px;height:19px}header.site-header .nav-link .nav-txt{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}header.site-header .header-right{gap:2px;flex:0 0 auto;width:auto;justify-content:flex-end;margin-left:0}header.site-header .header-lang{width:44px;height:44px;padding:0;justify-content:center}header.site-header .header-lang .header-lang-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}}
 header.site-header .header-icon-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;padding:0;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
 header.site-header .header-icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 header.site-header .header-icon-btn svg{width:18px;height:18px}
@@ -140,6 +138,9 @@ const PAGE_CSS = `
 .public-revision-history{max-width:900px;margin:3rem auto 0;padding-top:1.5rem;border-top:1px solid var(--panel-border);overflow-wrap:anywhere}
 .public-revision-history li{margin:1.25rem 0}.public-revision-history code{overflow-wrap:anywhere}
 .public-revision-history pre{max-width:100%;overflow-x:auto}
+.page-context-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;max-width:900px;margin:1.5rem auto}
+.page-context-actions .page-context-action{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-width:44px;min-height:44px;padding:.25rem .75rem;border:1px solid var(--panel-border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
+.page-context-actions .page-context-action svg{width:18px;height:18px;flex:0 0 auto}
 `.trim();
 
 // Boton "Compartir" de las paginas bio (ProfileHeader) -- MISMO cuerpo
@@ -209,11 +210,12 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
     locale: SITE_LANG,
     hasPosts: showPostsLink(),
     commerceEnabled: false,
-    context: deriveHeaderContext(layout.root),
+    context: null,
   });
   const historyHtml = !preview && revisionHistory
     ? `<section class="public-revision-history" aria-labelledby="revision-history-title"><h2 id="revision-history-title">Historial público de revisiones</h2><p>Los cambios se comparan entre revisiones aprobadas. No implican que un cambio haya causado un resultado de reputación.</p><ol>${revisionHistory.revisions.map((revision) => `<li><h3>Revisión ${revision.revisionNo}: ${esc(revision.title)}</h3><p><time datetime="${esc(revision.publishedAt)}">${esc(revision.publishedAt)}</time></p><p><code>${esc(revision.contentHash)}</code></p>${revision.changedPaths.length ? `<p>Cambios verificables: ${esc(revision.changedPaths.join(", "))}</p>` : revision.parentRevisionId ? "<p>Sin cambios en el contenido respecto a la revisión pública anterior.</p>" : "<p>Primera revisión pública registrada.</p>"}${revision.reputation.status === "observed" ? `<ul>${revision.reputation.observations.map((observation) => `<li><time datetime="${esc(observation.observedAt)}">${esc(observation.observedAt)}</time> — ${esc(observation.source)}; reglas ${esc(observation.rulesVersion)}${observation.sampleSize !== null ? `; muestra ${observation.sampleSize}` : ""}${observation.weight !== null ? `; peso ${observation.weight}` : ""}<pre><code>${esc(JSON.stringify(observation.calculation, null, 2))}</code></pre></li>`).join("")}</ul>` : "<p>Reputación ligada a esta revisión: sin datos.</p>"}</li>`).join("")}</ol><a href="/revisions/${esc(revisionHistory.publicationId)}/index.json">Consultar y verificar el historial completo (JSON)</a></section>`
     : "";
+  const contextHtml = contextActionsHtml(deriveHeaderContext(layout.root));
   return `<!doctype html>
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
@@ -235,6 +237,7 @@ ${elementsCss()}</style>
 ${headerHtml}
 <main class="container">
 <article class="ae-page">${bodyHtml}</article>
+${contextHtml}
 ${historyHtml}
 </main>
 <footer class="site-footer">
