@@ -92,6 +92,10 @@ export class SqlitePasswordResetStore implements PasswordResetStore {
     this.db.prepare("DELETE FROM password_reset_requests WHERE username = ?").run(username);
   }
 
+  async delete(token: string): Promise<void> {
+    this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").run(token);
+  }
+
   close(): void {
     this.db.close();
   }

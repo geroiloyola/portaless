@@ -23,7 +23,7 @@
 //   - Step-up por email (v0.0.9.10): requestEmailStepUpCode() genera un
 //     codigo OTP de un solo uso (8 digitos, TTL 10 min, maximo 5 fallos),
 //     lo hashea (nunca se guarda en claro) en un EmailStepUpStore y lo
-//     envia por un EmailSender (webhook transaccional del operador o
+//     envia por un EmailSender (SMTP/webhook transaccional del operador o
 //     captura en dev; ver email-sender.ts). verifyEmailStepUpCode()
 //     valida y consume el codigo. PRIMITIVA BASE: los endpoints todavia
 //     no la usan (siguen con contrasena + TOTP); cablearla en las

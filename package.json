@@ -20,6 +20,7 @@
     "setup": "tsx scripts/setup.mjs",
     "setup:d1": "tsx scripts/setup-d1.mjs",
     "migrate": "tsx scripts/migrate.mjs",
+    "test:email": "node --import tsx scripts/test-auth-email.mjs",
     "doctor": "tsx scripts/doctor.mjs",
     "migrate:d1": "tsx scripts/migrate-d1.mjs",
     "staging:create": "node node_modules/tsx/dist/cli.mjs scripts/staging/create.mjs",

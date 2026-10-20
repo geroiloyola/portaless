@@ -11,6 +11,7 @@ const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutos -- vida corta a proposi
 export interface PasswordResetStore {
   create(username: string): Promise<PasswordResetRequest>;
   consume(token: string): Promise<PasswordResetRequest | null>;
+  delete(token: string): Promise<void>;
   invalidateAllForUser(username: string): Promise<void>;
 }
 
@@ -46,5 +47,9 @@ export class InMemoryPasswordResetStore implements PasswordResetStore {
     for (const [token, record] of this.requests.entries()) {
       if (record.username === username) this.requests.delete(token);
     }
+  }
+
+  async delete(token: string): Promise<void> {
+    this.requests.delete(token);
   }
 }

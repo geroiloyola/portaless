@@ -36,7 +36,8 @@ Read this table first; every row links to the section that justifies it. A row i
 - `[x]` `main` branch protection; `admin`/`viewer` roles with `canWrite(role)` DOM guard + server-side validation across the dashboard.
 - `[x]` Licensing: core AGPL-3.0; APW specification CC BY 4.0; Plugin SDK planned MIT ([`licensing boundaries`](./docs/architecture/licensing-boundaries.md)).
 - `[x]` Password recovery, 2FA (TOTP), OAuth/SSO; step-up (password + TOTP) for sensitive actions.
-- `[x]` Exact pre-login allowlist for `/admin/*`; MFA attempt limits; hashed-bucket reset rate limits; `password_change_events` history; all sessions invalidated on password change/reset.
+- `[x]` Exact pre-login allowlist for `/admin/*`; MFA attempt limits; hashed-bucket login/reset rate limits; bounded login/reset/upload request bodies; per-admin/IP image/plugin upload quotas; `password_change_events` history; all sessions invalidated on password change/reset.
+- `[~]` Password-reset email delivery wired through trusted HTTPS links to webhook or SMTP (587 STARTTLS / 465 TLS); still requires an operator's real-relay delivery check. No public sign-up/invitation flow or seller/tenant model: Beta remains invite-only and commerce remains single-store catalog read-only.
 
 ### Persistence, install, plugins
 

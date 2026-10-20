@@ -1,12 +1,8 @@
 // Cloudflare Pages Function -- POST /admin/password-reset/request
-// Inicia recuperacion de contrasena. Siempre responde 200 (nunca revela
-// si el username/email existe -- mitigacion estandar de enumeracion de
-// usuarios). El envio real del email con el link de reset queda fuera de
-// alcance de v0.0.9.4 (ver ROADMAP.md): este endpoint genera y persiste
-// el token, pero NO lo envia por ningun canal todavia -- en desarrollo/
-// self-hosted sin proveedor de email configurado, el token se devuelve
-// en la respuesta SOLO si env.PORTALESS_DEV_MODE==="1", para poder
-// probar el flujo completo sin infraestructura de correo.
+// Inicia recuperación de contraseña. Mantiene una respuesta genérica para no
+// revelar si existe el usuario; en producción envía el enlace solo si hay email,
+// proveedor configurado y PORTALESS_PUBLIC_URL confiable. El token dev se
+// devuelve solo con PORTALESS_DEV_MODE fuera de producción.
 //
 // Guardia de produccion: si PORTALESS_DEV_MODE="1" y NODE_ENV==="production",
 // el arranque de este endpoint se rechaza explicitamente (500) en vez de
@@ -29,12 +25,30 @@ import {
   allowPasswordResetRequest,
   clientIpFromHeaders,
 } from "../../../packages/auth/src/password-reset-rate-limit.ts";
+import { createEmailSender } from "../../../packages/auth/src/email-sender.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 function okResponse(devToken) {
   return new Response(JSON.stringify({ success: true, devToken }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function passwordResetUrl(env, token) {
+  const configured = typeof env.PORTALESS_PUBLIC_URL === "string" ? env.PORTALESS_PUBLIC_URL.trim() : "";
+  if (!configured) throw new Error("PORTALESS_PUBLIC_URL is required for password recovery email links.");
+  const url = new URL(configured);
+  const localDev = env.PORTALESS_DEV_MODE === "1" && ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+  if (url.username || url.password || url.search || url.hash || (url.protocol !== "https:" && !(localDev && url.protocol === "http:"))) {
+    throw new Error("PORTALESS_PUBLIC_URL must be an HTTPS base URL (HTTP is allowed only for local dev).");
+  }
+  const prefix = url.pathname.replace(/\/+$/, "");
+  url.pathname = `${prefix}/admin/password-reset`;
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("token", token);
+  return url.toString();
 }
 
 export async function onRequestPost(context) {
@@ -60,8 +74,14 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 8 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -83,13 +103,39 @@ export async function onRequestPost(context) {
   }
 
   const usersStore = await createUsersStore(env);
-  const sessionStore = await createSessionStore(env);
-  const passwordResetStore = await createPasswordResetStore(env);
-  const authService = new AuthService(usersStore, sessionStore, passwordResetStore);
+  const user = await usersStore.findByUsername(username);
 
-  const result = await authService.requestPasswordReset(username);
+  // Development-only escape hatch remains explicit and is rejected in production above.
+  if (env.PORTALESS_DEV_MODE === "1") {
+    const authService = new AuthService(usersStore, await createSessionStore(env), await createPasswordResetStore(env));
+    const result = await authService.requestPasswordReset(username);
+    return okResponse(result?.token);
+  }
 
-  const devToken = env.PORTALESS_DEV_MODE === "1" && result ? result.token : undefined;
+  // Never create an undiscoverable reset token: production sends only when the
+  // account has an address, a configured sender and a trusted public base URL.
+  if (user?.email) {
+    const resets = await createPasswordResetStore(env);
+    let issued;
+    try {
+      const sender = createEmailSender(env);
+      const authService = new AuthService(usersStore, await createSessionStore(env), resets);
+      issued = await authService.requestPasswordReset(username);
+      if (issued) {
+        await sender.send({
+          to: user.email,
+          subject: "Portaless: recuperar contraseña",
+          text:
+            `Recibimos una solicitud para cambiar la contraseña de tu cuenta.\n\n` +
+            `Abre este enlace en los próximos 30 minutos:\n${passwordResetUrl(env, issued.token)}\n\n` +
+            `Si no solicitaste el cambio, ignora este mensaje.`,
+        });
+      }
+    } catch (error) {
+      if (issued?.token) await resets.delete(issued.token);
+      console.error("No se pudo enviar el correo de recuperación.", error);
+    }
+  }
 
-  return okResponse(devToken);
+  return okResponse(undefined);
 }

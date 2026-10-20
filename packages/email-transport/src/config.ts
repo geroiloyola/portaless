@@ -25,6 +25,8 @@ export interface EmailProviderSettings {
   host?: string;
   port?: number;
   username?: string;
+  /** Rechaza un relay sin STARTTLS aunque el SMTP no use AUTH. */
+  requireStartTls?: boolean;
 }
 
 export interface EmailTemplate {

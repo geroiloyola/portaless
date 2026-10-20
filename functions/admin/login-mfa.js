@@ -20,14 +20,21 @@ import {
   createSessionStore,
   createMfaChallengeStore,
 } from "../../packages/auth/src/store-factory.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 8 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
       headers: { "Content-Type": "application/json" },

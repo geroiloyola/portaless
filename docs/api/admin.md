@@ -133,9 +133,9 @@ Public writes from third parties hit `/trust/:siteId/*` instead (Web Bot Auth / 
 
 | Endpoint | Notes |
 |---|---|
-| `/admin/login`, `/admin/login-mfa` | Session + MFA (TOTP) |
+| `/admin/login`, `/admin/login-mfa` | Session + MFA (TOTP); login attempts rate-limited by IP and normalized username |
 | `/admin/api/change-password`, `/admin/api/password-events` | Password lifecycle and event history |
-| `/admin/password-reset/request`, `/confirm` | Reset flow (rate-limited per IP + user, hashed buckets) |
+| `/admin/password-reset/request`, `/confirm` | Reset flow (rate-limited per IP + user, hashed buckets); request emails a one-use link when auth mail and `PORTALESS_PUBLIC_URL` are configured |
 | `/admin/api/oauth/github/*` | GitHub App OAuth for the onboarding wizard (PKCE, refresh) |
 | `/admin/api/wizard/*` | Onboarding wizard steps (admin status, page generation) |
 

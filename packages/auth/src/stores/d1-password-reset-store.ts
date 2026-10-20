@@ -68,4 +68,8 @@ export class D1PasswordResetStore implements PasswordResetStore {
   async invalidateAllForUser(username: string): Promise<void> {
     await this.db.prepare("DELETE FROM password_reset_requests WHERE username = ?").bind(username).run();
   }
+
+  async delete(token: string): Promise<void> {
+    await this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").bind(token).run();
+  }
 }

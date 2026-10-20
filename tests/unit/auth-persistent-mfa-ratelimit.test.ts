@@ -22,6 +22,7 @@ import {
   RESET_LIMIT_PER_USER,
   RESET_WINDOW_MS,
 } from "../../packages/auth/src/password-reset-rate-limit.ts";
+import { allowLoginAttempt, clearLoginFailures, LOGIN_LIMIT_PER_USER, LOGIN_WINDOW_MS } from "../../packages/auth/src/login-rate-limit.ts";
 
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 const cleanups: Array<() => void> = [];
@@ -142,5 +143,39 @@ describe("Rate limit de /admin/password-reset/request", () => {
     expect(clientIpFromHeaders(new Headers({ "cf-connecting-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe("1.1.1.1");
     expect(clientIpFromHeaders(new Headers({ "x-forwarded-for": "2.2.2.2, 10.0.0.1" }))).toBe("2.2.2.2");
     expect(clientIpFromHeaders(new Headers())).toBe("unknown");
+  });
+});
+
+describe("rate limit de login", () => {
+  const now = Date.UTC(2026, 8, 30, 12, 0, 0);
+
+  it("limita por usuario y limpia el bucket tras autenticación correcta", async () => {
+    const store = new InMemoryRateLimitStore();
+    let last: Awaited<ReturnType<typeof allowLoginAttempt>> | undefined;
+    for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
+      last = await allowLoginAttempt(store, `198.51.100.${i}`, "admin", now);
+      expect(last.allowed).toBe(true);
+    }
+    expect((await allowLoginAttempt(store, "198.51.100.99", "ADMIN", now)).allowed).toBe(false);
+    await clearLoginFailures(store, last!.buckets, last!.windowStart);
+    expect((await allowLoginAttempt(store, "198.51.100.99", "admin", now)).allowed).toBe(true);
+  });
+
+  it("clear se comparte entre conexiones SQLite y conserva otras ventanas", async () => {
+    const path = tempDbPath();
+    const first = await SqliteRateLimitStore.open(path);
+    const second = await SqliteRateLimitStore.open(path);
+    cleanups.unshift(() => {
+      first.close();
+      second.close();
+    });
+    const attempt = await allowLoginAttempt(first, "203.0.113.8", "owner", now);
+    expect((await allowLoginAttempt(second, "203.0.113.9", "owner", now)).allowed).toBe(true);
+    await clearLoginFailures(second, attempt.buckets, attempt.windowStart);
+    for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
+      expect((await allowLoginAttempt(first, `192.0.2.${i}`, "owner", now)).allowed).toBe(true);
+    }
+    expect((await allowLoginAttempt(first, "192.0.2.90", "owner", now)).allowed).toBe(false);
+    expect((await allowLoginAttempt(first, "192.0.2.90", "owner", now + LOGIN_WINDOW_MS)).allowed).toBe(true);
   });
 });

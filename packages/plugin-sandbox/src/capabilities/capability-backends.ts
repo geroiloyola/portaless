@@ -250,6 +250,9 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
 
       const { subject, text } = renderEmailTemplate(template, (args.data ?? {}) as Record<string, unknown>);
       try {
+        if (settings.provider.kind === "smtp" && env.__PORTALESS_RUNTIME !== "node") {
+          throw capabilityError("EMAIL_SMTP_REQUIRES_NODE", "SMTP directo requiere el runtime self-hosted de Node; usa un webhook en Cloudflare Pages.");
+        }
         await sendEmail(settings.provider, { from: settings.from, to: args.to, subject, text });
       } catch (err) {
         // R4: si el transporte falla (proveedor caido), el email NO salio: se
