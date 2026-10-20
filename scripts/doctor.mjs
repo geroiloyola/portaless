@@ -20,7 +20,8 @@ async function main() {
     pathArg >= 0 ? args[pathArg + 1] : process.env.PORTALESS_SQLITE_PATH || "./portaless.db"
   );
 
-  const { schemaVersion, assertCompatible } = await import("../packages/persistence-migrations/src/index.ts");
+  const { schemaVersion } = await import("../packages/persistence-migrations/src/index.ts");
+  const { migrationStatus } = await import("../packages/persistence-migrations/src/gate.ts");
 
   console.log("Portaless doctor");
   console.log(`  base: ${sqlitePath}`);
@@ -37,27 +38,34 @@ async function main() {
 
   const db = await openSqlite(sqlitePath);
   try {
-    let dbVersion = 0;
-    try {
-      const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
-      dbVersion = Number(row?.v ?? 0);
-    } catch {
-      dbVersion = 0; // tabla ausente: base pre-versionado
+    const status = await migrationStatus({ PORTALESS_SQLITE_PATH: sqlitePath });
+    if (!status) {
+      console.log("  estado: DB vacía, todavía no hay esquema Portaless.");
+      return;
     }
-    console.log(`  base esta en: schema v${dbVersion}`);
+    console.log(`  ledger: ${status.legacy ? "ausente (legacy verificado por columnas)" : `schema v${status.dbVersion}`}`);
 
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name);
     const missing = REQUIRED_TABLES.filter((t) => !tables.includes(t));
     console.log(`  tablas: ${tables.length} (${missing.length} criticas faltantes)`);
     if (missing.length) console.log(`  faltan: ${missing.join(", ")}`);
 
-    try {
-      assertCompatible(dbVersion);
-      console.log(dbVersion === 0 ? "  estado: pre-versionado (corre `npm run migrate`)." : "  estado: compatible.");
-      console.log("  OK.");
-    } catch (err) {
-      console.error(`  INCOMPATIBLE: ${err.message}`);
+    const problems = [...status.schemaErrors, ...status.ledgerErrors];
+    if (problems.length) console.error(`  contrato incumplido: ${problems.join(", ")}`);
+    if (status.newer || status.invalid) {
+      console.error(status.newer
+        ? `  INCOMPATIBLE: la base está en v${status.dbVersion}, el código espera v${status.codeVersion}.`
+        : "  INCOMPATIBLE: el ledger o las columnas no cumplen el contrato.");
       process.exitCode = 1;
+    } else if (status.pending) {
+      console.log(`  estado: migraciones pendientes (v${status.dbVersion} -> v${status.codeVersion}); corre [1mnpm run migrate[0m.`);
+      process.exitCode = 1;
+    } else if (status.legacy) {
+      console.log("  estado: schema completo verificado; el ledger puede adoptarse con backup vía `npm run migrate`.");
+      console.log("  OK (sin ledger todavía).");
+    } else {
+      console.log("  estado: ledger y esquema compatibles.");
+      console.log("  OK.");
     }
   } finally {
     db.close();

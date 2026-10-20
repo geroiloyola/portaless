@@ -128,6 +128,7 @@ describe("migraciones: runner SQLite", () => {
 // --- v2/v3: consolidacion de los ALTER TABLE dispersos + gate de migraciones ---
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 import { migrationStatus } from "../../packages/persistence-migrations/src/gate";
+import { REQUIRED_SCHEMA_COLUMNS } from "../../packages/persistence-migrations/src/index";
 import Database from "better-sqlite3";
 
 describe("migraciones v2/v3: columnas historicas consolidadas", () => {
@@ -158,9 +159,19 @@ describe("migraciones v2/v3: columnas historicas consolidadas", () => {
 
   it("migrateSqlite agrega las columnas de v2/v3 a una base pre-versionada", async () => {
     const path = tempDb();
+    await applySchema(path, { quiet: true });
     const db = new Database(path);
-    db.exec("CREATE TABLE users (username TEXT PRIMARY KEY, password_hash TEXT, role TEXT, created_at TEXT)");
-    db.prepare("INSERT INTO users VALUES ('legacy','h','admin','t')").run();
+    db.exec("DROP INDEX IF EXISTS idx_users_oauth");
+    db.exec("DROP INDEX IF EXISTS idx_site_identity_keys_seq");
+    db.exec("DROP TABLE schema_migrations");
+    db.exec("ALTER TABLE users DROP COLUMN email");
+    db.exec("ALTER TABLE users DROP COLUMN oauth_subject");
+    db.exec("ALTER TABLE usage_ledger DROP COLUMN reader_did");
+    db.exec("ALTER TABLE site_identity_keys DROP COLUMN key_id");
+    db.exec("ALTER TABLE site_identity_keys DROP COLUMN key_sequence");
+    db.exec("ALTER TABLE plugin_artifacts DROP COLUMN manifest_json");
+    db.exec("DROP TABLE plugin_email_quota");
+    db.prepare("INSERT INTO users (username,password_hash,role,created_at) VALUES ('legacy','h','admin','t')").run();
     db.close();
     const result = await migrateSqlite(path);
     expect(result.to).toBe(schemaVersion());
@@ -201,6 +212,35 @@ describe("gate de migraciones", () => {
     expect(status).toMatchObject({ pending: false, newer: false });
   });
 
+  it("base sin ledger y sin columna requerida queda pendiente; migrar restaura el contrato", async () => {
+    const path = tempDb();
+    await applySchema(path, { quiet: true });
+    const db = await openSqlite(path);
+    db.exec("DROP TABLE schema_migrations");
+    db.exec("ALTER TABLE users DROP COLUMN email");
+    db.close();
+
+    const before = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
+    expect(before).toMatchObject({ legacy: true, pending: true });
+    expect(before?.schemaErrors).toContain("users.email");
+
+    const result = await migrateSqlite(path);
+    expect(result.applied).toContain("user_and_plugin_columns");
+    const after = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
+    expect(after).toMatchObject({ dbVersion: schemaVersion(), pending: false, invalid: false });
+  });
+
+  it("ledger actual no oculta una columna real ausente", async () => {
+    const path = tempDb();
+    await applySchema(path, { quiet: true });
+    const db = await openSqlite(path);
+    db.exec("ALTER TABLE users DROP COLUMN email");
+    db.close();
+    const status = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
+    expect(status).toMatchObject({ dbVersion: schemaVersion(), pending: true, invalid: true });
+    await expect(migrateSqlite(path)).rejects.toThrow(/users.email/);
+  });
+
   it("libro mayor atrasado -> pending=true (el middleware responde 503)", async () => {
     const path = tempDb();
     await applySchema(path, { quiet: true });
@@ -223,29 +263,29 @@ describe("gate de migraciones", () => {
 
   // R1: el path de Cloudflare (D1) no puede tumbar un sitio sano.
   describe("D1 (Cloudflare)", () => {
-    function d1Mock(tables: string[], ledgerRows: Array<[number, string, string]> | null) {
+    function d1Mock(tables: string[], ledgerRows: Array<[number, string, string]> | null, omitColumn?: string) {
+      const availableTables = new Set([...tables, ...(ledgerRows === null ? [] : ["schema_migrations"])]);
       return {
         prepare(sql: string) {
-          const table = /name = \?/.test(sql) ? "probe" : "ledger";
+          if (sql.includes("pragma_table_info")) {
+            return {
+              bind: (table: string) => ({
+                all: async () => ({ results: availableTables.has(table) ? (REQUIRED_SCHEMA_COLUMNS[table] ?? []).filter((name) => `${table}.${name}` !== omitColumn).map((name) => ({ name })) : [] }),
+              }),
+            };
+          }
+          if (sql.includes("sqlite_master")) {
+            return { all: async () => ({ results: [...availableTables].map((name) => ({ name })) }) };
+          }
           return {
-            bind: (_name: string) => ({
-              first: async () =>
-                tables.includes(_name) || (_name === "schema_migrations" && ledgerRows !== null) ? { name: _name } : null,
-            }),
-            first: async () => {
-              if (table === "ledger") {
-                if (ledgerRows === null) throw new Error("no such table: schema_migrations");
-                return { v: ledgerRows.length ? Math.max(...ledgerRows.map((r) => r[0])) : null };
-              }
-              return null;
-            },
+            all: async () => ({ results: (ledgerRows ?? []).map(([version, name]) => ({ version, name })) }),
           };
         },
       };
     }
 
     it("D1 inicializada SIN libro -> no bloquea (pre-versionada)", async () => {
-      const status = await migrationStatus({ DB: d1Mock(["users", "pages"], null) });
+      const status = await migrationStatus({ DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), null) });
       expect(status).toMatchObject({ pending: false, newer: false });
     });
 
@@ -259,8 +299,23 @@ describe("gate de migraciones", () => {
     });
 
     it("D1 con libro al dia -> pending=false", async () => {
-      const status = await migrationStatus({ DB: d1Mock(["users"], [[schemaVersion(), "x", "t"]]) });
+      const ledger = MIGRATIONS.map(({ version, name }) => [version, name, "t"] as [number, string, string]);
+      const status = await migrationStatus({ DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), ledger) });
       expect(status).toMatchObject({ pending: false, newer: false });
+    });
+
+    it("D1 no adopta como actual un schema sin columna obligatoria", async () => {
+      const status = await migrationStatus({ DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), null, "users.email") });
+      expect(status).toMatchObject({ legacy: true, pending: true, invalid: true });
+      expect(status?.schemaErrors).toContain("users.email");
+    });
+
+    it("D1 detecta huecos en el ledger", async () => {
+      const status = await migrationStatus({
+        DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), [[1, "baseline", "t"], [4, "email_capabilities", "t"]]),
+      });
+      expect(status).toMatchObject({ pending: true, invalid: true });
+      expect(status?.ledgerErrors).toContain("falta version 2 antes de 4");
     });
   });
 });

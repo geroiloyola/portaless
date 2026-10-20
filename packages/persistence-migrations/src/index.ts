@@ -32,6 +32,8 @@ export interface Migration {
    * los `ALTER TABLE` que antes vivian dispersos en cada store.
    */
   addColumns?: Array<{ table: string; column: string; type: string }>;
+  /** Tables created by this delta, with their required columns (for preflight). */
+  createsTables?: Record<string, string[]>;
 }
 
 /** Columnas historicas (consolidadas desde los stores, ver v2/v3). */
@@ -93,8 +95,76 @@ export const MIGRATIONS: readonly Migration[] = [
     version: 4,
     name: "email_capabilities",
     statements: EMAIL_CAPABILITY_STATEMENTS,
+    createsTables: { plugin_email_quota: ["plugin_id", "day", "count"] },
   },
 ];
+
+/**
+ * Column contract used before adopting an unversioned database and whenever a
+ * database claims the current schema version. Keep this independent of
+ * schema.sql so edge middleware and doctor can check it without filesystem IO.
+ * The v2/v3 columns are appended from the migration declarations below.
+ */
+export const REQUIRED_SCHEMA_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  users: ["username", "password_hash", "role", "created_at", "email", "provider", "totp_secret", "totp_enabled_at", "oauth_provider", "oauth_subject"],
+  sessions: ["token", "username", "role", "created_at", "expires_at"],
+  auth_mfa_challenges: ["token", "username", "role", "expires_at", "failed_attempts"],
+  auth_rate_limits: ["bucket", "window_start", "count"],
+  permission_grants: ["subject_type", "subject_id", "capability_id", "granted", "granted_at", "granted_by"],
+  pages: ["slug", "layout_json", "updated_at", "updated_by"],
+  site_identity: ["site_id", "did", "domain", "public_key_jwk", "private_key_jwk_encrypted", "private_key_encryption_iv", "key_algorithm", "created_at", "created_by"],
+  capability_bridge_tokens: ["token", "plugin_name", "granted_capabilities_json", "issued_at", "expires_at"],
+  webbotauth_nonces: ["nonce", "expires_at"],
+  mcp_agent_tokens: ["token_hash", "agent_key_id", "display_name", "created_at", "revoked"],
+  site_atproto_links: ["site_id", "handle", "added_at"],
+  cloud_images: ["image_id", "content_hash", "content_type", "byte_length", "declared_origin", "site_id", "site_did", "key_id", "key_algorithm", "signed_at", "sidecar_json", "bytes", "created_by", "created_at"],
+  site_skin: ["site_id", "skin", "tokens_json", "updated_at"],
+  settlement_provider_activations: ["provider_id", "credential_enc", "metadata_json", "verified_at", "activated_by"],
+  deployment_oauth_states: ["state", "provider", "code_verifier", "user_id", "expires_at"],
+  deployment_credentials: ["provider", "account_login", "access_token_enc", "refresh_token_enc", "access_expires_at", "refresh_expires_at", "connected_by", "updated_at"],
+  element_packs: ["name", "pack_json", "updated_at"],
+  theme_packs: ["name", "pack_json", "updated_at"],
+  community_attestations: ["iss", "jti", "site_id", "sub", "category", "val", "iat", "jws", "emitter_first_seen_iat", "received_at"],
+  activity_events: ["id", "kind", "actor", "subject", "detail", "occurred_at"],
+  plugin_artifacts: ["publisher", "name", "version", "code_hash", "total_bytes", "chunk_count", "created_at", "manifest_json"],
+  plugin_artifact_chunks: ["publisher", "name", "version", "seq", "data"],
+  plugin_storage: ["plugin_id", "key", "value_json", "size_bytes", "updated_at"],
+  plugin_email_quota: ["plugin_id", "day", "count"],
+  site_identity_keys: ["kid", "site_id", "public_key_jwk", "private_key_encrypted", "private_key_encryption_iv", "key_algorithm", "valid_from", "valid_to", "key_id", "key_sequence"],
+  site_attestation_log: ["site_id", "seq", "entry_jws", "entry_hash", "prev_hash", "att_hash", "kid", "ts", "att_jws"],
+  site_trust_agent_verifications: ["site_id", "category", "verified", "detail_json", "agent_key_id", "verified_at", "attestation_jws", "attestation_jti"],
+  site_trust_escrow_reports: ["site_id", "transaction_outcome", "escrow_provider", "amount_currency", "reported_at", "attestation_jws", "attestation_jti"],
+  site_trust_self_evaluations: ["site_id", "category", "declared_value", "evidence_url", "declared_by", "declared_at", "attestation_jws", "attestation_jti"],
+  usage_ledger: ["period", "operator_key_id", "operator_name_claimed", "requests_total", "requests_charged", "requests_free_tier", "revenue_usd", "policy_violations_detected", "first_seen", "last_seen", "reader_did"],
+  authorized_escrow_providers: ["provider_id", "api_key_hash", "display_name", "active", "authorized_at", "authorized_by", "public_key_jwk"],
+};
+
+export const BASELINE_REQUIRED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  users: ["username", "password_hash", "role", "created_at"],
+  pages: ["slug", "layout_json", "updated_at"],
+};
+
+export function missingSchemaColumns(
+  actual: Readonly<Record<string, readonly string[]>>,
+  contract: Readonly<Record<string, readonly string[]>> = REQUIRED_SCHEMA_COLUMNS,
+): string[] {
+  const missing: string[] = [];
+  for (const [table, required] of Object.entries(contract)) {
+    const actualColumns = new Set(actual[table] ?? []);
+    if (!(table in actual)) missing.push(`${table} (tabla)`);
+    for (const column of required) {
+      if (!actualColumns.has(column)) missing.push(`${table}.${column}`);
+    }
+  }
+  return missing;
+}
+
+export class SchemaContractError extends Error {
+  constructor(public readonly missing: string[]) {
+    super(`El esquema real no cumple el contrato de Portaless: ${missing.join(", ")}`);
+    this.name = "SchemaContractError";
+  }
+}
 
 /** Version del schema que ESTE codigo espera (el maximo de MIGRATIONS). */
 export function schemaVersion(): number {

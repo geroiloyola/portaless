@@ -10,7 +10,17 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { openSqlite } from "../../sqlite-driver/src/open.ts";
-import { MIGRATIONS, assertCompatible, pendingFrom, schemaVersion, type Migration } from "./index.ts";
+import {
+  BASELINE_REQUIRED_COLUMNS,
+  MIGRATIONS,
+  REQUIRED_SCHEMA_COLUMNS,
+  SchemaContractError,
+  assertCompatible,
+  missingSchemaColumns,
+  pendingFrom,
+  schemaVersion,
+  type Migration,
+} from "./index.ts";
 
 const CREATE_TABLE = `CREATE TABLE IF NOT EXISTS schema_migrations (
   version INTEGER PRIMARY KEY,
@@ -74,6 +84,44 @@ function tableColumns(db: any, table: string): string[] {
   }
 }
 
+function schemaColumns(db: any): Record<string, string[]> {
+  const tables = new Set([
+    ...Object.keys(REQUIRED_SCHEMA_COLUMNS),
+    ...MIGRATIONS.flatMap((migration) => (migration.addColumns ?? []).map((item) => item.table)),
+  ]);
+  return Object.fromEntries([...tables].map((table) => [table, tableColumns(db, table)]));
+}
+
+function projectMigrations(actual: Record<string, string[]>, pending: Migration[]): Record<string, string[]> {
+  const projected = Object.fromEntries(Object.entries(actual).map(([table, columns]) => [table, [...columns]]));
+  for (const migration of pending) {
+    for (const { table, column } of migration.addColumns ?? []) {
+      if (table in projected && !projected[table].includes(column)) projected[table].push(column);
+    }
+    for (const [table, columns] of Object.entries(migration.createsTables ?? {})) {
+      projected[table] = [...new Set([...(projected[table] ?? []), ...columns])];
+    }
+  }
+  return projected;
+}
+
+function assertLedgerContiguous(db: any, version: number): void {
+  if (!hasMigrationLedger(db)) return;
+  const rows = db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+  const expected = new Map(MIGRATIONS.map((migration) => [migration.version, migration.name]));
+  const seen = new Set<number>();
+  for (const row of rows) {
+    const rowVersion = Number(row.version);
+    if (seen.has(rowVersion) || expected.get(rowVersion) !== row.name) {
+      throw new Error(`Ledger de migraciones invalido en version ${rowVersion} (${row.name}).`);
+    }
+    seen.add(rowVersion);
+  }
+  for (let v = 1; v <= version; v++) {
+    if (!seen.has(v)) throw new Error(`Ledger de migraciones incompleto: falta la version ${v} antes de ${version}.`);
+  }
+}
+
 function applyColumnsFor(db: any, migration: Migration): void {
   for (const { table, column, type } of migration.addColumns ?? []) {
     const columns = tableColumns(db, table);
@@ -115,10 +163,20 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
 
     const from = currentVersion(db);
     assertCompatible(from);
+    assertLedgerContiguous(db, from);
     const pending = pendingFrom(from);
     if (pending.length === 0) {
+      const schemaErrors = missingSchemaColumns(schemaColumns(db));
+      if (schemaErrors.length) throw new SchemaContractError(schemaErrors);
       return { from, to: from, applied: [], backupPath: null, dryRun: Boolean(opts.dryRun) };
     }
+
+    const actualSchema = schemaColumns(db);
+    const baselineErrors = missingSchemaColumns(actualSchema, BASELINE_REQUIRED_COLUMNS);
+    if (baselineErrors.length) throw new SchemaContractError(baselineErrors);
+
+    const projectedErrors = missingSchemaColumns(projectMigrations(actualSchema, pending));
+    if (projectedErrors.length) throw new SchemaContractError(projectedErrors);
     if (opts.dryRun) {
       return { from, to: schemaVersion(), applied: pending.map((m) => m.name), backupPath: null, dryRun: true };
     }
@@ -140,6 +198,8 @@ export async function migrateSqlite(sqlitePath: string, opts: MigrateOptions = {
         throw err;
       }
     }
+    const schemaErrors = missingSchemaColumns(schemaColumns(db));
+    if (schemaErrors.length) throw new SchemaContractError(schemaErrors);
     return { from, to: schemaVersion(), applied, backupPath, dryRun: false };
   } finally {
     db.close();

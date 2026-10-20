@@ -128,7 +128,7 @@ async function migrationsGate(env) {
           error: status.newer ? "database_newer_than_code" : "pending_database_migrations",
           message: status.newer
             ? `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: actualiza el codigo antes de servir.`
-            : `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: corre las migraciones (self-host: npm run migrate; Cloudflare D1: aplica las migraciones numeradas nuevas o estampa el libro con scripts/stamp-d1.mjs).`,
+            : `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: corre las migraciones (self-host: npm run migrate; Cloudflare D1: npm run migrate:d1 -- --db <DB> --remote).`,
         }),
         { status: 503, headers: { "content-type": "application/json" } },
       );

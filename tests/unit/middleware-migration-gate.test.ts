@@ -4,7 +4,7 @@
 // fake (D1 mock y SQLite inexistente).
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { onRequest, __resetMigrationGateForTests } from "../../functions/_middleware";
-import { schemaVersion } from "../../packages/persistence-migrations/src/index";
+import { MIGRATIONS, REQUIRED_SCHEMA_COLUMNS, schemaVersion } from "../../packages/persistence-migrations/src/index";
 
 function makeContext(env: Record<string, unknown>, url = "https://site.example/pages/foo") {
   const request = new Request(url);
@@ -14,19 +14,21 @@ function makeContext(env: Record<string, unknown>, url = "https://site.example/p
 }
 
 function d1Mock(tables: string[], ledgerRows: Array<[number, string, string]> | null) {
+  const availableTables = new Set([...tables, ...(ledgerRows === null ? [] : ["schema_migrations"])]);
   return {
     prepare(sql: string) {
-      const isProbe = /name = \?/.test(sql);
-      return {
-        bind: (name: string) => ({
-            first: async () =>
-              tables.includes(name) || (name === "schema_migrations" && ledgerRows !== null) ? { name } : null,
+      if (sql.includes("pragma_table_info")) {
+        return {
+          bind: (table: string) => ({
+            all: async () => ({ results: availableTables.has(table) ? (REQUIRED_SCHEMA_COLUMNS[table] ?? []).map((name) => ({ name })) : [] }),
           }),
-        first: async () => {
-          if (isProbe) return null;
-          if (ledgerRows === null) throw new Error("no such table: schema_migrations");
-          return { v: ledgerRows.length ? Math.max(...ledgerRows.map((r) => r[0])) : null };
-        },
+        };
+      }
+      if (sql.includes("sqlite_master")) {
+        return { all: async () => ({ results: [...availableTables].map((name) => ({ name })) }) };
+      }
+      return {
+        all: async () => ({ results: (ledgerRows ?? []).map(([version, name]) => ({ version, name })) }),
       };
     },
   };
@@ -46,7 +48,7 @@ describe("middleware: gate de migraciones (R1)", () => {
   });
 
   it("Cloudflare sano SIN libro mayor -> NO bloquea (regresion R1)", async () => {
-    const { context, next } = makeContext({ DB: d1Mock(["users", "pages"], null) });
+    const { context, next } = makeContext({ DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), null) });
     const res = await onRequest(context);
     expect(res.status).toBe(200);
     expect(next).toHaveBeenCalled();
@@ -61,7 +63,8 @@ describe("middleware: gate de migraciones (R1)", () => {
   });
 
   it("Cloudflare con libro al dia -> pasa", async () => {
-    const { context, next } = makeContext({ DB: d1Mock(["users"], [[schemaVersion(), "x", "t"]]) });
+    const rows = MIGRATIONS.map(({ version, name }) => [version, name, "t"] as [number, string, string]);
+    const { context, next } = makeContext({ DB: d1Mock(Object.keys(REQUIRED_SCHEMA_COLUMNS), rows) });
     const res = await onRequest(context);
     expect(res.status).toBe(200);
     expect(next).toHaveBeenCalled();

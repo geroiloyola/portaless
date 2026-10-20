@@ -25,8 +25,8 @@ refuses to start (it never degrades the schema silently).
 
 | Deployment | Update |
 |---|---|
-| **Self-host / Docker** | `npm run doctor` (or `docker compose exec portaless npm run doctor`) → if the DB is behind, `npm run migrate` (backup first, into `<dataDir>/backups/`). Docker: pin the image tag, `docker compose pull && docker compose up -d`; the server migrates on boot after `applySchema`. Rollback = restore the backup and go back to the previous tag. |
-| **Cloudflare Pages (D1)** | Deploy the new tag, apply the new schema (`wrangler d1 execute <DB> --remote --file=schema.sql`) and stamp the ledger (`node node_modules/tsx/dist/cli.mjs scripts/stamp-d1.mjs --out stamp.sql` → `wrangler d1 execute <DB> --remote --file=stamp.sql`). |
+| **Self-host / Docker** | `npm run doctor` (or `docker compose exec portaless npm run doctor`) → if the DB is behind, `npm run migrate` (backup first, into `<dataDir>/backups/`). Docker: pin the image tag, `docker compose pull && docker compose up -d`; new databases bootstrap from `schema.sql`, existing ones apply numbered migrations. Rollback = restore the backup and go back to the previous tag. |
+| **Cloudflare Pages (D1)** | `npm run migrate:d1 -- --db <DB> --remote` exports a backup, verifies the actual schema and applies numbered migrations in order. `schema.sql` is only for initial setup of an empty DB (`npm run setup:d1`). |
 | **GitHub Pages (static)** | No database; update by merging the new tag (the `update-upstream` workflow opens a PR “Update to vX”). |
 
 Rules: run `doctor` before `migrate`; never edit `schema_migrations` by hand; a
@@ -37,6 +37,7 @@ closed).
 
 ## Unreleased
 
+- **Fase 3 C10–C11 — migraciones basadas en estado aplicado.** El bootstrap de `schema.sql` queda separado de upgrades; las bases existentes reciben backup y deltas ordenados, con cada fila del ledger escrita tras ejecutar su migración. `doctor` y el gate contrastan versión, continuidad del ledger y columnas del contrato; las bases sin ledger solo se adoptan si el esquema real pasa la verificación. D1 usa `npm run migrate:d1` con export de backup. Se eliminó el estampado manual que podía declarar actual una DB incompleta.
 - **C08 — clean allowlisted public export and stale-artifact withdrawal.** `npm run publish` builds in a disposable tree from an Astro-input allowlist; `functions/`, `server/`, tests, arbitrary root files and private environment values are not copied/passed to the child build. Only public source pages/posts, curated docs and publishable PageStore layouts are staged; a private DB slug suppresses same-slug source content. GitHub publication writes a complete tree and advances without force, withdrawing obsolete artifacts Portaless controls. A synthetic private marker is scanned against every generated `dist/` file.
 - **C09 — exclude private node data from Docker and source distributions.** `.dockerignore` excludes `.airchive/`, DBs, backups, secrets and runtime files at any depth. The CI Docker smoke places synthetic private markers in its build context, builds the actual image and verifies the markers and private paths are absent from `/app`. A separate `npm pack --dry-run` boundary check injects a synthetic `.airchive` marker and asserts the source package omits it. Docker execution is CI-owned; no real GitHub publish was performed.
 - **C09 follow-up — remove build-only source from runtime images.** After Astro builds, the Docker builder removes `.astro/`, source `docs/`, and source pages/posts; the runtime image retains the public `dist/` projection and runtime code, not private/draft source content. The image scanner runs in both builder and runner stages, and the Docker marker fixture now includes synthetic private page/post/docs content.

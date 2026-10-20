@@ -21,7 +21,7 @@
     "setup:d1": "tsx scripts/setup-d1.mjs",
     "migrate": "tsx scripts/migrate.mjs",
     "doctor": "tsx scripts/doctor.mjs",
-    "stamp:d1": "tsx scripts/stamp-d1.mjs",
+    "migrate:d1": "tsx scripts/migrate-d1.mjs",
     "staging:create": "node node_modules/tsx/dist/cli.mjs scripts/staging/create.mjs",
     "staging:destroy": "node scripts/staging/destroy.mjs",
     "staging:docker:create": "node --import tsx scripts/staging/docker.mjs create",
