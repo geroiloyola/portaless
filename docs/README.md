@@ -15,6 +15,7 @@
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 | [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
+| [`testing/INTEROPERABILITY.md`](./testing/INTEROPERABILITY.md) | English | C31–C33: MCP connection profile, OpenAI-compatible provider subset, and the local/external acceptance evidence matrix |
 
 ## Protocol APW and Portaless Index — [`protocol-apw/`](./protocol-apw/)
 
@@ -36,7 +37,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 | Document | What it covers |
 |---|---|
 | [`api/README.md`](./api/README.md) | Surface overview, auth model, 60-second end-to-end verification recipe |
-| [`api/well-known.md`](./api/well-known.md) | The 7 public `/.well-known/*` endpoints + `GET /trust/:siteId`, response shapes, pagination, error codes |
+| [`api/well-known.md`](./api/well-known.md) | The 8 public `/.well-known/*` endpoints + `GET /trust/:siteId`, response shapes, pagination, error codes |
 | [`api/admin.md`](./api/admin.md) | Admin API catalog (witness record, Index sync/subjects, reader-conduct emit, SiteTrustScore management, …) |
 
 ## Architecture — [`architecture/`](./architecture/)

@@ -61,7 +61,8 @@ must know.
 | Dashboard + Skin System | ✅ Functional |
 | Authentication (login, 2FA, OAuth) | ✅ Functional |
 | Permissions Center | ✅ Functional |
-| MCP server (19 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap) |
+| MCP server (19 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap). Public connection profile at `/.well-known/portaless-mcp.json` |
+| OpenAI-compatible provider profile | ✅ Local contract suite; external endpoints unverified until run against a real key/endpoint |
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
 | SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
 | Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |

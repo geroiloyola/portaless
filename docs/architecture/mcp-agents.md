@@ -3,14 +3,14 @@
 > **Documento de diseño histórico.** Narra la construcción inicial del MCP
 > server (los 6 commits originales). El **estado actual** vive en
 > [`AGENT.md`](../../AGENT.md) y en el código: `packages/mcp-server/src/server.ts`
-> es la fuente de verdad del número de tools, y hoy son **12**, no 7 — la tabla
-> de abajo se conserva como historia, no como inventario vigente. El conteo está
+> es la fuente de verdad del número de tools, y hoy son **19**, no 12 — la tabla
+> de abajo se conserva como historia y se amplía con C27–C30. El conteo está
 > fijado por `tests/unit/mcp-tool-count.test.ts`, que falla si un doc publica
 > otro número.
 
 ## Estado real
 
-**Implementado end-to-end para tools existentes.** `packages/mcp-server/` tiene servidor base (`server.ts`), capa de permisos (`permissions/`), auditoría local + ledger agregado (`audit/`), y 19 tools sobre `McpServer`, incluidas cuatro de contexto y tres para proponer, listar y aprobar revisiones exactas. La lectura de páginas privadas/borradores requiere `mcp:private-context:read`; publicar una revisión exacta requiere `content:publish`. El manager `/admin/pages` muestra los diffs pendientes y permite al usuario aprobar por ID de revisión exacto; la API admin correspondiente requiere sesión y rol admin.
+**Implementado end-to-end para tools existentes.** `packages/mcp-server/` tiene servidor base (`server.ts`), capa de permisos (`permissions/`), auditoría local + ledger agregado (`audit/`), y 19 tools sobre `McpServer`, incluidas cuatro de contexto y tres para proponer, listar y aprobar revisiones exactas. La lectura de páginas privadas/borradores requiere `mcp:private-context:read`; publicar una revisión exacta requiere `content:publish`. El manager `/admin/pages` muestra los diffs pendientes y permite al usuario aprobar por ID de revisión exacto; la API admin correspondiente requiere sesión y rol admin. `GET /.well-known/portaless-mcp.json` publica el perfil de conexión sin secretos (endpoint, bearer, tools, HTTPS/túnel).
 
 Este documento reemplaza la version anterior (que describia el paquete como "unicamente README.md y package.json, sin logica de servidor MCP real") con el estado verificado del codigo real, confirmado archivo por archivo esta sesion.
 
@@ -37,8 +37,9 @@ El mcp-server no introduce un sistema de permisos nuevo. Reutiliza el que ya exi
 
 ## Las tools reales, con estado de implementación
 
-Las 7 primeras son las del diseño inicial (con su commit). Las 5 siguientes se
-sumaron después; `server.ts` es la fuente de verdad y hoy el total es **12**.
+La tabla conserva las tools originales; C27–C30 añadieron cuatro de contexto
+y tres de propuestas/aprobación. `server.ts` es la fuente de verdad y hoy el
+total es **19**.
 
 | Tool | Capacidad requerida | Backend real | Commit |
 |---|---|---|---|
@@ -52,25 +53,33 @@ sumaron después; `server.ts` es la fuente de verdad y hoy el total es **12**.
 | `insert_block` | `content:write` | muta un nodo draft por `nodeId` (o padre + índice + slot); rechaza páginas publicadas/private | — |
 | `update_block` | `content:write` | ídem, actualización de un nodo draft | — |
 | `delete_block` | `content:write` | ídem, borrado de un nodo draft | — |
-| `apply_theme` | `content:write` | aplica un theme pack a la página | — |
+| `apply_theme` | `content:write` | aplica un theme pack a un draft; rechaza páginas publicadas/private | — |
 | `list_themes` | Ninguna (catálogo informativo) | catálogo de theme packs disponibles | — |
+| `get_site_context` | `content:read` | páginas publicadas con revisión/hash, skin/temas y documentación curada | `4814f61` |
+| `get_page_context` | `content:read` | revisión pública exacta (o la última), estructura, historial y estilos | `4814f61` |
+| `read_documentation` | `content:read` | catálogo explícito de Markdown público; rechaza rutas/archivo privado | `4814f61` |
+| `read_private_page_context` | `mcp:private-context:read` | draft/private exacto por slug; `content:read` no basta | `4814f61` |
+| `propose_page_revision` | `content:write` | crea un draft contra el `revisionId` público exacto; no cambia lo publicado | `4814f61` |
+| `list_page_proposals` | `content:publish` | propuestas pendientes con diff acotado y marca `stale` | `4814f61` |
+| `approve_page_revision` | `content:publish` | publica el `revisionId` exacto; aprobación inmutable | `4814f61` |
 
-### C06: frontera entre edición y publicación
+### C06/C28: frontera entre edición y publicación
 
 Las tools MCP no son una ruta de publicación. `create_page` siempre crea
 `status: "draft"`; `update_page` solo acepta mantener/poner un draft y rechaza
-un `status: "published"`; las tools de bloques rechazan mutar un layout
-publicado. Un admin autenticado promueve o privatiza desde `/admin/pages`.
-`content:read` de plugins/MCP solo devuelve páginas publicables; no es una
-capacidad para leer drafts, páginas privadas ni `.airchive/`. Un plugin con
-`content:write` solo puede guardar layouts draft nuevos y no puede sobrescribir
-una página publicada/private. La política de publicación compartida es
-`packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()`.
+un `status: "published"`; las tools de bloques y `apply_theme` rechazan mutar un
+layout publicado. Un admin autenticado promueve o privatiza desde
+`/admin/pages`. `content:read` de plugins/MCP solo devuelve páginas publicables;
+no es una capacidad para leer drafts, páginas privadas ni `.airchive/`. Un
+plugin con `content:write` solo puede guardar layouts draft nuevos y no puede
+sobrescribir una página publicada/private. La política de publicación compartida
+es `packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()`.
 
-Esto es una barrera fail-closed, no un sistema de revisiones: MCP todavía no
-puede proponer una revisión de una URL ya publicada manteniendo visible el
-contenido anterior. Ese flujo espera el modelo de revisiones/aprobaciones del
-MVP; hasta entonces, la edición de contenido publicado se hace desde el panel.
+Para contenido ya publicado, C28 añade el flujo de revisión exacta:
+`propose_page_revision` (draft contra el `baseRevisionId` conocido),
+`list_page_proposals` (diff para el revisor) y `approve_page_revision`
+(`content:publish`, publica solo ese `revisionId`). Una revisión posterior exige
+una propuesta y aprobación nuevas; una propuesta stale no se puede aprobar.
 
 **Nota de riesgo explícita, ya documentada en el propio código**: `grant_capability`/`revoke_permission` requieren `site:admin`, la capacidad de mayor riesgo del catálogo — un agente con `site:admin` puede conceder o revocar permisos a otros subjects, incluido él mismo. Es la tool que debería tener más fricción en la práctica, según el comentario inline de `grant-capability.ts`.
 
@@ -78,7 +87,7 @@ MVP; hasta entonces, la edición de contenido publicado se hace desde el panel.
 
 Cada invocación de tool pasa por `recordToolInvocation()`, que registra el evento en dos lugares:
 
-1. **Auditoría local** (`AuditLogStore`, hoy `InMemoryAuditLogStore` en `index.ts` — sin factory D1/SQLite propia todavía, ver "Pendiente" más abajo).
+1. **Auditoría local** (`AuditLogStore`, D1/SQLite append-only desde C29; `mcp_audit_events`, migración v8). Nunca guarda argumentos, contenido, tokens ni mensajes de excepción.
 2. **Ledger público del Trust Layer** (`UsageLedgerStore` real, vía `createUsageLedgerStore(env)`), el mismo que expone `GET /.well-known/portaless-usage-log.json` para requests HTTP normales desde v0.0.9.3.
 
 Esto significa que el uso de las tools por parte de cualquier agente ya queda registrado en el mismo ledger auditable públicamente que usa el resto de Portaless — no un log aislado sin trazabilidad externa.

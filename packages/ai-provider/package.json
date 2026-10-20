@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/ai-provider",
+  "version": "0.0.1",
+  "description": "Perfil explicito para endpoints compatibles con la API de OpenAI: configuracion server-side, chat completions, streaming, tool calls y errores controlados.",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "src/index.ts",
+  "dependencies": {}
+}

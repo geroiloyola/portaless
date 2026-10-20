@@ -1,0 +1,82 @@
+{
+  "format": "portaless-interop-evidence-v1",
+  "version": "1.0",
+  "generatedAt": "2026-10-20",
+  "requiredFlow": [
+    "connect",
+    "read_authorized_context",
+    "edit_block",
+    "save_draft",
+    "review_diff",
+    "approve_exact_revision",
+    "read_published_revision"
+  ],
+  "mcp": [
+    {
+      "id": "local-mcp-sdk-client",
+      "status": "passed",
+      "account": "local-test-fixture",
+      "client": "@modelcontextprotocol/sdk Client over InMemoryTransport",
+      "model": "not-applicable",
+      "transport": "in-memory",
+      "executedAt": "2026-10-20",
+      "evidence": "tests/unit/mcp-interop-acceptance.test.ts",
+      "flow": {
+        "connect": true,
+        "read_authorized_context": true,
+        "edit_block": true,
+        "save_draft": true,
+        "review_diff": true,
+        "approve_exact_revision": true,
+        "read_published_revision": true
+      }
+    },
+    {
+      "id": "chatgpt-custom-mcp",
+      "status": "blocked_unverified",
+      "account": null,
+      "client": "ChatGPT Desktop/Web custom MCP",
+      "model": null,
+      "transport": "streamable-http-https-or-supported-tunnel",
+      "executedAt": null,
+      "evidence": null,
+      "reason": "No external ChatGPT account/workspace and HTTPS tunnel were available in this environment. A real run must record the exact account, plan, client version, model and tool-discovery snapshot.",
+      "requiredEvidence": [
+        "exact account/workspace and plan",
+        "client version and model",
+        "HTTPS or supported tunnel URL",
+        "tool discovery snapshot",
+        "full write flow request/response ids"
+      ]
+    }
+  ],
+  "openAiCompatible": [
+    {
+      "id": "local-openai-compatible-fixture",
+      "status": "passed",
+      "account": "local-fake-endpoint",
+      "client": "@portaless/ai-provider",
+      "model": "test-model",
+      "baseUrl": "https://provider.test/v1",
+      "capabilities": [
+        "chat.completions",
+        "streaming",
+        "tool_calls"
+      ],
+      "executedAt": "2026-10-20",
+      "evidence": "tests/unit/ai-provider-openai-compatible.test.ts"
+    },
+    {
+      "id": "external-openai-compatible",
+      "status": "not_run",
+      "account": null,
+      "client": null,
+      "model": null,
+      "baseUrl": null,
+      "capabilities": [],
+      "executedAt": null,
+      "evidence": null,
+      "reason": "Requires a real user-supplied API key, named endpoint and model. No endpoint is claimed compatible until the contract suite passes against it."
+    }
+  ]
+}

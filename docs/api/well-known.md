@@ -1,8 +1,8 @@
 # Public well-known endpoints
 
-Every Portaless deployment with an APW identity publishes these endpoints under `/.well-known/`. They require **no authentication** — they are designed to be fetched by anyone; trust comes from cryptographic verification (see the [integrator recipe](./README.md#verifying-a-site-end-to-end-the-60-second-recipe)).
+Every Portaless deployment with an APW identity publishes the APW endpoints under `/.well-known/`; `portaless-mcp.json` and `portaless-usage-log.json` are independent of APW identity. They require **no authentication** — they are designed to be fetched by anyone; trust comes from cryptographic verification (see the [integrator recipe](./README.md#verifying-a-site-end-to-end-the-60-second-recipe)).
 
-All endpoints respond `404` (with a JSON error body) when the site has no registered APW identity.
+All APW endpoints respond `404` (with a JSON error body) when the site has no registered APW identity.
 
 Pagination on log-like endpoints: `?from=<seq>&limit=<n>` with `limit` maximum 500. `next` is the next `seq` to continue with, or `null` when exhausted.
 
@@ -131,6 +131,15 @@ The site's public traceability ledger (what its Trust Layer recorded about agent
 
 - Query: optional `?period=YYYY-MM`.
 - Public, no session guard — same transparency criterion as the content policy below.
+
+## `GET /.well-known/portaless-mcp.json`
+
+Secret-free MCP connection profile for hosted and local clients (C31). It describes the `/mcp` Streamable HTTP endpoint, bearer-token contract, per-invocation identity, the 19 registered tools, local stdio/loopback modes and the HTTPS/tunnel requirement for hosted clients such as ChatGPT.
+
+- Public, no authentication; contains no bearer token, API key or private data.
+- `transportSecurity.publicHttpsRequired` is always `true`. Plain HTTP is accepted only for loopback development and appears as `warnings: ["public_mcp_requires_https_or_supported_tunnel"]` otherwise.
+- Response headers: `access-control-allow-origin: *`, `cache-control: public, max-age=300`.
+- Full explanation and the external acceptance status: [`docs/testing/INTEROPERABILITY.md`](../testing/INTEROPERABILITY.md).
 
 ## Static: `/.well-known/portaless-content-policy.json`
 

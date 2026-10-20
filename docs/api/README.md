@@ -8,7 +8,7 @@ This directory documents every HTTP surface a third party can use to connect to 
 
 | Surface | Auth | Who it is for | Docs |
 |---|---|---|---|
-| `/.well-known/*` (7 endpoints) | None (public) | Any site, crawler, AI agent, index, or verifier | [`well-known.md`](./well-known.md) |
+| `/.well-known/*` (8 endpoints) | None (public) | Any site, crawler, AI agent, index, or verifier | [`well-known.md`](./well-known.md) |
 | `GET /trust/:siteId` | Optional Web Bot Auth | Readers of a site's trust data (subject to the site's read policy) | [`well-known.md`](./well-known.md#get-trustsiteid) |
 | `GET /trust/atproto/:handle` | None (public) | Anyone wanting an AT Protocol handle's identity joined with Portaless reputation (optional APW ↔ AT bridge) | [`well-known.md`](./well-known.md#get-trustatprotohandle) |
 | `POST /trust/images/verify` | None (public) | Anyone holding a Cloud Image sidecar, verifying it against the APW registry (C2PA without a central authority) | [`well-known.md`](./well-known.md#post-trustimagesverify) |
@@ -40,7 +40,7 @@ Full normative rules: [`APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md). Fi
 
 ## Files in this directory
 
-- [`well-known.md`](./well-known.md) — the 7 public well-known endpoints + `/trust/:siteId` + `/trust/atproto/:handle` + the Cloud Images surfaces (`POST /trust/images/verify`, `GET /images/:imageId`, `GET /trust/images/:imageId`), with response shapes, pagination, error codes, and verification recipes.
+- [`well-known.md`](./well-known.md) — the 8 public well-known endpoints + `/trust/:siteId` + `/trust/atproto/:handle` + the Cloud Images surfaces (`POST /trust/images/verify`, `GET /images/:imageId`, `GET /trust/images/:imageId`), with response shapes, pagination, error codes, and verification recipes.
 - [`admin.md`](./admin.md) — the admin API catalog (auth requirements, request/response notes).
 
 ## Related documentation

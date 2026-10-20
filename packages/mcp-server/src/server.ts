@@ -39,9 +39,9 @@ import { registerListInstalledPluginsTool } from "./tools/list-installed-plugins
 import { registerQueryUsageLogTool } from "./tools/query-usage-log";
 import { registerSiteContextTools } from "./tools/site-context";
 import { registerRevisionProposalTools } from "./tools/revision-proposals";
+import { SERVER_NAME, SERVER_VERSION } from "./metadata.js";
 
-export const SERVER_NAME = "portaless-mcp-server";
-export const SERVER_VERSION = "0.0.1";
+export { SERVER_NAME, SERVER_VERSION } from "./metadata.js";
 
 /**
  * Dependencias reales que index.ts debe resolver (via store-factory de
