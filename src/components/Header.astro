@@ -67,15 +67,14 @@ const otherHreflang = languageAlternate?.hreflang ?? other;
 const trustHref = `${base}trust/`;
 ---
 <header class="site-header">
-  <nav>
-    <a class="brand" href={base}>Portaless</a>
+  <div class="site-header-row">
+    <nav class="site-nav" aria-label={locale === "es" ? "Navegación principal" : "Primary navigation"}>
+    <!-- Brand and home are one control: the mark is the homepage link, not a
+         separate logo plus a duplicate Home entry. -->
+    <a class="brand nav-home" href={base} aria-label={`${homeLabel(locale)} — Portaless`}>Portaless</a>
     <!-- Cada enlace lleva su icono (visible solo en movil) y su texto (visible
          solo en desktop). El texto SIEMPRE esta en el DOM: en movil se oculta
          visualmente, asi el nombre accesible se conserva. -->
-    <a class="nav-link" href={base}>
-      <Fragment set:html={navIconHtml(NAV_ICONS.home)} />
-      <span class="nav-txt">{homeLabel(locale)}</span>
-    </a>
     {publicPosts.length > 0 && (
       <a class="nav-link" href={`${base}blog/`}>
         <Fragment set:html={navIconHtml(NAV_ICONS.posts)} />
@@ -92,10 +91,9 @@ const trustHref = `${base}trust/`;
         <span class="nav-txt">Tienda</span>
       </a>
     )}
-    <!-- Grupo derecho: selector de idioma (con icono, se lee como accion) y
-         el rincon de iconos. Empujado a la derecha con margin-left:auto, para
-         que el idioma quede alineado a la derecha y no entre las etiquetas. -->
-    <div class="header-right">
+    </nav>
+    <!-- Acciones/contexto fuera de la fila de navegación en viewport estrecho. -->
+    <div class="header-right" role="group" aria-label={locale === "es" ? "Acciones del sitio" : "Site actions"}>
       {showSwitcher && (
         <Fragment
           set:html={langSwitcherHtml({
@@ -120,7 +118,7 @@ const trustHref = `${base}trust/`;
            shell runtime (src/lib/atomic-responsive-icons.ts). -->
       <Fragment set:html={headerActionsHtml(context, base)} />
     </div>
-  </nav>
+  </div>
   {showNotice && (
     <Fragment set:html={langNoticeHtml({ text: t(locale, "lang.notice") })} />
   )}

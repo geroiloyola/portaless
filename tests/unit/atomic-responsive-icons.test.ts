@@ -149,7 +149,7 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
 
   it("el idioma vive en el grupo DERECHO junto a los iconos, no entre las etiquetas", () => {
     expect(headerSrc).toContain("langSwitcherHtml({");
-    expect(headerSrc).toContain('<div class="header-right">');
+    expect(headerSrc).toContain('<div class="header-right" role="group"');
     // el switcher va dentro del grupo derecho, antes de las acciones
     const groupIdx = headerSrc.indexOf('class="header-right"');
     expect(groupIdx).toBeGreaterThan(-1);
@@ -161,7 +161,7 @@ describe("langSwitcherHtml -- el selector de idioma como accion", () => {
     // El shell sirve /pages/*, que no estan localizadas: no lleva el switcher
     // sino el aviso honesto.
     expect(shellSrc).toContain("langNoticeHtml(");
-    expect(shellSrc).toContain('<div class="header-right">');
+    expect(shellSrc).toContain('<div class="header-right" role="group"');
   });
 
   it("el CSS alinea el grupo derecho (margin-left:auto) y pinta el pill", () => {
@@ -242,11 +242,11 @@ describe("trustLinkHtml -- TrustScore en el header (sexto item universal)", () =
 });
 
 describe("nav movil por iconos -- una sola fuente", () => {
-  it("NAV_ICONS mapea cada destino a su icono", () => {
-    expect(NAV_ICONS.home).toBe(ICON_HOUSE);
+  it("la marca es el destino Inicio y NAV_ICONS solo cubre otros destinos", () => {
     expect(NAV_ICONS.posts).toBe(ICON_NEWSPAPER);
     expect(NAV_ICONS.explore).toBe(ICON_SEARCH);
     expect(NAV_ICONS.shop).toBe(ICON_STORE);
+    expect(NAV_ICONS).not.toHaveProperty("home");
   });
 
   it("navIconHtml es un span decorativo (.nav-ico, aria-hidden)", () => {
@@ -256,16 +256,20 @@ describe("nav movil por iconos -- una sola fuente", () => {
     expect(html).toContain(ICON_HOUSE);
   });
 
-  it("Header.astro pone icono + texto en cada enlace (texto SIEMPRE en el DOM)", () => {
-    expect(headerSrc).toContain("navIconHtml(NAV_ICONS.home)");
+  it("Header.astro unifica marca e Inicio y conserva nombres accesibles en los otros links", () => {
+    expect(headerSrc).toContain('class="brand nav-home"');
+    expect(headerSrc).toContain('aria-label={`${homeLabel(locale)} — Portaless`}');
+    expect(headerSrc).not.toContain("navIconHtml(NAV_ICONS.home)");
     expect(headerSrc).toContain("navIconHtml(NAV_ICONS.posts)");
     expect(headerSrc).toContain("navIconHtml(NAV_ICONS.explore)");
     // el texto no se quita del DOM: se oculta visualmente en movil via CSS
     expect(headerSrc).toContain('<span class="nav-txt">');
   });
 
-  it("el shell runtime usa la MISMA fuente (NAV_ICONS + navIconHtml + .nav-txt)", () => {
-    expect(shellSrc).toContain("navIconHtml(NAV_ICONS.home)");
+  it("el shell runtime unifica marca e Inicio y mantiene iconos accesibles en los otros links", () => {
+    expect(shellSrc).toContain('class="brand nav-home"');
+    expect(shellSrc).toContain("homeLabel(SITE_LANG)");
+    expect(shellSrc).not.toContain("navIconHtml(NAV_ICONS.home)");
     expect(shellSrc).toContain("navIconHtml(NAV_ICONS.explore)");
     expect(shellSrc).toContain('<span class="nav-txt">');
   });
@@ -291,6 +295,17 @@ describe("nav movil por iconos -- una sola fuente", () => {
       cssSrc.indexOf("header.site-header .header-icon-btn", cssSrc.indexOf("@media (max-width: 640px)")),
     );
     expect(mobile).not.toContain("header-icon-btn");
+  });
+
+  it("mantiene una fila nav y separa las acciones del sitio en viewport móvil", () => {
+    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
+    expect(cssSrc).toMatch(/nav\.site-nav\s*\{[^}]*flex-wrap:\s*nowrap/);
+    const mobile = cssSrc.slice(cssSrc.indexOf("@media (max-width: 640px)"));
+    expect(mobile).toContain(".site-header-row");
+    expect(mobile).toContain("flex-direction: column");
+    expect(mobile).toContain(".header-right");
+    expect(mobile).toContain("width: 100%");
+    expect(shellSrc).toContain("nav.site-nav{display:flex;align-items:center;gap:1.5rem;flex:1 1 auto;min-width:0;flex-wrap:nowrap}");
   });
 });
 

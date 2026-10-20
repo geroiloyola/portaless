@@ -25,7 +25,6 @@
 import { ROUTES } from "./routes";
 import {
   ICON_DIRECTIONS,
-  ICON_HOUSE,
   ICON_LANGUAGES,
   ICON_NEWSPAPER,
   ICON_SEARCH,
@@ -134,7 +133,6 @@ export function trustLinkHtml(input: { href: string; label: string; ariaLabel: s
 // texto de cada enlace SIGUE en el DOM (clase .nav-txt, oculto visualmente en
 // movil) para no perder el nombre accesible.
 export const NAV_ICONS = {
-  home: ICON_HOUSE,
   posts: ICON_NEWSPAPER,
   explore: ICON_SEARCH,
   shop: ICON_STORE,
