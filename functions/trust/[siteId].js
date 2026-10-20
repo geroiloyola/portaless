@@ -89,6 +89,9 @@ function publicCommunityRows(rows) {
     siteId: row.siteId,
     category: row.category,
     score: row.score,
+    // signed is provenance metadata for presentation; it is true only for
+    // rows loaded from the signature-verified append-only attestation store.
+    signed: Boolean(row.iss),
     comment: row.comment,
     votedAt: row.votedAt,
   }));

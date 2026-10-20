@@ -33,6 +33,12 @@ describe("página pública de TrustScore: sin valores fabricados", () => {
     expect(trustPage).toContain("Sin datos");
   });
 
+  it("no renderiza un promedio de opiniones comunitarias como si fuera reputación", () => {
+    expect(trustPage).not.toContain("votes.reduce((s, v) => s + v.score");
+    expect(trustPage).not.toContain("avg.toFixed(1)");
+    expect(trustPage).toContain("opiniones no verificadas no puntúan");
+  });
+
   it("la bio de ejemplo no anuncia un conteo fabricado de Veraciers", () => {
     expect(jerryBantz).not.toContain("92 Veraciers");
     expect(jerryBantz).not.toContain("Perfil Verificado");

@@ -319,20 +319,21 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const header = document.createElement("h2");
     header.className = "st-source-title";
-    header.textContent = "Community — opinion de visitantes";
+    header.textContent = "Community — atestaciones y opiniones";
     section.appendChild(header);
 
     const note = document.createElement("p");
     note.className = "st-source-note";
-    note.textContent = "Atestaciones firmadas por Veraciers (did:apw). Ausencia significa que nadie emitio todavia — no es una señal negativa. Las opiniones de visitantes que no cuentan con firma se muestran aparte y no puntuan (APW v1.3, ERRATA E-13).";
+    note.textContent = "Las cantidades distinguen atestaciones firmadas por Veraciers de opiniones sin firma. Las opiniones no verificadas no puntúan (APW v1.3, ERRATA E-13); no se publica un promedio mezclado como reputación.";
     section.appendChild(note);
 
     const grid = document.createElement("div");
     grid.className = "st-self-grid";
 
     for (const [category, label] of Object.entries(COMMUNITY_LABELS)) {
-      const votes = communityVotes.filter((v) => v.category === category);
-      const avg = votes.length ? votes.reduce((s, v) => s + v.score, 0) / votes.length : null;
+      const entries = communityVotes.filter((v) => v.category === category);
+      const signedCount = entries.filter((entry) => entry.signed === true).length;
+      const opinionCount = entries.length - signedCount;
 
       const row = document.createElement("div");
       row.className = "st-self-row";
@@ -343,12 +344,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       row.appendChild(labelEl);
 
       const statusEl = document.createElement("span");
-      if (avg === null) {
+      if (entries.length === 0) {
         statusEl.className = "st-badge st-badge-neutral";
-        statusEl.textContent = "Sin votos";
+        statusEl.textContent = "Sin datos";
       } else {
-        statusEl.className = "st-badge st-badge-good";
-        statusEl.textContent = `${avg.toFixed(1)} / 5 (${votes.length} ${votes.length === 1 ? "voto" : "votos"})`;
+        statusEl.className = "st-badge st-badge-neutral";
+        const parts = [];
+        if (signedCount) parts.push(`${signedCount} ${signedCount === 1 ? "atestación firmada" : "atestaciones firmadas"}`);
+        if (opinionCount) parts.push(`${opinionCount} ${opinionCount === 1 ? "opinión no verificada" : "opiniones no verificadas"}`);
+        statusEl.textContent = parts.join(" · ");
       }
       row.appendChild(statusEl);
 

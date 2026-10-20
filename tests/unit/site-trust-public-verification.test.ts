@@ -1,6 +1,7 @@
 // GET /trust/:siteId: metadatos aditivos de verificabilidad de las cuatro
 // fuentes (APW B7 MVP). community queda marcada local_only, sin identidad
-// criptografica ni prueba exportable; no se cambia el shape de los arrays.
+// criptografica ni prueba exportable; community añade un booleano `signed`
+// para que el consumidor distinga ambas fuentes sin mostrar un promedio mezclado.
 // Desde B3 (ERRATA E-5), self es verificable si la fila trae attestationJws.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -33,7 +34,7 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(body.siteId).toBe("ejemplo.com");
     expect(body.self).toEqual(state.snapshot.self);
     expect(body.agent).toEqual(state.snapshot.agent);
-    expect(body.community).toEqual(state.snapshot.community);
+    expect(body.community).toEqual([{ ...state.snapshot.community[0], signed: false }]);
     expect(body.escrowReports).toEqual(state.snapshot.escrowReports);
     expect(body.verification).toMatchObject({
       self: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
@@ -83,6 +84,7 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(body.community[0].category).toBe("content_accuracy");
     expect(body.community[0].score).toBe(4);
     expect(body.community[0].comment).toBe("ok");
+    expect(body.community[0].signed).toBe(false);
   });
 });
 
