@@ -36,11 +36,16 @@ function emitContainerLogs(names) {
     const container = inspectResource("container", name);
     if (container) {
       console.error(`[staging:docker] container ${name} state: ${JSON.stringify({
+        path: container.Path,
+        args: container.Args,
+        user: container.Config?.User,
+        workingDir: container.Config?.WorkingDir,
         status: container.State?.Status,
         running: container.State?.Running,
         exitCode: container.State?.ExitCode,
         error: container.State?.Error,
         ports: container.NetworkSettings?.Ports,
+        mounts: (container.Mounts ?? []).map(({ Destination, RW }) => ({ destination: Destination, writable: RW })),
       })}`);
       try {
         const ports = docker(["port", name], { capture: true }).trim();
