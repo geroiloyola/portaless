@@ -82,7 +82,6 @@ test.describe("movil 375x812", () => {
     const controls = [
       "header.site-header a.nav-link[href='/explore/']",
       "header.site-header .header-icon-btn",
-      "header.site-header .header-trust",
       "header.site-header .header-lang",
     ];
     for (const sel of controls) {

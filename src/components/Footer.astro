@@ -20,6 +20,7 @@
 // sigue siendo /trust/<siteId> (functions/).
 import { t, type Locale } from "../lib/i18n";
 import { SITE_LANG } from "../lib/site-lang";
+import { ROUTES } from "../lib/routes";
 
 interface Props {
   locale?: Locale;
@@ -28,6 +29,9 @@ const { locale = SITE_LANG } = Astro.props;
 const trustHref = `${import.meta.env.BASE_URL}trust/`;
 const exploreHref = `${import.meta.env.BASE_URL}explore/`;
 const repoHref = "https://github.com/geroiloyola/portaless";
+const commerceEnabled = import.meta.env.ENABLE_COMMERCE === "true";
+const shopHref = `${import.meta.env.BASE_URL}${ROUTES.SHOP.replace(/^\//, "")}/`;
+const shopLabel = locale === "es" ? "Tienda" : "Shop";
 ---
 <footer class="site-footer">
   <div class="container">
@@ -35,6 +39,7 @@ const repoHref = "https://github.com/geroiloyola/portaless";
       <a href={trustHref}>{t(locale, "footer.trust")}</a>
       <span class="sep" aria-hidden="true">·</span>
       <a href={exploreHref}>{t(locale, "footer.explore")}</a>
+      {commerceEnabled && <><span class="sep" aria-hidden="true">·</span><a href={shopHref}>{shopLabel}</a></>}
       <span class="sep" aria-hidden="true">·</span>
       <a href={repoHref} target="_blank" rel="noopener noreferrer">{t(locale, "footer.poweredBy")}</a>
     </nav>

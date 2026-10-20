@@ -33,24 +33,25 @@ describe("gutter fluido derivado del sistema de diseno", () => {
 
 describe("objetivos tactiles 44x44 (WCAG 2.5.5)", () => {
   it("los controles del header miden 44x44", () => {
-    // nav-link (movil), header-lang, header-trust, header-icon-btn.
+    // nav-link (movil), header-lang and share header-icon-btn.
     const widths = globalCss.match(/width: 44px;/g) ?? [];
     const heights = globalCss.match(/height: 44px;/g) ?? [];
-    expect(widths.length).toBeGreaterThanOrEqual(4);
-    expect(heights.length).toBeGreaterThanOrEqual(4);
+    expect(widths.length).toBeGreaterThanOrEqual(3);
+    expect(heights.length).toBeGreaterThanOrEqual(3);
   });
 
   it("los enlaces del footer centran el texto con min-height: 44px", () => {
     expect(globalCss).toMatch(/footer\.site-footer \.footer-eco a \{[\s\S]*?min-height: 44px;/);
   });
 
-  // C20: la barra nav permanece en una sola fila; las acciones contextuales
-  // pasan a una fila exterior y mantienen sus objetivos táctiles.
-  it("la navegación móvil no envuelve y las acciones viven fuera de la barra", () => {
+  // C20: all header inventory fits one row at 320px; page-specific actions
+  // and TrustScore remain outside the header.
+  it("mantiene inventario de header y acciones contextuales fuera del header", () => {
     expect(globalCss).toMatch(/nav\.site-nav\s*\{[^}]*flex-wrap:\s*nowrap/);
     const mobile = globalCss.slice(globalCss.indexOf("@media (max-width: 640px)"));
-    expect(mobile).toContain("flex-direction: column");
+    expect(mobile).toContain("flex-direction: row");
     expect(mobile).toContain("header-right");
+    expect(globalCss).toContain(".page-context-actions");
     expect(globalCss).toContain("flex: 0 0 auto");
     expect(globalCss).not.toContain("Trade-off aceptado (review R9)");
   });

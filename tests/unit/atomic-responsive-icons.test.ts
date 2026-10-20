@@ -13,12 +13,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   deriveHeaderContext,
+  contextActionsHtml,
   headerActionsHtml,
   langNoticeHtml,
   langSwitcherHtml,
   NAV_ICONS,
   navIconHtml,
-  trustLinkHtml,
 } from "../../src/lib/atomic-responsive-icons";
 import {
   ICON_DIRECTIONS,
@@ -27,7 +27,6 @@ import {
   ICON_NEWSPAPER,
   ICON_SEARCH,
   ICON_SHARE_IOS,
-  ICON_SHIELD,
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
@@ -91,37 +90,42 @@ describe("headerActionsHtml -- una sola fuente para ambas superficies", () => {
     expect(html).not.toContain('cx="18" cy="5"');
   });
 
-  it("shop: carrito primero (a /shop/) y share al lado", () => {
+  it("el header nunca añade acciones contextuales a la fila móvil", () => {
     const html = headerActionsHtml("shop");
+    expect(html).toContain("data-portaless-share");
+    expect(html).not.toContain('href="/shop/"');
+    expect(html).not.toContain("data-portaless-volume");
+  });
+});
+
+describe("contextActionsHtml -- acciones fuera del header, junto a la página", () => {
+  it("shop: enlace táctil y etiquetado hacia /shop/", () => {
+    const html = contextActionsHtml("shop");
     expect(html).toContain('href="/shop/"');
     expect(html).toContain('aria-label="Ir a la tienda"');
     expect(html).toContain(ICON_SHOPPING_CART);
-    expect(html).toContain("data-portaless-share");
-    // el carrito va ANTES del share en el rincon
-    expect(html.indexOf("tienda/")).toBeLessThan(html.indexOf("data-portaless-share"));
+    expect(html).toContain("page-context-actions");
   });
 
-  it("video: control de volumen (aria-pressed arranca en false) y share", () => {
-    const html = headerActionsHtml("video");
+  it("video: control de volumen con etiqueta visible", () => {
+    const html = contextActionsHtml("video");
     expect(html).toContain("data-portaless-volume");
     expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('aria-label="Silenciar video"');
     expect(html).toContain(ICON_VOLUME_2);
-    expect(html).toContain("data-portaless-share");
-    expect(html.indexOf("data-portaless-volume")).toBeLessThan(html.indexOf("data-portaless-share"));
+    expect(html).toContain("<span>Silenciar video</span>");
   });
 
-  it("map: icono de como llegar (anclado a #ae-map con ICON_DIRECTIONS) y share", () => {
-    const html = headerActionsHtml("map");
+  it("map: enlace Cómo llegar junto al contenido", () => {
+    const html = contextActionsHtml("map");
     expect(html).toContain('href="#ae-map"');
     expect(html).toContain('aria-label="Cómo llegar"');
     expect(html).toContain(ICON_DIRECTIONS);
-    expect(html).toContain("data-portaless-share");
-    expect(html.indexOf("#ae-map")).toBeLessThan(html.indexOf("data-portaless-share"));
   });
 
-  it("respeta el prefijo base de rutas (import.meta.env.BASE_URL)", () => {
-    expect(headerActionsHtml("shop", "/sub/")).toContain('href="/sub/shop/"');
+  it("respeta el prefijo base de rutas y null no emite controles", () => {
+    expect(contextActionsHtml("shop", "/sub/")).toContain('href="/sub/shop/"');
+    expect(contextActionsHtml(null)).toBe("");
   });
 });
 
@@ -224,38 +228,16 @@ describe("langNoticeHtml -- aviso de idioma honesto (patron Airbnb)", () => {
   });
 });
 
-describe("trustLinkHtml -- TrustScore en el header (sexto item universal)", () => {
-  it("es un enlace con clase header-trust, el icono escudo y la etiqueta", () => {
-    const html = trustLinkHtml({ href: "/trust/", label: "TrustScore", ariaLabel: "Site Trust Score" });
-    expect(html).toContain('class="header-trust"');
-    expect(html).toContain('href="/trust/"');
-    expect(html).toContain('aria-label="Site Trust Score"');
-    expect(html).toContain(ICON_SHIELD);
-    expect(html).toContain('class="header-trust-icon"');
-    expect(html).toContain("TrustScore");
-  });
-
-  it("el header Astro y el shell runtime lo emiten desde la MISMA fuente", () => {
+describe("TrustScore permanece en el footer para el inventario móvil MVP", () => {
+  it("no añade otro control al header; footer conserva el destino del hub", () => {
+    const html = renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: true, commerceEnabled: false });
+    const footerSrc = readFileSync(join(root, "src/components/Footer.astro"), "utf8");
+    expect(html).not.toContain("header-trust");
+    expect(html.match(/data-portaless-share/g)).toHaveLength(1);
+    expect(footerSrc).toContain('href={trustHref}');
+    expect(footerSrc).toContain('`${import.meta.env.BASE_URL}trust/`');
     expect(headerSrc).toContain("renderPublicHeaderHtml({");
     expect(shellSrc).toContain("renderPublicHeaderHtml({");
-    expect(publicShellSrc).toContain("trustLinkHtml({");
-  });
-
-  it("va en el grupo derecho, antes de las acciones (share)", () => {
-    const html = renderPublicHeaderHtml({ base: "/", locale: "en", hasPosts: false, commerceEnabled: false });
-    const groupIdx = html.indexOf('class="header-right"');
-    const trustIdx = html.indexOf('class="header-trust"');
-    const actionsIdx = html.indexOf('class="header-actions"');
-    expect(trustIdx).toBeGreaterThan(groupIdx);
-    expect(actionsIdx).toBeGreaterThan(trustIdx);
-  });
-
-  it("el CSS del header-trust esta en ambas superficies (y en movil icon-only)", () => {
-    const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
-    expect(cssSrc).toContain(".header-trust");
-    expect(cssSrc).toContain(".header-trust-icon");
-    expect(shellSrc).toContain(".header-trust{");
-    expect(shellSrc).toContain(".header-trust .header-trust-text{");
   });
 });
 
@@ -310,14 +292,14 @@ describe("nav movil por iconos -- una sola fuente", () => {
     expect(mobile).not.toContain("header-icon-btn");
   });
 
-  it("mantiene una fila nav y separa las acciones del sitio en viewport móvil", () => {
+  it("mantiene una fila nav y sitúa las acciones contextuales con el contenido", () => {
     const cssSrc = readFileSync(join(root, "src/styles/global.css"), "utf8");
     expect(cssSrc).toMatch(/nav\.site-nav\s*\{[^}]*flex-wrap:\s*nowrap/);
     const mobile = cssSrc.slice(cssSrc.indexOf("@media (max-width: 640px)"));
     expect(mobile).toContain(".site-header-row");
-    expect(mobile).toContain("flex-direction: column");
+    expect(mobile).toContain("flex-direction: row");
     expect(mobile).toContain(".header-right");
-    expect(mobile).toContain("width: 100%");
+    expect(cssSrc).toContain(".page-context-actions");
     expect(shellSrc).toContain("nav.site-nav{display:flex;align-items:center;gap:1.5rem;flex:1 1 auto;min-width:0;flex-wrap:nowrap}");
   });
 });
@@ -325,7 +307,7 @@ describe("nav movil por iconos -- una sola fuente", () => {
 describe("rincon del header -- wiring estatico y runtime", () => {
   it("Header.astro usa la fuente unica y expone la prop de contexto", () => {
     expect(headerSrc).toContain("renderPublicHeaderHtml({");
-    expect(publicShellSrc).toContain("headerActionsHtml(context, base)");
+    expect(publicShellSrc).toContain("headerActionsHtml(null, base)");
     expect(headerSrc).toContain("context?: HeaderContext");
   });
 
@@ -343,8 +325,9 @@ describe("rincon del header -- wiring estatico y runtime", () => {
 
   it("el shell runtime deriva con la MISMA funcion y emite el mismo rincon", () => {
     expect(shellSrc).toContain("deriveHeaderContext(layout.root)");
-    expect(shellSrc).toContain("context: deriveHeaderContext(layout.root)");
-    expect(publicShellSrc).toContain("headerActionsHtml(context, base)");
+    expect(shellSrc).toContain("context: null");
+    expect(shellSrc).toContain("contextActionsHtml(deriveHeaderContext(layout.root))");
+    expect(publicShellSrc).toContain("headerActionsHtml(null, base)");
     expect(shellSrc).toContain("VOLUME_LISTENER_SCRIPT");
   });
 

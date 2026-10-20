@@ -134,26 +134,27 @@ test("proyecciones es bilingue: el switcher lleva a la MISMA pagina en el otro i
   );
 });
 
-test("Atomic Icons Responsive: pagina de video lleva control de volumen", async ({ page }) => {
+test("Atomic Icons Responsive: el control de video acompaña al contenido, no al header", async ({ page }) => {
   await page.goto("/pages/lanzamiento/");
 
-  await expect(page.locator("header.site-header [data-portaless-volume]")).toBeVisible();
+  await expect(page.locator("header.site-header [data-portaless-volume]")).toHaveCount(0);
+  await expect(page.locator("main [data-portaless-volume]")).toBeVisible();
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
-test("Atomic Icons Responsive: pagina de shop lleva el carrito al rincon", async ({ page }) => {
+test("Atomic Icons Responsive: enlace de shop acompaña al contenido, no al header", async ({ page }) => {
   await page.goto("/pages/link-in-bio/");
 
-  const cart = page.locator("header.site-header a.header-icon-btn[href='/shop/']");
+  const cart = page.locator("main a.page-context-action[href='/shop/']");
   await expect(cart).toBeVisible();
   await expect(cart).toHaveAttribute("aria-label", "Ir a la tienda");
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
-test("Atomic Icons Responsive: pagina con mapa lleva icono de como llegar", async ({ page }) => {
+test("Atomic Icons Responsive: enlace de mapa acompaña al contenido, no al header", async ({ page }) => {
   await page.goto("/pages/ejemplo-atomic-elements/");
 
-  const dir = page.locator("header.site-header a.header-icon-btn[href='#ae-map']");
+  const dir = page.locator("main a.page-context-action[href='#ae-map']");
   await expect(dir).toBeVisible();
   await expect(dir).toHaveAttribute("aria-label", "Cómo llegar");
   await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
@@ -171,19 +172,12 @@ test("footer del ecosistema: TrustScore · Explore · Powered by Portaless", asy
   await expect(footer).toContainText("Open Source, Modular, Agent-Ready & Zero-Hosting");
 });
 
-test("el TrustScore vive en el header, al lado de Share, apuntando al hub /trust/", async ({ page }) => {
+test("el TrustScore queda en el footer y el header respeta el inventario móvil", async ({ page }) => {
   await page.goto(BIO_URL);
 
-  const trust = page.locator("header.site-header a.header-trust");
-  await expect(trust).toBeVisible();
-  await expect(trust).toHaveAttribute("href", /\/trust\/$/);
-  await expect(trust).toHaveAttribute("aria-label", "TrustScore del sitio");
-  await expect(trust.locator(".header-trust-icon svg")).toHaveCount(1);
-
-  // Va ANTES del share (que sigue pegado al borde derecho).
-  const trustBox = (await trust.boundingBox())!;
-  const shareBox = (await page.locator("header.site-header [data-portaless-share]").boundingBox())!;
-  expect(trustBox.x).toBeLessThan(shareBox.x);
+  await expect(page.locator("header.site-header .header-trust")).toHaveCount(0);
+  await expect(page.locator("footer.site-footer a[href='/trust/']")).toBeVisible();
+  await expect(page.locator("header.site-header [data-portaless-share]")).toBeVisible();
 });
 
 test("Explore existe y lista paginas publicadas (sin links rotos)", async ({ page }) => {

@@ -1,17 +1,14 @@
 // Atomic Icons Responsive -- el rincon inteligente del header publico.
 //
-// El header SIEMPRE trae Share (mismo listener delegado
-// [data-portaless-share] de BaseLayout: Web Share API o copiar la URL con
-// toast). Ademas, el icono PRINCIPAL del rincon se deriva del contenido
-// de la pagina que el visitante esta viendo -- sin configuracion manual:
+// El header movil trae solo los controles que caben en su inventario de una
+// fila. Las acciones contextuales se renderizan junto al contenido de página.
 //
-//   - root contiene ProductGrid/StoreBlock -> carrito, que lleva a la
-//     SHOP del sitio (la pagina de tienda del sitio; existe siempre)
+//   - root contiene ProductGrid/StoreBlock -> enlace al catálogo del sitio
 //   - root contiene Video -> control de volumen que silencia y
 //     des-silencia los iframes embebidos de la pagina (YouTube via los
 //     comandos postMessage del IFrame API, con enablejsapi=1 en el
 //     embed; Vimeo via su protocolo method/value, best-effort)
-//   - cualquier otra pagina (bio, servicios, portafolio...) -> solo Share
+//   - Map -> Cómo llegar
 //
 // La decision recorre el arbol de elementos en PREORDEN: el primer nodo
 // que defina contexto gana (una pagina con Video arriba y productos
@@ -29,7 +26,6 @@ import {
   ICON_NEWSPAPER,
   ICON_SEARCH,
   ICON_SHARE_IOS,
-  ICON_SHIELD,
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
@@ -73,29 +69,33 @@ function firstContext(nodes: readonly unknown[]): HeaderContext {
   return null;
 }
 
-// HTML del rincon derecho del header. UNA sola fuente para ambas
-// superficies (Astro y runtime): los tests aun asi fijan la paridad por
-// fuente, por si algun dia alguien deja de pasar por aqui.
-// `base` es el prefijo de rutas (import.meta.env.BASE_URL en el build,
-// "/" en el runtime).
-export function headerActionsHtml(context: HeaderContext, base = "/"): string {
+export function contextActionsHtml(context: HeaderContext, base = "/"): string {
   const cart =
     context === "shop"
-      ? `<a class="header-icon-btn" href="${escapeHtml(base)}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda" title="Tienda">${ICON_SHOPPING_CART}</a>`
+      ? `<a class="page-context-action" href="${escapeHtml(base)}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda">${ICON_SHOPPING_CART}<span>Ir a la tienda</span></a>`
       : "";
   const volume =
     context === "video"
-      ? `<button type="button" class="header-icon-btn" data-portaless-volume aria-pressed="false" aria-label="Silenciar video" title="Silenciar video">${ICON_VOLUME_2}</button>`
+      ? `<button type="button" class="page-context-action" data-portaless-volume aria-pressed="false" aria-label="Silenciar video">${ICON_VOLUME_2}<span>Silenciar video</span></button>`
       : "";
   const directions =
     context === "map"
-      ? `<a class="header-icon-btn" href="#ae-map" aria-label="Cómo llegar" title="Cómo llegar">${ICON_DIRECTIONS}</a>`
+      ? `<a class="page-context-action" href="#ae-map" aria-label="Cómo llegar">${ICON_DIRECTIONS}<span>Cómo llegar</span></a>`
       : "";
+  const actions = `${cart}${volume}${directions}`;
+  return actions ? `<nav class="page-context-actions" aria-label="Acciones de esta página">${actions}</nav>` : "";
+}
+
+export function headerShareHtml(): string {
   // Share: SIEMPRE, con el icono iOS (caja + flecha). El listener
   // delegado que lo atiende vive en BaseLayout (build) y en el shell
   // runtime -- ninguno de los dos se toca aqui.
-  const share = `<button type="button" class="header-icon-btn" data-portaless-share aria-label="Compartir este enlace" title="Compartir este enlace">${ICON_SHARE_IOS}</button>`;
-  return `<div class="header-actions">${cart}${volume}${directions}${share}</div>`;
+  return `<button type="button" class="header-icon-btn" data-portaless-share aria-label="Compartir este enlace" title="Compartir este enlace">${ICON_SHARE_IOS}</button>`;
+}
+
+/** Header-action compatibility helper; context controls are not placed here. */
+export function headerActionsHtml(_context: HeaderContext, _base = "/"): string {
+  return `<div class="header-actions">${headerShareHtml()}</div>`;
 }
 
 // Selector de idioma del header: vive en el grupo derecho (junto a los
@@ -129,15 +129,6 @@ export function langNoticeHtml(input: { text: string; ctaLabel?: string; href?: 
       ? ` <a class="header-lang-notice-link" href="${escapeHtml(input.href)}">${escapeHtml(input.ctaLabel)}</a>`
       : "";
   return `<p class="header-lang-notice"><span class="header-lang-notice-txt">${escapeHtml(input.text)}</span>${cta}</p>`;
-}
-
-// TrustScore en el header: el score DEL SITIO (no de una persona dentro de el),
-// como sexto item universal -- la prueba de confianza verificable deja de vivir
-// solo en el footer. Icono escudo + etiqueta; en movil el texto se oculta
-// visualmente (misma regla que el resto del menu) y queda el icono. UNA fuente
-// para el header Astro y el shell runtime.
-export function trustLinkHtml(input: { href: string; label: string; ariaLabel: string }): string {
-  return `<a class="header-trust" href="${escapeHtml(input.href)}" aria-label="${escapeHtml(input.ariaLabel)}" title="${escapeHtml(input.ariaLabel)}"><span class="header-trust-icon" aria-hidden="true">${ICON_SHIELD}</span><span class="header-trust-text">${escapeHtml(input.label)}</span></a>`;
 }
 
 // Iconos de navegacion para MOVIL (CSS los muestra solo bajo el breakpoint; en
