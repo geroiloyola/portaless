@@ -76,6 +76,7 @@ function seedLayout(fields: Partial<PageLayout> = {}): PageLayout {
     version: "0.1",
     slug: "perfil",
     title: "Perfil",
+    status: "draft",
     root: [{ id: "n1", type: "Paragraph", props: { text: "hola" } }],
     ...fields,
   };
@@ -213,6 +214,26 @@ describe("apply_theme", () => {
     expect(res.isError).toBe(true);
     expect(JSON.parse(res.content[0].text).error).toMatch(/No existe una pagina/);
     expect(h.saved).toHaveLength(0);
+  });
+
+  it("C28: no modifica una pagina publicada; exige propuesta y aprobacion", async () => {
+    const h = await harness({ seed: seedLayout({ status: "published" }) });
+    const res = await h.apply({ slug: "perfil", theme: "2pac-dark" }, h.extra);
+    expect(res.isError).toBe(true);
+    expect(JSON.parse(res.content[0].text).error).toBe("published_page_requires_admin_approval");
+    expect(h.saved).toHaveLength(0);
+    expect(h.current()?.theme).toBeUndefined();
+    expect(h.entries).toHaveLength(0);
+  });
+
+  it("C29: no modifica una pagina privada sin su permiso independiente", async () => {
+    const h = await harness({ seed: seedLayout({ status: "private" }) });
+    const res = await h.apply({ slug: "perfil", theme: "2pac-dark" }, h.extra);
+    expect(res.isError).toBe(true);
+    expect(JSON.parse(res.content[0].text).error).toBe("private_content_access_denied");
+    expect(h.saved).toHaveLength(0);
+    expect(h.current()?.theme).toBeUndefined();
+    expect(h.entries).toHaveLength(0);
   });
 
   it("exige content:read y content:write (sin write no escribe)", async () => {
