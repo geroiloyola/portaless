@@ -184,10 +184,11 @@ describe("join completo (confianza also_known_as)", () => {
     });
     expect(result.limitations.some((l) => l.startsWith("site_trust_unreachable"))).toBe(false);
 
-    // usuario: subjectDid host-scoped + dimensiones R (R-01 puntuada y R-05 neutral)
+    // El usuario publica dimensiones con evidencia; el R-05 neutral/count=0
+    // se conserva para cálculos internos, pero no se proyecta como medición.
     expect(result.user).toMatchObject({ status: "ok", subjectDid: `did:apw:${HANDLE}` });
     const dims = (result.user as { status: "ok"; dimensions: { dimension: string; score: number }[] }).dimensions;
-    expect(dims.map((d2) => d2.dimension)).toEqual(["R-01", "R-05"]);
+    expect(dims.map((d2) => d2.dimension)).toEqual(["R-01"]);
     expect(dims[0].score).toBeGreaterThanOrEqual(1);
     expect(dims[0].score).toBeLessThanOrEqual(7);
 
@@ -195,6 +196,14 @@ describe("join completo (confianza also_known_as)", () => {
     await buildAtprotoReputation(HANDLE, d);
     expect(d.resolveAtproto).toHaveBeenCalledTimes(1);
     expect(d.fetchSiteTrust).toHaveBeenCalledTimes(1);
+  });
+
+  it("no proyecta R-05 neutral como dato cuando el historial verificado está vacío", async () => {
+    const d = deps({
+      loadConduct: vi.fn(async () => ({ ok: true as const, attestations: [], checkedEntries: 0, ignoredLegacy: 0 })),
+    });
+    const result = await buildAtprotoReputation(HANDLE, d);
+    expect(result.user).toEqual({ status: "no_data", reason: "no_scored_dimensions" });
   });
 
   it("confianza subdomain si el candidato no reclama el handle explicitamente", async () => {

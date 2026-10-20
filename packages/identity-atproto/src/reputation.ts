@@ -111,7 +111,12 @@ const CACHE_FAIL_MS = 60 * 1000;
 const cache = new Map<string, { result: AtprotoReputationResult; expiresAt: number }>();
 
 function dimensionList(scores: Map<string, DimensionScore>): DimensionScore[] {
-  return [...scores.values()].sort((a, b) => a.dimension.localeCompare(b.dimension));
+  // scoreSubject keeps protocol priors for calculations (notably an
+  // uncalibrated R-05 = 4.0, count/weight 0). A public projection must not
+  // render those priors as observed evidence.
+  return [...scores.values()]
+    .filter((score) => score.count > 0 && score.weightSum > 0)
+    .sort((a, b) => a.dimension.localeCompare(b.dimension));
 }
 
 function countsFromSnapshot(snapshot: SiteSnapshotLike): Record<string, number> {
@@ -284,10 +289,11 @@ export async function buildAtprotoReputation(rawHandle: unknown, deps: AtprotoRe
   try {
     const conduct = await loadConduct(handle);
     if (conduct.ok) {
+      const dimensions = dimensionList(scoreSubject(`did:apw:${handle}`, conduct.attestations));
       user = {
-        status: "ok",
-        subjectDid: `did:apw:${handle}`,
-        dimensions: dimensionList(scoreSubject(`did:apw:${handle}`, conduct.attestations)),
+        ...(dimensions.length === 0
+          ? { status: "no_data" as const, reason: "no_scored_dimensions" }
+          : { status: "ok" as const, subjectDid: `did:apw:${handle}`, dimensions }),
       };
     } else {
       user = { status: "no_data", reason: conduct.reason };
