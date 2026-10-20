@@ -105,45 +105,91 @@ function scheduleAutoEmit(context, env, operatorKeyId) {
   // self-host: el runtime no expone waitUntil; el task sigue su curso solo.
 }
 
-let migrationsCheckedAt = 0;
-let migrationsBlock = null;
+const MIGRATION_STATUS_TTL_MS = 10_000;
+let migrationStatusCache = new Map();
+let migrationStatusInflight = new Map();
+let migrationDbIds = new WeakMap();
+let nextMigrationDbId = 1;
+
+function migrationCacheKey(env) {
+  if (env.DB && (typeof env.DB === "object" || typeof env.DB === "function")) {
+    let id = migrationDbIds.get(env.DB);
+    if (!id) {
+      id = nextMigrationDbId++;
+      migrationDbIds.set(env.DB, id);
+    }
+    return `d1:${id}`;
+  }
+  if (env.PORTALESS_SQLITE_PATH) return `sqlite:${env.PORTALESS_SQLITE_PATH}`;
+  return "static";
+}
 
 /** Solo para tests: limpia la cache del gate entre escenarios. */
 export function __resetMigrationGateForTests() {
-  migrationsCheckedAt = 0;
-  migrationsBlock = null;
+  migrationStatusCache.clear();
+  migrationStatusInflight.clear();
+  migrationDbIds = new WeakMap();
+  nextMigrationDbId = 1;
 }
 
-/** Gate de migraciones cacheado (10s). Devuelve una Response 503 o null. */
-async function migrationsGate(env) {
+/** Consulta concurrente cacheada; solo retiene status/error, nunca Response ni su body consumible. */
+async function cachedMigrationStatus(env) {
+  const key = migrationCacheKey(env);
   const now = Date.now();
-  if (now - migrationsCheckedAt < 10_000) return migrationsBlock;
-  migrationsCheckedAt = now;
-  migrationsBlock = null;
-  try {
-    const status = await migrationStatus(env);
-    if (status && (status.pending || status.newer)) {
-      migrationsBlock = new Response(
-        JSON.stringify({
-          error: status.newer ? "database_newer_than_code" : "pending_database_migrations",
-          message: status.newer
-            ? `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: actualiza el codigo antes de servir.`
-            : `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: corre las migraciones (self-host: npm run migrate; Cloudflare D1: npm run migrate:d1 -- --db <DB> --remote).`,
-        }),
-        { status: 503, headers: { "content-type": "application/json" } },
-      );
-    }
-  } catch {
-    /* sin base o error de lectura: no bloquear (el arranque ya es fail-closed) */
+  const cached = migrationStatusCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.result;
+
+  const inflight = migrationStatusInflight.get(key);
+  if (inflight) return inflight;
+
+  const check = migrationStatus(env)
+    .then((status) => {
+      const result = { status };
+      // Timestamp only after the DB read completed successfully.
+      migrationStatusCache.set(key, { expiresAt: Date.now() + MIGRATION_STATUS_TTL_MS, result });
+      return result;
+    })
+    .catch((error) => ({ error }))
+    .finally(() => migrationStatusInflight.delete(key));
+  migrationStatusInflight.set(key, check);
+  return check;
+}
+
+/** Gate de migraciones cacheado (10s). Cada invocación construye su propia Response. */
+async function migrationsGate(env) {
+  const result = await cachedMigrationStatus(env);
+  if (result.error) {
+    return new Response(
+      JSON.stringify({ error: "migration_status_unavailable", message: "No se pudo verificar el estado de la base de datos." }),
+      { status: 503, headers: { "content-type": "application/json" } },
+    );
   }
-  return migrationsBlock;
+
+  const status = result.status;
+  if (!status || (!status.pending && !status.newer)) return null;
+
+  const code = status.newer
+    ? "database_newer_than_code"
+    : status.invalid
+      ? "database_schema_invalid"
+      : "pending_database_migrations";
+  const detail = [...(status.schemaErrors ?? []), ...(status.ledgerErrors ?? [])];
+  const message = status.newer
+    ? `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: actualiza el codigo antes de servir.`
+    : detail.length
+      ? `El esquema no cumple el contrato del codigo: ${detail.join(", ")}. Corre doctor/migrate y vuelve a verificar.`
+      : `La base esta en schema v${status.dbVersion} y el codigo espera v${status.codeVersion}: corre las migraciones (self-host: npm run migrate; Cloudflare D1: npm run migrate:d1 -- --db <DB> --remote).`;
+  return new Response(JSON.stringify({ error: code, message }), {
+    status: 503,
+    headers: { "content-type": "application/json" },
+  });
 }
 
 export async function onRequest(context) {
   const { request, env, next } = context;
   // GATE de migraciones (fail-closed): si la base esta detras del codigo (o
   // adelante), 503 en vez de dejar que una columna ausente rompa una query a
-  // mitad de camino. Se cachea 10s para no leer la base en cada request.
+  // mitad de camino. Cachea el estado 10s, no una Response/body consumible.
   const migrationsBlock = await migrationsGate(env);
   if (migrationsBlock) return migrationsBlock;
   // REDIRECTS de las URLs legadas (Fase 3): 301 en el punto de entrada comun.
