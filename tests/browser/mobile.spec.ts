@@ -115,6 +115,27 @@ test.describe("movil chico 320x568 (iPhone SE)", () => {
 test.describe("Docs en 320x480", () => {
   test.use({ viewport: { width: 320, height: 480 } });
 
+  for (const scale of [1, 2]) {
+    test(`/docs/first-steps/ reflow y teclado con texto al ${scale * 100}%`, async ({ page }) => {
+      await page.goto("/docs/first-steps/");
+      // Text enlargement tests reflow independently of device pixel density;
+      // this is not presented as an OS/browser pinch-zoom certification.
+      await page.evaluate((factor) => { document.documentElement.style.fontSize = `${factor * 100}%`; }, scale);
+      await expect(page.locator(".docs-content h1")).toBeVisible();
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+      await page.locator("#docs-nav-toggle").focus();
+      await page.keyboard.press("Space");
+      await expect(page.locator(".docs-nav")).toBeVisible();
+      for (const control of await page.locator(".docs-nav-link, .docs-nav-summary, .docs-md").all()) {
+        const box = await control.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.width).toBeGreaterThanOrEqual(44);
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+      }
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+    });
+  }
+
   test("conserva el articulo, limita el overflow al documento y permite abrir el sidebar con teclado", async ({ page }) => {
     await page.goto("/docs/protocol-apw/");
     await expect(page.locator(".docs-content h1")).toBeVisible();

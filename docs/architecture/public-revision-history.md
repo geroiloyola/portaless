@@ -12,9 +12,10 @@ authorship/tamper-proof storage.
   increasing `revisionNo`, the previous canonical revision ID, and a SHA-256
   `contentHash`.
 - The content hash is `sha256:` followed by the digest of JSON with recursively
-  sorted object keys. The top-level publication/revision metadata and publication
-  status are excluded; the page's actual public content (including slug, title,
-  description, theme and element tree) is included. This is Portaless's internal
+  sorted object keys over an explicit allowlist: version, slug, title,
+  description, locale, layoutVersion, theme and root. Publication/revision
+  metadata, publication status and unknown top-level private metadata are
+  excluded. This is Portaless's internal
   deterministic hash contract, not RFC 8785/JCS and not an APW signed artifact.
 - `page_revisions` is append-only in application code and protected against
   SQL `UPDATE`/`DELETE` by SQLite triggers. `pages` remains the mutable current

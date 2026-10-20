@@ -7,6 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOC_ENTRIES } from "../src/lib/docs-nav.mjs";
 import { isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
+import { SqlitePageStore } from "../packages/atomic-elements/src/persistence/stores/sqlite-page-store.ts";
+import { writePublicRevisionHistories } from "./public-revision-export.mjs";
 import {
   copyPublicBuildInputs,
   copyPublicDocs,
@@ -49,6 +51,8 @@ try {
   writeJson(fixtureRoot, "src/content/pages/private-source.en.json", { ...layout("private-source", "published", marker), locale: "en" });
   writeJson(fixtureRoot, "src/content/pages/draft-source.json", layout("draft-source", "draft", marker));
   writeJson(fixtureRoot, "src/content/pages/db-shadow.json", layout("db-shadow", "published", marker));
+  writeJson(fixtureRoot, "src/content/revision-history/private.json", { title: marker });
+  writeJson(fixtureRoot, "public/revisions/private/index.json", { title: marker });
 
   const postsDir = path.join(fixtureRoot, "src/content/posts");
   fs.mkdirSync(postsDir, { recursive: true });
@@ -61,7 +65,18 @@ try {
   copyPublicDocs(ROOT, stageRoot, DOC_ENTRIES);
   copyPublicSourcePages(fixtureRoot, stageRoot, new Set(["db-shadow"]), isPubliclyPublishable);
   copyPublicSourcePosts(fixtureRoot, stageRoot, isPubliclyPublishable);
-  writePublicPageLayouts(stageRoot, [layout("page-store-approved", "published", "Approved PageStore")], { clear: false });
+  const store = await SqlitePageStore.open(path.join(tempRoot, "canonical.sqlite"));
+  let approved;
+  try {
+    await store.save(layout("page-store-approved", "draft", marker));
+    const draft = await store.load("page-store-approved");
+    await store.save({ ...draft, status: "published", title: "Approved PageStore" });
+    approved = await store.load("page-store-approved");
+    writePublicPageLayouts(stageRoot, [approved], { clear: false });
+    await writePublicRevisionHistories(stageRoot, [approved], store);
+  } finally {
+    store.close();
+  }
 
   const dist = path.join(stageRoot, "dist");
   execFileSync("npm", ["run", "build"], {
@@ -72,6 +87,11 @@ try {
 
   assert.ok(fs.existsSync(path.join(dist, "pages/page-store-approved/index.html")));
   assert.ok(fs.existsSync(path.join(dist, "pages/public-source/index.html")));
+  assert.ok(fs.existsSync(path.join(dist, "docs/first-steps/index.html")), "the clean projection must retain the public Docs routes");
+  const history = JSON.parse(fs.readFileSync(path.join(dist, "revisions", approved.publicationId, "index.json"), "utf8"));
+  assert.equal(history.revisions.length, 1);
+  assert.equal(history.revisions[0].revisionId, approved.revisionId);
+  assert.ok(fs.readFileSync(path.join(dist, "pages/page-store-approved/index.html"), "utf8").includes("Historial público"));
   for (const filename of collectFiles(dist)) {
     assert.equal(fs.readFileSync(filename).includes(Buffer.from(marker)), false, `private marker leaked in ${path.relative(dist, filename)}`);
   }

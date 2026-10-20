@@ -33,7 +33,7 @@ import {
   writePublicPageLayouts,
 } from "./public-build-stage.mjs";
 import { DOC_ENTRIES } from "../src/lib/docs-nav.mjs";
-import { projectPublicRevisionHistory } from "../packages/atomic-elements/src/persistence/public-revision-history.ts";
+import { writePublicRevisionHistories } from "./public-revision-export.mjs";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
@@ -98,22 +98,7 @@ async function main() {
     copyPublicSourcePages(ROOT, stageRoot, databaseOwnedPrivateSlugs, isPubliclyPublishable);
     copyPublicSourcePosts(ROOT, stageRoot, isPubliclyPublishable);
     writePublicPageLayouts(stageRoot, publishable, { clear: false });
-    const revisionContentDir = path.join(stageRoot, "src", "content", "revision-history");
-    const revisionPublicDir = path.join(stageRoot, "public", "revisions");
-    fs.mkdirSync(revisionContentDir, { recursive: true });
-    fs.mkdirSync(revisionPublicDir, { recursive: true });
-    for (const layout of publishable) {
-      if (!layout.publicationId) continue;
-      const revisions = await pageStore.listPublicRevisionsByPublicationId?.(layout.publicationId);
-      const history = projectPublicRevisionHistory(revisions ?? []);
-      if (!history) continue;
-      const fileName = `${layout.publicationId}.json`;
-      const serialized = JSON.stringify(history, null, 2);
-      fs.writeFileSync(path.join(revisionContentDir, fileName), serialized);
-      const publicRevisionPath = path.join(revisionPublicDir, layout.publicationId, "index.json");
-      fs.mkdirSync(path.dirname(publicRevisionPath), { recursive: true });
-      fs.writeFileSync(publicRevisionPath, serialized);
-    }
+    await writePublicRevisionHistories(stageRoot, publishable, pageStore);
     const distDir = path.join(stageRoot, "dist");
     const buildEnv = createPublicBuildEnv(process.env, distDir);
     execFileSync("npm", ["run", "build"], { cwd: stageRoot, stdio: "inherit", env: buildEnv });

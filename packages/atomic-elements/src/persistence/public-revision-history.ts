@@ -1,6 +1,7 @@
 import type { PageLayout } from "../types";
 import type { PageRevisionEvidence, PublicPageRevision } from "./page-store";
-import { pageContentHash, validateRevisionEvidence } from "./revision-history";
+import { pageContentHash, pagePublicContent, validateRevisionEvidence } from "./revision-history";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 export const PUBLIC_REVISION_HISTORY_FORMAT = "portaless-public-revision-history/v1" as const;
 
@@ -31,8 +32,8 @@ export async function validatePortablePublicRevisionHistory(input: unknown): Pro
   const history = input as PublicRevisionHistory;
   if (history.format !== PUBLIC_REVISION_HISTORY_FORMAT || typeof history.publicationId !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(history.publicationId) ||
-      typeof history.slug !== "string" || !history.slug || !Array.isArray(history.revisions) ||
-      history.revisions.length < 1 || history.revisions.length > 100) throw new Error("invalid_revision_history");
+      typeof history.slug !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(history.slug) || !Array.isArray(history.revisions) ||
+      history.revisions.length < 1) throw new Error("invalid_revision_history");
 
   const seen = new Set<string>();
   for (let index = 0; index < history.revisions.length; index++) {
@@ -44,7 +45,7 @@ export async function validatePortablePublicRevisionHistory(input: unknown): Pro
         revision.layout?.slug !== history.slug || revision.layout?.publicationId !== history.publicationId ||
         revision.layout?.revisionId !== revision.revisionId || revision.layout?.revisionNo !== revision.revisionNo ||
         revision.layout?.contentHash !== revision.contentHash ||
-        (revision.layout?.status !== undefined && revision.layout.status !== "published") ||
+        !isPubliclyPublishable(revision.layout) || revision.title !== revision.layout.title ||
         !Number.isFinite(Date.parse(revision.createdAt)) || !Number.isFinite(Date.parse(revision.publishedAt))) {
       throw new Error("invalid_revision_history");
     }
@@ -97,8 +98,10 @@ function changedPaths(previous: PageLayout | null, current: PageLayout): string[
 
 /** Creates a public-only projection. Private actor identifiers and private parent pointers are omitted. */
 export function projectPublicRevisionHistory(revisions: PublicPageRevision[]): PublicRevisionHistory | null {
-  if (revisions.length === 0) return null;
-  const chronological = [...revisions].sort((left, right) => left.revisionNo - right.revisionNo);
+  const approved = revisions.filter((revision) => revision.approvedAt && isPubliclyPublishable(revision.layout));
+  if (approved.length === 0) return null;
+  if (approved.some((revision) => revision.publicationId !== approved[0].publicationId)) throw new Error("mixed_publication_history");
+  const chronological = [...approved].sort((left, right) => left.revisionNo - right.revisionNo);
   const records = chronological.map((revision, index) => ({
     revisionId: revision.revisionId,
     revisionNo: revision.revisionNo,
@@ -107,7 +110,14 @@ export function projectPublicRevisionHistory(revisions: PublicPageRevision[]): P
     createdAt: revision.createdAt,
     publishedAt: revision.approvedAt!,
     title: revision.title,
-    layout: revision.layout,
+    layout: {
+      ...pagePublicContent(revision.layout),
+      status: "published" as const,
+      publicationId: revision.publicationId,
+      revisionId: revision.revisionId,
+      revisionNo: revision.revisionNo,
+      contentHash: revision.contentHash,
+    },
     changedPaths: changedPaths(chronological[index - 1]?.layout ?? null, revision.layout),
     // Site-level APW observations have no content revision subject; do not
     // attribute them to a page. A real empty set remains `no_data`.

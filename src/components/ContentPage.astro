@@ -84,7 +84,7 @@ const revisionHistory = layout.publicationId
             <p><code>{revision.contentHash}</code></p>
             {revision.changedPaths.length > 0
               ? <p>Cambios verificables: {revision.changedPaths.join(", ")}</p>
-              : <p>Primera revisión pública registrada.</p>}
+              : <p>{revision.parentRevisionId ? "Sin cambios en el contenido respecto a la revisión pública anterior." : "Primera revisión pública registrada."}</p>}
             {revision.reputation.status === "no_data"
               ? <p>Reputación ligada a esta revisión: sin datos.</p>
               : (
@@ -115,4 +115,5 @@ const revisionHistory = layout.publicationId
   .public-revision-history { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--panel-border); overflow-wrap: anywhere; }
   .public-revision-history li { margin: 1.25rem 0; }
   .public-revision-history code { overflow-wrap: anywhere; }
+  .public-revision-history pre { max-width: 100%; overflow-x: auto; }
 </style>

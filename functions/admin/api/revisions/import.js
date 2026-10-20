@@ -1,4 +1,5 @@
 import { createPageStore } from "../../../../packages/atomic-elements/src/persistence/store-factory.ts";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../../_shared/read-body-limited.js";
 
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
@@ -9,12 +10,10 @@ export async function onRequestPost(context) {
 
   let raw;
   try {
-    raw = await context.request.text();
-  } catch {
+    raw = await readBodyLimited(context.request, MAX_IMPORT_BYTES);
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return Response.json({ error: "revision_history_too_large" }, { status: 413, headers: { "cache-control": "no-store" } });
     return Response.json({ error: "invalid_json_body" }, { status: 400, headers: { "cache-control": "no-store" } });
-  }
-  if (new TextEncoder().encode(raw).byteLength > MAX_IMPORT_BYTES) {
-    return Response.json({ error: "revision_history_too_large" }, { status: 413, headers: { "cache-control": "no-store" } });
   }
 
   let history;

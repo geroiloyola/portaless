@@ -93,6 +93,7 @@ describe("GET /revisions/:publicationId", () => {
     const current = await source.load("tampered");
     const portable = projectPublicRevisionHistory(await source.listPublicRevisionsByPublicationId!(current!.publicationId!))!;
     portable.revisions[0].layout.title = "altered";
+    portable.revisions[0].title = "altered";
     const destination = await createPageStore({ PORTALESS_SQLITE_PATH: databasePath() });
     await expect(destination.importPublicRevisionHistory!(portable)).rejects.toThrow("revision_content_hash_mismatch");
     expect(await destination.load("tampered")).toBeNull();

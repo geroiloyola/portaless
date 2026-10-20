@@ -38,7 +38,8 @@ function normalized(relativePath) {
 function hasPrivatePathComponent(relativePath) {
   const value = normalized(relativePath);
   const components = value.split("/").filter(Boolean);
-  if (components.some((component) => EXCLUDED_COMPONENTS.has(component))) return true;
+  if (components.some((component) => EXCLUDED_COMPONENTS.has(component) &&
+    !(component === "docs" && (value === "src/pages/docs" || value.startsWith("src/pages/docs/"))))) return true;
   if (components.some((component) => PRIVATE_FILE_PATTERNS.some((pattern) => pattern.test(component)))) return true;
   return false;
 }
@@ -48,7 +49,9 @@ export function isExcludedFromPublicBuild(relativePath) {
   const value = normalized(relativePath);
   if (hasPrivatePathComponent(value)) return true;
   return value === "src/content/pages" || value.startsWith("src/content/pages/") ||
-    value === "src/content/posts" || value.startsWith("src/content/posts/");
+    value === "src/content/posts" || value.startsWith("src/content/posts/") ||
+    value === "src/content/revision-history" || value.startsWith("src/content/revision-history/") ||
+    value === "public/revisions" || value.startsWith("public/revisions/");
 }
 
 function copyTree(sourceRoot, destinationRoot, relativeRoot, { children, allowFile } = {}) {

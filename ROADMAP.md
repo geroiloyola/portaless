@@ -33,7 +33,8 @@ Read this table first; every row links to the section that justifies it. A row i
 
 ### Foundation, auth and licensing
 
-- `[x]` `main` branch protection; `admin`/`viewer` roles with `canWrite(role)` DOM guard + server-side validation across the dashboard.
+- `[x]` `admin`/`viewer` roles with `canWrite(role)` DOM guard + server-side validation across the dashboard.
+- `[ ]` `main` branch protection: audit on 2026-10-20 found no classic protection and no active rules applying to `main` (GitHub API). Requiring PR review and checks must be configured by the owner; workflow files alone do not enforce this.
 - `[x]` Licensing: core AGPL-3.0; APW specification CC BY 4.0; Plugin SDK planned MIT ([`licensing boundaries`](./docs/architecture/licensing-boundaries.md)).
 - `[x]` Password recovery, 2FA (TOTP), OAuth/SSO; step-up (password + TOTP) for sensitive actions.
 - `[x]` Exact pre-login allowlist for `/admin/*`; MFA attempt limits; hashed-bucket login/reset rate limits; bounded login/reset/upload request bodies; per-admin/IP image/plugin upload quotas; `password_change_events` history; all sessions invalidated on password change/reset.

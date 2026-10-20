@@ -62,7 +62,7 @@ const mdHref = `${base.replace(/\/$/, "")}/docs/${entry.id}.md`;
     color: var(--muted, #6e6653); border: 1px solid var(--panel-border, #2c231a);
     border-radius: 999px; padding: 2px 8px;
   }
-  .docs-md { font-size: 0.8rem; }
+  .docs-md { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; font-size: 0.8rem; }
 
   .docs-content { width: 100%; max-width: min(72ch, 100%); min-width: 0; line-height: 1.7; overflow-wrap: anywhere; }
   .docs-content :is(h1, h2, h3, p, li, a, blockquote, th, td) { min-width: 0; overflow-wrap: anywhere; }

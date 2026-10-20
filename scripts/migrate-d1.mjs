@@ -44,6 +44,10 @@ function q(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+export function migrationSql(statements) {
+  return statements.map((statement) => `${statement.trim().replace(/;+$/, "")};`).join("\n") + "\n";
+}
+
 function missingColumns(schema, contract) {
   const missing = [];
   for (const [table, required] of Object.entries(contract)) {
@@ -137,7 +141,7 @@ export async function migrateD1(options) {
         `INSERT INTO schema_migrations (version, name, applied_at) VALUES (${migration.version}, ${q(migration.name)}, ${q(new Date().toISOString())});`,
       );
       const file = join(workDir, `v${migration.version}.sql`);
-      writeFileSync(file, `${statements.join("\n")}\n`, { mode: 0o600 });
+      writeFileSync(file, migrationSql(statements), { mode: 0o600 });
       const args = ["wrangler", "d1", "execute", options.db, options.mode, `--file=${file}`];
       if (options.config) args.push("-c", options.config);
       if (options.persistTo && options.mode === "--local") args.push("--persist-to", options.persistTo);

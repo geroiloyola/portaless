@@ -13,6 +13,7 @@ import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
 import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { isPubliclyPublishable } from "../../../../deploy-engine/src/draft-filter";
 
 interface PageRow {
   slug: string;
@@ -25,10 +26,9 @@ interface PageRow {
   content_hash: string | null;
 }
 
-interface RevisionRow extends PageRevisionMetadata {
-  slug: string;
-  content_hash: string;
-  layout_json: string;
+interface RevisionRow {
+  publication_id: string; revision_id: string; revision_no: number; content_hash: string;
+  created_at: string; approved_at: string; slug: string; layout_json: string;
 }
 
 interface EvidenceRow {
@@ -167,10 +167,8 @@ export class SqlitePageStore implements PageStore {
   }
 
   async listPublicRevisions(slug: string): Promise<PublicPageRevision[]> {
-    await this.ensureLegacyRevision(slug);
-    const rows = this.db.prepare(`SELECT * FROM page_revisions
-      WHERE slug = ? AND approved_at IS NOT NULL ORDER BY revision_no DESC`).all(slug) as RevisionRow[];
-    return this.publicRevisionRows(rows);
+    const current = await this.load(slug);
+    return current?.publicationId ? this.listPublicRevisionsByPublicationId(current.publicationId) : [];
   }
 
   async listPublicRevisionsByPublicationId(publicationId: string): Promise<PublicPageRevision[]> {
@@ -279,7 +277,7 @@ export class SqlitePageStore implements PageStore {
     const { pageContentHash } = await import("../revision-history");
     const contentHash = row.content_hash ?? await pageContentHash(layout);
     const legacyLayout = { ...layout, publicationId, revisionId, revisionNo, contentHash };
-    const publicLegacy = !slug.endsWith("-draft") && (layout.status === undefined || layout.status === "published");
+    const publicLegacy = isPubliclyPublishable(layout);
     const approvedAt = publicLegacy ? row.updated_at : null;
     const transaction = this.db.transaction(() => {
       const current = this.db.prepare("SELECT revision_id FROM pages WHERE slug = ?").get(slug) as { revision_id: string | null } | undefined;

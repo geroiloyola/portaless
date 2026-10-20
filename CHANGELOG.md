@@ -37,6 +37,8 @@ closed).
 
 ## Unreleased
 
+- **C00–C26 integrated audit.** Fixed clean-export exclusion of public Docs routes and copying of unfiltered history trees, generated D1 SQL separators, revision privacy/identity/race handling, repeated plugin/editor draft saves, explicit public-content hashing, history transfer/head consistency, bounded import and static fallback, D1 evidence query amplification, stalled STARTTLS cleanup and unchanged-revision labels. Added real-SQL SQLite/D1-adapter regressions and browser first-steps 320×480/200% text reflow checks; browser tests now run in CI. Audit found `main` has neither classic protection nor effective rules, and C20's stricter one-row inventory/C21 full-shell sharing remain unresolved. Full results and external verification limits: `docs/testing/audit-c00-c26-2026-10-20.md`.
+
 - **C19 — contención de Docs en viewports estrechos.** La grilla usa mínimos automáticos `min(100%, …)` y `minmax(0, …)`; sidebar y artículo pueden encogerse; cadenas/hrefs envuelven; tablas y bloques de código conservan todo el contenido en contenedores de scroll locales, sin ampliar el documento.
 - **C20 — navegación móvil accesible en una fila.** La marca es también el enlace Inicio, las entradas nav no envuelven y mantienen targets de 44px; idioma, TrustScore y acciones contextuales se colocan fuera de la barra nav en pantallas estrechas, siempre visibles y sin menú desplegable.
 - **C21–C22 — renderer compartido y aceptación móvil de Docs.** Astro y el shell Node consumen `renderPublicHeaderHtml()`; el sidebar Docs conserva target 44px y foco visible. Playwright verifica `/docs/protocol-apw/` a 320×480, overflow local de tablas/código y apertura por teclado.

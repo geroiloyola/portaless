@@ -103,6 +103,10 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await expect(viewLink).toBeVisible();
   await expect(viewLink).toHaveAttribute("href", `/pages/${SLUG}`);
   await expect(page.locator(".editor-save-status")).toContainText("guardada y publicada");
+  const unchanged = await page.request.get(`/pages/${SLUG}`);
+  const unchangedHtml = await unchanged.text();
+  expect(unchangedHtml.match(/Primera revisión pública registrada\./g)).toHaveLength(1);
+  expect(unchangedHtml).toContain("Sin cambios en el contenido respecto a la revisión pública anterior.");
 
   // 5. Page manager: la pagina figura con titulo y links.
   await page.goto("/admin/pages");

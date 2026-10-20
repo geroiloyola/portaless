@@ -11,6 +11,7 @@ import type { PageRevisionEvidence, PageRevisionMetadata, PageSaveOptions, PageS
 import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, pageContentHash, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
+import { isPubliclyPublishable } from "../../../../deploy-engine/src/draft-filter";
 
 interface PageRow {
   slug: string;
@@ -76,7 +77,7 @@ export class D1PageStore implements PageStore {
         ])
       : await this.db.batch([
           this.db.prepare(`INSERT INTO pages (slug, layout_json, updated_at, updated_by, publication_id, revision_id, revision_no, content_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING`)
             .bind(layout.slug, serialized, metadata.createdAt, options.actor ?? null, metadata.publicationId,
               metadata.revisionId, metadata.revisionNo, metadata.contentHash),
           this.db.prepare(`INSERT INTO page_revisions
@@ -102,10 +103,8 @@ export class D1PageStore implements PageStore {
   }
 
   async listPublicRevisions(slug: string): Promise<PublicPageRevision[]> {
-    await this.ensureLegacyRevision(slug);
-    const { results } = await this.db.prepare(`SELECT * FROM page_revisions
-      WHERE slug = ? AND approved_at IS NOT NULL ORDER BY revision_no DESC`).bind(slug).all<any>();
-    return this.publicRevisionRows(results ?? []);
+    const current = await this.load(slug);
+    return current?.publicationId ? this.listPublicRevisionsByPublicationId(current.publicationId) : [];
   }
 
   async listPublicRevisionsByPublicationId(publicationId: string): Promise<PublicPageRevision[]> {
@@ -152,7 +151,18 @@ export class D1PageStore implements PageStore {
   }
 
   private async publicRevisionRows(rows: any[]): Promise<PublicPageRevision[]> {
-    return Promise.all(rows.map(async (row: any, index: number) => {
+    if (rows.length === 0) return [];
+    const { results } = await this.db.prepare(`SELECT e.* FROM page_revision_evidence e
+      JOIN page_revisions r ON r.revision_id=e.revision_id
+      WHERE r.publication_id=? AND r.approved_at IS NOT NULL ORDER BY e.observed_at, e.evidence_id`)
+      .bind(rows[0].publication_id).all<any>();
+    const byRevision = new Map<string, PageRevisionEvidence[]>();
+    for (const evidence of this.mapEvidenceRows(results ?? [])) {
+      const entries = byRevision.get(evidence.revisionId) ?? [];
+      entries.push(evidence);
+      byRevision.set(evidence.revisionId, entries);
+    }
+    return rows.map((row: any, index: number) => {
       const layout = JSON.parse(row.layout_json) as PageLayout;
       return {
         publicationId: row.publication_id,
@@ -167,15 +177,13 @@ export class D1PageStore implements PageStore {
         slug: row.slug,
         title: layout.title,
         layout,
-        evidence: await this.evidenceFor(row.revision_id),
+        evidence: byRevision.get(row.revision_id) ?? [],
       };
-    }));
+    });
   }
 
-  private async evidenceFor(revisionId: string): Promise<PageRevisionEvidence[]> {
-    const { results } = await this.db.prepare(`SELECT * FROM page_revision_evidence
-      WHERE revision_id=? ORDER BY observed_at, evidence_id`).bind(revisionId).all<any>();
-    return (results ?? []).map((row: any) => ({
+  private mapEvidenceRows(rows: any[]): PageRevisionEvidence[] {
+    return rows.map((row: any) => ({
       evidenceId: row.evidence_id,
       revisionId: row.revision_id,
       observedAt: row.observed_at,
@@ -207,7 +215,7 @@ export class D1PageStore implements PageStore {
     const revisionNo = row.revision_no ?? 1;
     const contentHash = row.content_hash ?? await pageContentHash(layout);
     const legacyLayout: PageLayout = { ...layout, publicationId, revisionId, revisionNo, contentHash };
-    const publicLegacy = !slug.endsWith("-draft") && (layout.status === undefined || layout.status === "published");
+    const publicLegacy = isPubliclyPublishable(layout);
     const approvedAt = publicLegacy ? row.updated_at : null;
     const serialized = JSON.stringify(legacyLayout);
     await this.db.batch([

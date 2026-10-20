@@ -88,6 +88,8 @@ export class LocalStoragePageStore implements PageStore {
     if (!current && expected != null) throw new Error("revision_conflict");
     const { buildPageRevision } = await import("./revision-history");
     const revision = await buildPageRevision(layout, current, options.actor ?? null);
+    const latest = await this.load(layout.slug);
+    if ((latest?.revisionId ?? null) !== (current?.revisionId ?? null)) throw new Error("revision_conflict");
     localStorage.setItem(STORAGE_PREFIX + layout.slug, JSON.stringify(revision.layout, null, 2));
     return revision.metadata;
   }

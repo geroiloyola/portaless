@@ -1,24 +1,30 @@
 import type { PageLayout } from "../types";
 import type { PageRevisionEvidence, PageRevisionMetadata } from "./page-store";
+import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 export interface BuiltPageRevision {
   layout: PageLayout;
   metadata: PageRevisionMetadata;
 }
 
-function stableValue(value: unknown, root = false): unknown {
+function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map((child) => stableValue(child));
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => !root || !["publicationId", "revisionId", "revisionNo", "contentHash"].includes(key))
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([key, child]) => [key, stableValue(child)]),
   );
 }
 
+/** Only authored/rendered page fields belong to a public content snapshot. */
+export function pagePublicContent(layout: PageLayout): PageLayout {
+  const fields = ["version", "slug", "title", "description", "locale", "layoutVersion", "theme", "root"] as const;
+  return Object.fromEntries(fields.filter((key) => layout[key] !== undefined).map((key) => [key, layout[key]])) as unknown as PageLayout;
+}
+
 export async function pageContentHash(layout: PageLayout): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(stableValue(layout, true)));
+  const bytes = new TextEncoder().encode(JSON.stringify(stableValue(pagePublicContent(layout))));
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
   return `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
@@ -57,11 +63,13 @@ export async function buildPageRevision(
   actor: string | null = null,
   now = new Date().toISOString(),
 ): Promise<BuiltPageRevision> {
-  const publicationId = current?.publicationId ?? layout.publicationId ?? newRevisionIdentity();
+  // New identities are server-owned. Portable identities enter only through
+  // the validated history importer, never an untrusted layout field.
+  const publicationId = current?.publicationId ?? newRevisionIdentity();
   const revisionId = newRevisionIdentity();
   const revisionNo = (current?.revisionNo ?? 0) + 1;
   const contentHash = await pageContentHash(layout);
-  const publiclyApproved = !layout.slug.endsWith("-draft") && (layout.status === undefined || layout.status === "published");
+  const publiclyApproved = isPubliclyPublishable(layout);
   const approvedAt = publiclyApproved ? now : null;
   const metadata: PageRevisionMetadata = {
     publicationId,
