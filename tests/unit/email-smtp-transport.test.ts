@@ -5,7 +5,7 @@
 // servidor lo anuncia, y sin credenciales no lo exige).
 import { afterEach, describe, expect, it } from "vitest";
 import net from "node:net";
-import { dotStuff, normalizeHeader, sendEmail } from "../../packages/email-transport/src/send";
+import { dotStuff, normalizeHeader, sendEmail, smtpCommandFailure } from "../../packages/email-transport/src/send";
 import { renderEmailTemplate } from "../../packages/email-transport/src/config";
 
 interface FakeServer {
@@ -15,7 +15,12 @@ interface FakeServer {
   close: () => void;
 }
 
-function fakeSmtpServer(opts: { advertiseStartTls?: boolean } = {}): Promise<FakeServer> {
+function fakeSmtpServer(opts: {
+  advertiseStartTls?: boolean;
+  rejectCommand?: string;
+  oversizedEhlo?: boolean;
+  dropAfterData?: boolean;
+} = {}): Promise<FakeServer> {
   const messages: string[] = [];
   const commands: string[] = [];
   const server = net.createServer((socket) => {
@@ -32,6 +37,10 @@ function fakeSmtpServer(opts: { advertiseStartTls?: boolean } = {}): Promise<Fak
           messages.push(dataBuf.slice(0, end));
           dataBuf = dataBuf.slice(end + 5);
           inData = false;
+          if (opts.dropAfterData) {
+            socket.destroy();
+            return;
+          }
           socket.write("250 OK queued\r\n");
         }
         return;
@@ -44,11 +53,19 @@ function fakeSmtpServer(opts: { advertiseStartTls?: boolean } = {}): Promise<Fak
         const cmd = line.split(" ")[0].toUpperCase();
         commands.push(cmd);
         if (cmd === "EHLO") {
+          if (opts.oversizedEhlo) {
+            socket.write(`250-${"x".repeat(9 * 1024)}\r\n250 done\r\n`);
+            continue;
+          }
           const lines = ["250-fake", "250-SIZE 10240000"];
           if (opts.advertiseStartTls) lines.push("250-STARTTLS");
           lines.push("250 AUTH LOGIN");
           socket.write(lines.join("\r\n") + "\r\n");
         } else if (cmd === "MAIL" || cmd === "RCPT") {
+          if (cmd === opts.rejectCommand) {
+            socket.write("550 synthetic-private-reply-secret\r\n");
+            continue;
+          }
           socket.write("250 OK\r\n");
         } else if (cmd === "DATA") {
           socket.write("354 End data with <CR><LF>.<CR><LF>\r\n");
@@ -86,6 +103,13 @@ describe("helpers SMTP (puros)", () => {
   it("normalizeHeader quita CR/LF (defensa en profundidad)", () => {
     expect(normalizeHeader("Hola\r\nBcc: evil@x")).toBe("Hola Bcc: evil@x");
     expect(normalizeHeader("  asunto  ")).toBe("asunto");
+  });
+
+  it("no incluye argumentos ni respuestas del relay en errores SMTP", () => {
+    const error = smtpCommandFailure("SYNTHETIC-BASE64-SECRET", 535);
+    expect(error.message).not.toContain("SYNTHETIC-BASE64-SECRET");
+    expect(error.message).toBe("SMTP command rejected with reply code 535.");
+    expect(smtpCommandFailure("AUTH credential", 535).message).toBe("SMTP AUTH credential rejected with reply code 535.");
   });
 
   it("renderEmailTemplate limpia CR/LF de los valores del plugin", () => {
@@ -135,5 +159,41 @@ describe("sendEmail via SMTP (servidor fake real)", () => {
       { from: "a@b.cl", to: "c@d.cl", subject: "reset", text: "token secreto" },
     )).rejects.toThrow(/no ofrece STARTTLS/);
     expect(srv.messages).toHaveLength(0);
+  });
+
+  it("limita las respuestas del relay y redacta sus textos al rechazar un comando", async () => {
+    const oversized = await fakeSmtpServer({ oversizedEhlo: true });
+    servers.push(oversized);
+    await expect(sendEmail(
+      { kind: "smtp", host: "127.0.0.1", port: oversized.port },
+      { from: "a@b.cl", to: "c@d.cl", subject: "x", text: "y" },
+    )).rejects.toThrow(/reply line exceeded/);
+
+    const rejecting = await fakeSmtpServer({ rejectCommand: "MAIL" });
+    servers.push(rejecting);
+    const error = await sendEmail(
+      { kind: "smtp", host: "127.0.0.1", port: rejecting.port },
+      { from: "sender-private@example.test", to: "c@d.cl", subject: "x", text: "y" },
+    ).then(() => null, (caught) => caught as Error);
+    expect(error?.message).toContain("SMTP MAIL rejected with reply code 550");
+    expect(error?.message).not.toContain("synthetic-private-reply-secret");
+    expect(error?.message).not.toContain("sender-private@example.test");
+  });
+
+  it("rechaza cuerpos SMTP demasiado grandes antes de abrir una conexión", async () => {
+    await expect(sendEmail(
+      { kind: "smtp", host: "invalid-host-for-size-check.example", port: 587 },
+      { from: "a@b.cl", to: "c@d.cl", subject: "x", text: "x".repeat(2 * 1024 * 1024 + 1) },
+    )).rejects.toThrow(/size limit/);
+  });
+
+  it("marca desconocida la entrega cuando el relay cierra después de recibir DATA", async () => {
+    const srv = await fakeSmtpServer({ dropAfterData: true });
+    servers.push(srv);
+    await expect(sendEmail(
+      { kind: "smtp", host: "127.0.0.1", port: srv.port },
+      { from: "a@b.cl", to: "c@d.cl", subject: "x", text: "y" },
+    )).rejects.toMatchObject({ deliveryOutcome: "unknown" });
+    expect(srv.messages).toHaveLength(1); // el cuerpo llegó; faltó el acuse final 250
   });
 });

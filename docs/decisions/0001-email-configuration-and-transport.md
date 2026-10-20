@@ -64,6 +64,9 @@ These are recorded limitations, not accepted security guarantees:
   changing webhook URL or SMTP host/port/user drops it unless a replacement is
   supplied. HTTP redirects are not followed, and webhook credentials require
   HTTPS.
+- **Resolved in C16:** SMTP response buffers and message sizes are bounded,
+  every transport path closes its socket, and error text excludes server reply
+  content plus AUTH/base64 command arguments.
 - `from` is syntax-validated as an email address, but the current implementation
   does not prove domain ownership. A provider may enforce this; Portaless does
   not currently verify it. Do not label the address “verified” without that
