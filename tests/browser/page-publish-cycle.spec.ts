@@ -40,9 +40,14 @@ function layout(title: string, heading: string) {
 
 async function putPage(page: Page, body: unknown): Promise<void> {
   const res = await page.evaluate(async ({ slug, json }) => {
+    const current = await fetch(`/admin/pages/${encodeURIComponent(slug)}`);
+    const currentEtag = current.ok ? current.headers.get("etag") : null;
     const r = await fetch(`/admin/pages/${encodeURIComponent(slug)}`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(currentEtag ? { "if-match": currentEtag } : { "if-none-match": "*" }),
+      },
       body: JSON.stringify(json),
     });
     return r.status;
@@ -78,6 +83,16 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   await page.reload();
   await expect(page).toHaveTitle(TITLE_V2);
   await expect(page.locator("h1", { hasText: "Contenido EDITADO en vivo" })).toBeVisible();
+  const historyLink = page.locator(".public-revision-history a[href^='/revisions/']");
+  await expect(historyLink).toBeVisible();
+  const historyHref = await historyLink.getAttribute("href");
+  const historyResponse = await page.request.get(historyHref!);
+  expect(historyResponse.ok()).toBe(true);
+  const history = await historyResponse.json();
+  expect(history.format).toBe("portaless-public-revision-history/v1");
+  expect(history.revisions.map((revision: { title: string }) => revision.title)).toEqual([TITLE_V2, TITLE_V1]);
+  expect(history.revisions[0].changedPaths).toContain("title");
+  expect(history.revisions[0].reputation).toEqual({ status: "no_data", observations: [] });
 
   // 4. El editor carga la pagina, "Publicar" guarda y muestra el link
   //    "Ver pagina publica" -- el ciclo se cierra desde la UI.
