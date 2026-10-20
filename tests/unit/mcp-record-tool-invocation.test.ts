@@ -49,7 +49,7 @@ describe("recordToolInvocation", () => {
       capabilityId: "content:read",
       outcome: "success",
     });
-    expect(entries[0].errorMessage).toBeUndefined();
+    expect(entries[0].errorCode).toBeUndefined();
 
     const period = await ledger.get(currentPeriod());
     expect(period!.agents).toHaveLength(1);
@@ -98,7 +98,7 @@ describe("recordToolInvocation", () => {
     ).rejects.toThrow(CapabilityDeniedError);
 
     expect(entries[0].outcome).toBe("denied");
-    expect(entries[0].errorMessage).toContain("content:write");
+    expect(entries[0].errorCode).toBe("capability_denied");
     const period = await ledger.get(currentPeriod());
     expect(period!.agents[0].policyViolationsDetected).toBe(1);
     expect(period!.agents[0].requestsTotal).toBe(1);
@@ -120,7 +120,7 @@ describe("recordToolInvocation", () => {
     ).rejects.toThrow("timeout de red");
 
     expect(entries[0].outcome).toBe("error");
-    expect(entries[0].errorMessage).toBe("timeout de red");
+    expect(entries[0].errorCode).toBe("operation_failed");
     const period = await ledger.get(currentPeriod());
     expect(period!.agents[0].policyViolationsDetected).toBe(0);
     expect(period!.agents[0].requestsTotal).toBe(1);

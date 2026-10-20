@@ -62,19 +62,26 @@ async function connectedClient() {
 }
 
 describe("createPortalessMcpServer -- integracion con el SDK real (InMemoryTransport)", () => {
-  it("registra las 12 tools del servidor", async () => {
+  it("registra las tools del servidor", async () => {
     const { client } = await connectedClient();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       "apply_theme",
+      "approve_page_revision",
       "create_page",
       "delete_block",
+      "get_page_context",
+      "get_site_context",
       "grant_capability",
       "insert_block",
       "list_installed_plugins",
       "list_page_components",
+      "list_page_proposals",
       "list_themes",
+      "propose_page_revision",
       "query_usage_log",
+      "read_documentation",
+      "read_private_page_context",
       "revoke_permission",
       "update_block",
       "update_page",

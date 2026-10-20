@@ -32,7 +32,9 @@ export type CapabilityId =
   // capacidad de plugins: solo la tienen subjects "reader" (el DID
   // did:apw: de un lector), y un grant con ella deja pasar a ese lector en
   // GET /trust/:siteId aunque no cumpla los umbrales de reputacion.
-  | "trust:read-governance-bypass";
+  | "trust:read-governance-bypass"
+  | "content:publish"
+  | "mcp:private-context:read";
 
 export interface CapabilityRequest {
   id: CapabilityId;

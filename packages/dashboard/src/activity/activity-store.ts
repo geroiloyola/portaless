@@ -8,7 +8,8 @@
 // revenue) -- ver ROADMAP.md, Fase 10.
 //
 // FUENTES ACTUALES (emitActivity en el punto de escritura): page.saved y
-// page.deleted (functions/admin/pages/[slug].js), community.attestation
+// page.deleted (functions/admin/pages/[slug].js), page.approved
+// (functions/admin/api/page-proposals.js), community.attestation
 // (functions/trust/[siteId]/community-attestation.js), permission.granted /
 // permission.revoked (functions/admin/permissions/index.js), witness.recorded
 // (functions/admin/api/witness/record.js), password.changed

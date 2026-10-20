@@ -12,15 +12,19 @@ orden de desarrollo por commits en
 
 ## Estado
 
-En desarrollo activo. Commit 1/6: andamiaje base del servidor (sin tools
-todavia). Los siguientes commits agregan: capa de permisos, capa de
-auditoria, tool de solo lectura del Trust Layer, tools de contenido
-(Atomic Elements), y tools de administracion (Centro de Permisos).
+Activo. El servidor registra 19 tools MCP: contenido, contexto acotado y
+flujo de propuestas/aprobación por revisión exacta. La auditoría por evento
+usa D1/SQLite append-only; el detalle y las decisiones de permisos están en
+[`docs/architecture/mcp-agents.md`](../../docs/architecture/mcp-agents.md).
 
 ## Desarrollo
 
 ```bash
 npm install
-npm run dev   # corre src/index.ts directamente con tsx
+PORTALESS_SQLITE_PATH=./portaless.db MCP_AGENT_KEY=local-dev npm run dev # stores durables + identidad stdio
 npm run build # compila a dist/
 ```
+
+El servidor no arranca con auditoría volátil: configura `DB` (D1) o
+`PORTALESS_SQLITE_PATH`. En HTTP, configura además las variables de identidad
+por bearer y el allowlist de hosts cuando escuches fuera de loopback.

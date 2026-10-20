@@ -15,7 +15,11 @@ const root = join(__dirname, "../..");
 
 const serverSrc = readFileSync(join(root, "packages/mcp-server/src/server.ts"), "utf8");
 const registered = [...serverSrc.matchAll(/register[A-Za-z]+Tool\(/g)].map((m) => m[0]);
-const TOOL_COUNT = registered.length;
+const contextToolsSrc = readFileSync(join(root, "packages/mcp-server/src/tools/site-context.ts"), "utf8");
+const contextToolCount = [...contextToolsSrc.matchAll(/server\.registerTool\(/g)].length;
+const proposalToolsSrc = readFileSync(join(root, "packages/mcp-server/src/tools/revision-proposals.ts"), "utf8");
+const proposalToolCount = [...proposalToolsSrc.matchAll(/server\.registerTool\(/g)].length;
+const TOOL_COUNT = registered.length + contextToolCount + proposalToolCount;
 
 // Docs que un agente o un usuario nuevo leen primero. Si uno publica
 // "N (real) tools", N tiene que ser el conteo real.
@@ -30,8 +34,8 @@ const DOCS = [
 ];
 
 describe("conteo de tools MCP: server.ts es la fuente de verdad", () => {
-  it("cada register*Tool registra una sola tool y el total es 12", () => {
-    expect(TOOL_COUNT).toBe(12);
+  it("cada registro compartido/directo corresponde a una tool y el total es 19", () => {
+    expect(TOOL_COUNT).toBe(19);
     // Sin duplicados: dos register de la misma tool seria un bug.
     expect(new Set(registered).size).toBe(registered.length);
   });

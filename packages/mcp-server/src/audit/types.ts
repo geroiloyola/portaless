@@ -10,7 +10,10 @@ export interface AuditLogEntry {
   toolName: string;
   capabilityId: string | null; // null si la tool no requiere capacidad (ej. solo lectura publica)
   outcome: "success" | "denied" | "error";
-  errorMessage?: string;
+  /** Categoría estable y sin mensajes/fragmentos de contenido de la excepción. */
+  errorCode?: string;
+  subjectId?: string;
+  revisionId?: string;
 }
 
 export interface AuditLogStore {

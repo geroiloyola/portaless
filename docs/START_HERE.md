@@ -67,7 +67,7 @@ Full guide: [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md).
 
 ### 3. Connect your AI agent (MCP)
 
-The MCP server exposes 12 tools (`create_page`, `update_page`, `insert_block`,
+The MCP server exposes 19 tools (`create_page`, `update_page`, `insert_block`,
 `apply_theme`, `grant_capability`, …) so an agent edits pages through the **same
 permission system** that governs plugins — nothing is bypassed.
 

@@ -59,3 +59,19 @@ CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_update
   BEFORE UPDATE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END;
 CREATE TRIGGER IF NOT EXISTS page_revision_evidence_no_delete
   BEFORE DELETE ON page_revision_evidence BEGIN SELECT RAISE(ABORT, 'page_revision_evidence_immutable'); END;
+
+-- Approval is a separate immutable act; a revision snapshot is never edited
+-- when it is approved. v7 migration backfills pre-existing approved rows.
+CREATE TABLE IF NOT EXISTS page_revision_approvals (
+  revision_id TEXT PRIMARY KEY,
+  approved_at TEXT NOT NULL,
+  approved_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_page_revision_approvals_approved_at
+  ON page_revision_approvals (approved_at, revision_id);
+CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_update
+  BEFORE UPDATE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END;
+CREATE TRIGGER IF NOT EXISTS page_revision_approvals_no_delete
+  BEFORE DELETE ON page_revision_approvals BEGIN SELECT RAISE(ABORT, 'page_revision_approval_immutable'); END;
+INSERT OR IGNORE INTO page_revision_approvals (revision_id, approved_at, approved_by)
+  SELECT revision_id, approved_at, approved_by FROM page_revisions WHERE approved_at IS NOT NULL;

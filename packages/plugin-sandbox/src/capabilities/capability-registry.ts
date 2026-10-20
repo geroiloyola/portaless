@@ -120,7 +120,24 @@ export const capabilityRegistry: Record<CapabilityId, CapabilityDefinition> = {
     description: "Permite a un lector con DID verificado leer aunque no cumpla los umbrales de reputación de la política de lectura. No exime de Web Bot Auth ni de identidad APW.",
     risk: "alto",
   },
+  "content:publish": {
+    id: "content:publish", category: "Contenido",
+    label: "Publicar una revisión aprobada",
+    description: "Permite publicar una revisión exacta después de la aprobación de un administrador.",
+    risk: "alto",
+  },
+  "mcp:private-context:read": {
+    id: "mcp:private-context:read", category: "Contenido",
+    label: "Leer contexto privado por MCP",
+    description: "Permite al agente leer documentos privados identificados explícitamente y autorizados.",
+    risk: "alto",
+  },
 };
+
+export const MCP_ONLY_CAPABILITIES = new Set<CapabilityId>([
+  "content:publish",
+  "mcp:private-context:read",
+]);
 
 export function listCapabilitiesByCategory(): Record<string, CapabilityDefinition[]> {
   const grouped: Record<string, CapabilityDefinition[]> = {};

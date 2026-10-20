@@ -4,7 +4,7 @@
 // nunca acceso de red sin restriccion.
 
 import type { PluginManifest, CapabilityId } from "../types";
-import { capabilityRegistry } from "../capabilities/capability-registry";
+import { capabilityRegistry, MCP_ONLY_CAPABILITIES } from "../capabilities/capability-registry";
 
 export interface ManifestValidationResult {
   valid: boolean;
@@ -82,6 +82,10 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
   for (const req of requested ?? []) {
     if (!capabilityRegistry[req.id as CapabilityId]) {
       errors.push(`Capacidad desconocida solicitada: "${req.id}"`);
+      continue;
+    }
+    if (MCP_ONLY_CAPABILITIES.has(req.id as CapabilityId)) {
+      errors.push(`"${req.id}" es una capacidad exclusiva de MCP y no puede solicitarse en manifiestos de plugins.`);
       continue;
     }
     // APW 6.5: la excepcion de gobernanza de lectura no es de plugins: su

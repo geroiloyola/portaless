@@ -64,7 +64,19 @@ export interface RecordToolInvocationInput {
   agentKeyId: string;
   toolName: string;
   capabilityId: string | null;
+  subjectId?: string;
   run: () => Promise<unknown>;
+}
+
+function safeRevisionId(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") return undefined;
+  const id = (result as { revisionId?: unknown }).revisionId;
+  return typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id) ? id : undefined;
+}
+
+function safeErrorCode(err: unknown): string {
+  if (err instanceof CapabilityDeniedError) return "capability_denied";
+  return "operation_failed";
 }
 
 /**
@@ -88,6 +100,8 @@ export async function recordToolInvocation(
       toolName: input.toolName,
       capabilityId: input.capabilityId,
       outcome: "success",
+      subjectId: input.subjectId,
+      revisionId: safeRevisionId(result),
     });
     await incrementUsageLedger(usageLedger, input.agentKeyId, false);
     return result;
@@ -99,7 +113,8 @@ export async function recordToolInvocation(
       toolName: input.toolName,
       capabilityId: input.capabilityId,
       outcome: isDenied ? "denied" : "error",
-      errorMessage: (err as Error).message,
+      errorCode: safeErrorCode(err),
+      subjectId: input.subjectId,
     };
     await auditLog.append(entry);
     await incrementUsageLedger(usageLedger, input.agentKeyId, isDenied);

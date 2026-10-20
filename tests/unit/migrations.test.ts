@@ -13,6 +13,7 @@ import {
   schemaVersion,
 } from "../../packages/persistence-migrations/src/index";
 import { PLUGIN_EMAIL_QUOTA_DDL } from "../../packages/persistence-migrations/src/ddl";
+import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL } from "../../packages/persistence-migrations/src/ddl";
 import { currentVersion, migrateSqlite } from "../../packages/persistence-migrations/src/runner";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
 import { applySchema } from "../../scripts/setup.mjs";
@@ -173,7 +174,7 @@ describe("upgrade histórico y recuperación", () => {
     const result = await migrateSqlite(path);
     expect(result.from).toBe(1);
     expect(result.to).toBe(schemaVersion());
-    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence"]);
+    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events"]);
     expect(result.backupPath).toBeTruthy();
 
     const upgraded = await openSqlite(path);
@@ -229,7 +230,7 @@ describe("upgrade histórico y recuperación", () => {
     const recovered = await migrateSqlite(restoredPath);
     expect(recovered.from).toBe(2);
     expect(recovered.to).toBe(schemaVersion());
-    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence"]);
+    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events"]);
     const finalDb = await openSqlite(restoredPath);
     expect(currentVersion(finalDb)).toBe(schemaVersion());
     expect(finalDb.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
@@ -481,5 +482,23 @@ describe("R6: DDL de plugin_email_quota en una sola fuente", () => {
   it("la migracion v4 usa la MISMA constante (no una copia inline)", () => {
     const v4 = MIGRATIONS.find((m) => m.version === 4);
     expect(v4!.statements).toContain(PLUGIN_EMAIL_QUOTA_DDL);
+  });
+});
+
+describe("MCP audit DDL: una sola fuente entre store, migration y schema", () => {
+  const normalize = (sql: string) => sql.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").replace(/\s*([(),])\s*/g, "$1").trim().replace(/;+$/, "");
+  it("schema-additions coincide con el DDL de store/migration", () => {
+    const root = join(__dirname, "../..");
+    const file = readFileSync(join(root, "schema-additions/mcp-audit-events.sql"), "utf8");
+    const statements = [
+      file.match(/CREATE TABLE[\s\S]*?\)\s*;/)?.[0],
+      file.match(/CREATE INDEX[\s\S]*?;/)?.[0],
+      ...(file.match(/CREATE TRIGGER[\s\S]*?END;/g) ?? []),
+    ];
+    expect(statements).toHaveLength(4);
+    expect(statements.map((sql) => normalize(sql!))).toEqual([MCP_AUDIT_TABLE_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_NO_DELETE_DDL].map(normalize));
+  });
+  it("migration v8 usa las mismas constantes compartidas", () => {
+    expect(MIGRATIONS.find((migration) => migration.version === 8)?.statements).toEqual([MCP_AUDIT_TABLE_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_NO_DELETE_DDL]);
   });
 });

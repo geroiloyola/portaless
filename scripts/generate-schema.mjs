@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 25 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 29 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 20 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 24 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -39,6 +39,7 @@ const SOURCES = [
   { path: "schema-additions/capability-tokens.sql", selfBanner: true },
   { path: "schema-additions/webbotauth-nonces.sql", selfBanner: true },
   { path: "schema-additions/mcp-agent-tokens.sql", selfBanner: true },
+  { path: "schema-additions/mcp-audit-events.sql", selfBanner: true },
   { path: "schema-additions/deployment-oauth.sql", selfBanner: true },
   { path: "schema-additions/deployment-providers-config.sql", selfBanner: true },
   { path: "schema-additions/settlement-activations.sql", selfBanner: true },
