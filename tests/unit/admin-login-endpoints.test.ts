@@ -72,12 +72,17 @@ function formRequest(url: string, fields: Record<string, string>) {
   const body = new URLSearchParams(fields).toString();
   return new Request(url, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers: { "content-type": "application/x-www-form-urlencoded", origin: new URL(url).origin },
     body,
   });
 }
 
 function context(request: Request, next = async () => new Response("static")) {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method) && !request.headers.has("origin")) {
+    const headers = new Headers(request.headers);
+    headers.set("origin", new URL(request.url).origin);
+    request = new Request(request, { headers });
+  }
   return { request, env: {}, data: {}, params: {}, next } as any;
 }
 
@@ -99,10 +104,19 @@ describe("functions/admin/login.js", () => {
     expect(res!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
   });
 
+  it("rechaza login publicado desde otro origen", async () => {
+    const request = formRequest("https://x.test/admin/login", { username: "admin", password: "guess" });
+    const headers = new Headers(request.headers);
+    headers.set("origin", "https://attacker.example");
+    const response = await login.onRequestPost(context(new Request(request, { headers })));
+    expect(response!.status).toBe(403);
+    expect(response!.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("rechaza cuerpos de login que exceden el límite antes de parsearlos", async () => {
     const request = new Request("http://x.test/admin/login", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers: { "content-type": "application/x-www-form-urlencoded", origin: "http://x.test" },
       body: `username=admin&password=${"x".repeat(17 * 1024)}`,
     });
     const res = await login.onRequestPost(context(request));
@@ -173,6 +187,17 @@ describe("functions/admin/login.js", () => {
 });
 
 describe("functions/admin/login-mfa.js", () => {
+  it("rechaza completar MFA desde un origen distinto", async () => {
+    const request = new Request("https://x.test/admin/login-mfa", {
+      method: "POST",
+      headers: { origin: "https://attacker.example", "content-type": "application/json" },
+      body: JSON.stringify({ challengeToken: "synthetic", code: "000000" }),
+    });
+    const response = await loginMfa.onRequestPost(context(request));
+    expect(response!.status).toBe(403);
+    expect(response!.headers.get("cache-control")).toBe("no-store");
+  });
+
   async function challengeForCarol(): Promise<string> {
     await seedUsers();
     const res = await login.onRequestPost(

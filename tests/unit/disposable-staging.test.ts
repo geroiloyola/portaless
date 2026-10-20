@@ -65,17 +65,15 @@ describe("C04 disposable staging fixture", () => {
     expect(fixture.synthetic.draftMarker).toBe(STAGING_DRAFT_MARKER);
   });
 
-  it("webhook y SMTP fake aceptan trafico de prueba sin salir de loopback", async () => {
+  it("rechaza el webhook loopback como destino no confiable y conserva el SMTP fake local", async () => {
     const fixture = await createDisposableStaging({ rootDir: tempRoot() });
     fixtures.push(fixture);
 
-    await sendViaWebhook(
+    await expect(sendViaWebhook(
       { kind: "webhook", url: fixture.services.webhookUrl, token: fixture.synthetic.webhookToken },
       { from: "staging@example.invalid", to: "recipient@example.invalid", subject: "Synthetic", text: fixture.synthetic.secretMarker },
-    );
-    expect(fixture.services.webhookRequests).toHaveLength(1);
-    expect(fixture.services.webhookRequests[0].body).toContain(fixture.synthetic.secretMarker);
-    expect(fixture.services.webhookRequests[0].authorization).toBe(`Bearer ${fixture.synthetic.webhookToken}`);
+    )).rejects.toThrow(/URL publica segura/);
+    expect(fixture.services.webhookRequests).toHaveLength(0);
 
     await sendEmail(
       { kind: "smtp", host: "127.0.0.1", port: fixture.services.smtpPort },

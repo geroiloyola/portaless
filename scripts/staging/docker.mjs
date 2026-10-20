@@ -196,8 +196,7 @@ async function create({ image: requestedImage, checkOnly }) {
       "--read-only", "--tmpfs", "/tmp:rw,nosuid,nodev,noexec,size=16m",
       "--memory", "64m", "--cpus", "0.25", "--pids-limit", "64",
       "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
-      "--env", `PORTALESS_STAGING_WEBHOOK_TOKEN=${fixture.synthetic.webhookToken}`,
-      "--env", `PORTALESS_STAGING_INSPECTOR_TOKEN=${inspectorToken}`,
+       "--env", `PORTALESS_STAGING_INSPECTOR_TOKEN=${inspectorToken}`,
       "--entrypoint", "node", image, "scripts/staging/docker-fake-webhook.mjs",
     ]);
     docker([
@@ -226,8 +225,7 @@ async function create({ image: requestedImage, checkOnly }) {
       "--env", `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY=${fixture.env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY}`,
       "--env", "PORTALESS_PUBLIC_URL=https://portaless-staging.example.invalid",
       "--env", `PORTALESS_EMAIL_WEBHOOK_URL=http://${PREFIX}-webhook:4180/capture`,
-      "--env", `PORTALESS_EMAIL_WEBHOOK_TOKEN=${fixture.synthetic.webhookToken}`,
-      "--env", "PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT=3",
+       "--env", "PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT=3",
       image,
     ]);
 

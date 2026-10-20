@@ -45,6 +45,11 @@ operador todavía requiere verificación en la instalación concreta.
   anti-CSRF vía `state`.
 - `functions/admin/_middleware.js` — protege `/admin/*`, usando
   persistencia real via `store-factory.ts`.
+- Las operaciones mutantes protegidas por cookie requieren `Origin` o `Referer`
+  del mismo origen y rechazan `Sec-Fetch-Site: cross-site`; se drenan copias de
+  los cuerpos para aplicar un máximo común de 8 MiB incluso si el cliente usa
+  streaming/chunked. Login, MFA y recuperación, al quedar antes de sesión,
+  aplican la misma comprobación de origen en su endpoint.
 - **Persistencia real, multi-proveedor** (`packages/auth/src/stores/`):
   `D1UsersStore`/`D1SessionStore` (Cloudflare D1) y
   `SqliteUsersStore`/`SqliteSessionStore` (self-hosted, `better-sqlite3`

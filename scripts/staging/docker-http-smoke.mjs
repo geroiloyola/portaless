@@ -43,7 +43,7 @@ if (llms.includes(STAGING_DRAFT_MARKER) || llms.includes(STAGING_ARCHIVE_MARKER)
 
 const reset = await fetch(`${baseUrl}/admin/password-reset/request`, {
   method: "POST",
-  headers: { "content-type": "application/json" },
+  headers: { "content-type": "application/json", origin: new URL(baseUrl).origin },
   body: JSON.stringify({ username: STAGING_ADMIN_USER }),
 });
 if (!reset.ok || (await reset.json()).devToken) throw new Error("Password reset did not use the fake delivery backend.");

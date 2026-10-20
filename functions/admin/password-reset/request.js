@@ -27,11 +27,16 @@ import {
 } from "../../../packages/auth/src/password-reset-rate-limit.ts";
 import { createEmailSender } from "../../../packages/auth/src/email-sender.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
+import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
+import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { EmailSendError } from "../../../packages/email-transport/src/send.ts";
+
+const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 
 function okResponse(devToken) {
   return new Response(JSON.stringify({ success: true, devToken }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: JSON_HEADERS,
   });
 }
 
@@ -54,6 +59,13 @@ function passwordResetUrl(env, token) {
 export async function onRequestPost(context) {
   const { request, env } = context;
 
+  if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+    return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
+      status: 403,
+      headers: JSON_HEADERS,
+    });
+  }
+
   if (env.PORTALESS_DEV_MODE === "1" && env.NODE_ENV === "production") {
     console.error(
       "PORTALESS_DEV_MODE=1 detectado con NODE_ENV=production. " +
@@ -67,7 +79,7 @@ export async function onRequestPost(context) {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
       }
     );
   }
@@ -79,12 +91,12 @@ export async function onRequestPost(context) {
     if (error instanceof RequestBodyTooLargeError) {
       return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
         status: 413,
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
       });
     }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -92,7 +104,7 @@ export async function onRequestPost(context) {
   if (typeof username !== "string" || !username.trim()) {
     return new Response(JSON.stringify({ success: false, error: "Falta username." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -117,11 +129,13 @@ export async function onRequestPost(context) {
   if (user?.email) {
     const resets = await createPasswordResetStore(env);
     let issued;
+    let deliveryAttemptId;
     try {
       const sender = createEmailSender(env);
       const authService = new AuthService(usersStore, await createSessionStore(env), resets);
       issued = await authService.requestPasswordReset(username);
       if (issued) {
+        deliveryAttemptId = globalThis.crypto.randomUUID();
         await sender.send({
           to: user.email,
           subject: "Portaless: recuperar contraseña",
@@ -132,8 +146,21 @@ export async function onRequestPost(context) {
         });
       }
     } catch (error) {
-      if (issued?.token) await resets.delete(issued.token);
-      console.error("No se pudo enviar el correo de recuperación.", error);
+      const deliveryUnknown = error instanceof EmailSendError && error.deliveryOutcome === "unknown";
+      if (issued?.token && !deliveryUnknown) await resets.delete(issued.token);
+      if (deliveryUnknown && deliveryAttemptId) {
+        await emitActivity(env, {
+          kind: "email.delivery.reconciliation_pending",
+          actor: "auth",
+          subject: deliveryAttemptId,
+          detail: "purpose=password-reset; provider acceptance unknown; reset token retained",
+        });
+      }
+      if (deliveryUnknown) {
+        console.warn(`Resultado de entrega de reset desconocido; token retenido para reconciliar intento ${deliveryAttemptId}.`);
+      } else {
+        console.error("El proveedor rechazó la entrega del correo de recuperación; token eliminado.", error instanceof Error ? error.message : "delivery rejected");
+      }
     }
   }
 

@@ -87,7 +87,7 @@ function isPrivateIpv4(ip: string): boolean {
 
 /** Host interno/reservado (SSRF). No cubre DNS-rebinding (defense-in-depth). */
 function isPrivateHost(host: string): boolean {
-  const h = host.toLowerCase().replace(/^\[|\]$/g, ""); // quita corchetes IPv6
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, ""); // corchetes IPv6 y punto DNS final
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
   if (h.includes(":")) {
     if (h === "::1" || h === "::") return true;
@@ -98,16 +98,62 @@ function isPrivateHost(host: string): boolean {
   return isPrivateIpv4(h);
 }
 
+/** Canonicaliza host names before identity comparison or transport use. */
+export function normalizeEmailHost(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw || raw.length > 255 || /[\s/@?#\\\u0000-\u001f]/.test(raw)) return null;
+  try {
+    const u = new URL(`http://${raw}`);
+    if (u.username || u.password || u.port || u.pathname !== "/" || u.search || u.hash) return null;
+    const hostname = u.hostname.toLowerCase().replace(/\.$/, "");
+    if (!hostname) return null;
+    const unbracketed = hostname.replace(/^\[|\]$/g, "");
+    if (!unbracketed.includes(":") && unbracketed.split(".").some((label) => !label || label.startsWith("-") || label.endsWith("-"))) return null;
+    return unbracketed;
+  } catch {
+    return null;
+  }
+}
+
+/** Canonical webhook URL; credentials may only travel over HTTPS. */
+export function normalizeWebhookUrl(value: unknown, hasCredential = false): string | null {
+  if (typeof value !== "string") return null;
+  try {
+    const u = new URL(value.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (u.username || u.password || u.hash || isPrivateHost(u.hostname)) return null;
+    if (hasCredential && u.protocol !== "https:") return null;
+    u.hostname = u.hostname.toLowerCase().replace(/\.$/, "");
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 /** ¿La URL es http(s) y NO apunta a un host interno/reservado (SSRF)? */
 export function isSafeEmailUrl(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-  try {
-    const u = new URL(value);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-    return !isPrivateHost(u.hostname);
-  } catch {
-    return false;
+  return normalizeWebhookUrl(value) !== null;
+}
+
+/** Stable, non-secret identity for the destination that owns a credential. */
+export function emailProviderIdentity(provider: EmailProviderSettings): string {
+  if (provider.kind === "webhook") {
+    const url = normalizeWebhookUrl(provider.url);
+    return url ? `webhook:${url}` : "webhook:invalid";
   }
+  if (provider.kind === "smtp") {
+    const host = normalizeEmailHost(provider.host);
+    return `smtp:${host ?? "invalid"}:${Number(provider.port) || 0}:${String(provider.username ?? "").trim().toLowerCase()}`;
+  }
+  return "none";
+}
+
+export function hasSameEmailProviderIdentity(
+  previous: EmailProviderSettings,
+  next: EmailProviderSettings,
+): boolean {
+  return emailProviderIdentity(previous) === emailProviderIdentity(next);
 }
 
 export interface EmailValidation {
@@ -130,22 +176,25 @@ export function sanitizeEmailInput(input: unknown): EmailValidation {
   const kind = providerRaw.kind;
   const provider: EmailProviderSettings = { kind: "none" };
   if (kind === "webhook") {
-    if (!isSafeEmailUrl(providerRaw.url)) {
-      rejected.push("provider.url: se requiere una URL http(s) publica para el webhook.");
+      const token = typeof providerRaw.token === "string" ? providerRaw.token.trim() : "";
+    const url = normalizeWebhookUrl(providerRaw.url, Boolean(token));
+    if (!url) {
+      rejected.push("provider.url: se requiere una URL publica valida; si usa credenciales, debe ser HTTPS.");
     } else {
       provider.kind = "webhook";
-      provider.url = providerRaw.url as string;
-      if (typeof providerRaw.token === "string" && providerRaw.token.trim()) provider.token = providerRaw.token.trim();
+      provider.url = url;
+      if (token) provider.token = token;
     }
   } else if (kind === "smtp") {
     const port = Number(providerRaw.port);
-    if (typeof providerRaw.host !== "string" || !providerRaw.host.trim()) {
+    const host = normalizeEmailHost(providerRaw.host);
+    if (!host) {
       rejected.push("provider.host: se requiere el host SMTP.");
     } else if (!Number.isInteger(port) || port < 1 || port > 65535) {
       rejected.push("provider.port: puerto SMTP invalido (1-65535).");
     } else {
       provider.kind = "smtp";
-      provider.host = providerRaw.host.trim();
+      provider.host = host;
       provider.port = port;
       if (typeof providerRaw.username === "string" && providerRaw.username.trim()) provider.username = providerRaw.username.trim();
       if (typeof providerRaw.token === "string" && providerRaw.token) provider.token = providerRaw.token;

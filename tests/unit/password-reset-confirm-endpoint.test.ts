@@ -21,7 +21,7 @@ afterAll(() => {
 });
 
 function ctx(body: unknown, raw = false) {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = { "content-type": "application/json", origin: "http://x.test" };
   const init: RequestInit = { method: "POST", headers };
   if (raw) init.body = String(body);
   else init.body = JSON.stringify(body);
@@ -29,6 +29,17 @@ function ctx(body: unknown, raw = false) {
 }
 
 describe("admin/password-reset/confirm.js", () => {
+  it("rechaza completar recuperación desde un origen distinto", async () => {
+    const request = new Request("http://x.test/admin/password-reset/confirm", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify({ token: "synthetic", newPassword: "nueva-password-larga" }),
+    });
+    const response = await onRequestPost({ request, env } as any);
+    expect(response.status).toBe(403);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("400: JSON roto, faltan campos o password menor a 12 caracteres", async () => {
     const broken = await onRequestPost(ctx("{not-json", true));
     expect(broken.status).toBe(400);

@@ -18,8 +18,8 @@
 // El envio real del codigo lo hace AuthService.requestEmailStepUpCode();
 // aqui vive solo la transporte.
 
-import { isEmailAddress, type EmailProviderSettings } from "../../email-transport/src/config";
-import { EmailSendError, sendEmail } from "../../email-transport/src/send";
+import { isEmailAddress, normalizeEmailHost, normalizeWebhookUrl, type EmailProviderSettings } from "../../email-transport/src/config";
+import { EmailDeliveryUnknownError, EmailSendError, sendEmail } from "../../email-transport/src/send";
 
 export interface EmailMessage {
   to: string;
@@ -47,14 +47,29 @@ export class HttpWebhookEmailSender implements EmailSender {
 
   async send(message: EmailMessage): Promise<void> {
     if (!isEmailAddress(message.to)) throw new EmailSendError("destinatario de email invalido.");
+    const url = normalizeWebhookUrl(this.url, Boolean(this.token));
+    if (!url) throw new EmailSendError("webhook de email requiere destino público seguro; con credenciales, use HTTPS.");
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (this.token) headers.authorization = `Bearer ${this.token}`;
-    const res = await fetch(this.url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ to: message.to, subject: message.subject, text: message.text }),
-    });
-    if (!res.ok) throw new Error(`email webhook respondio HTTP ${res.status}`);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ to: message.to, subject: message.subject, text: message.text }),
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      throw new EmailDeliveryUnknownError("email webhook could not confirm acceptance; delivery outcome is unknown");
+    }
+    if (res.status >= 300 && res.status < 400) {
+      throw new EmailSendError("email webhook redirect rejected; redirects are disabled");
+    }
+    if (res.status >= 500) {
+      throw new EmailDeliveryUnknownError(`email webhook returned HTTP ${res.status}; prior acceptance cannot be ruled out`);
+    }
+    if (!res.ok) throw new EmailSendError(`email webhook rejected delivery with HTTP ${res.status}`);
   }
 }
 
@@ -96,7 +111,9 @@ export function createEmailSender(env?: Record<string, unknown> | null): EmailSe
     const token = typeof env.PORTALESS_EMAIL_WEBHOOK_TOKEN === "string" && env.PORTALESS_EMAIL_WEBHOOK_TOKEN
       ? env.PORTALESS_EMAIL_WEBHOOK_TOKEN
       : undefined;
-    return new HttpWebhookEmailSender(url.trim(), token);
+    const normalizedUrl = normalizeWebhookUrl(url, Boolean(token));
+    if (!normalizedUrl) throw new EmailBackendUnavailableError("PORTALESS_EMAIL_WEBHOOK_URL debe ser público; si tiene token, debe usar HTTPS.");
+    return new HttpWebhookEmailSender(normalizedUrl, token);
   }
   const host = env?.PORTALESS_EMAIL_SMTP_HOST;
   if (typeof host === "string" && host.trim()) {
@@ -112,6 +129,7 @@ export function createEmailSender(env?: Record<string, unknown> | null): EmailSe
       ? env.PORTALESS_EMAIL_SMTP_PASSWORD
       : "";
     const from = typeof env?.PORTALESS_EMAIL_FROM === "string" ? env.PORTALESS_EMAIL_FROM.trim() : "";
+    const normalizedHost = normalizeEmailHost(host);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
       throw new EmailBackendUnavailableError("PORTALESS_EMAIL_SMTP_PORT debe ser un puerto valido (1-65535).");
     }
@@ -121,9 +139,10 @@ export function createEmailSender(env?: Record<string, unknown> | null): EmailSe
     if (!isEmailAddress(from)) {
       throw new EmailBackendUnavailableError("PORTALESS_EMAIL_FROM debe ser un remitente valido para SMTP.");
     }
+    if (!normalizedHost) throw new EmailBackendUnavailableError("PORTALESS_EMAIL_SMTP_HOST no es un hostname válido.");
     const provider: EmailProviderSettings = {
       kind: "smtp",
-      host: host.trim(),
+      host: normalizedHost,
       port,
       requireStartTls: port !== 465,
       ...(username ? { username, token: password } : {}),

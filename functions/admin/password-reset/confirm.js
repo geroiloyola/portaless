@@ -18,12 +18,20 @@ import {
 } from "../../../packages/auth/src/password-event-store.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
+import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
 
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 1024;
+const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+    return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
+      status: 403,
+      headers: JSON_HEADERS,
+    });
+  }
 
   let body;
   try {
@@ -32,12 +40,12 @@ export async function onRequestPost(context) {
     if (error instanceof RequestBodyTooLargeError) {
       return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
         status: 413,
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
       });
     }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -45,20 +53,20 @@ export async function onRequestPost(context) {
   if (!token || !newPassword) {
     return new Response(JSON.stringify({ success: false, error: "Faltan token o newPassword." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
   if (typeof newPassword !== "string" || newPassword.length < MIN_PASSWORD_LENGTH) {
     return new Response(
       JSON.stringify({ success: false, error: `La contraseña nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: JSON_HEADERS }
     );
   }
   if (newPassword.length > MAX_PASSWORD_LENGTH) {
     return new Response(JSON.stringify({ success: false, error: `La contraseña nueva no puede superar ${MAX_PASSWORD_LENGTH} caracteres.` }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -80,6 +88,6 @@ export async function onRequestPost(context) {
 
   return new Response(JSON.stringify(result), {
     status: result.success ? 200 : 400,
-    headers: { "Content-Type": "application/json" },
+    headers: JSON_HEADERS,
   });
 }

@@ -6,7 +6,7 @@ const SEND_TOKEN = process.env.PORTALESS_STAGING_WEBHOOK_TOKEN;
 const INSPECTOR_TOKEN = process.env.PORTALESS_STAGING_INSPECTOR_TOKEN;
 const messages = [];
 
-if (!SEND_TOKEN || !INSPECTOR_TOKEN) throw new Error("Synthetic webhook tokens are required.");
+if (!INSPECTOR_TOKEN) throw new Error("Synthetic webhook inspector token is required.");
 
 const inspector = createServer(async (request, response) => {
   if (request.method === "GET" && request.url === "/healthz") {
@@ -29,7 +29,7 @@ const capture = createServer(async (request, response) => {
     response.writeHead(404).end();
     return;
   }
-  if (request.headers.authorization !== `Bearer ${SEND_TOKEN}`) {
+  if (SEND_TOKEN && request.headers.authorization !== `Bearer ${SEND_TOKEN}`) {
     response.writeHead(401).end();
     return;
   }

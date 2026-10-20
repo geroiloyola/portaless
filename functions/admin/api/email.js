@@ -21,9 +21,12 @@ import {
 } from "../../../packages/dashboard/src/site-settings/site-settings-store.ts";
 import {
   emailSettingsToValues,
+  hasSameEmailProviderIdentity,
   parseEmailSettings,
   sanitizeEmailInput,
 } from "../../../packages/email-transport/src/config.ts";
+import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
+import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 const AVAILABLE = ["none", "webhook", "smtp"];
 
@@ -32,7 +35,10 @@ function canWrite(role) {
 }
 
 function json(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
 }
 
 /** Devuelve la config SIN el token; solo dice si hay uno guardado. */
@@ -60,11 +66,15 @@ export async function onRequestPut(context) {
   if (!canWrite(user.role)) {
     return json({ error: "forbidden", message: `El rol '${user.role}' no tiene permiso de escritura. Se requiere rol 'admin'.` }, 403);
   }
+  if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+    return json({ error: "invalid_request_origin" }, 403);
+  }
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = JSON.parse(await readBodyLimited(request, 128 * 1024));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return json({ error: "request_too_large" }, 413);
     return json({ error: "invalid_json_body", message: "El cuerpo debe ser JSON valido." }, 400);
   }
 
@@ -79,7 +89,12 @@ export async function onRequestPut(context) {
   delete incomingProvider.clearCredential;
   if (!hasNewToken) {
     if (wantsClear) delete incomingProvider.token;
-    else if (current.provider.token) incomingProvider.token = current.provider.token;
+    else if (
+      current.provider.token &&
+      hasSameEmailProviderIdentity(current.provider, incomingProvider)
+    ) {
+      incomingProvider.token = current.provider.token;
+    }
   }
 
   const result = sanitizeEmailInput({ ...body, provider: incomingProvider });
@@ -94,4 +109,3 @@ export async function onRequestPut(context) {
   await store.setMany(emailSettingsToValues(result.settings));
   return json(withoutCredential(result.settings));
 }
-
