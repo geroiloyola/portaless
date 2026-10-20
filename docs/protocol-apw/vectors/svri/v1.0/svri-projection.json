@@ -1,0 +1,211 @@
+{
+  "format": "portaless-svri-projection-v1",
+  "id": "SVRI-v1.0",
+  "title": "SVRI v1.0 projection and qualitative level",
+  "specSection": "SVRI-v1.0 §2, §3 and §4",
+  "cases": [
+    {
+      "id": "no-evidence",
+      "kind": "svriProjection",
+      "description": "No verified source: neutral LTP prior is not a public measurement.",
+      "input": {
+        "dimensions": [],
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 1,
+        "effectiveWeight": 0,
+        "dimensionCount": 0,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "SVRI incompleto",
+      "kind": "svriProjection",
+      "description": "Required conformance case: an empty projection is pending, incomplete and inferred, never a measured 5.0.",
+      "input": {
+        "dimensions": [],
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 1,
+        "effectiveWeight": 0,
+        "dimensionCount": 0,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "one-escrow",
+      "kind": "svriProjection",
+      "description": "A single verified T1 source completes the primary-source requirement, but the neutral prior still dominates.",
+      "input": {
+        "dimensions": [{ "dimension": "W-05", "score": 4.230769230769231, "count": 1, "weightSum": 0.25 }],
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.384615,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": true,
+        "priorShare": 0.923077,
+        "effectiveWeight": 0.25,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "Prior exclusivo",
+      "kind": "svriProjection",
+      "description": "Required conformance case: thin community evidence leaves the mathematical prior above half of the result.",
+      "input": {
+        "dimensions": [{ "dimension": "W-02", "score": 5.2, "count": 1, "weightSum": 0.25 }],
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 1,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 7,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 1,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 0.923077,
+        "effectiveWeight": 0.25,
+        "dimensionCount": 1,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "Evidencia degradada",
+      "kind": "svriProjection",
+      "description": "Required conformance case: verified but weak T2 evidence removes incompleteness, yet the prior still dominates and the level stays at verify.",
+      "input": {
+        "dimensions": [{ "dimension": "W-04", "score": 4, "count": 1, "weightSum": 0.25 }],
+        "t1Count": 0,
+        "t2Count": 1,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5,
+        "t1Count": 0,
+        "t2Count": 1,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": true,
+        "priorShare": 0.923077,
+        "effectiveWeight": 0.25,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "community-only",
+      "kind": "svriProjection",
+      "description": "Verified community evidence alone cannot satisfy the T1/T2 completeness rule.",
+      "input": {
+        "dimensions": [{ "dimension": "W-02", "score": 5.2, "count": 2, "weightSum": 2 }],
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 2,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 7,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 2,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 0.6,
+        "effectiveWeight": 2,
+        "dimensionCount": 1,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "primary-evidence",
+      "kind": "svriProjection",
+      "description": "A score of nine is reliable only with complete primary evidence and without inference predominance.",
+      "input": {
+        "dimensions": [{ "dimension": "W-05", "score": 6.4, "count": 8, "weightSum": 3 }],
+        "t1Count": 4,
+        "t2Count": 4,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 9,
+        "t1Count": 4,
+        "t2Count": 4,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3,
+        "dimensionCount": 1,
+        "publicLevel": "reliable"
+      }
+    }
+  ]
+}

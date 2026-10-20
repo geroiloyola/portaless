@@ -93,7 +93,7 @@ describe("GET /trust/:siteId: excepcion por lector (6.5)", () => {
       failed: ["R-01"],
       governance: { enabled: true, granted: false },
     });
-    expect(body.public.verification.community.status).toBe("local_only");
+    expect(body.public.verification.community.status).toBe("mixed_per_entry");
   });
 
   it("con grant activo sobre su DID, lee aunque no cumpla umbrales", async () => {

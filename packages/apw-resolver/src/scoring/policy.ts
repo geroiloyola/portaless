@@ -3,6 +3,7 @@
  * Falla cerrado: un predicado desconocido o un historial no resoluble aplica on_fail.
  */
 import { scoreOf, type DimensionScore } from './scoring';
+import { projectSvri, toPublicSvriProjection, type EvidenceContext } from './svri';
 
 export const PUBLIC_DIMENSIONS = ['W-01', 'W-04', 'W-06', 'W-07', 'W-09'] as const;
 export const GOVERNED_DIMENSIONS = ['W-02', 'W-03', 'W-05', 'W-08', 'W-10', 'R-01', 'R-02', 'R-03', 'R-04', 'R-05'] as const;
@@ -98,6 +99,7 @@ export function projectTrustView(
   scores: ReadonlyMap<string, DimensionScore>,
   governedAllowed: boolean,
   publicOverrides: ReadonlyArray<string> = [],
+  evidence?: EvidenceContext,
 ) {
   const visible = new Set<string>([...PUBLIC_DIMENSIONS, ...publicOverrides.filter((d) => KNOWN.has(d))]);
   const aggregates: Record<string, { score: number; count: number; weightSum: number }> = {};
@@ -106,5 +108,15 @@ export function projectTrustView(
     aggregates[d] = { score: s.score, count: s.count, weightSum: s.weightSum };
     if (governedAllowed || visible.has(d)) dimensions[d] = s;
   }
-  return { aggregates, dimensions, governed: governedAllowed ? 'granted' : 'withheld' } as const;
+  // SVRI is derived from the strict evidence context, never from the score.
+  // Only the qualitative public projection leaves this function.
+  const svri = evidence
+    ? toPublicSvriProjection(projectSvri({ dimensions: evidence.dimensions, ...evidence.tierCounts }))
+    : undefined;
+  return {
+    aggregates,
+    dimensions,
+    governed: governedAllowed ? 'granted' as const : 'withheld' as const,
+    ...(svri ? { svri } : {}),
+  };
 }

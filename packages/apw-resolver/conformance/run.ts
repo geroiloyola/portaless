@@ -36,6 +36,9 @@ import {
   NEUTRAL,
   PRIOR_WEIGHT,
   SELF_WEIGHT,
+  SVRI_VERSION,
+  SVRI_SITE_PROFILE,
+  projectSvri,
 } from "../src/standalone";
 
 // Imported for the reachability assertion below: these are constants a vector
@@ -324,6 +327,56 @@ const execManifestBuild: Executor = (c, push) => {
   }
 };
 
+/**
+ * SVRI v1.0 (E-16): the projection vector is executed against the same public
+ * `projectSvri` surface a third-party implementation receives. Fields are
+ * compared with a tolerance only where the contract rounds a float; counts,
+ * booleans and the qualitative level are exact.
+ */
+const execSvriProjection: Executor = (c, push) => {
+  const label = String(c.id ?? c.description ?? "SVRI projection");
+  try {
+    const actual = projectSvri(c.input as never);
+    const expected = (c.expected ?? {}) as Record<string, unknown>;
+    const problems: string[] = [];
+    const floatTolerance = readNumber(c, "tolerance", 1e-6);
+    const floatFields = ["score", "priorShare", "effectiveWeight"] as const;
+    const exactFields = ["t1Count", "t2Count", "t3Count", "t4Count", "t5Count", "dimensionCount"] as const;
+
+    if (expected.version !== undefined && actual.version !== expected.version) {
+      problems.push(`version ${actual.version} != ${expected.version}`);
+    }
+    if (expected.profile !== undefined && actual.profile !== expected.profile) {
+      problems.push(`profile ${actual.profile} != ${expected.profile}`);
+    }
+    for (const field of floatFields) {
+      const want = expected[field];
+      if (typeof want === "number" && !near(actual[field], want, floatTolerance)) {
+        problems.push(`${field} ${actual[field]} != ${want}`);
+      }
+    }
+    for (const field of exactFields) {
+      const want = expected[field];
+      if (typeof want === "number" && actual[field] !== want) {
+        problems.push(`${field} ${actual[field]} != ${want}`);
+      }
+    }
+    if (typeof expected.incompleteData === "boolean" && actual.incompleteData !== expected.incompleteData) {
+      problems.push(`incompleteData ${actual.incompleteData} != ${expected.incompleteData}`);
+    }
+    if (typeof expected.isInference === "boolean" && actual.isInference !== expected.isInference) {
+      problems.push(`isInference ${actual.isInference} != ${expected.isInference}`);
+    }
+    if (typeof expected.publicLevel === "string" && actual.publicLevel !== expected.publicLevel) {
+      problems.push(`publicLevel ${actual.publicLevel} != ${expected.publicLevel}`);
+    }
+
+    push(problems.length === 0 ? { label, status: "pass" } : { label, status: "fail", detail: problems.join("; ") });
+  } catch (e) {
+    push({ label, status: "fail", detail: `lanzo: ${(e as Error).message}` });
+  }
+};
+
 // V-16 (Fase 9a): ranking determinista y hash del conjunto usado.
 const asRankingEntries = (raw: ReadonlyArray<Record<string, unknown>>) =>
   raw.map((e) => ({
@@ -415,6 +468,7 @@ const EXECUTORS: Record<string, Executor> = {
   parseDidKeyIdRejection: execParseDidKeyIdRejection,
   manifestParse: execManifestParse,
   manifestBuild: execManifestBuild,
+  svriProjection: execSvriProjection,
   selfWeight: (c, push) =>
     push(
       near(SELF_WEIGHT, c.expect as number, readNumber(c, "tolerance", 1e-12))
@@ -547,12 +601,14 @@ export async function runVector(raw: Record<string, unknown>): Promise<VectorRep
  */
 export function checkSurfaceConstants(): string[] {
   const missing: string[] = [];
-  const required = ["NEUTRAL", "PRIOR_WEIGHT", "SELF_WEIGHT"];
+  const required = ["NEUTRAL", "PRIOR_WEIGHT", "SELF_WEIGHT", "SVRI_VERSION", "SVRI_SITE_PROFILE", "projectSvri"];
   for (const name of required) {
     if (!(name in apw)) missing.push(name);
   }
   if (apw.NEUTRAL !== 4.0) missing.push("NEUTRAL != 4.0");
   if (apw.PRIOR_WEIGHT !== 3) missing.push("PRIOR_WEIGHT != 3");
+  if (apw.SVRI_VERSION !== "1.0") missing.push("SVRI_VERSION != 1.0");
+  if (apw.SVRI_SITE_PROFILE !== "ltp-svri-site-v1") missing.push("SVRI_SITE_PROFILE != ltp-svri-site-v1");
   return missing;
 }
 

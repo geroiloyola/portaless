@@ -128,6 +128,10 @@ Four rules follow, and they are non-negotiable in this project:
 
 Interfaces show **what is known and what is not**, before they show a number. An aggregate without the count and the weight behind it is decoration; a default rendered as data is a claim nobody made. Where evidence is absent, thin or contradictory, the interface says so, and a neutral value never stands in for a measurement that was never taken. A score is a reading of evidence — it is never the evidence itself, and it is never the whole story.
 
+> **Mathematical trust is never projected without cryptographic evidence.**
+
+A derived score is a *projection* of what the protocol could actually verify — issuer identity, a signature valid for its key window, chained history and the source's declared provenance — not a substitute for any of it. When that evidence is absent the projection says *pending*; when it is thin the projection says *inference*; and it never presents the neutral prior as if someone had measured it. This is the rule SVRI (Score de Verificación y Razonamiento de Inferencia) makes explicit: the number travels with its provenance and with the share of the result that is mathematical inference rather than observation. A reader-facing surface may show only the qualitative level, but it may never show that level as if the evidence behind it were stronger than it is.
+
 ---
 
 ## Identity must be proportionate

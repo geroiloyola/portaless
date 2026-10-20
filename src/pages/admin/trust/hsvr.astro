@@ -1,0 +1,117 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="HSVR — Reconstrucción histórica">
+  <main class="container hsvr-page">
+    <p><a href="/admin/trust-svri">← SVRI</a></p>
+    <h1>Reconstrucción Histórica de Veracidad (HSVR)</h1>
+    <p id="hsvr-site" class="hsvr-site"></p>
+    <p id="hsvr-status" role="status">Verificando el historial APW local…</p>
+    <div id="hsvr-audit-warning" class="warning-banner" role="alert" data-hsvr-audit-warning hidden></div>
+    <div class="hsvr-table-wrap">
+      <table id="hsvr-table">
+        <caption>Reproducción SVRI desde eventos firmados; no se consulta un score histórico almacenado.</caption>
+        <thead><tr><th>Secuencia</th><th>Fecha de registro</th><th>Tier / fuente</th><th>Emisor</th><th>Atestación</th><th>Verificación</th><th>SVRI recalculado</th></tr></thead>
+        <tbody id="hsvr-events"></tbody>
+      </table>
+    </div>
+    <section class="hsvr-policy" aria-labelledby="hsvr-policy-title">
+      <h2 id="hsvr-policy-title">Reglas aplicadas</h2>
+      <ul>
+        <li>Tier 1: escrow_report · Tier 2: self · Tier 3: community · Tier 4: reader_conduct · Tier 5: agent.</li>
+        <li>E-13: community no aporta peso si no supera la antigüedad de emisor y el umbral comunitario por categoría.</li>
+        <li>El previo bayesiano se muestra como inferencia, nunca como firma.</li>
+        <li>Un HSVR parcial indica anclaje DNS ausente, firmas históricas no disponibles o registros legacy incompletos.</li>
+      </ul>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .hsvr-page { max-width:76rem;margin-inline:auto;padding-block:var(--space-6,32px) }
+  .hsvr-site { color:var(--muted) }
+  .warning-banner { margin-block:var(--space-3,12px);padding:var(--space-3,12px) var(--space-4,16px);border:1px solid var(--warning-fg);border-inline-start:4px solid var(--warning-fg);border-radius:var(--radius-button,8px);background:var(--warning-bg);color:var(--text);font-size:.92rem;line-height:1.5 }
+  .warning-banner[hidden] { display:none }
+  .hsvr-table-wrap { max-width:100%;overflow:auto;border:1px solid var(--panel-border);border-radius:var(--radius,22px) }
+  #hsvr-table { width:100%;border-collapse:collapse;font-family:var(--font-mono,monospace);font-size:.78rem }
+  #hsvr-table caption { text-align:start;padding:var(--space-3,12px);color:var(--muted) }
+  #hsvr-table th,#hsvr-table td { text-align:start;vertical-align:top;padding:var(--space-2,8px);border-bottom:1px solid var(--panel-border);overflow-wrap:anywhere }
+  #hsvr-table tbody tr:last-child > * { border-bottom:0 }
+  .hsvr-policy { margin-block-start:var(--space-5,24px);padding:var(--space-4,16px);border:1px solid var(--panel-border);border-radius:var(--radius,22px) }
+  .hsvr-policy h2 { font-size:1rem }
+</style>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const siteId = params.get("siteId") || "default";
+  const status = document.getElementById("hsvr-status")!;
+  const warning = document.getElementById("hsvr-audit-warning")!;
+  const tbody = document.getElementById("hsvr-events")!;
+  document.getElementById("hsvr-site")!.textContent = `Sitio: ${siteId}`;
+
+  const KEY_HISTORY_REASON = /(?:source|community|agent|escrow)?_?key_(?:unavailable|history_unavailable)|key_history_unavailable|community_key_unavailable_or_outside_window|escrow_key_history_unavailable|agent_key_unavailable|source_key_unavailable_or_outside_window/i;
+
+  function auditDate(events: any[], affected: any[]): string {
+    const candidates = (affected.length ? affected : events)
+      .map((event) => event?.recordedAt)
+      .filter((value) => typeof value === "string" && !Number.isNaN(Date.parse(value)))
+      .sort((a, b) => Date.parse(a!) - Date.parse(b!));
+    if (!candidates.length) return "la fecha de la primera entrada";
+    return new Intl.DateTimeFormat("es", { dateStyle: "medium" }).format(new Date(candidates[0]!));
+  }
+
+  function showPartialAuditWarning(history: any, result: any): void {
+    const events = Array.isArray(history?.events) ? history.events : [];
+    const excluded = Array.isArray(result?.excludedEvidence) ? result.excludedEvidence : [];
+    const keyMissing = events.some((event: any) => !event.accepted && KEY_HISTORY_REASON.test(String(event.reason ?? "")));
+    const e13Missing = excluded.some((item: any) => item.reason === "emitter_too_new") ||
+      events.some((event: any) => event.reason === "emitter_too_new");
+    if (history?.status === "complete" && !keyMissing && !e13Missing) return;
+
+    const affected = events.filter((event: any) =>
+      !event.accepted || KEY_HISTORY_REASON.test(String(event.reason ?? "")) || event.reason === "emitter_too_new"
+    );
+    warning.hidden = false;
+    warning.dataset.auditReason = keyMissing ? "historical_key_unavailable" : e13Missing ? "emitter_too_new" : "partial_reconstruction";
+    warning.textContent = `Nota de Auditoría: Reconstrucción parcial. Algunas firmas anteriores a ${auditDate(events, affected)} no pueden validarse criptográficamente debido a la rotación de claves de los Veraciers o a formatos pre-E13.`;
+  }
+
+  function cell(row: HTMLTableRowElement, value: unknown) {
+    const td = document.createElement("td");
+    td.textContent = String(value ?? "—");
+    row.appendChild(td);
+  }
+
+  async function load() {
+    const response = await fetch(`/admin/api/svri?siteId=${encodeURIComponent(siteId)}`, { credentials: "same-origin" });
+    if (response.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    if (!response.ok) throw new Error(`HSVR no disponible (HTTP ${response.status}).`);
+    const result = await response.json();
+    const history = result.history;
+    const events = Array.isArray(history.events) ? history.events : [];
+    status.textContent = `Cadena: ${history.chainValid ? "válida" : "inválida"} · Estado de reconstrucción: ${history.status} · Entradas sin anclaje DNS: ${history.unanchoredEntries}`;
+    showPartialAuditWarning(history, result);
+    if (result.eventsTruncated) {
+      warning.hidden = false;
+      warning.textContent = `${warning.textContent ? `${warning.textContent} ` : ""}El timeline muestra las 1.000 entradas más recientes; la reconstrucción del estado actual sí usó el log completo.`;
+    }
+    for (const event of [...events].reverse()) {
+      const row = document.createElement("tr");
+      cell(row, event.sequence);
+      cell(row, event.recordedAt);
+      cell(row, event.tier ? `${event.tier} · ${event.source}` : event.source);
+      cell(row, event.issuer);
+      cell(row, event.attestationId);
+      cell(row, event.accepted ? (event.anchored ? "Firma válida · anclado" : "Firma válida · sin anclaje DNS") : `Excluida: ${event.reason}`);
+      cell(row, `${event.svri.score.toFixed(1)}/10 · ${event.svri.publicLevel} · prior ${event.svri.priorShare.toFixed(3)}`);
+      tbody.appendChild(row);
+    }
+    status.textContent += ` · SVRI actual: ${result.svri.score.toFixed(1)}/10`;
+  }
+
+  void load().catch((cause) => {
+    status.textContent = "";
+    warning.hidden = false;
+    warning.textContent = (cause as Error).message;
+  });
+</script>

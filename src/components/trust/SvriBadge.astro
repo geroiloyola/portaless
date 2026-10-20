@@ -1,0 +1,156 @@
+---
+import { getPublicSvriLevel } from "../../lib/svri-public-level";
+import type { SvriSiteDetail } from "../../../packages/apw-resolver/src/scoring/svri";
+
+interface Props { data?: SvriSiteDetail; siteId?: string }
+const { data, siteId = "default" } = Astro.props;
+const loaded = Boolean(data);
+const svri = data?.svri ?? {
+  version: "1.0" as const,
+  profile: "ltp-svri-site-v1" as const,
+  score: 5,
+  t1Count: 0,
+  t2Count: 0,
+  t3Count: 0,
+  t4Count: 0,
+  t5Count: 0,
+  incompleteData: true,
+  isInference: true,
+  priorShare: 1,
+  effectiveWeight: 0,
+  dimensionCount: 0,
+  rulesVersion: "ltp-svri-site-v1" as const,
+  publicLevel: "pending" as const,
+};
+const dimensions = data?.dimensions ?? [];
+const verifiedSourceRecords = data?.verifiedSourceRecords ?? [];
+const excludedEvidence = data?.excludedEvidence ?? [];
+const missingDimensions = data?.missingDimensions ?? [];
+const view = getPublicSvriLevel(svri);
+
+const DIMENSION_LABELS: Record<string, string> = {
+  "W-01": "Seguridad Técnica",
+  "W-02": "Veracidad del Contenido",
+  "W-03": "Transparencia",
+  "W-04": "Privacidad y Datos",
+  "W-05": "Cumplimiento Comercial",
+  "W-06": "Legibilidad para Agentes",
+  "W-07": "Continuidad",
+  "W-08": "Procedencia",
+  "W-09": "Coherencia",
+  "W-10": "Integridad",
+};
+const REASON_LABELS: Record<string, string> = {
+  dimension_missing: "Dimensión inexistente",
+  insufficient_weight: "E-13 (Peso insuficiente)",
+  emitter_too_new: "E-13 (Antigüedad)",
+  unsigned_legacy: "Formato legacy sin firma",
+  invalid_value: "Valor inválido",
+  duplicate_superseded: "Duplicado reemplazado",
+};
+const missingDimensionLabels = missingDimensions.map((dimension) => ({
+  id: dimension,
+  label: DIMENSION_LABELS[dimension] ?? "Dimensión no catalogada",
+}));
+const exclusionCounts = new Map<string, number>();
+for (const item of excludedEvidence) exclusionCounts.set(item.reason, (exclusionCounts.get(item.reason) ?? 0) + 1);
+const exclusionGroups = [...exclusionCounts.entries()].map(([reason, count]) => ({
+  reason,
+  count,
+  label: REASON_LABELS[reason] ?? reason,
+}));
+---
+
+<section class="admin-svri" data-svri-admin-badge data-svri-site-id={siteId} data-svri-loaded={String(loaded)} aria-labelledby="svri-title" style={`--svri-color:var(${view.colorToken})`}>
+  <header class="admin-svri-head">
+    <h2 id="svri-title" data-svri-score>{loaded ? `SVRI: ${svri.score.toFixed(1)}/10` : "SVRI: Sin datos cargados"}</h2>
+    <span class="admin-svri-level" data-svri-level={loaded ? view.id : "pending"}>{loaded ? view.label : "Pendiente de carga"}</span>
+  </header>
+  <p class="admin-svri-status" data-svri-status>{loaded ? (svri.incompleteData ? "Pendiente de evaluación completa" : svri.isInference ? "Resultado principalmente inferido; no presentar como verificación" : "Resultado respaldado por evidencia") : "El estado inicial no representa una puntuación del sitio."}</p>
+  <div class="admin-svri-tooltip-group">
+    <span class="admin-svri-tooltip-trigger" tabindex="0" aria-describedby="svri-tooltip-panel">Desglose técnico ⓘ</span>
+    <section id="svri-tooltip-panel" class="admin-svri-tooltip-panel" role="region" aria-label="Desglose técnico SVRI">
+    <p class="admin-svri-contract">SVRI {svri.version} · {svri.profile} · reglas {svri.rulesVersion}</p>
+    <pre data-svri-technical>{loaded ? `SVRI: ${svri.score.toFixed(1)}/10 T1: ${svri.t1Count} | T2: ${svri.t2Count} | T3: ${svri.t3Count} | T5: ${svri.t5Count}\nDato incompleto: ${String(svri.incompleteData)} | Inferencia: ${String(svri.isInference)}\nPeso efectivo: ${svri.effectiveWeight.toFixed(3)}` : "A la espera de datos SVRI verificados del administrador."}</pre>
+    <dl class="admin-svri-tier-split" data-svri-tier-split>
+      <div>
+        <dt>T4 (Conducta Observada)</dt>
+        <dd data-svri-t4-count>{svri.t4Count} registros reales</dd>
+      </div>
+      <div>
+        <dt>Inferencia (Prior Matemático)</dt>
+        <dd data-svri-prior-value>Valor base 4.0 · contribución {(svri.priorShare * 100).toFixed(1)}%</dd>
+      </div>
+    </dl>
+    <table data-svri-dimensions>
+      <thead><tr><th>Dimensión LTP</th><th>Score (1–7)</th><th>Registros</th><th>Peso</th></tr></thead>
+      <tbody>{dimensions.map((dimension) => <tr><th scope="row">{dimension.dimension}</th><td>{dimension.score.toFixed(2)}</td><td>{dimension.count}</td><td>{dimension.weightSum.toFixed(3)}</td></tr>)}</tbody>
+    </table>
+    <table data-svri-sources>
+      <caption>Referencias de fuentes verificadas (sin exponer los JWS completos)</caption>
+      <thead><tr><th>Tier</th><th>Emisor</th><th>Atestación</th></tr></thead>
+      <tbody>{verifiedSourceRecords.map((record) => <tr><th scope="row">{record.tier}</th><td>{record.issuer}</td><td><code>{record.attestationId}</code></td></tr>)}</tbody>
+    </table>
+    <details class="admin-svri-audit" data-svri-diagnostic>
+      <summary>Diagnóstico de Exclusión</summary>
+      <section data-svri-missing aria-labelledby="svri-missing-title">
+        <h3 id="svri-missing-title">Dimensiones sin firma T1/T2 (<span data-svri-missing-count>{missingDimensions.length}</span>)</h3>
+        <div data-svri-missing-body>
+          {missingDimensionLabels.length
+            ? <ul>
+                {missingDimensionLabels.map((dimension) => <li><code>{dimension.id}</code> — Ausente: {dimension.label}</li>)}
+              </ul>
+            : <p>Todas las dimensiones requeridas tienen evidencia primaria.</p>}
+        </div>
+      </section>
+      <section data-svri-excluded aria-labelledby="svri-excluded-title">
+        <h3 id="svri-excluded-title">Evidencia excluida (<span data-svri-excluded-count>{excludedEvidence.length}</span>)</h3>
+        <ul class="admin-svri-exclusion-summary" data-svri-exclusion-summary>
+          {exclusionGroups.map((group) => <li><strong>{group.count}</strong> firma{group.count === 1 ? "" : "s"} ignorada{group.count === 1 ? "" : "s"} por {group.label}</li>)}
+        </ul>
+        <p data-svri-excluded-empty hidden={excludedEvidence.length > 0}>No hay evidencia excluida.</p>
+        <table data-svri-excluded-table hidden={excludedEvidence.length === 0}>
+          <thead><tr><th>Atestación</th><th>Fuente</th><th>Emisor</th><th>Motivo</th></tr></thead>
+          <tbody data-svri-excluded-body>
+            {excludedEvidence.map((item) => <tr><th scope="row"><code>{item.attestationId}</code></th><td>{item.tier} · {item.source}{item.category ? ` · ${item.category}` : ""}</td><td>{item.issuer}</td><td><code>{item.reason}</code>{item.detail ? <small> — {item.detail}</small> : null}</td></tr>)}
+          </tbody>
+        </table>
+      </section>
+    </details>
+    <p class="admin-svri-note">El previo bayesiano no es una firma. T4 reader_conduct se cuenta como actividad, pero no se suma a la reputación W del sitio.</p>
+    <a href={`/admin/trust/hsvr?siteId=${encodeURIComponent(siteId)}`}>Ver Reconstrucción Histórica (HSVR) →</a>
+    </section>
+  </div>
+</section>
+
+<style>
+  .admin-svri { border:1px solid var(--panel-border);border-inline-start:4px solid var(--svri-color);border-radius:var(--radius,22px);padding:var(--space-4,16px);margin-block:var(--space-4,16px);background:var(--panel-bg);color:var(--text) }
+  .admin-svri-head { display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3,12px);flex-wrap:wrap }
+  .admin-svri h2 { margin:0;font-size:1.05rem;color:var(--svri-color) }
+  .admin-svri-level { color:var(--svri-color);font-weight:700 }
+  .admin-svri-status,.admin-svri-note { color:var(--muted);font-size:.9rem }
+  .admin-svri-tooltip-group { position:relative;display:inline-block;margin-block-start:var(--space-3,12px) }
+  .admin-svri-tooltip-trigger { display:inline-flex;align-items:center;min-height:44px;padding-inline:var(--space-2,8px);cursor:help;color:var(--accent-text);font-weight:650 }
+  .admin-svri-tooltip-trigger:focus-visible { outline:3px solid var(--accent-2);outline-offset:2px;border-radius:var(--radius-button,8px) }
+  .admin-svri-tooltip-panel { position:absolute;z-index:50;top:calc(100% + var(--space-2,8px));left:0;width:min(52rem,calc(100vw - 2 * var(--space-4,16px)));max-height:min(75vh,48rem);overflow:auto;padding:var(--space-4,16px);border:1px solid var(--panel-border);border-radius:var(--radius,22px);background:var(--panel-bg);box-shadow:var(--shadow-md);visibility:hidden;opacity:0;pointer-events:none;transition:opacity var(--transition-fast,150ms ease),visibility var(--transition-fast,150ms ease) }
+  .admin-svri-tooltip-group:hover .admin-svri-tooltip-panel,.admin-svri-tooltip-group:focus-within .admin-svri-tooltip-panel { visibility:visible;opacity:1;pointer-events:auto }
+  .admin-svri-contract,.admin-svri pre,.admin-svri table { font-family:var(--font-mono,monospace);font-size:.82rem }
+  .admin-svri pre { max-width:100%;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:var(--space-3,12px);background:var(--bg);border-radius:var(--radius-button,8px) }
+  .admin-svri table { width:100%;border-collapse:collapse }
+  .admin-svri table + table { margin-block-start:var(--space-4,16px) }
+  .admin-svri section { margin-block-start:var(--space-4,16px) }
+  .admin-svri h3 { font-size:.9rem;margin-block:0 var(--space-2,8px) }
+  .admin-svri small { color:var(--muted) }
+  .admin-svri-tier-split { display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:var(--space-3,12px);margin:var(--space-3,12px) 0 0 }
+  .admin-svri-tier-split div { padding:var(--space-3,12px);border:1px solid var(--panel-border);border-radius:var(--radius-button,8px);background:var(--bg) }
+  .admin-svri-tier-split dt { color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em }
+  .admin-svri-tier-split dd { margin:var(--space-1,4px) 0 0;font-family:var(--font-mono,monospace);font-size:.85rem }
+  .admin-svri-audit { margin-block-start:var(--space-4,16px);padding:var(--space-3,12px);border:1px solid var(--panel-border);border-radius:var(--radius-button,8px) }
+  .admin-svri-audit > summary { cursor:pointer;font-weight:700;color:var(--accent-text) }
+  .admin-svri-audit > summary:focus-visible { outline:3px solid var(--accent-2);outline-offset:2px;border-radius:var(--radius-button,8px) }
+  .admin-svri-exclusion-summary { margin-block:0 var(--space-3,12px) }
+  .admin-svri-exclusion-summary li + li { margin-block-start:var(--space-1,4px) }
+  .admin-svri caption { text-align:start;color:var(--muted);padding-block:var(--space-2,8px) }
+  .admin-svri th,.admin-svri td { text-align:start;padding:var(--space-2,8px);border-bottom:1px solid var(--panel-border) }
+  @media(max-width:640px){.admin-svri-tooltip-panel{position:fixed;top:10vh;left:var(--space-3,12px);right:var(--space-3,12px);width:auto;max-height:80vh}}
+</style>

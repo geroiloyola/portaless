@@ -92,7 +92,9 @@ jobs:
             // Scoring: V-08 and V-09, which the spec lists as minimal
             // interoperability vectors and which were not exported before.
             const scoring = ["issuerWeight","judgeFromDeviation","toValue","readerConductToDimension",
-                             "bayesianScore","calibrateJudges","scoreSubject","scoreOf","periodKey"];
+                             "bayesianScore","calibrateJudges","scoreSubject","scoreOf","periodKey",
+                             "SVRI_VERSION","SVRI_SITE_PROFILE","projectSvri","classifySvriLevel",
+                             "buildSiteSvri","toPublicSvriProjection"];
             const missing = [...required, ...scoring].filter((n) => typeof apw[n] === "undefined");
             if (missing.length) {
               console.error("missing from the published surface:", missing.join(", "));
@@ -100,6 +102,11 @@ jobs:
             }
             if (apw.NEUTRAL !== 4.0 || apw.PRIOR_WEIGHT !== 3) {
               console.error("scoring constants drifted:", apw.NEUTRAL, apw.PRIOR_WEIGHT);
+              process.exit(1);
+            }
+            const svri = apw.projectSvri({ dimensions: [], t1Count:0, t2Count:0, t3Count:0, t4Count:0, t5Count:0 });
+            if (svri.score !== 5 || !svri.incompleteData || !svri.isInference || svri.publicLevel !== "pending") {
+              console.error("SVRI empty-evidence vector failed from the tarball:", svri);
               process.exit(1);
             }
             console.log("published exports:", Object.keys(apw).length);

@@ -1,6 +1,6 @@
 // GET /trust/:siteId: metadatos aditivos de verificabilidad de las cuatro
-// fuentes (APW B7 MVP). community queda marcada local_only, sin identidad
-// criptografica ni prueba exportable; community añade un booleano `signed`
+// fuentes. community marca por fila si la atestación firmada fue verificada
+// al ingreso o si es opinión legacy sin firma; añade un booleano `signed`
 // para que el consumidor distinga ambas fuentes sin mostrar un promedio mezclado.
 // Desde B3 (ERRATA E-5), self es verificable si la fila trae attestationJws.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -39,11 +39,16 @@ describe("GET /trust/:siteId: verification metadata", () => {
     expect(body.verification).toMatchObject({
       self: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
       agent: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
-      community: { status: "local_only", verifiable: false },
+      community: { status: "mixed_per_entry", verifiable: true, proofField: "signed" },
       escrow_report: { status: "verifiable_if_attested", verifiable: true, proofField: "attestationJws" },
     });
-    expect(body.verification.community.reason).toContain("localStorage");
+    expect(body.verification.community.reason).toContain("signed: true");
     expect(body.governance).toEqual({ enabled: false });
+    expect(body.projection.svri).toEqual({ version: "1.0", publicLevel: "pending" });
+    expect(body.projection.svri.score).toBeUndefined();
+    expect(body.projection.svri.t1Count).toBeUndefined();
+    expect(body.projection.svri).toEqual({ version: "1.0", publicLevel: "pending" });
+    expect(body.projection.svri.score).toBeUndefined();
   });
 
   it("responde 400 sin siteId", async () => {

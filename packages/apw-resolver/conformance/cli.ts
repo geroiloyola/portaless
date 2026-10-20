@@ -41,15 +41,33 @@ async function main(): Promise<void> {
   if (!existsSync(dir)) {
     console.error(`apw-conformance: no vector directory at ${dir}`);
     console.error("");
-    console.error("Usage: npx apw-conformance <path-to-vectors-dir>");
+    console.error("Usage: npx apw-conformance <path-to-vectors-dir> [more-vector-dirs...]");
     console.error("Download the vectors from the specification repository:");
-    console.error("  docs/protocol-apw/vectors/v1.3/   (CC BY 4.0, independent of the code)");
+    console.error("  docs/protocol-apw/vectors/v1.3/       (CC BY 4.0, independent of the code)");
+    console.error("  docs/protocol-apw/vectors/svri/v1.0/  (SVRI v1.0 / E-16)");
     process.exit(2);
+  }
+
+  // SVRI lives beside the APW vectors (vectors/svri/v1.0). When the caller
+  // points at an APW vector directory, include that sibling automatically so
+  // the published binary checks the normative projection too. Explicit extra
+  // directories are accepted as well.
+  const dirs = [dir];
+  const svriSibling = resolve(dir, "..", "svri", "v1.0");
+  if (existsSync(svriSibling) && !dirs.includes(svriSibling)) dirs.push(svriSibling);
+  for (const extra of process.argv.slice(3)) {
+    const resolved = resolve(process.cwd(), extra);
+    if (!existsSync(resolved)) {
+      console.error(`apw-conformance: no vector directory at ${resolved}`);
+      process.exit(2);
+    }
+    if (!dirs.includes(resolved)) dirs.push(resolved);
   }
 
   let reports: VectorReport[];
   try {
-    reports = await loadFrom(dir);
+    reports = [];
+    for (const vectorDir of dirs) reports.push(...(await loadFrom(vectorDir)));
   } catch (e) {
     console.error(`apw-conformance: could not read the vectors: ${(e as Error).message}`);
     process.exit(2);
@@ -57,8 +75,8 @@ async function main(): Promise<void> {
 
   const missingConstants = checkSurfaceConstants();
   const report: ConformanceReport = {
-    spec: "APW-SPEC-v1.3",
-    vectorsVersion: "v1.3",
+    spec: "APW-SPEC-v1.3 + SVRI-v1.0",
+    vectorsVersion: "v1.3 + svri/v1.0",
     ok: reports.every((r) => r.failed === 0 && r.unsupported === 0) && missingConstants.length === 0,
     total: reports.reduce((n, r) => n + r.total, 0),
     passed: reports.reduce((n, r) => n + r.passed, 0),
@@ -75,7 +93,7 @@ async function main(): Promise<void> {
   if (missingConstants.length) {
     console.log(`missing from the surface: ${missingConstants.join(", ")}`);
   }
-  console.log(`vectors directory: ${dir}`);
+  console.log(`vectors directories: ${dirs.join(", ")}`);
   process.exit(report.ok ? 0 : 1);
 }
 
