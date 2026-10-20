@@ -7,7 +7,7 @@ import {
 } from "./disposable-staging.mjs";
 
 const baseUrl = `http://127.0.0.1:${process.env.PORT || 3000}`;
-const webhookInspector = "http://portaless-webhook:4181";
+const webhookInspector = "http://portaless-stage-webhook:4181";
 
 async function waitFor(url, label, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;
