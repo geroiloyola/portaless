@@ -89,6 +89,47 @@ Endpoints:
   historial/did.json del sitio). 200 siempre con el resultado
   estructurado (nunca lanza), CORS `*`, `no-store`.
 
+## SVRI y artefactos firmados (contrato requerido)
+
+Una imagen firmada es una **proyeccion congelada** de la evidencia del sitio en
+el instante de la firma. Por eso el sidecar JWS de Cloud Image v1 debe incluir,
+dentro del payload firmado, el nivel SVRI publico contemporaneo:
+
+```json
+{
+  "trust": {
+    "siteId": "default",
+    "counts": { "self": 0, "agent": 0, "community": 0, "escrowReports": 0 },
+    "projection": { "dimensions": {}, "aggregates": {}, "governed": "withheld" },
+    "svri": { "version": "1.0", "publicLevel": "pending" },
+    "computedAt": "2026-10-20T00:00:00.000Z"
+  }
+}
+```
+
+Reglas normativas del artefacto:
+
+- `trust.svri` se captura **al firmar** y queda cubierto por la firma Ed25519
+  como cualquier otro campo del payload. Un cambio posterior del SVRI del sitio
+  no reescribe el sidecar: la imagen acredita el nivel que existia cuando se
+  firmo, no el nivel actual.
+- Solo viaja el nivel cualitativo (`version` + `publicLevel`). El score
+  numerico, los conteos T1–T5, `priorShare` y HSVR siguen siendo
+  administrativos y **nunca** se embeben en un artefacto publico.
+- Si el SVRI no puede calcularse, el campo se omite o vale `null`; la
+  verificacion debe informar "SVRI no disponible" y **no** inventar
+  `pending` como si fuera una medicion. La firma de la imagen no depende del
+  SVRI: la procedencia criptografica de los bytes sigue siendo valida.
+- Un verificador externo puede comprobar la firma y el `contentHash` sin
+  confiar en el sitio; el nivel SVRI embebido es una declaracion firmada del
+  emisor en ese instante, no una garantia de verdad ni una evaluacion actual.
+
+**Estado actual:** `captureSiteTrust()` ya firma `trust.projection` (agregados
+APW §6.6 en modo solo-publico) y los conteos, pero todavia no agrega
+`trust.svri`; ese campo es el delta requerido para que el contrato anterior se
+cumpla. Anadirlo no cambia el formato `v: 1`, no invalida sidecars existentes y
+debe hacerse antes de declarar Cloud Images alineado con SVRI.
+
 ## Como se verifica una imagen (tres caminos)
 
 1. **El sitio la sirve**: `GET /trust/images/:imageId` — verificacion

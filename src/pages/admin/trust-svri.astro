@@ -1,0 +1,174 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SvriBadge from "../../components/trust/SvriBadge.astro";
+---
+<BaseLayout title="SVRI — Portaless Admin">
+  <main class="container svri-admin-page">
+    <header>
+      <h1>SVRI — verificación y razonamiento</h1>
+      <p>El score interno conserva el prior LTP; esta vista muestra su procedencia, peso e integridad. La firma atribuye una declaración, no prueba por sí sola su verdad.</p>
+    </header>
+    <form id="svri-site-form">
+      <label for="svri-site-id">Sitio</label>
+      <input id="svri-site-id" name="siteId" value="default" maxlength="253" required />
+      <button type="submit">Consultar SVRI</button>
+    </form>
+    <p id="svri-load-status" role="status">Cargando...</p>
+    <div id="svri-result"><SvriBadge siteId="default" /></div>
+    <p id="svri-error" role="alert" hidden></p>
+  </main>
+</BaseLayout>
+
+<style>
+  .svri-admin-page { max-width:60rem;margin-inline:auto;padding-block:var(--space-6,32px) }
+  .svri-admin-page header p { max-width:48rem;color:var(--muted) }
+  #svri-site-form { display:flex;align-items:center;gap:var(--space-2,8px);flex-wrap:wrap;margin-block:var(--space-4,16px) }
+  #svri-site-form input { min-height:44px;padding:var(--space-2,8px);border:1px solid var(--panel-border);border-radius:var(--radius-input,6px);background:var(--panel-bg);color:var(--text) }
+  #svri-site-form button { min-height:44px;padding-inline:var(--space-3,12px);border:0;border-radius:var(--radius-button,8px);background:var(--accent);color:var(--text);font-weight:700 }
+</style>
+
+<script>
+  import { getPublicSvriLevel } from "../../lib/svri-public-level";
+  const form = document.getElementById("svri-site-form") as HTMLFormElement;
+  const siteInput = document.getElementById("svri-site-id") as HTMLInputElement;
+  const status = document.getElementById("svri-load-status")!;
+  const error = document.getElementById("svri-error")!;
+  const root = document.getElementById("svri-result")!;
+
+  function textCell(row: HTMLTableRowElement, value: unknown, heading = false) {
+    const cell = document.createElement(heading ? "th" : "td");
+    if (heading) cell.scope = "row";
+    cell.textContent = String(value);
+    row.appendChild(cell);
+  }
+
+  const DIMENSION_LABELS: Record<string, string> = {
+    "W-01": "Seguridad Técnica",
+    "W-02": "Veracidad del Contenido",
+    "W-03": "Transparencia",
+    "W-04": "Privacidad y Datos",
+    "W-05": "Cumplimiento Comercial",
+    "W-06": "Legibilidad para Agentes",
+    "W-07": "Continuidad",
+    "W-08": "Procedencia",
+    "W-09": "Coherencia",
+    "W-10": "Integridad",
+  };
+  const REASON_LABELS: Record<string, string> = {
+    dimension_missing: "Dimensión inexistente",
+    insufficient_weight: "E-13 (Peso insuficiente)",
+    emitter_too_new: "E-13 (Antigüedad)",
+    unsigned_legacy: "Formato legacy sin firma",
+    invalid_value: "Valor inválido",
+    duplicate_superseded: "Duplicado reemplazado",
+  };
+
+  async function load(siteId: string) {
+    status.textContent = "Cargando proyección verificada…";
+    error.hidden = true;
+    const response = await fetch(`/admin/api/svri?siteId=${encodeURIComponent(siteId)}`, { credentials: "same-origin" });
+    if (response.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    if (!response.ok) throw new Error(`No se pudo cargar SVRI (HTTP ${response.status}).`);
+    const payload = await response.json();
+    const svri = payload.svri;
+    const level = getPublicSvriLevel(svri);
+    const badge = root.querySelector<HTMLElement>("[data-svri-admin-badge]");
+    if (!badge) throw new Error("No se encontró el componente SVRI.");
+    badge.dataset.siteId = siteId;
+    badge.style.setProperty("--svri-color", `var(${level.colorToken})`);
+    badge.querySelector("[data-svri-score]")!.textContent = `SVRI: ${Number(svri.score).toFixed(1)}/10`;
+    badge.querySelector("[data-svri-level]")!.textContent = level.label;
+    badge.querySelector("[data-svri-status]")!.textContent = svri.incompleteData
+      ? "Pendiente de evaluación primaria (T1/T2 ausentes)."
+      : svri.isInference ? "El prior matemático aporta más de la mitad del peso." : "El prior matemático no predomina.";
+    badge.querySelector("[data-svri-technical]")!.textContent =
+      `SVRI: ${Number(svri.score).toFixed(1)}/10 T1: ${svri.t1Count} | T2: ${svri.t2Count} | T3: ${svri.t3Count} | T5: ${svri.t5Count}\n` +
+      `Dato incompleto: ${String(svri.incompleteData)} | Inferencia: ${String(svri.isInference)}\n` +
+      `Peso efectivo: ${Number(svri.effectiveWeight).toFixed(3)}`;
+    badge.querySelector("[data-svri-t4-count]")!.textContent = `${svri.t4Count} registros reales`;
+    badge.querySelector("[data-svri-prior-value]")!.textContent =
+      `Valor base 4.0 · contribución ${(Number(svri.priorShare) * 100).toFixed(1)}%`;
+
+    const dimensions = badge.querySelector("[data-svri-dimensions] tbody")!;
+    dimensions.replaceChildren();
+    for (const item of payload.dimensions) {
+      const row = document.createElement("tr");
+      textCell(row, item.dimension, true);
+      textCell(row, Number(item.score).toFixed(2));
+      textCell(row, item.count);
+      textCell(row, Number(item.weightSum).toFixed(3));
+      dimensions.appendChild(row);
+    }
+    const records = badge.querySelector("[data-svri-sources] tbody")!;
+    records.replaceChildren();
+    for (const item of payload.verifiedSourceRecords) {
+      const row = document.createElement("tr");
+      textCell(row, item.tier, true);
+      textCell(row, item.issuer);
+      textCell(row, item.attestationId);
+      records.appendChild(row);
+    }
+
+    const missing = Array.isArray(payload.missingDimensions) ? payload.missingDimensions : [];
+    badge.querySelector("[data-svri-missing-count]")!.textContent = String(missing.length);
+    const missingBody = badge.querySelector("[data-svri-missing-body]")!;
+    missingBody.replaceChildren();
+    if (missing.length) {
+      const list = document.createElement("ul");
+      for (const dimension of missing) {
+        const item = document.createElement("li");
+        const code = document.createElement("code");
+        code.textContent = dimension;
+        item.append(code, ` — Ausente: ${DIMENSION_LABELS[dimension] ?? "Dimensión no catalogada"}`);
+        list.appendChild(item);
+      }
+      missingBody.appendChild(list);
+    } else {
+      const empty = document.createElement("p");
+      empty.textContent = "Todas las dimensiones requeridas tienen evidencia primaria.";
+      missingBody.appendChild(empty);
+    }
+
+    const excluded = Array.isArray(payload.excludedEvidence) ? payload.excludedEvidence : [];
+    badge.querySelector("[data-svri-excluded-count]")!.textContent = String(excluded.length);
+    const summary = badge.querySelector("[data-svri-exclusion-summary]")!;
+    summary.replaceChildren();
+    const counts = new Map<string, number>();
+    for (const item of excluded) counts.set(item.reason, (counts.get(item.reason) ?? 0) + 1);
+    for (const [reason, count] of counts) {
+      const item = document.createElement("li");
+      const strong = document.createElement("strong");
+      strong.textContent = String(count);
+      item.append(strong, ` firma${count === 1 ? "" : "s"} ignorada${count === 1 ? "" : "s"} por ${REASON_LABELS[reason] ?? reason}`);
+      summary.appendChild(item);
+    }
+    badge.querySelector("[data-svri-excluded-empty]")!.hidden = excluded.length > 0;
+    const excludedTable = badge.querySelector<HTMLTableElement>("[data-svri-excluded-table]")!;
+    excludedTable.hidden = excluded.length === 0;
+    const excludedBody = badge.querySelector("[data-svri-excluded-body]")!;
+    excludedBody.replaceChildren();
+    for (const item of excluded) {
+      const row = document.createElement("tr");
+      textCell(row, item.attestationId, true);
+      textCell(row, `${item.tier} · ${item.source}${item.category ? ` · ${item.category}` : ""}`);
+      textCell(row, item.issuer);
+      textCell(row, `${item.reason}${item.detail ? ` — ${item.detail}` : ""}`);
+      excludedBody.appendChild(row);
+    }
+    status.textContent = `Proyección ${svri.version} cargada para ${siteId}.`;
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void load(siteInput.value.trim()).catch((cause) => {
+      status.textContent = "";
+      error.textContent = (cause as Error).message;
+      error.hidden = false;
+    });
+  });
+  void load(siteInput.value).catch((cause) => {
+    status.textContent = "";
+    error.textContent = (cause as Error).message;
+    error.hidden = false;
+  });
+</script>

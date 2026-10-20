@@ -1,8 +1,14 @@
 # Protocol APW — Erratas
 
+> **E-16 (normativa, vigente):** SVRI v1.0 complementa LTP; la especificación está en [`SVRI-v1.0.md`](./SVRI-v1.0.md) y sus vectores independientes en [`vectors/svri/v1.0/`](./vectors/svri/v1.0/).
+
 > **INTEGRADAS (octubre 2026).** E-1 a E-11 estan incorporadas al cuerpo de la especificacion normativa vigente [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md) (E-10 en la seccion 5.7, E-11 en la 6.6 y en el Anexo A); sus vectores de prueba viven ahora en [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md). **E-12 es informativa** (agregador del Index): no cambia ningun requisito normativo de v1.3 y no requiere consolidacion; documenta que dos puntos marcados "fuera del alcance de esta version" en 5.7/7 ya existen en la implementacion de referencia. **E-13 es normativa y rige desde su publicacion**: agrega `community` al enum `src` de 5.3 y define lo que 6.7 exigia sin definir (emisor distinto, `min_weight` del predicado comunitario y antiguedad minima del emisor). Todavia **no esta consolidada en el cuerpo de v1.3**; como toda errata publicada, es de efecto inmediato y la proxima consolidacion la integra. **E-14 es normativa y rige desde su publicacion**: define el documento firmado de paginas publicables (`/.well-known/apw-pages.jws`, `typ apw-pages+jws`) que la seccion 7 dejaba sin formato, mas las guardas normativas del consumidor (fetch por hop, cap por streaming, bloqueo de rangos privados, cache obligatoria, render saneado). **E-15 es normativa y rige desde su publicacion**: define el manifiesto de plugin firmado por el publicador (`typ apw-plugin-manifest+jws`, la firma cubre `requestedCapabilities`) y la regla de instalacion (instalar NO concede; podar removidas, no auto-conceder ampliadas; inmutabilidad por version). Ninguna de las dos esta consolidada. Este archivo se conserva como registro historico de las correcciones y su motivacion. Ante cualquier discrepancia de redaccion, manda la version mas nueva (v1.3 mas E-13, E-14 y E-15).
 
+> **Actualización de estado:** E-16 es normativa y está vigente, además de las erratas enumeradas en el resumen histórico anterior. Su suplemento SVRI v1.0 gobierna la proyección de LTP donde corresponda.
+
 Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza)).
+
+E-16 publica el contrato SVRI v1.0 en [`SVRI-v1.0.md`](./SVRI-v1.0.md), suplemento normativo de LTP/APW.
 
 ## E-1 — Calculo de la huella `k` (APW v1.2, seccion 5.1)
 
@@ -375,3 +381,17 @@ Esta errata **cierra B7 y las tres definiciones pendientes de 6.7**. No cambia e
 **Limitacion**: el instalador HTTP esta detras de un flag apagado por defecto mientras la revision externa del sandbox sigue pendiente. Desde la Fase 14 (§14.1) el manifiesto verificado viaja con el artefacto (`plugin_artifacts.manifest_json`) y `POST /admin/api/plugins/run` ejecuta desde `PluginArtifactStore` tras verificar `sha256Hex(code) === codeHash`, cayendo a disco solo cuando el plugin no tiene artefacto guardado.
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/plugin-manifest.ts` (firma/verificacion), `packages/plugin-sandbox/src/registry/plugin-artifacts.ts` (store troceado), `packages/plugin-sandbox/src/install/reconcile.ts` (reconciliacion), `functions/admin/api/plugins/install.js` y `uninstall.js` (tras `PORTALESS_PLUGIN_INSTALLER`), y `PLUGIN_MANIFEST_TYP` en el SDK (`packages/plugin-sdk`); tests en `tests/unit/apw-plugin-manifest.test.ts`, `tests/unit/plugin-artifacts.test.ts` y `tests/unit/plugin-install-endpoint.test.ts`.
+
+## E-16 — SVRI: fidelidad de proyección LTP y reconstrucción histórica (normativa)
+
+**Fecha**: Octubre 2026
+
+**Problema**: el previo neutral de LTP es necesario para el cálculo bayesiano, pero no es una firma ni una evaluación observada. Un número sin procedencia puede confundir evidencia del sitio, evidencia externa y el previo matemático. APW tampoco define un único agregado entre dimensiones ni una interfaz que exponga su dependencia de inferencia.
+
+**Texto vigente**: SVRI v1.0 se define en [`SVRI-v1.0.md`](./SVRI-v1.0.md), suplemento normativo CC BY 4.0 de LTP. El perfil `ltp-svri-site-v1` conserva las fórmulas y pesos por dimensión de LTP, excluye filas sin JWS verificado, escala 1–7 a 0–10 y promedia dimensiones W con peso efectivo. Los tiers son T1 `escrow_report`, T2 `self`, T3 `community`, T4 `reader_conduct` (actividad firmada de lector; no fuente W del sitio) y T5 `agent` (emisión automatizada atribuida; la firma no prueba ausencia de intervención humana). El previo es inferencia, no una fuente ni un tier; las emisiones T4 del sitio se cuentan como actividad, pero no se puntúan como evidencia W propia.
+
+`incompleteData` es verdadero cuando `t1Count + t2Count === 0`; `isInference` es verdadero cuando la contribución del previo supera 0.5. Por tanto, T1/T2 hacen que la evaluación esté completa según este criterio, pero no garantizan por sí solas que el previo deje de predominar. Sin dimensiones con peso efectivo, el valor interno es el previo neutral mapeado a 5/10, nunca una medición.
+
+La presentación pública de SVRI sólo muestra el nivel cualitativo; el score, los conteos y la contribución del previo son administrativos. Los agregados APW preexistentes de §6.6 no cambian. HSVR reconstruye desde atestaciones e historiales append-only; si falta una prueba histórica, la salida debe declararse parcial y no inventar el evento.
+
+**Vectores independientes**: `vectors/svri/v1.0/manifest.json` y `svri-projection.json`.

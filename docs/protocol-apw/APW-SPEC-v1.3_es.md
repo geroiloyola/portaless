@@ -1,6 +1,8 @@
 # Protocol APW — Especificacion Normativa v1.3
 
 > **ARCHIVO HISTÓRICO (español).** La especificación normativa canónica y vigente está en inglés en [`APW-SPEC-v1.3.md`](./APW-SPEC-v1.3.md). Esta copia en español se conserva íntegra por contexto y traducción; ante cualquier discrepancia (números, fórmulas, keywords) manda la versión en inglés.
+>
+> El suplemento normativo SVRI v1.0 (ERRATA E-16) tiene documento canónico propio en [`SVRI-v1.0.md`](./SVRI-v1.0.md).
 
 **Autor**: Gerardo Loyola
 **Proyecto**: Portaless

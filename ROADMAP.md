@@ -17,7 +17,7 @@ Read this table first; every row links to the section that justifies it. A row i
 | Area | Today | Detail |
 |---|---|---|
 | Product: edit → publish, 17-element catalog, 6 skins, onboarding, self-host (Node/Docker) | `[x]` shipped | [In production](#in-production) |
-| Identity and evidence: `did:apw`, JWS/JCS artifacts, signed attestations, external witnesses, `reader_conduct` | `[x]` shipped — spec v1.3 plus errata E-1…E-15 | [Trust Layer](#trust-layer-identity-and-protocol-apw) |
+| Identity and evidence: `did:apw`, JWS/JCS artifacts, signed attestations, external witnesses, `reader_conduct` | `[x]` shipped — spec v1.3 plus errata E-1…E-16 and SVRI v1.0 | [Trust Layer](#trust-layer-identity-and-protocol-apw) |
 | Executable conformance: machine-readable vectors, published runner, clean-room tarball check | `[x]` shipped — **110/110 cases over 11 vectors** (verified 2026-10-15) | [Phase 7](#phase-7--executable-conformance) |
 | Community reputation bound to a signed `did:apw` | `[x]` mechanism shipped; **the corpus is external** | [Phase 8](#phase-8--bind-identity-to-reputation) |
 | Federated query: normative ranking (V-16) + signed pages document (E-14) + hardened peer reader | `[~]` mechanism shipped; **no public endpoint, no real peers** | [Phase 9](#phase-9--federated-query) |
@@ -25,7 +25,7 @@ Read this table first; every row links to the section that justifies it. A row i
 | Commercial seam: MIT plugin SDK 0.1.0, HTTP installer behind a flag, capability backends | `[~]` items 1–2 shipped; **item 3 deliberately not** | [Phase 11](#phase-11--the-commercial-seam) |
 | A real network: second operator, second implementation, external domain in an Index | `[ ]` **blocked on people, not on code** | [External](#external-depends-on-a-third-party) |
 | Edge sandbox adapters verified against real accounts; independent security review | `[~]` one command / one guide away, needs an operator and a reviewer | [External](#external-depends-on-a-third-party) |
-| Score honesty: a default never rendered as evidence | `[x]` known public score surfaces audited and corrected | [Score honesty](#score-honesty-a-default-never-stands-in-for-evidence-now-from-visionmd) |
+| SVRI projection fidelity | `[x]` normative E-16, five tiers, qualitative public level and admin HSVR | [Trust Layer](#trust-layer-identity-and-protocol-apw) |
 
 ---
 
@@ -50,9 +50,10 @@ Read this table first; every row links to the section that justifies it. A row i
 
 - `[x]` Web Bot Auth (RFC 9421, Ed25519) with shared draft-03 rules, key-directory cache, nonce uniqueness (shared across instances via D1/SQLite since v0.0.9.31 — in-memory fallback for single-process dev).
 - `[x]` Experimental ML-DSA (FIPS 204) in the SiteTrustScore `agent` source only; middleware remains Ed25519-only.
-- `[x]` SiteTrustScore with all 4 sources (`self`, `agent`, `community`, `escrow_report`) and full admin lifecycle for `authorized_agents` and escrow providers (Ed25519 public JWK loaded/rotated/removed without rotating the API key; signed reports rejected without it). Limits: empty allowlists by default; `community` is local, unverifiable voting (spec gap B7).
+- `[x]` SiteTrustScore sources feed SVRI v1.0: T1 escrow, T2 signed self, T3 signed community, T4 reader-conduct activity, T5 signed agent automation. Public pages show a qualitative level only; numerical score, provenance counts and HSVR are admin-only. Unsigned legacy opinions do not score.
+- `[x]` SVRI v1.0 profile `ltp-svri-site-v1`: LTP per-dimension weighting, source tiers deduplicated by issuer/JTI, prior contribution tracked separately, qualitative public level and admin-only SVRI/HSVR. Missing historic signatures, keys or DNS anchoring produce partial reconstruction instead of invented history.
 - `[x]` Pay-per-crawl with swappable providers (`cloudflare-pay-per-crawl`): in-band `crawler-price`; activation requires verified Cloudflare token + step-up + APW identity. No active provider → `charge` responds 402 `settlement: "not_available"`.
-- `[x]` **Protocol APW v1.3 complete** ([spec](./docs/protocol-apw/APW-SPEC-v1.3.md) · [vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md)): DNS-over-HTTPS TXT `_apw.` resolution, manifest v1/v2 (`k`, `h`), `did:apw` with key history + rotation, `/.well-known/did.json`, site JWS with JCS (`/.well-known/apw-manifest.jws`), signed attestations (`agent`, `escrow_report`, `self`), DNS-anchored chained history (`/.well-known/apw-log.json`), attestation bundle (`/.well-known/apw-attestations.json`), dimension scoring (Annex A) with R-05 calibration, fail-closed read policies, and `reader_conduct` reputation with completeness and ledger-backed emission. Closes spec gaps B1–B6 and B9; B7 (portable `community`) stays open.
+- `[x]` **Protocol APW v1.3 + SVRI v1.0** ([spec](./docs/protocol-apw/APW-SPEC-v1.3.md), [SVRI E-16](./docs/protocol-apw/SVRI-v1.0.md), [APW vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md), [SVRI vectors](./docs/protocol-apw/vectors/svri/v1.0/)): DNS-over-HTTPS `did:apw`, signed artifacts and attestations, chained history, LTP dimension scoring, five evidence tiers, qualitative public SVRI, and protected numerical details/HSVR. Reader `reader_conduct` remains separate from site W scoring.
 - `[x]` **Per-dimension public override (A.6)**: owner can publish any *governed* dimension via `public_overrides` on `site_trust_read_policies`; surfaced by `GET /trust/:siteId` in `projectTrustView()`. Public level cannot be hidden; unknown dimensions rejected.
 - `[x]` **External witnesses (ERRATA E-10, spec §5.7)**: a site with identity observes another's chain and publishes a signed statement (`apw-witness+jws`, deterministic `jti`) at `/.well-known/apw-witnesses.json`, logged in its own chained history. Fail-closed evaluation: `head_mismatch`, `equivocation`, `backdated_entry`. Recorded via `POST /admin/api/witness/record`.
 - `[x]` **Semi-automatic `h` anchoring**: TXT v2 computation with live `k`+`h` via `dnslink/cli.mjs --anchor --domain` and the dashboard checklist; witnesses anchor heads without touching DNS. Pasting the TXT into the DNS provider stays manual (no standardized DNS API).
@@ -78,7 +79,7 @@ Read this table first; every row links to the section that justifies it. A row i
 
 ## In development (internal — depends only on Portaless)
 
-### Score honesty: a default never stands in for evidence (`NOW`, from `VISION.md`)
+### Derived-score rendering integrity (completed; see Trust Layer)
 
 `VISION.md` states the rule — *a default must never quietly stand in for missing evidence*. The score renderers preserve it: `scoreSiteDimensions()` emits no entry for missing W evidence, the `/trust/atproto/:handle` projection omits zero-count/zero-weight R-05 priors and returns `no_data` when no measured reader dimensions exist, and the public Trust page reports counts rather than averaging visitor opinions into a reputation score. `scoreSubject()` and `scoreOf()` retain protocol defaults for internal calculations and policy evaluation; callers must carry their count and weight metadata rather than render those priors as observations.
 
@@ -86,7 +87,7 @@ Read this table first; every row links to the section that justifies it. A row i
 
 ### Public surfaces with fabricated data (`NOW`, from `VISION.md`)
 
-The same defect class as the score-honesty item above: a public surface showing a value no code computes, or a link that leads nowhere. Both are fixed and guarded by CI.
+The same projection-integrity concern: a public surface showing a value no code computes, or a link that leads nowhere. Both are fixed and guarded by CI.
 
 - `[x]` **`GET /trust/default` (the page the footer links from every page) no longer shows fabricated values.** The eleven hardcoded rows — country, join date, "92 Veraciers", "98 %/95 %/100 %/4.9" and the external-reach rows — are gone; the summary is built from the snapshot the page already fetches (`self`/`agent`/`community`/`escrow_report` counts), each a real number or *Sin datos*; the error path no longer invents "identidad canónica". Guarded by `tests/unit/trust-page-honesty.test.ts` (a source test: no fabricated literal can return unnoticed) and a browser case in `public-ecosystem-footer.spec.ts`.
 - `[x]` **No example page has a dead link.** `example.com`, the non-resolving `tienda.portaless.com`, the two rickroll videos and the bare platform roots (`instagram.com/`, `youtube.com/`, `open.spotify.com/`, `music.apple.com/`, `bandcamp.com/`, `tiktok.com/@`) are gone; internal destinations use real routes (`/shop/`, `/pages/portafolio/`). Guarded by `tests/unit/demo-pages-links.test.ts`; the rule is recorded in `docs/architecture/content-architecture-and-use-cases.md`.

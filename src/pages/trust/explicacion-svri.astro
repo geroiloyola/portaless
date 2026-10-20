@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Qué significa SVRI — Portaless">
+  <main class="container svri-explainer">
+    <h1>Qué significa el nivel SVRI</h1>
+    <p>SVRI resume qué tan respaldada está la reputación publicada por evidencia verificable y qué parte depende de inferencia matemática. Una firma identifica quién emitió una afirmación; no convierte por sí sola esa afirmación en verdad.</p>
+    <dl>
+      <dt>SVRI: Confiable</dt><dd>La puntuación está respaldada por fuentes primarias verificables y no predomina el prior matemático.</dd>
+      <dt>SVRI: Seguro</dt><dd>Hay evidencia primaria suficiente y un nivel de respaldo sólido, aunque no alcanza Confiable.</dd>
+      <dt>SVRI: Pendiente</dt><dd>Faltan las fuentes primarias requeridas. El cálculo neutral no se presenta como una medición.</dd>
+      <dt>SVRI: Verificar</dt><dd>La evidencia es limitada o el resultado depende principalmente de inferencia.</dd>
+      <dt>SVRI: Bajo</dt><dd>La evaluación verificable está en el rango bajo. Consulta el contexto antes de decidir.</dd>
+    </dl>
+    <p>Los niveles se calculan con reglas publicadas de Loyal Trust Protocol (LTP). El detalle técnico y la reconstrucción de firmas están reservados a administradores.</p>
+  </main>
+</BaseLayout>
+
+<style>
+  .svri-explainer { max-width:54rem;margin-inline:auto;padding-block:var(--space-6,32px) }
+  .svri-explainer dl { display:grid;grid-template-columns:minmax(12rem, .8fr) 2fr;gap:var(--space-3,12px);margin-block:var(--space-5,24px) }
+  .svri-explainer dt { font-weight:700 }
+  .svri-explainer dd { margin:0;color:var(--muted) }
+  @media(max-width:600px){.svri-explainer dl{grid-template-columns:1fr;gap:var(--space-1,4px)}.svri-explainer dd{margin-block-end:var(--space-3,12px)}}
+</style>

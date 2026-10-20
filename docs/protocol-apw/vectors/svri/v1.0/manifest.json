@@ -1,0 +1,51 @@
+{
+  "format": "portaless-svri-vectors",
+  "version": "1.0",
+  "profile": "ltp-svri-site-v1",
+  "license": "CC-BY-4.0",
+  "specification": "../../../SVRI-v1.0.md",
+  "vectors": [
+    {
+      "id": "SVRI-01-no-evidence",
+      "file": "svri-projection.json",
+      "case": "no-evidence",
+      "required": true
+    },
+    {
+      "id": "SVRI-02-one-escrow",
+      "file": "svri-projection.json",
+      "case": "one-escrow",
+      "required": true
+    },
+    {
+      "id": "SVRI-03-community-only",
+      "file": "svri-projection.json",
+      "case": "community-only",
+      "required": true
+    },
+    {
+      "id": "SVRI-04-primary-evidence",
+      "file": "svri-projection.json",
+      "case": "primary-evidence",
+      "required": true
+    },
+    {
+      "id": "SVRI-05-incomplete",
+      "file": "svri-projection.json",
+      "case": "SVRI incompleto",
+      "required": true
+    },
+    {
+      "id": "SVRI-06-prior-exclusive",
+      "file": "svri-projection.json",
+      "case": "Prior exclusivo",
+      "required": true
+    },
+    {
+      "id": "SVRI-07-degraded-evidence",
+      "file": "svri-projection.json",
+      "case": "Evidencia degradada",
+      "required": true
+    }
+  ]
+}

@@ -35,6 +35,7 @@ import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts
 import { createReadPolicyStore, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
 import { evaluatePolicy, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy.ts";
 import { scoreSiteDimensions } from "../../packages/apw-resolver/src/scoring/site-dimensions.ts";
+import { buildSiteSvriDetail } from "../../packages/apw-resolver/src/scoring/svri.ts";
 import { resolveReaderState, defaultReaderResolvers } from "../../packages/apw-resolver/src/scoring/reader-identity.ts";
 import { createPermissionStore } from "../../packages/permissions/src/store-factory.ts";
 import { hasReadGovernanceBypass } from "../../packages/permissions/src/reader-bypass.ts";
@@ -55,9 +56,10 @@ const VERIFICATION = Object.freeze({
     reason: "Solo las filas que incluyen attestationJws tienen una prueba criptográfica exportable.",
   },
   community: {
-    status: "local_only",
-    verifiable: false,
-    reason: "MVP: voterId viene de localStorage e ipHash solo limita frecuencia; no hay identidad criptográfica ni prueba exportable del votante.",
+    status: "mixed_per_entry",
+    verifiable: true,
+    proofField: "signed",
+    reason: "Cada fila indica signed: true si es una atestación did:apw verificada al ingreso, o false si es una opinión legacy sin firma. Las opiniones legacy no puntúan.",
   },
   escrow_report: {
     status: "verifiable_if_attested",
@@ -139,6 +141,7 @@ async function loadCommunityAttestations(env, siteId) {
       score: row.val,
       iss: row.iss,
       jti: row.jti,
+      attestationJws: row.jws,
       iat: row.iat,
       votedAt: row.receivedAt,
       emitterFirstSeenIat: row.emitterFirstSeenIat,
@@ -195,8 +198,14 @@ export async function onRequestGet(context) {
   const scoringSnapshot = { ...snapshot, community: [...(snapshot.community ?? []), ...attested] };
   const publicSnapshot = toPublicSnapshot(scoringSnapshot);
   const siteScores = loadSiteScores(scoringSnapshot);
+  let siteEvidence = null;
+  try {
+    siteEvidence = buildSiteSvriDetail(scoringSnapshot).evidence;
+  } catch (err) {
+    console.warn(`[Portaless SVRI] Sin proyeccion SVRI para ${siteId}: ${err?.message}`);
+  }
   const projection = (governedAllowed) =>
-    siteScores ? projectTrustView(siteScores, governedAllowed, publicOverrides) : undefined;
+    siteScores ? projectTrustView(siteScores, governedAllowed, publicOverrides, siteEvidence ?? undefined) : undefined;
 
   if (!policy) {
     return json(

@@ -63,8 +63,8 @@ must know.
 | Permissions Center | ✅ Functional |
 | MCP server (19 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap) |
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
-| SiteTrustScore (4 sources) | ✅ Functional |
-| Protocol APW resolver (v1.3, 110/110 test vectors) | ✅ Functional |
+| SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
+| Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |
 | Plugin SDK (MIT, v0.1.0) | ✅ Shipped |
 | Plugin sandboxing (4 adapters, 7/12 capability backends real) | ✅ Core wired; 5 capabilities still return explicit `501` by design |
 | Plugin installer (HTTP) | 🟡 Behind a flag, off by default (external sandbox review pending) |

@@ -142,6 +142,8 @@ Since phase 12 of [`ROADMAP.md`](../../ROADMAP.md) the operator can override thi
 
 ## `GET /trust/:siteId`
 
+The response includes `projection.svri` with only `{ version, publicLevel }` for the qualitative public badge. The numeric SVRI, tier counts, prior share and HSVR timeline are not part of the public SVRI projection. Existing APW §6.6 per-dimension aggregates remain unchanged; E-16 defines the separate SVRI summary.
+
 A site's trust data — the endpoint every reader of reputation hits. Subject to the site's **read policy** when one is active (spec §6.5).
 
 - **No policy (or public reading)**: returns the full `SiteTrustScore` projection, including all dimensions with `governed: "granted"`.

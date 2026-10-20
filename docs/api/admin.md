@@ -108,6 +108,14 @@ Manage this site's **Cloud Images** — every upload is signed server-side with 
 
 ## SiteTrustScore management
 
+### `GET /admin/api/svri?siteId=<id>`
+
+Admin-only. Returns the SVRI v1.0 numeric projection, T1–T5 provenance counts, LTP dimensions and a bounded HSVR timeline reconstructed from the append-only APW history. The site's chain and source JWS are verified where historical keys are available. Missing JWS, issuer keys or DNS anchors produce a partial reconstruction; the endpoint never invents missing historical scores.
+
+The response also carries the strict evidence context: `attestations` (every candidate evaluated), `excludedEvidence` (each rejected record with a normative `reason` such as `dimension_missing`, `insufficient_weight`, `emitter_too_new`, `unsigned_legacy`, `invalid_value` or `duplicate_superseded`) and `missingDimensions` (required site dimensions with no direct T1/T2 signature). `projectTrustView()` derives the public SVRI level from this context, never from the numeric score.
+
+The corresponding admin screens are `/admin/trust-svri` and `/admin/trust/hsvr?siteId=<id>`. They require the same admin session; the public Trust page receives only a qualitative `projection.svri.publicLevel`.
+
 | Endpoint | Method | Notes |
 |---|---|---|
 | `/admin/site-trust/:siteId/self` | `PUT` | Publish a signed `self` attestation (spec §5.3); requires site identity for the JWS, stores `signed: false` rows without it |

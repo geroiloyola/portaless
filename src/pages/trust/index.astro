@@ -23,6 +23,7 @@
 // /trust/<siteId>), y todo el contenido viene del fetch() a
 // GET /trust/:siteId.
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import PublicSvriBadge from "../../components/trust/PublicSvriBadge.astro";
 ---
 <BaseLayout title="Site Trust Score">
   <div class="st-page-header">
@@ -37,6 +38,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       Ninguna fuente sustituye a las demas.
     </p>
   </div>
+  <div class="st-svri-summary"><PublicSvriBadge level="pending" /></div>
 
   <div id="st-loading" class="st-loading">Cargando Site Trust Score…</div>
   <div id="st-load-error" class="st-load-error" style="display:none;"></div>
@@ -44,6 +46,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  import { getPublicSvriLevel } from "../../lib/svri-public-level";
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   // siteId se lee de la URL real en el navegador: la Function sirve este
@@ -389,6 +392,27 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const res = await fetch(`${baseUrl}/trust/${encodeURIComponent(siteId)}`);
       if (!res.ok) throw new Error(`No se pudo cargar el Trust Score (HTTP ${res.status}).`);
       const snapshot = await res.json();
+
+      const svriBadge = document.querySelector<HTMLElement>("[data-svri-badge]");
+      if (svriBadge) {
+        const level = getPublicSvriLevel(snapshot.projection?.svri);
+        svriBadge.dataset.svriLevel = level.id;
+        svriBadge.style.setProperty("--svri-color", `var(${level.colorToken})`);
+        svriBadge.setAttribute("aria-label", `${level.label}. Qué significa este nivel`);
+        const label = svriBadge.querySelector("span");
+        if (label) label.textContent = level.label;
+        const icon = svriBadge.querySelector("svg");
+        if (icon) {
+          const icons: Record<string, string> = {
+            reliable: "<path d=\"M12 3 19 6v5c0 4.5-2.8 7.7-7 10-4.2-2.3-7-5.5-7-10V6l7-3Zm-3 9 2 2 4-4\" />",
+            safe: "<path d=\"m5 12 4 4L19 6\" />",
+            pending: "<path d=\"M6 3h12M6 21h12M7 3c0 4 2 5 5 9-3 4-5 5-5 9m10-18c0 4-2 5-5 9 3 4 5 5 5 9\" />",
+            verify: "<path d=\"M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3v.1\" />",
+            low: "<path d=\"M12 3 19 6v5c0 4.5-2.8 7.7-7 10-4.2-2.3-7-5.5-7-10V6l7-3Zm-2 7 4 4m0-4-4 4\" />",
+          };
+          icon.innerHTML = icons[level.id] ?? icons.pending;
+        }
+      }
 
       loadingEl.style.display = "none";
       rootEl.style.display = "";

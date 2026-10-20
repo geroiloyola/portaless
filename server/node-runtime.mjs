@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
+import { lookup as dnsLookup } from "node:dns/promises";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
@@ -65,16 +66,17 @@ export function createAssetsBinding(staticDir) {
 
 // Se expone con un Proxy para no mutar process.env (sus valores son siempre
 // strings) y para que el resto de las variables se siga leyendo en vivo.
-// Si la plataforma ya trae su propio ASSETS, se respeta. APW v1.2: ademas
-// marca el runtime con __PORTALESS_RUNTIME = "node" (lo usa getClientIp).
+// Si la plataforma ya trae su propio ASSETS, se respeta. APW v1.2: marca el
+// runtime y expone lookup DNS solo al self-host para guards anti-SSRF.
 function withRuntimeBindings(env, assets) {
   return new Proxy(env, {
     get: (target, key, receiver) => {
       if (key === "__PORTALESS_RUNTIME") return "node";
+      if (key === "__PORTALESS_DNS_LOOKUP") return async (host) => (await dnsLookup(host, { all: true, verbatim: true })).map((address) => address.address);
       if (key === "ASSETS") return target.ASSETS || assets;
       return Reflect.get(target, key, receiver);
     },
-    has: (target, key) => key === "ASSETS" || key === "__PORTALESS_RUNTIME" || Reflect.has(target, key),
+    has: (target, key) => key === "ASSETS" || key === "__PORTALESS_RUNTIME" || key === "__PORTALESS_DNS_LOOKUP" || Reflect.has(target, key),
   });
 }
 

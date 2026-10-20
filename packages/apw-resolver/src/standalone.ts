@@ -16,10 +16,10 @@
 //   - jwkThumbprint / parseDidKeyId            — fingerprint k (RFC
 //     7638) y kid (secciones 5.1 y 5.4).
 //
-// Que NO incluye (viven en otros entry points del paquete y requieren
-// stores/DB): scoring de confianza, atestaciones de lectores, witnesses,
-// registro de identidad del sitio (eso es el LADO SERVIDOR de Portaless,
-// no el lado cliente de un verificador).
+// Que NO incluye: stores/DB ni I/O de ingestión. Las fórmulas puras LTP,
+// SVRI y los helpers de ranking sí son parte del surface de conformidad;
+// carga de reader_conduct, emisión, witnesses y registro de identidad viven
+// en el lado servidor de Portaless.
 //
 // Unicas dependencias externas de este grafo: `canonicalize` (JCS) y los
 // Web APIs (fetch, crypto.subtle). Nada de Node, nada de better-sqlite3,
@@ -91,6 +91,10 @@ export {
   scoreOf,
 } from "./scoring/scoring";
 export type { Source, ScoredAttestation, DimensionScore } from "./scoring/scoring";
+
+// SVRI v1.0 (E-16): deterministic projection contract and public level.
+export { SVRI_VERSION, SVRI_SITE_PROFILE, REQUIRED_SITE_DIMENSIONS, projectSvri, classifySvriLevel, buildSiteEvidenceContext, buildSiteSvri, buildSiteSvriDetail, toPublicSvriProjection } from "./scoring/svri";
+export type { SvriLevel, SvriProjection, SvriTierCounts, SvriVectorInput, SvriPublicProjection, SvriSiteDetail, SvriSiteBuildOptions, EvidenceContext, EvaluatedAttestation, ExcludedEvidence, EvidenceExclusionReason } from "./scoring/svri";
 
 export { didKeyId, isDidKeyId } from "./did-apw/key-id";
 export type { ParsedDidKeyId } from "./did-apw/key-id";

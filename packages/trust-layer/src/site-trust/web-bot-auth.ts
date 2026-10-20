@@ -91,7 +91,7 @@ interface Jwks {
   keys: Jwk[];
 }
 
-async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLike): Promise<Jwks> {
+async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLike, fetchImpl: typeof fetch = fetch): Promise<Jwks> {
   const cacheKey = `jwks:${signatureAgentUrl}`;
 
   if (kv) {
@@ -105,7 +105,7 @@ async function fetchJwksWithCache(signatureAgentUrl: string, kv?: KvNamespaceLik
   }
 
   const directoryUrl = new URL("/.well-known/http-message-signatures-directory", signatureAgentUrl).toString();
-  const res = await fetch(directoryUrl);
+  const res = await fetchImpl(directoryUrl);
   if (!res.ok) {
     throw new Error(`No se pudo obtener el JWKS de ${directoryUrl} (HTTP ${res.status}).`);
   }
@@ -130,9 +130,10 @@ function selectKeyByKeyId(jwks: Jwks, keyId: string): Jwk | null {
 export async function resolveAgentDirectoryKey(
   signatureAgent: string,
   keyId: string,
-  kv?: KvNamespaceLike
+  kv?: KvNamespaceLike,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<AgentDirectoryJwk | null> {
-  const jwks = await fetchJwksWithCache(signatureAgent, kv);
+  const jwks = await fetchJwksWithCache(signatureAgent, kv, fetchImpl);
   return selectKeyByKeyId(jwks, keyId);
 }
 

@@ -87,12 +87,15 @@ export function escrowOutcomeValue(outcome: string): number | null {
 
 export interface SiteSnapshotLike {
   siteId: string;
+  /** Optional canonical DID (the storage siteId may be an internal key such as `default`). */
+  siteDid?: string;
   self?: ReadonlyArray<{
     category: string;
     declaredValue: boolean;
     attestationJti?: string;
     declaredBy?: string;
     declaredAt?: string;
+    attestationJws?: string;
   }>;
   agent?: ReadonlyArray<{
     category: string;
@@ -100,6 +103,7 @@ export interface SiteSnapshotLike {
     agentKeyId: string;
     verifiedAt: string;
     attestationJti?: string;
+    attestationJws?: string;
   }>;
   community?: ReadonlyArray<{
     category: string;
@@ -109,6 +113,7 @@ export interface SiteSnapshotLike {
     /** `did:apw` del emisor (el Veracier). Presente solo en atestaciones firmadas. */
     iss?: string;
     jti?: string;
+    attestationJws?: string;
     /** `iat` de la atestacion, en segundos. */
     iat?: number;
     votedAt: string;
@@ -120,6 +125,7 @@ export interface SiteSnapshotLike {
     escrowProvider: string;
     reportedAt: string;
     attestationJti?: string;
+    attestationJws?: string;
   }>;
 }
 

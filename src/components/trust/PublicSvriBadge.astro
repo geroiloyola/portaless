@@ -1,0 +1,27 @@
+---
+import { getPublicSvriLevel } from "../../lib/svri-public-level";
+import type { SvriLevel } from "../../../packages/apw-resolver/src/scoring/svri";
+
+interface Props { level?: SvriLevel }
+const { level = "pending" } = Astro.props;
+const view = getPublicSvriLevel({ publicLevel: level });
+const explanationUrl = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/trust/explicacion-svri`;
+---
+
+<a class="public-svri-badge" href={explanationUrl} data-svri-badge data-svri-level={view.id} style={`--svri-color:var(${view.colorToken})`} aria-label={`${view.label}. Qué significa este nivel`}>
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    {view.iconName === "shield-check" && <path d="M12 3 19 6v5c0 4.5-2.8 7.7-7 10-4.2-2.3-7-5.5-7-10V6l7-3Zm-3 9 2 2 4-4" />}
+    {view.iconName === "check" && <path d="m5 12 4 4L19 6" />}
+    {view.iconName === "hourglass" && <path d="M6 3h12M6 21h12M7 3c0 4 2 5 5 9-3 4-5 5-5 9m10-18c0 4-2 5-5 9 3 4 5 5 5 9" />}
+    {view.iconName === "alert" && <path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3v.1" />}
+    {view.iconName === "shield-x" && <path d="M12 3 19 6v5c0 4.5-2.8 7.7-7 10-4.2-2.3-7-5.5-7-10V6l7-3Zm-2 7 4 4m0-4-4 4" />}
+  </svg>
+  <span>{view.label}</span>
+</a>
+
+<style>
+  .public-svri-badge { display:inline-flex;align-items:center;gap:var(--space-2,8px);min-height:44px;padding:var(--space-2,8px) var(--space-3,12px);border:1px solid color-mix(in srgb,var(--svri-color) 35%,var(--panel-border));border-radius:var(--radius-pill,999px);color:var(--svri-color);font-size:.875rem;font-weight:700;text-decoration:none }
+  .public-svri-badge:hover { background:color-mix(in srgb,var(--svri-color) 8%,transparent);text-decoration:none }
+  .public-svri-badge:focus-visible { outline:3px solid var(--accent-2);outline-offset:2px }
+  .public-svri-badge svg { width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto }
+</style>
