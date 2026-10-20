@@ -31,7 +31,11 @@ function requestContext(url: string, env: Record<string, string>, body: unknown)
   return {
     request: new Request(url, {
       method: "POST",
-      headers: { "content-type": "application/json", "cf-connecting-ip": crypto.randomUUID() },
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": crypto.randomUUID(),
+        origin: new URL(url).origin,
+      },
       body: JSON.stringify(body),
     }),
     env,
@@ -39,12 +43,27 @@ function requestContext(url: string, env: Record<string, string>, body: unknown)
 }
 
 describe("password recovery email delivery", () => {
+  it("rejects cross-origin reset requests before issuing a token", async () => {
+    const { env } = await fixture();
+    const response = await requestReset({
+      request: new Request("https://portaless.example/admin/password-reset/request", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://attacker.example" },
+        body: JSON.stringify({ username: "reset-recipient" }),
+      }),
+      env,
+    } as any);
+    expect(response.status).toBe(403);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({ error: "Origen de solicitud inválido." });
+  });
+
   it("rejects oversized request bodies", async () => {
     const { env } = await fixture();
     const response = await requestReset({
       request: new Request("https://portaless.example/admin/password-reset/request", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", origin: "https://portaless.example" },
         body: `{"username":"${"x".repeat(9 * 1024)}"}`,
       }),
       env,

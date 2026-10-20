@@ -18,12 +18,19 @@ import {
 } from "../../../packages/auth/src/password-event-store.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
+import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
 
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 1024;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+    return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  }
 
   let body;
   try {

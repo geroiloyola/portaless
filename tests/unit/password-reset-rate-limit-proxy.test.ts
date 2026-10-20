@@ -126,7 +126,7 @@ describe("endpoint real /admin/password-reset/request tras el runtime Node", () 
     async function requestReset(username: string, extraHeaders: Record<string, string> = {}) {
       const res = await fetch(`${base}/admin/password-reset/request`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...extraHeaders },
+        headers: { "content-type": "application/json", origin: base, ...extraHeaders },
         body: JSON.stringify({ username }),
       });
       return (await res.json()) as { success: boolean; devToken?: string };

@@ -12,6 +12,17 @@
 import { AuthService } from "../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
 import { isPublicAdminPath } from "../../packages/auth/src/public-admin-paths.ts";
+import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
+import { assertBodySizeLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
+
+const MAX_ADMIN_MUTATION_BODY_BYTES = 8 * 1024 * 1024;
+
+function jsonError(error, status) {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
+}
 
 function getCookie(request, name) {
   const cookieHeader = request.headers.get("Cookie") || "";
@@ -25,6 +36,20 @@ export async function onRequest(context) {
 
   if (isPublicAdminPath(url.pathname)) {
     return next();
+  }
+
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method.toUpperCase())) {
+    if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+      return jsonError("invalid_request_origin", 403);
+    }
+    try {
+      // Clone + drain before auth/store work. Endpoint handlers retain the
+      // original body, while chunked requests receive the same hard ceiling.
+      await assertBodySizeLimited(request.clone(), MAX_ADMIN_MUTATION_BODY_BYTES);
+    } catch (error) {
+      if (error instanceof RequestBodyTooLargeError) return jsonError("request_too_large", 413);
+      return jsonError("invalid_request_body", 400);
+    }
   }
 
   const usersStore = await createUsersStore(env);
@@ -47,4 +72,3 @@ export async function onRequest(context) {
 
   return next();
 }
-

@@ -27,9 +27,13 @@ afterAll(() => {
 });
 
 function ctx(opts: { user?: { username: string; role: string } | null; body?: unknown; method?: string } = {}) {
+  const method = opts.method ?? "GET";
   const request = new Request("http://x.test/admin/api/email", {
-    method: opts.method ?? "GET",
-    headers: opts.body !== undefined ? { "content-type": "application/json" } : {},
+    method,
+    headers: {
+      ...(opts.body !== undefined ? { "content-type": "application/json" } : {}),
+      ...(method !== "GET" ? { origin: "http://x.test" } : {}),
+    },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
   return { request, env, params: {}, data: opts.user ? { user: opts.user } : {}, next: async () => new Response("static") } as any;
@@ -66,9 +70,25 @@ describe("admin email endpoint", () => {
   });
 
   it("PUT con JSON invalido -> 400", async () => {
-    const request = new Request("http://x.test/admin/api/email", { method: "PUT", body: "no-json" });
+    const request = new Request("http://x.test/admin/api/email", { method: "PUT", headers: { origin: "http://x.test" }, body: "no-json" });
     const res = await adminEmail.onRequestPut({ request, env, data: { user: admin } } as any);
     expect(res.status).toBe(400);
+  });
+
+  it("PUT rechaza origen cruzado y cuerpos superiores a 128 KiB", async () => {
+    const wrongOrigin = new Request("http://x.test/admin/api/email", {
+      method: "PUT",
+      headers: { origin: "https://attacker.example", "content-type": "application/json" },
+      body: "{}",
+    });
+    expect((await adminEmail.onRequestPut({ request: wrongOrigin, env, data: { user: admin } } as any)).status).toBe(403);
+
+    const oversized = new Request("http://x.test/admin/api/email", {
+      method: "PUT",
+      headers: { origin: "http://x.test", "content-type": "application/json" },
+      body: `{"templates":"${"x".repeat(129 * 1024)}"}`,
+    });
+    expect((await adminEmail.onRequestPut({ request: oversized, env, data: { user: admin } } as any)).status).toBe(413);
   });
 
   it("PUT invalido -> 400 con rejected, sin guardar", async () => {

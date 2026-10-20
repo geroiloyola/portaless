@@ -21,7 +21,7 @@ afterAll(() => {
 });
 
 function ctx(body: unknown, raw = false) {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = { "content-type": "application/json", origin: "http://x.test" };
   const init: RequestInit = { method: "POST", headers };
   if (raw) init.body = String(body);
   else init.body = JSON.stringify(body);

@@ -37,3 +37,26 @@ export async function readBodyLimited(request, maxBytes) {
   }
   return new TextDecoder().decode(bytes);
 }
+
+/** Drains a cloned request stream without retaining its contents. */
+export async function assertBodySizeLimited(request, maxBytes) {
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new RequestBodyTooLargeError();
+  if (!request.body) return;
+
+  const reader = request.body.getReader();
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new RequestBodyTooLargeError();
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}

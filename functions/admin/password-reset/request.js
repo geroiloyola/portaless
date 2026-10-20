@@ -27,11 +27,12 @@ import {
 } from "../../../packages/auth/src/password-reset-rate-limit.ts";
 import { createEmailSender } from "../../../packages/auth/src/email-sender.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
+import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
 
 function okResponse(devToken) {
   return new Response(JSON.stringify({ success: true, devToken }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
 }
 
@@ -53,6 +54,13 @@ function passwordResetUrl(env, token) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
+    return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  }
 
   if (env.PORTALESS_DEV_MODE === "1" && env.NODE_ENV === "production") {
     console.error(
