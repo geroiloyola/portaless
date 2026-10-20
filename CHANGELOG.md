@@ -37,6 +37,7 @@ closed).
 
 ## Unreleased
 
+- **C19 — contención de Docs en viewports estrechos.** La grilla usa mínimos automáticos `min(100%, …)` y `minmax(0, …)`; sidebar y artículo pueden encogerse; cadenas/hrefs envuelven; tablas y bloques de código conservan todo el contenido en contenedores de scroll locales, sin ampliar el documento.
 - **C14 — auth y rutas sensibles con límites fail-closed.** Se conserva throttling persistente por IP/usuario y se aplica verificación de `Origin`/`Referer` + Fetch Metadata a POST/PUT/PATCH/DELETE autenticados; login, MFA y reset requieren origen y el middleware limita cuerpos chunked en las mutaciones admin. La configuración de email tiene un límite de cuerpo más estricto.
 - **C15 — credenciales de email ligadas al destino y egress controlado.** El admin conserva un token write-only solo si no cambia identidad de proveedor/destino; webhook con bearer requiere HTTPS, URLs/hosts se normalizan y ningún redirect se sigue con credenciales. El API de settings y los resets usan `no-store`; se conserva `site_settings` y no se añade cifrado en reposo.
 - **C16 — transporte SMTP con ciclo y errores acotados.** El mensaje y las respuestas/colas del relay tienen límites; se destruye el socket en todos los caminos, se conserva la validación TLS/STARTTLS y errores SMTP solo publican etiquetas de comando/códigos, nunca texto del relay ni argumentos base64 de AUTH.
