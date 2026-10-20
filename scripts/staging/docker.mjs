@@ -33,6 +33,20 @@ function docker(args, { capture = false } = {}) {
 
 function emitContainerLogs(names) {
   for (const name of names) {
+    const container = inspectResource("container", name);
+    if (container) {
+      console.error(`[staging:docker] container ${name} state: ${JSON.stringify({
+        status: container.State?.Status,
+        running: container.State?.Running,
+        exitCode: container.State?.ExitCode,
+        error: container.State?.Error,
+        ports: container.NetworkSettings?.Ports,
+      })}`);
+      try {
+        const ports = docker(["port", name], { capture: true }).trim();
+        if (ports) console.error(`[staging:docker] published ports ${name}: ${ports}`);
+      } catch {}
+    }
     try {
       const output = docker(["logs", "--tail", "100", name], { capture: true });
       if (output.trim()) console.error(`[staging:docker] logs ${name}:\n${output}`);
