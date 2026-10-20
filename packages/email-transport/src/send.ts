@@ -17,7 +17,7 @@
 //   - EHLO multilinea se parsea correctamente (250-... / 250 fin).
 //   - Timeout con clearTimeout (no dispara sobre un socket ya cerrado).
 
-import type { EmailProviderSettings } from "./config";
+import { normalizeWebhookUrl, type EmailProviderSettings } from "./config";
 
 export interface OutgoingEmail {
   from: string;
@@ -38,10 +38,20 @@ export class EmailSendError extends Error {
 // su propio servicio). Proveedor-neutral.
 // ---------------------------------------------------------------------------
 export async function sendViaWebhook(provider: EmailProviderSettings, message: OutgoingEmail): Promise<void> {
-  if (!provider.url) throw new EmailSendError("webhook sin URL configurada.");
+  const url = normalizeWebhookUrl(provider.url, Boolean(provider.token));
+  if (!url) throw new EmailSendError("webhook sin URL publica segura configurada.");
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (provider.token) headers.authorization = `Bearer ${provider.token}`;
-  const res = await fetch(provider.url, { method: "POST", headers, body: JSON.stringify(message) });
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(message),
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (res.status >= 300 && res.status < 400) {
+    throw new EmailSendError("el webhook de email intentó redirigir; las redirecciones están deshabilitadas.");
+  }
   if (!res.ok) throw new EmailSendError(`el webhook de email respondio HTTP ${res.status}`);
 }
 

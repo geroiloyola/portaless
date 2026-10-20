@@ -59,11 +59,11 @@ These are recorded limitations, not accepted security guarantees:
   volume, backups and operator access accordingly. Before offering a managed
   multi-tenant Cloudum service, define encryption-key custody and isolation;
   this ADR does not authorize sharing a DB or backup boundary between tenants.
-- The admin PUT path currently preserves an existing token when the submitted
-  token is blank. If the operator changes the webhook URL/provider at the same
-  time, that token can be retained for the new destination. Resolve this before
-  production use: bind credentials to provider identity/destination, or require
-  a new token when that identity changes.
+- **Resolved in C15:** the admin PUT path preserves a write-only credential
+  only when provider kind and normalized destination identity are unchanged;
+  changing webhook URL or SMTP host/port/user drops it unless a replacement is
+  supplied. HTTP redirects are not followed, and webhook credentials require
+  HTTPS.
 - `from` is syntax-validated as an email address, but the current implementation
   does not prove domain ownership. A provider may enforce this; Portaless does
   not currently verify it. Do not label the address “verified” without that

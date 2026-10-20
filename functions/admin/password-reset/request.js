@@ -29,10 +29,12 @@ import { createEmailSender } from "../../../packages/auth/src/email-sender.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
 
+const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+
 function okResponse(devToken) {
   return new Response(JSON.stringify({ success: true, devToken }), {
     status: 200,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    headers: JSON_HEADERS,
   });
 }
 
@@ -58,7 +60,7 @@ export async function onRequestPost(context) {
   if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
     return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
       status: 403,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -75,7 +77,7 @@ export async function onRequestPost(context) {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
       }
     );
   }
@@ -87,12 +89,12 @@ export async function onRequestPost(context) {
     if (error instanceof RequestBodyTooLargeError) {
       return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
         status: 413,
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
       });
     }
     return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -100,7 +102,7 @@ export async function onRequestPost(context) {
   if (typeof username !== "string" || !username.trim()) {
     return new Response(JSON.stringify({ success: false, error: "Falta username." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 

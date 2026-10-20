@@ -108,6 +108,7 @@ describe("admin email endpoint", () => {
     };
     const putRes = await put(payload);
     expect(putRes.status).toBe(200);
+    expect(putRes.headers.get("cache-control")).toBe("no-store");
     const putBody = await putRes.json();
     expect(putBody.provider.token).toBeUndefined();
     expect(putBody.hasCredential).toBe(true);
@@ -132,6 +133,18 @@ describe("admin email endpoint", () => {
   it("R3: PUT con token nuevo lo reemplaza", async () => {
     await put({ provider: { kind: "webhook", url: "https://hooks.example.com/send", token: "nuevo" }, from: "noreply@mitiendita.cl" });
     expect(await storedToken()).toBe("nuevo");
+  });
+
+  it("no hereda credenciales si cambia la identidad del proveedor o el destino", async () => {
+    await put({ provider: { kind: "webhook", url: "https://hooks.example.com/send", token: "bound-token" }, from: "noreply@mitiendita.cl" });
+    const changedDestination = await put({ provider: { kind: "webhook", url: "https://other.example.com/send" }, from: "noreply@mitiendita.cl" });
+    expect(changedDestination.status).toBe(200);
+    expect(await storedToken()).toBeUndefined();
+    expect((await getJson()).provider.url).toBe("https://other.example.com/send");
+
+    await put({ provider: { kind: "webhook", url: "https://hooks.example.com/send", token: "another-token" }, from: "noreply@mitiendita.cl" });
+    await put({ provider: { kind: "smtp", host: "smtp.example.com", port: 587, username: "mailer" }, from: "noreply@mitiendita.cl" });
+    expect(await storedToken()).toBeUndefined();
   });
 
   it("R3: PUT con clearCredential borra la credencial", async () => {

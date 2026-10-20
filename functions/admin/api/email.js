@@ -21,6 +21,7 @@ import {
 } from "../../../packages/dashboard/src/site-settings/site-settings-store.ts";
 import {
   emailSettingsToValues,
+  hasSameEmailProviderIdentity,
   parseEmailSettings,
   sanitizeEmailInput,
 } from "../../../packages/email-transport/src/config.ts";
@@ -88,7 +89,12 @@ export async function onRequestPut(context) {
   delete incomingProvider.clearCredential;
   if (!hasNewToken) {
     if (wantsClear) delete incomingProvider.token;
-    else if (current.provider.token) incomingProvider.token = current.provider.token;
+    else if (
+      current.provider.token &&
+      hasSameEmailProviderIdentity(current.provider, incomingProvider)
+    ) {
+      incomingProvider.token = current.provider.token;
+    }
   }
 
   const result = sanitizeEmailInput({ ...body, provider: incomingProvider });
