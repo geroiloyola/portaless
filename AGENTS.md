@@ -62,7 +62,7 @@ must know.
 | Authentication (login, 2FA, OAuth) | ✅ Functional |
 | Permissions Center | ✅ Functional |
 | MCP server (19 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap). Public connection profile at `/.well-known/portaless-mcp.json` |
-| OpenAI-compatible provider profile | ✅ Local contract suite; external endpoints unverified until run against a real key/endpoint |
+| OpenAI-compatible provider profile | ✅ Local contract suite; external endpoints unverified until run against a real key/endpoint. Connection guide: `docs/openai-compatible-provider.md` |
 | Publication orchestration + canonical backup | ✅ Approved-snapshot idempotency, retry/publish/unpublish state, checksummed SQLite backup and CLI restore |
 | Private-node profiles | ✅ Minimal/private Compose, optional Tailscale docs, 2 GiB/20 GiB reference budget measured |
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |

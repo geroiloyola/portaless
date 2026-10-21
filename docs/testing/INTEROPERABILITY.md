@@ -57,7 +57,9 @@ Known limits, also present in the profile document:
 ## C32 — OpenAI-compatible provider profile
 
 The provider profile is an explicit, tested subset, not a claim of universal
-compatibility. It lives in `packages/ai-provider/`.
+compatibility. It lives in `packages/ai-provider/`. Setup, the minimal Python
+mock and the external acceptance checklist are in the
+[connection guide](../openai-compatible-provider.md).
 
 Supported subset:
 
