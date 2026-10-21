@@ -9,18 +9,32 @@
    - **Build output directory:** `dist`
 4. En "Environment variables" agrega (si corresponde):
    - `PORTALESS_SITE_URL`
-   - `ENABLE_COMMERCE`
+   - `PORTALESS_BASE_PATH` (solo si sirves el sitio bajo un subpath)
+   - `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER`
+   - `IP_HASH_SALT` si usas votos comunitarios
+   - `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` para la identidad `did:apw`
+   - el binding D1 `DB` para login, admin, permisos y Trust Layer
 5. Haz deploy. Cloudflare Pages construye y publica el sitio con SSL
    automático en un dominio `*.pages.dev`, y puedes agregar tu propio
    dominio desde **Custom domains** dentro del mismo proyecto de Pages.
 
-## Ventaja frente a GitHub Pages
+## Qué corre en Cloudflare Pages
 
-Cloudflare Pages permite además, a futuro, sumar **Cloudflare Workers**
-para las partes dinámicas de Portaless (por ejemplo, el servidor MCP o el
-sandboxing de plugins vía Dynamic Workers descritos en el whitepaper),
-sin cambiar de proveedor. Es la ruta recomendada si planeas escalar más
-allá de un sitio puramente estático.
+Cloudflare Pages ejecuta las `functions/` de Portaless: login, admin, Trust
+Layer, endpoints MCP HTTP y APIs administrativas, con D1 como persistencia.
+No ejecuta el build de publicación: el nodo canónico y `/admin/publish`
+necesitan Node self-hosted, porque `workerd` no tiene `child_process` ni
+build tools. En Cloudflare, `POST /admin/api/publication` responde
+`503 build_runtime_unavailable` en lugar de fingir una publicación.
+
+Para publicar desde la UI, mantené el nodo canónico en self-hosted Node y usá
+Cloudflare Pages solo como proyección pública/funciones, o ejecutá el publisher
+en ese nodo. La identidad del snapshot es independiente del proveedor.
+
+El servidor MCP HTTP y el sandbox de plugins son procesos/adaptadores aparte;
+no se levantan automáticamente por desplegar Pages. Ver
+[`docs/private-node.md`](./private-node.md) y
+[`docs/testing/release-acceptance.md`](./testing/release-acceptance.md).
 
 ## D1: esquema y migraciones
 

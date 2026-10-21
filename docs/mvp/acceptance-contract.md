@@ -1,8 +1,10 @@
 # MVP acceptance contract: private node, AI editing and public publishing
 
-**Status: accepted product requirements; implementation is not implied.** This
+**Status: accepted product requirements; implementation is partial.** This
 contract translates the owner's MVP decisions into verifiable behavior. The
-current source-of-truth status remains [`ROADMAP.md`](../../ROADMAP.md). A
+current source-of-truth status remains [`ROADMAP.md`](../../ROADMAP.md); the
+latest local evidence and external blockers are in
+[`testing/release-acceptance.md`](../testing/release-acceptance.md). A
 requirement marked `BLOCKED` must not be advertised as shipped.
 
 ## 1. Product boundary
@@ -87,10 +89,10 @@ observations are about the site DID, not a content revision. See
 
 | Mode | Required behavior | Current verification |
 |---|---|---|
-| Local private node | Docker/Node, private canonical data, Git, MCP and public exporter | Docker/self-host paths exist; the end-to-end private-node-to-public-projection flow is not verified as terminal-less |
+| Local private node | Docker/Node, private canonical data, Git, MCP and public exporter | C34/C36/C39 verify approval-bound publish/unpublish, checksummed backup/restore and the resource budget locally; C41 records the clean-install, private-export and historical-upgrade evidence. A real GitHub account remains an external check (deployer tests are mocked) |
 | Cloudum private node | Same Portaless node contract in a private Docker deployment, with private network access | Cloudum service, its access controls, backups and operator threat model are external and not verified by this repository |
 | GitHub Pages | Serve only static public projection; no functions, DB, admin or MCP runtime | Static deployment exists; it cannot itself be the private node |
-| Cloudflare Pages | Serve static output and optionally run Functions/D1 | Functions/D1 paths exist; parity with local private-node semantics and the complete MVP flow remain to be verified |
+| Cloudflare Pages | Serve static output and optionally run Functions/D1 | Functions/D1 paths and representative D1 tests exist; the Cloudflare edge cannot run the Node build (`503 build_runtime_unavailable`), and full parity with local private-node semantics remains unverified |
 
 ### Restore/handover acceptance
 
@@ -105,6 +107,10 @@ observations are about the site DID, not a content revision. See
 5. Publish a test projection and compare its public manifest/revision with the
    expected canonical revision.
 
+**Current evidence:** C36/C41 verify local backup checksums, secret exclusion,
+restore and single-writer activation. A Cloudum-to-local or local-to-Cloudum
+handover has not been executed; that remains external.
+
 ### Resource acceptance
 
 - **Budget target:** at most 20 GB of persistent node storage and 2 GiB peak
@@ -113,8 +119,13 @@ observations are about the site DID, not a content revision. See
 - Measurement must identify the workload, dataset size/count, runtime, OS/CPU
   architecture, whether dependencies/build caches are included, peak RSS/cgroup
   memory and on-disk usage before/after a build, update, backup and restore.
-- The workload fixture and exact inclusion rules are **not yet specified**;
-  therefore these numbers are targets, not verified capacity guarantees.
+- The reference fixture and inclusion rules are now defined by
+  `scripts/resource-budget.mjs` and [`testing/resource-budget.md`](../testing/resource-budget.md):
+  200 pages × 5 published revisions, local SQLite, database + backup measured,
+  Node RSS and restore time recorded. The local fixture passes the budget; this
+  is **not** a Cloudum SLA or a guarantee for a different workload.
+- The 20 GB / 2 GiB budget is therefore a **measured reference**, not a universal
+  capacity guarantee. A larger dataset must be measured with the same command.
 - “Any OS” means an OS that can run the declared supported container runtime,
   not every native Node/platform combination. Initial acceptance matrix:
   Linux Docker Engine; macOS Docker Desktop; Windows 11 with WSL2/Docker Desktop.
@@ -181,19 +192,30 @@ plugin/MCP connection; API billing and product availability are separate.
 
 The expanded MVP is not complete until all are evidenced:
 
-- [ ] Public routes/builds do not return drafts or private/archive markers.
-- [ ] Local and Cloudum modes satisfy the same canonical-node contract.
-- [ ] Git publication exports only approved public projection files.
-- [ ] Restore/handover completes without data loss and with one active writer.
+- [x] Public routes/builds do not return drafts or private/archive markers —
+      local negative-export and runtime tests pass (C41 evidence).
+- [ ] Local and Cloudum modes satisfy the same canonical-node contract — local
+      mode is verified; Cloudum is external and not verified.
+- [x] Git publication exports only approved public projection files — local
+      clean-export and publish/unpublish tests pass; a real GitHub account is
+      still external.
+- [x] Restore/handover completes without data loss and with one active writer —
+      local backup/restore and single-writer activation pass; cross-host Cloudum
+      handover is external.
 - [ ] ChatGPT MCP write flow passes on the declared client/account plan, or the
-      product story is narrowed honestly.
-- [ ] API-key provider compatibility matrix is named and tested.
-- [ ] One-row 320×480 layout passes without reducing targets.
-- [ ] 20 GB/2 GiB budget is measured against a named workload.
-- [ ] Private backups, archives and secret handling are documented and tested.
+      product story is narrowed honestly — currently `blocked_unverified`.
+- [ ] API-key provider compatibility matrix is named and tested — local contract
+      passes; external providers remain `not_run`.
+- [x] One-row 320×480 layout passes without reducing targets — Playwright mobile
+      matrix passes.
+- [x] 20 GB/2 GiB budget is measured against a named workload — local reference
+      fixture passes; not a Cloudum SLA.
+- [x] Private backups, archives and secret handling are documented and tested —
+      C36/C41 evidence; external hosting remains operator-specific.
 
 ## Evidence and related documents
 
+- Release evidence and guarantee status: [`testing/release-acceptance.md`](../testing/release-acceptance.md) and [`testing/release-evidence.json`](../testing/release-evidence.json).
 - Interoperability evidence registry and status: [`docs/testing/interop-evidence.json`](../testing/interop-evidence.json) and [`testing/INTEROPERABILITY.md`](../testing/INTEROPERABILITY.md).
 - Current code: [`deployment-engine.md`](../architecture/deployment-engine.md),
   [`mcp-agents.md`](../architecture/mcp-agents.md),

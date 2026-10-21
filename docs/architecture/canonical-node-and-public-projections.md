@@ -1,9 +1,12 @@
 # Canonical node and public projections
 
-**Status: target architecture and contract.** This document records the
-architecture Portaless is to implement for a private canonical node and one or
-more public publishing targets. It does not claim that local/Cloudum replication,
-private archives, or approval-bound publishing are fully implemented today.
+**Status: target architecture and contract, partially implemented.** This
+document records the architecture Portaless is to implement for a private
+canonical node and one or more public publishing targets. Approval-bound
+publishing (C34), checksummed backup/restore with single-writer activation
+(C36), minimal/private node profiles (C37–C38) and a measured reference budget
+(C39) are implemented locally. Cloudum-hosted replication, cross-host handover
+and multi-writer synchronization are not.
 
 ## Purpose
 
@@ -166,12 +169,13 @@ Verified in the repository at the time of writing:
   repository ignore rules. These rules do not make an explicitly tracked secret
   safe to publish.
 
-Remaining work includes Cloudum hosting/synchronization and multi-writer
-handover. Revision-bound approval and publication orchestration are implemented
-(C28/C34), and the reference resource budget is measured (C39). C07–C09
-establish the preview, clean-export and packaging boundaries, but do not prove
-confidentiality for secrets deliberately committed or placed in an explicitly
-public asset directory.
+Remaining work includes Cloudum hosting/synchronization, cross-host handover and
+multi-writer conflict resolution. Revision-bound approval and publication
+orchestration (C28/C34), local backup/restore (C36) and the reference resource
+budget (C39) are implemented; the C41 release evidence records what is local and
+what remains external. C07–C09 establish the preview, clean-export and packaging
+boundaries, but do not prove confidentiality for secrets deliberately committed
+or placed in an explicitly public asset directory.
 
 ## Non-goals for this contract
 
