@@ -16,6 +16,7 @@
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 | [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
 | [`testing/INTEROPERABILITY.md`](./testing/INTEROPERABILITY.md) | English | C31–C33: MCP connection profile, OpenAI-compatible provider subset, and the local/external acceptance evidence matrix |
+| [`openai-compatible-provider.md`](./openai-compatible-provider.md) | English | How to configure and check the OpenAI-compatible provider, including the minimal Python mock; explicit subset and external-verification limits |
 | [`private-node.md`](./private-node.md) | English | C37–C39: minimal/private Docker profiles, Tailscale, backups and the resource budget |
 
 ## Protocol APW and Portaless Index — [`protocol-apw/`](./protocol-apw/)

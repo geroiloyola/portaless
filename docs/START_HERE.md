@@ -92,6 +92,26 @@ Then add it to your MCP client:
 
 Design + security model: [`architecture/mcp-agents.md`](./architecture/mcp-agents.md).
 
+### 3b. Optional: connect an OpenAI-compatible model provider
+
+This is **separate from MCP**. MCP is how an AI client edits your pages; the
+OpenAI-compatible provider is a server-side profile for Portaless code that
+needs to call a model endpoint. It is an explicit subset, not a claim of
+universal compatibility.
+
+Configure it on the server:
+
+```bash
+PORTALESS_OPENAI_API_KEY=...
+PORTALESS_OPENAI_BASE_URL=https://provider.example/v1
+PORTALESS_OPENAI_MODEL=provider-model-name
+```
+
+The key stays server-side. Check the active profile as an admin with
+`GET /admin/api/ai-provider`. External providers remain **unverified** until a
+real key, endpoint and model are tested. Setup, the minimal Python mock and the
+external acceptance checklist: [`openai-compatible-provider.md`](./openai-compatible-provider.md).
+
 ### 4. Create your first page (the payoff)
 
 Open your admin panel (`/admin`), then ask your agent (via MCP) to create a
@@ -137,6 +157,7 @@ The agent writes a draft; you approve and publish. No terminal, no code.
 | Deploy the dynamic site (trust layer, login) | [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md) |
 | Self-host (Node/Docker/Railway/Render) | [`self-hosting.md`](./self-hosting.md) |
 | Understand the AI-agent editing model (MCP) | [`architecture/mcp-agents.md`](./architecture/mcp-agents.md) |
+| Connect an OpenAI-compatible model provider | [`openai-compatible-provider.md`](./openai-compatible-provider.md) |
 | Write a third-party plugin | [`plugin-author-guide.md`](./plugin-author-guide.md) |
 | Understand where the project is going | [`VISION.md`](./VISION.md) |
 | Know what is real today, per module | [`../ROADMAP.md`](../ROADMAP.md) |
