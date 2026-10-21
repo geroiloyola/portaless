@@ -1,0 +1,40 @@
+# Optional private-network profile (C38). The app publishes no ports; the
+# default path is an internal Docker network. Tailscale is an optional profile
+# for operators who need private remote access, and MCP remains a separate
+# process/port decision (see docs/private-node.md).
+services:
+  portaless:
+    build: .
+    image: portaless:private
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 1.0
+    environment:
+      PORTALESS_SQLITE_PATH: /data/portaless.db
+      PORTALESS_MAX_CONCURRENT_REQUESTS: "8"
+    volumes:
+      - portaless-data:/data
+    networks:
+      - private
+    # No ports: intentionally not reachable from the host public interfaces.
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    profiles: ["tailscale"]
+    network_mode: "service:portaless"
+    cap_add:
+      - NET_ADMIN
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    restart: unless-stopped
+
+networks:
+  private:
+    internal: true
+volumes:
+  portaless-data:
+  tailscale-state:

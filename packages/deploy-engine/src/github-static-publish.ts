@@ -196,3 +196,17 @@ export async function publishStaticSite(opts: PublishOptions): Promise<PublishRe
     repoCreated,
   };
 }
+
+/**
+ * Retire a controlled public projection: replace the complete tree with a
+ * single explanatory tombstone. Because the new tree has no base_tree, every
+ * previous artifact is removed. The private canonical store is untouched.
+ */
+export async function retireStaticSite(opts: Omit<PublishOptions, "files" | "commitMessage"> & { commitMessage?: string }): Promise<PublishResult> {
+  const html = "<!doctype html><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>Unpublished</title><p>This public projection was retired from Portaless.</p>";
+  return publishStaticSite({
+    ...opts,
+    files: [{ path: "index.html", content: new TextEncoder().encode(html) }],
+    commitMessage: opts.commitMessage ?? "Retirar publicacion via Portaless",
+  });
+}

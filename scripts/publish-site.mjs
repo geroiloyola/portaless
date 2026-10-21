@@ -22,7 +22,8 @@ import { fileURLToPath } from "node:url";
 import { SqlitePageStore } from "../packages/atomic-elements/src/persistence/stores/sqlite-page-store.ts";
 import { createDeploymentOAuthStore } from "../packages/deploy-engine/src/oauth-store.ts";
 import { readGitHubOAuthConfig, getGitHubAccessToken, GITHUB_PROVIDER } from "../packages/deploy-engine/src/github-oauth.ts";
-import { publishStaticSite } from "../packages/deploy-engine/src/github-static-publish.ts";
+import { publishStaticSite, retireStaticSite } from "../packages/deploy-engine/src/github-static-publish.ts";
+import { snapshotFromLayouts } from "../packages/deploy-engine/src/publication-snapshot.ts";
 import { excludeDraftPages, isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
 import {
   copyPublicBuildInputs,
@@ -38,6 +39,10 @@ import { writePublicRevisionHistories } from "./public-revision-export.mjs";
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
 const repoArg = args.find((a) => a.startsWith("--repo="))?.slice("--repo=".length) ?? null;
+const retire = args.includes("--retire");
+const expectedSnapshot = process.env.PORTALESS_PUBLISH_SNAPSHOT
+  ? JSON.parse(process.env.PORTALESS_PUBLISH_SNAPSHOT)
+  : null;
 
 function walk(dir, distDir, out) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -67,6 +72,32 @@ async function main() {
   }
   const env = { PORTALESS_SQLITE_PATH: sqlitePath, PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: encryptionKey };
 
+  if (retire) {
+    console.log("1/1 Retirando la proyeccion publica controlada...");
+    const oauthStore = await createDeploymentOAuthStore(env);
+    const cfg = await readGitHubOAuthConfig(env, "http://localhost");
+    if (!cfg) {
+      console.error("GitHub no esta configurado (falta la GitHub App o las env vars). Completa el Paso 2 del Wizard primero.");
+      process.exit(1);
+    }
+    const token = await getGitHubAccessToken(cfg, oauthStore);
+    if (!token) {
+      console.error("No hay un token de GitHub valido (sin conectar, o vencido sin refresh todavia). Reconecta GitHub desde el Wizard.");
+      process.exit(1);
+    }
+    const cred = await oauthStore.getCredential(GITHUB_PROVIDER);
+    const owner = cred?.accountLogin;
+    if (!owner) {
+      console.error("No se pudo determinar el usuario de GitHub conectado.");
+      process.exit(1);
+    }
+    const repo = repoArg || `${owner}.github.io`;
+    const retired = await retireStaticSite({ token, owner, repo });
+    console.log(`\nProyeccion retirada. Commit: ${retired.commitSha}`);
+    console.log(`PORTALESS_PUBLISH_RESULT=${JSON.stringify({ commitSha: retired.commitSha, pagesUrl: retired.pagesUrl })}`);
+    return;
+  }
+
   console.log("1/4 Sincronizando paginas desde PageStore...");
   const pageStore = await SqlitePageStore.open(sqlitePath);
   const allSlugs = await pageStore.list();
@@ -80,6 +111,11 @@ async function main() {
   }
   const { pages: publishable, skipped } = excludeDraftPages(allLayouts);
   const slugs = publishable.map((p) => p.slug);
+  const currentSnapshot = await snapshotFromLayouts("default", allLayouts);
+  if (expectedSnapshot && (expectedSnapshot.hash !== currentSnapshot.hash || expectedSnapshot.siteId !== currentSnapshot.siteId)) {
+    pageStore.close();
+    throw new Error("stale_publication_snapshot: the approved public revisions changed after this run started");
+  }
   if (skipped > 0) {
     console.log(`   Omitiendo ${skipped} pagina(s) privadas, draft o con estado desconocido (politica fail-closed).`);
   }
@@ -132,6 +168,25 @@ async function main() {
   }
   const repo = repoArg || `${owner}.github.io`;
 
+  // The snapshot must still be current after the build, before touching the
+  // public provider. A concurrent approval aborts the run without deploying.
+  {
+    const verifyStore = await SqlitePageStore.open(sqlitePath);
+    try {
+      const verifyLayouts = [];
+      for (const slug of await verifyStore.list()) {
+        const layout = await verifyStore.load(slug);
+        if (layout) verifyLayouts.push(layout);
+      }
+      const afterBuild = await snapshotFromLayouts("default", verifyLayouts);
+      if (expectedSnapshot && afterBuild.hash !== expectedSnapshot.hash) {
+        throw new Error("stale_publication_snapshot: the approved public revisions changed during the build");
+      }
+    } finally {
+      verifyStore.close();
+    }
+  }
+
   console.log(`4/4 Publicando en https://github.com/${owner}/${repo} ...`);
   const result = await publishStaticSite({
     token,
@@ -145,6 +200,7 @@ async function main() {
   console.log(`  ${result.pagesUrl}`);
   console.log(`Repositorio: ${result.repoUrl}`);
   console.log("\nRecordatorio: si PORTALESS_SITE_URL no coincide con esa URL, las canonical URLs del SEO quedaran desalineadas.");
+  console.log(`PORTALESS_PUBLISH_RESULT=${JSON.stringify({ commitSha: result.commitSha, pagesUrl: result.pagesUrl })}`);
 }
 
 main().catch((err) => {

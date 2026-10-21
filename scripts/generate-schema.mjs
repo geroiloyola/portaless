@@ -55,6 +55,7 @@ const SOURCES = [
   { path: "schema-additions/agent-access-policy.sql", selfBanner: true },
   { path: "schema-additions/plugin-storage.sql", selfBanner: true },
   { path: "schema-additions/plugin-email-quota.sql", selfBanner: true },
+  { path: "schema-additions/publication-runs.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";

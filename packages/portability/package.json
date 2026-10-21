@@ -1,0 +1,9 @@
+{
+  "name": "@portaless/portability",
+  "version": "0.0.1",
+  "description": "Backup, verificacion y restauracion del nodo canonico de Portaless (SQLite + metadatos de revisiones), con secretos separados por politica.",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "src/index.ts",
+  "dependencies": {}
+}

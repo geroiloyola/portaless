@@ -22,14 +22,29 @@ publica, dumb, sin secretos, sin rutas de admin, sin Functions de servidor.
 Lo unico que recibe es el resultado YA COMPILADO de `astro build` -- nunca
 el codigo fuente de Portaless, nunca `functions/`, nunca el editor.
 
-## Por que no es un boton del navegador
+## Publicación integrada desde el admin (C34)
 
-`functions/admin/api/*.js` son Cloudflare Pages Functions: corren en runtime
-edge (`workerd`), sin `child_process` ni herramientas de build de Node --
-ni en produccion ni en local con Wrangler. Ahi no se puede compilar el
-sitio. Por eso `scripts/publish-site.mjs` es un CLI de Node corrido a mano
-por el admin self-hosted, mismo patron que `scripts/setup.mjs` y
-`scripts/onboard-agent.mjs`.
+`/admin/publish` y `GET|POST /admin/api/publication` orquestan la publicación
+del **snapshot aprobado** (mapa `slug -> revisionId` + hash). El estado vive en
+`publication_runs` (D1/SQLite) y contiene solo identificadores y resultado:
+nunca contenido, tokens ni respuestas del proveedor.
+
+- Publicar dos veces el mismo snapshot es idempotente.
+- Un reintento solo puede reutilizar el snapshot con el que empezó; si una
+  revisión aprobada cambió, responde `409 stale_publication_snapshot`.
+- Despublicar reemplaza el árbol público controlado por un tombstone, sin tocar
+  el canon privado ni los `publicationId`/`revisionId`.
+- El proveedor se registra en la fila (`PORTALESS_PUBLISH_PROVIDER`); cambiar de
+  GitHub Pages a Cloudflare no cambia el snapshot. Hoy el adaptador cableado es
+  GitHub Pages; el runner es inyectable (`__PORTALESS_PUBLISH_RUNNER`) para
+  pruebas y despliegues Node.
+
+`functions/admin/api/*.js` en Cloudflare Pages corren en `workerd`, sin
+`child_process` ni build tools. El endpoint responde `503
+build_runtime_unavailable` ahí; el build real corre en el nodo self-hosted de
+Node, que invoca `scripts/publish-site.mjs` con el snapshot esperado. El script
+verifica el snapshot antes y después del build, así una aprobación concurrente
+aborta sin tocar el proveedor.
 
 ## Que hace `npm run publish`
 
@@ -55,15 +70,15 @@ por el admin self-hosted, mismo patron que `scripts/setup.mjs` y
    convencion de GitHub Pages de usuario) y activa Pages si no estaba
    activado (idempotente).
 
-## Pendiente, no resuelto por esta tarea
+## Límites actuales
 
-- No hay boton ni endpoint HTTP que dispare esto desde el Wizard -- la UI
-  todavia no muestra la instruccion `npm run publish` (requiere editar
-  `step-2-infrastructure.astro`, no modificado en esta tarea).
-- Sin refresh automatico del token OAuth (heredado de `github-oauth.ts`):
-  si el token vencio, el script falla explicito y pide reconectar.
+- El adaptador cableado es GitHub Pages. Cloudflare Pages tiene validación de
+  conexión (C35) pero todavía no un deployer de build propio; el snapshot es
+  independiente del proveedor.
+- Sin refresh automático del token OAuth (heredado de `github-oauth.ts`): si el
+  token venció, el script falla explícito y pide reconectar.
 - Solo repos de la cuenta personal del usuario (`/user/repos`), no
   organizaciones.
-- No verificado contra una cuenta real de GitHub -- cubierto solo por tests
-  con `fetch` mockeado, mismo alcance que los adaptadores de Deno
-  Deploy/Cloudflare Workers for Platforms.
+- No verificado contra una cuenta real de GitHub: cubierto por tests con
+  `fetch` mockeado, mismo alcance que los adaptadores de Deno Deploy/Cloudflare
+  Workers for Platforms.

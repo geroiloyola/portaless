@@ -136,8 +136,16 @@ Verified in the repository at the time of writing:
   repository pages/posts and curated public docs, blocks source fixtures
   shadowed by private DB slugs, overlays publishable PageStore layouts, and
   publishes the generated `dist/` tree through the GitHub API. The destination tree is
-  complete, so old artifacts are withdrawn; ref updates are non-force. It
-  requires a terminal, SQLite and configured GitHub credentials.
+  complete, so old artifacts are withdrawn; ref updates are non-force.
+- `publication_runs` + `/admin/api/publication` bind each publish/retry to the
+  exact approved snapshot (`slug -> revisionId` + hash), make a repeated publish
+  idempotent, refuse a stale retry, and retire the controlled projection without
+  touching the private canon. The build/deploy still runs on self-hosted Node;
+  the edge endpoint returns `503 build_runtime_unavailable` instead of pretending.
+- `@portaless/portability` and `npm run backup` create a checksummed SQLite
+  backup, exclude secrets by default (separate `0600` opt-in file), verify
+  checksums on restore, and write a single-writer activation record. Restore is
+  CLI-only so two nodes cannot edit the same canon by accident.
 - `packages/deploy-engine/src/draft-filter.ts::isPubliclyPublishable()` is the
   central public-projection policy used by static content routes, listings,
   feeds, sitemaps, `llms.txt`, the Node page route and the publish CLI. It
@@ -158,11 +166,12 @@ Verified in the repository at the time of writing:
   repository ignore rules. These rules do not make an explicitly tracked secret
   safe to publish.
 
-Remaining work includes revision-bound approval before publication, Cloudum
-hosting/synchronization and measured workload limits. C07–C09 establish the
-preview, clean-export and packaging boundaries, but do not prove confidentiality
-for secrets deliberately committed or placed in an explicitly public asset
-directory.
+Remaining work includes Cloudum hosting/synchronization and multi-writer
+handover. Revision-bound approval and publication orchestration are implemented
+(C28/C34), and the reference resource budget is measured (C39). C07–C09
+establish the preview, clean-export and packaging boundaries, but do not prove
+confidentiality for secrets deliberately committed or placed in an explicitly
+public asset directory.
 
 ## Non-goals for this contract
 
