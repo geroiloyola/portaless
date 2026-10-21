@@ -46,6 +46,7 @@ Read in this order — **do not read them all**:
 | To read the API | `docs/api/README.md` |
 | To understand the docs site | `docs/README.md` |
 | To understand the accepted private-node/public-projection MVP contract | `docs/mvp/acceptance-contract.md` |
+| To see what the release actually demonstrates (and what remains external) | `docs/testing/release-acceptance.md` |
 | To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
 
 **If you are an AI agent editing code**: read `AGENT.md` after this file. It
@@ -65,6 +66,7 @@ must know.
 | OpenAI-compatible provider profile | ✅ Local contract suite; external endpoints unverified until run against a real key/endpoint. Connection guide: `docs/openai-compatible-provider.md` |
 | Publication orchestration + canonical backup | ✅ Approved-snapshot idempotency, retry/publish/unpublish state, checksummed SQLite backup and CLI restore |
 | Private-node profiles | ✅ Minimal/private Compose, optional Tailscale docs, 2 GiB/20 GiB reference budget measured |
+| Release acceptance (C40–C41) | 🟡 Local clean-install/build/upgrade/privacy/publication/mobile evidence passes; ChatGPT, external provider, Cloudum, real GitHub and independent review remain open |
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
 | SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
 | Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |

@@ -35,6 +35,7 @@
     "test": "vitest run",
     "backup": "node node_modules/tsx/dist/cli.mjs scripts/backup-node.mjs",
     "test:resources": "node node_modules/tsx/dist/cli.mjs scripts/resource-budget.mjs",
+    "test:release": "node scripts/verify-release.mjs",
     "verify:runtime": "node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-profile.mjs"
   },
   "dependencies": {

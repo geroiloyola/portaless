@@ -23,6 +23,7 @@ Read this table first; every row links to the section that justifies it. A row i
 | Federated query: normative ranking (V-16) + signed pages document (E-14) + hardened peer reader | `[~]` mechanism shipped; **no public endpoint, no real peers** | [Phase 9](#phase-9--federated-query) |
 | Product modules: real admin activity feed, no mock panels | `[~]` one module partially shipped | [Phase 10](#phase-10--product-modules) |
 | AI interoperability: MCP connection profile + OpenAI-compatible provider | `[~]` MCP local flow verified; provider subset contract-tested; **external ChatGPT/provider `not_run`** | [Editor, MCP, onboarding, CI, self-host](#editor-mcp-onboarding-ci-self-host) |
+| Release acceptance: docs reconciliation + clean-install/upgrade/privacy/publication evidence | `[~]` local C40–C41 evidence passes; **ChatGPT/API/Cloudum/real GitHub/independent review open** | [`release-acceptance.md`](./docs/testing/release-acceptance.md) |
 | Commercial seam: MIT plugin SDK 0.1.0, HTTP installer behind a flag, capability backends | `[~]` items 1–2 shipped; **item 3 deliberately not** | [Phase 11](#phase-11--the-commercial-seam) |
 | A real network: second operator, second implementation, external domain in an Index | `[ ]` **blocked on people, not on code** | [External](#external-depends-on-a-third-party) |
 | Edge sandbox adapters verified against real accounts; independent security review | `[~]` one command / one guide away, needs an operator and a reviewer | [External](#external-depends-on-a-third-party) |
@@ -460,6 +461,37 @@ One list, so progress does not depend on re-reading the phases. **Every unchecke
 - [ ] `R-05` is computable from more than one **real** independent emitter — *(Phase 8 shipped the mechanism with `min_weight`, distinct-emitter counting and a 7-day history floor; the corpus needs operators, and the Beta is invite-only for want of a second maintainer, so today it is one)*
 - [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/first-steps.md` is the starting artifact)*
 - [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/first-steps.md` shipped; keep it honest and updated as the product changes)*
+
+---
+
+## Release acceptance — C40–C41
+
+**Goal:** turn the release guarantees into demonstrated conditions of the
+version, not promises of bug-free software. Requirements remain in
+[`docs/mvp/acceptance-contract.md`](./docs/mvp/acceptance-contract.md); current
+evidence is in [`docs/testing/release-acceptance.md`](./docs/testing/release-acceptance.md)
+and [`docs/testing/release-evidence.json`](./docs/testing/release-evidence.json).
+
+- `[x]` **C40 — documentation reconciled with tested behavior.** README,
+  `START_HERE`, the MVP contract, canonical-node/publishing architecture,
+  resource-budget page and API references no longer claim a terminal-only
+  publisher, an unmeasured budget or a fixed plugin-capability count. The
+  OpenAI-compatible provider is documented as an explicit subset, not universal
+  compatibility.
+- `[~]` **C41 — release verification.** `npm run test:release` passes locally:
+  temporary `npm ci` from the lockfile, 239 unit/e2e files (2,095 passed, 1
+  skipped), normal build and `/portaless/` base build (78 pages), synthetic
+  private-export negative test, source-package boundary, resource fixture and 72
+  Playwright tests. Historical upgrade/restore and publish/unpublish are covered
+  by the same suite. **Open:** ChatGPT custom MCP (`blocked_unverified`),
+  external OpenAI-compatible endpoints (`not_run`), Cloudum equivalence and a
+  real GitHub publish (`not_run`), and an **independent human review** of the
+  full diff (`pending`).
+- `[x]` The release evidence is machine-readable and guarded by
+  `tests/unit/release-evidence.test.ts`; a `passed` row without an evidence path
+  fails the suite.
+- `[ ]` Independent review and the external runs above must be recorded before
+  this phase is closed.
 
 ---
 
