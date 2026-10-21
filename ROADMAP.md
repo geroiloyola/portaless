@@ -4,7 +4,7 @@
 >
 > **Source of truth for CURRENT status** (October 2026, post-reconciliation with APW spec v1.3): only what is true today — what is in production, what is missing, and what depends on third parties. The long-form Spanish version with full narrative context is archived in [`ROADMAP_es.md`](./ROADMAP_es.md) (kept intact; English wins on any discrepancy). Release history: [`CHANGELOG.md`](./CHANGELOG.md). PR-by-PR history: [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) (Spanish).
 
-**Legend**: `[x]` shipped (merged to `main`, verifiable by commit) · `[~]` implemented, awaiting a real-world external step · `[ ]` pending.
+**Legend**: `[x]` shipped (merged to `main`, verifiable by commit) · `[~]` implemented, awaiting a real-world external step · `[ ]` pending. Shared vocabulary is in [`docs/glossary.md`](./docs/glossary.md).
 
 Categories are by **who** must resolve the piece, not by priority.
 
@@ -479,8 +479,8 @@ and [`docs/testing/release-evidence.json`](./docs/testing/release-evidence.json)
   OpenAI-compatible provider is documented as an explicit subset, not universal
   compatibility.
 - `[~]` **C41 — release verification.** `npm run test:release` passes locally:
-  temporary `npm ci` from the lockfile, 239 unit/e2e files (2,095 passed, 1
-  skipped), normal build and `/portaless/` base build (78 pages), synthetic
+  temporary `npm ci` from the lockfile, 241 unit/e2e files (2,105 passed, 1
+  skipped), normal build and `/portaless/` base build (79 pages), synthetic
   private-export negative test, source-package boundary, resource fixture and 72
   Playwright tests. Historical upgrade/restore and publish/unpublish are covered
   by the same suite. **Open:** ChatGPT custom MCP (`blocked_unverified`),

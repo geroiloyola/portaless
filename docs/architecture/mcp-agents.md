@@ -10,6 +10,8 @@
 
 ## Estado real
 
+> **Diff UI safety:** the admin proposal/diff view renders the proposal as plain text with `textContent` (the diff is serialized to JSON and escaped by the browser). It never interprets proposal HTML or Markdown, so a homoglyph, zero-width character or `<script>` remains text and cannot execute. The residual risk is human confusion from invisible Unicode, not code execution.
+
 **Implementado end-to-end para tools existentes.** `packages/mcp-server/` tiene servidor base (`server.ts`), capa de permisos (`permissions/`), auditoría local + ledger agregado (`audit/`), y 19 tools sobre `McpServer`, incluidas cuatro de contexto y tres para proponer, listar y aprobar revisiones exactas. La lectura de páginas privadas/borradores requiere `mcp:private-context:read`; publicar una revisión exacta requiere `content:publish`. El manager `/admin/pages` muestra los diffs pendientes y permite al usuario aprobar por ID de revisión exacto; la API admin correspondiente requiere sesión y rol admin. `GET /.well-known/portaless-mcp.json` publica el perfil de conexión sin secretos (endpoint, bearer, tools, HTTPS/túnel).
 
 Este documento reemplaza la version anterior (que describia el paquete como "unicamente README.md y package.json, sin logica de servidor MCP real") con el estado verificado del codigo real, confirmado archivo por archivo esta sesion.

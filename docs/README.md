@@ -10,6 +10,7 @@
 |---|---|---|
 | [`START_HERE.md`](./START_HERE.md) | English | **The shortest path**: three free accounts (GitHub + an AI with MCP + Cloudflare) from zero to a verifiable site you edit with an agent |
 | [`../README.md`](../README.md) | English | Project overview, features, install |
+| [`glossary.md`](./glossary.md) | English | Shared vocabulary: APW, LTP, SVRI, HSVR, T1–T5, Veracier, Cloudum and the evidence-first terms |
 | [`../ROADMAP.md`](../ROADMAP.md) | English (concise) | Source of truth for current status. Spanish long-form archive: `ROADMAP_es.md` |
 | [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |

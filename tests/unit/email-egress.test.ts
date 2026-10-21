@@ -17,6 +17,20 @@ describe("email destination normalization and egress", () => {
     expect(normalizeEmailHost("smtp.example.com\r\nMAIL FROM:<x>")).toBeNull();
   });
 
+  it("rejects private IPv4-mapped IPv6 literals and loopback", () => {
+    for (const url of [
+      "http://[::ffff:127.0.0.1]/",
+      "http://[::ffff:169.254.169.254]/",
+      "http://[::ffff:10.0.0.1]/",
+      "http://[::ffff:100.64.0.1]/",
+      "http://[::1]/",
+      "http://[::]/",
+    ]) {
+      expect(normalizeWebhookUrl(url), url).toBeNull();
+    }
+    expect(normalizeWebhookUrl("https://[::ffff:8.8.8.8]/")).not.toBeNull();
+  });
+
   it("requires HTTPS when a webhook credential is configured", () => {
     expect(normalizeWebhookUrl("http://hooks.example.test/send", true)).toBeNull();
     expect(normalizeWebhookUrl("https://hooks.example.test./send", true)).toBe("https://hooks.example.test/send");

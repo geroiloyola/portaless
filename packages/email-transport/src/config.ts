@@ -92,8 +92,16 @@ function isPrivateHost(host: string): boolean {
   if (h.includes(":")) {
     if (h === "::1" || h === "::") return true;
     if (h.startsWith("fe80") || h.startsWith("fc") || h.startsWith("fd")) return true; // link-local / ULA
-    const mapped = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/); // IPv4-mapped
-    return mapped ? isPrivateIpv4(mapped[1]) : false;
+    const mapped = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/); // IPv4-mapped, dotted
+    if (mapped) return isPrivateIpv4(mapped[1]);
+    // WHATWG URL canonicalizes [::ffff:127.0.0.1] to [::ffff:7f00:1].
+    const mappedHex = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (mappedHex) {
+      const hi = Number.parseInt(mappedHex[1], 16);
+      const lo = Number.parseInt(mappedHex[2], 16);
+      return isPrivateIpv4(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+    }
+    return false;
   }
   return isPrivateIpv4(h);
 }

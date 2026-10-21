@@ -49,6 +49,7 @@ export const DOC_GROUPS = [
     id: "concepts",
     title: { en: "Concepts", es: "Conceptos" },
     docs: [
+      { slug: "glossary", title: "Glossary", file: "docs/glossary.md", lang: "en" },
       { slug: "vision", title: "Vision", file: "docs/VISION.md", lang: "en" },
       { slug: "ecosystem-boundaries", title: "Ecosystem boundaries", file: "docs/architecture/ecosystem-boundaries.md", lang: "es" },
       { slug: "licensing-boundaries", title: "Licensing boundaries", file: "docs/architecture/licensing-boundaries.md", lang: "es" },

@@ -93,6 +93,16 @@ describe("plugin-email-quota", () => {
     expect((await q.consume("p", "2026-10-18", 1)).allowed).toBe(true);
     expect((await q.consume("p", "2026-10-18", 1)).allowed).toBe(false);
   });
+
+  it("SQLite: 100 consumos concurrentes no superan el limite", async () => {
+    const db = tempDb();
+    const q = await createPluginEmailQuotaStore({ PORTALESS_SQLITE_PATH: db });
+    const results = await Promise.all(
+      Array.from({ length: 100 }, () => q.consume("race-plugin", "2026-10-18", 50)),
+    );
+    expect(results.filter((result) => result.allowed)).toHaveLength(50);
+    expect(await q.count("race-plugin", "2026-10-18")).toBe(50);
+  });
 });
 
 describe("email:send -- delegacion ciega", () => {

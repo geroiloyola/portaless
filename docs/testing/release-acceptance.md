@@ -1,6 +1,6 @@
 # Release acceptance — C40–C41
 
-**Status: local release evidence passed on 2026-10-21.** This page records what
+**Candidate: `v0.0.11`.** **Status: local release evidence passed on 2026-10-21.** This page records what
 the version demonstrates and what it does not. Machine-readable evidence:
 [`release-evidence.json`](./release-evidence.json). The external ChatGPT,
 OpenAI-compatible provider and Cloudum checks are still open; local fixtures do
@@ -33,9 +33,9 @@ on manual dispatch.
 | Evidence | Result |
 |---|---|
 | Clean install from lockfile | **PASS** — temporary `npm ci`, workspace manifests copied, `astro` present |
-| Normal build | **PASS** — 78 pages |
-| Build with `/portaless/` base | **PASS** — 78 pages; output carries the base |
-| Unit + e2e | **PASS** — 239 files, 2,095 tests, 1 skipped |
+| Normal build | **PASS** — 79 pages |
+| Build with `/portaless/` base | **PASS** — 79 pages; output carries the base |
+| Unit + e2e | **PASS** — 241 files, 2,105 tests, 1 skipped |
 | Playwright | **PASS** — 72 tests |
 | Private-export negative test | **PASS** — synthetic page/post/archive/DB markers absent from every artifact |
 | Source/package and Docker boundaries | **PASS** — local boundary checks; Docker boundary is covered by CI |
@@ -51,16 +51,34 @@ Fixture: 200 pages × 5 published revisions = **1,000 revisions**, local SQLite.
 
 | Metric | Value |
 |---|---|
-| Seed | 679 ms |
-| SQLite canon | 1,806,336 bytes (~1.72 MiB) |
-| Backup | 1,806,336 bytes, 8 ms |
-| Restore | 12 ms, 200 pages / 1,000 revisions |
-| Node RSS | 100,679,680 bytes (~96.0 MiB) |
+| Seed | 738 ms |
+| SQLite canon | 1,810,432 bytes (~1.73 MiB) |
+| Backup | 1,810,432 bytes, 10 ms |
+| Restore | 8 ms, 200 pages / 1,000 revisions |
+| Node RSS | 100,777,984 bytes (~96.1 MiB) |
 | Budget | 2 GiB RSS / 20 GiB disk |
 | Result | **PASS**, no violations |
 
 This is a local reference fixture, not a Cloudum SLA and not a guarantee for a
 different dataset.
+
+## Post-release audit hardening
+
+The final audit added and verified:
+
+- IPv4-mapped IPv6 literals (`[::ffff:127.0.0.1]`, canonicalized by WHATWG to
+  `[::ffff:7f00:1]`) are rejected as private egress destinations.
+- A 100-concurrent-consumer regression for the per-plugin email quota.
+- Escrow replay/iat-window and SVRI key-window regressions.
+- `migrate:d1` writes the ledger row as the last statement of each delta and
+  takes a local advisory lock; the lock is not distributed.
+- A pre-versioned database missing `att_jws` is rejected for adoption.
+- Proposal diffs are rendered as escaped text (`textContent`), with a source
+  regression test.
+- Glossary, ADR 0002 (DNS rebinding/egress) and the release/changelog cleanup.
+
+Main branch protection is a GitHub setting, verified separately from this
+repository evidence.
 
 ## Guarantees and evidence
 

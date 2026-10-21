@@ -13,12 +13,12 @@ Measured on 2026-10-21:
 
 | Metric | Value |
 |---|---|
-| Seed time | 679 ms |
-| SQLite canon | 1,806,336 bytes (~1.72 MiB) |
-| Backup | 1,806,336 bytes, 8 ms |
-| Restore | 12 ms |
+| Seed time | 738 ms |
+| SQLite canon | 1,810,432 bytes (~1.73 MiB) |
+| Backup | 1,810,432 bytes, 10 ms |
+| Restore | 8 ms |
 | Restored rows | 200 pages / 1,000 revisions |
-| Node RSS | 100,679,680 bytes (~96.0 MiB) |
+| Node RSS | 100,777,984 bytes (~96.1 MiB) |
 | Budget | 2 GiB RSS / 20 GiB disk |
 | Result | **PASS**, no violations |
 
