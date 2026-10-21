@@ -3,7 +3,7 @@
 // and write each ledger row only after its SQL has completed successfully.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -46,6 +46,55 @@ function q(value) {
 
 export function migrationSql(statements) {
   return statements.map((statement) => `${statement.trim().replace(/;+$/, "")};`).join("\n") + "\n";
+}
+
+/**
+ * Builds the SQL for ONE numbered delta. The ledger insert is deliberately the
+ * last statement: if wrangler fails before it, the migration must not be
+ * recorded as applied. The caller still verifies the final schema.
+ */
+export function migrationStatements(migration, liveSchema) {
+  const statements = [];
+  for (const { table, column, type } of migration.addColumns ?? []) {
+    if (liveSchema[table] && !liveSchema[table].includes(column)) {
+      statements.push(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);
+      liveSchema[table].push(column);
+    }
+  }
+  statements.push(...migration.statements);
+  statements.push(
+    "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);",
+    `INSERT INTO schema_migrations (version, name, applied_at) VALUES (${migration.version}, ${q(migration.name)}, ${q(new Date().toISOString())});`,
+  );
+  return statements;
+}
+
+const MIGRATION_LOCK_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * Local advisory lock for one `migrate:d1` process. D1 has no portable
+ * distributed lock; this prevents two operators on the same machine/CI checkout
+ * from interleaving. A remote operator must still coordinate out of band.
+ */
+export function acquireMigrationLock(lockPath, now = Date.now()) {
+  if (existsSync(lockPath)) {
+    let stale = true;
+    try {
+      const previous = JSON.parse(readFileSync(lockPath, "utf8"));
+      const at = Date.parse(previous?.at);
+      stale = !Number.isFinite(at) || now - at >= MIGRATION_LOCK_TTL_MS;
+    } catch {
+      stale = true;
+    }
+    if (!stale) throw new Error(`Otra migracion D1 esta en curso: ${lockPath}`);
+    rmSync(lockPath, { force: true });
+  }
+  const fd = openSync(lockPath, "wx", 0o600);
+  writeFileSync(fd, JSON.stringify({ pid: process.pid, at: new Date(now).toISOString() }));
+  return () => {
+    closeSync(fd);
+    rmSync(lockPath, { force: true });
+  };
 }
 
 function missingColumns(schema, contract) {
@@ -109,6 +158,11 @@ export async function migrateD1(options) {
     return { from, to: schemaVersion(), applied: pending.map((migration) => migration.name), backupPath: null, dryRun: true };
   }
 
+  const lockDir = options.backupDir ?? join(process.cwd(), "backups", "d1");
+  mkdirSync(lockDir, { recursive: true });
+  const lockName = `${String(options.db).replace(/[^A-Za-z0-9_.-]/g, "_")}-${options.mode}.lock`;
+  const releaseLock = acquireMigrationLock(join(lockDir, `.${lockName}`));
+  try {
   let backupPath = null;
   if (!options.skipBackup) {
     const backupDir = options.backupDir ?? join(process.cwd(), "backups", "d1");
@@ -128,18 +182,7 @@ export async function migrateD1(options) {
   try {
     let liveSchema = schema;
     for (const migration of pending) {
-      const statements = [];
-      for (const { table, column, type } of migration.addColumns ?? []) {
-        if (liveSchema[table] && !liveSchema[table].includes(column)) {
-          statements.push(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);
-          liveSchema[table].push(column);
-        }
-      }
-      statements.push(...migration.statements);
-      statements.push(
-        "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);",
-        `INSERT INTO schema_migrations (version, name, applied_at) VALUES (${migration.version}, ${q(migration.name)}, ${q(new Date().toISOString())});`,
-      );
+      const statements = migrationStatements(migration, liveSchema);
       const file = join(workDir, `v${migration.version}.sql`);
       writeFileSync(file, migrationSql(statements), { mode: 0o600 });
       const args = ["wrangler", "d1", "execute", options.db, options.mode, `--file=${file}`];
@@ -162,6 +205,9 @@ export async function migrateD1(options) {
   const missing = missingColumns(finalSchema, REQUIRED_SCHEMA_COLUMNS);
   if (missing.length) throw new Error(`D1 quedó incompleta después de migrar: ${missing.join(", ")}. Backup: ${backupPath}`);
   return { from, to: schemaVersion(), applied, backupPath, dryRun: false };
+  } finally {
+    releaseLock();
+  }
 }
 
 async function main() {

@@ -267,6 +267,18 @@ describe("POST /trust/:siteId/escrow-report con atestacion", () => {
     expect((await post(apiKey, { escrowProvider: PROVIDER, transactionOutcome: "completed_as_promised", attestation: second })).status).toBe(409);
   });
 
+  it("rechaza una atestacion fuera de la ventana de iat", async () => {
+    const { privateJwk, apiKey } = await setupProvider();
+    const attestation = await sign(
+      { alg: "EdDSA", typ: ATTESTATION_TYP },
+      claims({ iat: Math.floor(Date.now() / 1000) - 3600 }),
+      privateJwk,
+    );
+    const res = await post(apiKey, { escrowProvider: PROVIDER, transactionOutcome: "completed_as_promised", attestation });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "invalid_attestation", reason: "iat_out_of_window" });
+  });
+
   it("exige atestacion y clave publica registrada", async () => {
     const { apiKey } = await setupProvider();
     const missing = await post(apiKey, { escrowProvider: PROVIDER, transactionOutcome: "completed_as_promised" });

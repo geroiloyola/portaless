@@ -113,6 +113,21 @@ describe("migraciones: runner SQLite", () => {
     expect(existsSync(join(resolve(path, ".."), "backups"))).toBe(false);
   });
 
+  it("no adopta una base pre-versionada sin att_jws como actual", async () => {
+    const path = tempDb();
+    await applySchema(path, { quiet: true });
+    const db = await openSqlite(path);
+    try {
+      db.exec("ALTER TABLE site_attestation_log DROP COLUMN att_jws");
+      db.exec("DROP TABLE schema_migrations");
+    } finally {
+      db.close();
+    }
+    const status = await migrationStatus({ PORTALESS_SQLITE_PATH: path });
+    expect(status).toMatchObject({ legacy: true, pending: true });
+    expect(status?.schemaErrors).toContain("site_attestation_log.att_jws");
+  });
+
   it("idempotente: re-ejecutar no aplica nada", async () => {
     const path = tempDb();
     await applySchema(path, { quiet: true });
