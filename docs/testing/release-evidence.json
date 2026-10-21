@@ -18,20 +18,20 @@
     "browser": "npx playwright test"
   },
   "summary": {
-    "unitFiles": 239,
-    "unitTests": 2095,
+    "unitFiles": 241,
+    "unitTests": 2105,
     "unitSkipped": 1,
     "playwrightTests": 72,
-    "buildPages": 78,
+    "buildPages": 79,
     "baseBuild": "/portaless/",
     "resourceFixture": {
       "pages": 200,
       "revisions": 1000,
-      "dbBytes": 1806336,
-      "backupBytes": 1806336,
-      "backupMs": 8,
-      "restoreMs": 12,
-      "rssBytes": 100679680,
+      "dbBytes": 1810432,
+      "backupBytes": 1810432,
+      "backupMs": 10,
+      "restoreMs": 8,
+      "rssBytes": 100777984,
       "result": "pass"
     }
   },
@@ -253,5 +253,6 @@
     "The resource budget is a measured local reference, not a hosting SLA.",
     "A public revision fetched by a third party cannot be guaranteed erased after unpublish.",
     "Tailscale/Docker isolation does not prove that a host operator cannot read the mounted volume."
-  ]
+  ],
+  "candidateVersion": "0.0.11"
 }

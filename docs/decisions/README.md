@@ -11,3 +11,4 @@ An ADR being accepted is not evidence that its remaining risks are closed.
 | ADR | Decision | Status |
 |---|---|---|
 | [0001 — Email configuration and transport boundary](./0001-email-configuration-and-transport.md) | Keep email configuration in the shared `site_settings` KV store, quota in `plugin_email_quota`, use `email-transport` separately from auth email, and defer at-rest encryption for email credentials | Accepted; listed implementation risks remain |
+| [0002 — Egress validation and DNS rebinding](./0002-egress-dns-rebinding.md) | Keep literal-address checks and the no-redirect webhook policy; treat DNS rebinding and SMTP resolution as an operator network boundary for the Beta | Accepted; residual DNS-rebinding risk documented |

@@ -97,18 +97,18 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
 
   it("isEngineCompatible da el mismo veredicto en SDK y core", () => {
     const cases: Array<[string | undefined, string]> = [
-      [undefined, "0.0.10"],
-      ["", "0.0.10"],
-      ["^0.0.10", "0.0.10"],
-      ["^0.0.9", "0.0.10"],
-      ["^1.0.0", "0.0.10"],
-      ["~0.0.10", "0.0.10"],
-      [">=0.0.5", "0.0.10"],
-      ["<=0.0.10", "0.0.10"],
-      ["0.0.10", "0.0.10"],
-      [">1.0.0", "0.0.10"],
-      ["^0.0.1 || ^0.0.10", "0.0.10"],
-      ["no-es-un-rango", "0.0.10"],
+      [undefined, "0.0.11"],
+      ["", "0.0.11"],
+      ["^0.0.11", "0.0.11"],
+      ["^0.0.9", "0.0.11"],
+      ["^1.0.0", "0.0.11"],
+      ["~0.0.11", "0.0.11"],
+      [">=0.0.5", "0.0.11"],
+      ["<=0.0.11", "0.0.11"],
+      ["0.0.11", "0.0.11"],
+      [">1.0.0", "0.0.11"],
+      ["^0.0.1 || ^0.0.11", "0.0.11"],
+      ["no-es-un-rango", "0.0.11"],
     ];
     for (const [range, version] of cases) {
       expect(sdk.isEngineCompatible(range, version), `${range} @ ${version}`).toBe(
@@ -116,8 +116,8 @@ describe("plugin-sdk <-> plugin-sandbox: paridad", () => {
       );
     }
     // y el veredicto esperado (fail-closed en sintaxis desconocida)
-    expect(coreIsEngineCompatible("no-es-un-rango", "0.0.10")).toBe(false);
-    expect(coreIsEngineCompatible(undefined, "0.0.10")).toBe(true);
+    expect(coreIsEngineCompatible("no-es-un-rango", "0.0.11")).toBe(false);
+    expect(coreIsEngineCompatible(undefined, "0.0.11")).toBe(true);
   });
 
   it("CORE_VERSION sigue a package.json (no deriva en silencio)", () => {

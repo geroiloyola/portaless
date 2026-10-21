@@ -308,7 +308,7 @@ export function validateManifest(manifest: PluginManifest): ManifestValidationRe
 
   if (manifest.engines !== undefined) {
     if (typeof manifest.engines !== "object" || manifest.engines === null) {
-      errors.push('"engines" debe ser un objeto (ej. { "portaless": "^0.0.10" }).');
+      errors.push('"engines" debe ser un objeto (ej. { "portaless": "^0.0.11" }).');
     } else if (manifest.engines.portaless !== undefined && (typeof manifest.engines.portaless !== "string" || !manifest.engines.portaless.trim())) {
       errors.push('"engines.portaless" debe ser un rango semver no vacio.');
     }

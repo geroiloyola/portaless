@@ -94,7 +94,10 @@ docker compose up -d
 anterior. Si una migración falla, su transacción se revierte y el arranque
 corta (el backup queda intacto).
 
-Para Cloudflare D1: usa `npm run setup:d1 -- --db <DB> --remote` solo en una base vacía; las actualizaciones usan `npm run migrate:d1 -- --db <DB> --remote`, que exporta un backup y aplica deltas verificados (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`).
+Para Cloudflare D1: usa `npm run setup:d1 -- --db <DB> --remote` solo en una base vacía; las actualizaciones usan `npm run migrate:d1 -- --db <DB> --remote`, que exporta un backup y aplica deltas verificados (ver `docs/DEPLOY_CLOUDFLARE_PAGES.md`). `migrate:d1` adquiere un lock local por base/modo y escribe la fila del ledger como última sentencia de cada delta. El lock no es distribuido: no ejecutes la misma migración remota desde dos máquinas a la vez. Si falla antes del ledger, el gate fail-closed responde 503; restaurá el backup y reintentá.
+
+El vector de DNS rebinding en egress (webhooks/SMTP) está documentado en [`decisions/0002-egress-dns-rebinding.md`](./decisions/0002-egress-dns-rebinding.md).
+
 Ver también la sección **Migration** del [`CHANGELOG`](../CHANGELOG.md).
 
 ## Email transaccional
