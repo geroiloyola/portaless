@@ -116,7 +116,9 @@ external acceptance checklist: [`openai-compatible-provider.md`](./openai-compat
 
 Open your admin panel (`/admin`), then ask your agent (via MCP) to create a
 page: *"create a landing page with a hero, three features and a contact form"*.
-The agent writes a draft; you approve and publish. No terminal, no code.
+The agent writes a draft; you approve and publish. On self-hosted Node the
+integrated publisher closes the loop without a terminal once GitHub credentials
+are connected; Cloudflare Pages cannot run the build (explicit `503`).
 
 ## What you get out of it
 
@@ -132,18 +134,25 @@ The agent writes a draft; you approve and publish. No terminal, no code.
 
 ## Honest limits (read before promising anything)
 
-- The **last step of publishing on GitHub Pages still uses a terminal** for the
-  self-host publish flow; the pure static demo does not.
+- The **integrated publisher runs only on self-hosted Node** and needs GitHub
+  credentials connected; Cloudflare Pages answers `503 build_runtime_unavailable`
+  instead of pretending it can build. The pure static demo does not publish
+  editor pages.
 - **Cloudflare Pages OAuth in the wizard is “coming soon”** — connecting the repo
   is done in the Cloudflare dashboard for now.
 - The **plugin installer is behind a flag, off by default** (external sandbox
-  review pending), and **6 of 12 plugin capabilities** still answer an explicit
+  review pending), and **5 of 12 plugin capabilities** still answer an explicit
   `501` by design.
 - **Discovery across nodes has no public endpoint yet** — the mechanism is
   shipped, but there are no peers to federate with.
+- **ChatGPT custom MCP** and **external OpenAI-compatible endpoints** remain
+  `blocked_unverified` / `not_run`; local MCP and the local provider contract do
+  not prove an external account, client or model.
 - This Beta has a **single maintainer** and is **invite-only**; the exit
   criterion (a person outside the project installing it unaided) is **not met
   yet**.
+- Release evidence and the remaining external gates are in
+  [`testing/release-acceptance.md`](./testing/release-acceptance.md).
 - The full, per-module truth is [`../ROADMAP.md`](../ROADMAP.md) and
   [`../AGENT.md`](../AGENT.md) — this page is the friendly summary, not the
   source of truth.

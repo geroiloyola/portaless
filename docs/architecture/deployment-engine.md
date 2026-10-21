@@ -2,10 +2,11 @@
 
 > **Contrato actualizado:** [`canonical-node-and-public-projections.md`](./canonical-node-and-public-projections.md)
 > define el nodo canónico privado como local **o** alojado en un servicio privado
-> como Cloudum. Este documento describe el flujo de publicación que existe hoy;
-> no implica que Cloudum, la aprobación desde UI o la sincronización del nodo
-> estén implementados. El `publish` actual es un CLI self-hosted y requiere
-> terminal.
+> como Cloudum. Este documento describe el flujo de publicación que existe hoy:
+> la aprobación y publicación desde UI existen (C34) en un nodo Node self-hosted;
+> el build sigue siendo Node-only (Cloudflare responde `503`) y Cloudum,
+> sincronización multi-writer y el handover entre hosts no están implementados en
+> este repositorio. El CLI `npm run publish` sigue disponible para operadores.
 
 ## Decision de arquitectura
 
@@ -81,4 +82,5 @@ aborta sin tocar el proveedor.
   organizaciones.
 - No verificado contra una cuenta real de GitHub: cubierto por tests con
   `fetch` mockeado, mismo alcance que los adaptadores de Deno Deploy/Cloudflare
-  Workers for Platforms.
+  Workers for Platforms. El release local no convierte esa prueba mockeada en
+  una cuenta real; ver [`docs/testing/release-acceptance.md`](../testing/release-acceptance.md).

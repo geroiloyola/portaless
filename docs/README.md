@@ -13,6 +13,7 @@
 | [`../ROADMAP.md`](../ROADMAP.md) | English (concise) | Source of truth for current status. Spanish long-form archive: `ROADMAP_es.md` |
 | [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
+| [`testing/release-acceptance.md`](./testing/release-acceptance.md) | English | C40–C41 release evidence: clean install, builds, upgrade/restore, privacy negative test, publication, mobile and resources; external gates still open |
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 | [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
 | [`testing/INTEROPERABILITY.md`](./testing/INTEROPERABILITY.md) | English | C31–C33: MCP connection profile, OpenAI-compatible provider subset, and the local/external acceptance evidence matrix |

@@ -92,4 +92,5 @@ The reference fixture seeds 200 pages × 5 published revisions (1,000 revisions)
 measures SQLite, backup and restore, and enforces 2 GiB RSS / 20 GiB disk. The
 latest local measurement is in
 [`testing/resource-budget.md`](./testing/resource-budget.md). This is a local
-reference measurement, not a Cloudum SLA.
+reference measurement, not a Cloudum SLA. The complete C41 release evidence is
+in [`testing/release-acceptance.md`](./testing/release-acceptance.md).

@@ -9,7 +9,7 @@
    - `PORTALESS_BASE_PATH`: `/nombre-del-repo/` si el repo no es `tu-usuario.github.io`.
    - `ENABLE_COMMERCE`: `true` si quieres activar la tienda (ver `COMMERCE_SETUP.md`).
 4. Haz `git push` a la rama `main`. El workflow en
-   `.github/workflows/deploy-gh-pages.yml` construye el sitio y lo publica
+   `.github/workflows/deploy-pages.yml` construye el sitio y lo publica
    automáticamente.
 5. Tu sitio queda disponible en la URL que configuraste, con HTTPS
    automático provisto por GitHub.

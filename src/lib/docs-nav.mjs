@@ -31,6 +31,7 @@ export const DOC_GROUPS = [
     docs: [
       { slug: "plugin-author", title: "Plugin author", file: "docs/plugin-author-guide.md", lang: "en" },
       { slug: "openai-compatible-provider", title: "OpenAI-compatible provider", file: "docs/openai-compatible-provider.md", lang: "en" },
+      { slug: "release-acceptance", title: "Release acceptance", file: "docs/testing/release-acceptance.md", lang: "en" },
       { slug: "editor-and-pages", title: "The editor and the pages", file: "docs/architecture/content-architecture-and-use-cases.md", lang: "es" },
     ],
   },

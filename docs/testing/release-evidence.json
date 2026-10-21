@@ -1,0 +1,257 @@
+{
+  "format": "portaless-release-evidence-v1",
+  "version": "1.0",
+  "generatedAt": "2026-10-21",
+  "candidateBaseCommit": "0529435",
+  "candidateIncludes": [
+    "C40",
+    "C41"
+  ],
+  "commands": {
+    "release": "npm run test:release",
+    "unitAndE2e": "node node_modules/vitest/vitest.mjs run",
+    "privateExport": "node --import tsx scripts/test-public-export.mjs",
+    "sourceBoundary": "node scripts/verify-npm-source-boundary.mjs",
+    "buildNormal": "npm run build",
+    "buildBase": "PORTALESS_BASE_PATH=/portaless/ PORTALESS_OUT_DIR=<temporary> npm run build",
+    "resources": "npm run test:resources",
+    "browser": "npx playwright test"
+  },
+  "summary": {
+    "unitFiles": 239,
+    "unitTests": 2095,
+    "unitSkipped": 1,
+    "playwrightTests": 72,
+    "buildPages": 78,
+    "baseBuild": "/portaless/",
+    "resourceFixture": {
+      "pages": 200,
+      "revisions": 1000,
+      "dbBytes": 1806336,
+      "backupBytes": 1806336,
+      "backupMs": 8,
+      "restoreMs": 12,
+      "rssBytes": 100679680,
+      "result": "pass"
+    }
+  },
+  "requiredEvidence": [
+    {
+      "id": "lockfile-install",
+      "status": "passed",
+      "evidence": "scripts/verify-release.mjs",
+      "note": "Temporary workspace copied package.json, package-lock.json and package manifests; npm ci completed and installed astro."
+    },
+    {
+      "id": "build-normal",
+      "status": "passed",
+      "evidence": "scripts/verify-release.mjs",
+      "note": "77 pages."
+    },
+    {
+      "id": "build-base-portaless",
+      "status": "passed",
+      "evidence": "scripts/verify-release.mjs",
+      "note": "Built into a temporary output directory and checked that the output carries /portaless/."
+    },
+    {
+      "id": "node-runtime",
+      "status": "passed",
+      "evidence": [
+        "tests/e2e/self-host-node-runtime.test.ts",
+        "tests/e2e/self-host-first-run.test.ts",
+        "tests/e2e/dynamic-pages.test.ts"
+      ]
+    },
+    {
+      "id": "d1-representative",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/d1-site-trust-store.test.ts",
+        "tests/unit/d1-password-reset-store.test.ts",
+        "tests/unit/setup-d1.test.ts"
+      ]
+    },
+    {
+      "id": "publication-unpublication",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/publication-orchestrator.test.ts",
+        "tests/unit/admin-publication-endpoint.test.ts",
+        "tests/unit/publication-schema.test.ts"
+      ]
+    },
+    {
+      "id": "private-leak-negative",
+      "status": "passed",
+      "evidence": [
+        "scripts/test-public-export.mjs",
+        "tests/unit/private-artifact-boundary.test.ts",
+        "scripts/verify-npm-source-boundary.mjs"
+      ]
+    },
+    {
+      "id": "historical-upgrade-restore",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/upgrade.test.ts",
+        "tests/unit/portability-backup.test.ts",
+        "scripts/verify-upgrade.mjs"
+      ],
+      "note": "Historical v1 snapshot migrates to the current schema; backup, ledger, columns and seeded data are verified. Local backup/restore and single-writer activation are covered."
+    },
+    {
+      "id": "chatgpt-external",
+      "status": "blocked_unverified",
+      "evidence": "docs/testing/interop-evidence.json",
+      "note": "No external ChatGPT account/workspace and HTTPS tunnel were available. No account, client or model is claimed."
+    },
+    {
+      "id": "openai-compatible-local",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/ai-provider-openai-compatible.test.ts",
+        "docs/openai-compatible-provider.md"
+      ]
+    },
+    {
+      "id": "openai-compatible-external",
+      "status": "not_run",
+      "evidence": "docs/testing/interop-evidence.json",
+      "note": "Requires a real user-supplied API key, named endpoint and model."
+    },
+    {
+      "id": "resource-budget",
+      "status": "passed",
+      "evidence": [
+        "scripts/resource-budget.mjs",
+        "docs/testing/resource-budget.md"
+      ]
+    },
+    {
+      "id": "independent-review",
+      "status": "pending",
+      "evidence": null,
+      "note": "Requires a human reviewer who did not implement the change. This pass is an implementation-agent self-review, not an independent review."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "draft-not-public",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/pages-runtime-route.test.ts",
+        "tests/e2e/dynamic-pages.test.ts",
+        "tests/browser/publication-security.spec.ts",
+        "scripts/test-public-export.mjs"
+      ]
+    },
+    {
+      "id": "ledger-describes-real-changes",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/upgrade.test.ts",
+        "scripts/verify-upgrade.mjs"
+      ],
+      "note": "Upgrade verification checks the migrated schema, seeded page and skin values, not only schema_migrations.version."
+    },
+    {
+      "id": "ai-cannot-publish-with-edit-permission",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/mcp-revision-proposals.test.ts",
+        "tests/unit/mcp-apply-theme.test.ts",
+        "tests/unit/mcp-block-tools.test.ts",
+        "tests/unit/admin-page-proposals.test.ts"
+      ]
+    },
+    {
+      "id": "secrets-do-not-travel-with-site",
+      "status": "passed",
+      "evidence": [
+        "scripts/test-public-export.mjs",
+        "scripts/verify-private-artifacts.mjs",
+        "scripts/verify-npm-source-boundary.mjs"
+      ]
+    },
+    {
+      "id": "history-travels-between-publishers",
+      "status": "passed",
+      "evidence": [
+        "tests/unit/public-revision-history.test.ts",
+        "tests/unit/publication-orchestrator.test.ts"
+      ],
+      "note": "Fixtures preserve IDs and hashes through export/import. A real GitHub account is still an external check."
+    },
+    {
+      "id": "reputation-belongs-to-revision",
+      "status": "partial",
+      "evidence": [
+        "tests/unit/page-revision-evidence.test.ts",
+        "docs/architecture/public-revision-history.md"
+      ],
+      "note": "Revision-bound evidence storage exists, but page-specific APW observations remain no_data; site-level observations are not attributed to a page hash."
+    },
+    {
+      "id": "one-row-mobile-menu",
+      "status": "passed",
+      "evidence": [
+        "tests/browser/header-mobile.spec.ts",
+        "tests/browser/mobile.spec.ts",
+        "tests/unit/mobile-touch-and-gutter.test.ts"
+      ]
+    },
+    {
+      "id": "node-fits-resource-budget",
+      "status": "passed",
+      "evidence": [
+        "scripts/resource-budget.mjs",
+        "tests/unit/runtime-profile.test.ts"
+      ],
+      "note": "Local reference fixture only; not a Cloudum SLA."
+    },
+    {
+      "id": "local-and-cloudum-equivalent",
+      "status": "partial",
+      "evidence": [
+        "tests/unit/portability-backup.test.ts",
+        "docs/private-node.md"
+      ],
+      "note": "Local backup/restore and single-writer activation pass. Cloudum hosting, operator access and cross-host handover remain external and unverified."
+    },
+    {
+      "id": "chatgpt-really-works",
+      "status": "blocked_unverified",
+      "evidence": "docs/testing/interop-evidence.json",
+      "note": "The target account/workspace, client version, model and HTTPS tunnel must be recorded from a real run."
+    }
+  ],
+  "external": {
+    "chatgptCustomMcp": {
+      "status": "blocked_unverified",
+      "evidence": "docs/testing/interop-evidence.json"
+    },
+    "openAiCompatibleProvider": {
+      "status": "not_run",
+      "evidence": "docs/testing/interop-evidence.json"
+    },
+    "cloudum": {
+      "status": "not_run",
+      "reason": "Cloudum is an external hosting/operations service; its access controls, key custody, backups and handover are not verified by this repository."
+    },
+    "realGithubAccount": {
+      "status": "not_run",
+      "reason": "The publish adapter is tested with mocked fetch. A real GitHub account/repository publish is still external."
+    },
+    "independentHumanReview": {
+      "status": "pending",
+      "reason": "A reviewer who did not implement the change must inspect the complete release diff before this can be called independent."
+    }
+  },
+  "limits": [
+    "Local and fixture evidence is not an external-provider, Cloudum or real-GitHub guarantee.",
+    "The resource budget is a measured local reference, not a hosting SLA.",
+    "A public revision fetched by a third party cannot be guaranteed erased after unpublish.",
+    "Tailscale/Docker isolation does not prove that a host operator cannot read the mounted volume."
+  ]
+}

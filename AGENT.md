@@ -43,6 +43,7 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 - [`SECURITY.md`](./SECURITY.md) — known and active vulnerabilities (includes the real `isolated-vm` CVE, GHSA-864f-rcv7-6rh4).
 - [`docs/README.md`](./docs/README.md) — index of the whole documentation tree.
 - [`docs/api/`](./docs/api/) — integrator guide for Portaless HTTP APIs (public well-known endpoints, admin endpoints, verification recipes).
+- [`docs/testing/release-acceptance.md`](./docs/testing/release-acceptance.md) — C40–C41 release evidence and the external gates that remain open.
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — why the real repo structure differs from the original proposal, and where each thing actually is.
 - `docs/architecture/licensing-boundaries.md` — exact boundary between the AGPL-3.0 core, the MIT Plugin SDK, and third-party projects/plugins.
 - `docs/architecture/mcp-agents.md` — MCP server design, 19 registered tools, per-invocation HTTP identity, and persistent audit.
