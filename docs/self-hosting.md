@@ -30,6 +30,28 @@ docker compose up -d
 docker compose logs portaless
 ```
 
+## Perfiles de nodo privado
+
+- **Mínimo (2 GiB RAM / 1 CPU / concurrencia 8):**
+  `docker compose -f docker-compose.minimal.yml up -d`
+- **Red privada, sin puertos públicos:** `docker compose -f docker-compose.private.yml up -d`
+- **Acceso remoto opcional con Tailscale:** agrega `--profile tailscale` y sigue
+  [`private-node.md`](./private-node.md); Tailscale no concede capacidades a plugins.
+
+## Backup del nodo canónico
+
+`npm run backup` crea un backup SQLite verificado con checksums; los secretos
+quedan fuera salvo opt-in explícito (`--include-secrets`, archivo `0600`
+separado). Restaurar es una operación CLI que exige detener el escritor activo:
+
+```bash
+npm run backup -- verify <backup-dir>
+npm run backup -- restore <backup-dir> --target=/data/portaless.db --overwrite
+```
+
+Ver [`private-node.md`](./private-node.md) y el presupuesto medido en
+[`testing/resource-budget.md`](./testing/resource-budget.md).
+
 ## Railway
 
 1. Creá un servicio desde el repositorio. `railway.json` indica usar el `Dockerfile` y el healthcheck `/healthz`.

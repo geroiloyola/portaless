@@ -1,0 +1,133 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Publicar sitio — Portaless Admin">
+  <main class="container publish-page">
+    <p><a href="/admin/pages">← Páginas</a> · <a href="/admin/wizard/step-2-infrastructure">Conexiones</a> · <a href="/admin/backup">Backups</a></p>
+    <h1>Publicación integrada</h1>
+    <p class="publish-lead">
+      Publica exactamente el conjunto de revisiones aprobadas que muestra esta pantalla.
+      Reintentar no republica una revisión desautorizada; despublicar retira la proyección
+      pública sin tocar el canon privado.
+    </p>
+    <p id="publish-status" role="status">Cargando estado…</p>
+    <p id="publish-error" class="publish-error" role="alert" hidden></p>
+
+    <section class="publish-card" aria-labelledby="snapshot-title">
+      <h2 id="snapshot-title">Snapshot aprobado</h2>
+      <p id="snapshot-hash" class="publish-mono"></p>
+      <ul id="snapshot-pages"></ul>
+    </section>
+
+    <section class="publish-card" aria-labelledby="run-title">
+      <h2 id="run-title">Última ejecución</h2>
+      <dl id="run-detail"></dl>
+    </section>
+
+    <div class="publish-actions">
+      <button type="button" id="publish-now">Publicar revisiones aprobadas</button>
+      <button type="button" id="retry-run">Reintentar</button>
+      <button type="button" id="unpublish-site" class="publish-danger">Despublicar</button>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .publish-page { max-width:56rem;margin-inline:auto;padding-block:var(--space-6,32px) }
+  .publish-lead { max-width:44rem;color:var(--muted) }
+  .publish-card { margin-block:var(--space-4,16px);padding:var(--space-4,16px);border:1px solid var(--panel-border);border-radius:var(--radius,22px);background:var(--panel-bg) }
+  .publish-card h2 { margin-block-start:0;font-size:1rem }
+  .publish-mono, #snapshot-pages { font-family:var(--font-mono,monospace);font-size:.8rem;overflow-wrap:anywhere }
+  .publish-error { padding:var(--space-3,12px);border-inline-start:4px solid var(--danger-fg);background:var(--danger-bg);color:var(--text) }
+  .publish-actions { display:flex;flex-wrap:wrap;gap:var(--space-2,8px) }
+  .publish-actions button { min-height:44px;padding-inline:var(--space-3,12px);border:1px solid var(--panel-border);border-radius:var(--radius-button,8px);background:var(--accent);color:var(--text);font-weight:700;cursor:pointer }
+  .publish-actions button:disabled { opacity:.5;cursor:not-allowed }
+  .publish-actions .publish-danger { background:transparent;color:var(--danger-fg) }
+</style>
+
+<script>
+  const status = document.getElementById("publish-status")!;
+  const error = document.getElementById("publish-error")!;
+  const hashEl = document.getElementById("snapshot-hash")!;
+  const pagesEl = document.getElementById("snapshot-pages")!;
+  const detail = document.getElementById("run-detail")!;
+  const publishBtn = document.getElementById("publish-now") as HTMLButtonElement;
+  const retryBtn = document.getElementById("retry-run") as HTMLButtonElement;
+  const unpublishBtn = document.getElementById("unpublish-site") as HTMLButtonElement;
+  let latest: any = null;
+  let siteId = "default";
+
+  function setError(message = "") {
+    error.textContent = message;
+    error.hidden = !message;
+  }
+
+  function render(data: any) {
+    siteId = data.siteId || "default";
+    latest = data.latest || null;
+    hashEl.textContent = data.snapshot?.hash ?? "Sin snapshot";
+    pagesEl.replaceChildren();
+    for (const [slug, revisionId] of Object.entries(data.snapshot?.revisionIds ?? {})) {
+      const li = document.createElement("li");
+      li.textContent = `${slug} · ${revisionId}`;
+      pagesEl.appendChild(li);
+    }
+    detail.replaceChildren();
+    if (!latest) {
+      detail.textContent = "Todavía no hay una ejecución de publicación.";
+    } else {
+      for (const [key, value] of Object.entries({
+        Estado: latest.status,
+        Proveedor: latest.provider,
+        Snapshot: latest.snapshotHash,
+        Intentos: latest.attempts,
+        Inicio: latest.startedAt,
+        Fin: latest.finishedAt ?? "—",
+        Commit: latest.commitSha ?? "—",
+        URL: latest.pagesUrl ?? "—",
+        Error: latest.errorCode ?? "—",
+      })) {
+        const dt = document.createElement("dt");
+        dt.textContent = key;
+        const dd = document.createElement("dd");
+        dd.textContent = String(value);
+        detail.append(dt, dd);
+      }
+    }
+    status.textContent = data.published
+      ? `Publicado: ${data.published.pagesUrl ?? data.published.commitSha ?? "sin URL"}`
+      : "Sin publicación activa.";
+    retryBtn.disabled = !latest || latest.status === "published";
+    unpublishBtn.disabled = !data.published;
+  }
+
+  async function load() {
+    setError();
+    const res = await fetch(`/admin/api/publication?siteId=${encodeURIComponent(siteId)}`, { credentials: "same-origin" });
+    if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    if (!res.ok) throw new Error(`No se pudo leer el estado (HTTP ${res.status}).`);
+    render(await res.json());
+  }
+
+  async function act(action: string) {
+    setError();
+    const body: any = { action, siteId };
+    if (action === "retry") body.runId = latest?.id;
+    const res = await fetch("/admin/api/publication", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || `HTTP ${res.status}`);
+    await load();
+  }
+
+  publishBtn.addEventListener("click", () => { publishBtn.disabled = true; void act("publish").catch((e) => setError((e as Error).message)).finally(() => { publishBtn.disabled = false; }); });
+  retryBtn.addEventListener("click", () => { retryBtn.disabled = true; void act("retry").catch((e) => setError((e as Error).message)).finally(() => { retryBtn.disabled = false; }); });
+  unpublishBtn.addEventListener("click", () => { if (window.confirm("¿Retirar la proyección pública? El canon privado no se modifica.")) { unpublishBtn.disabled = true; void act("unpublish").catch((e) => setError((e as Error).message)).finally(() => { unpublishBtn.disabled = false; }); } });
+
+  void load().catch((e) => setError((e as Error).message));
+</script>

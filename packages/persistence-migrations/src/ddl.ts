@@ -37,3 +37,14 @@ export const MCP_AUDIT_APPEND_ONLY_DDL =
 export const MCP_AUDIT_NO_DELETE_DDL =
   "CREATE TRIGGER IF NOT EXISTS mcp_audit_events_no_delete BEFORE DELETE ON mcp_audit_events " +
   "BEGIN SELECT RAISE(ABORT, 'mcp audit events are append-only'); END";
+
+export const PUBLICATION_RUNS_TABLE_DDL =
+  "CREATE TABLE IF NOT EXISTS publication_runs (" +
+  "id TEXT PRIMARY KEY, site_id TEXT NOT NULL, provider TEXT NOT NULL, " +
+  "snapshot_hash TEXT NOT NULL, revision_ids_json TEXT NOT NULL, status TEXT NOT NULL, " +
+  "attempts INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, finished_at TEXT, " +
+  "error_code TEXT, commit_sha TEXT, pages_url TEXT)";
+export const PUBLICATION_RUNS_SNAPSHOT_INDEX_DDL =
+  "CREATE INDEX IF NOT EXISTS idx_publication_runs_snapshot ON publication_runs(snapshot_hash, started_at DESC)";
+export const PUBLICATION_RUNS_STATUS_INDEX_DDL =
+  "CREATE INDEX IF NOT EXISTS idx_publication_runs_status ON publication_runs(status, started_at DESC)";

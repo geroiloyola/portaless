@@ -32,7 +32,10 @@
     "test:browser": "playwright test",
     "generate-schema": "node scripts/generate-schema.mjs",
     "publish": "tsx scripts/publish-site.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "backup": "node node_modules/tsx/dist/cli.mjs scripts/backup-node.mjs",
+    "test:resources": "node node_modules/tsx/dist/cli.mjs scripts/resource-budget.mjs",
+    "verify:runtime": "node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-profile.mjs"
   },
   "dependencies": {
     "@noble/post-quantum": "^0.5.0",

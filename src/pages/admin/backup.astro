@@ -1,0 +1,67 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Backups del nodo — Portaless Admin">
+  <main class="container backup-page">
+    <p><a href="/admin/publish">← Publicación</a></p>
+    <h1>Backups del nodo canónico</h1>
+    <p class="backup-lead">
+      Un backup incluye la base canónica (páginas, revisiones, aprobaciones y configuración)
+      con checksum. Los secretos quedan fuera salvo que uses la CLI con opt-in explícito.
+      La restauración es CLI y exige detener el escritor activo.
+    </p>
+    <p id="backup-status" role="status">Cargando…</p>
+    <p id="backup-error" class="backup-error" role="alert" hidden></p>
+    <button type="button" id="backup-create">Crear backup ahora</button>
+    <ul id="backup-list" class="backup-list"></ul>
+    <p class="backup-note">Restaurar: <code>npm run backup -- restore &lt;dir&gt; --target=/data/portaless.db --overwrite</code> (con el nodo detenido).</p>
+  </main>
+</BaseLayout>
+
+<style>
+  .backup-page { max-width:52rem;margin-inline:auto;padding-block:var(--space-6,32px) }
+  .backup-lead,.backup-note { color:var(--muted);max-width:42rem }
+  .backup-error { padding:var(--space-3,12px);border-inline-start:4px solid var(--danger-fg);background:var(--danger-bg);color:var(--text) }
+  #backup-create { min-height:44px;padding-inline:var(--space-3,12px);border:1px solid var(--panel-border);border-radius:var(--radius-button,8px);background:var(--accent);color:var(--text);font-weight:700;cursor:pointer }
+  .backup-list { margin-block:var(--space-4,16px);padding:0;list-style:none;border:1px solid var(--panel-border);border-radius:var(--radius,22px) }
+  .backup-list li { padding:var(--space-3,12px);border-bottom:1px solid var(--panel-border);font-family:var(--font-mono,monospace);font-size:.78rem;overflow-wrap:anywhere }
+  .backup-list li:last-child { border-bottom:0 }
+</style>
+
+<script>
+  const status = document.getElementById("backup-status")!;
+  const error = document.getElementById("backup-error")!;
+  const list = document.getElementById("backup-list")!;
+  const create = document.getElementById("backup-create") as HTMLButtonElement;
+
+  function setError(message = "") { error.textContent = message; error.hidden = !message; }
+
+  async function load() {
+    setError();
+    const res = await fetch("/admin/api/backup", { credentials: "same-origin" });
+    if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    list.replaceChildren();
+    for (const backup of body.backups ?? []) {
+      const li = document.createElement("li");
+      li.textContent = `${backup.id} · ${backup.database.bytes} bytes · sha256 ${backup.database.sha256.slice(0, 16)}… · schema ${backup.schemaVersion ?? "?"}`;
+      list.appendChild(li);
+    }
+    status.textContent = body.backups?.length ? `${body.backups.length} backup(s) verificado(s).` : "Todavía no hay backups.";
+  }
+
+  create.addEventListener("click", () => {
+    create.disabled = true;
+    setError();
+    void (async () => {
+      const res = await fetch("/admin/api/backup", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}" });
+      if (res.status === 401) { window.location.href = "/admin/login?error=1"; return; }
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+      await load();
+    })().catch((e) => setError((e as Error).message)).finally(() => { create.disabled = false; });
+  });
+
+  void load().catch((e) => setError((e as Error).message));
+</script>

@@ -1,0 +1,19 @@
+# Minimal private-node profile (C37). One process, one volume, bounded memory,
+# CPU and concurrency. Use docker-compose.private.yml for private networking.
+services:
+  portaless:
+    build: .
+    image: portaless:minimal
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 1.0
+    environment:
+      PORTALESS_SQLITE_PATH: /data/portaless.db
+      PORTALESS_MAX_CONCURRENT_REQUESTS: "8"
+      NODE_OPTIONS: "--max-old-space-size=1536"
+    volumes:
+      - portaless-data:/data
+    ports:
+      - "127.0.0.1:3000:3000"
+volumes:
+  portaless-data:

@@ -174,7 +174,7 @@ describe("upgrade histórico y recuperación", () => {
     const result = await migrateSqlite(path);
     expect(result.from).toBe(1);
     expect(result.to).toBe(schemaVersion());
-    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events"]);
+    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs"]);
     expect(result.backupPath).toBeTruthy();
 
     const upgraded = await openSqlite(path);
@@ -230,7 +230,7 @@ describe("upgrade histórico y recuperación", () => {
     const recovered = await migrateSqlite(restoredPath);
     expect(recovered.from).toBe(2);
     expect(recovered.to).toBe(schemaVersion());
-    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events"]);
+    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs"]);
     const finalDb = await openSqlite(restoredPath);
     expect(currentVersion(finalDb)).toBe(schemaVersion());
     expect(finalDb.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();

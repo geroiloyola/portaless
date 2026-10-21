@@ -19,7 +19,7 @@
 // Modulo PURO (sin I/O, sin SQLite): lo importan el runner, el doctor y los
 // tests, y tambien `functions/` y `server/`.
 
-import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL, PLUGIN_EMAIL_QUOTA_DDL } from "./ddl";
+import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL, PLUGIN_EMAIL_QUOTA_DDL, PUBLICATION_RUNS_SNAPSHOT_INDEX_DDL, PUBLICATION_RUNS_STATUS_INDEX_DDL, PUBLICATION_RUNS_TABLE_DDL } from "./ddl";
 
 export interface Migration {
   version: number;
@@ -135,6 +135,7 @@ const MCP_AUDIT_EVENT_STATEMENTS = [MCP_AUDIT_TABLE_DDL, MCP_AUDIT_INDEX_DDL, MC
  * editando esta.
  */
 const EMAIL_CAPABILITY_STATEMENTS = [PLUGIN_EMAIL_QUOTA_DDL];
+const PUBLICATION_RUNS_STATEMENTS = [PUBLICATION_RUNS_TABLE_DDL, PUBLICATION_RUNS_SNAPSHOT_INDEX_DDL, PUBLICATION_RUNS_STATUS_INDEX_DDL];
 
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "baseline", statements: [] },
@@ -181,6 +182,12 @@ export const MIGRATIONS: readonly Migration[] = [
     statements: MCP_AUDIT_EVENT_STATEMENTS,
     createsTables: { mcp_audit_events: ["event_id", "timestamp", "agent_key_id", "tool_name", "capability_id", "outcome", "error_code", "subject_id", "revision_id"] },
   },
+  {
+    version: 9,
+    name: "publication_runs",
+    statements: PUBLICATION_RUNS_STATEMENTS,
+    createsTables: { publication_runs: ["id", "site_id", "provider", "snapshot_hash", "revision_ids_json", "status", "attempts", "started_at", "finished_at", "error_code", "commit_sha", "pages_url"] },
+  },
 ];
 
 /**
@@ -204,6 +211,7 @@ export const REQUIRED_SCHEMA_COLUMNS: Readonly<Record<string, readonly string[]>
   webbotauth_nonces: ["nonce", "expires_at"],
   mcp_agent_tokens: ["token_hash", "agent_key_id", "display_name", "created_at", "revoked"],
   mcp_audit_events: ["event_id", "timestamp", "agent_key_id", "tool_name", "capability_id", "outcome", "error_code", "subject_id", "revision_id"],
+  publication_runs: ["id", "site_id", "provider", "snapshot_hash", "revision_ids_json", "status", "attempts", "started_at", "finished_at", "error_code", "commit_sha", "pages_url"],
   site_atproto_links: ["site_id", "handle", "added_at"],
   cloud_images: ["image_id", "content_hash", "content_type", "byte_length", "declared_origin", "site_id", "site_did", "key_id", "key_algorithm", "signed_at", "sidecar_json", "bytes", "created_by", "created_at"],
   site_skin: ["site_id", "skin", "tokens_json", "updated_at"],

@@ -62,6 +62,7 @@ export const REQUIRED_TABLES = [
   "plugin_artifact_chunks",
   "plugin_storage",
   "plugin_email_quota",
+  "publication_runs",
 ];
 
 function defaultSqlitePath() {
