@@ -82,7 +82,7 @@ Categorías por **quién** debe resolver la pieza, no por prioridad:
 ### Calidad continua (CI/CD)
 
 - [x] CI real en Node 24 (`npm test` bloquea), validacion de manifiestos con el mismo `validateManifest()` de produccion.
-- [x] Full Tests con cobertura (linea de base 47.43% lineas; minimos 45/44/46/40) y smoke de `npm run setup`.
+- [x] Full Tests con cobertura (mínimos actuales 68/67/66/65; el 45/44/46/40 es histórico) y smoke de `npm run setup`.
 - [x] Job `docker-smoke` (arranque, setup, reinicio, bloqueo del segundo setup).
 
 ### Self-host (Ready)
@@ -112,7 +112,7 @@ Responsabilidad exclusiva de Portaless: no depende de ningun tercero.
 - [ ] Proxy confiable para `X-Forwarded-For` en self-host (rate limit de reset).
 - [ ] Verificacion reforzada por email para acciones sensibles (bloqueado por falta de backend `email:send`).
 - [ ] Tests de navegador (Playwright) para `/admin/security`, `/admin/wizard/rotate-identity` y el Paso 4 del wizard.
-- [ ] Subir los minimos de cobertura de Full Tests de 45/44/46/40 hacia 60-70%, sin bajarlos nunca.
+- [x] Subir los mínimos de cobertura de Full Tests (actuales 68/67/66/65; histórico 45/44/46/40), sin bajarlos nunca.
 - [ ] MCP server: identidad de agente por invocacion (hoy es por proceso; riesgo de seguridad activo documentado en `AGENT.md`).
 - [ ] Identidad AT Protocol (`packages/identity-atproto/` sigue siendo stub).
 

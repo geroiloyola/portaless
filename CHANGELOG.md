@@ -14,8 +14,9 @@ maintained in English only.)
 > security review or a second maintainer has a fixed point to check out. The
 > first such tag is **`v0.0.10`** (the accumulated work that used to sit under
 > the single `0.0.9.10 (unreleased)` heading); **`v0.0.11`** is the second fixed
-> point. New work goes under **Unreleased** and gets its own tag when it ships. This is **not** called “Beta”: the ROADMAP
-> gates that name on exit criteria that are still open.
+> point. New work goes under **Unreleased** and gets its own tag when it ships.
+> This is the **Beta, invite-only**; the next milestone remains gated by the
+> ROADMAP exit criteria, not by a version number.
 
 ## Migration (how to update a deployment without losing data)
 
@@ -37,7 +38,7 @@ closed).
 
 ## Unreleased
 
-- **Post-`v0.0.11` consistency and Trust Layer audit (branch `audit/v0.0.11-consistency`).** Corrects the capability count to **5 of 12 plugin capabilities still at `501`** (`network:fetch` is implemented by each sandbox adapter, not by the six non-network host-bridge backends) across README, AGENT/AGENTS, ROADMAP, home copy, ecosystem boundaries and the sandbox guide, with a source-count regression test. The Web Bot Auth key-directory fetch now uses the hardened `createSafeFetcher` path (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap), with integration tests for a metadata-IP directory and a private-hop redirect. `/admin/api/agents` now reports `enforced` and the panel warns when `ENABLE_TRUST_LAYER` is off; the panel also states that only `ai_input` is request-enforced while `search`/`ai_train` are cooperative published signals. `SECURITY.md` no longer implies a private reporting channel exists (owner decision pending) and records the verified `main` protection; `docs/security-review-guide.md` now covers the Trust Layer, MCP HTTP, email, publication, backup/restore and AI provider. Local validation: 244 files / 2,117 tests / 1 skipped, 72 Playwright, 79 pages. Open owner decisions: Alpha vs Beta naming, unsigned search-bot handling, and the private security channel.
+- **Post-`v0.0.11` consistency and Trust Layer audit (branch `audit/v0.0.11-consistency`).** Corrects the capability count to **5 of 12 plugin capabilities still at `501`** (`network:fetch` is implemented by each sandbox adapter, not by the six non-network host-bridge backends) across README, AGENT/AGENTS, ROADMAP, home copy, ecosystem boundaries and the sandbox guide, with a source-count regression test. The Web Bot Auth key-directory fetch now uses the hardened `createSafeFetcher` path (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap), with integration tests for a metadata-IP directory and a private-hop redirect. `/admin/api/agents` now reports `enforced` and the panel warns when `ENABLE_TRUST_LAYER` is off; the panel also states that only `ai_input` is request-enforced while `search`/`ai_train` are cooperative published signals. `SECURITY.md` no longer implies a private reporting channel exists (owner decision pending) and records the verified `main` protection; `docs/security-review-guide.md` now covers the Trust Layer, MCP HTTP, email, publication, backup/restore and AI provider. Status wording is now **Beta, invite-only** in the README, badge, SECURITY, `/beta` and the home (EN/ES); the next milestone remains a ROADMAP exit criterion. The Web Bot Auth directory now pins the validated IP in the Node runtime (one lookup, private/loopback/link-local/mapped ranges rejected), caches failures for 60 s in a bounded LRU (256) and caps in-flight directory fetches at 8. Unsigned bot-like requests still receive `403` on content even with `ai_input=allow`; a test fixes that behavior and the panel states it when the Trust Layer is active. Local validation: 246 files / 2,136 tests / 1 skipped, 72 Playwright, 79 pages. Open owner decisions: unsigned search-bot exception and the private security channel.
 
 ## v0.0.11 (2026-10-21)
 

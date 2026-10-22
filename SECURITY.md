@@ -24,7 +24,7 @@ Do not publish exploitation details until an assessment and coordinated disclosu
 
 ## Security status
 
-Portaless is an alpha / MVP under active development. It must not be considered production-ready, nor used with sensitive data, without an independent review and validation of the deployment environment.
+Portaless is in **Beta, invite-only**, under active development. It must not be considered production-ready, nor used with sensitive data, without an independent review and validation of the deployment environment.
 
 Areas that require special attention:
 
@@ -123,15 +123,25 @@ audits dependencies against the time-bounded allowlist, and scans fetched Git
 history for secrets.
 
 **A workflow existing does not make it a merge gate.** Branch protection on
-`main` is an external GitHub setting. It was verified on 2026-10-21 as:
-required status checks `build`, `docker-smoke`, `upgrade`,
-`Todos los tests + cobertura (Node 24)`, `vitest tests/unit (Node 24)` and
-`audit`; strict (branches must be up to date); one approving review; enforce
-for administrators; no force-pushes and no branch deletion; conversation
-resolution required. If the GitHub setting changes, this paragraph is stale
-and the setting is the source of truth. The security scan uses `npm ci`, the
-time-bounded audit allowlist, the `isolated-vm` version check, and a pinned
-Gitleaks action over fetched history.
+`main` is an external GitHub setting. It was verified on **2026-10-22** with
+`GET /repos/geroiloyola/portaless/branches/main/protection`:
+
+- required status checks: `build`, `docker-smoke`, `upgrade`,
+  `Todos los tests + cobertura (Node 24)`, `vitest tests/unit (Node 24)`,
+  `audit`; `strict: true`;
+- required approving reviews: `1`; `dismiss_stale_reviews: true`;
+  `require_code_owner_reviews: false`; `require_last_push_approval: false`;
+- `enforce_admins: true`;
+- `allow_force_pushes: false`; `allow_deletions: false`;
+- `required_conversation_resolution: true`;
+- `required_signatures: false`; `required_linear_history: false`;
+  `lock_branch: false`; `allow_fork_syncing: false`.
+
+That branch-protection response does not expose a `bypass_actors` field, so
+this policy makes no claim about bypass actors. If the GitHub setting changes,
+this paragraph is stale and the setting is the source of truth. The security
+scan uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version
+check, and a pinned Gitleaks action over fetched history.
 
 ## Scope and limitations
 

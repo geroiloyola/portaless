@@ -7,7 +7,7 @@
 A lightweight, open source, modular CMS — built to be published without paid hosting, without plugins that break your site, and with real control over which AI agents can access your content.
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-5A6B24?style=flat&labelColor=261C15)](./LICENSE)
-[![Status: Alpha](https://img.shields.io/badge/status-alpha%20%2F%20MVP-F05D23?style=flat&labelColor=261C15)](./ROADMAP.md)
+[![Status: Beta, invite-only](https://img.shields.io/badge/status-beta%20%2F%20invite--only-5A6B24?style=flat&labelColor=261C15)](./ROADMAP.md)
 [![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
 [![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](./docs/protocol-apw/APW-SPEC-v1.3.md)
 
@@ -25,13 +25,13 @@ Portaless is a CMS built on [Astro](https://astro.build) that solves, by archite
 
 - **No exposed database, no server to manage** — the site compiles to static HTML and is served from free infrastructure (GitHub Pages, Cloudflare Pages).
 - **Sandboxed plugins with atomic permissions**, instead of unrestricted access to the core (the documented root cause of the overwhelming majority of WordPress's historical vulnerabilities).
-- **Granular control over AI agents**: cryptographic bot identification, pay-per-crawl policies, and a public traceability ledger. You decide, from the panel, the terms for search engines, AI assistants and model training. The site publishes them in writing and enforces the AI-input rule on signed agent requests; search and training remain cooperative signals.
+- **Granular control over AI agents**: cryptographic bot identification, pay-per-crawl policies, and a public traceability ledger. You decide, from the panel, the terms for search engines, AI assistants and model training. The site publishes them in writing and enforces the AI-input rule on signed agent requests; search and training remain cooperative signals (not enforced per request).
 - **A native visual editor (Atomic Elements)**, designed to be radically lighter than Elementor.
 - **A modular dashboard with swappable "skins"**, no CSS or PHP required.
 - **Real account protection**: two-factor authentication, password recovery, and login via external providers (Google, GitHub, etc.).
 - **Cross-site trust and discovery** via Protocol APW and a public `SiteTrustScore`, so independent Portaless instances can verify each other without any central authority.
 
-> **Current status: alpha / MVP.** Not everything described in the whitepaper is implemented yet. Before using this in production, read the [Real status by module](#real-status-by-module) section and [`ROADMAP.md`](./ROADMAP.md).
+> **Current status: Beta, invite-only.** Not everything described in the whitepaper is implemented yet. Before using this in production, read the [Real status by module](#real-status-by-module) section and [`ROADMAP.md`](./ROADMAP.md). The ROADMAP gates the next milestone on exit criteria that are still open.
 
 ---
 
@@ -55,9 +55,9 @@ Real screenshots of the running product — captured from the live app, not mock
 
 ---
 
-## Public Beta
+## Beta (invite-only)
 
-Portaless is in its **first public Beta**. What that means honestly:
+Portaless is in its **Beta**, invite-only. What that means honestly:
 
 - **Ready today**: the full edit→publish cycle from the browser (17-element catalog, 6 skins), integrated publication with explicit approval snapshots, publish/retry/unpublish, checksummed canonical backups and single-writer restore, minimal/private node profiles with a measured 2 GiB / 20 GiB reference budget, `did:apw` cryptographic identity with key rotation, SiteTrustScore (4 sources), external witnesses, the Portaless Index aggregator with calibrated weights and inter-node sync, plugin sandboxing, an MIT-licensed [plugin SDK](./packages/plugin-sdk/) (with a [plugin-author guide](./docs/plugin-author-guide.md)), signed community attestations, a recomputable ranking defined in the spec (V-16), and the open [Protocol APW](./docs/protocol-apw/APW-SPEC-v1.3.md) with independently checkable [test vectors](./docs/protocol-apw/APW-VECTORS-v1.3.md) that run as an **executable conformance suite** (110/110 cases over 11 vectors) plus a [starter kit](./docs/protocol-apw/STARTER-KIT.md) for implementers who never saw this code.
 - **Not ready yet**: the integrated publisher builds only on self-hosted Node (Cloudflare Pages answers `503 build_runtime_unavailable`) and still needs GitHub credentials connected; Cloudflare Pages OAuth in the wizard is “coming soon”; the plugin installer exists but is **behind a flag, off by default**, and five plugin capabilities still answer an explicit `501` (`content:*`, `storage:*`, `agent:identify`, `email:send` and `network:fetch` are real); discovery across nodes has a shipped mechanism but **no public endpoint, because there are no peers to federate with**; this Beta has a **single maintainer**, so it is **invite-only** — no public sign-up until a second maintainer with real merge permissions exists ([the recorded decision](./SECURITY.md#bus-factor-single-maintainer-risk)); and the roadmap's exit criterion — a person outside the project installing Portaless unaided, with their site appearing in an Index node that is not the author's — has **not been met yet**. “Beta” is the honest name for that stage, not a marketing number.
@@ -72,7 +72,7 @@ Portaless is in its **first public Beta**. What that means honestly:
 
 - [What is Portaless?](#what-is-portaless)
 - [See Portaless in action](#see-portaless-in-action)
-- [Public Beta](#public-beta)
+- [Beta (invite-only)](#beta-invite-only)
 - [Features](#features)
 - [Recent updates](#recent-updates)
 - [Real status by module](#real-status-by-module)
@@ -284,7 +284,7 @@ To charge AI crawlers through Cloudflare Pay Per Crawl:
 
 1. Serve the site through Cloudflare with Pay Per Crawl and dynamic pricing enabled for the domain. Make sure the origin only accepts traffic that comes through Cloudflare (e.g. Cloudflare Tunnel or Authenticated Origin Pulls) — otherwise the `cf-pay-per-crawl` header could be spoofed.
 2. Generate the site's APW identity in the onboarding wizard (it defines the site domain).
-3. Set the `charge` rule with a `price_usd` of at least `0.01`, and `"settlement_provider": "cloudflare-pay-per-crawl"`. The three rules (`search`, `ai_input`, `ai_train`) can be saved from the panel in [`/admin/agents`](#public-beta), which takes precedence over the file; the settlement provider lives only in `portaless-content-policy.json`, so edit that file for it.
+3. Set the `charge` rule with a `price_usd` of at least `0.01`, and `"settlement_provider": "cloudflare-pay-per-crawl"`. The three rules (`search`, `ai_input`, `ai_train`) can be saved from the panel in [`/admin/agents`](#beta-invite-only), which takes precedence over the file; the settlement provider lives only in `portaless-content-policy.json`, so edit that file for it.
 4. In `/admin/settlement`, enter a Cloudflare API token with **Zone Read** only (never the Global API Key) and the Zone ID, plus your password (and 2FA code, if enabled). Portaless verifies the token against the zone before activating anything.
 
 Portaless never processes the payment: Cloudflare charges the crawler. The ledger records the access with `charged: false` because the origin cannot know whether the crawler paid.
