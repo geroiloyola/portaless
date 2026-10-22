@@ -24,7 +24,7 @@ import {
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 import { __resetNonceStoreFactoryForTests } from "../../packages/trust-layer/src/webbotauth/nonce-store";
 import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory";
-import { readUnsignedBotRejections } from "../../packages/trust-layer/src/ledger/unsigned-bot-metrics";
+import { readUnsignedBotRejections, __flushUnsignedBotMetricsForTests } from "../../packages/trust-layer/src/ledger/unsigned-bot-metrics";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "mw-key-1";
@@ -204,6 +204,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     expect(res!.status).toBe(403);
     expect((await res!.json()).error).toBe("unsigned_automated_request");
     expect(next).not.toHaveBeenCalled();
+    await __flushUnsignedBotMetricsForTests(env);
     expect((await readUnsignedBotRejections(env)).periods[0]).toMatchObject({ googlebot: 1, bingbot: 0, other: 0, unknown: 0 });
   });
 
