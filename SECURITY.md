@@ -137,11 +137,17 @@ history for secrets.
 - `required_signatures: false`; `required_linear_history: false`;
   `lock_branch: false`; `allow_fork_syncing: false`.
 
-That branch-protection response does not expose a `bypass_actors` field, so
-this policy makes no claim about bypass actors. If the GitHub setting changes,
+`GET /repos/geroiloyola/portaless/rulesets` returned `[]`: there are no
+repository rulesets, so the classic branch protection above is the effective
+rule. That response does not expose a `bypass_actors` field, so this policy
+makes no claim about bypass actors. If the GitHub setting changes,
 this paragraph is stale and the setting is the source of truth. The security
 scan uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version
-check, and a pinned Gitleaks action over fetched history.
+check, and a pinned Gitleaks action over fetched history. The Gitleaks scan is
+a **step inside the `audit` job**, not a separate commit status. Playwright is
+a **step inside the `build` job** of `ci.yml`, not a separate commit status;
+requiring `build` therefore requires Playwright, and requiring `audit`
+therefore requires Gitleaks plus `npm audit` and the `isolated-vm` check.
 
 ## Scope and limitations
 
