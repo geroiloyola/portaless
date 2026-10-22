@@ -126,9 +126,9 @@ Key files, in review order:
 | File | What to check |
 |---|---|
 | `functions/_middleware.js` | Order of gates: migrations, legacy 301 (relative `Location`, base-path boundary), public discovery routes, `ENABLE_TRUST_LAYER`, signature presence, UA heuristic, `verifyWebBotAuthRequest`, policy load, ledger write. A policy `block` must answer `403`; `charge` without settlement must answer `402`; `allow` must call `next()`. |
-| `packages/trust-layer/src/webbotauth/verify.ts` | `Signature-Agent` must be HTTPS and signed; directory fetch goes through `createSafeFetcher` (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap, 2 redirects); 60 s negative cache (LRU, 256 entries) and at most 8 directory fetches in flight; nonce is consumed only after the signature verifies. |
+| `packages/trust-layer/src/webbotauth/verify.ts` + `directory-fetch.ts` | `Signature-Agent` must be HTTPS and signed; single-flight, bounded caches and admission precede crypto verification. 5 s timeout, 512 KiB body cap, 2 redirects; one fetch per origin; 6 cold-origin slots and 2 reserved slots within 8 total. Unavailable/cached failures map to `503 Retry-After`, not policy misconduct. Nonce is consumed only after signature verification. |
 | `packages/apw-resolver/src/federation/safe-fetch.ts` | Private IPv4/IPv6, `::ffff:` mapped forms and bracketed literals; `redirect: "manual"` and per-hop re-validation; streaming byte cap; DNS `lookup` resolves once and `fetchPinned` receives that validated address. In self-host, `server/node-runtime.mjs` pins the connection to it (Host/SNI unchanged) so a second DNS answer cannot rebind. |
-| `server/node-runtime.mjs` | `createPinnedFetch()` connects to the address validated by the safe-fetcher, not to a fresh DNS resolution. The binding is exposed as `env.__PORTALESS_DIRECTORY_FETCHER` and used by the middleware. |
+| `server/node-runtime.mjs` | `createPinnedFetch()` connects to the validated address without a fresh DNS resolution. TLS certificate hostname validation and SNI remain bound to the URL hostname; `rejectUnauthorized` stays true. Binding: `env.__PORTALESS_DIRECTORY_FETCHER`. Real TLS regression: `tests/unit/pinned-fetch-tls.test.ts`. |
 | `packages/trust-layer/src/policy/load-policy.ts` + `agent-access-store.ts` | Precedence store > asset > default; invalid or half-written policy never applies; the panel override is not cached. |
 | `packages/trust-layer/src/policy/agent-access-store.ts` | `PUT` validation: three rules, `allow|charge|block`, positive price for `charge`; `site` is server-fixed. |
 | `packages/trust-layer/src/policy/robots-generator.ts` | `search`/`ai-train`/`ai-input` become `Content-Signal`; `block` becomes `no`. |
@@ -143,20 +143,73 @@ next request is `403`; set `ai_input=charge` with no settlement and confirm
 `ai_input=allow`, see B3 below); send many invalid origins and confirm the
 negative cache prevents repeated fetches.
 
-**Cost/abuse (B6):** a failed origin is remembered for 60 s in a bounded LRU
-(256 entries), and directory fetches are capped at 8 in flight. Repeated
-invalid origins no longer create one fetch per request; an overload burst
-fails closed without caching the rejection. The remaining limit is that the
-cache is per-process, so multiple instances each allow their own 8 fetches.
+**Admission/exhaustion (round 4):** baseline `ef9f65d` with 20 simultaneous
+origins delayed 5 s consumed all 8 slots; a legitimate cold directory received
+no fetch. Single-flight now permits one fetch per canonical origin (concurrent
+callers share its result). At most 6 slots can be occupied by cold, unapproved
+origins. The other 2 are available to origins configured locally in
+`PORTALESS_WBA_RESERVED_ORIGINS` (comma-separated HTTPS origins, maximum 256)
+or with a successfully verified signature previously seen by this process.
+Reservation is admission eligibility, not authentication or a category grant.
+Claiming that origin in `Signature-Agent` cannot grant an extra same-origin
+fetch: single-flight still applies. The verified-origin LRU is bounded and
+resets on process restart; owner-configured reservations work with a cold cache.
+The positive cache and 60 s negative LRU each hold at most 256 origins. LRU hits
+do not extend the failure deadline. Unknown origins can still be denied during
+a flood; attackers can also target known/reserved origins. These finite slots
+improve isolation, not universal availability. Everything is per process/isolate.
 
-There is **no per-window egress budget** today. The hard per-fetch bounds are
-5 s and 512 KiB with at most 2 redirects, so the current worst case is 8
-concurrent fetches × up to 3 HTTPS requests × 512 KiB. Proposed budget:
-**32 directory fetches per minute per process and 16 MiB of directory egress
-per minute per process**, with the 60 s negative cache and a 429/503-style
-fail-closed response when the window is exhausted. That needs an owner
-decision and a traffic measurement before being enabled; this pass only
-documents the proposal.
+**Egress budget design — NOT IMPLEMENTED.** This design **replaces the earlier
+global fail-closed proposal of 32 fetches/min and 16 MiB/min per process**.
+A single global budget would let unrelated unauthenticated traffic starve all
+legitimate readers. The implemented concurrency ceiling is only a backstop;
+it is not this per-window budget. The future budget must apply before identity
+verification and charge every redirect and DNS/DoH/DID/history/evidence hop:
+
+| Budget dimension | Proposed window and action (not enabled) |
+|---|---|
+| Canonical directory origin, before authentication | Per-origin token bucket; starting proposal 8 cold fetch attempts/min and 4 MiB response body/min. Single-flight/cache hits do not start a second fetch. Throttle that origin with `503 Retry-After`; do not poison unrelated origins. |
+| Unauthenticated client | Starting proposal 20 verification attempts/min and 8 MiB outbound response body/min per client bucket; `429 Retry-After` before starting more egress. Multiple clients cannot bypass the origin limit. |
+| Verified identity | Separate post-verification request/byte bucket per verified key/identity (starting proposal 120 reads/min, byte quota chosen for the site's workload). IP rotation does not reset it. This cannot replace the two pre-authentication budgets. |
+
+Never persist raw client IP. Derive an HMAC bucket from the runtime-trusted IP
+using a server secret rotated each UTC day; retain counters for the active
+window only and overlap old/new buckets conservatively across rotation. The
+rotation secret must not be exposed or logged. Raw IP and raw UA are not ledger
+fields. Self-host accepts only runtime-injected `x-portaless-client-ip`, derived
+from the socket and explicitly trusted proxies; Cloudflare Pages accepts
+`CF-Connecting-IP` only inside its trusted ingress. A directly accessible origin
+must not trust an incoming Cloudflare header. Missing trusted IP/secret goes
+to a bounded shared unknown-client bucket, never an unlimited exemption. These
+values need workload measurements, owner approval and tests before deployment.
+
+**TLS and Cloudflare runtime boundary:** Node uses one validated DNS answer per
+redirect hop and pins that connection while checking the URL hostname's TLS
+certificate. A trusted certificate for `other.example` is rejected for
+`expected.example` in the real TLS test. Workers/Pages use platform `fetch`:
+HTTPS/TLS hostname checks, blocked literal addresses and manual redirect-hop
+validation apply, but application-controlled DNS/connection pinning is absent.
+Do not claim equivalent DNS-rebinding protection there. Stronger guarantees
+require a platform/network egress policy or trusted egress proxy and a real
+deployment verification; this round makes no untested claim about Workers
+blocking every private DNS destination.
+
+**Egress ranges, baseline vs. round 4:** `egress-ip.ts` is the executable source.
+
+| CIDR | Baseline `ef9f65d` | Round 4 |
+|---|---|---|
+| `0.0.0.0/8`, `10.0.0.0/8`, `100.64.0.0/10`, `127.0.0.0/8`, `169.254.0.0/16`, `172.16.0.0/12`, `192.168.0.0/16` | Rejected | Rejected |
+| `192.0.0.0/24`, `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`, `203.0.113.0/24` | Missing | Rejected |
+| `224.0.0.0/4`, `240.0.0.0/4` | Rejected | Rejected |
+| `::/128`, `::1/128`, `fc00::/7` | Compressed forms recognized; expanded DNS forms incomplete | Rejected after numeric normalization |
+| `fe80::/10` | Only textual `fe80:` recognized (not the full /10) | Entire /10 rejected |
+| `ff00::/8`, `64:ff9b::/96`, `64:ff9b:1::/48`, `2002::/16`, `2001::/32` | Missing | Entire prefixes rejected, including embedded IPv4 in NAT64/6to4/Teredo |
+| `::ffff:0:0/96` | Only recognized mappings to a private IPv4 rejected | Entire prefix rejected, including public embedded IPv4; no mapped-address routing ambiguity |
+
+The denylist is not a complete registry of every special-use address. Literal
+and DNS-answer regressions cover each listed prefix and boundary; invalid DNS
+address strings also fail closed. Other application egress paths must opt into
+this fetcher; email transports keep their separately documented network policy.
 
 **Search-bot decision (B3):** `looksLikeAutomatedAgent()` matches
 `bot|crawler|spider|gpt|claude|scrapy|python-requests`. An unsigned request
@@ -164,19 +217,28 @@ with such a UA is rejected with `403 unsigned_automated_request` **before the
 policy is read**, so it is rejected even when `ai_input=allow`; the default
 `ai_input` is `charge` with `price_usd: 0.002` and `unit: "request"`. A test
 fixes this behavior and the panel banner states it when the Trust Layer is
-active. Exempting a UA would be spoofable; the owner may still choose a
-separately reviewed search-bot exception (for example, a verified IP range or
-signed discovery), but this pass does not add one.
+active. User-Agent filtering only detects the bot that declares itself; a
+scraper impersonating a browser bypasses this heuristic. This round only adds
+measurement, not a B3 behavior model. The pending `it.skip` is tracked from
+ROADMAP to the Phase 0 ADR in PR #96.
 
-Ledger by branch: an unsigned bot-like or non-bot request writes **no ledger
-entry** and has no `operatorKeyId`; an invalid signature writes
+Ledger by branch: an unsigned bot-like request increments an admin-only monthly
+family counter in existing `site_settings` (atomic UPSERT; last 13 months) and
+has no `operatorKeyId`. No raw IP, UA, URL, signature or identity is stored.
+An unsigned non-bot request still writes no ledger entry. Invalid signatures write
 `operatorKeyId: "unverified"` with `policyViolation: true`; a valid signature
 writes the verified `operatorKeyId` for `allow`, `block` and `charge`
 (`charged: false` always, because the origin does not know whether settlement
-happened). The proposed B3 exception would move policy loading before the
-unsigned-bot rejection, so `ai_input=allow` could let that traffic pass without
-ever producing a verified operator identity; tests for the proposal are
-skipped until the owner confirms.
+happened). Directory saturation, upstream failure and cached failures return
+`503 verification_unavailable` with `Retry-After` and no ledger entry or
+`policyViolation`. Expired/too-old signatures return distinct
+`401 signature_expired`, also with no policy violation. They are not evidence
+of misconduct. Crypto-invalid signatures remain `401 verification_failed`.
+Counter availability is reported explicitly; persistence failure cannot turn
+an existing rejection into an allowance. Without a DB counters are process-local.
+The unknown-UA bucket exists but normally stays empty: the existing detection
+heuristic does not reject requests without User-Agent. Family labels are
+unverified declarations, not verified Google/Bing operator attribution.
 
 Why `ai_input` defaults to `charge`: git blame points to the initial
 implementation (`a63d5f9`/`2481951`) and there is no ADR or decision record
