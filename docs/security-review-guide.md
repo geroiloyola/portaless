@@ -149,6 +149,15 @@ invalid origins no longer create one fetch per request; an overload burst
 fails closed without caching the rejection. The remaining limit is that the
 cache is per-process, so multiple instances each allow their own 8 fetches.
 
+There is **no per-window egress budget** today. The hard per-fetch bounds are
+5 s and 512 KiB with at most 2 redirects, so the current worst case is 8
+concurrent fetches × up to 3 HTTPS requests × 512 KiB. Proposed budget:
+**32 directory fetches per minute per process and 16 MiB of directory egress
+per minute per process**, with the 60 s negative cache and a 429/503-style
+fail-closed response when the window is exhausted. That needs an owner
+decision and a traffic measurement before being enabled; this pass only
+documents the proposal.
+
 **Search-bot decision (B3):** `looksLikeAutomatedAgent()` matches
 `bot|crawler|spider|gpt|claude|scrapy|python-requests`. An unsigned request
 with such a UA is rejected with `403 unsigned_automated_request` **before the
@@ -158,6 +167,26 @@ fixes this behavior and the panel banner states it when the Trust Layer is
 active. Exempting a UA would be spoofable; the owner may still choose a
 separately reviewed search-bot exception (for example, a verified IP range or
 signed discovery), but this pass does not add one.
+
+Ledger by branch: an unsigned bot-like or non-bot request writes **no ledger
+entry** and has no `operatorKeyId`; an invalid signature writes
+`operatorKeyId: "unverified"` with `policyViolation: true`; a valid signature
+writes the verified `operatorKeyId` for `allow`, `block` and `charge`
+(`charged: false` always, because the origin does not know whether settlement
+happened). The proposed B3 exception would move policy loading before the
+unsigned-bot rejection, so `ai_input=allow` could let that traffic pass without
+ever producing a verified operator identity; tests for the proposal are
+skipped until the owner confirms.
+
+Why `ai_input` defaults to `charge`: git blame points to the initial
+implementation (`a63d5f9`/`2481951`) and there is no ADR or decision record
+with a rationale. The practical contract is fail-closed: enabling
+`ENABLE_TRUST_LAYER=true` without a policy file or panel override applies
+`defaultContentPolicy()` — `search: allow`, `ai_input: charge` at
+`price_usd: 0.002` per request, `ai_train: block`. With no verified settlement
+provider, a signed agent gets `402 payment_required` with
+`settlement: "not_available"` and cannot read; unsigned bot-like traffic gets
+`403` before policy loading; unsigned browser traffic passes.
 
 ### 5. MCP server (HTTP and stdio)
 

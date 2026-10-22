@@ -51,6 +51,45 @@ describe("Web Bot Auth directory egress (SSRF)", () => {
     expect(fetchPinned).not.toHaveBeenCalled();
   });
 
+  it("re-resolves and pins every redirect hop, blocking a private second hop", async () => {
+    const lookup = vi.fn()
+      .mockResolvedValueOnce(["93.184.216.34"])
+      .mockResolvedValueOnce(["10.0.0.5"]);
+    const fetchPinned = vi.fn(async () => new Response(null, {
+      status: 302,
+      headers: { location: "https://private-hop.example/.well-known/http-message-signatures-directory" },
+    }));
+    const safe = createSafeFetcher({ lookup, fetchPinned });
+
+    const res = await safe("https://public.example/.well-known/http-message-signatures-directory");
+
+    expect(res).toMatchObject({ ok: false, error: "blocked_host" });
+    expect(lookup).toHaveBeenCalledTimes(2);
+    expect(fetchPinned).toHaveBeenCalledTimes(1);
+    expect(fetchPinned.mock.calls[0][2]).toBe("93.184.216.34");
+  });
+
+  it("pins each public redirect hop with its own validated address", async () => {
+    const lookup = vi.fn()
+      .mockResolvedValueOnce(["93.184.216.34"])
+      .mockResolvedValueOnce(["198.51.100.10"]);
+    const fetchPinned = vi.fn()
+      .mockResolvedValueOnce(new Response(null, {
+        status: 302,
+        headers: { location: "https://second.example/.well-known/http-message-signatures-directory" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ keys: [] }), { status: 200 }));
+    const safe = createSafeFetcher({ lookup, fetchPinned });
+
+    const res = await safe("https://first.example/.well-known/http-message-signatures-directory");
+
+    expect(res.ok).toBe(true);
+    expect(lookup).toHaveBeenCalledTimes(2);
+    expect(fetchPinned).toHaveBeenCalledTimes(2);
+    expect(fetchPinned.mock.calls[0][2]).toBe("93.184.216.34");
+    expect(fetchPinned.mock.calls[1][2]).toBe("198.51.100.10");
+  });
+
   it("pins the first validated address, so a second private resolution cannot rebind", async () => {
     const lookup = vi.fn()
       .mockResolvedValueOnce(["93.184.216.34"])

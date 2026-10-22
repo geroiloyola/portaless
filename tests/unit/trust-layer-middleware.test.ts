@@ -107,6 +107,18 @@ function makeContext(request: Request, env: Record<string, unknown>) {
   return { context: { request, env, data, next, params: {} } as any, next, data };
 }
 
+function mockDirectory(publicKeyX: string) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }] }),
+        { status: 200, headers: { "content-type": "application/http-message-signatures-directory+json" } }
+      )
+    )
+  );
+}
+
 describe("functions/_middleware.js (Trust Layer)", () => {
   let dir: string;
   let env: Record<string, unknown>;
@@ -315,5 +327,79 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     const { context } = makeContext(request, envWithPolicy);
     const res = await onRequest(context);
     expect(res!.status).toBe(402);
+  });
+
+  // B3: matriz del comportamiento ACTUAL. El rechazo de bot sin firma ocurre
+  // ANTES de cargar la politica, por eso el access de ai_input no lo cambia.
+  for (const access of ["allow", "block", "charge"] as const) {
+    it(`B3 actual: sin firma + bot-like + ai_input=${access} => 403 antes de la politica`, async () => {
+      const request = new Request("https://mysite.example/pages/foo", {
+        headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+      });
+      const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access, price_usd: 0.002 })) };
+      const { context, next } = makeContext(request, envWithPolicy);
+      const res = await onRequest(context);
+      expect(res!.status).toBe(403);
+      expect((await res!.json()).error).toBe("unsigned_automated_request");
+      expect(next).not.toHaveBeenCalled();
+      const ledger = await createUsageLedgerStore(env as any);
+      const period = new Date().toISOString().slice(0, 7);
+      expect(await ledger.get(period)).toBeFalsy();
+    });
+  }
+
+  // Propuesta pendiente del dueno: mover la carga de politica ANTES del
+  // rechazo de bots sin firma haria que ai_input=allow los dejara pasar.
+  // No implementar hasta confirmacion.
+  it.skip("B3 propuesta: sin firma + bot-like + ai_input=allow => next", async () => {
+    const request = new Request("https://mysite.example/pages/foo", {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+    });
+    const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
+    const { context, next } = makeContext(request, envWithPolicy);
+    const res = await onRequest(context);
+    expect(await res!.text()).toBe("PASO-AL-SIGUIENTE");
+    expect(next).toHaveBeenCalled();
+  });
+
+  for (const access of ["allow", "block", "charge"] as const) {
+    it(`B3 actual: firma valida + ai_input=${access} => ${access === "allow" ? "200" : access === "block" ? "403" : "402"}`, async () => {
+      const { privateKey, publicKeyX } = await generateKeyPair();
+      mockDirectory(publicKeyX);
+      const request = await buildSignedRequest(privateKey, { nonce: `matrix-${access}` });
+      const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access, price_usd: 0.002 })) };
+      const { context, next } = makeContext(request, envWithPolicy);
+      const res = await onRequest(context);
+      if (access === "allow") {
+        expect(await res!.text()).toBe("PASO-AL-SIGUIENTE");
+        expect(next).toHaveBeenCalled();
+      } else if (access === "block") {
+        expect(res!.status).toBe(403);
+        expect((await res!.json()).error).toBe("ai_input_blocked_by_policy");
+      } else {
+        expect(res!.status).toBe(402);
+        expect((await res!.json()).error).toBe("payment_required");
+      }
+      const ledger = await createUsageLedgerStore(env as any);
+      const period = new Date().toISOString().slice(0, 7);
+      const entry = await ledger.get(period);
+      expect(entry?.agents.some((agent) => agent.operatorKeyId === KEY_ID)).toBe(true);
+    });
+  }
+
+  it("B3 actual: firma invalida => 401 y ledger 'unverified'", async () => {
+    const request = new Request("https://mysite.example/pages/foo", {
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
+        "Signature-Agent": `"${OPERATOR_ORIGIN}"`,
+        "Signature-Input": 'sig1=("@method" "@authority" "@path");created=1;expires=9999999999;keyid="mw-key-1";nonce="basura"',
+        Signature: "sig1=:bm90LXVuLXNpZ25hdHVyZQ==:",
+      },
+    });
+    const { context, next } = makeContext(request, env);
+    const res = await onRequest(context);
+    expect(res!.status).toBe(401);
+    expect((await res!.json()).error).toBe("verification_failed");
+    expect(next).not.toHaveBeenCalled();
   });
 });
