@@ -4,6 +4,9 @@
 - **Decision date:** 2026-10-22
 - **Scope:** Automated reads of Portaless content and projections across static,
   Cloudflare Pages Functions and the self-host Node runtime.
+- **Rebased baseline:** merged PR #97 (`11d08cb`). Follow-up review fixes in
+  [PR #98](https://github.com/geroiloyola/portaless/pull/98) are a prerequisite
+  before activating new identity fan-out; they are not claimed merged here.
 - **Implementation gate:** Do not advertise or enable governed content until
   the resource classification, reader identity/reputation profile and dynamic
   serving path in this contract have tests and an owner-approved policy.
@@ -92,13 +95,24 @@ as public. Confidentiality requires the governed serving path below.
 ### `public`
 
 - The owner has approved the resource for public projection.
-- Anyone may retrieve its public bytes without identity.
+- Target public-mode default: requests **without a signature pass anonymously**.
+  A public resource stays public; an anonymous reader is not classified as human
+  merely because its User-Agent resembles a browser.
 - Static HTML/Markdown and public feeds/indexes may contain it.
 - `robots.txt`/Content Signals may express the owner's terms. They are
   cooperative signals, not an access-control boundary.
-- On a dynamic deployment, Web Bot Auth and `ai_input` may additionally control
-  recognized/identified automated requests, but that does not make a public
-  resource confidential or protect a static copy.
+- Rejecting an unsigned bot-looking User-Agent is an optional **strict
+  best-effort** mode. It catches a bot that declares itself, not a scraper that
+  impersonates a browser. It is not the boundary for governed content.
+- A request that supplies an **invalid signature never degrades to anonymous**.
+  An expired signature is a distinct credential failure, not misconduct;
+  directory/resolver unavailability is a transient verification failure.
+- **Migration is explicit and opt-in.** The current middleware's unsigned-bot
+  `403` and existing installed policies do not change in this ADR or silently
+  during an upgrade. A future implementation must version the mode, preserve
+  the existing behavior for existing installations and require owner opt-in
+  before changing its default. Tests must cover old installations, migration,
+  no-signature passage, optional strict mode and invalid-signature rejection.
 
 ### `governed`
 
@@ -116,7 +130,10 @@ as public. Confidentiality requires the governed serving path below.
 - An automated reader must present valid Web Bot Auth, resolve to a verified
   `did:apw` identity, be assigned a policy category by verified/configured
   identity (not by a self-asserted header), and satisfy the owner's reader
-  policy. Missing evidence never becomes an SVRI prior-as-measurement.
+  policy. **The MVP gate admits only explicit owner-approved reader grants**
+  after authentication; the alternative reputation-based admission branch is
+  inactive until independent emitters and the required evidence actually exist.
+  Missing evidence never becomes an SVRI prior-as-measurement.
 - Anonymous readers are denied. An authorized human-reader/session path is not
   defined by PR1; do not infer “human” from User-Agent. Until that separate
   contract exists, governed resources are available only to the owner/admin
@@ -189,10 +206,16 @@ must never disclose a governed resource's identifiers or descriptive metadata.
 - A blocked request is not evidence of misconduct. Do not emit a negative
   `reader_conduct` attestation solely because a category is disabled, evidence
   is absent, DNS failed or a reader missed a local threshold.
+- An expired signature is not evidence of misconduct either. Failure to
+  authenticate or obtain evidence must not become a negative conduct event.
 - `did:apw:google.com` / `did:apw:openai.com` are not trusted identities merely
   because a name resembles a company. Category assignment requires verified
-  ownership or explicit local configuration. A User-Agent or self-asserted
-  category cannot grant a more permissive rule.
+  ownership plus explicit local configuration. **The owner assigns one effective
+  category per verified DID**, and an unassigned DID falls into
+  `other_automation`. Categories are local policy assignments, **not proof of
+  the request's purpose**. Web Bot Auth does not prove whether the bytes will
+  be used for search, summarization or training. A User-Agent or self-asserted
+  purpose cannot select a more permissive category.
 - Sybil resistance is not guaranteed by Web Bot Auth or a numeric threshold.
   Keys can be created cheaply; reputation depends on independent, verified,
   non-duplicated evidence. Do not claim that proxies become impossible or that
@@ -200,6 +223,100 @@ must never disclose a governed resource's identifiers or descriptive metadata.
 - Community reputation is not a global, instantly propagated blacklist. Each
   site evaluates evidence under its own reader policy; other nodes update only
   when they resolve/refresh the relevant evidence.
+
+### Cold start and explicit grants
+
+The new content Gatekeeper MVP is **grant-only**. Category enablement, including
+Portaless Index, means eligibility for evaluation, not permission or fabricated
+reputation. The owner must approve the verified reader; a new Index identity
+without that grant is denied. Diagnostic mode must state that outcome, for
+example: “identity valid; category enabled; no explicit owner grant; denied.”
+
+`trust:read-governance-bypass` already implements authenticated threshold
+exceptions for the existing `/trust/:siteId` contract. It is a pattern to reuse,
+not an automatic authorization for every new content route. The policy/grants
+PR must define its resource scope before reuse; no existing grant silently
+expands to all content. A grant never skips authentication, a disabled category,
+or resource authorization and never produces a reputation score.
+
+R-05 is currently disabled for lack of the required emitter corpus. That does
+not mean R-01 can never be computed; it means the new MVP must not rely on a
+complete reader-reputation path that has not been demonstrated. Future
+`explicit_grant OR sufficient_reputation` admission remains **inactive** until
+the reputation PR has real independent emitters, minimum evidence/freshness,
+accepted rules and vectors. Merely configuring a numeric threshold does not
+activate that branch.
+
+### Deployment-trusted client buckets (required before identity work)
+
+Identity resolution causes egress **before** identity verification. PR2 must
+apply directory-origin and unauthenticated-client budgets, single-flight and
+bounded concurrency/cache before the identity/classification PR (Phase 3).
+Post-verification identity quotas supplement, never replace, these controls.
+The budget accounts for Web Bot Auth directory, TXT/DoH, DID, history, evidence
+and every redirect, including failed attempts. No new fan-out is activated
+until that complete boundary is tested.
+
+- **Self-host Node:** accept `x-portaless-client-ip` only when injected by
+  `server/node-runtime.mjs` (`__PORTALESS_RUNTIME=node`). The runtime discards
+  the client's copy and uses socket IP, or a validated proxy chain only through
+  `PORTALESS_TRUSTED_PROXIES`. A caller's `CF-Connecting-IP` is not trusted.
+- **Cloudflare Pages/Workers:** accept `CF-Connecting-IP` only on platform-trusted
+  ingress. A proxy/origin deployment must prevent direct origin access or
+  authenticate the edge-to-origin connection; an arbitrary received header is
+  not evidence of the client IP. Never accept the Node-injected header there.
+- **Missing trusted IP or bucket secret:** use a bounded shared unknown-client
+  bucket with `429`/`Retry-After` on exhaustion, not an unlimited exemption.
+  If the required budget backend is unavailable, return a transient `503`
+  without a policy-violation attestation.
+- Do not persist raw IP. Use a per-window HMAC bucket with a server-side rotating
+  secret and conservative accounting across rotation. Do not echo/store/log the
+  raw IP or use an untrusted forwarded header to let clients rotate buckets.
+
+The exact traffic limits are configuration proposals in the
+[security review guide](../security-review-guide.md); this ADR does not enable
+them or assert that quotas for the full resolution chain already exist.
+
+### External-search identity and freshness
+
+A switch for external search must not imply Google/Bing compatibility without
+an actual verified adapter. Signature/APW is the initial supported identity
+contract. A future **network-verified search operator** can be a separate,
+weaker evidence path using official ranges or forward-confirmed reverse DNS;
+it does not mint a DID, inherit a DID's grants, or prove request purpose.
+Until such an adapter is implemented and verified, the UI must report that
+no external search client has been verified to satisfy that path.
+
+Any network-range adapter must pin an official source, record `fetchedAt` and
+the source/version, cap downloads (initial proposal **256 KiB**) and entries
+(initial proposal **4096 CIDRs**), and enforce a bounded lifetime (initial
+proposal **24 hours**). Fetches need the same egress/timeout/redirect guards.
+On refresh failure, a still-valid cached list may be used only until its
+deadline; missing, expired or malformed lists **deny that identity path**.
+Never keep a stale list indefinitely or fall back to trusting a User-Agent.
+Reverse-DNS evidence needs forward confirmation and TTL-bounded caching too.
+
+**Cloudflare verification delegation: research only, pending verification.**
+No delegation integration or compatibility is promised by this ADR; it has no
+implementation acceptance criteria here. A platform header is not proof on a
+directly reachable origin. Any future adoption needs its own verified trust
+boundary and architecture decision.
+
+## Revised execution order
+
+| PR / phase | Scope and exit gate |
+|---|---|
+| PR1 / Phase 0 | This ADR: public vs governed, explicit migration and threat/resource matrix. Documentation only. |
+| PR2 | Pre-authentication defenses and budgets for the full resolution chain; trusted client buckets, origin limits, single-flight, bounded egress and failure semantics. Must pass before identity fan-out. |
+| PR3 / Phase 3 | Identity/classification: verified identity plus one owner-assigned category; unassigned identities are `other_automation`. No claim of verified purpose. |
+| PR4 | Policy, explicit grants and diagnostic outcomes. MVP grant-only; reputation admission remains inactive. |
+| PR5 | Governed-resource enforcement on every representation and exclusion from static/public Git projections. |
+| PR6 | Panel, bounded audit and real-client interoperability evidence. |
+| PR7, externally gated | Reader-reputation admission only with real independent emitters, accepted evidence rules and vectors; no neutral-prior shortcut. |
+
+Each implementation remains a separate reviewed PR. Rebase this ADR onto the
+merged hardening; do not combine unrelated unmerged branches or activate later
+phases merely because their interface or toggle exists.
 
 ## Acceptance criteria for implementation PRs
 
@@ -218,9 +335,10 @@ must never disclose a governed resource's identifiers or descriptive metadata.
 6. Public resources continue to work on GitHub Pages with no Functions. The
    product states plainly that static public bytes cannot be withdrawn or gated
    after deployment.
-7. Web Bot Auth, APW reader identity, reputation, missing evidence, expired
+7. Web Bot Auth, APW reader identity, explicit grants, missing evidence, expired
    evidence, resolver outages and policy changes have explicit status/ledger
-   behavior. Missing evidence is never treated as an SVRI prior-as-measurement.
+   behavior. MVP grant-only admission and inactive reputation admission are
+   tested. Missing evidence is never treated as an SVRI prior-as-measurement.
 8. Every decision is auditable by policy revision and reason; no rejection is
    converted automatically into a negative reputation attestation.
 9. The new configuration is optional and backward-compatible. Disabling it
@@ -247,11 +365,11 @@ must never disclose a governed resource's identifiers or descriptive metadata.
    authenticated human-reader path.
 3. Which verified identities/categories count as Portaless Index, external
    search or AI. Do not ship category allowlists based on UA strings.
-4. Whether the existing LTP R-reader policy is sufficient for the first gate or
-   whether a new SVRI reader-reputation profile is a prerequisite. A bare
-   threshold `5.0` is not sufficient to decide this.
-5. Whether public static publication remains the default mode and what warning
-   the owner must acknowledge before publishing content they intend to govern.
+4. Resource scope for the new grant-only MVP, and the future evidence/profile
+   needed to enable reputation admission. A bare threshold `5.0` is insufficient.
+5. The explicit opt-in migration and publication disclosure for moving an
+   existing installation between public and governed modes. Existing behavior
+   must not change without that migration.
 
 ## Related implementation evidence
 

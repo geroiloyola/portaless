@@ -56,6 +56,27 @@ describe("isPublicBotRoute", () => {
     expect(contract).toContain("proposed route contract for PR1");
   });
 
+  it("the revised ADR fixes public-mode migration, grant-only MVP and pre-authentication prerequisites without changing the runtime", () => {
+    const text = contract.replace(/\s+/g, " ");
+    for (const requirement of [
+      "without a signature pass anonymously",
+      "strict best-effort",
+      "invalid signature never degrades to anonymous",
+      "Migration is explicit and opt-in",
+      "MVP is **grant-only**",
+      "other_automation",
+      "not proof of the request's purpose",
+      "x-portaless-client-ip",
+      "CF-Connecting-IP",
+      "Missing trusted IP or bucket secret",
+      "24 hours",
+      "256 KiB",
+      "4096 CIDRs",
+      "research only, pending verification",
+    ]) expect(text.replace(/\*\*/g, ""), requirement).toContain(requirement.replace(/\*\*/g, ""));
+    expect(text).toContain("PR2 must apply directory-origin and unauthenticated-client budgets");
+  });
+
   it("no se puede escapar con .. porque se evalua el pathname normalizado", () => {
     expect(pathOf("/.well-known/../admin/")).toBe("/admin/");
     expect(isPublicBotRoute(pathOf("/.well-known/../admin/"))).toBe(false);
