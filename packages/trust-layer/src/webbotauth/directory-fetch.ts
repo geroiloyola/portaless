@@ -1,4 +1,5 @@
 import { createSafeFetcher, isPrivateIp, type SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
+import type { ResolutionBudget } from "../net/resolution-budget";
 
 export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;
 export const DIRECTORY_FETCH_RESERVED = 2;
@@ -13,7 +14,12 @@ export interface DirectoryResponse {
 }
 export type DirectoryResult =
   | { ok: true; directory: DirectoryResponse }
-  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached"; retryAfterSeconds: number };
+  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached" | "client_budget_exhausted" | "origin_budget_exhausted" | "budget_state_full"; retryAfterSeconds: number; status?: 429 | 503 };
+
+export interface DirectoryBudgetContext {
+  budget: ResolutionBudget;
+  clientBucket: string | readonly string[];
+}
 
 export function normalizeDirectoryOrigin(origin: string): string {
   const url = new URL(origin);
@@ -60,7 +66,7 @@ export class DirectoryResolver {
     return { positive: this.positive.size, negative: this.negative.size, inFlight: this.inflight.size };
   }
 
-  resolve(origin: string, fetcher: SafeFetcher = createSafeFetcher(), reservedOrigins: readonly string[] = []): Promise<DirectoryResult> {
+  resolve(origin: string, fetcher: SafeFetcher = createSafeFetcher(), reservedOrigins: readonly string[] = [], budgetContext?: DirectoryBudgetContext): Promise<DirectoryResult> {
     const key = normalizeDirectoryOrigin(origin);
     const cached = this.positive.get(key);
     if (cached && cached.until > this.now()) return Promise.resolve({ ok: true, directory: cached.directory });
@@ -85,7 +91,13 @@ export class DirectoryResolver {
     // Start asynchronously so the single-flight entry exists before any fetch.
     const task = Promise.resolve().then(async (): Promise<DirectoryResult> => {
       try {
-        const res = await fetcher(new URL(PATH, key).href, { timeoutMs: 5000, maxBytes: 512 * 1024, maxRedirects: 2 });
+        const limits = { timeoutMs: 5000, maxBytes: 512 * 1024, maxRedirects: 0 };
+        const res = budgetContext
+          ? await budgetContext.budget.fetch({ clientBucket: budgetContext.clientBucket, directoryOrigin: key, stage: "directory" }, new URL(PATH, key).href, fetcher, limits)
+          : await fetcher(new URL(PATH, key).href, { ...limits, maxRedirects: 2 });
+        if (!res.ok && "retryAfterSeconds" in res) {
+          return { ok: false, reason: res.error, retryAfterSeconds: res.retryAfterSeconds, status: res.status };
+        }
         if (res.ok && res.text) {
           const directory = JSON.parse(res.text) as DirectoryResponse;
           if (Array.isArray(directory?.keys) && directory.keys.every((entry) => entry && typeof entry.kid === "string")) {

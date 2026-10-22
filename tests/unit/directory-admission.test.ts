@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DirectoryResolver, DIRECTORY_FETCH_COLD_MAX, parseReservedDirectoryOrigins } from "../../packages/trust-layer/src/webbotauth/directory-fetch";
+import { ResolutionBudget } from "../../packages/trust-layer/src/net/resolution-budget";
 
 afterEach(() => vi.useRealTimers());
 
@@ -67,6 +68,19 @@ describe("R4 directory admission", () => {
     now = 60_001;
     await resolver.resolve("https://fail.example", fail);
     expect(fail).toHaveBeenCalledTimes(2);
+  });
+
+  it("real directory adapter charges pre-auth egress and does not negative-cache budget exhaustion", async () => {
+    const resolver = new DirectoryResolver();
+    const budget = new ResolutionBudget({ windowMs: 60_000, client: { attempts: 1, bytes: 1024 * 1024 }, origin: { attempts: 10, bytes: 1024 * 1024 },
+      maxBuckets: 10, maxConcurrentTotal: 8, maxConcurrentPerClient: 4, maxConcurrentPerOrigin: 4 });
+    const fetcher = vi.fn(async () => ({ ok: true, text: '{"keys":[]}' }));
+    const context = { budget, clientBucket: "a".repeat(64) };
+    expect((await resolver.resolve("https://reader.example", fetcher, [], context)).ok).toBe(true);
+    const second = await resolver.resolve("https://other-reader.example", fetcher, [], context);
+    expect(second).toMatchObject({ ok: false, reason: "client_budget_exhausted", status: 429 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(resolver.state().negative).toBe(0);
   });
 
   it("keeps a recently used negative-cache entry and evicts the least recently used origin", async () => {
