@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **PR2 step 2 — versioned pre-auth budget configuration.** Adds additive schema migration v10 with no seeded row, a bounded typed limits document, admin GET/PUT API, and atomic expected-revision compare-and-set for SQLite/D1. Secrets and counters are excluded. API reports configuration as not effective until later runtime integration; existing installations and B3 remain unchanged.
+
 - **PR1 RFC — public vs. governed automated reads.** Adds proposed ADR 0003 with a verified route matrix for static pages, `/llms.txt`, `/blog/*.md`, `/revisions/`, feeds, `.well-known`, Cloud Images, `/trust/:siteId` and admin preview. It records current enforcement gaps and separates publication state from access class. Documentation and regression coverage only: no middleware, schema or runtime behavior changes; owner decisions remain explicit in the RFC.
 - **PR1 revision after merged #97.** Records the owner-directed public-mode proposal (anonymous by default, optional strict best-effort UA filtering, invalid signatures never anonymous), explicit opt-in migration preserving existing installations, grant-only cold-start MVP, local DID categories without purpose claims, mandatory pre-authentication budgets before identity, deployment-specific client-IP trust, bounded search-range freshness and Cloudflare delegation as research only. No B3 runtime behavior or new identity fan-out is activated.
 

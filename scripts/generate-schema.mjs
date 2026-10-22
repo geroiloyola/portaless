@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 29 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 31 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 24 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 26 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -56,6 +56,7 @@ const SOURCES = [
   { path: "schema-additions/plugin-storage.sql", selfBanner: true },
   { path: "schema-additions/plugin-email-quota.sql", selfBanner: true },
   { path: "schema-additions/publication-runs.sql", selfBanner: true },
+  { path: "schema-additions/resolution-budget-config.sql", selfBanner: true },
 ];
 
 const BANNER_LINE = "-- -----------------------------------------------------------------------------";
@@ -151,6 +152,10 @@ const HEADER = `-- =============================================================
 -- codigo de plugins instalados por HTTP, troceado en BLOB de 512 KB (limites
 -- de D1). Fuente schema-additions/plugin-artifacts.sql; el store las crea al
 -- vuelo. Ver packages/plugin-sandbox/src/registry/plugin-artifacts.ts.
+--
+-- NOTA PR2: resolution_budget_config guarda configuración tipada versionada,
+-- nunca secretos ni contadores. Sin fila, instalaciones previas no cambian.
+-- Fuente schema-additions/resolution-budget-config.sql; migración versionada v10.
 --
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
