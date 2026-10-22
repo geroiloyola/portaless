@@ -196,8 +196,6 @@ export async function verifyWebBotAuthRequest(
     if (!isFirstUse) return { verified: false, reason: "nonce_replayed" };
   }
 
-  directories.markVerified(operatorOrigin);
-
   return {
     verified: true,
     agentKeyId: parsed.keyId,

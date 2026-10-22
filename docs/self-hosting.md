@@ -38,6 +38,41 @@ docker compose logs portaless
 - **Acceso remoto opcional con Tailscale:** agrega `--profile tailscale` y sigue
   [`private-node.md`](./private-node.md); Tailscale no concede capacidades a plugins.
 
+## Reserva de directorios Web Bot Auth
+
+Con `ENABLE_TRUST_LAYER=true`, el proceso permite un solo fetch en vuelo por
+origen canónico (single-flight), hasta 6 orígenes normales y 8 en total. Los
+2 huecos reservados solo están disponibles para los orígenes que el dueño
+configure en `PORTALESS_WBA_RESERVED_ORIGINS`. **Una firma válida previa no
+concede reserva:** un atacante también puede firmar con claves de sus dominios.
+
+```bash
+PORTALESS_WBA_RESERVED_ORIGINS=https://lector.example,https://otro-lector.example:8443
+```
+
+Esta variable está incluida en [`.env.example`](../.env.example). Usa orígenes
+HTTPS separados por comas: sin credenciales, ruta distinta de `/`, query,
+fragmento ni comodines. Se normalizan mayúsculas, IDN/punycode, puerto HTTPS
+por defecto y punto final; se deduplican. Se descartan individualmente las
+entradas inválidas, localhost, `.local`, literales IP bloqueados y las entradas
+posteriores a las primeras 256 no vacías. Si está vacía o todas son inválidas,
+no se asigna ninguna reserva y los orígenes usan los 6 huecos normales. No se
+deshabilita la validación de firma ni se permite más tráfico por ese motivo.
+La resolución DNS y el pinning de Node siguen comprobando los destinos reales.
+
+En Cloudflare Pages/Workers, define la misma variable en el entorno del
+despliegue. La configuración se aplica en cada isolate; cachés, single-flight
+y huecos no son globales entre isolates. Un isolate nuevo no aprende reservas
+de firmas anteriores: solo lee esta lista explícita. No hay garantía de cuota
+global por zona ni de disponibilidad universal. Saturación devuelve `503` con
+`Retry-After`, sin guardar un fallo negativo del origen.
+
+Los rechazos B3 se agregan en memoria y se vuelcan cada 10 segundos; todas las
+cifras del panel se rotulan **declarada**. Un reinicio, descarte de isolate o
+fallo de volcado puede perder el lote; no son un recuento exhaustivo de bots.
+Workers conserva el trabajo con `waitUntil`; en Node el timer no mantiene el
+proceso vivo. Nada de esto modifica el rechazo por User-Agent actual.
+
 ## Backup del nodo canónico
 
 `npm run backup` crea un backup SQLite verificado con checksums; los secretos
