@@ -56,7 +56,8 @@ export const SAFE_FETCH_DEFAULTS: Required<SafeFetchLimits> = {
 };
 
 /** IPv4/IPv6 en rango privado, loopback, link-local o CGNAT. */
-export function isPrivateIp(ip: string): boolean {
+export function isPrivateIp(rawIp: string): boolean {
+  const ip = rawIp.replace(/^\[|\]$/g, "");
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
@@ -71,8 +72,15 @@ export function isPrivateIp(ip: string): boolean {
   const lower = ip.toLowerCase();
   if (lower === "::1" || lower === "::") return true;
   if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) return true; // link-local, unique-local fc00::/7
-  const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(lower);
-  if (mapped) return isPrivateIp(mapped[1]);
+  const mappedV4 = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(lower);
+  if (mappedV4) return isPrivateIp(mappedV4[1]);
+  // WHATWG URL canonicalizes [::ffff:127.0.0.1] to [::ffff:7f00:1].
+  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
+  if (mappedHex) {
+    const hi = Number.parseInt(mappedHex[1], 16);
+    const lo = Number.parseInt(mappedHex[2], 16);
+    return isPrivateIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
   return false;
 }
 
