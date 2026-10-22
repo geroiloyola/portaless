@@ -198,12 +198,16 @@ export async function onRequest(context) {
   // functions/) el build static emite las paginas meta-refresh equivalentes.
   const url = new URL(request.url);
   const basePath = (env.PORTALESS_BASE_PATH || "/").replace(/\/+$/, "");
-  const sitePath = url.pathname.startsWith(basePath)
-    ? url.pathname.slice(basePath.length) || "/"
-    : url.pathname;
+  const baseMatch = basePath === "/" || url.pathname === basePath || url.pathname.startsWith(`${basePath}/`);
+  const sitePath = baseMatch ? url.pathname.slice(basePath.length) || "/" : url.pathname;
   const legacyDestination = resolveLegacyRedirect(sitePath);
   if (legacyDestination) {
-    return Response.redirect(`${url.origin}${basePath}${legacyDestination}${url.search}`, 301);
+    // Relativo en vez de `${url.origin}`: Host manipulado no debe controlar
+    // un 301 cachable hacia otro origen.
+    return new Response(null, {
+      status: 301,
+      headers: { location: `${basePath}${legacyDestination}${url.search}` },
+    });
   }
   if (env.ENABLE_TRUST_LAYER !== "true") return next();
   if (isPublicBotRoute(new URL(request.url).pathname)) return next();
@@ -222,7 +226,12 @@ export async function onRequest(context) {
     }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
-  const result = await verifyWebBotAuthRequest(request, { env });
+  const result = await verifyWebBotAuthRequest(request, {
+    env,
+    // Solo el runtime Node lo expone: resuelve y valida una IP y conecta a
+    // ella (DNS pinning). En edge no existe y el verificador usa su default.
+    directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,
+  });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   const origin = new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el

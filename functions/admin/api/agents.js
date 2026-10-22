@@ -77,6 +77,7 @@ export async function onRequestGet(context) {
       updatedAt: resolved.updatedAt ?? null,
       updatedBy: resolved.updatedBy ?? null,
       writable: canWrite(user.role),
+      enforced: env?.ENABLE_TRUST_LAYER === "true",
       policyPath: CONTENT_POLICY_WELL_KNOWN_PATH,
     }),
     { status: 200, headers: { "content-type": "application/json" } }

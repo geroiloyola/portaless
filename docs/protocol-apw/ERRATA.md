@@ -6,7 +6,7 @@
 
 > **Actualización de estado:** E-16 es normativa y está vigente, además de las erratas enumeradas en el resumen histórico anterior. Su suplemento SVRI v1.0 gobierna la proyección de LTP donde corresponda.
 
-Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza)).
+Correcciones a la especificacion publicada. Cada errata reemplaza el texto indicado; el resto del documento sigue vigente. **Licencia**: CC BY 4.0 (ver [Licencia y gobernanza](./APW-SPEC-v1.3.md#license-and-governance)).
 
 E-16 publica el contrato SVRI v1.0 en [`SVRI-v1.0.md`](./SVRI-v1.0.md), suplemento normativo de LTP/APW.
 

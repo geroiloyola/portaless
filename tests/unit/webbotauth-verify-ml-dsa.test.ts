@@ -100,10 +100,12 @@ describe("verifyWebBotAuthRequest (middleware) -- ML-DSA", () => {
   });
 
   function mockDirectoryOnce(pub: string, keyId = KEY_ID, alg = "ML-DSA-65") {
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ keys: [{ kid: keyId, kty: "AKP", alg, pub }] }),
-    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ keys: [{ kid: keyId, kty: "AKP", alg, pub }] }), {
+        status: 200,
+        headers: { "content-type": "application/http-message-signatures-directory+json" },
+      })
+    );
   }
 
   for (const alg of Object.keys(IMPLS) as MlDsaAlgName[]) {
@@ -155,12 +157,17 @@ describe("verifyWebBotAuthRequest (middleware) -- ML-DSA", () => {
   it("rechaza alg=ml-dsa-65 declarado sobre una clave Ed25519 del directorio (algorithm_key_mismatch)", async () => {
     const keyPair = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;
     const rawPublic = new Uint8Array(await crypto.subtle.exportKey("raw", keyPair.publicKey));
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: bytesToBase64Url(rawPublic), alg: "ed25519" }],
-      }),
-    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: bytesToBase64Url(rawPublic), alg: "ed25519" }],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/http-message-signatures-directory+json" },
+        }
+      )
+    );
 
     const url = "https://mysite.example/pages/foo";
     const created = Math.floor(Date.now() / 1000);
@@ -253,10 +260,12 @@ describe("verifyWebBotAuthRequest (middleware) -- ML-DSA", () => {
   });
 
   it("rechaza una clave AKP sin pub (unsupported_key_type_in_directory)", async () => {
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ keys: [{ kid: KEY_ID, kty: "AKP", alg: "ML-DSA-65" }] }),
-    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ keys: [{ kid: KEY_ID, kty: "AKP", alg: "ML-DSA-65" }] }), {
+        status: 200,
+        headers: { "content-type": "application/http-message-signatures-directory+json" },
+      })
+    );
 
     const { keys } = makeMlDsaKey("ML-DSA-65");
     const request = await buildSignedRequest({ keys, impl: ml_dsa65 });

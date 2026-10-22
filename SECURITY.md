@@ -4,7 +4,15 @@
 
 ## Reporting a vulnerability
 
-Do not open a public issue to report a vulnerability. Contact the maintainers privately through the project's configured contact channel and include:
+> **Owner action pending.** This repository does not yet publish a private
+> security contact. No email address, form or GitHub private-vulnerability
+> channel is configured here, and this policy does not invent one. The owner
+> must publish a private channel before the Beta opens beyond invited
+> operators.
+
+Do not open a public issue to report a vulnerability. Until a private channel
+is published, use the private contact the owner provided when onboarding the
+operator, and include:
 
 - description and potential impact;
 - affected version and component;
@@ -16,7 +24,7 @@ Do not publish exploitation details until an assessment and coordinated disclosu
 
 ## Security status
 
-Portaless is an alpha / MVP under active development. It must not be considered production-ready, nor used with sensitive data, without an independent review and validation of the deployment environment.
+Portaless is in **Beta, invite-only**, under active development. It must not be considered production-ready, nor used with sensitive data, without an independent review and validation of the deployment environment.
 
 Areas that require special attention:
 
@@ -112,20 +120,34 @@ An audit result must not be silenced with `|| true` unless there is a documented
 The checked-in workflows install from the lockfile with `npm ci`; `Security Scan`
 runs on pull requests and pushes to `main`, checks the installed sandbox runtime,
 audits dependencies against the time-bounded allowlist, and scans fetched Git
-history for secrets. These workflows do **not** configure GitHub merge rules by
-themselves. A repository owner must require the relevant status checks through
-branch protection/rulesets. That GitHub setting is external to this repository
-and must be verified in repository settings before claiming failed checks block
-merges.
+history for secrets.
 
-The repository workflows implement these checks (`Unit Tests`, `Full Tests`,
-`Sandbox E2E Tests`, `Upgrade tests`, `Security Scan`, and `.github/workflows/ci.yml`).
-**A workflow existing does not make it a merge gate.** Repository rulesets/branch
-protection must require the applicable status checks on `main`. That GitHub
-setting is outside this repository and must be verified in the repository
-settings before claiming that failed checks block merges. The security scan
-uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version check,
-and a pinned Gitleaks action over fetched history.
+**A workflow existing does not make it a merge gate.** Branch protection on
+`main` is an external GitHub setting. It was verified on **2026-10-22** with
+`GET /repos/geroiloyola/portaless/branches/main/protection`:
+
+- required status checks: `build`, `docker-smoke`, `upgrade`,
+  `Todos los tests + cobertura (Node 24)`, `vitest tests/unit (Node 24)`,
+  `audit`; `strict: true`;
+- required approving reviews: `1`; `dismiss_stale_reviews: true`;
+  `require_code_owner_reviews: false`; `require_last_push_approval: false`;
+- `enforce_admins: true`;
+- `allow_force_pushes: false`; `allow_deletions: false`;
+- `required_conversation_resolution: true`;
+- `required_signatures: false`; `required_linear_history: false`;
+  `lock_branch: false`; `allow_fork_syncing: false`.
+
+`GET /repos/geroiloyola/portaless/rulesets` returned `[]`: there are no
+repository rulesets, so the classic branch protection above is the effective
+rule. That response does not expose a `bypass_actors` field, so this policy
+makes no claim about bypass actors. If the GitHub setting changes,
+this paragraph is stale and the setting is the source of truth. The security
+scan uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version
+check, and a pinned Gitleaks action over fetched history. The Gitleaks scan is
+a **step inside the `audit` job**, not a separate commit status. Playwright is
+a **step inside the `build` job** of `ci.yml`, not a separate commit status;
+requiring `build` therefore requires Playwright, and requiring `audit`
+therefore requires Gitleaks plus `npm audit` and the `isolated-vm` check.
 
 ## Scope and limitations
 

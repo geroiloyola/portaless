@@ -194,15 +194,14 @@ empaqueta el tarball real, lo instala en un proyecto vacio e importa `.` y
   plugin_source_backend_unavailable` de workerd para los plugins instalados.
   El instalador sigue detras del flag apagado por defecto mientras la revision
   externa del sandbox esta pendiente.
-- **Capacidades**: 6 de las 12 con bridge devuelven `501 NOT_CONFIGURED`
-  (`media:read/write`, `email:send`, `commerce:read/checkout`,
-  `site:admin`) — **por decision, no por
-  olvido**: `site:admin`/`email:send` quedan en `501` hasta que exista un caso
-  de uso concreto y revisado (documentado en `ROADMAP.md` §14.2 item 3:
-  `site:admin` no tiene un conjunto de operaciones definido para un plugin, y
-  `email:send` dejaria a un plugin enviando email como el sitio, sin diseno de
-  cuota por plugin), y `media:*`/`commerce:checkout` necesitan un proveedor
-  externo. El patron correcto ya existe y respeta
+- **Capacidades**: 7 de las 12 tienen una via real de ejecucion (6 backends
+  no-red en `CAPABILITY_BACKENDS` mas `network:fetch`, que lo implementa cada
+  adaptador del sandbox). Las otras cinco (`media:read/write`,
+  `commerce:read/checkout`, `site:admin`) devuelven `501 NOT_CONFIGURED` —
+  **por decision, no por olvido**: `site:admin` no tiene un conjunto de
+  operaciones definido para un plugin; `email:send` ya esta conectado con
+  blind delegation + cuota; y `media:*`/`commerce:checkout` necesitan
+  proveedores externos. El patron correcto ya existe y respeta
   `ROADMAP.md:227`: **el core expone la interfaz y el plugin pone la
   implementacion** — igual que hoy `SettlementProvider.charge()` es un placeholder
   que devuelve `success: false` y la liquidacion real la construye un tercero.

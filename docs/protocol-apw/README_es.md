@@ -15,7 +15,7 @@ Portaless es la implementación de referencia de **Protocol APW (Air Portal Webs
 | [`APW-SPEC-v1.0.md`](./APW-SPEC-v1.0.md) | Anterioridad citable del diseño |
 | [`apw-spec.md`](./apw-spec.md) | Resumen conceptual reemplazado |
 
-**Licencia y gobernanza**: la especificación, su errata y sus vectores se publican bajo **CC BY 4.0** — reimplementar, traducir y usar comercialmente está permitido con atribución al autor (Gerardo Loyola), sin registro ni certificación de Portaless; ver la sección [Licencia y gobernanza](./APW-SPEC-v1.3.md#licencia-y-gobernanza) de la spec. El código de implementación de referencia es AGPL-3.0 (`LICENSE`). La sección 6 se llama **Loyal Trust Protocol (LTP)**; en versiones anteriores del documento apareció como "Loyola Trust Protocol" (mismo acrónimo, misma especificación).
+**Licencia y gobernanza**: la especificación, su errata y sus vectores se publican bajo **CC BY 4.0** — reimplementar, traducir y usar comercialmente está permitido con atribución al autor (Gerardo Loyola), sin registro ni certificación de Portaless; ver la sección [Licencia y gobernanza](./APW-SPEC-v1.3.md#license-and-governance) de la spec. El código de implementación de referencia es AGPL-3.0 (`LICENSE`). La sección 6 se llama **Loyal Trust Protocol (LTP)**; en versiones anteriores del documento apareció como "Loyola Trust Protocol" (mismo acrónimo, misma especificación).
 
 **El problema que resuelve**: hoy no existe ningún mecanismo técnico completo, descentralizado y gratuito que permita a un agente de IA (o a un humano) verificar si un sitio es confiable sin depender de un dominio de alta reputación, sin una autoridad central certificadora, y sin señales proxy circunvenibles.
 

@@ -127,14 +127,18 @@ concedidas simultaneamente sin interferencia entre si).
 ## Backends reales de capacidades (Fase 14, §14.2)
 
 Tener el *puente* (la capacidad cruza al host) no es tener el *backend* (hay un
-handler real detras). La Fase 14 conecta los backends **uno a la vez**. Hoy:
+handler real detras). La Fase 14 conecta los backends **uno a la vez**. Hoy
+7 de las 12 capacidades tienen una via real de ejecucion; las otras cinco
+responden `501`:
 
 | Capacidad | Backend real |
 | --- | --- |
 | `content:read` / `content:write` | `PageStore` (D1/SQLite) |
 | `storage:read` / `storage:write` | `PluginStorageStore` (`plugin_storage`): namespace por plugin + cuotas |
 | `agent:identify` | lectura del ledger de uso del Trust Layer (campos publicos, agregados por operador) |
-| `media:*`, `email:send`, `commerce:*`, `site:admin` | sin backend -> `501 NOT_CONFIGURED` |
+| `email:send` | blind delegation + cuota diaria por plugin |
+| `network:fetch` | cada adaptador del sandbox (allowlist de hosts), no el host bridge |
+| `media:*`, `commerce:*`, `site:admin` | sin backend -> `501 NOT_CONFIGURED` |
 
 La fuente unica es `packages/plugin-sandbox/src/capabilities/capability-backends.ts`
 (`createCapabilityHostBridge()`, `CAPABILITY_BACKENDS`, `dispatchCapability()`),

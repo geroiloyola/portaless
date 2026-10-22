@@ -30,6 +30,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   <div id="ag-load-error" class="ag-load-error" style="display:none;"></div>
 
   <div id="ag-root" style="display:none;">
+    <div id="ag-enforcement" class="ag-enforcement" style="display:none;"></div>
+
     <section class="ag-origin" id="ag-origin-box">
       <h2 class="ag-section-title">De donde sale este valor</h2>
       <p class="ag-origin-text" id="ag-origin-text"></p>
@@ -52,7 +54,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
             <span class="ag-rule-name">Busqueda</span>
             <span class="ag-rule-current" data-current="search"></span>
           </div>
-          <p class="ag-rule-help">Si tu pagina aparece o no en un buscador.</p>
+          <p class="ag-rule-help">Si tu pagina aparece o no en un buscador. <strong>Señal cooperativa (no se aplica por petición).</strong></p>
           <select class="ag-select" data-select="search">
             <option value="allow">Permitir</option>
             <option value="charge">Cobrar</option>
@@ -68,6 +70,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="ag-rule-help">
             Si un asistente puede leer tus paginas para responder o resumir.
             "Cobrar" exige ademas un medio de pago verificado (ver abajo).
+            <strong>Esta es la única regla que se aplica por petición.</strong>
           </p>
           <select class="ag-select" data-select="ai_input">
             <option value="allow">Permitir</option>
@@ -88,7 +91,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="ag-rule-help">
             Si tu contenido puede usarse para entrenar un modelo. Es la decision
             que un visitante no ve, asi que el valor por defecto del proyecto
-            es bloquearla.
+            es bloquearla. <strong>Señal cooperativa (no se aplica por petición).</strong>
           </p>
           <select class="ag-select" data-select="ai_train">
             <option value="allow">Permitir</option>
@@ -126,6 +129,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     updatedAt: string | null;
     updatedBy: string | null;
     writable: boolean;
+    enforced: boolean;
     policyPath: string;
   }
 
@@ -159,6 +163,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const saveBtn = document.getElementById("ag-save") as HTMLButtonElement;
   const restoreBtn = document.getElementById("ag-restore") as HTMLButtonElement;
   const caveatsEl = document.getElementById("ag-caveats")!;
+  const enforcementEl = document.getElementById("ag-enforcement")!;
 
   function escapeHtml(value: string): string {
     const div = document.createElement("div");
@@ -227,8 +232,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     originTextEl.textContent = text;
   }
 
+  function renderEnforcement(enforced: boolean): void {
+    enforcementEl.style.display = "";
+    enforcementEl.textContent = enforced
+      ? "Trust Layer activo: los buscadores que no firman reciben 403 en contenido, aunque search esté en allow. Solo pasan las rutas de descubrimiento y las peticiones firmadas."
+      : "El Trust Layer está apagado en esta instalación (ENABLE_TRUST_LAYER != true). Esta política se publica y se puede editar, pero el sitio no bloquea ni cobra peticiones de agentes con ella.";
+  }
+
   function renderCaveats(policies: Record<string, PolicyRuleView>): void {
-    const notes: string[] = [];
+    const notes: string[] = [
+      "Solo la regla de lectura por IA (ai_input) se aplica en el servidor a cada petición de agente. Búsqueda y entrenamiento se publican en robots.txt/Content-Signal y en el manifiesto; un crawler que no respete esas señales no queda bloqueado por ellas.",
+      "Además, una petición sin firma cuya User-Agent parece automatizada se rechaza aunque search esté en allow. Es una decisión pendiente del dueño: eximir por User-Agent sería falsificable.",
+    ];
 
     const aiInput = policies.ai_input;
     if (aiInput?.access === "charge") {
@@ -313,6 +328,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const data: AgentPolicyResponse = await res.json();
     currentData = data;
+    renderEnforcement(data.enforced);
     renderTerms(data.policy.policies);
     renderOrigin(data);
     renderCaveats(data.policy.policies);
@@ -411,6 +427,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   .ag-section-title { margin: 0 0 8px; font-size: 1rem; }
   .ag-section-title + * { margin-top: 0; }
+
+  .ag-enforcement {
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    border: 1px solid var(--warning-fg, #b45309);
+    border-left: 3px solid var(--warning-fg, #b45309);
+    border-radius: 10px;
+    color: var(--warning-fg, #b45309);
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
 
   .ag-origin {
     padding: 16px 18px;

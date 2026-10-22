@@ -43,10 +43,23 @@ export interface SafeFetchResult {
   error?: SafeFetchFailure;
 }
 
+export type PinnedFetch = (
+  url: string,
+  init: RequestInit,
+  /** IP ya validada por `lookup`; el transporte debe conectarse a ella sin resolver otra vez. */
+  address?: string,
+) => Promise<Response>;
+
 export interface SafeFetchDeps {
   fetch?: typeof fetch;
   /** Resuelve un host a sus IPs. En Node: (h) => dns.lookup(h, { all: true }).map(a => a.address). */
   lookup?: (host: string) => Promise<string[]>;
+  /**
+   * Transporte Node con DNS pinning: recibe la IP validada en el mismo lookup
+   * y conecta a ella, manteniendo el hostname para Host/SNI. Sin esto, validar
+   * y luego dejar que `fetch` vuelva a resolver permite DNS rebinding.
+   */
+  fetchPinned?: PinnedFetch;
 }
 
 export const SAFE_FETCH_DEFAULTS: Required<SafeFetchLimits> = {
@@ -56,7 +69,8 @@ export const SAFE_FETCH_DEFAULTS: Required<SafeFetchLimits> = {
 };
 
 /** IPv4/IPv6 en rango privado, loopback, link-local o CGNAT. */
-export function isPrivateIp(ip: string): boolean {
+export function isPrivateIp(rawIp: string): boolean {
+  const ip = rawIp.replace(/^\[|\]$/g, "");
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
@@ -71,8 +85,15 @@ export function isPrivateIp(ip: string): boolean {
   const lower = ip.toLowerCase();
   if (lower === "::1" || lower === "::") return true;
   if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) return true; // link-local, unique-local fc00::/7
-  const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(lower);
-  if (mapped) return isPrivateIp(mapped[1]);
+  const mappedV4 = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(lower);
+  if (mappedV4) return isPrivateIp(mappedV4[1]);
+  // WHATWG URL canonicalizes [::ffff:127.0.0.1] to [::ffff:7f00:1].
+  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
+  if (mappedHex) {
+    const hi = Number.parseInt(mappedHex[1], 16);
+    const lo = Number.parseInt(mappedHex[2], 16);
+    return isPrivateIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
   return false;
 }
 
@@ -84,20 +105,27 @@ function isIpLiteral(host: string): boolean {
  * Valida una URL de salida: solo https, host valido, y host no privado (por
  * literal o por resolucion, si hay `lookup`). Lanza con el reason como mensaje.
  */
-export async function assertSafeUrl(url: URL, lookup?: (host: string) => Promise<string[]>): Promise<void> {
+async function resolveSafeAddress(url: URL, lookup?: (host: string) => Promise<string[]>): Promise<string | undefined> {
   if (url.protocol !== "https:") throw new Error("invalid_url");
   const host = url.hostname.toLowerCase();
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) throw new Error("blocked_host");
   if (isIpLiteral(host) && isPrivateIp(host)) throw new Error("blocked_host");
-  if (lookup) {
-    let ips: string[];
-    try {
-      ips = await lookup(host);
-    } catch {
-      throw new Error("blocked_host");
-    }
-    if (ips.length === 0 || ips.some(isPrivateIp)) throw new Error("blocked_host");
+  if (!lookup) return undefined;
+
+  let ips: string[];
+  try {
+    ips = await lookup(host);
+  } catch {
+    throw new Error("blocked_host");
   }
+  if (ips.length === 0 || ips.some(isPrivateIp)) throw new Error("blocked_host");
+  // Se elige UNA direccion de esta misma resolucion. El transporte la recibe
+  // como pin: no hay una segunda resolucion que un atacante pueda cambiar.
+  return ips[0];
+}
+
+export async function assertSafeUrl(url: URL, lookup?: (host: string) => Promise<string[]>): Promise<void> {
+  await resolveSafeAddress(url, lookup);
 }
 
 async function readCapped(res: Response, maxBytes: number): Promise<string | "too_large"> {
@@ -132,6 +160,8 @@ async function readCapped(res: Response, maxBytes: number): Promise<string | "to
 /** Crea un fetcher endurecido. Inyecta `fetch` y `lookup` para poder testearlo. */
 export function createSafeFetcher(deps: SafeFetchDeps = {}) {
   const doFetch = deps.fetch ?? fetch;
+  const fetchHop: PinnedFetch = deps.fetchPinned
+    ?? ((url, init) => doFetch(url, init));
   return async function safeFetch(url: string, limits: SafeFetchLimits = {}): Promise<SafeFetchResult> {
     const { timeoutMs, maxBytes, maxRedirects } = { ...SAFE_FETCH_DEFAULTS, ...limits };
     const fail = (error: SafeFetchFailure, status?: number): SafeFetchResult => ({ ok: false, error, status });
@@ -144,19 +174,20 @@ export function createSafeFetcher(deps: SafeFetchDeps = {}) {
     }
 
     for (let hop = 0; hop <= maxRedirects; hop++) {
+      let address: string | undefined;
       try {
-        await assertSafeUrl(current, deps.lookup);
+        address = await resolveSafeAddress(current, deps.lookup);
       } catch (e) {
         return fail(e instanceof Error && e.message === "invalid_url" ? "invalid_url" : "blocked_host");
       }
 
       let res: Response;
       try {
-        res = await doFetch(current.toString(), {
+        res = await fetchHop(current.toString(), {
           redirect: "manual",
           headers: { accept: "application/json" },
           signal: AbortSignal.timeout(timeoutMs),
-        });
+        }, address);
       } catch (e) {
         return fail(e instanceof Error && e.name === "TimeoutError" ? "timeout" : "network_error");
       }

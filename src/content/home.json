@@ -35,7 +35,7 @@
     {
       "id": "answer-p",
       "type": "Paragraph",
-      "props": { "text": "You decide, from the panel, who may read your site — search engines, AI assistants, model training — and the site answers accordingly, in writing. It is an answer a reader can observe, plus a published policy, not a setting that only the owner knows about." }
+      "props": { "text": "You decide, from the panel, who may read your site: the terms for search engines, AI assistants and model training. The site publishes them, in writing, and enforces the AI-input rule on signed agent requests; search and training are cooperative signals (not enforced per request) that a crawler must honor." }
     },
     {
       "id": "pillars",
@@ -71,7 +71,7 @@
       "props": {
         "title": "Honest answers",
         "variant": "bordered",
-        "items": "Is it ready for production? :: It is in public Beta and honest about its limits: the plugin installer is behind a flag that is off by default until an external security review, and six of twelve plugin capabilities still answer an explicit 501.\nDo I need a paid host? :: No. It runs on free static hosting (GitHub Pages, Cloudflare Pages) or self-hosted, and no database is exposed to the internet.\nDoes an AI reading my site have to identify itself? :: Only if you decide so. Reading public content requires no identity; when you ask who is reading, the reader proves control of a key it already holds — not another account with another company.\nHow is this different from a CMS? :: Extensions run in a sandbox and are granted capabilities one at a time; the core never certifies them, and your content is a projection of your own canonical state."
+        "items": "Is it ready for production? :: It is in Beta, invite-only, and honest about its limits: the plugin installer is behind a flag that is off by default until an external security review, and five of twelve plugin capabilities still answer an explicit 501.\nDo I need a paid host? :: No. It runs on free static hosting (GitHub Pages, Cloudflare Pages) or self-hosted, and no database is exposed to the internet.\nDoes an AI reading my site have to identify itself? :: Only if you decide so. Reading public content requires no identity; when you ask who is reading, the reader proves control of a key it already holds — not another account with another company.\nHow is this different from a CMS? :: Extensions run in a sandbox and are granted capabilities one at a time; the core never certifies them, and your content is a projection of your own canonical state."
       }
     },
     {
@@ -81,7 +81,7 @@
         "variant": "spotlight",
         "size": "lg",
         "title": "Ready when you are.",
-        "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes.",
+        "subtitle": "Install it, publish, and decide who may read. With Docker and a browser, the first site takes about ten minutes.",
         "ctaLabel": "Start in 10 minutes",
         "ctaHref": "/beta"
       }

@@ -107,10 +107,12 @@ describe("verifyWebBotAuthRequest -- nonces compartidos entre instancias (option
   });
 
   function mockDirectoryOnce(publicKeyX: string, keyId = KEY_ID) {
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ keys: [{ kid: keyId, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }] }),
-    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ keys: [{ kid: keyId, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }] }), {
+        status: 200,
+        headers: { "content-type": "application/http-message-signatures-directory+json" },
+      })
+    );
   }
 
   it("con env: el mismo nonce en dos requests es replay en el MISMO proceso (SQLite)", async () => {

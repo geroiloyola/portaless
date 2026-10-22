@@ -17,9 +17,9 @@ const base = import.meta.env.BASE_URL;
 
 const COPY: Record<Locale, Record<string, unknown>> = {
   es: {
-    title: "Beta publico — Portaless",
-    description: "Portaless esta en su primer Beta publico: que esta listo, que no, y como instalarlo en 10 minutos.",
-    kicker: "Primer Beta publico",
+    title: "Beta, solo por invitación — Portaless",
+    description: "Portaless está en Beta, solo por invitación: qué está listo, qué no, y cómo instalarlo en 10 minutos.",
+    kicker: "Beta, solo por invitación",
     h1: "Sitios verificables, sin empresas intermediarias",
     lead: "Portaless es software libre (AGPL-3.0) para publicar un sitio con <strong>identidad criptografica propia</strong> (Protocol APW) y un <strong>Score de Confianza publico</strong> que agentes de IA y humanos pueden verificar sin pedirle permiso a nadie. Esta en Beta: funciona de verdad y tambien te decimos, sin adornos, lo que todavía no esta listo.",
     btnExample: "Ver el sitio de ejemplo",
@@ -32,7 +32,7 @@ const COPY: Record<Locale, Record<string, unknown>> = {
       "Testigos externos y Portaless Index (agregador con pesos calibrados y sincronizacion entre nodos)",
       "Protocolo abierto APW v1.3 con vectores de prueba independientes del codigo",
       "Sandbox de plugins, Pay-per-crawl, servidor MCP",
-      "Politica de acceso de agentes operable desde el panel: decidis quien lee tu sitio —buscadores, asistentes de IA, entrenamiento de modelos— y el sitio responde en consecuencia, por escrito",
+      "Politica de acceso de agentes operable desde el panel: publica las condiciones para buscadores, asistentes de IA y entrenamiento, y aplica la regla de lectura por IA a las peticiones firmadas; busqueda y entrenamiento son señales cooperativas (no se aplican por petición)",
     ],
     notReadyTitle: "No listo todavía",
     notReady: [
@@ -51,9 +51,9 @@ const COPY: Record<Locale, Record<string, unknown>> = {
       'Capturas reales del producto, no maquetas: <a href="https://geroiloyola.github.io/portaless/">demo publica</a> · <a href="https://github.com/geroiloyola/portaless">codigo fuente</a> · <a href="https://github.com/geroiloyola/portaless/blob/main/SECURITY.md">seguridad y bus-factor</a>',
   },
   en: {
-    title: "Public Beta — Portaless",
-    description: "Portaless is in its first public Beta: what is ready, what is not, and how to install it in 10 minutes.",
-    kicker: "First public Beta",
+    title: "Beta, invite-only — Portaless",
+    description: "Portaless is in Beta, invite-only: what is ready, what is not, and how to install it in 10 minutes.",
+    kicker: "Beta, invite-only",
     h1: "Verifiable sites, with no company in between",
     lead: "Portaless is free software (AGPL-3.0) for publishing a site with its <strong>own cryptographic identity</strong> (Protocol APW) and a <strong>public TrustScore</strong> that AI agents and humans can verify without asking anyone's permission. It is in Beta: it really works, and we also tell you, plainly, what is not ready yet.",
     btnExample: "See the example site",
@@ -66,7 +66,7 @@ const COPY: Record<Locale, Record<string, unknown>> = {
       "External witnesses and Portaless Index (aggregator with calibrated weights and node sync)",
       "Open APW v1.3 protocol with test vectors independent of the code",
       "Plugin sandbox, Pay-per-crawl, MCP server",
-      "Agent access policy operable from the panel: you decide who reads your site —search engines, AI assistants, model training— and the site answers accordingly, in writing",
+      "Agent access policy operable from the panel: it publishes the terms for search engines, AI assistants and model training, and enforces the AI-input rule on signed requests; search and training remain cooperative signals (not enforced per request)",
     ],
     notReadyTitle: "Not ready yet",
     notReady: [

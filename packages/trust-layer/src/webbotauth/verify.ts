@@ -46,6 +46,10 @@ import {
   InMemoryWebBotAuthNonceStore,
   type NonceStoreFactoryEnv,
 } from "./nonce-store";
+import {
+  createSafeFetcher,
+  type SafeFetcher,
+} from "../../../apw-resolver/src/federation/safe-fetch";
 
 export interface KeyRecord {
   keyId: string;
@@ -64,6 +68,21 @@ export interface VerifyResult {
 const DIRECTORY_PATH = "/.well-known/http-message-signatures-directory";
 const MAX_SIGNATURE_AGE_SECONDS = 300;
 
+/**
+ * Clave canonica de cache: origen en minusculas, sin puerto por defecto, sin
+ * punto final y con IDN ya convertido a punycode por WHATWG URL.
+ */
+function normalizeDirectoryOrigin(origin: string): string {
+  try {
+    const url = new URL(origin);
+    let host = url.hostname.toLowerCase();
+    if (host.endsWith(".")) host = host.slice(0, -1);
+    return `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`;
+  } catch {
+    return origin.toLowerCase();
+  }
+}
+
 // v0.0.9: cache del directorio de claves con TTL, para no hacer un fetch()
 // nuevo en cada request del mismo operador. Ver ROADMAP.md "Cache del
 // directorio de claves Web Bot Auth". Shape propio (JWK crudo: OKP/Ed25519
@@ -81,29 +100,98 @@ interface DirectoryCacheEntry {
 
 const directoryCache = new Map<string, DirectoryCacheEntry>();
 
-/** Solo para tests: vacia el cache de directorios entre casos. */
-export function __resetDirectoryCacheForTests(): void {
-  directoryCache.clear();
+// B6: un origen invalido no debe generar un fetch nuevo en cada request.
+// La cache negativa es corta (60 s) y acotada (LRU simple por insercion).
+const NEGATIVE_CACHE_TTL_MS = 60_000;
+export const DIRECTORY_NEGATIVE_CACHE_MAX = 256;
+const negativeDirectoryCache = new Map<string, number>();
+export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;
+let directoryFetchesInFlight = 0;
+
+function rememberDirectoryFailure(origin: string): void {
+  const now = Date.now();
+  negativeDirectoryCache.delete(origin);
+  negativeDirectoryCache.set(origin, now + NEGATIVE_CACHE_TTL_MS);
+  while (negativeDirectoryCache.size > DIRECTORY_NEGATIVE_CACHE_MAX) {
+    const oldest = negativeDirectoryCache.keys().next().value;
+    if (oldest === undefined) break;
+    negativeDirectoryCache.delete(oldest);
+  }
 }
 
-async function fetchOperatorKeyDirectory(operatorOrigin: string): Promise<DirectoryResponse | null> {
-  const cached = directoryCache.get(operatorOrigin);
+/** Solo para tests: vacia cache positiva/negativa y contadores entre casos. */
+export function __resetDirectoryCacheForTests(): void {
+  directoryCache.clear();
+  negativeDirectoryCache.clear();
+  directoryFetchesInFlight = 0;
+}
+
+/** Solo para tests: estado acotado de las caches y fetches en vuelo. */
+export function __directoryFetchStateForTests(): { positive: number; negative: number; inFlight: number } {
+  return {
+    positive: directoryCache.size,
+    negative: negativeDirectoryCache.size,
+    inFlight: directoryFetchesInFlight,
+  };
+}
+
+async function fetchOperatorKeyDirectory(
+  operatorOrigin: string,
+  fetcher: SafeFetcher = createSafeFetcher(),
+): Promise<DirectoryResponse | null> {
+  const cacheKey = normalizeDirectoryOrigin(operatorOrigin);
+  const cached = directoryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.directory;
   }
 
+  const failedUntil = negativeDirectoryCache.get(cacheKey);
+  if (failedUntil !== undefined) {
+    if (failedUntil > Date.now()) return null;
+    negativeDirectoryCache.delete(cacheKey);
+  }
+
+  // Tope global: bajo una inundacion de origenes distintos se falla cerrado
+  // en vez de abrir fetches sin limite. No se cachea este rechazo: es una
+  // condicion de carga, no una propiedad del origen.
+  if (directoryFetchesInFlight >= DIRECTORY_FETCH_IN_FLIGHT_MAX) return null;
+
+  directoryFetchesInFlight += 1;
+  let res: Awaited<ReturnType<SafeFetcher>>;
   try {
-    const res = await fetch(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
-      headers: { accept: "application/json" },
+    res = await fetcher(new URL(DIRECTORY_PATH, cacheKey).toString(), {
+      timeoutMs: 5000,
+      maxBytes: 512 * 1024,
+      maxRedirects: 2,
     });
-    if (!res.ok) return null;
-    const directory = (await res.json()) as DirectoryResponse;
-    directoryCache.set(operatorOrigin, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
+  } catch {
+    rememberDirectoryFailure(cacheKey);
+    return null;
+  } finally {
+    directoryFetchesInFlight -= 1;
+  }
+  if (!res.ok || !res.text) {
+    rememberDirectoryFailure(cacheKey);
+    return null;
+  }
+
+  try {
+    const directory = JSON.parse(res.text) as DirectoryResponse;
+    if (!Array.isArray(directory?.keys)) {
+      rememberDirectoryFailure(cacheKey);
+      return null;
+    }
+    negativeDirectoryCache.delete(cacheKey);
+    directoryCache.set(cacheKey, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
     return directory;
   } catch {
+    rememberDirectoryFailure(cacheKey);
     return null;
   }
 }
+
+/** Solo para tests: ejercita el fetch interno sin fabricar una firma completa. */
+export const __fetchOperatorKeyDirectoryForTests = fetchOperatorKeyDirectory;
 
 // v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. v0.0.9.31:
 // ahora compartido entre instancias. Si el caller pasa options.env (con
@@ -124,6 +212,8 @@ export function __resetNonceStoreForTests(): void {
 
 export interface VerifyWebBotAuthOptions {
   env?: NonceStoreFactoryEnv;
+  /** Solo para tests o runtimes que ya inyectan un fetcher endurecido. */
+  directoryFetcher?: SafeFetcher;
 }
 
 export async function verifyWebBotAuthRequest(
@@ -139,8 +229,9 @@ export async function verifyWebBotAuthRequest(
     return { verified: false, reason: "missing_signature_headers" };
   }
 
-  const operatorOrigin = parseSignatureAgent(rawSignatureAgent);
-  if (!operatorOrigin) return { verified: false, reason: "invalid_signature_agent" };
+  const parsedOperatorOrigin = parseSignatureAgent(rawSignatureAgent);
+  if (!parsedOperatorOrigin) return { verified: false, reason: "invalid_signature_agent" };
+  const operatorOrigin = normalizeDirectoryOrigin(parsedOperatorOrigin);
 
   const webBotAuth = parseWebBotAuthSignatureInput(signatureInputHeader);
   if (!webBotAuth.ok) return { verified: false, reason: webBotAuth.reason };
@@ -160,7 +251,7 @@ export async function verifyWebBotAuthRequest(
   if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
   if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
 
-  const directory = await fetchOperatorKeyDirectory(operatorOrigin);
+  const directory = await fetchOperatorKeyDirectory(operatorOrigin, options?.directoryFetcher);
   if (!directory) return { verified: false, reason: "key_directory_unreachable" };
 
   const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);
