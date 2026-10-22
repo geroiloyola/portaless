@@ -85,9 +85,39 @@ interface DirectoryCacheEntry {
 
 const directoryCache = new Map<string, DirectoryCacheEntry>();
 
-/** Solo para tests: vacia el cache de directorios entre casos. */
+// B6: un origen invalido no debe generar un fetch nuevo en cada request.
+// La cache negativa es corta (60 s) y acotada (LRU simple por insercion).
+const NEGATIVE_CACHE_TTL_MS = 60_000;
+export const DIRECTORY_NEGATIVE_CACHE_MAX = 256;
+const negativeDirectoryCache = new Map<string, number>();
+export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;
+let directoryFetchesInFlight = 0;
+
+function rememberDirectoryFailure(origin: string): void {
+  const now = Date.now();
+  negativeDirectoryCache.delete(origin);
+  negativeDirectoryCache.set(origin, now + NEGATIVE_CACHE_TTL_MS);
+  while (negativeDirectoryCache.size > DIRECTORY_NEGATIVE_CACHE_MAX) {
+    const oldest = negativeDirectoryCache.keys().next().value;
+    if (oldest === undefined) break;
+    negativeDirectoryCache.delete(oldest);
+  }
+}
+
+/** Solo para tests: vacia cache positiva/negativa y contadores entre casos. */
 export function __resetDirectoryCacheForTests(): void {
   directoryCache.clear();
+  negativeDirectoryCache.clear();
+  directoryFetchesInFlight = 0;
+}
+
+/** Solo para tests: estado acotado de las caches y fetches en vuelo. */
+export function __directoryFetchStateForTests(): { positive: number; negative: number; inFlight: number } {
+  return {
+    positive: directoryCache.size,
+    negative: negativeDirectoryCache.size,
+    inFlight: directoryFetchesInFlight,
+  };
 }
 
 async function fetchOperatorKeyDirectory(
@@ -99,22 +129,53 @@ async function fetchOperatorKeyDirectory(
     return cached.directory;
   }
 
-  const res = await fetcher(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
-    timeoutMs: 5000,
-    maxBytes: 512 * 1024,
-    maxRedirects: 2,
-  });
-  if (!res.ok || !res.text) return null;
+  const failedUntil = negativeDirectoryCache.get(operatorOrigin);
+  if (failedUntil !== undefined) {
+    if (failedUntil > Date.now()) return null;
+    negativeDirectoryCache.delete(operatorOrigin);
+  }
+
+  // Tope global: bajo una inundacion de origenes distintos se falla cerrado
+  // en vez de abrir fetches sin limite. No se cachea este rechazo: es una
+  // condicion de carga, no una propiedad del origen.
+  if (directoryFetchesInFlight >= DIRECTORY_FETCH_IN_FLIGHT_MAX) return null;
+
+  directoryFetchesInFlight += 1;
+  let res: Awaited<ReturnType<SafeFetcher>>;
+  try {
+    res = await fetcher(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
+      timeoutMs: 5000,
+      maxBytes: 512 * 1024,
+      maxRedirects: 2,
+    });
+  } catch {
+    rememberDirectoryFailure(operatorOrigin);
+    return null;
+  } finally {
+    directoryFetchesInFlight -= 1;
+  }
+  if (!res.ok || !res.text) {
+    rememberDirectoryFailure(operatorOrigin);
+    return null;
+  }
 
   try {
     const directory = JSON.parse(res.text) as DirectoryResponse;
-    if (!Array.isArray(directory?.keys)) return null;
+    if (!Array.isArray(directory?.keys)) {
+      rememberDirectoryFailure(operatorOrigin);
+      return null;
+    }
+    negativeDirectoryCache.delete(operatorOrigin);
     directoryCache.set(operatorOrigin, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
     return directory;
   } catch {
+    rememberDirectoryFailure(operatorOrigin);
     return null;
   }
 }
+
+/** Solo para tests: ejercita el fetch interno sin fabricar una firma completa. */
+export const __fetchOperatorKeyDirectoryForTests = fetchOperatorKeyDirectory;
 
 // v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. v0.0.9.31:
 // ahora compartido entre instancias. Si el caller pasa options.env (con

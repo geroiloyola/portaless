@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAssetsBinding, createSelfHostServer } from "../../server/node-runtime.mjs";
+import { createAssetsBinding, createPinnedFetch, createSelfHostServer } from "../../server/node-runtime.mjs";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => {
@@ -43,7 +43,23 @@ const ECHO_MIDDLEWARE = `export async function onRequest(c) {
   return Response.json({ status: res.status, body: res.ok ? await res.json() : null, flag: c.env.ENABLE_TRUST_LAYER ?? null, hasAssets: "ASSETS" in c.env });
 }`;
 
+const DIRECTORY_FETCHER_MIDDLEWARE = `export async function onRequest(c) {
+  if (new URL(c.request.url).pathname !== "/probe") return c.next();
+  return Response.json({
+    hasFetcher: typeof c.env.__PORTALESS_DIRECTORY_FETCHER === "function",
+    hasLookup: typeof c.env.__PORTALESS_DNS_LOOKUP === "function",
+  });
+}`;
+
 describe("env.ASSETS en el runtime Node", () => {
+  it("inyecta el directory fetcher con DNS pinning en self-host (B5)", async () => {
+    const paths = fixture(DIRECTORY_FETCHER_MIDDLEWARE);
+    const server = await createSelfHostServer({ rootDir: paths.root, functionsDir: paths.functions, staticDir: paths.dist, env: {} });
+    const base = await listen(server);
+
+    expect(await (await fetch(base + "/probe")).json()).toEqual({ hasFetcher: true, hasLookup: true });
+  });
+
   it("el middleware lee el manifiesto publicado y sigue viendo las demas variables", async () => {
     const paths = fixture(ECHO_MIDDLEWARE);
     const env: Record<string, string> = { ENABLE_TRUST_LAYER: "true" };
@@ -56,6 +72,29 @@ describe("env.ASSETS en el runtime Node", () => {
     // No muta el env original.
     expect("ASSETS" in env).toBe(false);
     expect((await fetch(base + "/")).status).toBe(200);
+  });
+
+  it("createPinnedFetch conecta a la IP validada y conserva el hostname (B5)", async () => {
+    const captured: Record<string, unknown> = {};
+    const fakeRequest = (url: URL, options: any, callback: (res: any) => void) => {
+      captured.hostname = url.hostname;
+      captured.options = options;
+      options.lookup(url.hostname, {}, (err: Error | null, address: string, family: number) => {
+        captured.lookupError = err;
+        captured.address = address;
+        captured.family = family;
+      });
+      callback({ statusCode: 500, headers: {}, resume() {} });
+      return { on() { return this; }, end() {} };
+    };
+
+    const res = await createPinnedFetch(fakeRequest as never)("https://directory.example/x", {}, "93.184.216.34");
+
+    expect(res.status).toBe(500);
+    expect(captured.hostname).toBe("directory.example");
+    expect(captured.lookupError).toBeNull();
+    expect(captured.address).toBe("93.184.216.34");
+    expect(captured.family).toBe(4);
   });
 
   it("respeta un ASSETS provisto por la plataforma", async () => {

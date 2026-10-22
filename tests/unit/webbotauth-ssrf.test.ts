@@ -35,6 +35,37 @@ describe("Web Bot Auth directory egress (SSRF)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("blocks a hostname that resolves to 127.0.0.1 before connecting", async () => {
+    const fetchPinned = vi.fn();
+    const safe = createSafeFetcher({ lookup: async () => ["127.0.0.1"], fetchPinned });
+    const res = await safe("https://rebind.example/.well-known/http-message-signatures-directory");
+    expect(res).toMatchObject({ ok: false, error: "blocked_host" });
+    expect(fetchPinned).not.toHaveBeenCalled();
+  });
+
+  it("blocks a hostname that resolves to 169.254.169.254 before connecting", async () => {
+    const fetchPinned = vi.fn();
+    const safe = createSafeFetcher({ lookup: async () => ["169.254.169.254"], fetchPinned });
+    const res = await safe("https://metadata.example/.well-known/http-message-signatures-directory");
+    expect(res).toMatchObject({ ok: false, error: "blocked_host" });
+    expect(fetchPinned).not.toHaveBeenCalled();
+  });
+
+  it("pins the first validated address, so a second private resolution cannot rebind", async () => {
+    const lookup = vi.fn()
+      .mockResolvedValueOnce(["93.184.216.34"])
+      .mockResolvedValueOnce(["127.0.0.1"]);
+    const fetchPinned = vi.fn(async () => new Response(JSON.stringify({ keys: [] }), { status: 200 }));
+    const safe = createSafeFetcher({ lookup, fetchPinned });
+
+    const res = await safe("https://rebind.example/.well-known/http-message-signatures-directory");
+
+    expect(res.ok).toBe(true);
+    expect(lookup).toHaveBeenCalledTimes(1);
+    expect(fetchPinned).toHaveBeenCalledTimes(1);
+    expect(fetchPinned.mock.calls[0][2]).toBe("93.184.216.34");
+  });
+
   it("does not follow key directory redirects to a private hop", async () => {
     const fetchMock = vi.fn(async () => new Response(null, {
       status: 302,

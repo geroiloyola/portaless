@@ -17,6 +17,10 @@ import {
   verifyWebBotAuthRequest,
   __resetDirectoryCacheForTests,
   __resetNonceStoreForTests,
+  __directoryFetchStateForTests,
+  __fetchOperatorKeyDirectoryForTests,
+  DIRECTORY_NEGATIVE_CACHE_MAX,
+  DIRECTORY_FETCH_IN_FLIGHT_MAX,
 } from "../../packages/trust-layer/src/webbotauth/verify";
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 
@@ -285,5 +289,44 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
 
     expect(result.verified).toBe(false);
     expect(result.reason).toBe("signature_too_old");
+  });
+
+  it("B6: un origen invalido repetido no vuelve a fetchear dentro de la ventana", async () => {
+    const directoryFetch = vi.fn(async () => ({ ok: false, error: "http_error", status: 503 }));
+
+    expect(await __fetchOperatorKeyDirectoryForTests("https://bad.example", directoryFetch as never)).toBeNull();
+    expect(await __fetchOperatorKeyDirectoryForTests("https://bad.example", directoryFetch as never)).toBeNull();
+
+    expect(directoryFetch).toHaveBeenCalledTimes(1);
+    expect(__directoryFetchStateForTests()).toMatchObject({ negative: 1, inFlight: 0 });
+  });
+
+  it("B6: la cache negativa se acota por LRU", async () => {
+    const directoryFetch = vi.fn(async () => ({ ok: false, error: "http_error", status: 503 }));
+    for (let i = 0; i < DIRECTORY_NEGATIVE_CACHE_MAX + 20; i++) {
+      await __fetchOperatorKeyDirectoryForTests(`https://bad-${i}.example`, directoryFetch as never);
+    }
+
+    const state = __directoryFetchStateForTests();
+    expect(state.negative).toBe(DIRECTORY_NEGATIVE_CACHE_MAX);
+    expect(state.inFlight).toBe(0);
+  });
+
+  it("B6: limita los fetches de directorio en vuelo y falla cerrado", async () => {
+    const resolvers: Array<(value: { ok: false; error: string; status: number }) => void> = [];
+    const directoryFetch = vi.fn(() => new Promise((resolve) => {
+      resolvers.push(resolve as never);
+    }));
+
+    const pending = Array.from({ length: DIRECTORY_FETCH_IN_FLIGHT_MAX + 1 }, (_, i) =>
+      __fetchOperatorKeyDirectoryForTests(`https://slow-${i}.example`, directoryFetch as never)
+    );
+
+    expect(directoryFetch).toHaveBeenCalledTimes(DIRECTORY_FETCH_IN_FLIGHT_MAX);
+    expect(await pending[DIRECTORY_FETCH_IN_FLIGHT_MAX]).toBeNull();
+
+    for (const resolve of resolvers) resolve({ ok: false, error: "http_error", status: 503 });
+    await Promise.all(pending.slice(0, DIRECTORY_FETCH_IN_FLIGHT_MAX));
+    expect(__directoryFetchStateForTests().inFlight).toBe(0);
   });
 });

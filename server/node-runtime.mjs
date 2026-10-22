@@ -1,9 +1,11 @@
 import { createServer } from "node:http";
+import { request as httpsRequest } from "node:https";
 import { Readable } from "node:stream";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { createSafeFetcher } from "../packages/apw-resolver/src/federation/safe-fetch.ts";
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8" };
 
@@ -29,6 +31,57 @@ export function resolveClientIp(socketIp, forwardedFor, trustedProxies = []) {
   const chain = String(forwardedFor || "").split(",").map(normalizeIp).filter(Boolean);
   for (let i = chain.length - 1; i >= 0; i--) { if (!trustedProxies.includes(chain[i])) return chain[i]; }
   return remote;
+}
+
+// B5: el safe-fetcher resuelve y valida una IP; este transporte se conecta a
+// ESA IP (lookup pinneado) manteniendo el hostname para Host/SNI. Sin esto,
+// `fetch` volveria a resolver y un DNS rebinding entre ambas resoluciones
+// podria saltarse la validacion.
+export function createPinnedFetch(requestImpl = httpsRequest) {
+  return (url, init = {}, address) => new Promise((resolvePromise, reject) => {
+    if (!address) {
+      reject(new Error("missing_pinned_address"));
+      return;
+    }
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      reject(new Error("invalid_url"));
+      return;
+    }
+    if (parsed.protocol !== "https:") {
+      reject(new Error("invalid_url"));
+      return;
+    }
+
+    const headers = Object.fromEntries(new Headers(init.headers || {}).entries());
+    const req = requestImpl(parsed, {
+      method: init.method || "GET",
+      headers,
+      signal: init.signal,
+      lookup: (_hostname, _options, callback) => {
+        callback(null, address, address.includes(":") ? 6 : 4);
+      },
+    }, (res) => {
+      const status = res.statusCode || 502;
+      const responseHeaders = new Headers();
+      for (const [key, value] of Object.entries(res.headers)) {
+        if (Array.isArray(value)) value.forEach((item) => responseHeaders.append(key, item));
+        else if (value !== undefined) responseHeaders.set(key, value);
+      }
+      // 3xx/4xx/5xx: el safe-fetcher solo necesita status y Location; no se
+      // deja un body abierto ni se bufferiza para descartarlo.
+      if (status < 200 || status >= 300) {
+        res.resume();
+        resolvePromise(new Response(null, { status, headers: responseHeaders }));
+        return;
+      }
+      resolvePromise(new Response(Readable.toWeb(res), { status, headers: responseHeaders }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
 
 function walk(dir) { if (!existsSync(dir)) return []; return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => { const path = join(dir, entry.name); return entry.isDirectory() ? walk(path) : [path]; }); }
@@ -68,21 +121,27 @@ export function createAssetsBinding(staticDir) {
 // strings) y para que el resto de las variables se siga leyendo en vivo.
 // Si la plataforma ya trae su propio ASSETS, se respeta. APW v1.2: marca el
 // runtime y expone lookup DNS solo al self-host para guards anti-SSRF.
-function withRuntimeBindings(env, assets) {
+function withRuntimeBindings(env, assets, directoryFetcher) {
+  const dnsLookupAll = async (host) => (await dnsLookup(host, { all: true, verbatim: true })).map((address) => address.address);
   return new Proxy(env, {
     get: (target, key, receiver) => {
       if (key === "__PORTALESS_RUNTIME") return "node";
-      if (key === "__PORTALESS_DNS_LOOKUP") return async (host) => (await dnsLookup(host, { all: true, verbatim: true })).map((address) => address.address);
+      if (key === "__PORTALESS_DNS_LOOKUP") return dnsLookupAll;
+      if (key === "__PORTALESS_DIRECTORY_FETCHER") return directoryFetcher;
       if (key === "ASSETS") return target.ASSETS || assets;
       return Reflect.get(target, key, receiver);
     },
-    has: (target, key) => key === "ASSETS" || key === "__PORTALESS_RUNTIME" || key === "__PORTALESS_DNS_LOOKUP" || Reflect.has(target, key),
+    has: (target, key) => key === "ASSETS" || key === "__PORTALESS_RUNTIME" || key === "__PORTALESS_DNS_LOOKUP" || key === "__PORTALESS_DIRECTORY_FETCHER" || Reflect.has(target, key),
   });
 }
 
 export async function createSelfHostServer(options = {}) {
   const rootDir = resolve(options.rootDir || process.cwd()); const functionsDir = resolve(options.functionsDir || join(rootDir, "functions")); const staticDir = resolve(options.staticDir || join(rootDir, "dist")); const env = options.env || process.env;
-  const runtimeEnv = withRuntimeBindings(env, createAssetsBinding(staticDir));
+  const directoryFetcher = createSafeFetcher({
+    lookup: async (host) => (await dnsLookup(host, { all: true, verbatim: true })).map((address) => address.address),
+    fetchPinned: createPinnedFetch(),
+  });
+  const runtimeEnv = withRuntimeBindings(env, createAssetsBinding(staticDir), directoryFetcher);
   const trustedProxies = parseTrustedProxies(env.PORTALESS_TRUSTED_PROXIES);
   const sourceFiles = walk(functionsDir).filter((file) => file.endsWith(".js"));
   const handlers = sourceFiles.filter((file) => !file.endsWith(`${sep}_middleware.js`)).map((file) => ({ file, ...routeFromFile(functionsDir, file) }));

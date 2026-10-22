@@ -226,7 +226,12 @@ export async function onRequest(context) {
     }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
-  const result = await verifyWebBotAuthRequest(request, { env });
+  const result = await verifyWebBotAuthRequest(request, {
+    env,
+    // Solo el runtime Node lo expone: resuelve y valida una IP y conecta a
+    // ella (DNS pinning). En edge no existe y el verificador usa su default.
+    directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,
+  });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   const origin = new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
