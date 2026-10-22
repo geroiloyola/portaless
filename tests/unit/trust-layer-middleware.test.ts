@@ -18,10 +18,13 @@ import { onRequest } from "../../functions/_middleware";
 import {
   __resetDirectoryCacheForTests,
   __resetNonceStoreForTests,
+  __fetchOperatorKeyDirectoryForTests,
+  DIRECTORY_FETCH_COLD_MAX,
 } from "../../packages/trust-layer/src/webbotauth/verify";
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 import { __resetNonceStoreFactoryForTests } from "../../packages/trust-layer/src/webbotauth/nonce-store";
 import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory";
+import { readUnsignedBotRejections } from "../../packages/trust-layer/src/ledger/unsigned-bot-metrics";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "mw-key-1";
@@ -47,11 +50,11 @@ async function generateKeyPair() {
 
 async function buildSignedRequest(
   privateKey: CryptoKey,
-  opts: { nonce: string; url?: string }
+  opts: { nonce: string; url?: string; created?: number; expires?: number }
 ): Promise<Request> {
   const url = opts.url ?? "https://mysite.example/pages/foo";
-  const created = Math.floor(Date.now() / 1000);
-  const expires = created + 300;
+  const created = opts.created ?? Math.floor(Date.now() / 1000);
+  const expires = opts.expires ?? created + 300;
   const agentHeader = `"${OPERATOR_ORIGIN}"`;
   const paramsLine =
     `(${DEFAULT_COMPONENTS})` +
@@ -201,6 +204,65 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     expect(res!.status).toBe(403);
     expect((await res!.json()).error).toBe("unsigned_automated_request");
     expect(next).not.toHaveBeenCalled();
+    expect((await readUnsignedBotRejections(env)).periods[0]).toMatchObject({ googlebot: 1, bingbot: 0, other: 0, unknown: 0 });
+  });
+
+  it("R4: timeout and cached failure are 503 + Retry-After, with no violation or ledger write", async () => {
+    const { privateKey } = await generateKeyPair();
+    const directoryFetcher = vi.fn(async () => ({ ok: false, error: "timeout" }));
+    for (const expectedReason of ["directory_unavailable", "directory_failure_cached"]) {
+      const request = await buildSignedRequest(privateKey, { nonce: expectedReason });
+      const { context, next } = makeContext(request, { ...env, __PORTALESS_DIRECTORY_FETCHER: directoryFetcher });
+      const res = await onRequest(context);
+      expect(res.status).toBe(503);
+      expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
+      expect(await res.json()).toEqual({ error: "verification_unavailable", reason: expectedReason });
+      expect(next).not.toHaveBeenCalled();
+    }
+    expect(directoryFetcher).toHaveBeenCalledTimes(1);
+    const ledger = await createUsageLedgerStore(env as any);
+    expect(await ledger.get(new Date().toISOString().slice(0, 7))).toBeNull();
+  });
+
+  it("R4: cold-lane exhaustion is 503, not an invalid-signature violation", async () => {
+    const releases: Array<(value: any) => void> = [];
+    const pending = Array.from({ length: DIRECTORY_FETCH_COLD_MAX }, (_, i) =>
+      __fetchOperatorKeyDirectoryForTests(`https://slow-${i}.example`, (() => new Promise((done) => releases.push(done))) as never));
+    await Promise.resolve();
+    try {
+      const { privateKey } = await generateKeyPair();
+      const request = await buildSignedRequest(privateKey, { nonce: "busy" });
+      const res = await onRequest(makeContext(request, env).context);
+      expect(res.status).toBe(503);
+      expect(res.headers.get("retry-after")).toBe("1");
+      expect(await res.json()).toEqual({ error: "verification_unavailable", reason: "directory_busy" });
+      expect(await (await createUsageLedgerStore(env as any)).get(new Date().toISOString().slice(0, 7))).toBeNull();
+    } finally {
+      for (const done of releases) done({ ok: false, error: "timeout" });
+      await Promise.all(pending);
+    }
+  });
+
+  it("R4: expired signatures are distinct 401 credentials, with no misconduct ledger entry", async () => {
+    const { privateKey } = await generateKeyPair();
+    const now = Math.floor(Date.now() / 1000);
+    const request = await buildSignedRequest(privateKey, { nonce: "expired", created: now - 60, expires: now - 1 });
+    const res = await onRequest(makeContext(request, env).context);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "signature_expired", reason: "signature_expired" });
+    expect(await (await createUsageLedgerStore(env as any)).get(new Date().toISOString().slice(0, 7))).toBeNull();
+  });
+
+  it("R4: a cryptographically invalid signature remains 401 verification_failed", async () => {
+    const { privateKey, publicKeyX } = await generateKeyPair();
+    mockDirectory(publicKeyX);
+    const request = await buildSignedRequest(privateKey, { nonce: "bad-crypto" });
+    request.headers.set("Signature", `sig1=:${bytesToBase64(new Uint8Array(64))}:`);
+    const res = await onRequest(makeContext(request, env).context);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "verification_failed", reason: "signature_verification_failed" });
+    const period = await (await createUsageLedgerStore(env as any)).get(new Date().toISOString().slice(0, 7));
+    expect(period?.agents.find((a) => a.operatorKeyId === "unverified")?.policyViolationsDetected).toBe(1);
   });
 
   it("firma invalida: 401 verification_failed y el ledger registra la violacion", async () => {
