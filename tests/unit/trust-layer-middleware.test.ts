@@ -204,12 +204,17 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
-        }),
-      })
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/http-message-signatures-directory+json" },
+          }
+        )
+      )
     );
     const request = await buildSignedRequest(privateKey, { nonce: "charge-1" });
     const { context, next } = makeContext(request, env);
@@ -226,12 +231,17 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
-        }),
-      })
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/http-message-signatures-directory+json" },
+          }
+        )
+      )
     );
     const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "block" })) };
     const request = await buildSignedRequest(privateKey, { nonce: "block-1" });
@@ -246,12 +256,17 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
-        }),
-      })
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/http-message-signatures-directory+json" },
+          }
+        )
+      )
     );
     const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
     const request = await buildSignedRequest(privateKey, { nonce: "allow-1" });
@@ -268,12 +283,17 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     const { privateKey, publicKeyX } = await generateKeyPair();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
-        }),
-      })
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            keys: [{ kid: KEY_ID, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/http-message-signatures-directory+json" },
+          }
+        )
+      )
     );
     const envWithPolicy = { ...env, ASSETS: assetsServing({ version: "0.1", site: "x" }) };
     const request = await buildSignedRequest(privateKey, { nonce: "invalid-policy-1" });

@@ -46,6 +46,10 @@ import {
   InMemoryWebBotAuthNonceStore,
   type NonceStoreFactoryEnv,
 } from "./nonce-store";
+import {
+  createSafeFetcher,
+  type SafeFetcher,
+} from "../../../apw-resolver/src/federation/safe-fetch";
 
 export interface KeyRecord {
   keyId: string;
@@ -86,18 +90,25 @@ export function __resetDirectoryCacheForTests(): void {
   directoryCache.clear();
 }
 
-async function fetchOperatorKeyDirectory(operatorOrigin: string): Promise<DirectoryResponse | null> {
+async function fetchOperatorKeyDirectory(
+  operatorOrigin: string,
+  fetcher: SafeFetcher = createSafeFetcher(),
+): Promise<DirectoryResponse | null> {
   const cached = directoryCache.get(operatorOrigin);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.directory;
   }
 
+  const res = await fetcher(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
+    timeoutMs: 5000,
+    maxBytes: 512 * 1024,
+    maxRedirects: 2,
+  });
+  if (!res.ok || !res.text) return null;
+
   try {
-    const res = await fetch(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
-      headers: { accept: "application/json" },
-    });
-    if (!res.ok) return null;
-    const directory = (await res.json()) as DirectoryResponse;
+    const directory = JSON.parse(res.text) as DirectoryResponse;
+    if (!Array.isArray(directory?.keys)) return null;
     directoryCache.set(operatorOrigin, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
     return directory;
   } catch {
@@ -124,6 +135,8 @@ export function __resetNonceStoreForTests(): void {
 
 export interface VerifyWebBotAuthOptions {
   env?: NonceStoreFactoryEnv;
+  /** Solo para tests o runtimes que ya inyectan un fetcher endurecido. */
+  directoryFetcher?: SafeFetcher;
 }
 
 export async function verifyWebBotAuthRequest(
@@ -160,7 +173,7 @@ export async function verifyWebBotAuthRequest(
   if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
   if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
 
-  const directory = await fetchOperatorKeyDirectory(operatorOrigin);
+  const directory = await fetchOperatorKeyDirectory(operatorOrigin, options?.directoryFetcher);
   if (!directory) return { verified: false, reason: "key_directory_unreachable" };
 
   const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);

@@ -105,10 +105,12 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
   });
 
   function mockDirectoryOnce(publicKeyX: string, keyId = KEY_ID) {
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ keys: [{ kid: keyId, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }] }),
-    });
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ keys: [{ kid: keyId, kty: "OKP", crv: "Ed25519", x: publicKeyX, alg: "ed25519" }] }), {
+        status: 200,
+        headers: { "content-type": "application/http-message-signatures-directory+json" },
+      })
+    );
   }
 
   it("verifica una request firmada segun draft-03 y devuelve agentKeyId para el ledger", async () => {
@@ -173,6 +175,40 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     headers.set("Signature-Agent", `"${OPERATOR_ORIGIN}/otro"`);
     const result = await verifyWebBotAuthRequest(new Request(original.url, { headers }));
     expect(result).toMatchObject({ verified: false, reason: "signature_verification_failed" });
+  });
+
+  it("no fetchea un directorio que apunta a una IP privada literal (SSRF)", async () => {
+    const { privateKey } = await generateKeyPair();
+    const request = await buildSignedRequest({
+      privateKey,
+      keyId: KEY_ID,
+      signatureAgentHeader: '"https://169.254.169.254"',
+    });
+
+    const result = await verifyWebBotAuthRequest(request);
+
+    expect(result).toMatchObject({ verified: false, reason: "key_directory_unreachable" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("no sigue un redirect del directorio hacia una IP privada", async () => {
+    const { privateKey } = await generateKeyPair();
+    fetchSpy.mockResolvedValueOnce(
+      new Response(null, {
+        status: 302,
+        headers: { location: "https://127.0.0.1/.well-known/http-message-signatures-directory" },
+      })
+    );
+    const request = await buildSignedRequest({
+      privateKey,
+      keyId: KEY_ID,
+      signatureAgentHeader: '"https://directory.example"',
+    });
+
+    const result = await verifyWebBotAuthRequest(request);
+
+    expect(result).toMatchObject({ verified: false, reason: "key_directory_unreachable" });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("cachea el directorio de claves: la segunda request al mismo operador no vuelve a fetchear", async () => {
