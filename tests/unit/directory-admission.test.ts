@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DirectoryResolver, DIRECTORY_FETCH_COLD_MAX } from "../../packages/trust-layer/src/webbotauth/directory-fetch";
+import { DirectoryResolver, DIRECTORY_FETCH_COLD_MAX, parseReservedDirectoryOrigins } from "../../packages/trust-layer/src/webbotauth/directory-fetch";
 
 afterEach(() => vi.useRealTimers());
 
@@ -38,6 +38,24 @@ describe("R4 directory admission", () => {
     expect(resolver.state().inFlight).toBe(0);
   });
 
+  it("post97: directory_busy is never negative-cached; a cold legitimate origin retries when a slot frees", async () => {
+    const resolver = new DirectoryResolver();
+    const releases: Array<(value: any) => void> = [];
+    const slow = () => new Promise<any>((done) => releases.push(done));
+    const pending = Array.from({ length: DIRECTORY_FETCH_COLD_MAX }, (_, i) => resolver.resolve(`https://busy-${i}.example`, slow));
+    await Promise.resolve();
+    const good = vi.fn(async () => ({ ok: true, text: '{"keys":[]}' }));
+    expect(await resolver.resolve("https://legitimate.example", good)).toMatchObject({ reason: "directory_busy" });
+    expect(good).not.toHaveBeenCalled();
+    expect(resolver.state().negative).toBe(0);
+    releases[0]({ ok: true, text: '{"keys":[]}' });
+    await pending[0];
+    expect((await resolver.resolve("https://legitimate.example", good)).ok).toBe(true);
+    expect(good).toHaveBeenCalledTimes(1);
+    for (const done of releases.slice(1)) done({ ok: true, text: '{"keys":[]}' });
+    await Promise.all(pending);
+  });
+
   it("cached failures have a decreasing Retry-After, true LRU, and retry after 60 seconds", async () => {
     let now = 0;
     const resolver = new DirectoryResolver(() => now);
@@ -64,19 +82,29 @@ describe("R4 directory admission", () => {
     expect(resolver.state().negative).toBe(256);
   });
 
-  it("previously verified origins retain reserved eligibility after positive-cache expiration", async () => {
+  it("only an owner-configured origin retains reserved eligibility with a cold cache", async () => {
     let now = 0;
     const resolver = new DirectoryResolver(() => now);
-    resolver.markVerified("https://verified.example");
     const pending: Array<(value: any) => void> = [];
     const slow = () => new Promise<any>((done) => pending.push(done));
     const flood = Array.from({ length: DIRECTORY_FETCH_COLD_MAX }, (_, i) => resolver.resolve(`https://new-${i}.example`, slow));
-    const trusted = resolver.resolve("https://verified.example", slow);
+    const trusted = resolver.resolve("https://verified.example", slow, ["https://verified.example"]);
     await Promise.resolve();
     expect(pending).toHaveLength(DIRECTORY_FETCH_COLD_MAX + 1);
     for (const done of pending) done({ ok: true, text: '{"keys":[]}' });
     await Promise.all([...flood, trusted]);
     now = 600_001;
-    expect((await resolver.resolve("https://verified.example", async () => ({ ok: true, text: '{"keys":[]}' }))).ok).toBe(true);
+    expect((await resolver.resolve("https://verified.example", async () => ({ ok: true, text: '{"keys":[]}' }), ["https://verified.example"])).ok).toBe(true);
+  });
+
+  it("reserved origins accept only bounded HTTPS origins, normalize/deduplicate, and discard invalid entries", () => {
+    expect(parseReservedDirectoryOrigins(" https://EXAMPLE.com.:443, https://example.com, https://BÜCHER.example.,https://xn--bcher-kva.example ").origins)
+      .toEqual(["https://example.com", "https://xn--bcher-kva.example"]);
+    const invalid = ["http://bad.example", "https://user:password@bad.example", "https://good.example/path", "https://good.example/?key=secret", "https://good.example/#x", "*", "https://*.example", "https://localhost.", "https://127.0.0.1", "https://[::1]", "not-a-url"];
+    expect(parseReservedDirectoryOrigins(invalid.join(","))).toEqual({ origins: [], invalidCount: invalid.length });
+    expect(parseReservedDirectoryOrigins()).toEqual({ origins: [], invalidCount: 0 });
+    const excess = parseReservedDirectoryOrigins(Array.from({ length: 257 }, (_, i) => `https://o-${i}.example`).join(","));
+    expect(excess.origins).toHaveLength(256);
+    expect(excess.invalidCount).toBe(1);
   });
 });

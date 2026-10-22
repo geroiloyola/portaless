@@ -1,4 +1,4 @@
-import { createSafeFetcher, type SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
+import { createSafeFetcher, isPrivateIp, type SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
 
 export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;
 export const DIRECTORY_FETCH_RESERVED = 2;
@@ -21,6 +21,26 @@ export function normalizeDirectoryOrigin(origin: string): string {
   return url.origin;
 }
 
+/** Owner configuration only. Invalid/excess entries never create a reservation. */
+export function parseReservedDirectoryOrigins(raw = ""): { origins: string[]; invalidCount: number } {
+  const origins = new Set<string>();
+  let invalidCount = 0;
+  const entries = raw.split(",").map((value) => value.trim()).filter(Boolean);
+  for (const [index, value] of entries.entries()) {
+    try {
+      if (index >= 256) throw new Error("excess_entries");
+      const url = new URL(value);
+      if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash || url.hostname.includes("*")) throw new Error("invalid_origin");
+      const origin = normalizeDirectoryOrigin(value);
+      const host = new URL(origin).hostname;
+      if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")
+        || ((host.includes(":") || /^\d+(\.\d+){3}$/.test(host)) && isPrivateIp(host))) throw new Error("blocked_host");
+      origins.add(origin);
+    } catch { invalidCount++; }
+  }
+  return { origins: [...origins], invalidCount };
+}
+
 function boundedSet<T>(map: Map<string, T>, key: string, value: T): void {
   map.delete(key);
   map.set(key, value);
@@ -31,15 +51,10 @@ function boundedSet<T>(map: Map<string, T>, key: string, value: T): void {
 export class DirectoryResolver {
   private positive = new Map<string, { directory: DirectoryResponse; until: number }>();
   private negative = new Map<string, number>();
-  private verified = new Map<string, true>();
   private inflight = new Map<string, Promise<DirectoryResult>>();
   private coldInFlight = 0;
 
   constructor(private now: () => number = Date.now) {}
-
-  markVerified(origin: string): void {
-    boundedSet(this.verified, normalizeDirectoryOrigin(origin), true);
-  }
 
   state() {
     return { positive: this.positive.size, negative: this.negative.size, inFlight: this.inflight.size };
@@ -60,9 +75,9 @@ export class DirectoryResolver {
     const pending = this.inflight.get(key);
     if (pending) return pending; // per-origin maximum: one fetch, shared result
 
-    const reserved = this.verified.has(key) || reservedOrigins.slice(0, 256).some((value) => {
-      try { return normalizeDirectoryOrigin(value) === key; } catch { return false; }
-    });
+    // A valid signature is cheap for attacker-owned domains. It proves key
+    // control, never eligibility for scarce reserved admission capacity.
+    const reserved = parseReservedDirectoryOrigins(reservedOrigins.join(",")).origins.includes(key);
     if (this.inflight.size >= DIRECTORY_FETCH_IN_FLIGHT_MAX || (!reserved && this.coldInFlight >= DIRECTORY_FETCH_COLD_MAX)) {
       return Promise.resolve({ ok: false, reason: "directory_busy", retryAfterSeconds: 1 });
     }

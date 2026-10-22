@@ -148,16 +148,23 @@ origins delayed 5 s consumed all 8 slots; a legitimate cold directory received
 no fetch. Single-flight now permits one fetch per canonical origin (concurrent
 callers share its result). At most 6 slots can be occupied by cold, unapproved
 origins. The other 2 are available to origins configured locally in
-`PORTALESS_WBA_RESERVED_ORIGINS` (comma-separated HTTPS origins, maximum 256)
-or with a successfully verified signature previously seen by this process.
+`PORTALESS_WBA_RESERVED_ORIGINS` (comma-separated HTTPS origins, maximum 256).
+Post-#97 review reproduced that 8 attacker-owned domains with valid signatures
+could otherwise promote themselves and occupy all reserved capacity. That
+automatic promotion is removed: only the owner's explicit list grants admission.
 Reservation is admission eligibility, not authentication or a category grant.
 Claiming that origin in `Signature-Agent` cannot grant an extra same-origin
-fetch: single-flight still applies. The verified-origin LRU is bounded and
-resets on process restart; owner-configured reservations work with a cold cache.
+fetch: single-flight still applies. Owner-configured reservations work with a
+cold cache. The setting is documented in `.env.example` and `self-hosting.md`;
+invalid/excess entries are discarded, never promoted or interpreted as wildcards.
 The positive cache and 60 s negative LRU each hold at most 256 origins. LRU hits
 do not extend the failure deadline. Unknown origins can still be denied during
 a flood; attackers can also target known/reserved origins. These finite slots
 improve isolation, not universal availability. Everything is per process/isolate.
+Workers isolates share neither counters nor concurrency slots: each isolate
+applies the explicit deployment list, with no learned trust from signatures.
+`directory_busy` does not write the negative cache; a regression saturates the
+cold lane and proves an unrelated cold origin retries immediately after release.
 
 **Egress budget design — NOT IMPLEMENTED.** This design **replaces the earlier
 global fail-closed proposal of 32 fetches/min and 16 MiB/min per process**.
@@ -210,6 +217,10 @@ The denylist is not a complete registry of every special-use address. Literal
 and DNS-answer regressions cover each listed prefix and boundary; invalid DNS
 address strings also fail closed. Other application egress paths must opt into
 this fetcher; email transports keep their separately documented network policy.
+Post-#97 additions also reject `2001:db8::/32`, `192.88.99.0/24`, `100::/64`
+and `fec0::/10`. Tests retain the broadcast `255.255.255.255` rejection and
+exercise WHATWG normalization of decimal, hex and octal literal spellings
+before the range guard (for example `2130706433`, `0x7f000001`, `0177.0.0.1`).
 
 **Search-bot decision (B3):** `looksLikeAutomatedAgent()` matches
 `bot|crawler|spider|gpt|claude|scrapy|python-requests`. An unsigned request
@@ -223,7 +234,8 @@ measurement, not a B3 behavior model. The pending `it.skip` is tracked from
 ROADMAP to the Phase 0 ADR in PR #96.
 
 Ledger by branch: an unsigned bot-like request increments an admin-only monthly
-family counter in existing `site_settings` (atomic UPSERT; last 13 months) and
+family counter buffered in memory and flushed every 10 seconds into existing
+`site_settings` (atomic batch/transaction; last 13 months) and
 has no `operatorKeyId`. No raw IP, UA, URL, signature or identity is stored.
 An unsigned non-bot request still writes no ledger entry. Invalid signatures write
 `operatorKeyId: "unverified"` with `policyViolation: true`; a valid signature
@@ -236,6 +248,17 @@ happened). Directory saturation, upstream failure and cached failures return
 of misconduct. Crypto-invalid signatures remain `401 verification_failed`.
 Counter availability is reported explicitly; persistence failure cannot turn
 an existing rejection into an allowance. Without a DB counters are process-local.
+The panel labels every count **declarada**. Before batching, N rejections
+executed N UPSERTs plus N prune statements and N idempotent DDL statements.
+Now N same-family rejections in an interval execute zero DB writes until the
+flush, then one aggregate UPSERT and one prune (plus the idempotent DDL).
+There are at most four normal current-month UPSERTs per isolate/interval, not N;
+multiple isolates may each flush their own batches. The test submits 1,000
+rejections and counts statements. Admin reads do not force a flush. Pending
+counts are not overlaid on persisted snapshots (avoiding double counting).
+Node uses an unref'd timer; Workers attaches the shared flush promise to
+`waitUntil`. Restart/isolate disposal or failed flush can lose a batch; these
+are declared approximate counts, not exhaustive identities or durable events.
 The unknown-UA bucket exists but normally stays empty: the existing detection
 heuristic does not reject requests without User-Agent. Family labels are
 unverified declarations, not verified Google/Bing operator attribution.

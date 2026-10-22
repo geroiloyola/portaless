@@ -33,7 +33,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div id="ag-enforcement" class="ag-enforcement" style="display:none;"></div>
     <section class="ag-origin" aria-labelledby="ag-metrics-title">
       <h2 id="ag-metrics-title" class="ag-section-title">Rechazos sin firma (User-Agent declarado)</h2>
-      <p>Este filtro solo detecta al bot que se declara; no detiene a quien aparenta ser un navegador. No atribuye identidad ni reputación.</p>
+      <p>Este filtro solo detecta al bot que se declara; no detiene a quien aparenta ser un navegador. No atribuye identidad ni reputación. Cada cifra es declarada y aproximada: se agrupa por proceso/isolate y se vuelca cada 10 segundos; puede perderse antes del volcado al reiniciar.</p>
       <p id="ag-metrics-status"></p>
       <div class="ag-metrics-table"><table><thead><tr><th>Periodo UTC</th><th>Googlebot</th><th>Bingbot</th><th>Otros</th><th>Desconocido</th></tr></thead><tbody id="ag-metrics"></tbody></table></div>
     </section>
@@ -343,15 +343,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const metrics = data.unsignedBotRejections;
     document.getElementById("ag-metrics-status")!.textContent = !metrics?.available
       ? "Contadores no disponibles."
-      : metrics.periods.length === 0 ? "Sin rechazos registrados."
+      : metrics.periods.length === 0 ? "Sin rechazos volcados todavía."
       : metrics.persistence === "process" ? "Contadores de este proceso; no persisten tras reiniciar." : "Totales mensuales persistentes; últimos 13 meses.";
     const body = document.getElementById("ag-metrics")!;
     body.replaceChildren();
     for (const row of metrics?.periods ?? []) {
       const tr = document.createElement("tr");
-      for (const value of [row.period, row.googlebot, row.bingbot, row.other, row.unknown]) {
+      for (const [index, value] of [row.period, row.googlebot, row.bingbot, row.other, row.unknown].entries()) {
         const td = document.createElement("td");
-        td.textContent = String(value);
+        td.textContent = index === 0 ? String(value) : `${value} (declarada)`;
         tr.appendChild(td);
       }
       body.appendChild(tr);

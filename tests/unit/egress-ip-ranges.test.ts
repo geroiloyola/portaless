@@ -12,6 +12,8 @@ const blocked = [
   "2001:0:4136:e378:8000:63bf:80ff:fffe", // Teredo obfuscates 127.0.0.1
   "2001:0:4136:e378:8000:63bf:5601:5601", // Teredo obfuscates 169.254.169.254
   "::ffff:127.0.0.1", "::ffff:7f00:1", "0:0:0:0:0:ffff:a9fe:a9fe", "::ffff:8.8.8.8",
+  "2001:db8::1", "2001:db8:ffff:ffff::1", "192.88.99.0", "192.88.99.255",
+  "100::1", "100:0:0:0:ffff:ffff:ffff:ffff", "fec0::1", "feff:ffff::1",
 ];
 
 describe("R4 special-use and transition egress", () => {
@@ -24,7 +26,12 @@ describe("R4 special-use and transition egress", () => {
     expect(await createSafeFetcher({ fetch: fetcher })(`https://${host}/`)).toMatchObject({ ok: false, error: "blocked_host" });
     expect(fetcher).not.toHaveBeenCalled();
   });
-  it.each(["8.8.8.8", "93.184.216.34", "100.63.255.255", "100.128.0.0", "198.20.0.0", "2001:4860:4860::8888", "2606:4700:4700::1111", "fec0::1"])("keeps non-listed boundary %s outside this denylist", (ip) => {
+  it.each(["8.8.8.8", "93.184.216.34", "100.63.255.255", "100.128.0.0", "198.20.0.0", "2001:4860:4860::8888", "2606:4700:4700::1111", "100:0:0:1::1", "2001:db7::1", "2001:db9::1", "192.88.98.255", "192.88.100.0"])("keeps non-listed boundary %s outside this denylist", (ip) => {
     expect(isPrivateIp(ip)).toBe(false);
+  });
+  it.each(["2130706433", "0x7f000001", "0177.0.0.1", "127.1", "0x7f.0.0.1", "0377.0377.0377.0377", "4294967295", "0xffffffff"])("normalizes and blocks decimal/hex/octal IPv4 literal %s before fetch", async (host) => {
+    const fetch = vi.fn();
+    expect(await createSafeFetcher({ fetch })(`https://${host}/`)).toMatchObject({ ok: false, error: "blocked_host" });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
