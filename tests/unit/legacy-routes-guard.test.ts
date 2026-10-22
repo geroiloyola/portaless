@@ -25,6 +25,8 @@ const ALLOWED = [
   "CHANGELOG.md",
   "CHANGELOG_es.md",
   "docs/roadmap/ROADMAP-ARCHIVE.md",
+  // PR1 route contract names legacy aliases to document their access-class inheritance
+  "docs/decisions/0003-public-and-governed-resource-contract.md",
   // el mapa de redirects (narran las URLs legadas: es su trabajo)
   "src/lib/routes.ts",
   "astro.config.mjs",

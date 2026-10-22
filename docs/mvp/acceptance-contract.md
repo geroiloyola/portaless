@@ -215,6 +215,7 @@ The expanded MVP is not complete until all are evidenced:
 
 ## Evidence and related documents
 
+- Automated reads and the route-by-route public/governed contract: [ADR 0003](../decisions/0003-public-and-governed-resource-contract.md). It is proposed and does not change the current enforcement behavior.
 - Release evidence and guarantee status: [`testing/release-acceptance.md`](../testing/release-acceptance.md) and [`testing/release-evidence.json`](../testing/release-evidence.json).
 - Interoperability evidence registry and status: [`docs/testing/interop-evidence.json`](../testing/interop-evidence.json) and [`testing/INTEROPERABILITY.md`](../testing/INTEROPERABILITY.md).
 - Current code: [`deployment-engine.md`](../architecture/deployment-engine.md),
