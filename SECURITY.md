@@ -4,7 +4,15 @@
 
 ## Reporting a vulnerability
 
-Do not open a public issue to report a vulnerability. Contact the maintainers privately through the project's configured contact channel and include:
+> **Owner action pending.** This repository does not yet publish a private
+> security contact. No email address, form or GitHub private-vulnerability
+> channel is configured here, and this policy does not invent one. The owner
+> must publish a private channel before the Beta opens beyond invited
+> operators.
+
+Do not open a public issue to report a vulnerability. Until a private channel
+is published, use the private contact the owner provided when onboarding the
+operator, and include:
 
 - description and potential impact;
 - affected version and component;
@@ -112,20 +120,18 @@ An audit result must not be silenced with `|| true` unless there is a documented
 The checked-in workflows install from the lockfile with `npm ci`; `Security Scan`
 runs on pull requests and pushes to `main`, checks the installed sandbox runtime,
 audits dependencies against the time-bounded allowlist, and scans fetched Git
-history for secrets. These workflows do **not** configure GitHub merge rules by
-themselves. A repository owner must require the relevant status checks through
-branch protection/rulesets. That GitHub setting is external to this repository
-and must be verified in repository settings before claiming failed checks block
-merges.
+history for secrets.
 
-The repository workflows implement these checks (`Unit Tests`, `Full Tests`,
-`Sandbox E2E Tests`, `Upgrade tests`, `Security Scan`, and `.github/workflows/ci.yml`).
-**A workflow existing does not make it a merge gate.** Repository rulesets/branch
-protection must require the applicable status checks on `main`. That GitHub
-setting is outside this repository and must be verified in the repository
-settings before claiming that failed checks block merges. The security scan
-uses `npm ci`, the time-bounded audit allowlist, the `isolated-vm` version check,
-and a pinned Gitleaks action over fetched history.
+**A workflow existing does not make it a merge gate.** Branch protection on
+`main` is an external GitHub setting. It was verified on 2026-10-21 as:
+required status checks `build`, `docker-smoke`, `upgrade`,
+`Todos los tests + cobertura (Node 24)`, `vitest tests/unit (Node 24)` and
+`audit`; strict (branches must be up to date); one approving review; enforce
+for administrators; no force-pushes and no branch deletion; conversation
+resolution required. If the GitHub setting changes, this paragraph is stale
+and the setting is the source of truth. The security scan uses `npm ci`, the
+time-bounded audit allowlist, the `isolated-vm` version check, and a pinned
+Gitleaks action over fetched history.
 
 ## Scope and limitations
 

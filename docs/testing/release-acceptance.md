@@ -77,6 +77,16 @@ The final audit added and verified:
   regression test.
 - Glossary, ADR 0002 (DNS rebinding/egress) and the release/changelog cleanup.
 
+The follow-up `audit/v0.0.11-consistency` branch (not re-tagged) additionally
+moves the Web Bot Auth key-directory fetch onto the hardened `createSafeFetcher`
+path (private/loopback/metadata targets and private redirect hops blocked, 5 s
+timeout, 512 KiB cap), reports `enforced` in `/admin/api/agents`, corrects the
+published capability count to 5 of 12 still at `501` (`network:fetch` is an
+adapter path, not a host-bridge backend), and expands this repository's security
+review guide. Its local validation is **244 files / 2,117 tests / 1 skipped,
+72 Playwright, 79 pages**. The `v0.0.11` evidence above remains the tagged
+snapshot (241 / 2,105); it is not retroactively rewritten.
+
 Main branch protection is a GitHub setting, verified separately from this
 repository evidence.
 

@@ -214,7 +214,7 @@ describe("/admin/api/agents", () => {
     });
   });
 
-  function ctx(opts: { user?: { username: string; role: string } | null; method?: string; body?: unknown } = {}) {
+  function ctx(opts: { user?: { username: string; role: string } | null; method?: string; body?: unknown; env?: Record<string, unknown> } = {}) {
     const headers: Record<string, string> = {};
     let body: string | undefined;
     if (opts.body !== undefined) {
@@ -228,7 +228,7 @@ describe("/admin/api/agents", () => {
     });
     return {
       request,
-      env: {},
+      env: opts.env ?? {},
       params: {},
       data: opts.user ? { user: opts.user } : {},
       next: async () => new Response("static"),
@@ -254,6 +254,17 @@ describe("/admin/api/agents", () => {
     expect(body.policy.policies.ai_train.access).toBe("block");
     expect(body.writable).toBe(false);
     expect(body.policyPath).toBe("/.well-known/portaless-content-policy.json");
+  });
+
+  it("GET informa si el Trust Layer aplica la politica (B1)", async () => {
+    const mod = await loadEndpoint();
+    const off = await mod.onRequestGet(ctx({ user: { username: "ana", role: "admin" } }));
+    expect((await off.json()).enforced).toBe(false);
+
+    const on = await mod.onRequestGet(
+      ctx({ user: { username: "ana", role: "admin" }, env: { ENABLE_TRUST_LAYER: "true" } })
+    );
+    expect((await on.json()).enforced).toBe(true);
   });
 
   it("PUT con role viewer: 403 y no escribe nada", async () => {

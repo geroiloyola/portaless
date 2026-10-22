@@ -37,7 +37,7 @@ closed).
 
 ## Unreleased
 
-No unreleased changes yet.
+- **Post-`v0.0.11` consistency and Trust Layer audit (branch `audit/v0.0.11-consistency`).** Corrects the capability count to **5 of 12 plugin capabilities still at `501`** (`network:fetch` is implemented by each sandbox adapter, not by the six non-network host-bridge backends) across README, AGENT/AGENTS, ROADMAP, home copy, ecosystem boundaries and the sandbox guide, with a source-count regression test. The Web Bot Auth key-directory fetch now uses the hardened `createSafeFetcher` path (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap), with integration tests for a metadata-IP directory and a private-hop redirect. `/admin/api/agents` now reports `enforced` and the panel warns when `ENABLE_TRUST_LAYER` is off; the panel also states that only `ai_input` is request-enforced while `search`/`ai_train` are cooperative published signals. `SECURITY.md` no longer implies a private reporting channel exists (owner decision pending) and records the verified `main` protection; `docs/security-review-guide.md` now covers the Trust Layer, MCP HTTP, email, publication, backup/restore and AI provider. Local validation: 244 files / 2,117 tests / 1 skipped, 72 Playwright, 79 pages. Open owner decisions: Alpha vs Beta naming, unsigned search-bot handling, and the private security channel.
 
 ## v0.0.11 (2026-10-21)
 
