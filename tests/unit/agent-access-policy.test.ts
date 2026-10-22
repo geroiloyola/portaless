@@ -267,6 +267,16 @@ describe("/admin/api/agents", () => {
     expect((await on.json()).enforced).toBe(true);
   });
 
+  it("B1: en hosting estático (sin flag ni ASSETS) enforced es false", async () => {
+    const mod = await loadEndpoint();
+    const res = await mod.onRequestGet(
+      ctx({ user: { username: "ana", role: "admin" }, env: { __PORTALESS_RUNTIME: undefined, ASSETS: undefined } })
+    );
+    const body = await res.json();
+    expect(body.enforced).toBe(false);
+    expect(body.source).toBe("default");
+  });
+
   it("PUT con role viewer: 403 y no escribe nada", async () => {
     const mod = await loadEndpoint();
     const res = await mod.onRequestPut(

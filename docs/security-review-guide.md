@@ -2,7 +2,7 @@
 
 This document exists so someone **other than the author** can perform the
 minimal external security review that Phase 3 of
-[`ROADMAP.md`](../ROADMAP.md) requires before the public Beta. You do not
+[`ROADMAP.md`](../ROADMAP.md) requires before the Beta. You do not
 need to know the whole codebase: the surfaces below carry the highest damage
 if they fail, and this guide maps where they live, what they promise, and how
 to break them.
@@ -126,8 +126,9 @@ Key files, in review order:
 | File | What to check |
 |---|---|
 | `functions/_middleware.js` | Order of gates: migrations, legacy 301 (relative `Location`, base-path boundary), public discovery routes, `ENABLE_TRUST_LAYER`, signature presence, UA heuristic, `verifyWebBotAuthRequest`, policy load, ledger write. A policy `block` must answer `403`; `charge` without settlement must answer `402`; `allow` must call `next()`. |
-| `packages/trust-layer/src/webbotauth/verify.ts` | `Signature-Agent` must be HTTPS and signed; directory fetch goes through `createSafeFetcher` (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap, 2 redirects); nonce is consumed only after the signature verifies. |
-| `packages/apw-resolver/src/federation/safe-fetch.ts` | Private IPv4/IPv6, `::ffff:` mapped forms and bracketed literals; `redirect: "manual"` and per-hop re-validation; streaming byte cap; DNS `lookup` hook. Without `lookup`, DNS rebinding remains the documented residual risk (ADR 0002). |
+| `packages/trust-layer/src/webbotauth/verify.ts` | `Signature-Agent` must be HTTPS and signed; directory fetch goes through `createSafeFetcher` (HTTPS only, private/literal targets blocked, per-hop redirect validation, 5 s timeout, 512 KiB cap, 2 redirects); 60 s negative cache (LRU, 256 entries) and at most 8 directory fetches in flight; nonce is consumed only after the signature verifies. |
+| `packages/apw-resolver/src/federation/safe-fetch.ts` | Private IPv4/IPv6, `::ffff:` mapped forms and bracketed literals; `redirect: "manual"` and per-hop re-validation; streaming byte cap; DNS `lookup` resolves once and `fetchPinned` receives that validated address. In self-host, `server/node-runtime.mjs` pins the connection to it (Host/SNI unchanged) so a second DNS answer cannot rebind. |
+| `server/node-runtime.mjs` | `createPinnedFetch()` connects to the address validated by the safe-fetcher, not to a fresh DNS resolution. The binding is exposed as `env.__PORTALESS_DIRECTORY_FETCHER` and used by the middleware. |
 | `packages/trust-layer/src/policy/load-policy.ts` + `agent-access-store.ts` | Precedence store > asset > default; invalid or half-written policy never applies; the panel override is not cached. |
 | `packages/trust-layer/src/policy/agent-access-store.ts` | `PUT` validation: three rules, `allow|charge|block`, positive price for `charge`; `site` is server-fixed. |
 | `packages/trust-layer/src/policy/robots-generator.ts` | `search`/`ai-train`/`ai-input` become `Content-Signal`; `block` becomes `no`. |
@@ -138,22 +139,25 @@ Attack ideas: send `Signature-Agent: "https://169.254.169.254"` (must not
 fetch); redirect the directory to loopback (must not follow); replay a nonce;
 change `Signature-Agent` after signing; save `ai_input=block` and confirm the
 next request is `403`; set `ai_input=charge` with no settlement and confirm
-`402`; spoof `Googlebot` unsigned (currently rejected by the UA heuristic —
-this is the open B3 decision, see below); send many invalid origins and measure
-directory-fetch cost.
+`402`; spoof `Googlebot` unsigned (rejected by the UA heuristic even with
+`ai_input=allow`, see B3 below); send many invalid origins and confirm the
+negative cache prevents repeated fetches.
 
-**Cost/abuse (B6, not fixed in this pass):** the directory cache stores only
-successful lookups, so distinct invalid origins can each trigger one outbound
-fetch (bounded by the 5 s timeout, 512 KiB cap and 2 redirects). There is no
-negative cache or global egress rate limit. Record the observed cost before
-changing behavior; the remediation is a product/security decision.
+**Cost/abuse (B6):** a failed origin is remembered for 60 s in a bounded LRU
+(256 entries), and directory fetches are capped at 8 in flight. Repeated
+invalid origins no longer create one fetch per request; an overload burst
+fails closed without caching the rejection. The remaining limit is that the
+cache is per-process, so multiple instances each allow their own 8 fetches.
 
-**Search-bot decision (B3, open):** `looksLikeAutomatedAgent()` matches
-`bot|crawler|spider|gpt|claude|scrapy|python-requests`, so an unsigned
-`Googlebot` is rejected on a content page even when `search=allow`. Exempting
-a UA would be spoofable; cryptographic identification is the only non-spoofable
-path. The owner must choose between keeping the rejection and documenting it,
-or adding a separately reviewed search-bot exception.
+**Search-bot decision (B3):** `looksLikeAutomatedAgent()` matches
+`bot|crawler|spider|gpt|claude|scrapy|python-requests`. An unsigned request
+with such a UA is rejected with `403 unsigned_automated_request` **before the
+policy is read**, so it is rejected even when `ai_input=allow`; the default
+`ai_input` is `charge` with `price_usd: 0.002` and `unit: "request"`. A test
+fixes this behavior and the panel banner states it when the Trust Layer is
+active. Exempting a UA would be spoofable; the owner may still choose a
+separately reviewed search-bot exception (for example, a verified IP range or
+signed discovery), but this pass does not add one.
 
 ### 5. MCP server (HTTP and stdio)
 

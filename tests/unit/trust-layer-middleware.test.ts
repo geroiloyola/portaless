@@ -176,6 +176,21 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it("B3: un Googlebot sin firma recibe 403 aunque ai_input=allow", async () => {
+    const request = new Request("https://mysite.example/pages/foo", {
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    });
+    const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
+    const { context, next } = makeContext(request, envWithPolicy);
+    const res = await onRequest(context);
+
+    expect(res!.status).toBe(403);
+    expect((await res!.json()).error).toBe("unsigned_automated_request");
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it("firma invalida: 401 verification_failed y el ledger registra la violacion", async () => {
     const request = new Request("https://mysite.example/pages/foo", {
       headers: {

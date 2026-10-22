@@ -54,7 +54,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
             <span class="ag-rule-name">Busqueda</span>
             <span class="ag-rule-current" data-current="search"></span>
           </div>
-          <p class="ag-rule-help">Si tu pagina aparece o no en un buscador.</p>
+          <p class="ag-rule-help">Si tu pagina aparece o no en un buscador. <strong>Señal cooperativa (no se aplica por petición).</strong></p>
           <select class="ag-select" data-select="search">
             <option value="allow">Permitir</option>
             <option value="charge">Cobrar</option>
@@ -70,6 +70,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="ag-rule-help">
             Si un asistente puede leer tus paginas para responder o resumir.
             "Cobrar" exige ademas un medio de pago verificado (ver abajo).
+            <strong>Esta es la única regla que se aplica por petición.</strong>
           </p>
           <select class="ag-select" data-select="ai_input">
             <option value="allow">Permitir</option>
@@ -90,7 +91,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="ag-rule-help">
             Si tu contenido puede usarse para entrenar un modelo. Es la decision
             que un visitante no ve, asi que el valor por defecto del proyecto
-            es bloquearla.
+            es bloquearla. <strong>Señal cooperativa (no se aplica por petición).</strong>
           </p>
           <select class="ag-select" data-select="ai_train">
             <option value="allow">Permitir</option>
@@ -232,13 +233,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
 
   function renderEnforcement(enforced: boolean): void {
-    if (enforced) {
-      enforcementEl.style.display = "none";
-      return;
-    }
     enforcementEl.style.display = "";
-    enforcementEl.textContent =
-      "El Trust Layer está apagado en esta instalación (ENABLE_TRUST_LAYER != true). Esta política se publica y se puede editar, pero el sitio no bloquea ni cobra peticiones de agentes con ella.";
+    enforcementEl.textContent = enforced
+      ? "Trust Layer activo: los buscadores que no firman reciben 403 en contenido, aunque search esté en allow. Solo pasan las rutas de descubrimiento y las peticiones firmadas."
+      : "El Trust Layer está apagado en esta instalación (ENABLE_TRUST_LAYER != true). Esta política se publica y se puede editar, pero el sitio no bloquea ni cobra peticiones de agentes con ella.";
   }
 
   function renderCaveats(policies: Record<string, PolicyRuleView>): void {
