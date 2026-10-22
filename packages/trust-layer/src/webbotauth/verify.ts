@@ -68,6 +68,21 @@ export interface VerifyResult {
 const DIRECTORY_PATH = "/.well-known/http-message-signatures-directory";
 const MAX_SIGNATURE_AGE_SECONDS = 300;
 
+/**
+ * Clave canonica de cache: origen en minusculas, sin puerto por defecto, sin
+ * punto final y con IDN ya convertido a punycode por WHATWG URL.
+ */
+function normalizeDirectoryOrigin(origin: string): string {
+  try {
+    const url = new URL(origin);
+    let host = url.hostname.toLowerCase();
+    if (host.endsWith(".")) host = host.slice(0, -1);
+    return `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`;
+  } catch {
+    return origin.toLowerCase();
+  }
+}
+
 // v0.0.9: cache del directorio de claves con TTL, para no hacer un fetch()
 // nuevo en cada request del mismo operador. Ver ROADMAP.md "Cache del
 // directorio de claves Web Bot Auth". Shape propio (JWK crudo: OKP/Ed25519
@@ -124,15 +139,16 @@ async function fetchOperatorKeyDirectory(
   operatorOrigin: string,
   fetcher: SafeFetcher = createSafeFetcher(),
 ): Promise<DirectoryResponse | null> {
-  const cached = directoryCache.get(operatorOrigin);
+  const cacheKey = normalizeDirectoryOrigin(operatorOrigin);
+  const cached = directoryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.directory;
   }
 
-  const failedUntil = negativeDirectoryCache.get(operatorOrigin);
+  const failedUntil = negativeDirectoryCache.get(cacheKey);
   if (failedUntil !== undefined) {
     if (failedUntil > Date.now()) return null;
-    negativeDirectoryCache.delete(operatorOrigin);
+    negativeDirectoryCache.delete(cacheKey);
   }
 
   // Tope global: bajo una inundacion de origenes distintos se falla cerrado
@@ -143,33 +159,33 @@ async function fetchOperatorKeyDirectory(
   directoryFetchesInFlight += 1;
   let res: Awaited<ReturnType<SafeFetcher>>;
   try {
-    res = await fetcher(new URL(DIRECTORY_PATH, operatorOrigin).toString(), {
+    res = await fetcher(new URL(DIRECTORY_PATH, cacheKey).toString(), {
       timeoutMs: 5000,
       maxBytes: 512 * 1024,
       maxRedirects: 2,
     });
   } catch {
-    rememberDirectoryFailure(operatorOrigin);
+    rememberDirectoryFailure(cacheKey);
     return null;
   } finally {
     directoryFetchesInFlight -= 1;
   }
   if (!res.ok || !res.text) {
-    rememberDirectoryFailure(operatorOrigin);
+    rememberDirectoryFailure(cacheKey);
     return null;
   }
 
   try {
     const directory = JSON.parse(res.text) as DirectoryResponse;
     if (!Array.isArray(directory?.keys)) {
-      rememberDirectoryFailure(operatorOrigin);
+      rememberDirectoryFailure(cacheKey);
       return null;
     }
-    negativeDirectoryCache.delete(operatorOrigin);
-    directoryCache.set(operatorOrigin, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
+    negativeDirectoryCache.delete(cacheKey);
+    directoryCache.set(cacheKey, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
     return directory;
   } catch {
-    rememberDirectoryFailure(operatorOrigin);
+    rememberDirectoryFailure(cacheKey);
     return null;
   }
 }
@@ -213,8 +229,9 @@ export async function verifyWebBotAuthRequest(
     return { verified: false, reason: "missing_signature_headers" };
   }
 
-  const operatorOrigin = parseSignatureAgent(rawSignatureAgent);
-  if (!operatorOrigin) return { verified: false, reason: "invalid_signature_agent" };
+  const parsedOperatorOrigin = parseSignatureAgent(rawSignatureAgent);
+  if (!parsedOperatorOrigin) return { verified: false, reason: "invalid_signature_agent" };
+  const operatorOrigin = normalizeDirectoryOrigin(parsedOperatorOrigin);
 
   const webBotAuth = parseWebBotAuthSignatureInput(signatureInputHeader);
   if (!webBotAuth.ok) return { verified: false, reason: webBotAuth.reason };

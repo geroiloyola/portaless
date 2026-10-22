@@ -301,6 +301,25 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     expect(__directoryFetchStateForTests()).toMatchObject({ negative: 1, inFlight: 0 });
   });
 
+  it("B6: normaliza variantes del mismo origen antes de cachear", async () => {
+    const directoryFetch = vi.fn(async () => ({ ok: false, error: "http_error", status: 503 }));
+
+    for (const origin of [
+      "https://EXAMPLE.com",
+      "https://example.com:443",
+      "https://example.com.",
+      "https://bücher.example",
+      "https://xn--bcher-kva.example",
+    ]) {
+      await __fetchOperatorKeyDirectoryForTests(origin, directoryFetch as never);
+    }
+
+    // example.com (3 variantes) y bücher.example/punycode (2 variantes)
+    // son DOS origenes canonicos distintos, no cinco.
+    expect(directoryFetch).toHaveBeenCalledTimes(2);
+    expect(__directoryFetchStateForTests()).toMatchObject({ negative: 2, inFlight: 0 });
+  });
+
   it("B6: la cache negativa se acota por LRU", async () => {
     const directoryFetch = vi.fn(async () => ({ ok: false, error: "http_error", status: 503 }));
     for (let i = 0; i < DIRECTORY_NEGATIVE_CACHE_MAX + 20; i++) {
