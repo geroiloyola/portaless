@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **PR2 draft — inactive resolution-budget kernel.** Adds bounded per-process client/root-directory windows, pre-fetch byte reservations, per-stage accounting and trusted-ingress HMAC buckets with an unknown-client fallback. No production resolver imports it yet; whole-chain adapters, distributed atomic storage, deployment secret rotation and activation remain explicit draft blockers. No B3 or identity/classification behavior changes.
+
 - **PR1 RFC — public vs. governed automated reads.** Adds proposed ADR 0003 with a verified route matrix for static pages, `/llms.txt`, `/blog/*.md`, `/revisions/`, feeds, `.well-known`, Cloud Images, `/trust/:siteId` and admin preview. It records current enforcement gaps and separates publication state from access class. Documentation and regression coverage only: no middleware, schema or runtime behavior changes; owner decisions remain explicit in the RFC.
 - **PR1 revision after merged #97.** Records the owner-directed public-mode proposal (anonymous by default, optional strict best-effort UA filtering, invalid signatures never anonymous), explicit opt-in migration preserving existing installations, grant-only cold-start MVP, local DID categories without purpose claims, mandatory pre-authentication budgets before identity, deployment-specific client-IP trust, bounded search-range freshness and Cloudflare delegation as research only. No B3 runtime behavior or new identity fan-out is activated.
 
