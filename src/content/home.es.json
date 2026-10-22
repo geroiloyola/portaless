@@ -81,7 +81,7 @@
         "variant": "spotlight",
         "size": "lg",
         "title": "Cuando quieras.",
-        "subtitle": "Instalalo, publicá y decidí quién puede leer. El primer sitio toma unos diez minutos.",
+        "subtitle": "Instalalo, publicá y decidí quién puede leer. Con Docker y un navegador, el primer sitio toma unos diez minutos.",
         "ctaLabel": "Empezá en 10 minutos",
         "ctaHref": "/es/beta"
       }

@@ -81,7 +81,7 @@
         "variant": "spotlight",
         "size": "lg",
         "title": "Ready when you are.",
-        "subtitle": "Install it, publish, and decide who may read. The first site takes about ten minutes.",
+        "subtitle": "Install it, publish, and decide who may read. With Docker and a browser, the first site takes about ten minutes.",
         "ctaLabel": "Start in 10 minutes",
         "ctaHref": "/beta"
       }
