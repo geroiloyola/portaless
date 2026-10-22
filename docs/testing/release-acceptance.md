@@ -86,7 +86,7 @@ adapter path, not a host-bridge backend), and expands this repository's security
 review guide. Round 2 adds Node DNS pinning for the directory fetch, a 60 s
 bounded negative cache (LRU 256), an in-flight cap of 8, the Beta/invite-only
 status wording, and the search-bot/cooperative-signal regressions. Its local
-validation is **246 files / 2,136 tests / 1 skipped, 72 Playwright, 79 pages**.
+validation is **247 files / 2,147 tests / 2 skipped, 72 Playwright, 79 pages**.
 The `v0.0.11` evidence above remains the tagged snapshot (241 / 2,105); it is
 not retroactively rewritten.
 
