@@ -350,4 +350,32 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     await Promise.all(pending.slice(0, DIRECTORY_FETCH_IN_FLIGHT_MAX));
     expect(__directoryFetchStateForTests().inFlight).toBe(0);
   });
+
+  it("post97: valid signatures from attacker-owned origins never earn reserved admission", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    __resetDirectoryCacheForTests();
+    const releases: Array<(value: any) => void> = [];
+    const flood: Array<Promise<unknown>> = [];
+    try {
+      const { privateKey, publicKeyX } = await generateKeyPair();
+      const origins = Array.from({ length: 8 }, (_, i) => `https://owned-${i}.example`);
+      for (const origin of origins) {
+        mockDirectoryOnce(publicKeyX);
+        const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, signatureAgentHeader: `"${origin}"` });
+        expect((await verifyWebBotAuthRequest(request)).verified).toBe(true);
+      }
+      vi.setSystemTime(Date.now() + 600_001); // cold directories, previously valid callers
+      const slow = vi.fn(() => new Promise<any>((done) => releases.push(done)));
+      for (const origin of origins) {
+        const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, signatureAgentHeader: `"${origin}"` });
+        flood.push(verifyWebBotAuthRequest(request, { directoryFetcher: slow }));
+      }
+      await Promise.resolve();
+      expect(slow).toHaveBeenCalledTimes(DIRECTORY_FETCH_COLD_MAX);
+    } finally {
+      for (const done of releases) done({ ok: false, error: "timeout" });
+      await Promise.all(flood);
+      vi.useRealTimers();
+    }
+  });
 });

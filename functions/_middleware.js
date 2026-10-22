@@ -220,7 +220,7 @@ export async function onRequest(context) {
   if (!hasSignature && !automatedLooking) return next();
 
   if (!hasSignature && automatedLooking) {
-    try { await recordUnsignedBotRejection(env, request.headers.get("user-agent")); }
+    try { await recordUnsignedBotRejection(env, request.headers.get("user-agent"), new Date(), context.waitUntil?.bind(context)); }
     catch { console.warn("[trust-layer] unsigned-bot aggregate unavailable"); }
     return new Response(JSON.stringify({
       error: "unsigned_automated_request",
