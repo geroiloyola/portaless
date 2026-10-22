@@ -31,6 +31,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <div id="ag-root" style="display:none;">
     <div id="ag-enforcement" class="ag-enforcement" style="display:none;"></div>
+    <section class="ag-origin" aria-labelledby="ag-metrics-title">
+      <h2 id="ag-metrics-title" class="ag-section-title">Rechazos sin firma (User-Agent declarado)</h2>
+      <p>Este filtro solo detecta al bot que se declara; no detiene a quien aparenta ser un navegador. No atribuye identidad ni reputación.</p>
+      <p id="ag-metrics-status"></p>
+      <div class="ag-metrics-table"><table><thead><tr><th>Periodo UTC</th><th>Googlebot</th><th>Bingbot</th><th>Otros</th><th>Desconocido</th></tr></thead><tbody id="ag-metrics"></tbody></table></div>
+    </section>
 
     <section class="ag-origin" id="ag-origin-box">
       <h2 class="ag-section-title">De donde sale este valor</h2>
@@ -130,6 +136,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     updatedBy: string | null;
     writable: boolean;
     enforced: boolean;
+    unsignedBotRejections: {
+      available: boolean;
+      persistence?: string;
+      periods: Array<{ period: string; googlebot: number; bingbot: number; other: number; unknown: number }>;
+    };
     policyPath: string;
   }
 
@@ -329,6 +340,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const data: AgentPolicyResponse = await res.json();
     currentData = data;
     renderEnforcement(data.enforced);
+    const metrics = data.unsignedBotRejections;
+    document.getElementById("ag-metrics-status")!.textContent = !metrics?.available
+      ? "Contadores no disponibles."
+      : metrics.periods.length === 0 ? "Sin rechazos registrados."
+      : metrics.persistence === "process" ? "Contadores de este proceso; no persisten tras reiniciar." : "Totales mensuales persistentes; últimos 13 meses.";
+    const body = document.getElementById("ag-metrics")!;
+    body.replaceChildren();
+    for (const row of metrics?.periods ?? []) {
+      const tr = document.createElement("tr");
+      for (const value of [row.period, row.googlebot, row.bingbot, row.other, row.unknown]) {
+        const td = document.createElement("td");
+        td.textContent = String(value);
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
     renderTerms(data.policy.policies);
     renderOrigin(data);
     renderCaveats(data.policy.policies);
@@ -417,6 +444,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </script>
 
 <style>
+  .ag-metrics-table { max-width: 100%; overflow-x: auto; }
+  .ag-metrics-table th, .ag-metrics-table td { padding: 8px; text-align: left; }
   .ag-page-header { margin-bottom: 28px; }
   .ag-page-title { margin: 0 0 6px; font-size: 1.4rem; }
   .ag-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; max-width: 680px; line-height: 1.5; }

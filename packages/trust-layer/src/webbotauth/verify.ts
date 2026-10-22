@@ -47,9 +47,10 @@ import {
   type NonceStoreFactoryEnv,
 } from "./nonce-store";
 import {
-  createSafeFetcher,
   type SafeFetcher,
 } from "../../../apw-resolver/src/federation/safe-fetch";
+import { DirectoryResolver, normalizeDirectoryOrigin } from "./directory-fetch";
+export { DIRECTORY_FETCH_IN_FLIGHT_MAX, DIRECTORY_FETCH_COLD_MAX, DIRECTORY_NEGATIVE_CACHE_MAX } from "./directory-fetch";
 
 export interface KeyRecord {
   keyId: string;
@@ -60,138 +61,26 @@ export interface KeyRecord {
 export interface VerifyResult {
   verified: boolean;
   reason?: string;
+  failureType?: "unavailable" | "expired";
+  retryAfterSeconds?: number;
   agentKeyId?: string | null;
   keyAlgorithm?: string;
   keyRecord?: KeyRecord;
 }
 
-const DIRECTORY_PATH = "/.well-known/http-message-signatures-directory";
 const MAX_SIGNATURE_AGE_SECONDS = 300;
-
-/**
- * Clave canonica de cache: origen en minusculas, sin puerto por defecto, sin
- * punto final y con IDN ya convertido a punycode por WHATWG URL.
- */
-function normalizeDirectoryOrigin(origin: string): string {
-  try {
-    const url = new URL(origin);
-    let host = url.hostname.toLowerCase();
-    if (host.endsWith(".")) host = host.slice(0, -1);
-    return `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`;
-  } catch {
-    return origin.toLowerCase();
-  }
-}
-
-// v0.0.9: cache del directorio de claves con TTL, para no hacer un fetch()
-// nuevo en cada request del mismo operador. Ver ROADMAP.md "Cache del
-// directorio de claves Web Bot Auth". Shape propio (JWK crudo: OKP/Ed25519
-// con x, o AKP/ML-DSA-* con pub), distinto del de key-directory.ts.
-const DIRECTORY_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos.
-
-interface DirectoryResponse {
-  keys: Array<{ kid: string; kty: string; crv?: string; x?: string; alg?: string; pub?: string }>;
-}
-
-interface DirectoryCacheEntry {
-  directory: DirectoryResponse;
-  expiresAt: number; // epoch ms
-}
-
-const directoryCache = new Map<string, DirectoryCacheEntry>();
-
-// B6: un origen invalido no debe generar un fetch nuevo en cada request.
-// La cache negativa es corta (60 s) y acotada (LRU simple por insercion).
-const NEGATIVE_CACHE_TTL_MS = 60_000;
-export const DIRECTORY_NEGATIVE_CACHE_MAX = 256;
-const negativeDirectoryCache = new Map<string, number>();
-export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;
-let directoryFetchesInFlight = 0;
-
-function rememberDirectoryFailure(origin: string): void {
-  const now = Date.now();
-  negativeDirectoryCache.delete(origin);
-  negativeDirectoryCache.set(origin, now + NEGATIVE_CACHE_TTL_MS);
-  while (negativeDirectoryCache.size > DIRECTORY_NEGATIVE_CACHE_MAX) {
-    const oldest = negativeDirectoryCache.keys().next().value;
-    if (oldest === undefined) break;
-    negativeDirectoryCache.delete(oldest);
-  }
-}
-
-/** Solo para tests: vacia cache positiva/negativa y contadores entre casos. */
+let directories = new DirectoryResolver();
+/** Solo para tests: sustituye el resolver sin alterar tareas de otro escenario. */
 export function __resetDirectoryCacheForTests(): void {
-  directoryCache.clear();
-  negativeDirectoryCache.clear();
-  directoryFetchesInFlight = 0;
+  directories = new DirectoryResolver();
 }
-
-/** Solo para tests: estado acotado de las caches y fetches en vuelo. */
 export function __directoryFetchStateForTests(): { positive: number; negative: number; inFlight: number } {
-  return {
-    positive: directoryCache.size,
-    negative: negativeDirectoryCache.size,
-    inFlight: directoryFetchesInFlight,
-  };
+  return directories.state();
 }
-
-async function fetchOperatorKeyDirectory(
-  operatorOrigin: string,
-  fetcher: SafeFetcher = createSafeFetcher(),
-): Promise<DirectoryResponse | null> {
-  const cacheKey = normalizeDirectoryOrigin(operatorOrigin);
-  const cached = directoryCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.directory;
-  }
-
-  const failedUntil = negativeDirectoryCache.get(cacheKey);
-  if (failedUntil !== undefined) {
-    if (failedUntil > Date.now()) return null;
-    negativeDirectoryCache.delete(cacheKey);
-  }
-
-  // Tope global: bajo una inundacion de origenes distintos se falla cerrado
-  // en vez de abrir fetches sin limite. No se cachea este rechazo: es una
-  // condicion de carga, no una propiedad del origen.
-  if (directoryFetchesInFlight >= DIRECTORY_FETCH_IN_FLIGHT_MAX) return null;
-
-  directoryFetchesInFlight += 1;
-  let res: Awaited<ReturnType<SafeFetcher>>;
-  try {
-    res = await fetcher(new URL(DIRECTORY_PATH, cacheKey).toString(), {
-      timeoutMs: 5000,
-      maxBytes: 512 * 1024,
-      maxRedirects: 2,
-    });
-  } catch {
-    rememberDirectoryFailure(cacheKey);
-    return null;
-  } finally {
-    directoryFetchesInFlight -= 1;
-  }
-  if (!res.ok || !res.text) {
-    rememberDirectoryFailure(cacheKey);
-    return null;
-  }
-
-  try {
-    const directory = JSON.parse(res.text) as DirectoryResponse;
-    if (!Array.isArray(directory?.keys)) {
-      rememberDirectoryFailure(cacheKey);
-      return null;
-    }
-    negativeDirectoryCache.delete(cacheKey);
-    directoryCache.set(cacheKey, { directory, expiresAt: Date.now() + DIRECTORY_CACHE_TTL_MS });
-    return directory;
-  } catch {
-    rememberDirectoryFailure(cacheKey);
-    return null;
-  }
+export async function __fetchOperatorKeyDirectoryForTests(origin: string, fetcher?: SafeFetcher) {
+  const result = await directories.resolve(origin, fetcher);
+  return result.ok ? result.directory : null;
 }
-
-/** Solo para tests: ejercita el fetch interno sin fabricar una firma completa. */
-export const __fetchOperatorKeyDirectoryForTests = fetchOperatorKeyDirectory;
 
 // v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. v0.0.9.31:
 // ahora compartido entre instancias. Si el caller pasa options.env (con
@@ -211,7 +100,7 @@ export function __resetNonceStoreForTests(): void {
 }
 
 export interface VerifyWebBotAuthOptions {
-  env?: NonceStoreFactoryEnv;
+  env?: NonceStoreFactoryEnv & { PORTALESS_WBA_RESERVED_ORIGINS?: string };
   /** Solo para tests o runtimes que ya inyectan un fetcher endurecido. */
   directoryFetcher?: SafeFetcher;
 }
@@ -248,11 +137,13 @@ export async function verifyWebBotAuthRequest(
 
   if (!parsed.created || !parsed.expires) return { verified: false, reason: "missing_created_or_expires" };
   const now = Math.floor(Date.now() / 1000);
-  if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old" };
-  if (now > parsed.expires) return { verified: false, reason: "signature_expired" };
+  if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old", failureType: "expired" };
+  if (now > parsed.expires) return { verified: false, reason: "signature_expired", failureType: "expired" };
 
-  const directory = await fetchOperatorKeyDirectory(operatorOrigin, options?.directoryFetcher);
-  if (!directory) return { verified: false, reason: "key_directory_unreachable" };
+  const resolved = await directories.resolve(operatorOrigin, options?.directoryFetcher,
+    options?.env?.PORTALESS_WBA_RESERVED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean));
+  if (!resolved.ok) return { verified: false, reason: resolved.reason, failureType: "unavailable", retryAfterSeconds: resolved.retryAfterSeconds };
+  const directory = resolved.directory;
 
   const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);
   if (!keyEntry) return { verified: false, reason: "keyid_not_in_directory" };
@@ -290,7 +181,7 @@ export async function verifyWebBotAuthRequest(
         base64UrlToBytes(keyEntry.pub!)
       );
     } catch (err) {
-      return { verified: false, reason: `ml_dsa_unavailable: ${(err as Error).message}` };
+      return { verified: false, reason: "ml_dsa_unavailable", failureType: "unavailable", retryAfterSeconds: 1 };
     }
   }
   if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
@@ -304,6 +195,8 @@ export async function verifyWebBotAuthRequest(
     const isFirstUse = await store.registerIfUnseen(parsed.nonce, nowMs, NONCE_WINDOW_MS);
     if (!isFirstUse) return { verified: false, reason: "nonce_replayed" };
   }
+
+  directories.markVerified(operatorOrigin);
 
   return {
     verified: true,

@@ -44,6 +44,7 @@ import {
   recordAgentAccess,
 } from "../packages/trust-layer/src/index.ts";
 import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
+import { recordUnsignedBotRejection } from "../packages/trust-layer/src/ledger/unsigned-bot-metrics.ts";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
@@ -219,6 +220,8 @@ export async function onRequest(context) {
   if (!hasSignature && !automatedLooking) return next();
 
   if (!hasSignature && automatedLooking) {
+    try { await recordUnsignedBotRejection(env, request.headers.get("user-agent")); }
+    catch { console.warn("[trust-layer] unsigned-bot aggregate unavailable"); }
     return new Response(JSON.stringify({
       error: "unsigned_automated_request",
       message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
@@ -233,6 +236,23 @@ export async function onRequest(context) {
     directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,
   });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
+  if (!result.verified) {
+    // Directory load, a cached upstream failure and expired credentials are not
+    // evidence of policy misconduct. Do not attribute them to an operator.
+    if (result.failureType === "unavailable") {
+      return Response.json({ error: "verification_unavailable", reason: result.reason }, {
+        status: 503,
+        headers: { "retry-after": String(result.retryAfterSeconds ?? 1), "cache-control": "no-store" },
+      });
+    }
+    if (result.failureType === "expired") {
+      return Response.json({ error: "signature_expired", reason: result.reason }, {
+        status: 401, headers: { "cache-control": "no-store" },
+      });
+    }
+    await recordAgentAccess(ledgerStore, { operatorKeyId: "unverified", charged: false, amountUsd: 0, policyViolation: true });
+    return Response.json({ error: "verification_failed", reason: result.reason }, { status: 401, headers: { "cache-control": "no-store" } });
+  }
   const origin = new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
   // override que el dueno escribio desde /admin/agents; si no hay override se
@@ -240,11 +260,6 @@ export async function onRequest(context) {
   const policyStore = await createAgentAccessPolicyStore(env);
   const policy = await loadContentPolicy(origin, env.ASSETS, policyStore);
   const rule = policy.policies.ai_input;
-
-  if (!result.verified) {
-    await recordAgentAccess(ledgerStore, { operatorKeyId: "unverified", charged: false, amountUsd: 0, policyViolation: true });
-    return new Response(JSON.stringify({ error: "verification_failed", reason: result.reason }), { status: 401, headers: { "content-type": "application/json" } });
-  }
 
   const operatorKeyId = result.agentKeyId ?? result.keyRecord?.keyId ?? "unknown";
   const readerHost = readerHostFromOperator(result.keyRecord?.operator);

@@ -21,6 +21,7 @@ import {
   __fetchOperatorKeyDirectoryForTests,
   DIRECTORY_NEGATIVE_CACHE_MAX,
   DIRECTORY_FETCH_IN_FLIGHT_MAX,
+  DIRECTORY_FETCH_COLD_MAX,
 } from "../../packages/trust-layer/src/webbotauth/verify";
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 
@@ -191,7 +192,7 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
 
     const result = await verifyWebBotAuthRequest(request);
 
-    expect(result).toMatchObject({ verified: false, reason: "key_directory_unreachable" });
+    expect(result).toMatchObject({ verified: false, failureType: "unavailable", reason: "directory_unavailable" });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -211,7 +212,7 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
 
     const result = await verifyWebBotAuthRequest(request);
 
-    expect(result).toMatchObject({ verified: false, reason: "key_directory_unreachable" });
+    expect(result).toMatchObject({ verified: false, failureType: "unavailable", reason: "directory_unavailable" });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -341,7 +342,8 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
       __fetchOperatorKeyDirectoryForTests(`https://slow-${i}.example`, directoryFetch as never)
     );
 
-    expect(directoryFetch).toHaveBeenCalledTimes(DIRECTORY_FETCH_IN_FLIGHT_MAX);
+    await Promise.resolve();
+    expect(directoryFetch).toHaveBeenCalledTimes(DIRECTORY_FETCH_COLD_MAX);
     expect(await pending[DIRECTORY_FETCH_IN_FLIGHT_MAX]).toBeNull();
 
     for (const resolve of resolvers) resolve({ ok: false, error: "http_error", status: 503 });

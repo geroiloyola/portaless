@@ -25,6 +25,7 @@ import { createAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_
 import { resolveContentPolicy, CONTENT_POLICY_WELL_KNOWN_PATH } from "../../../packages/trust-layer/src/policy/load-policy.ts";
 import { defaultContentPolicy } from "../../../packages/trust-layer/src/policy/manifest-schema.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { readUnsignedBotRejections } from "../../../packages/trust-layer/src/ledger/unsigned-bot-metrics.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -69,6 +70,9 @@ export async function onRequestGet(context) {
   const store = await createAgentAccessPolicyStore(env);
   const origin = new URL(request.url).origin;
   const resolved = await resolveContentPolicy(origin, env?.ASSETS, store);
+  let unsignedBotRejections;
+  try { unsignedBotRejections = await readUnsignedBotRejections(env ?? {}); }
+  catch { unsignedBotRejections = { available: false, periods: [] }; }
 
   return new Response(
     JSON.stringify({
@@ -78,9 +82,10 @@ export async function onRequestGet(context) {
       updatedBy: resolved.updatedBy ?? null,
       writable: canWrite(user.role),
       enforced: env?.ENABLE_TRUST_LAYER === "true",
+      unsignedBotRejections,
       policyPath: CONTENT_POLICY_WELL_KNOWN_PATH,
     }),
-    { status: 200, headers: { "content-type": "application/json" } }
+    { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
   );
 }
 
