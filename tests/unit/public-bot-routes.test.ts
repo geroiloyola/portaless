@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { isPublicBotRoute } from "../../packages/trust-layer/src/policy/public-bot-routes.ts";
 
 const pathOf = (url: string) => new URL(url, "https://a.com").pathname;
+const contract = readFileSync(join(__dirname, "../../docs/decisions/0003-public-and-governed-resource-contract.md"), "utf8");
 
 describe("isPublicBotRoute", () => {
   it("deja pasar las rutas de descubrimiento", () => {
@@ -19,9 +22,38 @@ describe("isPublicBotRoute", () => {
   });
 
   it("no deja pasar contenido ni admin", () => {
-    for (const path of ["/", "/blog/hola/", "/blog/hola", "/pages/inicio", "/admin/", "/llms.txt.bak", "/robots.txt/x", "/blog.md"]) {
+    for (const path of [
+      "/",
+      "/blog/hola/",
+      "/blog/hola",
+      "/pages/inicio",
+      "/docs/vision.md",
+      "/revisions/123e4567-e89b-42d3-a456-426614174000/index.json",
+      "/images/image-id",
+      "/admin/",
+      "/llms.txt.bak",
+      "/robots.txt/x",
+      "/blog.md",
+    ]) {
       expect(isPublicBotRoute(path), path).toBe(false);
     }
+  });
+
+  it("the PR1 route contract records each current discovery exception and content family", () => {
+    for (const route of [
+      "`/llms.txt`",
+      "`/robots.txt`",
+      "`/sitemap.xml`",
+      "`/rss.xml`",
+      "`/blog/:slug.md`",
+      "`/revisions/:publicationId/index.json`",
+      "`/pages/:slug/`",
+      "`/.well-known/*`",
+      "`/trust/:siteId`",
+    ]) {
+      expect(contract, route).toContain(route);
+    }
+    expect(contract).toContain("proposed route contract for PR1");
   });
 
   it("no se puede escapar con .. porque se evalua el pathname normalizado", () => {
