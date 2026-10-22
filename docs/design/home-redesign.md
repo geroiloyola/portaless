@@ -41,7 +41,7 @@ home tells that in three beats, in this order:
 | 4 | "This home is Portaless" | `Heading` + `Paragraph` + `Icon` | Meta and true: it is a JSON of elements. |
 | 5 | Latest posts | `PostList` | Real posts, same canonical filter as `/blog`, RSS, `llms.txt`. |
 | 6 | Store teaser | `ProductGrid`/`StoreBlock` | Rendered only when commerce is enabled; otherwise absent (no fake catalog). |
-| 7 | FAQ | `FAQ` | Answers state real limits (installer flag off, 6 of 12 backends, single maintainer). |
+| 7 | FAQ | `FAQ` | Answers state real limits (installer flag off, 5 of 12 plugin capabilities still `501`, single maintainer). |
 | 8 | Closing CTA | `Hero` (minimal) + `Button` | Points at the 10-minute install guide. |
 
 The header and footer are **not** part of the layout: they come from

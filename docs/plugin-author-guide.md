@@ -177,7 +177,7 @@ that is **off by default**:
 
 - The **HTTPS installer is behind a flag, off by default**, and is not announced,
   until the external sandbox review closes (ROADMAP Phase 14 exit criteria).
-- **6 of 12 capabilities have no backend** and answer `501` (§3). `site:admin`
+- **5 of 12 capabilities have no backend** and answer `501` (§3). `site:admin`
   is a **recorded decision, not a gap** (it has no defined operation set for a
   plugin). `media:*` and `commerce:checkout` need an external provider or a
   per-plugin media namespace. `email:send` **shipped**: you send only

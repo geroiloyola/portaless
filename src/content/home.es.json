@@ -35,7 +35,7 @@
     {
       "id": "answer-p",
       "type": "Paragraph",
-      "props": { "text": "Vos decidís, desde el panel, quién puede leer tu sitio — buscadores, asistentes de IA, entrenamiento de modelos — y el sitio responde en consecuencia, por escrito. Es una respuesta que cualquier lector puede observar, más una política publicada, no un ajuste que solo conoce el dueño." }
+      "props": { "text": "Vos decidís, desde el panel, quién puede leer tu sitio: las condiciones para buscadores, asistentes de IA y entrenamiento de modelos. El sitio las publica, por escrito, y aplica la regla de lectura por IA a las peticiones firmadas de agentes; búsqueda y entrenamiento son señales cooperativas que el crawler debe respetar." }
     },
     {
       "id": "pillars",
@@ -71,7 +71,7 @@
       "props": {
         "title": "Respuestas honestas",
         "variant": "bordered",
-        "items": "¿Está listo para producción? :: Está en Beta pública y es honesto con sus límites: el instalador de plugins está detrás de un flag apagado por defecto hasta una revisión de seguridad externa, y seis de doce capacidades de plugin todavía responden un 501 explícito.\n¿Necesito un hosting pago? :: No. Corre en hosting estático gratuito (GitHub Pages, Cloudflare Pages) o autoalojado, y ninguna base de datos queda expuesta a internet.\n¿Un agente de IA que lee mi sitio tiene que identificarse? :: Solo si vos lo decidís. Leer contenido público no requiere identidad; cuando pedís saber quién lee, el lector prueba el control de una clave que ya tiene — no otra cuenta en otra empresa.\n¿En qué se diferencia de un CMS? :: Las extensiones corren en un sandbox y reciben capacidades de a una; el core nunca las certifica, y tu contenido es una proyección de tu propio estado canónico."
+        "items": "¿Está listo para producción? :: Está en Beta pública y es honesto con sus límites: el instalador de plugins está detrás de un flag apagado por defecto hasta una revisión de seguridad externa, y cinco de doce capacidades de plugin todavía responden un 501 explícito.\n¿Necesito un hosting pago? :: No. Corre en hosting estático gratuito (GitHub Pages, Cloudflare Pages) o autoalojado, y ninguna base de datos queda expuesta a internet.\n¿Un agente de IA que lee mi sitio tiene que identificarse? :: Solo si vos lo decidís. Leer contenido público no requiere identidad; cuando pedís saber quién lee, el lector prueba el control de una clave que ya tiene — no otra cuenta en otra empresa.\n¿En qué se diferencia de un CMS? :: Las extensiones corren en un sandbox y reciben capacidades de a una; el core nunca las certifica, y tu contenido es una proyección de tu propio estado canónico."
       }
     },
     {

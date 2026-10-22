@@ -22,8 +22,12 @@ justificacion.
      contenido se use para entrenar modelos.
    - `free_for`: dominios de operadores exentos (archivos, ONGs, buscadores
      que consideres beneficiosos).
-3. El archivo `functions/_middleware.js` ya intercepta cada request y aplica
-   estas politicas automaticamente en Cloudflare Pages.
+3. Con `ENABLE_TRUST_LAYER=true`, `functions/_middleware.js` intercepta cada
+   request. Aplica **`ai_input`** a las peticiones de agentes (allow, 402 o
+   403). `search` y `ai_train` se publican en `robots.txt` (`Content-Signal`) y
+   en el manifiesto, pero son señales cooperativas: el middleware no bloquea
+   por ellas. El panel `/admin/agents` muestra `enforced=false` cuando el flag
+   esta apagado.
 
 ## Precedencia: panel > archivo > por defecto
 
