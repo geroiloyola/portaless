@@ -7,6 +7,18 @@ function reject(url: string): Promise<unknown> {
 }
 
 describe("Web Bot Auth directory egress (SSRF)", () => {
+  it("releases a DNS lookup stalled beyond the hop deadline before fetching", async () => {
+    const fetch = vi.fn();
+    const safe = createSafeFetcher({ lookup: () => new Promise(() => {}), fetch });
+    expect(await safe("https://slow.example/", { timeoutMs: 20 })).toMatchObject({ ok: false, error: "timeout" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("bounds a stalled response body as well as the fetch headers", async () => {
+    const body = new ReadableStream({ start() { /* never emits */ } });
+    const safe = createSafeFetcher({ fetch: vi.fn(async () => new Response(body)) });
+    expect(await safe("https://slow.example/", { timeoutMs: 20 })).toMatchObject({ ok: false, error: "timeout" });
+  });
   it("rejects only non-HTTPS Signature-Agent origins", () => {
     expect(parseSignatureAgent('"http://site.example"')).toBeNull();
     expect(parseSignatureAgent('"https://user:pass@site.example"')).toBeNull();
@@ -72,7 +84,7 @@ describe("Web Bot Auth directory egress (SSRF)", () => {
   it("pins each public redirect hop with its own validated address", async () => {
     const lookup = vi.fn()
       .mockResolvedValueOnce(["93.184.216.34"])
-      .mockResolvedValueOnce(["198.51.100.10"]);
+      .mockResolvedValueOnce(["93.184.216.35"]);
     const fetchPinned = vi.fn()
       .mockResolvedValueOnce(new Response(null, {
         status: 302,
@@ -87,7 +99,7 @@ describe("Web Bot Auth directory egress (SSRF)", () => {
     expect(lookup).toHaveBeenCalledTimes(2);
     expect(fetchPinned).toHaveBeenCalledTimes(2);
     expect(fetchPinned.mock.calls[0][2]).toBe("93.184.216.34");
-    expect(fetchPinned.mock.calls[1][2]).toBe("198.51.100.10");
+    expect(fetchPinned.mock.calls[1][2]).toBe("93.184.216.35");
   });
 
   it("pins the first validated address, so a second private resolution cannot rebind", async () => {

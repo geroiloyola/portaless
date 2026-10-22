@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { Readable } from "node:stream";
 import { lookup as dnsLookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import { checkServerIdentity } from "node:tls";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
@@ -60,8 +62,14 @@ export function createPinnedFetch(requestImpl = httpsRequest) {
       method: init.method || "GET",
       headers,
       signal: init.signal,
+      // Keep certificate identity tied to the URL, never to the pinned IP.
+      servername: isIP(parsed.hostname.replace(/^\[|\]$/g, "")) ? undefined : parsed.hostname,
+      rejectUnauthorized: true,
+      checkServerIdentity: (_servername, cert) => checkServerIdentity(parsed.hostname.replace(/^\[|\]$/g, ""), cert),
       lookup: (_hostname, _options, callback) => {
-        callback(null, address, address.includes(":") ? 6 : 4);
+        const family = address.includes(":") ? 6 : 4;
+        if (_options?.all) callback(null, [{ address, family }]);
+        else callback(null, address, family);
       },
     }, (res) => {
       const status = res.statusCode || 502;

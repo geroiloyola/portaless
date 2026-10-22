@@ -15,10 +15,12 @@
  *    `localhost`.
  *  - Timeout por AbortSignal.
  *
- * Modulo sin dependencias de Node: `fetch` y `lookup` se inyectan. En workerd el
- * runtime ya bloquea fetch a IP directa y TCP a localhost; la superficie real es
- * el self-host Node, que es donde se pasa `lookup`.
+ * Modulo sin dependencias de Node: `fetch` y `lookup` se inyectan. Workers uses
+ * platform DNS/TLS and cannot pin a connection IP; literal and redirect guards
+ * still apply, but Node's DNS-pinning guarantee must not be claimed on Workers.
  */
+import { isBlockedEgressIp } from "./egress-ip";
+export { BLOCKED_EGRESS_CIDRS } from "./egress-ip";
 
 export interface SafeFetchLimits {
   timeoutMs?: number;
@@ -70,31 +72,7 @@ export const SAFE_FETCH_DEFAULTS: Required<SafeFetchLimits> = {
 
 /** IPv4/IPv6 en rango privado, loopback, link-local o CGNAT. */
 export function isPrivateIp(rawIp: string): boolean {
-  const ip = rawIp.replace(/^\[|\]$/g, "");
-  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
-  if (v4) {
-    const [a, b] = [Number(v4[1]), Number(v4[2])];
-    if (a === 0 || a === 10 || a === 127) return true;
-    if (a === 169 && b === 254) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
-    if (a >= 224) return true; // multicast / reserved
-    return false;
-  }
-  const lower = ip.toLowerCase();
-  if (lower === "::1" || lower === "::") return true;
-  if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) return true; // link-local, unique-local fc00::/7
-  const mappedV4 = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(lower);
-  if (mappedV4) return isPrivateIp(mappedV4[1]);
-  // WHATWG URL canonicalizes [::ffff:127.0.0.1] to [::ffff:7f00:1].
-  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
-  if (mappedHex) {
-    const hi = Number.parseInt(mappedHex[1], 16);
-    const lo = Number.parseInt(mappedHex[2], 16);
-    return isPrivateIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
-  }
-  return false;
+  return isBlockedEgressIp(rawIp);
 }
 
 function isIpLiteral(host: string): boolean {
@@ -157,6 +135,16 @@ async function readCapped(res: Response, maxBytes: number): Promise<string | "to
   return new TextDecoder("utf-8").decode(merged);
 }
 
+function beforeDeadline<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
+  });
+}
+const timedOut = (error: unknown) => error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+
 /** Crea un fetcher endurecido. Inyecta `fetch` y `lookup` para poder testearlo. */
 export function createSafeFetcher(deps: SafeFetchDeps = {}) {
   const doFetch = deps.fetch ?? fetch;
@@ -174,25 +162,30 @@ export function createSafeFetcher(deps: SafeFetchDeps = {}) {
     }
 
     for (let hop = 0; hop <= maxRedirects; hop++) {
+      // DNS and streamed response body share the hop's deadline. Bounding only
+      // fetch headers would let a stalled lookup/body monopolize admission slots.
+      const signal = AbortSignal.timeout(timeoutMs);
       let address: string | undefined;
       try {
-        address = await resolveSafeAddress(current, deps.lookup);
+        address = await beforeDeadline(resolveSafeAddress(current, deps.lookup), signal);
       } catch (e) {
+        if (timedOut(e)) return fail("timeout");
         return fail(e instanceof Error && e.message === "invalid_url" ? "invalid_url" : "blocked_host");
       }
 
       let res: Response;
       try {
-        res = await fetchHop(current.toString(), {
+        res = await beforeDeadline(fetchHop(current.toString(), {
           redirect: "manual",
           headers: { accept: "application/json" },
-          signal: AbortSignal.timeout(timeoutMs),
-        }, address);
+          signal,
+        }, address), signal);
       } catch (e) {
-        return fail(e instanceof Error && e.name === "TimeoutError" ? "timeout" : "network_error");
+        return fail(timedOut(e) ? "timeout" : "network_error");
       }
 
       if (res.status >= 300 && res.status < 400) {
+        await res.body?.cancel().catch(() => {});
         const location = res.headers.get("location");
         if (!location) return fail("http_error", res.status);
         if (hop === maxRedirects) return fail("too_many_redirects");
@@ -204,11 +197,18 @@ export function createSafeFetcher(deps: SafeFetchDeps = {}) {
         continue;
       }
 
-      if (!res.ok) return fail("http_error", res.status);
+      if (!res.ok) {
+        await res.body?.cancel().catch(() => {});
+        return fail("http_error", res.status);
+      }
 
-      const body = await readCapped(res, maxBytes);
-      if (body === "too_large") return fail("too_large", res.status);
-      return { ok: true, status: res.status, text: body, finalUrl: current.toString() };
+      try {
+        const body = await beforeDeadline(readCapped(res, maxBytes), signal);
+        if (body === "too_large") return fail("too_large", res.status);
+        return { ok: true, status: res.status, text: body, finalUrl: current.toString() };
+      } catch (e) {
+        return fail(timedOut(e) ? "timeout" : "network_error", res.status);
+      }
     }
 
     return fail("too_many_redirects");
