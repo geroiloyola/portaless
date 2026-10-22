@@ -38,9 +38,9 @@ export type BudgetRejection = {
 interface Bucket { window: number; attempts: number; bytes: number }
 
 /**
- * PR2 kernel only: not imported by middleware or the production resolver.
+ * PR2 kernel: optionally injected by the Web Bot Auth directory adapter.
  * Fixed-window, per-process atomic reservations; no claim of a shared Workers
- * quota. Distributed store/adapters and production activation remain gated.
+ * quota. Whole-chain adapters and cross-instance atomicity remain gated.
  */
 export class ResolutionBudget {
   private buckets = new Map<string, Bucket>();
