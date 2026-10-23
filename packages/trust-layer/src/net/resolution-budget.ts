@@ -47,9 +47,9 @@ export class ResolutionBudget {
   private activeClients = new Map<string, number>();
   private activeOrigins = new Map<string, number>();
   private activeTotal = 0;
-  private logicalNow = Number.NEGATIVE_INFINITY;
   private options: ResolutionBudgetOptions;
-  constructor(options: ResolutionBudgetOptions = RESOLUTION_BUDGET_PROPOSAL, private now: () => number = Date.now) {
+  /** Inject elapsed monotonic milliseconds in tests, never a wall clock. */
+  constructor(options: ResolutionBudgetOptions = RESOLUTION_BUDGET_PROPOSAL, private now: () => number = () => performance.now()) {
     this.options = { ...options, client: { ...options.client }, origin: { ...options.origin } };
     const numbers = [options.windowMs, options.maxBuckets, options.client.attempts, options.client.bytes, options.origin.attempts, options.origin.bytes,
       options.maxConcurrentTotal, options.maxConcurrentPerClient, options.maxConcurrentPerOrigin];
@@ -61,11 +61,6 @@ export class ResolutionBudget {
       activeClients: [...this.activeClients], activeOrigins: [...this.activeOrigins] };
   }
 
-  private monotonicNow(): number {
-    this.logicalNow = Math.max(this.logicalNow, this.now());
-    return this.logicalNow;
-  }
-
   async fetch(context: ResolutionContext, url: string, fetcher: SafeFetcher, limits: SafeFetchLimits = {}): Promise<SafeFetchResult | BudgetRejection> {
     const clientBuckets = [...new Set(Array.isArray(context.clientBucket) ? context.clientBucket : [context.clientBucket])];
     if (!RESOLUTION_STAGES.includes(context.stage) || !clientBuckets.length || clientBuckets.length > 2
@@ -74,17 +69,15 @@ export class ResolutionBudget {
     if (!origin.startsWith("https://")) throw new Error("invalid_resolution_origin");
     const cap = limits.maxBytes ?? 512 * 1024;
     if (!Number.isSafeInteger(cap) || cap <= 0) throw new Error("invalid_resolution_byte_cap");
-    const timestamp = this.monotonicNow();
+    const timestamp = this.now();
     const window = Math.floor(timestamp / this.options.windowMs);
     const retryAfterSeconds = Math.max(1, Math.ceil(((window + 1) * this.options.windowMs - timestamp) / 1000));
     const clientKeys = clientBuckets.map((bucket) => `client:${bucket}`);
     const originKey = `origin:${origin}`;
-    // Never evict active buckets to make room: that would reset attacker quotas.
+    // Sweep expired consumption. Active leases live in separate maps and cannot
+    // be forgotten at window rollover or evicted under capacity pressure.
     for (const [key, value] of this.buckets) if (value.window !== window) this.buckets.delete(key);
     const newKeys = clientKeys.filter((key) => !this.buckets.has(key)).length + Number(!this.buckets.has(originKey));
-    if (this.buckets.size + newKeys > this.options.maxBuckets) {
-      return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
-    }
     const clients = clientKeys.map((key) => this.buckets.get(key) ?? { window, attempts: 0, bytes: 0 });
     const operator = this.buckets.get(originKey) ?? { window, attempts: 0, bytes: 0 };
     if (clients.some((client) => client.attempts >= this.options.client.attempts || client.bytes + cap > this.options.client.bytes)) {
@@ -101,6 +94,16 @@ export class ResolutionBudget {
     }
     if (activeOrigin >= this.options.maxConcurrentPerOrigin) {
       return { ok: false, error: "origin_budget_exhausted", status: 503, retryAfterSeconds };
+    }
+    const needed = this.buckets.size + newKeys - this.options.maxBuckets;
+    if (needed > 0) {
+      const protectedKeys = new Set([...clientKeys, originKey]);
+      const candidates = [...this.buckets].filter(([key]) => !protectedKeys.has(key)
+        && !this.activeClients.has(key) && !this.activeOrigins.has(key))
+        .sort(([, a], [, b]) => a.attempts - b.attempts || a.bytes - b.bytes);
+      // Do not partially evict if live leases leave insufficient room.
+      if (candidates.length < needed) return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
+      for (const [key] of candidates.slice(0, needed)) this.buckets.delete(key);
     }
     // Reserve both scopes synchronously before the first await. Failed attempts
     // keep their consumption charge; concurrency permits always release.
@@ -130,8 +133,9 @@ export class ResolutionBudget {
         if (remaining <= 0) this.activeClients.delete(key);
         else this.activeClients.set(key, remaining);
       }
-      if (activeOrigin === 0) this.activeOrigins.delete(originKey);
-      else this.activeOrigins.set(originKey, activeOrigin);
+      const remainingOrigins = (this.activeOrigins.get(originKey) ?? 1) - 1;
+      if (remainingOrigins <= 0) this.activeOrigins.delete(originKey);
+      else this.activeOrigins.set(originKey, remainingOrigins);
     }
   }
 }

@@ -14,7 +14,7 @@ export interface DirectoryResponse {
 }
 export type DirectoryResult =
   | { ok: true; directory: DirectoryResponse }
-  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached" | "client_budget_exhausted" | "origin_budget_exhausted" | "budget_state_full"; retryAfterSeconds: number; status?: 429 | 503 };
+  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached" | "directory_redirect_disabled" | "client_budget_exhausted" | "origin_budget_exhausted" | "budget_state_full"; retryAfterSeconds: number; status?: 429 | 503 };
 
 export interface DirectoryBudgetContext {
   budget: ResolutionBudget;
@@ -56,11 +56,11 @@ function boundedSet<T>(map: Map<string, T>, key: string, value: T): void {
 /** Per-process admission, not a per-window egress budget or authentication. */
 export class DirectoryResolver {
   private positive = new Map<string, { directory: DirectoryResponse; until: number }>();
-  private negative = new Map<string, number>();
+  private negative = new Map<string, { until: number; reason: "directory_unavailable" | "directory_redirect_disabled" }>();
   private inflight = new Map<string, Promise<DirectoryResult>>();
   private coldInFlight = 0;
 
-  constructor(private now: () => number = Date.now) {}
+  constructor(private now: () => number = () => performance.now()) {}
 
   state() {
     return { positive: this.positive.size, negative: this.negative.size, inFlight: this.inflight.size };
@@ -71,11 +71,11 @@ export class DirectoryResolver {
     const cached = this.positive.get(key);
     if (cached && cached.until > this.now()) return Promise.resolve({ ok: true, directory: cached.directory });
     this.positive.delete(key);
-    const failedUntil = this.negative.get(key);
-    if (failedUntil !== undefined && failedUntil > this.now()) {
+    const failed = this.negative.get(key);
+    if (failed !== undefined && failed.until > this.now()) {
       // LRU hit refreshes recency, never extends the failure TTL.
-      boundedSet(this.negative, key, failedUntil);
-      return Promise.resolve({ ok: false, reason: "directory_failure_cached", retryAfterSeconds: Math.max(1, Math.ceil((failedUntil - this.now()) / 1000)) });
+      boundedSet(this.negative, key, failed);
+      return Promise.resolve({ ok: false, reason: failed.reason === "directory_redirect_disabled" ? failed.reason : "directory_failure_cached", retryAfterSeconds: Math.max(1, Math.ceil((failed.until - this.now()) / 1000)) });
     }
     this.negative.delete(key);
     const pending = this.inflight.get(key);
@@ -98,6 +98,10 @@ export class DirectoryResolver {
         if (!res.ok && "retryAfterSeconds" in res) {
           return { ok: false, reason: res.error, retryAfterSeconds: res.retryAfterSeconds, status: res.status };
         }
+        if (!res.ok && budgetContext && res.error === "too_many_redirects") {
+          boundedSet(this.negative, key, { until: this.now() + FAILURE_TTL, reason: "directory_redirect_disabled" });
+          return { ok: false, reason: "directory_redirect_disabled", retryAfterSeconds: FAILURE_TTL / 1000 };
+        }
         if (res.ok && res.text) {
           const directory = JSON.parse(res.text) as DirectoryResponse;
           if (Array.isArray(directory?.keys) && directory.keys.every((entry) => entry && typeof entry.kid === "string")) {
@@ -107,7 +111,7 @@ export class DirectoryResolver {
           }
         }
       } catch { /* Unavailable/malformed directory is not proof of a bad signature. */ }
-      boundedSet(this.negative, key, this.now() + FAILURE_TTL);
+      boundedSet(this.negative, key, { until: this.now() + FAILURE_TTL, reason: "directory_unavailable" });
       return { ok: false, reason: "directory_unavailable", retryAfterSeconds: FAILURE_TTL / 1000 };
     }).finally(() => {
       this.inflight.delete(key);
