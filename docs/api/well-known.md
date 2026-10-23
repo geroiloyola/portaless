@@ -93,7 +93,10 @@ Statements this site publishes as a **witness** of other sites' chains. Spec §5
 
 ## `GET /.well-known/apw-index.json`
 
-The **Portaless Index** directory: pre-computed, re-verifiable observations of subjects by this node's configured witnesses. Spec §5.7 ("Aggregator", informative).
+The reference runtime's **LTP Index witness directory**: pre-computed,
+re-verifiable observations of subjects by this node's configured witnesses.
+Spec §5.7 ("Aggregator", informative). Its historical `typ: apw-index` and route
+remain unchanged; this is not the new LTP Proof Package service.
 
 ```json
 {
@@ -122,7 +125,7 @@ The **Portaless Index** directory: pre-computed, re-verifiable observations of s
 
 - `status`: `consistent` | `head_mismatch` | `equivocation` | `backdated_entry` | `subject_chain_unverified` | `no_observations`.
 - `consensus`: the head with the most **effective** per-witness weight sum at the last observed `seq`. Effective weight = `baseWeight × calibrationFactor`: the base is the operator's static weight (default 1.0); the factor comes from A.4.4-style **calibration** — a witness that agrees with the consensus gains factor (~1.9 ceiling), one that disagrees loses it (~0.1 floor), witnesses with no observation at the consensus `seq` are not counted. Both components are published per observation so any reader can recompute.
-- **The document is plain and unsigned on purpose**: every entry is re-verifiable against the subject's and its witnesses' raw chains. Treat it as a cache/hint, not as authority. Other Portaless Index nodes may use this document as **discovery** (subject + `witnessesUsed`); they re-verify everything locally and never import observations unverified (spec §7; inter-node sync shipped in the reference implementation, Phase 5). Still out of scope: manifest/SiteTrustScore aggregation across instances.
+- **The document is plain and unsigned on purpose**: every entry is re-verifiable against the subject's and its witnesses' raw chains. Treat it as a cache/hint, not as authority. Other LTP Index witness-directory nodes may use this document as **discovery** (subject + `witnessesUsed`); they re-verify everything locally and never import observations unverified (spec §7; inter-node sync shipped in the reference implementation, Phase 5). Still out of scope: manifest/SiteTrustScore aggregation across instances.
 - Response headers: `access-control-allow-origin: *`, `cache-control: max-age=60`.
 
 ## `GET /.well-known/portaless-usage-log.json`

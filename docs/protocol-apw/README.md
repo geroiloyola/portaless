@@ -1,8 +1,23 @@
-# Protocol APW and Veranet
+# LTP Stack — APW, LTP, SVRI/HSVR and Veranet
 
 > Canonical English version. The Spanish archive is [`README_es.md`](./README_es.md).
 
-Portaless is the reference implementation of **Protocol APW (Air Portal Website)**: an open protocol for cryptographic identity and verifiable trust for independent websites, formally published in September 2026.
+Portaless is a reference implementation of the **LTP Stack**: APW for identity
+and state structure, LTP for trust/evidence/traceability, SVRI for the consumable
+output vector and HSVR for its verifiable historical record. The published APW
+v1.3 document currently groups these contracts; the conceptual separation does
+not silently change its signed artifacts, algorithms or adopted vectors.
+
+See [LTP Stack architecture](./LTP-STACK-ARCHITECTURE.md) for layer ownership,
+compatibility and the future `ltp-stack` / `ltp-protocols` repository direction.
+
+**Phase closure (2026-10-23):** the owner approved the architecture and three
+Draft 0.1 contracts as the implementation baseline, explicitly including the
+independent identity root and restrictive resource budget. See
+[contract approval and standardization gates](./LTP-STANDARDIZATION-STATUS.md)
+for the final-publication checklist and the requirement to merge this documentation
+before programming indexed egress for Workers/Edge. Runtime activation remains
+subject to conformance and integration evidence.
 
 **Protocol documentation**
 
@@ -18,6 +33,25 @@ Portaless is the reference implementation of **Protocol APW (Air Portal Website)
 | [`APW-SPEC-v1.2.md`](./APW-SPEC-v1.2.md), [`APW-SPEC-v1.0.md`](./APW-SPEC-v1.0.md) | Superseded versions / citable prior art (Spanish) |
 | [`apw-spec.md`](./apw-spec.md) | Historical conceptual summary, superseded |
 
+## Proposed resolution contracts (not yet adopted or implemented)
+
+The standard names **LTP Index**, **LTP Proof Package**,
+**LTP Attestation** and **SVRI Projection** are protocol-neutral. Portaless is a
+reference runtime, not the name of a protocol service or data format.
+
+| Draft | Contract |
+|---|---|
+| [LTP Index Draft 0.1](./LTP-INDEX-DRAFT-v0.1.md) | Configured trust-proof distribution service, request/result messages, limits and failure semantics. |
+| [LTP Proof Package Draft 0.1](./LTP-PROOF-PACKAGE-DRAFT-v0.1.md) | Canonical proof container, APW identity/state proofs, LTP Attestations, SVRI Projection recomputation and resumable bootstrap. |
+| [APW Identity Bootstrap Draft 0.1](./APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md) | Independent DoH/AD or locally verified DNSSEC; explicit trust/freshness boundaries. |
+
+These owner-approved baseline drafts do not amend the adopted APW v1.3/E-16 formats, rename existing wire
+messages, or establish conformance. Independent machine-readable vectors and
+reviewed compatible implementations are required before activation. No runtime
+source import, hosting vendor or central Index is a protocol prerequisite.
+
+## Integration and implementation
+
 **Integrator guide**: third parties connecting to APW / Portaless / Index APIs should start at [`docs/api/`](../api/) (public well-known endpoints, verification recipes, admin endpoints).
 
 **License and governance**: the specification, its errata, and its vectors are published under **CC BY 4.0** — reimplementation, translation, and commercial use are permitted with attribution to the author (Gerardo Loyola), with no registration or certification by Portaless; see the [License and governance](./APW-SPEC-v1.3.md#license-and-governance) section of the spec. The reference implementation code is AGPL-3.0 (`LICENSE`). Section 6 is called **Loyal Trust Protocol (LTP)**; in earlier versions of the document it appeared as "Loyola Trust Protocol" (same acronym, same specification).
@@ -26,8 +60,20 @@ Portaless is the reference implementation of **Protocol APW (Air Portal Website)
 
 **How it solves it**: each site publishes its cryptographic identity (Ed25519, RFC 9421) and a public `SiteTrustScore` computed from 4 independent, auditable sources — self-declaration, AI-agent verification, community voting, and external custody reports. The whole design is crypto-agile and post-quantum-ready from the database schema up (the `key_algorithm` column allows a future migration to ML-DSA / FIPS 204 without losing the chain of custody).
 
-**Veranet**: the end state toward which Protocol APW converges — a verifiably trustworthy network of sites, with immutable, post-quantum cryptographic identity, where no human, machine, agent, or AI can falsify the provenance of a site or its content without leaving a publicly auditable signal. Veranet is not a centralized platform: it is the state of the network when enough independent sites adopt Protocol APW and discover each other through the **Portaless Index** — a federated discovery layer with verifiable identity, pre-aggregation trust scoring, and built-in pay-for-access from the design.
+**Veranet**: the target network of independently operated sites using APW
+identity/state proofs, LTP evidence evaluation and SVRI outputs, discovered
+through interchangeable **LTP Index** services. It is not a central authority or
+a network already proven to exist. Cryptographic provenance does not establish
+truth, prevent every omission or make an unavailable source verifiable.
 
-**Real implementation status** (verifiable by commit, not by promise): specification v1.3 is implemented end to end in this repository — DNS-over-HTTPS resolution, `did:apw` identity with rotation, signed artifacts (JWS + JCS), DNS-anchored chained attestation history, dimension scoring, and read governance — including external witnesses (§5.7) and the Portaless Index local witness aggregator (`/.well-known/apw-index.json`). `packages/apw-resolver/` is the reference implementation; see [`ROADMAP.md`](../../ROADMAP.md) for the exact, current status of every piece.
+**Real implementation status** (verifiable by commit, not by promise): the
+reference runtime implements DNS-over-HTTPS resolution, `did:apw` identity/key
+rotation, signed artifacts, DNS-anchored APW history, LTP scoring/read governance
+and local witness aggregation. The existing `/.well-known/apw-index.json`
+message is a historical witness-directory format, not the new **LTP Proof Package**
+service. Package paths remain implementation details; see [`ROADMAP.md`](../../ROADMAP.md)
+for current limitations. The Draft 0.1 contracts above are not implemented.
 
-Publication date of this specification: **September 2026**.
+Original APW specification publication date: **September 2026**. The three new
+Draft 0.1 contracts have baseline approval dated **2026-10-23**; their final
+normative publication remains subject to the gates above.
