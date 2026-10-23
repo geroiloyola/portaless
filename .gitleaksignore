@@ -2,3 +2,67 @@
 # SARIF region 335:41-68 describes identity binding and signature validity.
 # Exact historical finding only; all other commits, files and rules stay scanned.
 80ef272341cd9e25c24cda3b2f018f05e3c32980:docs/decisions/0003-public-and-governed-resource-contract.md:generic-api-key:335
+
+# PR #104: gitleaks 8.24.3 reported 30 findings / 28 unique fingerprints.
+# Draft history rewritten: only the introducing commit changed; fixture bytes,
+# paths, lines and rules are identical. Rebind to vector commit 9ed8868.
+# Reviewed deterministic, public S3 fixtures: original/mutated APW JWS (not bearer
+# credentials), public DNSKEY RDATA and key-set SHA-256 commitments. author.py
+# reproduces all originals from published TEST-only seeds; audit checks digests.
+# Exact historical findings only; no path/rule-wide exclusions or signed-byte edits.
+# solo pruebas — public APW JWS, deliberately mutated signature.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/invalid-signature.json:jwt:1
+# solo pruebas — public APW log JWS, deliberately mutated signature.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/invalid-log-signature.json:jwt:1
+# solo pruebas — public attestation JWS, deliberately mutated signature.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/invalid-attestation-signature.json:jwt:1
+# solo pruebas — public JWS over noncanonical bytes.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-signature-noncanonical-payload.json:jwt:1
+# solo pruebas — synthetic public DNSKEY RDATA, not an API key.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-offline-dnssec-15.json:generic-api-key:13
+# solo pruebas — original public log JWS in bootstrap slice.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-1.json:jwt:6
+# solo pruebas — original public attestation JWS in bootstrap slice.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-1.json:jwt:8
+# solo pruebas — SHA-256 key-set commitment, not an API key.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-1.json:generic-api-key:12
+# solo pruebas — original public log JWS in bootstrap slice.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-2.json:jwt:7
+# solo pruebas — original public log/attestation JWS in retained prefix.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-2.json:jwt:11
+# solo pruebas — SHA-256 key-set commitment in resume descriptor.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-2.json:generic-api-key:3
+# solo pruebas — SHA-256 key-set commitment in quarantined state.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-bootstrap-step-2.json:generic-api-key:10
+# solo pruebas — original public log JWS in continuation slice.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-continuation.json:jwt:8
+# solo pruebas — original public log/attestation JWS in trusted prefix fixture.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-continuation.json:jwt:15
+# solo pruebas — SHA-256 key-set commitment in checkpoint fixture.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-continuation.json:generic-api-key:13
+# solo pruebas — synthetic public P-256 DNSKEY RDATA.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-offline-dnssec-13.json:generic-api-key:13
+# solo pruebas — correctly signed expired key-set metadata.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/expired-key-set.json:jwt:1
+# solo pruebas — original public APW manifest JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:14
+# solo pruebas — original public key-set binding JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:20
+# solo pruebas — original public first log entry JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:22
+# solo pruebas — original public second log entry JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:23
+# solo pruebas — public key-set SHA-256 in the crypto ledger.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/crypto-ledger.json:generic-api-key:14
+# solo pruebas — original public positive escrow attestation JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:28
+# solo pruebas — original public negative escrow attestation JWS.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/valid-proof-chain.json:jwt:29
+# solo pruebas — synthetic public Ed25519 root DNSKEY RDATA.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:4
+# solo pruebas — synthetic public Ed25519 zone DNSKEY RDATA.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:15
+# solo pruebas — synthetic public P-256 root DNSKEY RDATA.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:18
+# solo pruebas — synthetic public P-256 zone DNSKEY RDATA.
+9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:29
