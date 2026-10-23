@@ -34,6 +34,24 @@ const valid: ResolutionBudgetConfiguration = {
 };
 
 describe("typed resolution-budget config and optimistic concurrency", () => {
+  it.each([
+    ["windowMs", 1000, 3_600_000], ["maxBuckets", 2, 4096],
+    ["maxConcurrentTotal", 1, 64], ["maxConcurrentPerClient", 1, 64], ["maxConcurrentPerOrigin", 1, 64],
+    ["client.attempts", 1, 100_000], ["origin.attempts", 1, 100_000],
+    ["client.bytes", 1, 64 * 1024 * 1024], ["origin.bytes", 1, 64 * 1024 * 1024],
+  ])("validates both boundaries server-side for %s", (path, min, max) => {
+    const withValue = (value: unknown) => {
+      const config: any = JSON.parse(JSON.stringify(valid));
+      const keys = String(path).split(".");
+      if (keys.length === 2) config[keys[0]][keys[1]] = value;
+      else config[keys[0]] = value;
+      return config;
+    };
+    for (const value of [min, max]) expect(validateResolutionBudgetConfiguration(withValue(value))).toBe(true);
+    for (const value of [Number(min) - 1, Number(max) + 1, 1.5, String(min), null, NaN, Infinity]) {
+      expect(validateResolutionBudgetConfiguration(withValue(value))).toBe(false);
+    }
+  });
   it("validates exact versioned fields and rejects limits outside bounded ranges", () => {
     expect(validateResolutionBudgetConfiguration(valid)).toBe(true);
     expect(validateResolutionBudgetConfiguration({ ...valid, secret: "must-not-persist" })).toBe(false);
