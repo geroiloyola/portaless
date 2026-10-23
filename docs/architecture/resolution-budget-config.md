@@ -12,6 +12,12 @@ rather than overwrite. SQLite and D1 updates each use a single conditional SQL
 statement. The table has one row per Portaless instance and records updater and
 timestamp for auditability.
 
+Every PUT requires `AuthService.verifyStepUp`: `password` and `totpCode` when
+the account requires it. These factors are request-only and never enter the
+configuration or activity payload. Each successful change invokes `emitActivity`
+with its actor and revision; rejected authentication, invalid limits and stale
+CAS writes do not emit a change event.
+
 The document validates fixed-window duration (1–3600 seconds), attempts
 (1–100,000), body allowance (1–64 MiB per scope), bucket capacity (2–4096), and
 concurrency (1–64). These are validation bounds, not selected deployment

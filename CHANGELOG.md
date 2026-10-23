@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **PR2 follow-up review — local saturation, monotonic expiry and step-up.** Adds idle least-use quota eviction with active-lease protection, a 10,000-client saturation regression, monotonic quota/directory expiry unaffected by wall-clock jumps, out-of-order lease-release correction, explicit cached redirect failure reasons, and required password/TOTP step-up for budget config changes. Documents edge proxy/WAF as the recommended first line, approximate per-instance/N-instance and eviction limits, and two-phase HMAC rotation. Persisted limits remain inactive; owner confirmation and the whole-chain gate remain open.
+
 - **PR2 step 2 — versioned pre-auth budget configuration.** Adds additive schema migration v10 with no seeded row, a bounded typed limits document, admin GET/PUT API, and atomic expected-revision compare-and-set for SQLite/D1. Secrets and counters are excluded. API reports configuration as not effective until later runtime integration; existing installations and B3 remain unchanged.
 - **PR2 continuation — bounded kernel and first real adapter (experimental).** Adds active-concurrency permits released in `finally`, nondecreasing logical windows, quota-state stress coverage, dual-key HMAC overlap and an opt-in pre-egress budget in the Web Bot Auth directory adapter. The flag is off by default; TXT/DoH, DID, history and evidence adapters, shared counters and secret operations remain open. No B3 or identity/classification behavior changes.
 

@@ -1,4 +1,13 @@
-# PR2: pre-authentication resolution budget kernel
+# First line of defense: edge proxy/WAF — resolution budgets (PR2)
+
+**Recommendation pending owner confirmation:** enforce admission/rate/connection
+limits at a trusted edge proxy/WAF first. The kernel is a bounded local backstop,
+not fleet-wide DoS protection. Without a trusted client IP there is **no
+per-client limit**: all such requests share `unknown`, and one caller can deny
+other unknown callers. With **N live instances**, retained per-instance quota
+can allow up to **N times** the configured allowance per window. Restarts,
+bucket eviction and HMAC identity changes can further reset consumption;
+there is no strict aggregate request-rate guarantee in this profile.
 
 **Status: draft implementation, opt-in and disabled by default.** Started only after the revised
 [Phase 0 ADR](../decisions/0003-public-and-governed-resource-contract.md).
@@ -12,8 +21,12 @@ Post-#97 hardening (#98) is merged, but whole-chain budgets remain incomplete.
 
 `packages/trust-layer/src/net/resolution-budget.ts` supplies:
 
-- Fixed UTC windows with bounded state; active buckets are never evicted to
-  admit new attacker origins (capacity exhaustion is an explicit `503`).
+- Fixed elapsed-time windows with bounded state. Buckets with live permits are
+  never evicted; when capacity is full, idle buckets with the fewest attempts
+  are evicted first (bytes break ties; insertion order breaks remaining ties).
+  Current-request keys are protected, so retrying an exhausted key does not
+  itself clear its consumption. If insufficient idle entries exist, reject
+  with `503 budget_state_full` without partial eviction.
 - Synchronous, atomic per-process reservation of both a client bucket and the
   root directory-origin bucket **before** a network await.
 - Starting configuration proposal: 20 admitted network attempts/minute and
@@ -34,10 +47,11 @@ Post-#97 hardening (#98) is merged, but whole-chain budgets remain incomplete.
   validate, pin where supported and separately budget each redirect hop.
 - Structured `429 client_budget_exhausted` and `503 origin_budget_exhausted` /
   `budget_state_full` rejections with `Retry-After` data, before fetch occurs.
-- A monotonic logical clock prevents a backwards wall-clock adjustment from
-  reopening a previously consumed window. Quota state is bounded by
-  `maxBuckets`; expired buckets are swept on the next admission, and same-window
-  active quota entries are not evicted to make room.
+- `performance.now()` supplies monotonic time for quota windows and directory
+  cache expiry. Forward/backwards wall-clock jumps cannot expire them. Wall
+  time is used only for the HMAC UTC day (and protocol signature timestamps),
+  not quota/cache expiry. HMAC day changes can create a new client identity;
+  they do not establish a globally continuous quota.
 - HMAC client buckets derived from trusted ingress only, UTC-day-separated and
   independent of raw IP storage. Node accepts only the runtime-injected header;
   Cloudflare requires an explicit server-controlled trusted-ingress flag.
@@ -46,7 +60,8 @@ Post-#97 hardening (#98) is merged, but whole-chain budgets remain incomplete.
 
 ## Pending owner decision: per-instance vs. shared atomic counters
 
-No deployment guarantee has been selected. The in-memory implementation is a
+The recommended initial profile is edge controls plus approximate per-instance
+counters; the owner has not confirmed it. The in-memory implementation is a
 per-process/isolate approximation; the proposed limits are not globally
 enforced. The owner must choose the required profile before production
 activation:
@@ -70,6 +85,13 @@ protection.
 - `maxBuckets` bounds memory under arbitrary client/origin churn. Old windows
   are swept lazily on admission; an idle instance can retain at most the
   configured maximum until another request or process exit.
+- The regression sends 10,000 distinct completed one-use clients/origins and
+  then a new legitimate client in the same window. Before eviction, only 2,048
+  client/origin pairs fitted in 4,096 entries and the legitimate client received
+  `503`. With idle least-use eviction all 10,001 fetches are admitted and the
+  table stays at or below 4,096 entries. This deliberately favors new admission;
+  an evicted caller can regain quota, so it must not be sold as strict rate
+  enforcement. Active-origin accounting also survives out-of-order completion.
 - Requests without trusted IP/secret share `unknown`. Its exhaustion denies
   further unknown-bucket egress but does not consume a valid HMAC client's
   client quota. Unknown clients can still cause denial for one another; no
@@ -91,9 +113,10 @@ protection.
 2. Select deployment limits from measurements. Verification-attempt admission,
    read/body allowance, query sizes and full-chain deadline need an explicit
    integration contract; no amount of per-identity limiting can replace this.
-3. Define a shared atomic store for multi-isolate/multi-process deployments,
-   failure semantics and missing backend behavior. The current kernel's Maps
-   are per process; restarting/adding isolates resets their state.
+3. Obtain the owner's confirmation of edge controls plus approximate local
+   counters, or implement/test shared atomic counters if a fleet-wide guarantee
+   is required. The current Maps are per process; no silent shared-to-local
+   fallback is permitted.
 4. Configure server-side secret rotation, conservative continuity during key
    changes, retention and operator diagnostics. The kernel day-separates an
    injected secret; it does not provision or rotate deployment secrets.
@@ -103,15 +126,55 @@ protection.
    clients start no egress, cold identities cannot starve unrelated configured
    origins, and no failure becomes a negative conduct attestation.
 
-PR2 stays **draft** until these blockers are resolved. No public or governed
+The merged PR2 increments do not close these blockers. No public or governed
 access-mode defaults change as a consequence of this draft.
+
+## Directory redirects: explicit failure
+
+With the opt-in budget enabled, `maxRedirects: 0` means any directory redirect
+fails: the target is not fetched. The adapter records
+`directory_redirect_disabled` in its bounded negative cache for 60 monotonic
+seconds and returns that same reason on cache hits with decreasing Retry-After.
+The verifier/middleware expose it as transient unavailability, never a conduct
+violation. This diagnostic is process-local, not a durable audit entry; it
+contains neither URL credentials nor secrets. Operators must serve the directory
+at its canonical URL until separately budgeted redirects are implemented.
+
+## HMAC rotation procedure (local approximate profile)
+
+`.env.example` contains only blank secret values; never deploy an example or
+public key as a secret. Keep a cryptographically random value with at least
+32 random bytes in server-side secret storage, never in the config API, Git,
+logs or tickets. `openssl rand -base64 32` can generate one locally; transfer
+it directly into protected secret storage without logging it in deployment jobs.
+
+1. Keep the old current secret. Provision the new secret as the previous-slot
+   value first, so all instances charge both old and new HMAC aliases. Wait
+   until all instances use this overlap configuration.
+2. Swap: set `PORTALESS_RESOLUTION_BUDGET_SECRET` to the new value and
+   `PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET` to the old value. Both aliases
+   remain charged together; swapping order cannot create extra consumption.
+3. Retain overlap for at least the longest configured quota window **after the
+   last instance update** (and any outstanding request deadline). Verify the
+   deployment is converged, then remove the previous value. Do not rotate again
+   until that process finishes; only two keys are supported.
+4. Remove the retired key from secret storage according to the operator's
+   retention policy. Never print either key in diagnostics. Enabled deployments
+   with a missing/short key fail with a generic `503` before directory egress;
+   disabled deployments do not require a key.
+
+There is no automatic expiry/provisioning of the previous key. Process restart
+resets counters even if both secrets are retained. This procedure preserves
+overlap only within live local state; edge controls must cover restarts and
+multi-instance allowance. Persisted limits remain `effective: false` until
+runtime integration is completed.
 
 ## Tests
 
 `tests/unit/resolution-budget.test.ts` verifies client rotation across origins,
 origin rotation across clients/stages/targets, concurrency-permit release on
 success/timeout/abort/exception, failed-attempt charges, bounded state and
-window cleanup, clock rollback, unknown-bucket isolation, UTC expiry and
+window cleanup, wall-clock jumps, unknown-bucket isolation, elapsed expiry and
 Retry-After, per-hop redirect accounting and trusted-ingress HMAC buckets.
 `tests/unit/directory-admission.test.ts` also verifies the real directory
 adapter charges before egress and does not negative-cache budget exhaustion.
