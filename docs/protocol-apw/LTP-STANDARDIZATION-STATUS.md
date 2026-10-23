@@ -34,7 +34,7 @@ owner for a decision rather than silently changing the baseline.
 |---|---|---|
 | S1 | Complete unambiguous interoperability definitions. | Pin exact serialization for the APW TXT manifest hashed by `rootManifestDigest`; complete nested schema/type constraints and status/reason/null/HTTP combinations. Publish valid and invalid examples so independent engines do not infer local runtime structures. |
 | S2 | Specify and test comprehensive budget accounting. | The numerical baseline is approved. Define how package/decoded DNS bytes, DNSSEC operations, manifest/key-set signatures, nested issuers, retries and resumed steps consume it; prove shared caps, cancellation and no reset on a cache hit/retry. This accounting must not create a bypass around the approved limits. |
-| S3 | Publish executable conformance vectors for all three new contracts with explicit authorship. | Candidate is **verificación cruzada (mismo autor)**, not independent review. Fixed keys, clocks, roots, policy, original bytes and expected errors are present; [coverage blockers](./vectors/ltp/v0.1/README.md#approval-and-coverage-boundary) prevent approval/closure. Existing APW/SVRI vectors do not cover the new formats. |
+| S3 | Publish executable conformance vectors for all three new contracts with explicit authorship. | [v0.2 total candidate](./vectors/ltp/v0.2/README.md) adds 285 CORE-01…06 targets while preserving v0.1. Candidate is **verificación cruzada (mismo autor)**; manual S3-core coverage review/digest approval are pending. Reputation/offline-profile adoption and S4 remain open; no expected semantic outcome was executed by an LTP engine. |
 | S4 | Obtain agreement from at least two independent verifiers. | Another person's verifier in another language with another primitive backend must record identity/revision/backend and complete results. OpenSSL CLI, Node/jose and cryptography/dnspython share the OpenSSL family; they cross-check encoding/canonicalization/structure, not primitive independence. This gate is still open. |
 | S5 | Publish security/resource/privacy acceptance evidence. | Controlled HTTPS/DNS fixtures must demonstrate zero arbitrary-origin consumer calls, no silent fallback, authenticated issuer/root handling, bounded hostile input, expiry/revocation behavior and audience separation. Report acquisition and local verification separately. Runtime activation additionally needs actual adapter/integration evidence. |
 | S6 | Publish a versioned normative release after S1–S5. | Record the final version/date, stable filenames and identifiers, dependency/errata references, vectors and verifier results; update status/index links consistently. Keep unchanged deployed identifiers and distinguish `apw-index` from the package service. Record the release through the normal reviewed PR and owner merge process. |
@@ -54,8 +54,9 @@ approved. Corpus coverage review remains part of S3. This is an additional
 prerequisite, not a replacement for the documentary merge gate below.
 
 The baseline PR #103 was merged by the owner on 2026-10-23. Its documentary
-merge gate is satisfied; **S1/S3 owner approval remains blocked by missing S3
-coverage**. This draft adds same-author cross-checks, not an S4 verifier, and
+merge gate is satisfied; **S1/S3 owner approval remains pending manual S3-core
+coverage review**. The static execution instruction permits targets and CI only,
+not A/B. This draft adds same-author cross-checks, not an S4 verifier, and
 does not start Phase 2. Minimal bootstrap scope is configured DoH/AD; offline
 DNSSEC is a future optional audited-library profile, not supplied by these tools.
 

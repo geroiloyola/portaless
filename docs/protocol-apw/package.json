@@ -10,6 +10,8 @@
     "audit:external": "node vectors/ltp/v0.1/tools/external-audit.mjs",
     "check:author": "python3 vectors/ltp/v0.1/tools/author.py --check",
     "check:numbers": "python3 vectors/ltp/v0.1/tools/numeric-audit.py",
+    "check:core": "node tools/check-core-author.mjs",
+    "audit:core": "node tools/core-audit.mjs",
     "test": "node --test tools/*.test.mjs"
   },
   "devDependencies": {

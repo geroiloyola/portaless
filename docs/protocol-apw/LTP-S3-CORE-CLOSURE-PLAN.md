@@ -1,16 +1,18 @@
 # Closing S3-core — evidence before authorization to start A/B
 
-**Status: work plan only; S3-core remains incomplete. License: CC BY 4.0.**
+**Status: static execution authorized; v0.2 targets generated, manual approval pending. License: CC BY 4.0.**
 LTP means **Local Trust Protocol**: each node applies its own policy to verified
 evidence. This plan does not implement a verifier, transport, quota or DNSSEC
 validator, approve a corpus, or open Phase 2. The owner controls that decision.
 
 ## What is missing for A/B
 
-The [six open rows](./LTP-S3-COVERAGE.md#s3-core--proposed-prerequisite-for-a-and-b)
-all contain dependencies of A or B. None can be deferred to S3-reputation merely
-to approve the current digest. The following IDs identify **work packages**, not
-existing fixture IDs or passing tests.
+The [six core rows](./LTP-S3-COVERAGE.md#s3-core--proposed-prerequisite-for-a-and-b)
+all contain dependencies of A or B. The execution instruction authorized static
+target generation and CI consolidation only. [Candidate v0.2](./vectors/ltp/v0.2/README.md)
+now supplies 285 cases; the following IDs still identify **work packages**, not
+claims that an A/B implementation passed them. Review may identify gaps; none
+can be deferred to reputation merely to approve a digest.
 
 | Work ID | Consumer | Static evidence required before closing the row |
 |---|---|---|
@@ -38,8 +40,8 @@ engine, or alter a signed golden byte to accommodate later code.
    local policy, transcript bytes, signatures and literal expected outputs. Keep
    the current 41 assets and numerical extension as the old candidate; a future
    completed-core candidate needs its own reviewed/versioned manifest and digest.
-   This naming-only revision intentionally does not add those vectors or change
-   any of the three current digests.
+   The authorized static revision publishes the new total-corpus digest while
+   preserving the original corpus, schema bundle and numeric extension.
 3. **Check the assets without claiming engine conformance.** Validate schemas,
    exact signing/hash preimages, numeric serialization, mutations and resource
    objective consistency. Cross-check encodings through current tools and report
@@ -49,9 +51,9 @@ engine, or alter a signed golden byte to accommodate later code.
 4. **Review the coverage against A/B.** linstarkcorp must review every dependency
    above, including cases spanning A → B. Any missing prerequisite keeps both
    deliveries blocked; marking a digest approved cannot override that finding.
-   The owner chooses how to gate the standalone checks: require `cross-check`
-   through GitHub protection, or review moving it into the already-required
-   `Unit Tests / unit` job. The agent changes no protection settings here.
+   The owner selected consolidation in the already-required `Unit Tests / unit`
+   job. The standalone checks now run there without a separate GitHub check;
+   protection settings and strict coverage thresholds are unchanged.
 5. **Bind and decide.** Once all core requirements have concrete reviewed targets,
    regenerate the candidate tuple: schema/corpus/numeric digests and exact
    normative-prose SHA. The owner must explicitly accept the proposed scoped

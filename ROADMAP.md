@@ -88,7 +88,7 @@ no force pushes, no deletions, and required status checks `build`,
 
 ## In development (internal — depends only on Portaless)
 
-- `[ ]` **S3-core evidence for A/B** — all six [core closure work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md) still need static targets and review. Digest approval alone cannot waive missing bootstrap, TXT/DoH, DID, rotation, error or resource-objective cases. Local Trust Protocol naming is decided; core approval and Phase 2 authorization remain separate owner decisions.
+- `[ ]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) now supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md). Manual coverage/digest review remains open; asset checks do not execute an LTP engine. Digest approval cannot waive a missing prerequisite. Core approval and Phase 2 authorization remain separate owner decisions.
 
 - `[ ]` **LTP S1/S3 corpus approval** — [Draft schemas, vectors and cross-checks](./docs/protocol-apw/vectors/ltp/v0.1/README.md) are authored locally with third-party primitive verification, not independent human review. Pending coverage blocks approval; S4 external verification and Phase 2 engine/network/budget work remain gated. [Classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) are review proposals, not a repository migration.
   The [S3-core A/B criterion](./docs/protocol-apw/LTP-S3-COVERAGE.md) is proposed, not approved; any owner decision must bind the [data and normative-text tuple](./docs/protocol-apw/LTP-APPROVAL-RECORD.md). Current cross-checks share OpenSSL and do not close S4 primitive independence.

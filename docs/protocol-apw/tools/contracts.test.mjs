@@ -40,11 +40,17 @@ test('S3 coverage is a blocking approval gate, not waived by primitive-check suc
   const coverage = text('vectors/ltp/v0.1/README.md');
   assert.match(coverage, /BLOCKING — corpus approval is not available/);
   const matrix = text('LTP-S3-COVERAGE.md');
-  for (const topic of ['reader_conduct', 'Rotations/multiple-key ordering', '(iss,jti)', 'Community calibration', 'every service error class']) assert(matrix.includes(topic));
-  assert.match(matrix, /All six rows have missing cases/);
+  for (const topic of ['reader_conduct', 'Rotations/multiple-key ordering', '(iss,jti)', 'Community calibration']) assert(matrix.includes(topic));
+  const serviceCases = json('vectors/ltp/v0.2/core-05-errors.json').cases.filter(c => c.expected.stage === 'service');
+  const reasons = json('schemas/v0.1/ltp-resolution-result.schema.json').properties.reason.enum.filter(x => x !== null);
+  assert.deepEqual([...new Set(serviceCases.map(c => c.expected.reason).filter(Boolean))].sort(), reasons.sort());
+  const candidate = json('vectors/ltp/v0.2/coverage.json');
+  assert.equal(candidate.areas.length, 6);
+  assert(candidate.areas.every(area => area.cases.length > 0));
+  assert.match(matrix, /manual\ncoverage review and owner approval remain pending/);
   assert.match(matrix, /not approved/);
   assert.match(matrix, /Until then A\/B stay frozen/);
-  assert.match(text('LTP-STANDARDIZATION-STATUS.md'), /owner approval remains blocked by missing S3/);
+  assert.match(text('LTP-STANDARDIZATION-STATUS.md'), /owner approval remains pending manual S3-core/);
 });
 
 test('future signed SVRI and HSVR cannot silently inherit unsigned binary64 projection encoding', () => {
@@ -55,12 +61,12 @@ test('future signed SVRI and HSVR cannot silently inherit unsigned binary64 proj
   assert(numbers.some(c => c.wire === '1.25' && !c.signedInteger));
 });
 
-test('S3-core missing-rotation finding matches the actual single-key baseline, not an asserted completed suite', () => {
+test('v0.1 single-key baseline is preserved while v0.2 adds three-key rotation targets without claiming implementation', () => {
   const base = json('vectors/ltp/v0.1/valid-proof-chain.json');
   assert.equal(base.result.package.histories[0].keys.length, 1);
   const matrix = text('LTP-S3-COVERAGE.md');
-  assert.match(matrix, /Current positive chain uses one key only/);
-  assert.match(matrix, /All six rows have missing cases/);
+  assert.match(matrix, /initial v0.1 positive chain uses one key only/);
+  assert.equal(json('vectors/ltp/v0.2/proofs.json').proofs['identity-rotation'].result.package.histories[0].keys.length, 3);
   assert.match(matrix, /S3-reputation stays\nDraft until/);
   assert.match(matrix, /not an implementation/);
 });
@@ -72,6 +78,6 @@ test('S3-core closure requires all six A/B evidence packages and separates corpu
   for (const id of ['01', '02', '03', '04', '05', '06']) assert(rows.some(row => row.startsWith(`| CORE-${id} |`)));
   assert.match(plan, /Any missing prerequisite keeps both\n   deliveries blocked/);
   assert.match(plan, /A\/B cannot start/);
-  assert.match(plan, /This naming-only revision intentionally does not add those vectors/);
+  assert.match(plan, /authorized static revision publishes the new total-corpus digest/);
   assert.match(plan, /Only then may Phase 2 implement A\/B/);
 });

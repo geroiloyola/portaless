@@ -50,7 +50,7 @@ reference runtime, not the name of a protocol service or data format.
 | [Extraction preparation](./LTP-EXTRACTION-PLAN.md) | Standalone package, link lint, future release/digest plan; no extraction executed. |
 | [Approval record](./LTP-APPROVAL-RECORD.md) | Candidate data digests plus exact normative-text commit; no owner decision entered. |
 | [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Core gaps and proposed A/B approval criterion; reputation remains Draft. |
-| [CI/protection observation](./LTP-CI-REVIEW.md) | Which jobs run checks, observed required contexts, and a proposal only. |
+| [CI/protection observation](./LTP-CI-REVIEW.md) | Standalone static checks consolidated in the required Unit Tests / unit job; no settings changes. |
 
 These owner-approved baseline drafts do not amend the adopted APW v1.3/E-16 formats, rename existing wire
 messages, or establish conformance. Machine-readable vectors with explicit

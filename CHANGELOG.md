@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **S3-core static candidate v0.2.** Publishes 285 literal CORE-01…06 targets with direct contracts, three-key rotation and a signed 1,000-entry history segmented 400/400/200, preserving the initial corpus. The total manifest pins initial/new assets for manual owner review. Original/core author and primitive checks now run inside the already-required Unit Tests/unit job; the separate check is removed, coverage thresholds and protection settings unchanged. No engine, network, budgets or A/B implementation is introduced.
+
 - **Owner-selected LTP expansion.** LTP means **Local Trust Protocol**: each node applies its own policy to verified evidence; LTP Stack is APW + LTP + SVRI + HSVR. Live terminology, continuity notes and CI naming lint preserve historical editions, author/Annex A credit, identifiers and signed assets. The S3-core closure plan lists the evidence A/B still need; no implementation or corpus approval is implied.
 
 - **LTP S1/S3 Draft candidate.** Adds standalone schemas, frozen cryptographic/math assets, a separately pinned numeric extension, same-author Python/Node cross-checks and third-party OpenSSL/JOSE/dnspython signature checks. Adds the #102 seeded heap-invariant regression, specification-link boundary CI and extraction preparation. Clarifies deterministic core versus optional profiles, minimal DoH/AD scope and synthetic DNSSEC inputs. S3 coverage blocks corpus approval; no Phase 2 engine/network/budget work or repository extraction is enabled.

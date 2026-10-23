@@ -1,6 +1,6 @@
 # S3 coverage split — proposed approval scopes
 
-**Status: Draft proposal, not approved. License: CC BY 4.0.**
+**Status: v0.2 static target set published for manual review, not approved. License: CC BY 4.0.**
 This is a coverage/dependency review, not an implementation or a change to the
 approved gate. No Phase 2 engine, network, budget or DNSSEC validator is supplied.
 Fixture `proofAccepted` values are future targets, not observed engine verdicts.
@@ -11,22 +11,25 @@ Scope: existing APW identity via configured validating DoH/AD, `did.json` and
 bounded complete identity history; no reputation, score or offline DNSSEC claim.
 File references below are corpus-relative to `vectors/ltp/v0.1/`.
 
-| Core area | Existing target evidence | Still missing — blocking S3-core approval |
+| Core area | Concrete v0.2 case IDs / set | Static coverage submitted for review |
 |---|---|---|
-| Bootstrap/root binding | `valid-identity-only.json`, `forwarded-ad-not-a-root.json`, `invalid-key-binding.json`, `expired-root.json` | Conflicting TXT roots, malicious trust-policy/root replacement, rollback to known state, bootstrap unsupported/incomplete permutations. |
-| TXT/DoH | `unsigned-dns.json`, `wrong-dns-question.json`; controlled local AD observation in `valid-proof-chain.json` | Wrong type, TC/truncation, NXDOMAIN/no TXT, bad status/TTL, ambiguous TXT, alias rejection, DoH failure and no-downgrade/fallback targets. No live DoH observation is demonstrated. |
-| did.json | Signed manifest and DID/key fixture; substituted key negative | Subject/controller/kid substitution, duplicate/ambiguous verification methods, unsupported keys, private-key rejection and missing DID/history bindings. |
-| History, rotation and several keys | `seq-gap.json`, changed key-window/expired key-set, valid continuation and two-step bootstrap, absent/expired checkpoint | **Rotations/multiple-key ordering**, key fingerprints/key IDs sorting/ties, retired-key windows, target changes/overlaps/restarts, checkpoint trust-policy changes and complete rollback/equivocation classes. Current positive chain uses one key only. |
-| Service/error classes | Missing-null/string-null/unknown-member/request-ID/digest negatives; one incomplete result | Literal fixtures for **every service error class** in Serialization §6 and bootstrap failure class; HTTP/Retry-After combinations and unknown-version/profile cases. Schemas/prose alone are not targets. |
-| Resource-bound objectives | Declared request limits and step-cap-one bootstrap target | **Complete resource-bound targets** at/over bytes, records, keys, signatures, steps, deadlines, shared/nested work, cancellation and retry/resume/no-reset. Define immutable expected failures first; measurements/accounting implementation belong to S2/S5. |
+| Bootstrap/root binding | [14 CORE-01 cases](./vectors/ltp/v0.2/core-01-bootstrap.json), e.g. `CORE-01-valid-root`, `CORE-01-package-policy-install`, `CORE-01-known-sequence-rollback` | Provisioned roots, forwarded/absent AD, root/key/policy substitution, freshness and known-state rollback/equivocation; TXT contradictions also in CORE-02. |
+| TXT/DoH | [42 CORE-02 cases](./vectors/ltp/v0.2/core-02-doh.json), e.g. `CORE-02-conflicting-txt`, `CORE-02-truncated`, `CORE-02-transport-fallback` | Question/type/name, AD/TC, NXDOMAIN/no TXT, status/TTL, ambiguity, aliases, endpoint input, transport failure and no-downgrade/fallback targets. Transcripts are inert, not live observations. |
+| did.json | [23 CORE-03 cases](./vectors/ltp/v0.2/core-03-did.json), e.g. `CORE-03-controller`, `CORE-03-private-key`, `CORE-03-duplicate-method` | Subject/controller/kid, duplicate/ambiguous methods, public/private/unsupported keys, missing references, signed claim substitution and actual signature mutation. |
+| History, rotation and several keys | [46 CORE-04 cases](./vectors/ltp/v0.2/core-04-history.json), e.g. `CORE-04-rotation-valid`, `CORE-04-keys-reversed`, `CORE-04-long-1000-step-1/2/3` | **Rotations/multiple-key ordering**, legacy null keyId, alias/duplicates, inclusive key windows, chain failures, key-set preimages, checkpoints, policy/target changes, restart and three signed segments. |
+| Service/error classes | [39 CORE-05 cases](./vectors/ltp/v0.2/core-05-errors.json) | All 14 core service reason classes and literal HTTP/Retry-After outputs, envelope/version/profile negatives, nine strict-parser targets. Expected parser/verifier outcomes are targets, not executed results. |
+| Resource-bound objectives | [121 CORE-06 cases](./vectors/ltp/v0.2/core-06-resources.json), e.g. `CORE-06-dohBytes-at`, `CORE-06-signatureAttempts-over`, `CORE-06-abort-stream` | At/over limits, exact body recipes, count lists, cumulative requested work, cancellation, cache/dependency expiry and retry/resume/no-reset objectives. No scheduler/accounting/transport has been implemented. |
 
-All six rows have missing cases. The core positive example is not a complete
-core conformance suite. Strict-parser malformed inputs also remain rejection
-targets; current byte/math/schema audits do not execute a strict LTP parser.
+The initial v0.1 positive chain uses one key only and remains preserved. All six
+rows now have concrete static targets in the versioned candidate; **manual
+coverage review and owner approval remain pending**. No LTP engine, strict parser,
+network or budget implementation has executed the expected semantic outcomes.
+The complete [coverage index](./vectors/ltp/v0.2/coverage.json) lists all 285 new
+IDs and literal reasons/stages, with full input/expected objects in the case sets.
 
-The [CORE-01…06 closure plan](./LTP-S3-CORE-CLOSURE-PLAN.md) maps each gap to A/B
-and the evidence needed. These are A/B prerequisites, not optional reputation
-work: approval of a digest alone cannot waive a missing dependency or start A/B.
+The [CORE-01…06 closure plan](./LTP-S3-CORE-CLOSURE-PLAN.md) remains the review
+checklist. If review finds any missing A/B prerequisite, approval of a digest
+alone cannot waive it or start A/B. A target set is not a conformance report.
 
 ## S3-reputation — remains Draft
 
