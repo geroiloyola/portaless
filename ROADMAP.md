@@ -88,6 +88,9 @@ no force pushes, no deletions, and required status checks `build`,
 
 ## In development (internal — depends only on Portaless)
 
+- `[ ]` **LTP S1/S3 corpus approval** — [Draft schemas, vectors and cross-checks](./docs/protocol-apw/vectors/ltp/v0.1/README.md) are authored locally with third-party primitive verification, not independent human review. Pending coverage blocks approval; S4 external verification and Phase 2 engine/network/budget work remain gated. [Classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) are review proposals, not a repository migration.
+  The [S3-core A/B criterion](./docs/protocol-apw/LTP-S3-COVERAGE.md) is proposed, not approved; any owner decision must bind the [data and normative-text tuple](./docs/protocol-apw/LTP-APPROVAL-RECORD.md). Current cross-checks share OpenSSL and do not close S4 primitive independence.
+
 ### Derived-score rendering integrity (completed; see Trust Layer)
 
 `VISION.md` states the rule — *a default must never quietly stand in for missing evidence*. The score renderers preserve it: `scoreSiteDimensions()` emits no entry for missing W evidence, the `/trust/atproto/:handle` projection omits zero-count/zero-weight R-05 priors and returns `no_data` when no measured reader dimensions exist, and the public Trust page reports counts rather than averaging visitor opinions into a reputation score. `scoreSubject()` and `scoreOf()` retain protocol defaults for internal calculations and policy evaluation; callers must carry their count and weight metadata rather than render those priors as observations.

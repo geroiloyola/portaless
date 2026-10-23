@@ -30,6 +30,9 @@ must preserve original signed artifacts and the audience allowed to receive them
 
 ## 2. Endpoint and request
 
+Exact request/result schemas and null/retry/HTTP combinations are in the
+[S1 serialization candidate](./LTP-SERIALIZATION-DRAFT-v0.1.md).
+
 The operator configures the complete HTTPS URL; its path is not an identity root.
 Consumers MUST NOT derive an endpoint from a requester, subject TXT/DID, package
 field, discovery hint or redirect without a separate operator configuration act.

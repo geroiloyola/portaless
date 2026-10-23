@@ -37,6 +37,11 @@ rules; it does not assign new semantics to SVRI's reader-capability profile.
 
 ## 2. Encoding and digests
 
+The [S1 serialization candidate and schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md)
+pin exact preimages, null/absence, nested types and numeric representation. The
+[static S3 corpus](./vectors/ltp/v0.1/README.md) precedes engine implementation;
+owner approval and complete coverage remain required before closing S3.
+
 The container is UTF-8 I-JSON. Reject duplicate object members, invalid Unicode,
 nonfinite numbers, fractional integer fields, and integers outside 0..2^53−1.
 Object schemas owned by Draft 0.1 are closed: reject unknown structures/fields
@@ -425,6 +430,6 @@ conformant implementation or a new SVRI certificate.
 ## References
 
 - [APW v1.3](./APW-SPEC-v1.3.md), with [published errata](./ERRATA.md).
-- [SVRI v1.0](./SVRI-v1.0.md) and its independent vectors.
+- [SVRI v1.0](./SVRI-v1.0.md) and its vectors (verificación cruzada, mismo autor; no external review claimed).
 - [APW Identity Bootstrap Draft 0.1](./APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md).
 - [LTP Index Draft 0.1](./LTP-INDEX-DRAFT-v0.1.md).

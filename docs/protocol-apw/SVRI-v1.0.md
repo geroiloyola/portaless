@@ -117,7 +117,7 @@ HSVR no es una ruta pública ni una API anónima. Su representación incluye ate
 
 ## 6. Conformidad
 
-Los vectores independientes están en [`vectors/svri/v1.0/`](./vectors/svri/v1.0/). Una implementación SVRI v1.0 debe reproducir puntuación, conteos, flags y nivel público, incluidos:
+Los vectores de **verificación cruzada (mismo autor)** están en [`vectors/svri/v1.0/`](./vectors/svri/v1.0/); no se acredita revisión por otra persona. Una implementación SVRI v1.0 debe reproducir puntuación, conteos, flags y nivel público, incluidos:
 
 - ausencia de firmas → score interno prior 5.0, `incompleteData = true`, `isInference = true`, nivel Pendiente;
 - sólo T3/T5 → sigue incompleto según el criterio T1+T2;

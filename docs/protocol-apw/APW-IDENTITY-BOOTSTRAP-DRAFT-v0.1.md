@@ -35,6 +35,11 @@ This contract separates:
 
 ## 2. Shared parsing and binding rules
 
+The [S1 serialization candidate](./LTP-SERIALIZATION-DRAFT-v0.1.md) fixes the
+TXT-manifest commitment input. The [S3 corpus](./vectors/ltp/v0.1/README.md)
+provides independent-online context and real offline DNSSEC fixture bytes for
+algorithms 8, 13 and 15; broader negative coverage remains an adoption gate.
+
 The input domain MUST be a lowercase ASCII DNS A-label name, without scheme,
 port, trailing dot, user information, query or fragment. The complete
 `_apw.<domain>` name MUST fit DNS length constraints. IDNA conversion, if offered
@@ -98,6 +103,22 @@ validated locally by the consumer. The provider can lie or serve its valid
 cache; its trust and propagation latency MUST be declared.
 
 ## 4. Profile `dnssec-offline-v1`
+
+**Scope clarification — Draft review:** the minimal Draft delivery is §3's AD
+bit from an operator-configured validating resolver over authenticated DoH.
+Offline validation is an **optional, not-yet-supported conformance target** and
+may only use an audited/reviewed third-party DNSSEC library with owner approval
+of the adapter, anchor/algorithm policy and evidence. Do not implement a custom
+production DNSSEC validator without the owner's explicit approval. No library
+security audit or production adapter approval is claimed by this corpus.
+
+Outside the minimal delivery: complete **DS delegation-chain** validation and
+anchor management, authenticated denial via **NSEC/NSEC3**, **wildcard** processing,
+and **algorithm rotation/rollover**. The requirements below describe what an
+eventual advertised offline profile must prove, not implemented Draft support.
+The fixture tools only check signatures/selected byte bindings on a synthetic
+chain; they cannot supply these missing validation/policy guarantees. Return
+unsupported/incomplete rather than accepting a partial chain as a live root.
 
 ### Proof input and local trust
 
@@ -195,4 +216,4 @@ through both profiles with their different provenance/freshness labels.
 
 These draft profiles do not retroactively change an existing deployment's DNS
 policy or declare any runtime conformant. Enabling requires reviewed adapters,
-independent executable vectors and the deployment trust configuration.
+executable vectors with documented authorship and the deployment trust configuration.
