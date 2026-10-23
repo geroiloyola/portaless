@@ -237,6 +237,11 @@ export async function onRequest(context) {
   });
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   if (!result.verified) {
+    if (result.failureType === "directory_redirect_disabled") {
+      return Response.json({ error: "directory_redirect_disabled", reason: result.reason }, {
+        status: 401, headers: { "cache-control": "no-store" },
+      });
+    }
     // Directory load, a cached upstream failure and expired credentials are not
     // evidence of policy misconduct. Do not attribute them to an operator.
     if (result.failureType === "unavailable") {

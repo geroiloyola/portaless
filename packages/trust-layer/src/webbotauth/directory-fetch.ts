@@ -14,7 +14,8 @@ export interface DirectoryResponse {
 }
 export type DirectoryResult =
   | { ok: true; directory: DirectoryResponse }
-  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached" | "directory_redirect_disabled" | "client_budget_exhausted" | "origin_budget_exhausted" | "budget_state_full"; retryAfterSeconds: number; status?: 429 | 503 };
+  | { ok: false; reason: "directory_redirect_disabled"; status: 401; retryAfterSeconds?: never }
+  | { ok: false; reason: "directory_busy" | "directory_unavailable" | "directory_failure_cached" | "client_budget_exhausted" | "origin_budget_exhausted" | "budget_state_full"; retryAfterSeconds: number; status?: 429 | 503 };
 
 export interface DirectoryBudgetContext {
   budget: ResolutionBudget;
@@ -56,7 +57,7 @@ function boundedSet<T>(map: Map<string, T>, key: string, value: T): void {
 /** Per-process admission, not a per-window egress budget or authentication. */
 export class DirectoryResolver {
   private positive = new Map<string, { directory: DirectoryResponse; until: number }>();
-  private negative = new Map<string, { until: number; reason: "directory_unavailable" | "directory_redirect_disabled" }>();
+  private negative = new Map<string, { until: number; reason: "directory_unavailable" }>();
   private inflight = new Map<string, Promise<DirectoryResult>>();
   private coldInFlight = 0;
 
@@ -75,7 +76,7 @@ export class DirectoryResolver {
     if (failed !== undefined && failed.until > this.now()) {
       // LRU hit refreshes recency, never extends the failure TTL.
       boundedSet(this.negative, key, failed);
-      return Promise.resolve({ ok: false, reason: failed.reason === "directory_redirect_disabled" ? failed.reason : "directory_failure_cached", retryAfterSeconds: Math.max(1, Math.ceil((failed.until - this.now()) / 1000)) });
+      return Promise.resolve({ ok: false, reason: "directory_failure_cached", retryAfterSeconds: Math.max(1, Math.ceil((failed.until - this.now()) / 1000)) });
     }
     this.negative.delete(key);
     const pending = this.inflight.get(key);
@@ -99,8 +100,7 @@ export class DirectoryResolver {
           return { ok: false, reason: res.error, retryAfterSeconds: res.retryAfterSeconds, status: res.status };
         }
         if (!res.ok && budgetContext && res.error === "too_many_redirects") {
-          boundedSet(this.negative, key, { until: this.now() + FAILURE_TTL, reason: "directory_redirect_disabled" });
-          return { ok: false, reason: "directory_redirect_disabled", retryAfterSeconds: FAILURE_TTL / 1000 };
+          return { ok: false, reason: "directory_redirect_disabled", status: 401 };
         }
         if (res.ok && res.text) {
           const directory = JSON.parse(res.text) as DirectoryResponse;

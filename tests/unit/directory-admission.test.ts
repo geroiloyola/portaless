@@ -6,18 +6,19 @@ import { createSafeFetcher } from "../../packages/apw-resolver/src/federation/sa
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("R4 directory admission", () => {
-  it("rejects a redirect in the opt-in adapter, records its reason and does not fetch the target", async () => {
+  it("rejects a directory redirect with its own 401, no retry hint or negative cache, and never fetches the target", async () => {
     let elapsed = 0;
     const resolver = new DirectoryResolver(() => elapsed);
     const budget = new ResolutionBudget(undefined, () => elapsed);
     const network = vi.fn(async () => new Response(null, { status: 302, headers: { location: "https://redirect-target.example/keys" } }));
     const fetcher = createSafeFetcher({ fetch: network });
     const context = { budget, clientBucket: "a".repeat(64) };
-    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toMatchObject({ reason: "directory_redirect_disabled", retryAfterSeconds: 60 });
+    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toEqual({ ok: false, reason: "directory_redirect_disabled", status: 401 });
     elapsed = 1000;
-    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toMatchObject({ reason: "directory_redirect_disabled", retryAfterSeconds: 59 });
-    expect(network).toHaveBeenCalledTimes(1);
-    expect(resolver.state().negative).toBe(1);
+    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toEqual({ ok: false, reason: "directory_redirect_disabled", status: 401 });
+    expect(network).toHaveBeenCalledTimes(2);
+    expect(network.mock.calls.every(([url]) => String(url).startsWith("https://reader.example/"))).toBe(true);
+    expect(resolver.state().negative).toBe(0);
     expect(resolver.state().inFlight).toBe(0);
   });
   it("directory cache expiry ignores forward and backwards wall-clock jumps", async () => {
