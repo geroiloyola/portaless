@@ -60,6 +60,27 @@ no se asigna ninguna reserva y los orígenes usan los 6 huecos normales. No se
 deshabilita la validación de firma ni se permite más tráfico por ese motivo.
 La resolución DNS y el pinning de Node siguen comprobando los destinos reales.
 
+### Presupuesto experimental del directorio
+
+`PORTALESS_RESOLUTION_BUDGET_ENABLED=true` activa únicamente la primera
+integración del kernel, para el directorio Web Bot Auth; no cubre aún TXT/DoH,
+DID, historial o evidencia y no satisface por sí sola el gate completo previo a
+PR3. Requiere `PORTALESS_RESOLUTION_BUDGET_SECRET` con al menos 32 caracteres.
+En Node, la IP debe proceder del header que inyecta `server/node-runtime.mjs`.
+En Cloudflare se requiere además
+`PORTALESS_TRUSTED_CLOUDFLARE_INGRESS=true`, solo con ingress confiable y origen
+protegido. Si el presupuesto está activado con configuración ausente/inválida,
+la verificación devuelve indisponibilidad `503` sin hacer fetch ni registrar
+una violación de política.
+
+Durante rotación, configura el secreto nuevo en `PORTALESS_RESOLUTION_BUDGET_SECRET`
+y conserva el previo en `PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET`; ambos
+HMAC se cargan contra la misma cuota mientras exista solapamiento. Este mecanismo
+no provisiona ni sincroniza secretos entre instancias. Los límites actuales son
+propuestas por proceso/isolate, no cuotas globales. La elección entre memoria,
+D1 y Durable Objects sigue pendiente de decisión y medición; consulta
+[`resolution-budget.md`](./architecture/resolution-budget.md).
+
 En Cloudflare Pages/Workers, define la misma variable en el entorno del
 despliegue. La configuración se aplica en cada isolate; cachés, single-flight
 y huecos no son globales entre isolates. Un isolate nuevo no aprende reservas

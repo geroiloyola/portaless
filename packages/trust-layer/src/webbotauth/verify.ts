@@ -50,6 +50,7 @@ import {
   type SafeFetcher,
 } from "../../../apw-resolver/src/federation/safe-fetch";
 import { DirectoryResolver, normalizeDirectoryOrigin } from "./directory-fetch";
+import { ResolutionBudget, resolutionClientBuckets } from "../net/resolution-budget";
 export { DIRECTORY_FETCH_IN_FLIGHT_MAX, DIRECTORY_FETCH_COLD_MAX, DIRECTORY_NEGATIVE_CACHE_MAX } from "./directory-fetch";
 
 export interface KeyRecord {
@@ -63,6 +64,7 @@ export interface VerifyResult {
   reason?: string;
   failureType?: "unavailable" | "expired";
   retryAfterSeconds?: number;
+  status?: 429 | 503;
   agentKeyId?: string | null;
   keyAlgorithm?: string;
   keyRecord?: KeyRecord;
@@ -70,9 +72,11 @@ export interface VerifyResult {
 
 const MAX_SIGNATURE_AGE_SECONDS = 300;
 let directories = new DirectoryResolver();
+let resolutionBudget = new ResolutionBudget();
 /** Solo para tests: sustituye el resolver sin alterar tareas de otro escenario. */
 export function __resetDirectoryCacheForTests(): void {
   directories = new DirectoryResolver();
+  resolutionBudget = new ResolutionBudget();
 }
 export function __directoryFetchStateForTests(): { positive: number; negative: number; inFlight: number } {
   return directories.state();
@@ -100,7 +104,14 @@ export function __resetNonceStoreForTests(): void {
 }
 
 export interface VerifyWebBotAuthOptions {
-  env?: NonceStoreFactoryEnv & { PORTALESS_WBA_RESERVED_ORIGINS?: string };
+  env?: NonceStoreFactoryEnv & {
+    PORTALESS_WBA_RESERVED_ORIGINS?: string;
+    PORTALESS_RESOLUTION_BUDGET_ENABLED?: string;
+    PORTALESS_RESOLUTION_BUDGET_SECRET?: string;
+    PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET?: string;
+    PORTALESS_TRUSTED_CLOUDFLARE_INGRESS?: string;
+    __PORTALESS_RUNTIME?: string;
+  };
   /** Solo para tests o runtimes que ya inyectan un fetcher endurecido. */
   directoryFetcher?: SafeFetcher;
 }
@@ -140,9 +151,25 @@ export async function verifyWebBotAuthRequest(
   if (now - parsed.created > MAX_SIGNATURE_AGE_SECONDS) return { verified: false, reason: "signature_too_old", failureType: "expired" };
   if (now > parsed.expires) return { verified: false, reason: "signature_expired", failureType: "expired" };
 
+  let budgetContext: { budget: ResolutionBudget; clientBucket: string | readonly string[] } | undefined;
+  if (options?.env?.PORTALESS_RESOLUTION_BUDGET_ENABLED === "true") {
+    const runtime = options.env.__PORTALESS_RUNTIME === "node" ? "node" : "cloudflare";
+    if (!options.env.PORTALESS_RESOLUTION_BUDGET_SECRET || options.env.PORTALESS_RESOLUTION_BUDGET_SECRET.length < 32
+      || (options.env.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET && options.env.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET.length < 32)
+      || (runtime === "cloudflare" && options.env.PORTALESS_TRUSTED_CLOUDFLARE_INGRESS !== "true")) {
+      return { verified: false, reason: "resolution_budget_misconfigured", failureType: "unavailable", retryAfterSeconds: 1, status: 503 };
+    }
+    const clientBucket = await resolutionClientBuckets(request, {
+      runtime,
+      trustedCloudflareIngress: options.env.PORTALESS_TRUSTED_CLOUDFLARE_INGRESS === "true",
+      secret: options.env.PORTALESS_RESOLUTION_BUDGET_SECRET,
+      previousSecret: options.env.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET,
+    });
+    budgetContext = { budget: resolutionBudget, clientBucket };
+  }
   const resolved = await directories.resolve(operatorOrigin, options?.directoryFetcher,
-    options?.env?.PORTALESS_WBA_RESERVED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean));
-  if (!resolved.ok) return { verified: false, reason: resolved.reason, failureType: "unavailable", retryAfterSeconds: resolved.retryAfterSeconds };
+    options?.env?.PORTALESS_WBA_RESERVED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean), budgetContext);
+  if (!resolved.ok) return { verified: false, reason: resolved.reason, failureType: "unavailable", retryAfterSeconds: resolved.retryAfterSeconds, status: resolved.status };
   const directory = resolved.directory;
 
   const keyEntry = directory.keys.find((k) => k.kid === parsed.keyId);

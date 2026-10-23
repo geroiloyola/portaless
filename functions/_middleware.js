@@ -241,7 +241,7 @@ export async function onRequest(context) {
     // evidence of policy misconduct. Do not attribute them to an operator.
     if (result.failureType === "unavailable") {
       return Response.json({ error: "verification_unavailable", reason: result.reason }, {
-        status: 503,
+        status: result.status ?? 503,
         headers: { "retry-after": String(result.retryAfterSeconds ?? 1), "cache-control": "no-store" },
       });
     }

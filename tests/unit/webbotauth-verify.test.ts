@@ -133,6 +133,19 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("fails closed before directory egress when opt-in budget lacks its production secret", async () => {
+    const { privateKey } = await generateKeyPair();
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID });
+    const directoryFetcher = vi.fn(async () => ({ ok: true, text: '{"keys":[]}' }));
+    const result = await verifyWebBotAuthRequest(request, {
+      env: { PORTALESS_RESOLUTION_BUDGET_ENABLED: "true", PORTALESS_RESOLUTION_BUDGET_SECRET: "synthetic-invalid-secret", __PORTALESS_RUNTIME: "node" },
+      directoryFetcher,
+    });
+    expect(result).toMatchObject({ verified: false, failureType: "unavailable", status: 503, reason: "resolution_budget_misconfigured" });
+    expect(JSON.stringify(result)).not.toContain("synthetic-invalid-secret");
+    expect(directoryFetcher).not.toHaveBeenCalled();
+  });
+
   it("interoperabilidad: verifica una firma hecha por la libreria web-bot-auth", async () => {
     // Si falla con signature_agent_not_signed, la libreria no cubre
     // signature-agent por defecto: hay que revisarlo antes de mergear.
