@@ -332,7 +332,7 @@ Protocol contracts, under the APW specification's CC BY 4.0 boundary:
   configured trust anchors, but does not prove globally latest DNS state.
   Trusting the Index's DNS assertion is a different
   trust model and is not silently adopted by signing its response.
-- **Local validation:** verify subject/key binding, signatures/key windows,
+- **Local validation:** verify identity binding and artifact signatures; check validity windows,
   chain continuity/anchor, source inclusion/completeness and scoring version.
   Recompute the LTP/SVRI result the consumer is authorized to receive. A subject-signed level
   without evidence is an attributable declaration, not independently reproduced

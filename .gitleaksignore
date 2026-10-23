@@ -1,0 +1,4 @@
+# PR #103: reviewed false positive in ordinary ADR prose, not a credential.
+# SARIF region 335:41-68 describes identity binding and signature validity.
+# Exact historical finding only; all other commits, files and rules stay scanned.
+80ef272341cd9e25c24cda3b2f018f05e3c32980:docs/decisions/0003-public-and-governed-resource-contract.md:generic-api-key:335
