@@ -1,4 +1,5 @@
 import type { SafeFetchLimits, SafeFetchResult, SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
+import { IdleBucketIndex } from "./idle-bucket-index";
 
 export const RESOLUTION_STAGES = ["directory", "txt_doh", "did", "history", "evidence"] as const;
 export type ResolutionStage = typeof RESOLUTION_STAGES[number];
@@ -35,7 +36,7 @@ export type BudgetRejection = {
   status: 429 | 503;
   retryAfterSeconds: number;
 };
-interface Bucket { window: number; attempts: number; bytes: number }
+interface Bucket { window: number; attempts: number; bytes: number; order: number; denied?: boolean }
 
 /**
  * PR2 kernel: optionally injected by the Web Bot Auth directory adapter.
@@ -44,12 +45,15 @@ interface Bucket { window: number; attempts: number; bytes: number }
  */
 export class ResolutionBudget {
   private buckets = new Map<string, Bucket>();
+  private idle = new IdleBucketIndex();
+  private window = -1;
+  private sequence = 0;
   private activeClients = new Map<string, number>();
   private activeOrigins = new Map<string, number>();
   private activeTotal = 0;
-  private logicalNow = Number.NEGATIVE_INFINITY;
   private options: ResolutionBudgetOptions;
-  constructor(options: ResolutionBudgetOptions = RESOLUTION_BUDGET_PROPOSAL, private now: () => number = Date.now) {
+  /** Inject elapsed monotonic milliseconds in tests, never a wall clock. */
+  constructor(options: ResolutionBudgetOptions = RESOLUTION_BUDGET_PROPOSAL, private now: () => number = () => performance.now()) {
     this.options = { ...options, client: { ...options.client }, origin: { ...options.origin } };
     const numbers = [options.windowMs, options.maxBuckets, options.client.attempts, options.client.bytes, options.origin.attempts, options.origin.bytes,
       options.maxConcurrentTotal, options.maxConcurrentPerClient, options.maxConcurrentPerOrigin];
@@ -58,12 +62,16 @@ export class ResolutionBudget {
 
   stateForTests() {
     return { buckets: [...this.buckets].map(([key, value]) => ({ key, ...value })), activeTotal: this.activeTotal,
-      activeClients: [...this.activeClients], activeOrigins: [...this.activeOrigins] };
+      activeClients: [...this.activeClients], activeOrigins: [...this.activeOrigins], idleEntries: this.idle.size };
   }
 
-  private monotonicNow(): number {
-    this.logicalNow = Math.max(this.logicalNow, this.now());
-    return this.logicalNow;
+  private index(key: string, bucket: Bucket) {
+    if (this.buckets.get(key) !== bucket) return; // completion from a previous window
+    this.idle.remove(key);
+    const quota = key.startsWith("client:") ? this.options.client : this.options.origin;
+    if (bucket.denied || bucket.attempts >= quota.attempts || bucket.bytes >= quota.bytes
+      || this.activeClients.has(key) || this.activeOrigins.has(key)) return;
+    this.idle.set({ key, attempts: bucket.attempts, bytes: bucket.bytes, order: bucket.order });
   }
 
   async fetch(context: ResolutionContext, url: string, fetcher: SafeFetcher, limits: SafeFetchLimits = {}): Promise<SafeFetchResult | BudgetRejection> {
@@ -74,23 +82,29 @@ export class ResolutionBudget {
     if (!origin.startsWith("https://")) throw new Error("invalid_resolution_origin");
     const cap = limits.maxBytes ?? 512 * 1024;
     if (!Number.isSafeInteger(cap) || cap <= 0) throw new Error("invalid_resolution_byte_cap");
-    const timestamp = this.monotonicNow();
+    const timestamp = this.now();
     const window = Math.floor(timestamp / this.options.windowMs);
     const retryAfterSeconds = Math.max(1, Math.ceil(((window + 1) * this.options.windowMs - timestamp) / 1000));
     const clientKeys = clientBuckets.map((bucket) => `client:${bucket}`);
     const originKey = `origin:${origin}`;
-    // Never evict active buckets to make room: that would reset attacker quotas.
-    for (const [key, value] of this.buckets) if (value.window !== window) this.buckets.delete(key);
-    const newKeys = clientKeys.filter((key) => !this.buckets.has(key)).length + Number(!this.buckets.has(originKey));
-    if (this.buckets.size + newKeys > this.options.maxBuckets) {
-      return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
+    // Whole-window replacement avoids a table scan on every admission. Old
+    // in-flight references remain bounded by concurrency, with separate leases.
+    if (window !== this.window) {
+      this.buckets = new Map(); this.idle = new IdleBucketIndex(); this.window = window;
     }
-    const clients = clientKeys.map((key) => this.buckets.get(key) ?? { window, attempts: 0, bytes: 0 });
-    const operator = this.buckets.get(originKey) ?? { window, attempts: 0, bytes: 0 };
+    const newKeys = clientKeys.filter((key) => !this.buckets.has(key)).length + Number(!this.buckets.has(originKey));
+    const clients = clientKeys.map((key) => this.buckets.get(key) ?? { window, attempts: 0, bytes: 0, order: this.sequence++ });
+    const operator = this.buckets.get(originKey) ?? { window, attempts: 0, bytes: 0, order: this.sequence++ };
     if (clients.some((client) => client.attempts >= this.options.client.attempts || client.bytes + cap > this.options.client.bytes)) {
+      for (const [i, client] of clients.entries()) {
+        if (client.attempts >= this.options.client.attempts || client.bytes + cap > this.options.client.bytes) {
+          client.denied = true; this.idle.remove(clientKeys[i]);
+        }
+      }
       return { ok: false, error: "client_budget_exhausted", status: 429, retryAfterSeconds };
     }
     if (operator.attempts >= this.options.origin.attempts || operator.bytes + cap > this.options.origin.bytes) {
+      operator.denied = true; this.idle.remove(originKey);
       return { ok: false, error: "origin_budget_exhausted", status: 503, retryAfterSeconds };
     }
     const activeClientCounts = clientKeys.map((key) => this.activeClients.get(key) ?? 0);
@@ -101,6 +115,16 @@ export class ResolutionBudget {
     }
     if (activeOrigin >= this.options.maxConcurrentPerOrigin) {
       return { ok: false, error: "origin_budget_exhausted", status: 503, retryAfterSeconds };
+    }
+    const needed = this.buckets.size + newKeys - this.options.maxBuckets;
+    const requestKeys = [...clientKeys, originKey];
+    for (const key of requestKeys) this.idle.remove(key);
+    if (needed > 0) {
+      if (this.idle.size < needed) {
+        for (const key of requestKeys) { const bucket = this.buckets.get(key); if (bucket) this.index(key, bucket); }
+        return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
+      }
+      for (let i = 0; i < needed; i++) this.buckets.delete(this.idle.pop()!);
     }
     // Reserve both scopes synchronously before the first await. Failed attempts
     // keep their consumption charge; concurrency permits always release.
@@ -130,8 +154,11 @@ export class ResolutionBudget {
         if (remaining <= 0) this.activeClients.delete(key);
         else this.activeClients.set(key, remaining);
       }
-      if (activeOrigin === 0) this.activeOrigins.delete(originKey);
-      else this.activeOrigins.set(originKey, activeOrigin);
+      const remainingOrigins = (this.activeOrigins.get(originKey) ?? 1) - 1;
+      if (remainingOrigins <= 0) this.activeOrigins.delete(originKey);
+      else this.activeOrigins.set(originKey, remainingOrigins);
+      for (const [i, key] of clientKeys.entries()) this.index(key, clients[i]);
+      this.index(originKey, operator);
     }
   }
 }

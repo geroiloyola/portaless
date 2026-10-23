@@ -366,6 +366,8 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
 
   it("post97: valid signatures from attacker-owned origins never earn reserved admission", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
+    let elapsed = 0;
+    const monotonic = vi.spyOn(performance, "now").mockImplementation(() => elapsed);
     __resetDirectoryCacheForTests();
     const releases: Array<(value: any) => void> = [];
     const flood: Array<Promise<unknown>> = [];
@@ -378,6 +380,7 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
         expect((await verifyWebBotAuthRequest(request)).verified).toBe(true);
       }
       vi.setSystemTime(Date.now() + 600_001); // cold directories, previously valid callers
+      elapsed = 600_001; // directory TTL uses elapsed time, not wall time
       const slow = vi.fn(() => new Promise<any>((done) => releases.push(done)));
       for (const origin of origins) {
         const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, signatureAgentHeader: `"${origin}"` });
@@ -388,6 +391,7 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     } finally {
       for (const done of releases) done({ ok: false, error: "timeout" });
       await Promise.all(flood);
+      monotonic.mockRestore();
       vi.useRealTimers();
     }
   });

@@ -147,6 +147,24 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("returns a directory redirect 401 without Retry-After or a policy-violation entry", async () => {
+    const { privateKey } = await generateKeyPair();
+    const network = vi.fn(async () => new Response(null, { status: 302, headers: { location: "https://elsewhere.example/" } }));
+    vi.stubGlobal("fetch", network);
+    const { context, next } = makeContext(await buildSignedRequest(privateKey, { nonce: "redirect-disabled" }), {
+      ...env, __PORTALESS_RUNTIME: "node", PORTALESS_RESOLUTION_BUDGET_ENABLED: "true",
+      PORTALESS_RESOLUTION_BUDGET_SECRET: "synthetic-only-test-secret-not-a-deployment",
+    });
+    const res = await onRequest(context);
+    expect(res!.status).toBe(401);
+    expect(await res!.json()).toEqual({ error: "directory_redirect_disabled", reason: "directory_redirect_disabled" });
+    expect(res!.headers.has("retry-after")).toBe(false);
+    expect(network).toHaveBeenCalledTimes(1);
+    expect(next).not.toHaveBeenCalled();
+    const ledger = await createUsageLedgerStore(env);
+    expect((await ledger.get(new Date().toISOString().slice(0, 7)))?.agents ?? []).toEqual([]);
+  });
+
   it("sin ENABLE_TRUST_LAYER=true pasa al siguiente sin verificar nada", async () => {
     const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "curl/8.0" },

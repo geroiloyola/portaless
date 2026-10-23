@@ -1,12 +1,67 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResolutionBudget, RESOLUTION_STAGES, resolutionClientBucket, resolutionClientBuckets, __resetResolutionHmacDayForTests, type ResolutionContext } from "../../packages/trust-layer/src/net/resolution-budget";
 
 const base: ResolutionContext = { clientBucket: "a".repeat(64), directoryOrigin: "https://reader.example", stage: "directory" };
 const small = { windowMs: 60_000, client: { attempts: 3, bytes: 100 }, origin: { attempts: 2, bytes: 100 }, maxBuckets: 12,
   maxConcurrentTotal: 8, maxConcurrentPerClient: 4, maxConcurrentPerOrigin: 4 };
 const good = () => ({ ok: true, text: "ok" });
+afterEach(() => vi.restoreAllMocks());
 
 describe("PR2 inactive pre-authentication budget kernel", () => {
+  it("retains an exhausted client despite uniformly used filler and continuous eviction", async () => {
+    const budget = new ResolutionBudget({ ...small, maxBuckets: 8, client: { attempts: 2, bytes: 1000 }, origin: { attempts: 100, bytes: 10000 } }, () => 0);
+    const fetcher = vi.fn(async () => good());
+    for (let i = 0; i < 2; i++) await budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 });
+    // Fillers are uniformly driven to the same limit; tie-breaking used to
+    // evict the oldest exhausted client and allow it another fetch.
+    for (let i = 0; i < 100; i++) {
+      const filler = { ...base, clientBucket: i.toString(16).padStart(64, "0"), directoryOrigin: `https://fill-${i}.example` };
+      for (let j = 0; j < 3; j++) await budget.fetch(filler, "https://t.example/", fetcher, { maxBytes: 10 });
+    }
+    const before = fetcher.mock.calls.length;
+    expect(await budget.fetch({ ...base, directoryOrigin: "https://fresh.example" }, "https://t.example/", fetcher, { maxBytes: 10 }))
+      .toMatchObject({ error: "client_budget_exhausted" });
+    expect(fetcher).toHaveBeenCalledTimes(before);
+  });
+  it("pins byte-denied and exhausted origin quotas until the elapsed window ends", async () => {
+    let now = 0;
+    const budget = new ResolutionBudget({ ...small, maxBuckets: 4, client: { attempts: 100, bytes: 5 }, origin: { attempts: 1, bytes: 100 } }, () => now);
+    await budget.fetch(base, "https://t.example/", async () => good(), { maxBytes: 5 });
+    expect(await budget.fetch({ ...base, directoryOrigin: "https://new.example" }, "https://t.example/", async () => good(), { maxBytes: 5 })).toMatchObject({ status: 429 });
+    for (let i = 0; i < 10; i++) await budget.fetch({ ...base, clientBucket: i.toString(16).padStart(64, "0"), directoryOrigin: `https://o-${i}.example` }, "https://t.example/", async () => good(), { maxBytes: 5 });
+    expect(await budget.fetch({ ...base, clientBucket: "f".repeat(64) }, "https://t.example/", async () => good(), { maxBytes: 5 })).toMatchObject({ error: "origin_budget_exhausted" });
+    now = 60_000;
+    expect((await budget.fetch(base, "https://t.example/", async () => good(), { maxBytes: 5 })).ok).toBe(true);
+  });
+  it("admits a legitimate client after 10,000 completed one-use clients fill the quota table", async () => {
+    const budget = new ResolutionBudget(undefined, () => 0);
+    let started = 0;
+    const fetcher = async () => { started++; return good(); };
+    for (let i = 0; i < 10_000; i++) {
+      await budget.fetch({ ...base, clientBucket: i.toString(16).padStart(64, "0"), directoryOrigin: `https://churn-${i}.example` },
+        "https://target.example/", fetcher, { maxBytes: 10 });
+    }
+    expect((await budget.fetch(base, "https://target.example/", fetcher, { maxBytes: 10 })).ok).toBe(true);
+    expect(started).toBe(10_001);
+    expect(budget.stateForTests().buckets.length).toBeLessThanOrEqual(4096);
+    expect(budget.stateForTests().activeTotal).toBe(0);
+    expect(budget.stateForTests().idleEntries).toBeLessThanOrEqual(4096);
+  }, 20_000);
+  it("uses elapsed monotonic time despite forward and backwards wall-clock jumps", async () => {
+    let wall = 0;
+    let elapsed = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => wall);
+    vi.spyOn(performance, "now").mockImplementation(() => elapsed);
+    const budget = new ResolutionBudget({ ...small, client: { attempts: 1, bytes: 100 } });
+    const fetcher = vi.fn(async () => good());
+    await budget.fetch(base, "https://target.example/", fetcher, { maxBytes: 10 });
+    wall = 12 * 60 * 60 * 1000;
+    expect(await budget.fetch(base, "https://target.example/", fetcher, { maxBytes: 10 })).toMatchObject({ status: 429 });
+    wall = -12 * 60 * 60 * 1000;
+    expect(await budget.fetch(base, "https://target.example/", fetcher, { maxBytes: 10 })).toMatchObject({ status: 429 });
+    elapsed = 60_000;
+    expect((await budget.fetch(base, "https://target.example/", fetcher, { maxBytes: 10 })).ok).toBe(true);
+  });
   it("limits an unauthenticated client across rotated origins before egress", async () => {
     const budget = new ResolutionBudget(small);
     const fetcher = vi.fn(async () => good());
@@ -84,7 +139,7 @@ describe("PR2 inactive pre-authentication budget kernel", () => {
     expect(fetcher.mock.calls[0][1]).toMatchObject({ maxBytes: 10, maxRedirects: 0 });
     expect(budget.stateForTests().buckets.every((row) => row.attempts === 1 && row.bytes === 2)).toBe(true);
   });
-  it("resets only at the bounded UTC window, with positive Retry-After", async () => {
+  it("resets only at the elapsed-time window, with positive Retry-After", async () => {
     let now = 59_000;
     const budget = new ResolutionBudget(small, () => now);
     const fetcher = vi.fn(async () => good());
@@ -94,15 +149,42 @@ describe("PR2 inactive pre-authentication budget kernel", () => {
     now = 60_000;
     expect((await budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 })).ok).toBe(true);
   });
-  it("never evicts active quota state to admit more origins", async () => {
+  it("rejects saturation without evicting buckets with active leases, then admits after release", async () => {
     let now = 0;
     const budget = new ResolutionBudget({ ...small, maxBuckets: 2 }, () => now);
     const fetcher = vi.fn(async () => good());
-    await budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 });
+    let release!: (value: any) => void;
+    const first = budget.fetch(base, "https://t.example/", () => new Promise<any>((done) => { release = done; }), { maxBytes: 10 });
     expect(await budget.fetch({ ...base, clientBucket: "b".repeat(64), directoryOrigin: "https://new.example" }, "https://t.example/", fetcher, { maxBytes: 10 })).toMatchObject({ error: "budget_state_full", status: 503 });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    now = 60_000;
+    expect(fetcher).not.toHaveBeenCalled();
+    release(good());
+    await first;
     expect((await budget.fetch({ ...base, clientBucket: "b".repeat(64), directoryOrigin: "https://new.example" }, "https://t.example/", fetcher, { maxBytes: 10 })).ok).toBe(true);
+  });
+  it("evicts idle low-use buckets first and retains higher-use and current-request quota", async () => {
+    const budget = new ResolutionBudget({ ...small, maxBuckets: 4, client: { attempts: 10, bytes: 100 }, origin: { attempts: 10, bytes: 100 } }, () => 0);
+    await budget.fetch(base, "https://t.example/", async () => good(), { maxBytes: 10 });
+    await budget.fetch(base, "https://t.example/", async () => good(), { maxBytes: 10 });
+    await budget.fetch({ ...base, clientBucket: "b".repeat(64), directoryOrigin: "https://low-use.example" }, "https://t.example/", async () => good(), { maxBytes: 10 });
+    await budget.fetch({ ...base, clientBucket: "c".repeat(64), directoryOrigin: "https://new.example" }, "https://t.example/", async () => good(), { maxBytes: 10 });
+    const keys = budget.stateForTests().buckets.map((row) => row.key);
+    expect(keys).toContain(`client:${base.clientBucket}`);
+    expect(keys).toContain(`origin:${base.directoryOrigin}`);
+    expect(keys).not.toContain(`client:${"b".repeat(64)}`);
+    expect(keys).not.toContain("origin:https://low-use.example");
+  });
+  it("releases same-origin permits correctly when concurrent fetches finish out of order", async () => {
+    const budget = new ResolutionBudget(small, () => 0);
+    const releases: Array<(value: any) => void> = [];
+    const fetcher = () => new Promise<any>((done) => releases.push(done));
+    const a = budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 });
+    const b = budget.fetch({ ...base, clientBucket: "b".repeat(64) }, "https://t.example/", fetcher, { maxBytes: 10 });
+    releases[0](good());
+    await a;
+    expect(budget.stateForTests().activeOrigins).toEqual([[`origin:${base.directoryOrigin}`, 1]]);
+    releases[1](good());
+    await b;
+    expect(budget.stateForTests().activeOrigins).toEqual([]);
   });
   it("keeps quota state bounded under many client/origin buckets and sweeps expired windows", async () => {
     let now = 0;
@@ -116,12 +198,12 @@ describe("PR2 inactive pre-authentication budget kernel", () => {
     await budget.fetch({ ...base, clientBucket: "f".repeat(64), directoryOrigin: "https://new-window.example" }, "https://t.example/", fetcher, { maxBytes: 1 });
     expect(budget.stateForTests().buckets).toHaveLength(2);
   });
-  it("does not reopen an expired quota when the wall clock moves backwards", async () => {
+  it("does not reopen a quota while the injected elapsed clock has not reached expiry", async () => {
     let now = 60_000;
     const budget = new ResolutionBudget({ ...small, client: { attempts: 1, bytes: 100 } }, () => now);
     const fetcher = vi.fn(async () => good());
     await budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 });
-    now = 0;
+    now = 60_001;
     expect(await budget.fetch(base, "https://t.example/", fetcher, { maxBytes: 10 })).toMatchObject({ error: "client_budget_exhausted" });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
@@ -151,6 +233,23 @@ describe("PR2 inactive pre-authentication budget kernel", () => {
 
 describe("trusted-ingress client bucket", () => {
   const secret = "synthetic-test-only-secret-for-hmac";
+  it("a forward wall-clock day jump resets HMAC client allowance but not the origin quota", async () => {
+    __resetResolutionHmacDayForTests();
+    const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "192.0.2.10" } });
+    const budget = new ResolutionBudget({ ...small, client: { attempts: 1, bytes: 100 }, origin: { attempts: 2, bytes: 100 } }, () => 0);
+    const bucket = (now: number) => resolutionClientBuckets(request, { runtime: "node", secret, now });
+    const fetcher = async () => good();
+    const first = await bucket(0);
+    await budget.fetch({ ...base, clientBucket: first }, "https://t.example/", fetcher, { maxBytes: 10 });
+    expect(await budget.fetch({ ...base, clientBucket: first }, "https://t.example/", fetcher, { maxBytes: 10 })).toMatchObject({ status: 429 });
+    const jumped = await bucket(2 * 86_400_000);
+    expect(jumped).not.toEqual(first);
+    expect((await budget.fetch({ ...base, clientBucket: jumped }, "https://t.example/", fetcher, { maxBytes: 10 })).ok).toBe(true);
+    expect(await bucket(0)).toEqual(jumped); // high-water day does not roll back
+    const later = await bucket(3 * 86_400_000);
+    expect(await budget.fetch({ ...base, clientBucket: later }, "https://t.example/", fetcher, { maxBytes: 10 })).toMatchObject({ error: "origin_budget_exhausted" });
+    __resetResolutionHmacDayForTests();
+  });
   it("uses only the Node-injected client IP and stores no raw IP", async () => {
     __resetResolutionHmacDayForTests();
     const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "127.0.0.1", "CF-Connecting-IP": "1.2.3.4" } });

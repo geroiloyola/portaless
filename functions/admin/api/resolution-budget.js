@@ -4,6 +4,8 @@ import {
   RESOLUTION_BUDGET_CONFIG_CONFLICT,
 } from "../../../packages/trust-layer/src/net/resolution-budget-config.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -45,11 +47,18 @@ export async function onRequestPut(context) {
   catch { return json({ error: "invalid_resolution_budget_config_body" }, 400); }
 
   if (!body || typeof body !== "object" || Array.isArray(body)
-    || Object.keys(body).some((key) => !["config", "expectedRevision"].includes(key))
+    || Object.keys(body).some((key) => !["config", "expectedRevision", "password", "totpCode"].includes(key))
     || !("config" in body) || !("expectedRevision" in body)
     || (body.expectedRevision !== null && (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 1))) {
     return json({ error: INVALID_RESOLUTION_BUDGET_CONFIG }, 400);
   }
+
+  const auth = new AuthService(await createUsersStore(context.env), await createSessionStore(context.env));
+  const stepUp = await auth.verifyStepUp(user.username, {
+    password: typeof body.password === "string" ? body.password : undefined,
+    totpCode: typeof body.totpCode === "string" ? body.totpCode : undefined,
+  });
+  if (!stepUp.ok) return json({ error: "step_up_failed", reason: stepUp.reason }, 401);
 
   const store = await createResolutionBudgetConfigStore(context.env ?? {});
   let saved;

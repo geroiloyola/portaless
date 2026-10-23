@@ -26,6 +26,7 @@ import { resolveContentPolicy, CONTENT_POLICY_WELL_KNOWN_PATH } from "../../../p
 import { defaultContentPolicy } from "../../../packages/trust-layer/src/policy/manifest-schema.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { readUnsignedBotRejections } from "../../../packages/trust-layer/src/ledger/unsigned-bot-metrics.ts";
+import { trustedIngressStatus } from "../../../packages/trust-layer/src/net/trusted-ingress-status.ts";
 
 function canWrite(role) {
   return role === "admin";
@@ -82,6 +83,7 @@ export async function onRequestGet(context) {
       updatedBy: resolved.updatedBy ?? null,
       writable: canWrite(user.role),
       enforced: env?.ENABLE_TRUST_LAYER === "true",
+      trustedIngress: trustedIngressStatus(env),
       unsignedBotRejections,
       policyPath: CONTENT_POLICY_WELL_KNOWN_PATH,
     }),

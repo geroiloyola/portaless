@@ -1,10 +1,43 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DirectoryResolver, DIRECTORY_FETCH_COLD_MAX, parseReservedDirectoryOrigins } from "../../packages/trust-layer/src/webbotauth/directory-fetch";
 import { ResolutionBudget } from "../../packages/trust-layer/src/net/resolution-budget";
+import { createSafeFetcher } from "../../packages/apw-resolver/src/federation/safe-fetch";
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("R4 directory admission", () => {
+  it("rejects a directory redirect with its own 401, no retry hint or negative cache, and never fetches the target", async () => {
+    let elapsed = 0;
+    const resolver = new DirectoryResolver(() => elapsed);
+    const budget = new ResolutionBudget(undefined, () => elapsed);
+    const network = vi.fn(async () => new Response(null, { status: 302, headers: { location: "https://redirect-target.example/keys" } }));
+    const fetcher = createSafeFetcher({ fetch: network });
+    const context = { budget, clientBucket: "a".repeat(64) };
+    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toEqual({ ok: false, reason: "directory_redirect_disabled", status: 401 });
+    elapsed = 1000;
+    expect(await resolver.resolve("https://reader.example", fetcher, [], context)).toEqual({ ok: false, reason: "directory_redirect_disabled", status: 401 });
+    expect(network).toHaveBeenCalledTimes(2);
+    expect(network.mock.calls.every(([url]) => String(url).startsWith("https://reader.example/"))).toBe(true);
+    expect(resolver.state().negative).toBe(0);
+    expect(resolver.state().inFlight).toBe(0);
+  });
+  it("directory cache expiry ignores forward and backwards wall-clock jumps", async () => {
+    let wall = 0;
+    let elapsed = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => wall);
+    vi.spyOn(performance, "now").mockImplementation(() => elapsed);
+    const resolver = new DirectoryResolver();
+    const fail = vi.fn(async () => ({ ok: false, error: "timeout" as const }));
+    await resolver.resolve("https://fail.example", fail);
+    wall = 12 * 60 * 60 * 1000;
+    expect(await resolver.resolve("https://fail.example", fail)).toMatchObject({ reason: "directory_failure_cached", retryAfterSeconds: 60 });
+    wall = -12 * 60 * 60 * 1000;
+    elapsed = 59_000;
+    expect(await resolver.resolve("https://fail.example", fail)).toMatchObject({ retryAfterSeconds: 1 });
+    elapsed = 60_000;
+    await resolver.resolve("https://fail.example", fail);
+    expect(fail).toHaveBeenCalledTimes(2);
+  });
   it("20 slow distinct Signature-Agent origins cannot consume the two locally reserved slots", async () => {
     vi.useFakeTimers();
     const resolver = new DirectoryResolver();

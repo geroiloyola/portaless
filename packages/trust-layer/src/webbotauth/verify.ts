@@ -62,9 +62,9 @@ export interface KeyRecord {
 export interface VerifyResult {
   verified: boolean;
   reason?: string;
-  failureType?: "unavailable" | "expired";
+  failureType?: "unavailable" | "expired" | "directory_redirect_disabled";
   retryAfterSeconds?: number;
-  status?: 429 | 503;
+  status?: 401 | 429 | 503;
   agentKeyId?: string | null;
   keyAlgorithm?: string;
   keyRecord?: KeyRecord;
@@ -169,6 +169,9 @@ export async function verifyWebBotAuthRequest(
   }
   const resolved = await directories.resolve(operatorOrigin, options?.directoryFetcher,
     options?.env?.PORTALESS_WBA_RESERVED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean), budgetContext);
+  if (!resolved.ok && resolved.reason === "directory_redirect_disabled") {
+    return { verified: false, reason: resolved.reason, failureType: "directory_redirect_disabled", status: 401 };
+  }
   if (!resolved.ok) return { verified: false, reason: resolved.reason, failureType: "unavailable", retryAfterSeconds: resolved.retryAfterSeconds, status: resolved.status };
   const directory = resolved.directory;
 
