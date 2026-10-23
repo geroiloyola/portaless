@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ltp:schemas:0.1:proof-package",
+  "$comment": "CC BY 4.0. S1 candidate. Schema acceptance does not establish identity, completeness, signatures or trust.",
+  "type": "object", "additionalProperties": false,
+  "required": ["typ", "version", "profile", "subject", "bootstrapProfile", "identities", "histories", "attestations", "issuerBindings", "calculation", "assembledAt", "expiresAt"],
+  "properties": {
+    "typ": {"const": "ltp-proof-package"}, "version": {"const": "0.1"},
+    "profile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/proofProfile"},
+    "subject": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"},
+    "bootstrapProfile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/bootstrapProfile"},
+    "identities": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identityProof"}},
+    "histories": {"type": "array", "items": {"$ref": "#/$defs/historyProof"}},
+    "attestations": {"type": "array", "items": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/jws"}},
+    "issuerBindings": {"type": "array", "items": {"$ref": "#/$defs/issuerBinding"}},
+    "calculation": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/calculation"}]},
+    "assembledAt": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "expiresAt": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"}
+  },
+  "allOf": [
+    {"if": {"properties": {"profile": {"const": "ltp-site-log-proof-v1"}}}, "then": {"properties": {"calculation": {"$ref": "#/$defs/calculation"}, "histories": {"minItems": 1}}}, "else": {"properties": {"calculation": {"type": "null"}}}},
+    {"if": {"properties": {"profile": {"const": "apw-identity-proof-v1"}}}, "then": {"properties": {"attestations": {"maxItems": 0}, "issuerBindings": {"maxItems": 0}}}},
+    {"if": {"properties": {"profile": {"const": "ltp-reader-conduct-proof-v1"}}}, "then": {"properties": {"histories": {"minItems": 1}}}},
+    {"if": {"properties": {"bootstrapProfile": {"const": "independent-doh-ad-v1"}}}, "then": {"properties": {"identities": {"items": {"properties": {"dnsMessages": {"maxItems": 0}}}}}}, "else": {"properties": {"identities": {"items": {"properties": {"dnsMessages": {"minItems": 1}}}}}}}
+  ],
+  "$defs": {
+    "didDocument": {
+      "type": "object", "required": ["id", "verificationMethod"],
+      "properties": {
+        "id": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"},
+        "verificationMethod": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["id", "type", "controller", "publicKeyJwk"],
+          "properties": {"id": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/keyId"}, "type": {"type": "string", "minLength": 1}, "controller": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}, "publicKeyJwk": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/publicKey"}}
+        }}
+      },
+      "$comment": "Embedded adopted DID documents retain extension rules. Extensions are hashed as supplied, never fetch permissions; private JWK members are forbidden."
+    },
+    "identityProof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["did", "didDocument", "manifestJws", "dnsMessages", "historyRef"],
+      "properties": {
+        "did": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}, "didDocument": {"$ref": "#/$defs/didDocument"},
+        "manifestJws": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/jws"},
+        "dnsMessages": {"type": "array", "items": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/dnsMessage"}},
+        "historyRef": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/nullableDigest"}
+      }
+    },
+    "historyKey": {
+      "type": "object", "additionalProperties": false,
+      "required": ["keyId", "fingerprint", "publicKeyJwk", "validFrom", "validTo"],
+      "properties": {
+        "keyId": {"anyOf": [{"$ref": "urn:ltp:schemas:0.1:common#/$defs/keyId"}, {"type": "null"}]},
+        "fingerprint": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}, "publicKeyJwk": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/publicKey"},
+        "validFrom": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/timestamp"},
+        "validTo": {"anyOf": [{"$ref": "urn:ltp:schemas:0.1:common#/$defs/timestamp"}, {"type": "null"}]}
+      }
+    },
+    "historyProof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "did", "format", "checkpointRef", "startSeq", "keys", "keySetJws", "entries", "terminal"],
+      "properties": {
+        "id": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}, "did": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"},
+        "format": {"enum": ["full", "continuation", "bootstrap-segment"]}, "checkpointRef": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/nullableDigest"},
+        "startSeq": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"},
+        "keys": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/historyKey"}},
+        "keySetJws": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/jws"},
+        "entries": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["seq", "jws"], "properties": {"seq": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"}, "jws": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/jws"}}}},
+        "terminal": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/head"}
+      },
+      "allOf": [
+        {"if": {"properties": {"format": {"const": "continuation"}}}, "then": {"properties": {"checkpointRef": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}}}, "else": {"properties": {"checkpointRef": {"type": "null"}}}},
+        {"if": {"properties": {"format": {"const": "full"}}}, "then": {"properties": {"startSeq": {"const": 1}}}}
+      ]
+    },
+    "issuerBinding": {
+      "type": "object", "additionalProperties": false, "required": ["iss", "src", "kid", "kind", "ref"],
+      "properties": {
+        "iss": {"type": "string", "minLength": 1}, "src": {"enum": ["self", "agent", "escrow_report", "community", "reader_conduct"]},
+        "kid": {"type": "string", "minLength": 1}, "kind": {"enum": ["apw-identity", "local-trust-key"]}, "ref": {"type": "string", "minLength": 1}
+      },
+      "allOf": [{"if": {"properties": {"kind": {"const": "apw-identity"}}}, "then": {"properties": {"iss": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}, "ref": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}}}}]
+    },
+    "calculation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile", "rulesVersion", "coverage", "snapshot", "evaluatedAt", "evidenceSetDigest", "projection"],
+      "properties": {
+        "profile": {"const": "ltp-svri-site-v1"}, "rulesVersion": {"const": "ltp-svri-site-v1"}, "coverage": {"const": "subject-log-snapshot"},
+        "snapshot": {"type": "object", "additionalProperties": false, "required": ["did", "seq", "head"], "properties": {"did": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}, "seq": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"}, "head": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/nullableDigest"}}},
+        "evaluatedAt": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"}, "evidenceSetDigest": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"},
+        "projection": {"$ref": "urn:ltp:schemas:0.1:svri-projection"}
+      }
+    },
+    "keySetPayload": {
+      "type": "object", "additionalProperties": false, "required": ["version", "did", "keysDigest", "terminal", "iat", "exp"],
+      "properties": {"version": {"const": "0.1"}, "did": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"}, "keysDigest": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}, "terminal": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/head"}, "iat": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"}, "exp": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"}}
+    }
+  }
+}

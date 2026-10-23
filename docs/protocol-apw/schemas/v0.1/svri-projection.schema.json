@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ltp:schemas:0.1:svri-projection",
+  "$comment": "CC BY 4.0. Administrative SVRI v1.0 representation inside LTP packages; semantic recomputation is mandatory.",
+  "type": "object", "additionalProperties": false,
+  "required": ["version", "profile", "score", "t1Count", "t2Count", "t3Count", "t4Count", "t5Count", "incompleteData", "isInference", "priorShare", "effectiveWeight", "dimensionCount", "rulesVersion"],
+  "properties": {
+    "version": {"const": "1.0"}, "profile": {"const": "ltp-svri-site-v1"},
+    "score": {"type": "number", "minimum": 0, "maximum": 10},
+    "t1Count": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "t2Count": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "t3Count": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "t4Count": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "t5Count": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/uint"},
+    "incompleteData": {"type": "boolean"}, "isInference": {"type": "boolean"},
+    "priorShare": {"type": "number", "minimum": 0, "maximum": 1},
+    "effectiveWeight": {"type": "number", "minimum": 0},
+    "dimensionCount": {"type": "integer", "minimum": 0, "maximum": 10},
+    "rulesVersion": {"const": "ltp-svri-site-v1"}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ltp:schemas:0.1:resolution-request",
+  "type": "object", "additionalProperties": false,
+  "required": ["typ", "version", "requestId", "subject", "profile", "bootstrapProfile", "checkpointIds", "resume", "limits"],
+  "properties": {
+    "typ": {"const": "ltp-resolution-request"}, "version": {"const": "0.1"},
+    "requestId": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}, "subject": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"},
+    "profile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/proofProfile"}, "bootstrapProfile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/bootstrapProfile"},
+    "checkpointIds": {"type": "array", "maxItems": 3, "uniqueItems": true, "items": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}},
+    "resume": {"type": "array", "maxItems": 3, "items": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/resume"}},
+    "limits": {"type": "object", "additionalProperties": false, "required": ["maxPackageBytes", "maxSignatureVerifications", "deadlineMs"], "properties": {"maxPackageBytes": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"}, "maxSignatureVerifications": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"}, "deadlineMs": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"}}}
+  }
+}

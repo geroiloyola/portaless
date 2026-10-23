@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ltp:schemas:0.1:resolution-result",
+  "type": "object", "additionalProperties": false,
+  "required": ["typ", "version", "requestId", "subject", "profile", "bootstrapProfile", "status", "package", "packageDigest", "reason", "retryAfterSeconds"],
+  "properties": {
+    "typ": {"const": "ltp-resolution-result"}, "version": {"const": "0.1"},
+    "requestId": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}, "subject": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/did"},
+    "profile": {"type": "string", "minLength": 1}, "bootstrapProfile": {"type": "string", "minLength": 1},
+    "status": {"enum": ["candidate", "incomplete", "no_data", "unsupported", "unavailable", "denied", "limit_exceeded"]},
+    "package": {"anyOf": [{"$ref": "urn:ltp:schemas:0.1:proof-package"}, {"type": "null"}]},
+    "packageDigest": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/nullableDigest"},
+    "reason": {"enum": [null, "invalid_request", "unsupported_version", "unsupported_profile", "authentication_required", "access_denied", "proof_not_available", "proof_incomplete", "checkpoint_required", "history_step_limit", "service_unavailable", "budget_exhausted", "request_too_large", "response_limit_exceeded", "deadline_exceeded"]},
+    "retryAfterSeconds": {"anyOf": [{"$ref": "urn:ltp:schemas:0.1:common#/$defs/positiveInt"}, {"type": "null"}]}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"enum": ["candidate", "incomplete"]}}}, "then": {"properties": {"profile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/proofProfile"}, "bootstrapProfile": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/bootstrapProfile"}}}},
+    {"if": {"properties": {"package": {"type": "null"}}}, "then": {"properties": {"packageDigest": {"type": "null"}}}, "else": {"properties": {"packageDigest": {"$ref": "urn:ltp:schemas:0.1:common#/$defs/digest"}}}},
+    {"if": {"properties": {"status": {"const": "candidate"}}}, "then": {"properties": {"package": {"$ref": "urn:ltp:schemas:0.1:proof-package"}, "reason": {"type": "null"}, "retryAfterSeconds": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "incomplete"}}}, "then": {"properties": {"reason": {"enum": ["proof_incomplete", "checkpoint_required", "history_step_limit"]}}}},
+    {"if": {"properties": {"status": {"enum": ["no_data", "unsupported", "denied", "unavailable", "limit_exceeded"]}}}, "then": {"properties": {"package": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "no_data"}}}, "then": {"properties": {"reason": {"const": "proof_not_available"}, "retryAfterSeconds": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "unsupported"}}}, "then": {"properties": {"reason": {"enum": ["invalid_request", "unsupported_version", "unsupported_profile"]}, "retryAfterSeconds": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "denied"}}}, "then": {"properties": {"reason": {"enum": ["authentication_required", "access_denied"]}, "retryAfterSeconds": {"type": "null"}}}},
+    {"if": {"properties": {"status": {"const": "unavailable"}}}, "then": {"properties": {"reason": {"const": "service_unavailable"}}}},
+    {"if": {"properties": {"status": {"const": "limit_exceeded"}}}, "then": {"properties": {"reason": {"enum": ["budget_exhausted", "request_too_large", "response_limit_exceeded", "deadline_exceeded"]}}}}
+  ]
+}

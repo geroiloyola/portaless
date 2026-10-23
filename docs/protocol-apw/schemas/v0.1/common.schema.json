@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ltp:schemas:0.1:common",
+  "$comment": "CC BY 4.0. S1 candidate; no remote schema resolution or defaults.",
+  "$defs": {
+    "uint": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "positiveInt": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "domain": {"type": "string", "maxLength": 253, "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$"},
+    "did": {"type": "string", "maxLength": 261, "pattern": "^did:apw:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$"},
+    "digest": {"type": "string", "pattern": "^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"},
+    "nullableDigest": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]},
+    "keyId": {"type": "string", "pattern": "^did:apw:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*#key-[1-9][0-9]*$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?Z$"},
+    "jws": {"type": "string", "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{85}[AQgw]$"},
+    "dnsMessage": {"type": "string", "minLength": 16, "pattern": "^[A-Za-z0-9_-]+$"},
+    "bootstrapProfile": {"enum": ["independent-doh-ad-v1", "dnssec-offline-v1"]},
+    "proofProfile": {"enum": ["apw-identity-proof-v1", "ltp-site-log-proof-v1", "ltp-reader-conduct-proof-v1"]},
+    "publicKey": {
+      "type": "object", "additionalProperties": false,
+      "required": ["crv", "kty", "x"],
+      "properties": {"crv": {"const": "Ed25519"}, "kty": {"const": "OKP"}, "x": {"$ref": "#/$defs/digest"}}
+    },
+    "head": {
+      "type": "object", "additionalProperties": false,
+      "required": ["seq", "hash"],
+      "properties": {"seq": {"$ref": "#/$defs/uint"}, "hash": {"$ref": "#/$defs/nullableDigest"}},
+      "allOf": [{"if": {"properties": {"seq": {"const": 0}}}, "then": {"properties": {"hash": {"type": "null"}}}, "else": {"properties": {"hash": {"$ref": "#/$defs/digest"}}}}]
+    },
+    "txtManifest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["v", "siteId", "trustUrl", "contentKinds", "k"],
+      "properties": {
+        "v": {"const": 2}, "siteId": {"type": "string", "minLength": 1},
+        "trustUrl": {"type": "string", "minLength": 1},
+        "contentKinds": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "k": {"$ref": "#/$defs/digest"}, "h": {"$ref": "#/$defs/digest"}, "rg": {"type": "boolean"}
+      }
+    },
+    "resume": {
+      "type": "object", "additionalProperties": false,
+      "required": ["did", "targetManifestDigest", "rootManifestDigest", "keySetDigest", "nextSeq", "previousHash"],
+      "properties": {
+        "did": {"$ref": "#/$defs/did"}, "targetManifestDigest": {"$ref": "#/$defs/digest"},
+        "rootManifestDigest": {"$ref": "#/$defs/digest"}, "keySetDigest": {"$ref": "#/$defs/digest"},
+        "nextSeq": {"$ref": "#/$defs/positiveInt"}, "previousHash": {"$ref": "#/$defs/nullableDigest"}
+      },
+      "allOf": [{"if": {"properties": {"nextSeq": {"const": 1}}}, "then": {"properties": {"previousHash": {"type": "null"}}}, "else": {"properties": {"previousHash": {"$ref": "#/$defs/digest"}}}}]
+    }
+  }
+}
