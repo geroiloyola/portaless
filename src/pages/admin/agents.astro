@@ -31,6 +31,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <div id="ag-root" style="display:none;">
     <div id="ag-enforcement" class="ag-enforcement" style="display:none;"></div>
+    <p id="ag-ingress" role="status"></p>
     <section class="ag-origin" aria-labelledby="ag-metrics-title">
       <h2 id="ag-metrics-title" class="ag-section-title">Rechazos sin firma (User-Agent declarado)</h2>
       <p>Este filtro solo detecta al bot que se declara; no detiene a quien aparenta ser un navegador. No atribuye identidad ni reputación. Cada cifra es declarada y aproximada: se agrupa por proceso/isolate y se vuelca cada 10 segundos; puede perderse antes del volcado al reiniciar.</p>
@@ -136,6 +137,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     updatedBy: string | null;
     writable: boolean;
     enforced: boolean;
+    trustedIngress?: { configured: boolean; source: string; edgeRulesVerified: boolean };
     unsignedBotRejections: {
       available: boolean;
       persistence?: string;
@@ -358,6 +360,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     }
     renderTerms(data.policy.policies);
     renderOrigin(data);
+    const ingress = data.trustedIngress;
+    document.getElementById("ag-ingress")!.textContent = ingress?.configured
+      ? `Ingress de confianza configurado: ${ingress.source === "node-runtime" ? "runtime Node (IP de socket o proxy configurado)" : "Cloudflare declarado por el operador"}. Reglas de proxy/WAF no verificadas por Portaless.`
+      : "Ingress de confianza no configurado: no hay límite individual sin IP confiable; se comparte unknown. Configura el borde proxy/WAF. Reglas de borde no verificadas por Portaless.";
     renderCaveats(data.policy.policies);
     fillForm(data.policy.policies, data.writable);
   }

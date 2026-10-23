@@ -29,3 +29,21 @@ test("each displayed bot-family count is explicitly labeled declarada", async ({
   await expect(page.locator("#ag-metrics td")).toHaveText(["2026-10", "3 (declarada)", "2 (declarada)", "1 (declarada)", "0 (declarada)"]);
   await expect(page.getByText("Cada cifra es declarada y aproximada:", { exact: false })).toBeVisible();
 });
+
+test("agents panel distinguishes configured ingress from verified WAF rules and unknown clients", async ({ page }) => {
+  await login(page);
+  await page.goto("/admin/agents");
+  const actual = await page.evaluate(async () => (await (await fetch("/admin/api/agents")).json()).trustedIngress);
+  expect(actual).toEqual({ configured: true, source: "node-runtime", edgeRulesVerified: false });
+  await expect(page.locator("#ag-ingress")).toContainText("Ingress de confianza configurado: runtime Node");
+  await expect(page.locator("#ag-ingress")).toContainText("no verificadas por Portaless");
+  await page.route("**/admin/api/agents", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.trustedIngress = { configured: false, source: "unconfigured", edgeRulesVerified: false };
+    await route.fulfill({ response, json: body });
+  });
+  await page.reload();
+  await expect(page.locator("#ag-ingress")).toContainText("Ingress de confianza no configurado");
+  await expect(page.locator("#ag-ingress")).toContainText("se comparte unknown");
+});
