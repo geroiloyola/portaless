@@ -1,0 +1,1 @@
+{"id":"string-null","base":"valid-proof-chain.json","patch":[{"op":"replace","path":"/result/retryAfterSeconds","value":"null"},{"op":"replace","path":"/result/packageDigest","value":"nOMU4XoN8ioy2WgPnZzi9Y-zD-fzm7SOnIvxP1bX1Kk"}],"expected":{"schemaValid":false,"proofAccepted":false,"stage":"schema","reason":"schema_invalid","resourceGrant":false}}

@@ -1,0 +1,1 @@
+{"id":"expired-checkpoint","base":"valid-continuation.json","patch":[{"op":"replace","path":"/local/checkpoints/0/retainedUntil","value":1790000010},{"op":"replace","path":"/result/packageDigest","value":"zYwvchygvx5sZ_RVz3AxOP9UQAb4NJd8XYmnuKBIjdk"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"checkpoint","reason":"checkpoint_required","resourceGrant":false}}

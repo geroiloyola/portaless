@@ -1,0 +1,1 @@
+{"id":"missing-negative-evidence","base":"valid-proof-chain.json","patch":[{"op":"remove","path":"/result/package/attestations/1"},{"op":"replace","path":"/result/packageDigest","value":"0GZ0hg8jODNAtZ03wk08PIWwLmjd4KDB4fG-b8lWtZk"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"evidence","reason":"proof_incomplete","resourceGrant":false}}

@@ -1,0 +1,1 @@
+{"id":"unsigned-dns","base":"valid-proof-chain.json","patch":[{"op":"replace","path":"/local/onlineObservation/AD","value":false},{"op":"replace","path":"/result/packageDigest","value":"nOMU4XoN8ioy2WgPnZzi9Y-zD-fzm7SOnIvxP1bX1Kk"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"bootstrap","reason":"dnssec_required","resourceGrant":false}}

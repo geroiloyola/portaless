@@ -1,0 +1,1 @@
+{"id":"package-digest-mismatch","base":"valid-proof-chain.json","patch":[{"op":"replace","path":"/result/packageDigest","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"envelope","reason":"digest_mismatch","resourceGrant":false}}

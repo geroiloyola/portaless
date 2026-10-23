@@ -1,0 +1,16 @@
+{
+ "id":"valid-offline-dnssec-15","base":"valid-proof-chain.json","patch":[
+  {"op":"replace","path":"/request/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/package/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/package/identities/0/dnsMessages","value":[
+   "AACEAAABAAIAAAAAAAAwAAEAADAAAQAAADwAJAEBAw-BOXcOqH0XX1ajVGbDTH7My42KkbTuN6Jd9g9bj8mzlAAALgABAAAAPABTADAPAAAAADxqsUmQarEtcJy3AOxnCQZfTbeepR14kHYbrn_bJsp8fHs3g8ZMBTHo3mGBMmHOd8oE6i-cI5IaSP-HwBir5EHZvQx6czsb1Qnpjw8",
+   "AACEAAABAAIAAAAAB2V4YW1wbGUAACsAAQdleGFtcGxlAAArAAEAAAA8ACQg8Q8CEIX7Fqw2ghl1osQF0xBwvSs0Hiovb_rbwRlOe4FwgPQHZXhhbXBsZQAALgABAAAAPABTACsPAQAAADxqsUmQarEtcJy3AFM4XFe5QUis7OsJJAYJ0X7kj3lvwzCzRC87brNyC-anU9HgX1jLNwXF41uaDN8E06NvvXLLwfMbwyKz8oBCRwk",
+   "AACEAAABAAIAAAAAB2V4YW1wbGUAADAAAQdleGFtcGxlAAAwAAEAAAA8ACQBAQMP7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9EHZXhhbXBsZQAALgABAAAAPABbADAPAQAAADxqsUmQarEtcCDxB2V4YW1wbGUAScQ_beY-7tcTgPTG-BLOAjA1ttowI6Jz8ZUf8H2t2oHOX2HE9847E8A6ZKUuw3JSsCb3tZL1JkR9K23lOn96CQ",
+   "AACEAAABAAIAAAAABF9hcHcGdmVjdG9yB2V4YW1wbGUAABAAAQRfYXB3BnZlY3RvcgdleGFtcGxlAAAQAAEAAAA8AM3MeyJjb250ZW50S2luZHMiOlsibWl4ZWQiXSwiaCI6IjdiaVNFQkhHLXdIaXN2TGxnLXRyc1dWdnNHTjBaTUx4dTB0QjFBemJYT1UiLCJrIjoiMUlHMnRNSDdKMndiSlpuT2Y4TEp6UWl0S2Y3TE12b0FFbHN1RE1WTTU0WSIsInJnIjpmYWxzZSwic2l0ZUlkIjoidmVjdG9yLmV4YW1wbGUiLCJ0cnVzdFVybCI6Ii90cnVzdC92ZWN0b3IuZXhhbXBsZSIsInYiOjJ9BF9hcHcGdmVjdG9yB2V4YW1wbGUAAC4AAQAAADwAWwAQDwMAAAA8arFJkGqxLXAg8QdleGFtcGxlAIodXYJ3KMOXVekthlQjTEzci8nmzawF6ZgKoLyiMPoLfyugkIr41WHdB2SmUYrdl2YGWXG4g6RIE8YqlI849go"
+  ]},
+  {"op":"replace","path":"/local/onlineObservation","value":null},
+  {"op":"replace","path":"/local/trustAnchors","value":[{"owner":".","dnskeyRdata":"AQEDD4E5dw6ofRdfVqNUZsNMfszLjYqRtO43ol32D1uPybOU"}]},
+  {"op":"replace","path":"/result/packageDigest","value":"ABGJwJhzwxyivIRV7s-bxrZN_28LsqiY00oDzp5FnDA"}
+ ],"expected":{"schemaValid":true,"proofAccepted":true,"stage":"complete","reason":null,"resourceGrant":false,"observation":"offline","signatureValidUntil":1790003600,"publicLevel":"verify","projection":{"version":"1.0","profile":"ltp-svri-site-v1","score":5,"t1Count":2,"t2Count":0,"t3Count":0,"t4Count":0,"t5Count":0,"incompleteData":false,"isInference":true,"priorShare":0.8571428571428571,"effectiveWeight":0.5,"dimensionCount":1,"rulesVersion":"ltp-svri-site-v1"}}
+}
