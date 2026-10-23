@@ -10,9 +10,11 @@ a signature, a normative release, S4 evidence or permission to start Phase 2.
 {
   "status": "pending-owner-decision",
   "ownerDecision": null,
-  "normativeCommit": "e6df65b976c63b4e14a2212eb36b68ece021fb18",
+  "normativeCommit": "df6e284ed81a1b0869c0d7d8a22593921b50641b",
+  "corpusVersion": "0.2",
   "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
-  "corpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
+  "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
+  "corpusDigest": "wpevxHbAUDyL5OVybTC2ANQ8ISby1hkCefwUgfSNeVg",
   "numericExtensionDigest": "RLmrcBc3SjFN1Mephzw6y7h3N5_mzKN9oLxLRkTZH1g",
   "normativeFiles": {
     "LTP-SERIALIZATION-DRAFT-v0.1.md": "2ad896594374421897ac1777caeb8b6059df73179f3b5a83979884208f4016eb",
@@ -21,14 +23,15 @@ a signature, a normative release, S4 evidence or permission to start Phase 2.
     "LTP-ARTIFACT-CLASSIFICATION.md": "cacb27b316092fecc8173fb679e132e390b7ced40ccd3a978a8045c05e3a3821",
     "LTP-INDEX-DRAFT-v0.1.md": "ebf30fc498b4a06c3c42012c080a2bd724053019ad494a736fc4c805c5daf616",
     "LTP-PROOF-PACKAGE-DRAFT-v0.1.md": "15610e3a57ab4ac317d2fba4f2247caa6370fcd9a044e42da9b0ee7c37433ca6",
-    "LTP-STANDARDIZATION-STATUS.md": "219e99b08b0e5eaad252a5945ad4f88e8f095286a3aaf4ebf31c17df6f1499f4",
-    "LTP-S3-COVERAGE.md": "2f08c846b5b72f25f9414707739099048f76e461d911a111dceb4e7c792bd96a",
+    "LTP-STANDARDIZATION-STATUS.md": "71074a01fe6ac1746099fc22d13dc3e8a66ef42c0f373e473281ae37341a3bb4",
+    "LTP-S3-COVERAGE.md": "57d30b9b23c7da8dfa0268b3a8e9a6c1ff21f9a243f20b0ef2f9122d02c55704",
     "vectors/ltp/v0.1/README.md": "d133522fcb1448c1f93cc70e558057b80942421efc2f81d8972b8746ccef6427",
-    "LTP-CI-REVIEW.md": "bf62e1b32521f7178b8b111764c51473ddeb397d1e410f0f96c52f54287c1944",
+    "LTP-CI-REVIEW.md": "62480f5335a1870122ea078da34d5c579ff0784e2becf4c1caedfc81d3bdb5ce",
     "APW-SPEC-v1.3.md": "a768c07e26317a5191c461984b0b12ae644079b9fd735b660f11c37e0ff003f1",
     "SVRI-v1.0.md": "ac14eb1aae745544f5a36ce27736960b99c787fc910225abf5df46debd5273dc",
-    "README.md": "8d6aeb21edf27271f485639f9279a098078bc2a10791e74502c31b6ccc7a8128",
-    "LTP-S3-CORE-CLOSURE-PLAN.md": "77e96fdebafafd4d325209783439b9f126b13fb502ae72bd5c6de707095f0b6d"
+    "README.md": "e1aec7e912053d91db811a7382b4d71edfe69bec938a48575f710d2ea3699665",
+    "LTP-S3-CORE-CLOSURE-PLAN.md": "4eaa2e91b724da924d32d15b04a4469d05dbd1111c812690c6f44b0256241901",
+    "vectors/ltp/v0.2/README.md": "600c0a7d16963892c40d606eb18c2e786fbce140ff12fae85e4bd23f43f7ee5b"
   }
 }
 ```
@@ -45,7 +48,8 @@ The commit SHA is a Git identifier, not a fourth JCS digest or a signature.
 | Commitment | Covers | Does not cover |
 |---|---|---|
 | Schema bundle | SHA-256 of UTF-8 JCS of `schemas/v0.1/manifest.json`; its five entries pin each parsed schema by SHA-256/JCS. | Markdown prose, schema-file whitespace, corpus, numeric extension, tools, dependencies, runtime or an approval. |
-| Original corpus | SHA-256 of UTF-8 JCS of `vectors/ltp/v0.1/manifest.json`; its entries pin 41 parsed JSON fixture assets. Original signed JWS strings and DNS wire base64url strings inside fixtures are preserved in those commitments. | README/tools, Python/Node correctness, missing coverage, execution of the 37 resolution targets, live DNS/emitters, numeric extension or normative text. |
+| Original corpus (`originalCorpusDigest`) | SHA-256 of UTF-8 JCS of `vectors/ltp/v0.1/manifest.json`; 41 original parsed assets, unchanged. | Numeric extension, new core assets, tools, prose, live behavior or new approval of reputation profiles. |
+| Total candidate (`corpusDigest`, v0.2) | SHA-256 of UTF-8 JCS of `vectors/ltp/v0.2/manifest.json`; 51 pinned assets including all initial fixtures, numeric extension and nine new core data files. Contains 285 new core targets, 362 total targets. | Execution of semantic expected verdicts, runtime/transport/budget conformance, tools/README/CI correctness or normative prose. |
 | Numeric extension | SHA-256 of UTF-8 JCS of the entire `numeric-serialization.json` object, separately from the original corpus. | Other fixtures, prose, universal Python/Node numeric equivalence, tools or a future signed SVRI/HSVR format. |
 | Normative prose commit + byte hashes | Exact committed text of the listed files, including serialization, bootstrap, architecture, classification and proposed S3-core gate. | Approval of that text, unrelated files in the tree, future edits, runtime conformity, cryptographic-backend independence or final publication. |
 
@@ -55,7 +59,7 @@ including whitespace/newlines. These are intentionally different commitments.
 
 ## Owner decision procedure and scope
 
-The owner must cite this record's reviewed Git revision, all three data digests,
+The owner must cite this record's reviewed Git revision, schema/total-corpus/numeric digests and the preserved original-corpus commitment,
 the normative text SHA, and the exact approved scope in a recorded decision.
 **Without the text SHA, approval of data does not cover normative prose.** A later
 text change requires a new normative commit/hash tuple and renewed owner review;
@@ -67,13 +71,25 @@ still blocks approval; S3-reputation stays Draft pending its suite and real
 emitter evidence. This record currently approves neither scope. Green CI, a
 draft-history rewrite or this file's existence never opens A/B or Phase 2.
 
-## Naming-only follow-up
+## Naming-only follow-up (prior review revision)
 
 The owner selected **Local Trust Protocol** as the expansion of LTP. That naming
 decision does not approve the S1/S3 corpus: `ownerDecision` above remains null.
-The new prose SHA supersedes the earlier `246cdc8` text pin; all three data
-digests are unchanged. The byte-hash scope now includes APW v1.3, SVRI v1.0,
-the live protocol overview and the S3-core closure plan (14 files total).
+That revision superseded the earlier `246cdc8` text pin without changing data
+digests and expanded the byte-hash scope to 14 specification files.
 The same Git revision contains the editorial glossary/ADR/site updates and the
 line-by-line inventory; the portable spec check hashes only specification files
 and imports no runtime code. Historical editions and signed data remain intact.
+
+## Authorized static execution — current candidate
+
+The execution instruction authorizes generating CORE-01…06 and consolidating CI,
+not approving the resulting corpus. The current record pins the new total
+candidate digest above and **df6e284ed81a1b0869c0d7d8a22593921b50641b** prose,
+with 15 exact specification-file hashes. The initial corpus, schema bundle and
+numeric extension remain byte-for-byte unchanged and retain their digests.
+Manual coverage review and the owner's final S3-core scope decision remain open;
+`ownerDecision` is null. Inclusion of old reputation/math fixtures in the total
+manifest is archival continuity, not approval of S3-reputation or offline DNSSEC.
+No artifact/CI result grants permission to implement A/B, run a resolver, acquire
+network data or enforce budgets. Static targets are not engine results.

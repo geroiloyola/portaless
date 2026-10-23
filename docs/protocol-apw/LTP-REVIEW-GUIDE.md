@@ -30,8 +30,22 @@ remain Draft/open; no A/B, engine, network, budget or repository extraction star
 
 The current review/approval tuple is always the explicit one in
 [LTP-APPROVAL-RECORD.md](./LTP-APPROVAL-RECORD.md). The naming decision is not
-S3-core coverage acceptance. [CORE-01…06](./LTP-S3-CORE-CLOSURE-PLAN.md) all remain
-open; approving a digest alone cannot waive missing A/B dependencies.
+S3-core coverage acceptance. The subsequent static-execution revision below
+adds targets, not owner approval; a digest cannot waive an A/B prerequisite.
+
+## Authorized S3-core static execution (current review head)
+
+| Commit | What to review |
+|---|---|
+| `987c745` | The complete standalone package checks now run inside the existing required Unit Tests/unit job, including pinned Python dependencies. Separate workflow removed; no coverage threshold or protection-setting changes. |
+| `df6e284` | Total versioned v0.2 manifest, all 285 CORE-01…06 case IDs with literal expected results/direct contracts, signature bank, 3-key rotation and signed 1,000-entry segmented chain, resource recipes and negative byte/crypto targets. Check actual primitive evidence separately from the unexecuted semantic verdicts. Initial v0.1/schemas and all production modules are unchanged. |
+| Current record-refresh commit | Pins the new total digest **wpevxHbAUDyL5OVybTC2ANQ8ISby1hkCefwUgfSNeVg**, preserved original/schema/numeric digests and current **df6e284ed81a1b0869c0d7d8a22593921b50641b** prose (15 files). Owner decision remains null and A/B remains blocked. |
+
+Start the manual review with [v0.2 README](./vectors/ltp/v0.2/README.md) and
+[coverage.json](./vectors/ltp/v0.2/coverage.json). Each area file contains every
+exact input patch, expected result and direct contract reference. The static
+audit verifies hashes, schemas, signatures, encodings and arithmetic facts, not
+the future engine, parser, network or scheduler. S4 independence remains open.
 
 ## Rewrite verification evidence
 
