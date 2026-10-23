@@ -21,14 +21,18 @@
 | [`openai-compatible-provider.md`](./openai-compatible-provider.md) | English | How to configure and check the OpenAI-compatible provider, including the minimal Python mock; explicit subset and external-verification limits |
 | [`private-node.md`](./private-node.md) | English | C37–C39: minimal/private Docker profiles, Tailscale, backups and the resource budget |
 
-## Protocol APW and Portaless Index — [`protocol-apw/`](./protocol-apw/)
+## LTP Stack — APW, LTP Index, SVRI/HSVR — [`protocol-apw/`](./protocol-apw/)
 
-The open standard (CC BY 4.0) and its reference implementation (`packages/apw-resolver/`, AGPL-3.0).
+Protocol contracts (CC BY 4.0), separate from their reference implementation
+(`packages/apw-resolver/`, AGPL-3.0). See the
+[LTP Stack architecture](./protocol-apw/LTP-STACK-ARCHITECTURE.md) for identity,
+trust/traceability and output/history responsibilities; paths retain their
+historical names until a separately approved repository migration.
 
 | Document | Language | Status |
 |---|---|---|
 | [`protocol-apw/README.md`](./protocol-apw/README.md) | English | Protocol overview, Veranet vision, license/governance, real status |
-| [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Normative specification** — identity, signed artifacts, chained history, witnesses (§5.7), Loyal Trust Protocol (§6), Annex A scoring, Portaless Index aggregator |
+| [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, LTP witness/evidence evaluation and scoring, SVRI/HSVR contracts; current LTP Index witness-directory representation |
 | [`protocol-apw/APW-VECTORS-v1.3.md`](./protocol-apw/APW-VECTORS-v1.3.md) | English (canonical) | **Test vectors** V-01..V-13 for independent implementations |
 | [`protocol-apw/APW-SPEC-v1.3_es.md`](./protocol-apw/APW-SPEC-v1.3_es.md) · [`APW-VECTORS-v1.3_es.md`](./protocol-apw/APW-VECTORS-v1.3_es.md) | Spanish archives | Full-context Spanish copies of the current normative set |
 | [`protocol-apw/ERRATA.md`](./protocol-apw/ERRATA.md) | Spanish (historical) | Errata E-1..E-10; integrated into v1.3 |

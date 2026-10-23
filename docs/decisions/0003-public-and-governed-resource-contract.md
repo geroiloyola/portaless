@@ -1,12 +1,14 @@
 # ADR 0003: Public and governed resource contract
 
-- **Status:** Proposed for owner review; documentation only, no enforcement change
+- **Status:** Owner-approved architecture and resolution-contract baseline; documentation only, no enforcement change
 - **Decision date:** 2026-10-22
 - **Scope:** Automated reads of Portaless content and projections across static,
   Cloudflare Pages Functions and the self-host Node runtime.
-- **Rebased baseline:** merged PR #97 (`11d08cb`). Follow-up review fixes in
-  [PR #98](https://github.com/geroiloyola/portaless/pull/98) are a prerequisite
-  before activating new identity fan-out; they are not claimed merged here.
+- **Resolution phase approval:** 2026-10-23; D1–D9, independent identity root and
+  restrictive budget approved. Final protocol publication/conformance pending
+  the [standardization gates](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
+- **Inspected resolution baseline:** `main` after merged PR #102 (`bc3b243`),
+  including the follow-up review fixes of PR #98.
 - **Implementation gate:** Do not advertise or enable governed content until
   the resource classification, reader identity/reputation profile and dynamic
   serving path in this contract have tests and an owner-approved policy.
@@ -27,7 +29,8 @@ published `public` resource is intentionally retrievable by anyone. A published
 only by a runtime that can enforce its policy. **User-Agent detection and
 `robots.txt` are not confidentiality controls.**
 
-This ADR records the proposed route contract for PR1. It does not add a schema
+This ADR originated as the proposed route contract for PR1 and now records the
+owner-approved architecture baseline. It does not add a schema
 field, alter middleware, change current routes, or make SVRI numeric thresholds
 an authorization primitive.
 
@@ -227,7 +230,7 @@ must never disclose a governed resource's identifiers or descriptive metadata.
 ### Cold start and explicit grants
 
 The new content Gatekeeper MVP is **grant-only**. Category enablement, including
-Portaless Index, means eligibility for evaluation, not permission or fabricated
+LTP Index, means eligibility for evaluation, not permission or fabricated
 reputation. The owner must approve the verified reader; a new Index identity
 without that grant is denied. Diagnostic mode must state that outcome, for
 example: “identity valid; category enabled; no explicit owner grant; denied.”
@@ -273,9 +276,130 @@ until that complete boundary is tested.
   secret and conservative accounting across rotation. Do not echo/store/log the
   raw IP or use an untrusted forwarded header to let clients rotate buckets.
 
-The exact traffic limits are configuration proposals in the
-[security review guide](../security-review-guide.md); this ADR does not enable
-them or assert that quotas for the full resolution chain already exist.
+For complete-resolution implementation, D7 below adopts the single restrictive
+resource table in the A/B/C plan. Existing kernel configuration and review
+guidance remain in the [security review guide](../security-review-guide.md);
+this ADR does not change deployed defaults or assert that quotas for the full
+resolution chain already exist.
+
+### D3 — LTP Index and LTP Proof Package; optional private relay
+
+**Revised owner-directed target:** do not require a private relay for every Edge
+installation. Keep arbitrary requester-selected egress prohibited; prefer an
+operator-configured LTP Index that transports proof-bearing public/authorized
+projections for local verification. A private relay is an explicit alternative.
+The previous relay-mandatory target is superseded. The indexed proof format and
+independent identity bootstrap are **owner-approved Draft 0.1 contract baselines**,
+not final protocol publications or implemented runtime capabilities. Review,
+independent conformance vectors and runtime acceptance precede activation.
+
+**Strict protocol/runtime separation (owner-approved):** standard terms are
+**LTP Index**, **LTP Proof Package**, **LTP Attestation**
+and **SVRI Projection**. Portaless names only the reference implementation or
+runtime. No standard message, verification chain or wire format requires its
+source code, database or private APIs. Independent engines/services may implement
+the same contract and produce the same mathematical result for the same proofs,
+rules and explicit trust-policy inputs. The principal concept is the LTP trust
+and traceability stack: APW supplies identity/state structure, LTP evaluates
+chains/evidence/witnesses, SVRI is the consumable output vector and HSVR its
+retained/verifiable history. See [LTP Stack architecture](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+
+Protocol contracts, under the APW specification's CC BY 4.0 boundary:
+
+- [LTP Index Draft 0.1](../protocol-apw/LTP-INDEX-DRAFT-v0.1.md):
+  request/result schema, configured endpoints, limits, resumable acquisition and errors.
+- [LTP Proof Package Draft 0.1](../protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md):
+  original proofs, canonical digests, identity/history/source chains and SVRI recomputation.
+- [APW Identity Bootstrap Draft 0.1](../protocol-apw/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md):
+  independently obtained DoH/AD or locally validated DNSSEC, without Index-issued roots.
+
+- **Node:** use the local validated-address connector. Keep Host/SNI bound to
+  the original URL hostname and verify the TLS certificate against that hostname,
+  **not against the pinned IP**. Preserve streaming caps, cancellation, quotas
+  and per-hop validation; no silent fallback to an ordinary resolving fetch.
+- **Workers/Edge:** contact fixed operator-selected LTP Index endpoints over HTTPS,
+  with redirects disabled and bounded requests/responses. The target subject is
+  data, not a fetch destination. Packages must provide enough authenticated
+  identity, chain and source evidence to verify locally without chasing arbitrary
+  subject/witness URLs. Fixed endpoints reduce destination control but do not
+  make network I/O "100% safe" or prove the connected IP.
+- **Identity root:** preserve D1. A subject key delivered by the Index cannot
+  authenticate itself; a forwarded DoH `AD: true` is not a portable DNSSEC proof.
+  The selected bootstrap profile is `dnssec-offline-v1` or
+  `independent-doh-ad-v1`. The latter explicitly permits a bounded consumer query
+  to a separately configured fixed HTTPS DoH provider requiring AD, never one
+  nominated by the package. The former performs local DNSSEC validation from
+  configured trust anchors, but does not prove globally latest DNS state.
+  Trusting the Index's DNS assertion is a different
+  trust model and is not silently adopted by signing its response.
+- **Local validation:** verify identity binding and artifact signatures; check validity windows,
+  chain continuity/anchor, source inclusion/completeness and scoring version.
+  Recompute the LTP/SVRI result the consumer is authorized to receive. A subject-signed level
+  without evidence is an attributable declaration, not independently reproduced
+  SVRI. Public projections must not expose governed evidence or admin SVRI/HSVR.
+- **Fail closed:** absent/incomplete/expired proof, invalid bootstrap or unavailable
+  configured transport makes the operation pending/unavailable with its reason.
+  Do not attempt direct egress, extend stale data, report a cryptographically
+  invalid signature, or generate a misconduct attestation for that failure.
+  D6's already-valid cache lifetime is not a fresh external verification.
+- **Optional relay boundary:** the relay must provide tested IP pinning/CIDR/TLS
+  guarantees and must not be an open proxy. Use a fixed operator-configured HTTPS
+  endpoint and independently provisioned authentication keys. Require authenticated,
+  replay-protected, expiring request/response binding to destination/method,
+  request identity, resource limits and body digest. Maintain chain budgets at
+  both ends. The consumer still verifies APW identities, source signatures,
+  hashes and scoring rules on the returned data independently.
+
+A signed relay response authenticates the relay's statement and bytes; it does
+**not** mathematically prove the peer IP or honest execution of the connector.
+The relay, TLS channel and runtime remain explicit operator trust assumptions.
+WebAssembly alone does not change host networking privileges. A future native
+connector requires its own implementation evidence, not a declaration of support.
+
+The existing `/.well-known/apw-index.json` is an unsigned witness-observation
+directory requiring re-verification against subject/witness chains; it is not
+this self-contained proof package or a global SVRI certificate service. Indexes
+remain interchangeable distribution/discovery services, not protocol authorities.
+LTP Index services can withhold or replay still-valid data; expiry, rollback handling and
+independent observations remain necessary. No global Index deployment or latency
+guarantee is claimed. See the [repository contrast](../architecture/indexed-resolution-review.md).
+
+This requirement scopes external resolution, not all Portaless networking or
+public static reads. Local data, local verification, optional modules switched
+off and static hosting remain usable without a relay. Any runtime migration or
+activation of this behavior must be explicit, tested and documented; the current
+existence of a Node directory binding does not imply coverage of every resolver.
+See the [A/B/C proposal](../architecture/resolution-chain-proposal.md) for the
+approved design decisions and outstanding delivery gates. No Edge route may
+advertise these profiles until the protocol drafts, independent vectors and
+actual adapters have passed review; existing `typ: apw-index` messages retain
+their legacy witness-directory meaning.
+
+### Resolution phase closure — owner approval of D1–D9
+
+The owner formally approved the documented architecture and three contracts on
+2026-10-23, explicitly including the independent identity root and restrictive
+resource budget. The following record is authoritative for this resolution phase;
+remaining policy choices for later enforcement phases are not invented by this approval.
+
+| Decision | Approved baseline |
+|---|---|
+| D1 | DNSSEC-authenticated identity root independent of the Index: required AD from an operator-selected HTTPS resolver, or local DNSSEC under the explicitly selected offline profile. No downgrade or Index-supplied root. |
+| D2 | One fixed configured DoH endpoint initially; operator-only extension to at most two under the approved table and transport-only fallback rules. No vendor dependency in the protocol. |
+| D3 | Configured LTP Index and locally verified LTP Proof Package, independent APW Identity Bootstrap, optional explicitly configured private relay, and fail-closed behavior. |
+| D4 | Bounded incremental histories with quarantined progress distinct from trusted checkpoints; no authorization from a partial prefix. |
+| D5 | Separate public operational/limit/pending/identity/crypto outcomes; preserve uncached redirect 401 without Retry-After and no misconduct from infrastructure failures. |
+| D6 | Short inherited expiry without sliding TTL, stale-on-error or summed local cache windows; declare upstream revocation/replay limitations. |
+| D7 | The [single resource table](../architecture/resolution-chain-proposal.md#approved-resource-limits) is the restrictive implementation baseline. Values remain estimates until measured; new values are not yet deployed. Any later change requires a recorded owner decision. |
+| D8 | A → B → C before PR3, including the public AT bridge; shared engine and budget, distinct endpoint authorization/projections. |
+| D9 | Edge-first ingress and approximate per-instance quotas; no claim of a distributed/global quota or real independent reputation emitters. |
+
+**Merge gate:** programming the indexed-egress Workers/Edge route is blocked
+until the documentation commit containing this approved baseline is merged into
+`main`. After merge, the next phase is exclusively implementing and verifying
+the engine against these contracts and limits. The merge is not permission to
+activate Edge: final publication, independent vectors/verifiers and runtime
+acceptance remain mandatory under the [closure checklist](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
 
 ### External-search identity and freshness
 
@@ -363,7 +487,7 @@ phases merely because their interface or toggle exists.
    available in the editor, the publication flow, or both.
 2. Whether governed human readers are unsupported in the MVP or need a separate
    authenticated human-reader path.
-3. Which verified identities/categories count as Portaless Index, external
+3. Which verified identities/categories count as LTP Index, external
    search or AI. Do not ship category allowlists based on UA strings.
 4. Resource scope for the new grant-only MVP, and the future evidence/profile
    needed to enable reputation admission. A bare threshold `5.0` is insufficient.

@@ -6,6 +6,12 @@
 
 SVRI comunica un resultado LTP junto con la procedencia de la evidencia y la contribución de inferencia matemática. No sustituye LTP, no introduce un almacén paralelo de puntuaciones y no convierte una firma en prueba de la verdad de una declaración.
 
+**Responsabilidad de capa:** APW define identidad y estructura de los registros;
+LTP audita su continuidad, fuentes/testigos y calcula confianza/trazabilidad;
+SVRI es el vector de salida consumible de ese cálculo; HSVR conserva su histórico
+verificable. Esta aclaración conceptual no cambia las fórmulas, escalas, perfiles
+o campos normativos de esta versión. Véase [LTP Stack](./LTP-STACK-ARCHITECTURE.md).
+
 ## 1. Fuentes y tiers
 
 El tier identifica la procedencia; **no es un multiplicador de peso**. Los pesos y el cálculo por dimensión siguen siendo los publicados por LTP, incluido el previo neutral `P = 3`.
@@ -96,7 +102,14 @@ El público recibe el nombre del nivel y una explicación breve. No recibe el sc
 
 ## 5. HSVR — reconstrucción histórica
 
-HSVR es el procedimiento administrativo para reproducir SVRI desde atestaciones append-only y los historiales APW disponibles. Para cada evento conserva la secuencia, instante de anotación, fuente, tier, emisor, identificador, estado de verificación y score recalculado.
+HSVR es el histórico verificable de las salidas SVRI. Puede conservarse como
+resultados fechados con referencias a su snapshot, reglas y pruebas, o
+reconstruirse desde esas pruebas. El contrato administrativo actual reproduce
+SVRI desde atestaciones append-only y los historiales APW disponibles, evaluados
+por LTP. Para cada evento conserva la secuencia, instante de anotación, fuente,
+tier, emisor, identificador, estado de verificación y score recalculado. Esta
+definición no afirma que el runtime ya persista una instantánea por cada cálculo;
+guardar cifras sin su contexto/pruebas no constituye historia verificada.
 
 El consumidor debe verificar la cadena del sitio, comprobar que el hash de cada JWS de emisor coincide con el `att` anclado y verificar la firma del emisor cuando la clave histórica esté disponible. La imposibilidad de verificar el anclaje DNS, una clave histórica o un JWS antiguo se marca como reconstrucción **parcial**; no se rellena ni se presenta como histórico verificado. Un score actual no puede sustituir un punto histórico que no esté respaldado por las pruebas disponibles.
 

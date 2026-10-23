@@ -28,7 +28,9 @@ Record an external-witness observation of another site (spec §5.7).
 
 ### `POST /admin/api/index/sync`
 
-Synchronize the local Portaless Index directory from a configured set of witnesses (spec §5.7 "Aggregator").
+Synchronize the reference runtime's local LTP Index witness directory from a
+configured set of witnesses (spec §5.7 "Aggregator"). This operates the historical
+`apw-index` representation, not the new proof-package service.
 
 - Auth: admin session, role `admin`. No step-up.
 - Body: `{ "domain": "<subject domain>", "witnesses": ["<witness domain>", ...], "weights"?: { "did:apw:<domain>": <number 0..1000> } }` — 1–20 witnesses; weights optional (default 1.0, persisted before sync; the base weight is a **multiplier over the calibration factor**, see below).

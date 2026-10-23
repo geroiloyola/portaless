@@ -10,6 +10,13 @@
 
 **Normative keywords**: *must*, *must only*, *never* indicate requirement; *may* indicates option; *today* marks a temporary limitation of the reference implementation.
 
+**Layer ownership (editorial):** this published file consolidates several
+contracts of the **LTP Stack**. APW supplies peer identity/state structure; LTP
+evaluates histories, source evidence and witnesses for trust/traceability;
+SVRI is its consumable output vector and HSVR the verifiable historical output.
+See [LTP Stack architecture](./LTP-STACK-ARCHITECTURE.md). The naming clarification
+does not amend existing signed bytes, numerical rules or adopted vector results.
+
 **Version history**
 
 | Version | Date | Content |
@@ -299,11 +306,18 @@ A **witness** is any site with a `did:apw` identity that observes ANOTHER site's
 
 **Limits**:
 
-- A malicious witness can invent observations; that is why only observations anchored in the WITNESS's own verified chain count, and the evaluator decides which witnesses to listen to (not normative here: Portaless Index is the first aggregator).
+- A malicious witness can invent observations; that is why only observations anchored in the WITNESS's own verified chain count, and the evaluator decides which witnesses to listen to (not normative here: the reference implementation provides a local LTP Index aggregator).
 - Two observations of the same subject hours apart prove its head did not change between those moments, even without updating the TXT.
 - Updating the TXT remains manual (no DNS provider exposes a standardized API); **computing** the value is automatic (`dnslink/cli.mjs --anchor --domain <d>` and the panel checklist, both via `buildSiteManifest`).
 
-**Aggregator (Portaless Index, informative)**: an evaluator needs to listen to several witnesses. Portaless implements the first aggregator as a node feature: `POST /admin/api/index/sync` (admin role) pulls from a configured set of witnesses (pull of `/.well-known/apw-witnesses.json`, paginated), applies exactly the four §5.7 verifiers to each statement (witness chain verified, `att` anchored in that chain, signature against its key, deterministic `jti`; plus expected `iss`/`sub` and no self-witness), stores the latest anchored observation per (subject, witness, seq) — a smaller anchor never overwrites a larger one — and evaluates against the subject's live chain. **Weighting** is static: one weight per witness (default 1.0, editable by whoever syncs); the directory's `consensus` is the head with the most weight sum at the last observed `seq`. The result is cached and published as a plain document at `/.well-known/apw-index.json` (`{ typ: "apw-index", iss, generatedAt, subjects[] }`), with no signature of its own because every entry is re-verifiable against the subject's and its witnesses' chains. **Out of scope for this version**: A.4.4-style weight calibration (a witness gains weight by agreeing with consensus), push/gossip synchronization between index nodes (each node only pulls its own witnesses), and manifest/SiteTrustScore aggregation from other instances (section 7).
+**Aggregator (LTP Index, informative)**: an evaluator needs to listen to several witnesses. Portaless implements the first aggregator as a node feature: `POST /admin/api/index/sync` (admin role) pulls from a configured set of witnesses (pull of `/.well-known/apw-witnesses.json`, paginated), applies exactly the four §5.7 verifiers to each statement (witness chain verified, `att` anchored in that chain, signature against its key, deterministic `jti`; plus expected `iss`/`sub` and no self-witness), stores the latest anchored observation per (subject, witness, seq) — a smaller anchor never overwrites a larger one — and evaluates against the subject's live chain. **Weighting** is static: one weight per witness (default 1.0, editable by whoever syncs); the directory's `consensus` is the head with the most weight sum at the last observed `seq`. The result is cached and published as a plain document at `/.well-known/apw-index.json` (`{ typ: "apw-index", iss, generatedAt, subjects[] }`), with no signature of its own because every entry is re-verifiable against the subject's and its witnesses' chains. **Out of scope for this version**: A.4.4-style weight calibration (a witness gains weight by agreeing with consensus), push/gossip synchronization between index nodes (each node only pulls its own witnesses), and manifest/SiteTrustScore aggregation from other instances (section 7).
+
+**Terminology clarification (editorial):** LTP Index is the neutral trust role;
+Portaless is a reference implementation. APW owns identity/state structure, LTP
+audits trust/traceability, SVRI is the output and HSVR its verifiable history
+([LTP Stack](./LTP-STACK-ARCHITECTURE.md)). The proposed LTP Index and
+LTP Proof Package contracts are [separate drafts](./README.md#proposed-resolution-contracts-not-yet-adopted-or-implemented),
+not changes to the existing `apw-index` wire format or adopted verification rules.
 
 ## 6. Reputation-based Read Governance — Loyal Trust Protocol (v1.2 + E-8, E-9)
 
@@ -461,7 +475,7 @@ A policy is a **set of predicates over dimensions** (Annex A), evaluated against
 
 ## 7. Future (outside the current implementation)
 
-- **Portaless Index**: witness network and discovery. The **local aggregator** already exists (§5.7, "Aggregator"): a directory of verified observations per subject, static per-witness weighting, published at `/.well-known/apw-index.json`. Missing is the network: A.4.4-style weight calibration (a witness gains weight by agreeing with consensus), gossip synchronization between index nodes (today each node only pulls its own witnesses), and manifest/SiteTrustScore discovery across multiple instances (indexability format, third-party query permission, and a provenance layer). Index is also the first natural reader of the enclaves.
+- **LTP Index**: witness network and discovery. The **local aggregator** already exists in the reference implementation (§5.7, "Aggregator"): a directory of verified observations per subject, static per-witness weighting, published at `/.well-known/apw-index.json`. Missing is the network: A.4.4-style weight calibration (a witness gains weight by agreeing with consensus), gossip synchronization between index nodes (today each node only pulls its own witnesses), and manifest/SiteTrustScore discovery across multiple instances (indexability format, third-party query permission, and a provenance layer). Index is also the first natural reader of the enclaves.
 - **Portable `community`** (B7): requires voter identity with resistance to fake identities.
 - **R-05 in policies**: not a config toggle, two data flows are missing (§6.5). (1) A flow where the reader **emits** attestations over subjects: today only anonymous community voting by IP, no DID, and `loadReaderConduct` does not even load what the reader emits (it drops `iss` equal to its own DID). (2) A **corpus** of other emitters on the same (subject, dimension) for A.4.4's leave-one-out consensus: indexes or witnesses. While both are missing, a reader's R-05 is 4.0 with weight 0 and the threshold would reject everyone.
 - **History-age signal in W-07**: A.4.1 does not define how to carry an age to the 1..7 scale, so W-07 scores today only with `agent.content_freshness` (§6.6).
@@ -498,7 +512,7 @@ The exhibit of a network (ROADMAP Phase 9) is that a third party can **recompute
 - If the site's key is compromised, the attacker can sign new entries until it is rotated and the TXT updated.
 - `ts` is declared by whoever signs the entry: with a compromised key, entries can be backdated within that key's window.
 - `community` remains inflatable until voter identity exists.
-- APW shares primitives with federated protocols (DID identifiers, signed records, verifiable history), but does not yet define a node-to-node synchronization layer; that layer belongs to Portaless Index.
+- APW defines peer identity and signed-state structure; trust-oriented witness aggregation and evaluation belong to LTP Index services. Their distribution uses existing transports; a trust-index role is not a new APW socket protocol.
 
 ---
 

@@ -13,14 +13,17 @@
 | [`../CHANGELOG.md`](../../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
 | [`../SECURITY.md`](../../SECURITY.md) · [`../CONTRIBUTING.md`](../../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 
-## Protocol APW and Portaless Index — [`protocol-apw/`](../protocol-apw/)
+## LTP Stack — APW, LTP Index, SVRI/HSVR — [`protocol-apw/`](../protocol-apw/)
 
-The open standard (CC BY 4.0) and its reference implementation (`packages/apw-resolver/`, AGPL-3.0).
+Protocol contracts (CC BY 4.0), separate from their reference implementation
+(`packages/apw-resolver/`, AGPL-3.0). See
+[LTP Stack architecture](../protocol-apw/LTP-STACK-ARCHITECTURE.md) for layer
+ownership and compatibility of current paths/formats.
 
 | Document | Language | Status |
 |---|---|---|
 | [`protocol-apw/README.md`](../protocol-apw/README.md) | English | Protocol overview, Veranet vision, license/governance, real status |
-| [`protocol-apw/APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Normative specification** — identity, signed artifacts, chained history, witnesses (§5.7), Loyal Trust Protocol (§6), Annex A scoring, Portaless Index aggregator |
+| [`protocol-apw/APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, LTP witness/evidence evaluation and scoring, SVRI/HSVR contracts; current LTP Index witness-directory representation |
 | [`protocol-apw/APW-VECTORS-v1.3.md`](../protocol-apw/APW-VECTORS-v1.3.md) | English (canonical) | **Test vectors** V-01..V-16 for independent implementations, with machine-readable fixtures in [`protocol-apw/vectors/v1.3/`](../protocol-apw/vectors/v1.3/) that run executably in CI (**110/110 cases**) |
 | [`protocol-apw/APW-SPEC-v1.3_es.md`](../protocol-apw/APW-SPEC-v1.3_es.md) · [`APW-VECTORS-v1.3_es.md`](../protocol-apw/APW-VECTORS-v1.3_es.md) | Spanish archives | Full-context Spanish copies of the current normative set |
 | [`protocol-apw/ERRATA.md`](../protocol-apw/ERRATA.md) | Spanish | Errata **E-1..E-15**. E-1..E-10 are integrated into v1.3; **E-11..E-15 are normative, in effect and not yet consolidated** into the spec body (E-13 signed community attestations, E-14 the signed pages document, E-15 the signed plugin manifest are the most recent) |
