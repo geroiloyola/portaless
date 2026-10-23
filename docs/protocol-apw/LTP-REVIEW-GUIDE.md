@@ -13,13 +13,25 @@ not independently approved or deployable snapshots.
 | `f762837` | #102 heap regression, preserved | Fixed seed, all set/update/remove/pop paths, parent/child order, exact positions and model comparison after every operation. No production heap edits. |
 | `adf5593` | S1 schemas | Five closed/typed candidate schemas, null/absence and profile constraints; manifest commitments. No normative prose is covered by these digests. |
 | `9ed8868` | Vectors and tools | Static original signed bytes, 41-asset manifest and separately pinned numeric extension; isolated package/lock, Python author, Node/native/JOSE/OpenSSL/dnspython cross-checks and numeric/tamper tests. Shared backend versions must be disclosed; no LTP engine verdicts are claimed. |
-| `246cdc8` | Documentation / normative prose | Serialization, bootstrap scope, architecture, classification, S3-core gaps/proposed A/B criterion, shared primitive-backend limitation, CI observation/proposal and test-only fixture notes. Review contract regressions; no gate approval, formulas or signed bytes changed. **This is the normative text SHA pinned in the approval record.** |
+| `246cdc8` | Original documentation / normative prose | Serialization, bootstrap scope, architecture, classification, S3-core gaps/proposed A/B criterion, shared primitive-backend limitation, CI observation/proposal and test-only fixture notes. Review contract regressions; no gate approval, formulas or signed bytes changed. Historical text pin, superseded by the owner-naming follow-up below. |
 | `dc4ecca` | CI / documentation lint | Separate spec dependency installation; standalone cross-check job; root lint in existing required suites; positive/negative link-boundary and CI-scope tests. Moving cross-check into a required job is proposed in prose only; no protection settings changed. |
 | `e3af413` | Scanner fixtures | 28 individually labeled `solo pruebas` findings, exact introducing-commit fingerprints rebound to `9ed8868`; literal key/seed/token/digest non-reuse in tracked production source with an injected negative. No path/rule-wide exclusion. |
-| Final commit titled `docs(ltp): bind approval tuple to normative prose and review history` | Approval binding and this guide | Three candidate data digests plus full `246cdc8619e13147374473d8796028a3b0ccce3d` text SHA and per-file byte hashes. Check that all ten prose files match that Git revision, mutations fail the record check, and `ownerDecision` remains null. This commit cannot contain its own SHA; cite its Git revision in any future owner decision. |
+| `4faeccd` | Original approval binding and this guide | Previously bound three data digests to the `246cdc8` text SHA and ten file hashes. Preserved review provenance, not the current tuple. The follow-up below replaces that text binding without changing data digests. |
 
 The owner has not approved S1/S3-core through this rewrite. S3-reputation and S4
 remain Draft/open; no A/B, engine, network, budget or repository extraction starts.
+
+## Owner naming follow-up (appended, no new history rewrite)
+
+| Commit | What to review |
+|---|---|
+| `e6df65b` | Local Trust Protocol as unique live expansion; inventory of 24 pre-edit matching lines (10 live, 14 historical, zero signed identifiers); continuity and author credit; old section anchor preserved. Root Vitest naming lint rejects retired/other expansions outside explicit history. CORE-01…06 explains what A/B still need; no vectors or runtime implementation added. |
+| Current commit titled `docs(ltp): refresh prose approval pin after owner naming decision` | Current approval record binds **e6df65b976c63b4e14a2212eb36b68ece021fb18**, 14 exact spec-file hashes and the same three data digests. Review the expanded portable hash scope, mutation rejection, and `ownerDecision: null`. This binding commit's own SHA is obtained from Git, not embedded in itself. |
+
+The current review/approval tuple is always the explicit one in
+[LTP-APPROVAL-RECORD.md](./LTP-APPROVAL-RECORD.md). The naming decision is not
+S3-core coverage acceptance. [CORE-01…06](./LTP-S3-CORE-CLOSURE-PLAN.md) all remain
+open; approving a digest alone cannot waive missing A/B dependencies.
 
 ## Rewrite verification evidence
 

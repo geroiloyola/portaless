@@ -15,6 +15,7 @@ export const normativePaths = [
   'LTP-INDEX-DRAFT-v0.1.md', 'LTP-PROOF-PACKAGE-DRAFT-v0.1.md',
   'LTP-STANDARDIZATION-STATUS.md', 'LTP-S3-COVERAGE.md',
   'vectors/ltp/v0.1/README.md', 'LTP-CI-REVIEW.md',
+  'APW-SPEC-v1.3.md', 'SVRI-v1.0.md', 'README.md', 'LTP-S3-CORE-CLOSURE-PLAN.md',
 ];
 export function candidate(normativeCommit) {
   assert.match(normativeCommit, /^[a-f0-9]{40}$/);
