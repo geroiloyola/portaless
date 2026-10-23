@@ -59,6 +59,9 @@ jobs:
           fi
           echo "OK: sin imports de node:sqlite"
 
+      - name: Instalar herramientas aisladas de especificación
+        run: npm ci --prefix docs/protocol-apw --ignore-scripts --no-audit --no-fund
+
       - name: vitest tests/unit
         run: npx vitest run tests/unit/ --reporter=verbose
 

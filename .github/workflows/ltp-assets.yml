@@ -1,0 +1,24 @@
+name: LTP specification assets (draft)
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  cross-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: docs/protocol-apw
+      - run: python -m pip install -r requirements-audit.txt
+        working-directory: docs/protocol-apw
+      - run: npm run check:author && npm run check:numbers && npm run audit && npm test
+        working-directory: docs/protocol-apw
