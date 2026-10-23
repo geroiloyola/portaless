@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **Owner-selected LTP expansion.** LTP means **Local Trust Protocol**: each node applies its own policy to verified evidence; LTP Stack is APW + LTP + SVRI + HSVR. Live terminology, continuity notes and CI naming lint preserve historical editions, author/Annex A credit, identifiers and signed assets. The S3-core closure plan lists the evidence A/B still need; no implementation or corpus approval is implied.
+
 - **LTP S1/S3 Draft candidate.** Adds standalone schemas, frozen cryptographic/math assets, a separately pinned numeric extension, same-author Python/Node cross-checks and third-party OpenSSL/JOSE/dnspython signature checks. Adds the #102 seeded heap-invariant regression, specification-link boundary CI and extraction preparation. Clarifies deterministic core versus optional profiles, minimal DoH/AD scope and synthetic DNSSEC inputs. S3 coverage blocks corpus approval; no Phase 2 engine/network/budget work or repository extraction is enabled.
 - **LTP Draft review refinement.** Records the shared OpenSSL primitive backend, individual test-only scanner labels and production-source non-reuse check, exact normative-text approval binding, and S3-core versus S3-reputation coverage. Moving external checks into an already-required CI job and using S3-core approval for A/B are proposals only; neither changes protection settings or starts implementation.
 

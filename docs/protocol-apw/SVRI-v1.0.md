@@ -4,6 +4,10 @@
 **Licencia:** CC BY 4.0.  
 **Perfil inicial:** `ltp-svri-site-v1`.
 
+**LTP significa Local Trust Protocol:** cada nodo aplica su propia política a
+evidencia verificada. **LTP Stack** es el conjunto APW + LTP + SVRI + HSVR; este
+nombre no cambia los identificadores, fórmulas ni bytes firmados del perfil.
+
 SVRI comunica un resultado LTP junto con la procedencia de la evidencia y la contribución de inferencia matemática. No sustituye LTP, no introduce un almacén paralelo de puntuaciones y no convierte una firma en prueba de la verdad de una declaración.
 
 **Responsabilidad de capa:** APW define identidad y estructura de los registros;

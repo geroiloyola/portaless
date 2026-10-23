@@ -9,7 +9,7 @@ Normative specification: [`docs/protocol-apw/APW-SPEC-v1.3.md`](../../docs/proto
 - **DNS resolution** (`src/dns-txt/`): DNS-over-HTTPS lookup of the `_apw.<domain>` TXT record (v1 with `k`, v2 with `k` + `h`).
 - **DNSLink** (`src/dnslink/`): immutable content pointers; `dnslink/cli.mjs` computes and anchors the TXT.
 - **`did:apw` identity** (`src/did-apw/`): key history with rotation, site manifest (v1/v2), JWS + JCS signing, chained attestation log anchored in DNS, external witnesses (spec §5.7), and the Portaless Index local witness aggregator (`witness-index.ts`, published at `/.well-known/apw-index.json`).
-- **Reader conduct & scoring** (`src/scoring/`, `src/reader-conduct/`): dimension scoring (Annex A) and fail-closed reader-reputation policies (section 6, Loyal Trust Protocol).
+- **Reader conduct & scoring** (`src/scoring/`, `src/reader-conduct/`): dimension scoring (Annex A) and fail-closed reader-reputation policies (section 6, Local Trust Protocol).
 
 ## HTTP surfaces (served by the site, not by this package directly)
 

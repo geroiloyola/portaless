@@ -15,6 +15,11 @@
 
 ## Summary
 
+**Naming (owner decision, 2026-10-23):** LTP means **Local Trust Protocol**;
+each node applies its own policy to verified evidence. **LTP Stack** is APW +
+LTP + SVRI + HSVR. This editorial clarification changes no grants, limits, routes,
+format identifiers or signed bytes and authorizes no implementation phase.
+
 Portaless distinguishes **publication state** from **read-access class**:
 
 - **Publication state** answers whether a revision is approved for publication:

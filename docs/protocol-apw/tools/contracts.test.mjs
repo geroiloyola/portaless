@@ -64,3 +64,14 @@ test('S3-core missing-rotation finding matches the actual single-key baseline, n
   assert.match(matrix, /S3-reputation stays\nDraft until/);
   assert.match(matrix, /not an implementation/);
 });
+
+test('S3-core closure requires all six A/B evidence packages and separates corpus approval from runtime acceptance', () => {
+  const plan = text('LTP-S3-CORE-CLOSURE-PLAN.md');
+  const rows = plan.split('\n').filter(line => /^\| CORE-0[1-6] \|/.test(line));
+  assert.equal(rows.length, 6);
+  for (const id of ['01', '02', '03', '04', '05', '06']) assert(rows.some(row => row.startsWith(`| CORE-${id} |`)));
+  assert.match(plan, /Any missing prerequisite keeps both\n   deliveries blocked/);
+  assert.match(plan, /A\/B cannot start/);
+  assert.match(plan, /This naming-only revision intentionally does not add those vectors/);
+  assert.match(plan, /Only then may Phase 2 implement A\/B/);
+});

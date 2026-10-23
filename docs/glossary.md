@@ -8,7 +8,7 @@ UI; a reader should not have to infer them from context.
 |---|---|
 | **LTP Stack** | The trust-centered stack: APW identity/state structure → LTP evidence/traceability evaluation → SVRI output → HSVR historical output. See [`LTP-STACK-ARCHITECTURE.md`](./protocol-apw/LTP-STACK-ARCHITECTURE.md). |
 | **APW** | Identity and structural layer: `did:apw`, domain/key binding, signed artifacts and state-transition/log structure used for peer exchange. The currently published [`APW v1.3`](./protocol-apw/APW-SPEC-v1.3.md) document also contains the existing LTP contracts; file organization does not make identity alone a trust result. |
-| **LTP** | Loyal Trust Protocol: the trust and traceability engine that audits histories, verifies/selects evidence and witnesses and computes policy-relevant trust results, including W dimensions for sites and R dimensions for readers. |
+| **LTP** | **Local Trust Protocol**: each node applies its own local policy to verified evidence. Its deterministic core audits history, signatures, evidence and witnesses; versioned profiles can derive W dimensions for sites or R dimensions for readers. It is not a global authority or an automatic resource grant. |
 | **LTP Index** | A neutral trust-proof discovery/distribution role, not an identity or reputation authority. The new [Draft 0.1 contract](./protocol-apw/LTP-INDEX-DRAFT-v0.1.md) is not yet implemented; the current witness directory retains its historical `apw-index` format. |
 | **LTP Proof Package** | The proposed neutral [container of APW identity/state proofs and LTP evidence](./protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md) for independent verification. Index signatures alone do not verify its contents. |
 | **Veranet** | The end state where independent APW sites and indexes can verify each other without a central authority. It is a direction, not a shipped network. |
@@ -27,6 +27,10 @@ UI; a reader should not have to infer them from context.
 | **Canonical node** | The one active writer for a site's private content, revisions, archive and credentials. |
 | **Public projection** | The allowlisted, generated public output (for example Git/GitHub Pages) derived from approved revisions; it is not the private canon. |
 | **Single-writer** | The rule that only one node may accept writes at a time; backups and restored copies are not concurrent writers. |
+
+**Acronym collision:** [RFC 5326](https://www.rfc-editor.org/rfc/rfc5326.html)
+uses LTP for Licklider Transmission Protocol, an unrelated protocol. Here the
+unique expansion is Local Trust Protocol; LTP Stack means APW + LTP + SVRI + HSVR.
 
 ## Related documents
 

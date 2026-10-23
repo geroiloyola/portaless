@@ -72,7 +72,11 @@ conformance report or a second complete verifier.
 
 **Integrator guide**: third parties connecting to APW / Portaless / Index APIs should start at [`docs/api/`](../api/) (public well-known endpoints, verification recipes, admin endpoints).
 
-**License and governance**: the specification, its errata, and its vectors are published under **CC BY 4.0** — reimplementation, translation, and commercial use are permitted with attribution to the author (Gerardo Loyola), with no registration or certification by Portaless; see the [License and governance](./APW-SPEC-v1.3.md#license-and-governance) section of the spec. The reference implementation code is AGPL-3.0 (`LICENSE`). Section 6 is called **Loyal Trust Protocol (LTP)**; in earlier versions of the document it appeared as "Loyola Trust Protocol" (same acronym, same specification).
+**License and governance**: the specification, its errata, and its vectors are published under **CC BY 4.0** — reimplementation, translation, and commercial use are permitted with attribution to the author (Gerardo Loyola), with no registration or certification by Portaless; see the [License and governance](./APW-SPEC-v1.3.md#license-and-governance) section of the spec. The reference implementation code is AGPL-3.0 (`LICENSE`). LTP means **Local Trust Protocol**: each node applies its own policy to verified evidence. LTP Stack is APW + LTP + SVRI + HSVR.
+
+<!-- ltp-continuity:start -->
+**Naming continuity:** "Loyal Trust Protocol" and "Loyola Trust Protocol" are former expansions, retained only when citing historical editions. The acronym, identifiers, signed bytes and author credit are unchanged; see the specification's naming continuity note.
+<!-- ltp-continuity:end -->
 
 **The problem it solves**: today no complete, decentralized, free technical mechanism exists that lets an AI agent (or a human) verify whether a site is trustworthy without depending on a high-reputation domain, a central certifying authority, or circumventable proxy signals.
 

@@ -24,6 +24,10 @@ All six rows have missing cases. The core positive example is not a complete
 core conformance suite. Strict-parser malformed inputs also remain rejection
 targets; current byte/math/schema audits do not execute a strict LTP parser.
 
+The [CORE-01…06 closure plan](./LTP-S3-CORE-CLOSURE-PLAN.md) maps each gap to A/B
+and the evidence needed. These are A/B prerequisites, not optional reputation
+work: approval of a digest alone cannot waive a missing dependency or start A/B.
+
 ## S3-reputation — remains Draft
 
 | Deferred area | Missing evidence / closure |

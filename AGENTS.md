@@ -13,6 +13,10 @@ modules: commerce, plugin sandboxing, AI-agent identification (Web Bot Auth),
 MCP server (so an AI agent can edit pages directly), and a modular dashboard.
 Core is AGPL-3.0; the Protocol APW spec is CC BY 4.0; the Plugin SDK is MIT.
 
+LTP means **Local Trust Protocol**: each node applies its own policy to verified
+evidence. **LTP Stack** is APW + LTP + SVRI + HSVR; this naming does not rename
+wire identifiers, paths or signed artifacts.
+
 ## The new-user story (this is the product's north star)
 
 A person should be able to start in the APW/LTP world with **three free

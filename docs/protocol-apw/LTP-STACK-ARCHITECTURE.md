@@ -16,6 +16,12 @@ protocol, an Index authority or the proof-package format.
 
 ## 1. Layer responsibilities
 
+**Owner naming decision (2026-10-23): LTP = Local Trust Protocol.** Each node
+applies its own local policy to verified evidence. **LTP Stack** is the complete
+APW + LTP + SVRI + HSVR set, not an expansion of the LTP acronym. This editorial
+clarification preserves attribution to Gerardo Loyola in authorship and Annex A,
+all adopted identifiers and signed bytes, and existing formulas.
+
 | Layer | Responsibility | What it does not establish by itself |
 |---|---|---|
 | **APW — identity and structure** | `did:apw`, domain/key binding, original signed artifacts, structural links between state transitions, peer-to-peer identity/state exchange and the DNS-anchored log format. | A signature/state hash does not determine trustworthiness, reputation, truthful content or authorization. |
@@ -205,7 +211,7 @@ Initial collision check (2026-10-23), for the owner's naming decision:
 
 | Acronym | Checked evidence | Finding / decision |
 |---|---|---|
-| LTP | [RFC 5326 title and abstract](https://www.rfc-editor.org/rfc/rfc5326.html) | Confirmed: **Licklider Transmission Protocol** already uses LTP. Unrelated protocol; qualify this draft as Loyal Trust Protocol / LTP Stack. Owner decides final public naming before S6. |
+| LTP | [RFC 5326 title and abstract](https://www.rfc-editor.org/rfc/rfc5326.html) | Confirmed: **Licklider Transmission Protocol** already uses LTP. Unrelated protocol; the owner has selected **Local Trust Protocol** here. Qualify citations; LTP Stack denotes APW + LTP + SVRI + HSVR. The collision remains, without a uniqueness or endorsement claim. |
 | SVRI | [Sexual Violence Research Initiative](https://www.svri.org/) | Confirmed public acronym collision. Spell out this project's projection name and version; owner decides naming before S6. |
 | HSVR | [PubMed 42288468, abstract via Europe PMC](https://europepmc.org/article/MED/42288468), DOI `10.1016/j.anorl.2026.03.009` | Confirmed: **home sleep video recordings (HSVR)** is an existing expansion in clinical literature. Unrelated field; qualify the historical SVRI output name. Owner decides naming before S6. |
 

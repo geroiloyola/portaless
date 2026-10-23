@@ -21,6 +21,10 @@ A lightweight, open source, modular CMS — built to be published without paid h
 
 ## What is Portaless?
 
+**LTP Stack** is APW + LTP + SVRI + HSVR. **LTP** means **Local Trust Protocol**:
+each node applies its own policy to verified evidence. See the
+[glossary](./docs/glossary.md) for layer responsibilities and acronym context.
+
 Portaless is a CMS built on [Astro](https://astro.build) that solves, by architectural design, the most persistent structural problems of WordPress:
 
 - **No exposed database, no server to manage** — the site compiles to static HTML and is served from free infrastructure (GitHub Pages, Cloudflare Pages).
