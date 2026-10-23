@@ -90,6 +90,10 @@
 -- de D1). Fuente schema-additions/plugin-artifacts.sql; el store las crea al
 -- vuelo. Ver packages/plugin-sandbox/src/registry/plugin-artifacts.ts.
 --
+-- NOTA PR2: resolution_budget_config guarda configuración tipada versionada,
+-- nunca secretos ni contadores. Sin fila, instalaciones previas no cambian.
+-- Fuente schema-additions/resolution-budget-config.sql; migración versionada v10.
+--
 -- Aplicar este archivo:
 --   Cloudflare D1:      wrangler d1 execute <NOMBRE_DB> --file=schema.sql
 --   SQLite self-hosted: sqlite3 portaless.db < schema.sql
@@ -1125,3 +1129,15 @@ CREATE INDEX IF NOT EXISTS idx_publication_runs_snapshot
   ON publication_runs(snapshot_hash, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_publication_runs_status
   ON publication_runs(status, started_at DESC);
+
+-- PR2 -- versioned owner configuration for the pre-auth resolution budget.
+-- No default row is inserted: existing installations preserve their behavior.
+-- Runtime secrets and counters never belong in this table.
+
+CREATE TABLE IF NOT EXISTS resolution_budget_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  config_json TEXT NOT NULL,
+  revision INTEGER NOT NULL CHECK (revision > 0),
+  updated_at TEXT NOT NULL,
+  updated_by TEXT NOT NULL
+);

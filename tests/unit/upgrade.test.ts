@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { schemaVersion } from "../../packages/persistence-migrations/src/index";
 
 const root = resolve(__dirname, "../..");
 const tsx = join(root, "node_modules/tsx/dist/cli.mjs");
@@ -39,7 +40,7 @@ describe("upgrade: snapshot de un tag anterior -> migrar a HEAD", () => {
       cwd: root,
       encoding: "utf8",
     });
-    expect(out).toContain("v1 -> v9");
+    expect(out).toContain(`v1 -> v${schemaVersion()}`);
     expect(out).toContain("[upgrade] backup:");
     expect(out).toContain("[upgrade] OK");
   });

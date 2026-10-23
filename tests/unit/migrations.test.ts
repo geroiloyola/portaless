@@ -12,7 +12,7 @@ import {
   pendingFrom,
   schemaVersion,
 } from "../../packages/persistence-migrations/src/index";
-import { PLUGIN_EMAIL_QUOTA_DDL } from "../../packages/persistence-migrations/src/ddl";
+import { PLUGIN_EMAIL_QUOTA_DDL, RESOLUTION_BUDGET_CONFIG_DDL } from "../../packages/persistence-migrations/src/ddl";
 import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL } from "../../packages/persistence-migrations/src/ddl";
 import { currentVersion, migrateSqlite } from "../../packages/persistence-migrations/src/runner";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
@@ -56,6 +56,7 @@ async function makeHistoricalDb(path: string, version: number): Promise<void> {
       if (columns.includes(column)) db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
     }
     if (version < 4) db.exec("DROP TABLE IF EXISTS plugin_email_quota");
+    if (version < 10) db.exec("DROP TABLE IF EXISTS resolution_budget_config");
     db.exec("DELETE FROM schema_migrations WHERE version > " + Number(version));
     db.prepare("INSERT OR REPLACE INTO users (username,password_hash,role,created_at) VALUES (?,?,?,?)")
       .run("historical-admin", "preserved-hash", "admin", "2020-01-01T00:00:00.000Z");
@@ -189,7 +190,7 @@ describe("upgrade histórico y recuperación", () => {
     const result = await migrateSqlite(path);
     expect(result.from).toBe(1);
     expect(result.to).toBe(schemaVersion());
-    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs"]);
+    expect(result.applied).toEqual(["identity_and_attestation_columns", "user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs", "resolution_budget_config"]);
     expect(result.backupPath).toBeTruthy();
 
     const upgraded = await openSqlite(path);
@@ -245,7 +246,7 @@ describe("upgrade histórico y recuperación", () => {
     const recovered = await migrateSqlite(restoredPath);
     expect(recovered.from).toBe(2);
     expect(recovered.to).toBe(schemaVersion());
-    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs"]);
+    expect(recovered.applied).toEqual(["user_and_plugin_columns", "email_capabilities", "page_revision_history", "page_revision_evidence", "page_revision_approvals", "mcp_audit_events", "publication_runs", "resolution_budget_config"]);
     const finalDb = await openSqlite(restoredPath);
     expect(currentVersion(finalDb)).toBe(schemaVersion());
     expect(finalDb.prepare("SELECT username FROM users WHERE username='historical-admin'").get()).toBeTruthy();
@@ -515,5 +516,28 @@ describe("MCP audit DDL: una sola fuente entre store, migration y schema", () =>
   });
   it("migration v8 usa las mismas constantes compartidas", () => {
     expect(MIGRATIONS.find((migration) => migration.version === 8)?.statements).toEqual([MCP_AUDIT_TABLE_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_NO_DELETE_DDL]);
+  });
+});
+
+describe("PR2 resolution budget config migration", () => {
+  const normalize = (sql: string) => sql.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").replace(/\s*([(),])\s*/g, "$1").trim().replace(/;+$/, "");
+  it("migration v10 creates the configuration table without seeding a row and is idempotent", async () => {
+    const path = tempDb();
+    await makeHistoricalDb(path, 9);
+    const migrated = await migrateSqlite(path);
+    expect(migrated.applied).toContain("resolution_budget_config");
+    const db = new Database(path);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='resolution_budget_config'").get()).toBeTruthy();
+    expect(db.prepare("SELECT id FROM resolution_budget_config").all()).toEqual([]);
+    db.close();
+    expect((await migrateSqlite(path)).applied).toEqual([]);
+  });
+  it("migration and schema-additions share one DDL definition", () => {
+    const root = join(__dirname, "../..");
+    const file = readFileSync(join(root, "schema-additions/resolution-budget-config.sql"), "utf8");
+    const create = file.match(/CREATE TABLE[\s\S]*?\)\s*;/)?.[0];
+    expect(create).toBeTruthy();
+    expect(normalize(create!)).toBe(normalize(RESOLUTION_BUDGET_CONFIG_DDL));
+    expect(MIGRATIONS.find((migration) => migration.version === 10)?.statements).toEqual([RESOLUTION_BUDGET_CONFIG_DDL]);
   });
 });

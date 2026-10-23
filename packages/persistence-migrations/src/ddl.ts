@@ -48,3 +48,8 @@ export const PUBLICATION_RUNS_SNAPSHOT_INDEX_DDL =
   "CREATE INDEX IF NOT EXISTS idx_publication_runs_snapshot ON publication_runs(snapshot_hash, started_at DESC)";
 export const PUBLICATION_RUNS_STATUS_INDEX_DDL =
   "CREATE INDEX IF NOT EXISTS idx_publication_runs_status ON publication_runs(status, started_at DESC)";
+
+export const RESOLUTION_BUDGET_CONFIG_DDL =
+  "CREATE TABLE IF NOT EXISTS resolution_budget_config (" +
+  "id INTEGER PRIMARY KEY CHECK (id = 1), config_json TEXT NOT NULL, " +
+  "revision INTEGER NOT NULL CHECK (revision > 0), updated_at TEXT NOT NULL, updated_by TEXT NOT NULL)";

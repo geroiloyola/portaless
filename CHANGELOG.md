@@ -38,6 +38,7 @@ closed).
 
 ## Unreleased
 
+- **PR2 step 2 — versioned pre-auth budget configuration.** Adds additive schema migration v10 with no seeded row, a bounded typed limits document, admin GET/PUT API, and atomic expected-revision compare-and-set for SQLite/D1. Secrets and counters are excluded. API reports configuration as not effective until later runtime integration; existing installations and B3 remain unchanged.
 - **PR2 continuation — bounded kernel and first real adapter (experimental).** Adds active-concurrency permits released in `finally`, nondecreasing logical windows, quota-state stress coverage, dual-key HMAC overlap and an opt-in pre-egress budget in the Web Bot Auth directory adapter. The flag is off by default; TXT/DoH, DID, history and evidence adapters, shared counters and secret operations remain open. No B3 or identity/classification behavior changes.
 
 - **PR2 initial kernel draft (superseded by the continuation above).** Introduced bounded per-process client/root-directory windows, pre-fetch byte reservations, per-stage accounting and trusted-ingress HMAC buckets. At that point it had no production resolver integration; the continuation above adds only an opt-in directory adapter and keeps whole-chain budgets blocked. No B3 or identity/classification behavior changes.
