@@ -1,4 +1,5 @@
 import type { SafeFetchLimits, SafeFetchResult, SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
+import { IdleBucketIndex } from "./idle-bucket-index";
 
 export const RESOLUTION_STAGES = ["directory", "txt_doh", "did", "history", "evidence"] as const;
 export type ResolutionStage = typeof RESOLUTION_STAGES[number];
@@ -35,7 +36,7 @@ export type BudgetRejection = {
   status: 429 | 503;
   retryAfterSeconds: number;
 };
-interface Bucket { window: number; attempts: number; bytes: number }
+interface Bucket { window: number; attempts: number; bytes: number; order: number; denied?: boolean }
 
 /**
  * PR2 kernel: optionally injected by the Web Bot Auth directory adapter.
@@ -44,6 +45,9 @@ interface Bucket { window: number; attempts: number; bytes: number }
  */
 export class ResolutionBudget {
   private buckets = new Map<string, Bucket>();
+  private idle = new IdleBucketIndex();
+  private window = -1;
+  private sequence = 0;
   private activeClients = new Map<string, number>();
   private activeOrigins = new Map<string, number>();
   private activeTotal = 0;
@@ -58,7 +62,16 @@ export class ResolutionBudget {
 
   stateForTests() {
     return { buckets: [...this.buckets].map(([key, value]) => ({ key, ...value })), activeTotal: this.activeTotal,
-      activeClients: [...this.activeClients], activeOrigins: [...this.activeOrigins] };
+      activeClients: [...this.activeClients], activeOrigins: [...this.activeOrigins], idleEntries: this.idle.size };
+  }
+
+  private index(key: string, bucket: Bucket) {
+    if (this.buckets.get(key) !== bucket) return; // completion from a previous window
+    this.idle.remove(key);
+    const quota = key.startsWith("client:") ? this.options.client : this.options.origin;
+    if (bucket.denied || bucket.attempts >= quota.attempts || bucket.bytes >= quota.bytes
+      || this.activeClients.has(key) || this.activeOrigins.has(key)) return;
+    this.idle.set({ key, attempts: bucket.attempts, bytes: bucket.bytes, order: bucket.order });
   }
 
   async fetch(context: ResolutionContext, url: string, fetcher: SafeFetcher, limits: SafeFetchLimits = {}): Promise<SafeFetchResult | BudgetRejection> {
@@ -74,16 +87,24 @@ export class ResolutionBudget {
     const retryAfterSeconds = Math.max(1, Math.ceil(((window + 1) * this.options.windowMs - timestamp) / 1000));
     const clientKeys = clientBuckets.map((bucket) => `client:${bucket}`);
     const originKey = `origin:${origin}`;
-    // Sweep expired consumption. Active leases live in separate maps and cannot
-    // be forgotten at window rollover or evicted under capacity pressure.
-    for (const [key, value] of this.buckets) if (value.window !== window) this.buckets.delete(key);
+    // Whole-window replacement avoids a table scan on every admission. Old
+    // in-flight references remain bounded by concurrency, with separate leases.
+    if (window !== this.window) {
+      this.buckets = new Map(); this.idle = new IdleBucketIndex(); this.window = window;
+    }
     const newKeys = clientKeys.filter((key) => !this.buckets.has(key)).length + Number(!this.buckets.has(originKey));
-    const clients = clientKeys.map((key) => this.buckets.get(key) ?? { window, attempts: 0, bytes: 0 });
-    const operator = this.buckets.get(originKey) ?? { window, attempts: 0, bytes: 0 };
+    const clients = clientKeys.map((key) => this.buckets.get(key) ?? { window, attempts: 0, bytes: 0, order: this.sequence++ });
+    const operator = this.buckets.get(originKey) ?? { window, attempts: 0, bytes: 0, order: this.sequence++ };
     if (clients.some((client) => client.attempts >= this.options.client.attempts || client.bytes + cap > this.options.client.bytes)) {
+      for (const [i, client] of clients.entries()) {
+        if (client.attempts >= this.options.client.attempts || client.bytes + cap > this.options.client.bytes) {
+          client.denied = true; this.idle.remove(clientKeys[i]);
+        }
+      }
       return { ok: false, error: "client_budget_exhausted", status: 429, retryAfterSeconds };
     }
     if (operator.attempts >= this.options.origin.attempts || operator.bytes + cap > this.options.origin.bytes) {
+      operator.denied = true; this.idle.remove(originKey);
       return { ok: false, error: "origin_budget_exhausted", status: 503, retryAfterSeconds };
     }
     const activeClientCounts = clientKeys.map((key) => this.activeClients.get(key) ?? 0);
@@ -96,14 +117,14 @@ export class ResolutionBudget {
       return { ok: false, error: "origin_budget_exhausted", status: 503, retryAfterSeconds };
     }
     const needed = this.buckets.size + newKeys - this.options.maxBuckets;
+    const requestKeys = [...clientKeys, originKey];
+    for (const key of requestKeys) this.idle.remove(key);
     if (needed > 0) {
-      const protectedKeys = new Set([...clientKeys, originKey]);
-      const candidates = [...this.buckets].filter(([key]) => !protectedKeys.has(key)
-        && !this.activeClients.has(key) && !this.activeOrigins.has(key))
-        .sort(([, a], [, b]) => a.attempts - b.attempts || a.bytes - b.bytes);
-      // Do not partially evict if live leases leave insufficient room.
-      if (candidates.length < needed) return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
-      for (const [key] of candidates.slice(0, needed)) this.buckets.delete(key);
+      if (this.idle.size < needed) {
+        for (const key of requestKeys) { const bucket = this.buckets.get(key); if (bucket) this.index(key, bucket); }
+        return { ok: false, error: "budget_state_full", status: 503, retryAfterSeconds };
+      }
+      for (let i = 0; i < needed; i++) this.buckets.delete(this.idle.pop()!);
     }
     // Reserve both scopes synchronously before the first await. Failed attempts
     // keep their consumption charge; concurrency permits always release.
@@ -136,6 +157,8 @@ export class ResolutionBudget {
       const remainingOrigins = (this.activeOrigins.get(originKey) ?? 1) - 1;
       if (remainingOrigins <= 0) this.activeOrigins.delete(originKey);
       else this.activeOrigins.set(originKey, remainingOrigins);
+      for (const [i, key] of clientKeys.entries()) this.index(key, clients[i]);
+      this.index(originKey, operator);
     }
   }
 }
