@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import canonicalize from 'canonicalize';
 import { expect, test } from 'vitest';
 
 test('S3 scanner exceptions name only exact committed public fixture findings, not broad paths or real credentials', () => {
@@ -32,6 +34,25 @@ test('S3 scanner exceptions name only exact committed public fixture findings, n
       expect(rule).toBe('generic-api-key');
       expect(line).toMatch(/"(?:keySetDigest|dnskeyRdata|zoneDnskeyRdata)"\s*:\s*"/);
     }
+  }
+  // New-candidate exceptions are only known public SHA-256 preimages, not JWS or credentials.
+  const corePath = 'docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json';
+  const coreEntries = ledger.filter(line => line.includes(`:${corePath}:`));
+  expect(coreEntries).toHaveLength(27);
+  expect(new Set(coreEntries).size).toBe(coreEntries.length);
+  const coreLines = read(corePath).split('\n');
+  const proof = JSON.parse(read('docs/protocol-apw/vectors/ltp/v0.2/proofs.json')).proofs['identity-1000'];
+  const records = [...proof.result.package.histories[0].keys].sort((a, b) => a.fingerprint < b.fingerprint ? -1 : a.fingerprint > b.fingerprint ? 1 : 0);
+  const sha = (value: string) => createHash('sha256').update(value).digest('base64url');
+  const knownPublicDigests = new Set([sha(canonicalize(records)), sha('old key set'), sha('other keyset')]);
+  for (const entry of coreEntries) {
+    const [commit, path, rule, line] = entry.split(':');
+    expect(commit).toBe('df6e284ed81a1b0869c0d7d8a22593921b50641b');
+    expect(path).toBe(corePath); expect(rule).toBe('generic-api-key');
+    expect(ledger[ledger.indexOf(entry)-1]).toContain('solo pruebas');
+    const match = coreLines[Number(line)-1].match(/^\s*"keySetDigest": "([A-Za-z0-9_-]{43})",?$/);
+    expect(match, `public SHA-256 finding at ${line}`).not.toBeNull();
+    expect(knownPublicDigests.has(match![1])).toBe(true);
   }
 });
 

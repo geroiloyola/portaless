@@ -66,3 +66,61 @@
 9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:18
 # solo pruebas — synthetic public P-256 zone DNSKEY RDATA.
 9ed88686e28c98bad27f174c7c6c8c4d210613bc:docs/protocol-apw/vectors/ltp/v0.1/dnssec-proofs.json:generic-api-key:29
+
+# PR #104 v0.2: 27 reviewed false positives, all public SHA-256 key-set
+# commitments (the actual sorted public set or explicit synthetic wrong-set hashes).
+# No JWS, secret, rule/path-wide exclusion or signed-byte change is introduced.
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:3784
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:6327
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:8868
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:11409
+# solo pruebas — synthetic wrong-set SHA-256, not a credential.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:13950
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:16445
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:16472
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:18932
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:18961
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:18988
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:20233
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:20282
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:22751
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:25196
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:25240
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:27685
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:27729
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:30174
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:30218
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:32663
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:32707
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:35152
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:35196
+# solo pruebas — synthetic wrong-set SHA-256, not a credential.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:37641
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:37685
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:40130
+# solo pruebas — public key-set SHA-256 commitment.
+df6e284ed81a1b0869c0d7d8a22593921b50641b:docs/protocol-apw/vectors/ltp/v0.2/core-04-history.json:generic-api-key:42615
