@@ -1,14 +1,13 @@
 # G4 pre-authorization review — reputation/SVRI arithmetic
 
-**Status: review only. G4 is not authorized for an engine. On 2026-10-24 the
-owner authorized generation of the static REP-01…REP-11 JSON targets only; the
-TypeScript SVRI engine remains blocked until that corpus is audited. No
-implementation, profile or activation is introduced by this document.
-License: CC BY 4.0.**
-G4 remains `PENDING_AUTHORIZATION` in the
-[canonical register](./LTP-GATES-AND-AUTHORIZATIONS.md). This report exists so a
-future owner decision starts from the real implementations, the normative
-arithmetic and the tests that would be required.
+**Status: G4 engine implementation authorized on 2026-10-24 after the static
+REP-01…REP-11 corpus was audited. The engine lives in
+`packages/ltp-reputation/`; a signed profile, real-emitter claim, runtime
+integration/activation and S4 independence remain pending. License: CC BY 4.0.**
+G4 is `AUTHORIZED` for engine implementation in the
+[canonical register](./LTP-GATES-AND-AUTHORIZATIONS.md). This report records the
+existing implementations, the normative arithmetic and the differential
+constraints the engine must honor.
 
 ## 1. What exists today
 
@@ -116,27 +115,39 @@ The family-level requirements above are enumerated case by case in
 REP-01…REP-11, with a boundary condition and expected invariant per case. That
 matrix, not this summary, is the documentary evidence for vector completeness.
 
-## 5. Open decisions before any G4 code
+## 5. Open decisions outside the static engine
 
 - Any future G4 authorization must cite §2: the adopted unsigned SVRI is
   binary64 with `1e-9` tolerance; rationals are oracle metadata; exact fractions
   are only a future signed-profile option with new vectors.
-- Decide whether G4 reuses `apw-resolver` primitives or introduces a separately
-  reviewed implementation with differential tests.
+- Decided for this increment: a separate `packages/ltp-reputation/` package with
+  a differential check against `apw-resolver`; merging/reusing the primitives
+  remains a future architecture decision.
 - Set emitter/denominator/work caps and the adversarial test matrix.
 - Identify an independent oracle or reviewer; the current vectors are authored
   by the same maintainer.
 - Define the real-emitter evidence required for any production reputation claim;
   vectors alone cannot satisfy it.
 
-Until those decisions are recorded, G4 remains pending and no reputation/SVRI
-math is implemented in `ltp-engine`.
+Those remaining decisions do not block the static engine: the 117-case engine is
+implemented in `packages/ltp-reputation/` and matches the audited corpus. They
+block a signed profile, real-emitter claim, runtime activation and S4 claim.
 
-## 6. Authorized static corpus (2026-10-24)
+## 6. Authorized static corpus and engine (2026-10-24)
 
-The owner authorized only the precomputed JSON targets:
-[`vectors/ltp/reputation/v0.1/`](./vectors/ltp/reputation/v0.1/). The fixture-only
-Python oracle is `tools/reputation-author.py`; it is not a Portaless engine. The
-117 REP cases, coverage index and manifest are static audit material. A
-TypeScript implementation, runtime integration, signed profile, real-emitter
-claim, S4 independence and activation are still blocked.
+The static corpus [`vectors/ltp/reputation/v0.1/`](./vectors/ltp/reputation/v0.1/)
+was audited and merged in #107 (manifest digest
+`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`). The fixture-only Python oracle is
+`tools/reputation-author.py`.
+
+The owner then authorized the TypeScript engine. `packages/ltp-reputation/`
+implements the 117 cases and matches every literal expected object; a
+differential test compares projection cases with `apw-resolver` within the
+documented 6-decimal/`1e-9` normalization. The engine is not wired to runtime
+configuration, grants, middleware, activation or a signed profile, and S4/real
+emitters remain outside it.
+
+One representation difference is explicit: the audited vectors use the public
+level name `trusted`; the legacy `apw-resolver` returns `reliable` for the same
+level. The differential test normalizes this label and does not rewrite either
+artifact.

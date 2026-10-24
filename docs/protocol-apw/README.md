@@ -54,7 +54,7 @@ reference runtime, not the name of a protocol service or data format.
 | [Canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md) | Single source of authorization scopes/states; corpus integrity and acceptance confer no implementation permission. |
 | [Composed corpus v0.3](./vectors/ltp/v0.3/README.md) | AB-STATIC-01 master plus six negatives joining acquisition/verification bytes and state; accepted under G1. |
 | [G2/G3 implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md) | Accepted identity-only acquisition/verifier; Node-only, Workers not covered, activation pending. |
-| [G4 pre-authorization review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md) | Existing reputation implementations, binary64+tolerance arithmetic, rational risks and differential-test proposal; no G4 code. |
+| [G4 pre-authorization review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md) | Existing implementations, binary64+tolerance arithmetic, rational risks, differential constraints and the authorized G4 engine/117-vector conformance; runtime activation remains pending. |
 
 These owner-approved baseline drafts do not amend the adopted APW v1.3/E-16 formats, rename existing wire
 messages, or establish conformance. Machine-readable vectors with explicit

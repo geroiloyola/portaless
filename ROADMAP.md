@@ -92,11 +92,13 @@ no force pushes, no deletions, and required status checks `build`,
 
 - `[x]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md), with the composed v0.3 corpus closing the reviewed G1 scope.
 
+- `[x]` **G4 reputation engine (static conformance)** — `packages/ltp-reputation/` matches all 117 audited REP-01…REP-11 vectors and differentially checks `apw-resolver` within the documented rounding normalization. Runtime activation, real emitters, signed profile, S4 and G5 remain open.
+
 - `[ ]` **Identity-engine runtime integration (proposal)** — configuration, one category per DID, explicit owner grants, diagnostics and middleware enforcement are documented in [the proposal](./docs/architecture/ltp-runtime-integration-proposal.md); B3 is unchanged and no code/migration is included. Pending owner decisions.
 
 - `[ ]` **Bounded G2/G3 identity-only acquisition + verifier** — `packages/ltp-engine/` implements configured HTTPS DoH/TXT and Index acquisition, shared budget/deadline accounting and deterministic offline verification. It passes AB-STATIC-01…07 in memory. The real connector now rejects special-use CIDRs/hosts, DNS rebinding, redirects and plaintext before socket work; loopback/TLS and budget-stress regressions pass. External live acceptance/measurements, deployment activation, S4 independence and S6 publication remain open.
 
-- `[x]` **LTP S1/S3 corpus approval** — schemas and vectors accepted under G1; [classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) remain proposals, not a repository migration. S4 external verification, S6 release, G4 reputation and G5 offline DNSSEC remain gated. Current cross-checks share OpenSSL and do not close S4.
+- `[x]` **LTP S1/S3 corpus approval** — schemas and vectors accepted under G1; [classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) remain proposals, not a repository migration. S4 external verification, S6 release and G5 offline DNSSEC remain gated; the G4 static corpus and engine are recorded separately. Current cross-checks share OpenSSL and do not close S4.
 
 ### Derived-score rendering integrity (completed; see Trust Layer)
 
