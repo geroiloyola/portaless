@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **MCP dependency security update.** Refreshes the transitive Express `body-parser` lock from 2.3.0 to 2.4.0 (and its required `qs` patch) to fix GHSA-27r3-jxmh-p828 / CVE-2026-111181. Adds an isolated compressed-body regression that sends trailing bytes after decoder completion and verifies the process remains available. Audit thresholds and allowlist remain unchanged.
+
 - **S3-core static candidate v0.2.** Publishes 285 literal CORE-01…06 targets with direct contracts, three-key rotation and a signed 1,000-entry history segmented 400/400/200, preserving the initial corpus. The total manifest pins initial/new assets for manual owner review. Original/core author and primitive checks now run inside the already-required Unit Tests/unit job; the separate check is removed, coverage thresholds and protection settings unchanged. No engine, network, budgets or A/B implementation is introduced.
 
 - **Owner-selected LTP expansion.** LTP means **Local Trust Protocol**: each node applies its own policy to verified evidence; LTP Stack is APW + LTP + SVRI + HSVR. Live terminology, continuity notes and CI naming lint preserve historical editions, author/Annex A credit, identifiers and signed assets. The S3-core closure plan lists the evidence A/B still need; no implementation or corpus approval is implied.
