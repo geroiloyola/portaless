@@ -18,10 +18,32 @@ export const normativePaths = [
   'APW-SPEC-v1.3.md', 'SVRI-v1.0.md', 'README.md', 'LTP-S3-CORE-CLOSURE-PLAN.md',
   'vectors/ltp/v0.2/README.md',
   'LTP-GATES-AND-AUTHORIZATIONS.md', 'vectors/ltp/v0.3/README.md',
+  'LTP-G2-G3-IMPLEMENTATION-SCOPE.md',
 ];
-export function candidate(normativeCommit) {
+const decisionKeys = ['corpusDigest', 'decidedAt', 'decision', 'mergeCommit', 'reviewedCommit', 'reviewer', 'scope'];
+
+/** Validates the recorded G1 decision against the actual candidate digest. */
+export function validateOwnerDecision(decision, corpusDigest) {
+  if (decision === null) return null;
+  assert.deepEqual(Object.keys(decision).sort(), decisionKeys, 'owner decision fields');
+  assert.equal(decision.decision, 'approved');
+  assert.equal(decision.scope, 'G1-static-corpus-only');
+  assert.match(decision.decidedAt, /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(decision.reviewedCommit, /^[a-f0-9]{40}$/);
+  assert.match(decision.mergeCommit, /^[a-f0-9]{40}$/);
+  assert.equal(decision.reviewer, 'linstarkcorp');
+  assert.equal(decision.corpusDigest, corpusDigest);
+  return decision;
+}
+
+export function candidate(normativeCommit, ownerDecision = null) {
   assert.match(normativeCommit, /^[a-f0-9]{40}$/);
-  return { status: 'pending-owner-decision', ownerDecision: null, decisionScope: 'G1-static-corpus-only', normativeCommit, corpusVersion: '0.3',
+  return {
+    status: ownerDecision ? 'approved' : 'pending-owner-decision',
+    ownerDecision,
+    decisionScope: 'G1-static-corpus-only',
+    normativeCommit,
+    corpusVersion: '0.3',
     schemaBundleDigest: jcsDigest('schemas/v0.1/manifest.json'),
     originalCorpusDigest: jcsDigest('vectors/ltp/v0.1/manifest.json'),
     previousCorpusDigest: jcsDigest('vectors/ltp/v0.2/manifest.json'),
@@ -37,11 +59,21 @@ export function readRecord() {
 }
 export function checkRecord(record, readProse = read) {
   assert.deepEqual(Object.keys(record.normativeFiles), normativePaths, 'required normative prose scope');
-  const expected = candidate(record.normativeCommit);
-  assert.deepEqual(record, expected, 'data digests, exact prose bytes and pending decision must match');
+  const actual = candidate(record.normativeCommit);
+  const decision = validateOwnerDecision(record.ownerDecision, actual.corpusDigest);
+  const expected = candidate(record.normativeCommit, decision);
+  assert.deepEqual(record, expected, 'data digests, exact prose bytes and recorded decision must match');
   for (const path of normativePaths) assert.equal(hash(readProse(path), 'hex'), record.normativeFiles[path], `changed normative prose: ${path}`);
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  if (process.argv[2] === '--candidate') console.log(JSON.stringify(candidate(process.argv[3]), null, 2));
-  else { checkRecord(readRecord()); console.log('Candidate tuple matches data digests and exact normative prose; owner approval remains pending.'); }
+  if (process.argv[2] === '--candidate') {
+    const decision = process.argv[4] ? JSON.parse(process.argv[4]) : null;
+    console.log(JSON.stringify(candidate(process.argv[3], decision), null, 2));
+  } else {
+    const record = readRecord();
+    checkRecord(record);
+    console.log(record.ownerDecision
+      ? 'Recorded G1 owner decision matches the corpus, exact prose and data digests; G2/G3 remain separate register decisions.'
+      : 'Candidate tuple matches data digests and exact normative prose; owner approval remains pending.');
+  }
 }

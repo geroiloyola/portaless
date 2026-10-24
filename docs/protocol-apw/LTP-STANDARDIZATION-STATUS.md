@@ -34,7 +34,7 @@ owner for a decision rather than silently changing the baseline.
 |---|---|---|
 | S1 | Complete unambiguous interoperability definitions. | Pin exact serialization for the APW TXT manifest hashed by `rootManifestDigest`; complete nested schema/type constraints and status/reason/null/HTTP combinations. Publish valid and invalid examples so independent engines do not infer local runtime structures. |
 | S2 | Specify and test comprehensive budget accounting. | The numerical baseline is approved. Define how package/decoded DNS bytes, DNSSEC operations, manifest/key-set signatures, nested issuers, retries and resumed steps consume it; prove shared caps, cancellation and no reset on a cache hit/retry. This accounting must not create a bypass around the approved limits. |
-| S3 | Publish executable conformance vectors for all three new contracts with explicit authorship. | [v0.3 composed candidate](./vectors/ltp/v0.3/README.md) adds AB-STATIC-01…07 to preserved v0.2/v0.1. Candidate is **verificación cruzada (mismo autor)**; manual sufficiency review remains pending under canonical G1. No expected semantic outcome was executed by an LTP engine. |
+| S3 | Publish executable conformance vectors for all three new contracts with explicit authorship. | [v0.3 composed corpus](./vectors/ltp/v0.3/README.md) adds AB-STATIC-01…07 to preserved v0.2/v0.1. **G1 accepted 2026-10-24**; the bounded identity-only engine matches all seven literal targets. Candidate authorship remains **verificación cruzada (mismo autor)**; G4/G5 and S4/S6 remain open. |
 | S4 | Obtain agreement from at least two independent verifiers. | Another person's verifier in another language with another primitive backend must record identity/revision/backend and complete results. OpenSSL CLI, Node/jose and cryptography/dnspython share the OpenSSL family; they cross-check encoding/canonicalization/structure, not primitive independence. This gate is still open. |
 | S5 | Publish security/resource/privacy acceptance evidence. | Controlled HTTPS/DNS fixtures must demonstrate zero arbitrary-origin consumer calls, no silent fallback, authenticated issuer/root handling, bounded hostile input, expiry/revocation behavior and audience separation. Report acquisition and local verification separately. Runtime activation additionally needs actual adapter/integration evidence. |
 | S6 | Publish a versioned normative release after S1–S5. | Record the final version/date, stable filenames and identifiers, dependency/errata references, vectors and verifier results; update status/index links consistently. Keep unchanged deployed identifiers and distinguish `apw-index` from the package service. Record the release through the normal reviewed PR and owner merge process. |
@@ -48,15 +48,15 @@ only for profiles whose complete requirements it actually passes.
 
 **Authorization source:** [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md)
 is the sole G1–G5 register. This file retains S1–S6 milestones and does not define
-another set of implementation permissions. **S1/S3 owner approval remains pending
-manual S3-core coverage review**, including the composed A→B case.
+another set of implementation permissions. **S1/S3-core were accepted under G1 on
+2026-10-24**, including the composed A→B corpus.
 
-The baseline PR #103 was merged by the owner on 2026-10-23. Its documentary
-baseline prerequisite is already satisfied and grants no permission to implement.
-The current correction instruction permits static G1 artifacts and checks only.
-Neither accepting the corpus nor merging #104 starts a subsequent phase.
-Implementation scopes require separate future decisions under the canonical
-register; no automatic transition is specified here.
+The baseline PR #103 was merged by the owner on 2026-10-23. **PR #104 was reviewed
+by linstarkcorp and merged at `7fd939f`**; that merge did not itself open G2/G3.
+The owner then recorded separate bounded G2/G3 authorizations for the identity-only
+acquisition/budget layer and deterministic verifier. G4/G5 remain blocked, and
+no automatic transition is specified here. Deployment and wider runtime
+acceptance still require the relevant S1–S6 evidence.
 
 Deployment/runtime acceptance still requires the relevant S1–S6 evidence,
 [LTP Index §8](./LTP-INDEX-DRAFT-v0.1.md#8-adoption-gate),

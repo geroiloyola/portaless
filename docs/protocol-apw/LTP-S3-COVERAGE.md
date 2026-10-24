@@ -1,9 +1,10 @@
 # S3 coverage split — proposed approval scopes
 
-**Status: v0.3 composed G1 candidate submitted for review, not approved. License: CC BY 4.0.**
-This is a static coverage review, not an implementation or an authorization.
-No Phase 2 engine, network, budget or DNSSEC validator is supplied.
-Fixture `proofAccepted` values are future targets, not observed engine verdicts.
+**Status: G1 accepted 2026-10-24; G2/G3 implementation authorized, G4/G5 blocked. License: CC BY 4.0.**
+The corpus is accepted for the identified static scope. A bounded identity-only
+engine now consumes it under the separate [G2/G3 authorization](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md).
+No reputation, public SVRI profile or offline DNSSEC validator is supplied.
+Fixture `proofAccepted` values remain the immutable acceptance targets.
 
 ## S3-core — proposed prerequisite for A and B
 
@@ -21,9 +22,10 @@ Case links below identify their exact preserved corpus revision.
 | Resource-bound objectives | [121 CORE-06 cases](./vectors/ltp/v0.2/core-06-resources.json), e.g. `CORE-06-dohBytes-at`, `CORE-06-signatureAttempts-over`, `CORE-06-abort-stream` | At/over limits, exact body recipes, count lists, cumulative requested work, cancellation, cache/dependency expiry and retry/resume/no-reset objectives. No scheduler/accounting/transport has been implemented. |
 
 The initial v0.1 positive chain uses one key only and remains preserved. All six
-rows now have concrete static targets in the versioned candidate; **manual
-coverage review and owner approval remain pending**. No LTP engine, strict parser,
-network or budget implementation has executed the expected semantic outcomes.
+rows have concrete static targets in the versioned candidate; the owner accepted
+G1 on 2026-10-24 after `linstarkcorp` reviewed the composed v0.3 corpus. The
+bounded identity-only engine verifies the seven composed targets; wider CORE
+semantics, reputation and offline DNSSEC remain outside that implementation.
 The complete [coverage index](./vectors/ltp/v0.2/coverage.json) lists all 285 new
 IDs and literal reasons/stages, with full input/expected objects in the case sets.
 
@@ -65,13 +67,14 @@ NSEC/NSEC3, wildcard and algorithm-rollover requirements are described only in
 the [canonical gates register](./LTP-GATES-AND-AUTHORIZATIONS.md). Synthetic
 RRSIG examples do not demonstrate full offline validation.
 
-## Proposed S3-core approval criterion — owner decision required
+## Recorded S3-core approval criterion — G1 accepted
 
 This matrix is evidence for **G1**, whose acceptance and current state are defined
 only in [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
 Review must cover all core rows and their composition, with fixed keys/time,
 literal outputs, direct contracts and byte-level producer/consumer bindings.
 Any uncovered prerequisite remains a blocker even when hashes match.
-The [approval record](./LTP-APPROVAL-RECORD.md) identifies the candidate tuple;
-accepting that tuple does not authorize a next phase. This file creates no
-implementation, reputation or offline-DNSSEC permission and no alternative gate.
+The [approval record](./LTP-APPROVAL-RECORD.md) records the accepted G1 tuple.
+G2/G3 required and received separate owner decisions; G1 alone did not open them.
+This matrix remains a coverage document, not an implementation or an alternative
+gate; it creates no G4/G5 permission.

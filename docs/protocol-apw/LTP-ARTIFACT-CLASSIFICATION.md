@@ -30,5 +30,6 @@ any change to the approved sequence requires an owner decision. This table does
 not enable PR3, R-05 or a new numeric reader reputation requirement.
 
 This classification grants no permission. The [coverage matrix](./LTP-S3-COVERAGE.md)
-supports G1 review; authorization scopes and states are defined only by
+supports the accepted G1 corpus; bounded G2/G3 implementation is separately
+authorized and G4/G5 remain blocked. States are defined only by
 [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).

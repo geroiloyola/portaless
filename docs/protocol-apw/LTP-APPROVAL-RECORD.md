@@ -1,15 +1,23 @@
-# S1/S3 approval record — candidate, no owner approval entered
+# S1/S3 approval record — accepted G1 decision
 
-**Status: pending owner decision. License: CC BY 4.0.**
-This record binds candidate data **and normative prose**. It is not an approval,
-a signature, a normative release, S4 evidence or permission to start Phase 2.
+**Status: G1 accepted by the owner on 2026-10-24. License: CC BY 4.0.**
+This record binds the reviewed corpus data **and normative prose**. It is not a
+normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
 
 ## Candidate tuple
 
 ```json
 {
-  "status": "pending-owner-decision",
-  "ownerDecision": null,
+  "status": "approved",
+  "ownerDecision": {
+    "decision": "approved",
+    "scope": "G1-static-corpus-only",
+    "decidedAt": "2026-10-24",
+    "reviewer": "linstarkcorp",
+    "reviewedCommit": "3ff080b42481e9321b449cec6e4e78ae5a9c9653",
+    "mergeCommit": "7fd939fda0e2570e5c18dfbe0e555483b52b449f",
+    "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA"
+  },
   "decisionScope": "G1-static-corpus-only",
   "normativeCommit": "07efe1a69fa9a4a12616edfe93106f28429deb87",
   "corpusVersion": "0.3",
@@ -75,30 +83,31 @@ text change requires a new normative commit/hash tuple and renewed owner review;
 an asset change requires the affected digest(s), scanner findings and record to
 be reviewed again. Old decisions are not transferred silently to a new tuple.
 
-The [S3-core coverage evidence](./LTP-S3-COVERAGE.md) awaits manual sufficiency
-review under canonical G1. Reputation profiles await their separate suite and
-real emitter evidence. This record approves neither scope. Green CI, publication,
-acceptance or merge never opens A/B, network, budgets or a new engine.
+The [S3-core coverage evidence](./LTP-S3-COVERAGE.md) is accepted for the
+identified G1 corpus. Reputation profiles await their separate suite and real
+emitter evidence. This record does not approve G4 or G5. Green CI, publication,
+acceptance or merge did not open G2/G3; the owner recorded those decisions
+separately in the canonical register.
 
 ## Naming-only follow-up (prior review revision)
 
 The owner selected **Local Trust Protocol** as the expansion of LTP. That naming
-decision does not approve the S1/S3 corpus: `ownerDecision` above remains null.
-That revision superseded the earlier `246cdc8` text pin without changing data
+decision did not itself approve the S1/S3 corpus. That revision superseded the earlier `246cdc8` text pin without changing data
 digests and expanded the byte-hash scope to 14 specification files.
 The same Git revision contains the editorial glossary/ADR/site updates and the
 line-by-line inventory; the portable spec check hashes only specification files
 and imports no runtime code. Historical editions and signed data remain intact.
 
-## Authorized static composition — current candidate
+## Accepted static composition — G1 decision
 
-The correction instruction authorizes static AB-STATIC-01…07 and the canonical
-authorization register, not approval of the resulting corpus. The tuple above
-pins the new total candidate digest and final prose Git SHA with 17 exact
-specification-file hashes. The initial corpus, v0.2, schema bundle and numeric
-extension retain their bytes and commitments. Manual G1 coverage review and the
-owner's final scope decision remain open; `ownerDecision` is null and
-`decisionScope` is `G1-static-corpus-only`. Inclusion of old reputation/math
-fixtures is archival continuity, not approval of advanced profiles or offline
-DNSSEC. No artifact/CI result grants permission to implement A/B, run a resolver,
-acquire network data or enforce budgets. Static targets are not engine results.
+The owner accepted the static AB-STATIC-01…07 corpus after `linstarkcorp`'s
+review. The tuple above pins the accepted total corpus digest and the exact
+specification prose with 18 file hashes. The initial corpus, v0.2, schema bundle
+and numeric extension retain their bytes and commitments. `decisionScope` is
+`G1-static-corpus-only`. Inclusion of old reputation/math fixtures is archival
+continuity, not approval of advanced profiles or offline DNSSEC.
+
+G1 did not itself authorize implementation. The owner recorded separate bounded
+G2/G3 decisions in [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md);
+G4/G5 remain blocked. No artifact/CI result expands that scope. The identity-only
+engine's matching test results are not a deployment or S4 claim.

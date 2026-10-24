@@ -110,7 +110,8 @@ requires vectors with explicit authorship and compatible externally reviewed ver
 Current implementation permissions are defined only in the
 [canonical gates register](./LTP-GATES-AND-AUTHORIZATIONS.md). The baseline merge
 is historical architecture evidence, not a trigger for programming. Static corpus
-approval grants no engine, network, resource or deployment authorization.
+approval did not itself grant engine, network, resource or deployment
+authorization; G2/G3 were separately authorized for identity-only work.
 
 ## 5. Future specification repository
 
