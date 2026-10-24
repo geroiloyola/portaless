@@ -1,0 +1,872 @@
+{
+  "format": "ltp-reputation-coverage",
+  "version": "0.1",
+  "totalCases": 117,
+  "families": [
+    {
+      "id": "REP-01",
+      "cases": 11
+    },
+    {
+      "id": "REP-02",
+      "cases": 9
+    },
+    {
+      "id": "REP-03",
+      "cases": 9
+    },
+    {
+      "id": "REP-04",
+      "cases": 14
+    },
+    {
+      "id": "REP-05",
+      "cases": 12
+    },
+    {
+      "id": "REP-06",
+      "cases": 10
+    },
+    {
+      "id": "REP-07",
+      "cases": 10
+    },
+    {
+      "id": "REP-08",
+      "cases": 14
+    },
+    {
+      "id": "REP-09",
+      "cases": 13
+    },
+    {
+      "id": "REP-10",
+      "cases": 8
+    },
+    {
+      "id": "REP-11",
+      "cases": 7
+    }
+  ],
+  "cases": [
+    {
+      "id": "REP-01-01",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Valid issuer key, window and complete chain."
+    },
+    {
+      "id": "REP-01-02",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Issuer key does not belong to the attested DID."
+    },
+    {
+      "id": "REP-01-03",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Issuer identity/history is missing."
+    },
+    {
+      "id": "REP-01-04",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Attestation timestamp exactly at validFrom."
+    },
+    {
+      "id": "REP-01-05",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Attestation timestamp exactly at validTo."
+    },
+    {
+      "id": "REP-01-06",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "One second before validFrom and after validTo+grace."
+    },
+    {
+      "id": "REP-01-07",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Retired key at validTo+grace and one second after."
+    },
+    {
+      "id": "REP-01-08",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Self-issuer or issuer equal to the reader."
+    },
+    {
+      "id": "REP-01-09",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Incomplete chain or JWS hash not anchored."
+    },
+    {
+      "id": "REP-01-10",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Same DID under several domains/aliases."
+    },
+    {
+      "id": "REP-01-11",
+      "family": "REP-01",
+      "file": "rep-01-issuer.json",
+      "kind": "issuerEligibility",
+      "description": "Two distinct did:apw controlled by one operator."
+    },
+    {
+      "id": "REP-02-01",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Valid Ed25519 over exact compact JWS."
+    },
+    {
+      "id": "REP-02-02",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "One-bit signature mutation."
+    },
+    {
+      "id": "REP-02-03",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Wrong kid or key not in issuer key set."
+    },
+    {
+      "id": "REP-02-04",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Payload is not equal to JCS(JSON.parse(payload))."
+    },
+    {
+      "id": "REP-02-05",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Wrong typ or unsupported algorithm."
+    },
+    {
+      "id": "REP-02-06",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "iat outside key window or expired attestation."
+    },
+    {
+      "id": "REP-02-07",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Identical JWS retransmitted."
+    },
+    {
+      "id": "REP-02-08",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Private key member or malformed JWK."
+    },
+    {
+      "id": "REP-02-09",
+      "family": "REP-02",
+      "file": "rep-02-attestation.json",
+      "kind": "attestationIntegrity",
+      "description": "Valid signature but wrong subject."
+    },
+    {
+      "id": "REP-03-01",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti), identical payload, repeated."
+    },
+    {
+      "id": "REP-03-02",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti), different payload."
+    },
+    {
+      "id": "REP-03-03",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti) across two stores."
+    },
+    {
+      "id": "REP-03-04",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Same jti, different iss."
+    },
+    {
+      "id": "REP-03-05",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Missing iss or jti."
+    },
+    {
+      "id": "REP-03-06",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Permutation of a valid set."
+    },
+    {
+      "id": "REP-03-07",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Duplicate (iss,jti), one valid and one mutated."
+    },
+    {
+      "id": "REP-03-08",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Legacy row without JWS after cutoff."
+    },
+    {
+      "id": "REP-03-09",
+      "family": "REP-03",
+      "file": "rep-03-uniqueness.json",
+      "kind": "attestationUniqueness",
+      "description": "Legacy row before cutoff with ignore/reject policy."
+    },
+    {
+      "id": "REP-04-01",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Emitter history exactly 7 days."
+    },
+    {
+      "id": "REP-04-02",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Emitter age 7 days minus one second."
+    },
+    {
+      "id": "REP-04-03",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Emitter age one second over 7 days."
+    },
+    {
+      "id": "REP-04-04",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "min_weight exactly 2.0 with two eligible distinct emitters."
+    },
+    {
+      "id": "REP-04-05",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Weight sum 1.999999999, just below min_weight 2.0."
+    },
+    {
+      "id": "REP-04-06",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "One eligible emitter below min_weight."
+    },
+    {
+      "id": "REP-04-07",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Exactly two distinct eligible emitters."
+    },
+    {
+      "id": "REP-04-08",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Three distinct emitters over the fan-out cap."
+    },
+    {
+      "id": "REP-04-09",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Same DID via several domains/aliases."
+    },
+    {
+      "id": "REP-04-10",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Two domains owned by one operator, distinct DIDs."
+    },
+    {
+      "id": "REP-04-11",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Self-attestation or attestation about own subject."
+    },
+    {
+      "id": "REP-04-12",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Weight-0 emitter recorded but not counted."
+    },
+    {
+      "id": "REP-04-13",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Age 7d-1s combined with min_weight exactly 2.0."
+    },
+    {
+      "id": "REP-04-14",
+      "family": "REP-04",
+      "file": "rep-04-eligibility.json",
+      "kind": "communityEligibility",
+      "description": "Only T3/T5 sources, no T1/T2."
+    },
+    {
+      "id": "REP-05-01",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "respected_policy true."
+    },
+    {
+      "id": "REP-05-02",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "respected_policy false."
+    },
+    {
+      "id": "REP-05-03",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "policy_violation true."
+    },
+    {
+      "id": "REP-05-04",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "policy_violation false."
+    },
+    {
+      "id": "REP-05-05",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "rate_respected true/false."
+    },
+    {
+      "id": "REP-05-06",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "paid_as_agreed true/false."
+    },
+    {
+      "id": "REP-05-07",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "redistribution true."
+    },
+    {
+      "id": "REP-05-08",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "Unknown category."
+    },
+    {
+      "id": "REP-05-09",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "Non-boolean value for a boolean category."
+    },
+    {
+      "id": "REP-05-10",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "Community values 1, 2.5, 4, 5.5, 7 and invalid 0/6/NaN."
+    },
+    {
+      "id": "REP-05-11",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "T4 activity on a site is not W evidence."
+    },
+    {
+      "id": "REP-05-12",
+      "family": "REP-05",
+      "file": "rep-05-reader-conduct.json",
+      "kind": "readerConductMapping",
+      "description": "Reader-conduct for a different subject."
+    },
+    {
+      "id": "REP-06-01",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Wrong issuer key/signature."
+    },
+    {
+      "id": "REP-06-02",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Issuer is not the reader TXT k."
+    },
+    {
+      "id": "REP-06-03",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Issuer equals the reader."
+    },
+    {
+      "id": "REP-06-04",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS after legacy cutoff."
+    },
+    {
+      "id": "REP-06-05",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS before cutoff, ignore."
+    },
+    {
+      "id": "REP-06-06",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS before cutoff, reject."
+    },
+    {
+      "id": "REP-06-07",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "JWS hash not present in the chain."
+    },
+    {
+      "id": "REP-06-08",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Unsigned legacy row."
+    },
+    {
+      "id": "REP-06-09",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "Origin omission / equivocation is not detectable from one chain."
+    },
+    {
+      "id": "REP-06-10",
+      "family": "REP-06",
+      "file": "rep-06-negatives.json",
+      "kind": "readerConductNegative",
+      "description": "T4 activity vs W evidence."
+    },
+    {
+      "id": "REP-07-01",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "No attestations."
+    },
+    {
+      "id": "REP-07-02",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Only T3/T5 sources."
+    },
+    {
+      "id": "REP-07-03",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Below min_weight."
+    },
+    {
+      "id": "REP-07-04",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "priorShare exactly 0.5."
+    },
+    {
+      "id": "REP-07-05",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "priorShare just above and below 0.5."
+    },
+    {
+      "id": "REP-07-06",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Zero effective dimensions with T4 activity."
+    },
+    {
+      "id": "REP-07-07",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Declared dimension without data."
+    },
+    {
+      "id": "REP-07-08",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "T4 activity only."
+    },
+    {
+      "id": "REP-07-09",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Incomplete data with a high raw score."
+    },
+    {
+      "id": "REP-07-10",
+      "family": "REP-07",
+      "file": "rep-07-no-data.json",
+      "kind": "svriNoData",
+      "description": "Unknown or malformed source."
+    },
+    {
+      "id": "REP-08-01",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score exactly 5.0."
+    },
+    {
+      "id": "REP-08-02",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score 4.999999999 just below 5."
+    },
+    {
+      "id": "REP-08-03",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score exactly 7.0 with isInference=false."
+    },
+    {
+      "id": "REP-08-04",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score 6.999999999 just below 7."
+    },
+    {
+      "id": "REP-08-05",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score exactly 9.0, complete, non-inference, T1/T2 present."
+    },
+    {
+      "id": "REP-08-06",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score 8.999999999 just below 9."
+    },
+    {
+      "id": "REP-08-07",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Two scores equal after 6-decimal rounding."
+    },
+    {
+      "id": "REP-08-08",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Two values within 1e-9."
+    },
+    {
+      "id": "REP-08-09",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "((6.7-1)/6)^2 binary64 vs 0.9025 oracle."
+    },
+    {
+      "id": "REP-08-10",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score10 endpoints 1 to 0 and 7 to 10."
+    },
+    {
+      "id": "REP-08-11",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Exact rational oracle metadata."
+    },
+    {
+      "id": "REP-08-12",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score 7.0 with isInference=true."
+    },
+    {
+      "id": "REP-08-13",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Score 9.0 with incompleteData=true."
+    },
+    {
+      "id": "REP-08-14",
+      "family": "REP-08",
+      "file": "rep-08-boundaries.json",
+      "kind": "svriBoundary",
+      "description": "Exact boundary 7.0 with complete/non-inference flags."
+    },
+    {
+      "id": "REP-09-01",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "Exactly 2 unique evidence emitters."
+    },
+    {
+      "id": "REP-09-02",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "3 unique evidence emitters."
+    },
+    {
+      "id": "REP-09-03",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "200 reader-conduct candidates."
+    },
+    {
+      "id": "REP-09-04",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "201 reader-conduct candidates."
+    },
+    {
+      "id": "REP-09-05",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "16 history keys."
+    },
+    {
+      "id": "REP-09-06",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "17 history keys."
+    },
+    {
+      "id": "REP-09-07",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "400 history entries."
+    },
+    {
+      "id": "REP-09-08",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "401 history entries."
+    },
+    {
+      "id": "REP-09-09",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "640 signature attempts."
+    },
+    {
+      "id": "REP-09-10",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "641 signature attempts."
+    },
+    {
+      "id": "REP-09-11",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "2 emitters exactly at min_weight 2.0."
+    },
+    {
+      "id": "REP-09-12",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "Rational denominator at max emitters (2)."
+    },
+    {
+      "id": "REP-09-13",
+      "family": "REP-09",
+      "file": "rep-09-caps.json",
+      "kind": "workCap",
+      "description": "Adversarial denominator growth at 200 candidates."
+    },
+    {
+      "id": "REP-10-01",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Complete historical reconstruction."
+    },
+    {
+      "id": "REP-10-02",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Missing historical key."
+    },
+    {
+      "id": "REP-10-03",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Missing attestation/JWS."
+    },
+    {
+      "id": "REP-10-04",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Missing DNS/anchor."
+    },
+    {
+      "id": "REP-10-05",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Rules/snapshot version mismatch."
+    },
+    {
+      "id": "REP-10-06",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Reordered history events."
+    },
+    {
+      "id": "REP-10-07",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Current score requested for a missing past event."
+    },
+    {
+      "id": "REP-10-08",
+      "family": "REP-10",
+      "file": "rep-10-hsvr.json",
+      "kind": "hsvrProvenance",
+      "description": "Partial history with a high current score."
+    },
+    {
+      "id": "REP-11-01",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Every svri-math reference case through apw-resolver and candidate."
+    },
+    {
+      "id": "REP-11-02",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Same signed snapshot through scoreSiteDimensions and candidate."
+    },
+    {
+      "id": "REP-11-03",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Same input, different order/permutation."
+    },
+    {
+      "id": "REP-11-04",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Independent person/language/backend (S4)."
+    },
+    {
+      "id": "REP-11-05",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Random/adversarial inputs at caps."
+    },
+    {
+      "id": "REP-11-06",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Implementation revision/arithmetic mode/caps recorded."
+    },
+    {
+      "id": "REP-11-07",
+      "family": "REP-11",
+      "file": "rep-11-differential.json",
+      "kind": "differential",
+      "description": "Signed-rational profile request."
+    }
+  ]
+}

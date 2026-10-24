@@ -1,0 +1,143 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-02",
+  "title": "REP-02 — Attestation signature and canonical bytes",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-02-01",
+      "kind": "attestationIntegrity",
+      "description": "Valid Ed25519 over exact compact JWS.",
+      "input": {
+        "validSignature": true,
+        "kidMatches": true,
+        "canonical": true,
+        "typ": true,
+        "iatInWindow": true
+      },
+      "expected": {
+        "accepted": true,
+        "reason": null,
+        "count": 1,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-02",
+      "kind": "attestationIntegrity",
+      "description": "One-bit signature mutation.",
+      "input": {
+        "validSignature": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "bad_signature",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-03",
+      "kind": "attestationIntegrity",
+      "description": "Wrong kid or key not in issuer key set.",
+      "input": {
+        "kidMatches": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "kid_not_in_issuer_keys",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-04",
+      "kind": "attestationIntegrity",
+      "description": "Payload is not equal to JCS(JSON.parse(payload)).",
+      "input": {
+        "canonical": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "not_canonical",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-05",
+      "kind": "attestationIntegrity",
+      "description": "Wrong typ or unsupported algorithm.",
+      "input": {
+        "typ": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "unsupported_typ",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-06",
+      "kind": "attestationIntegrity",
+      "description": "iat outside key window or expired attestation.",
+      "input": {
+        "iatInWindow": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "iat_outside_key_window",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-07",
+      "kind": "attestationIntegrity",
+      "description": "Identical JWS retransmitted.",
+      "input": {
+        "validSignature": true,
+        "duplicate": true
+      },
+      "expected": {
+        "accepted": true,
+        "reason": null,
+        "count": 1,
+        "deduped": true
+      }
+    },
+    {
+      "id": "REP-02-08",
+      "kind": "attestationIntegrity",
+      "description": "Private key member or malformed JWK.",
+      "input": {
+        "publicKeyOnly": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "private_key_material",
+        "count": 0,
+        "deduped": false
+      }
+    },
+    {
+      "id": "REP-02-09",
+      "kind": "attestationIntegrity",
+      "description": "Valid signature but wrong subject.",
+      "input": {
+        "subjectMatches": false
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "subject_mismatch",
+        "count": 0,
+        "deduped": false
+      }
+    }
+  ]
+}

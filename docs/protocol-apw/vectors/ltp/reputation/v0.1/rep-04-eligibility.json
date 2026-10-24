@@ -1,0 +1,446 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-04",
+  "title": "REP-04 — Community eligibility, age and min_weight",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-04-01",
+      "kind": "communityEligibility",
+      "description": "Emitter history exactly 7 days.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 1,
+        "distinctEmitters": 1,
+        "acceptedEmitters": 1,
+        "overFanoutCap": false,
+        "weightSum": 1.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-02",
+      "kind": "communityEligibility",
+      "description": "Emitter age 7 days minus one second.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604799,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": false,
+        "eligibleEmitters": 0,
+        "distinctEmitters": 0,
+        "acceptedEmitters": 0,
+        "overFanoutCap": false,
+        "weightSum": 0,
+        "countsTowardMinWeight": false,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-03",
+      "kind": "communityEligibility",
+      "description": "Emitter age one second over 7 days.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604801,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 1,
+        "distinctEmitters": 1,
+        "acceptedEmitters": 1,
+        "overFanoutCap": false,
+        "weightSum": 1.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-04",
+      "kind": "communityEligibility",
+      "description": "min_weight exactly 2.0 with two eligible distinct emitters.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:b.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 2,
+        "distinctEmitters": 2,
+        "acceptedEmitters": 2,
+        "overFanoutCap": false,
+        "weightSum": 2.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": true,
+        "absent": false,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-05",
+      "kind": "communityEligibility",
+      "description": "Weight sum 1.999999999, just below min_weight 2.0.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:b.example",
+            "ageSeconds": 604800,
+            "weight": 0.999999999,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 2,
+        "distinctEmitters": 2,
+        "acceptedEmitters": 2,
+        "overFanoutCap": false,
+        "weightSum": 1.999999999,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-06",
+      "kind": "communityEligibility",
+      "description": "One eligible emitter below min_weight.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 1,
+        "distinctEmitters": 1,
+        "acceptedEmitters": 1,
+        "overFanoutCap": false,
+        "weightSum": 1.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-07",
+      "kind": "communityEligibility",
+      "description": "Exactly two distinct eligible emitters.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:b.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 2,
+        "distinctEmitters": 2,
+        "acceptedEmitters": 2,
+        "overFanoutCap": false,
+        "weightSum": 2.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": true,
+        "absent": false,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-08",
+      "kind": "communityEligibility",
+      "description": "Three distinct emitters over the fan-out cap.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:b.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:c.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 3,
+        "distinctEmitters": 3,
+        "acceptedEmitters": 2,
+        "overFanoutCap": true,
+        "weightSum": 2.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": true,
+        "absent": false,
+        "rejectedByCap": 1
+      }
+    },
+    {
+      "id": "REP-04-09",
+      "kind": "communityEligibility",
+      "description": "Same DID via several domains/aliases.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 2,
+        "distinctEmitters": 1,
+        "acceptedEmitters": 1,
+        "overFanoutCap": false,
+        "weightSum": 1.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-10",
+      "kind": "communityEligibility",
+      "description": "Two domains owned by one operator, distinct DIDs.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          },
+          {
+            "did": "did:apw:b.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 2,
+        "distinctEmitters": 2,
+        "acceptedEmitters": 2,
+        "overFanoutCap": false,
+        "weightSum": 2.0,
+        "countsTowardMinWeight": true,
+        "minWeight": 2.0,
+        "minWeightPass": true,
+        "absent": false,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-11",
+      "kind": "communityEligibility",
+      "description": "Self-attestation or attestation about own subject.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 1.0,
+            "self": true
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": false,
+        "eligibleEmitters": 0,
+        "distinctEmitters": 0,
+        "acceptedEmitters": 0,
+        "overFanoutCap": false,
+        "weightSum": 0,
+        "countsTowardMinWeight": false,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-12",
+      "kind": "communityEligibility",
+      "description": "Weight-0 emitter recorded but not counted.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604800,
+            "weight": 0.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": true,
+        "eligibleEmitters": 1,
+        "distinctEmitters": 1,
+        "acceptedEmitters": 1,
+        "overFanoutCap": false,
+        "weightSum": 0.0,
+        "countsTowardMinWeight": false,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-13",
+      "kind": "communityEligibility",
+      "description": "Age 7d-1s combined with min_weight exactly 2.0.",
+      "input": {
+        "emitters": [
+          {
+            "did": "did:apw:a.example",
+            "ageSeconds": 604799,
+            "weight": 1.0,
+            "self": false
+          }
+        ],
+        "minWeight": 2.0
+      },
+      "expected": {
+        "eligible": false,
+        "eligibleEmitters": 0,
+        "distinctEmitters": 0,
+        "acceptedEmitters": 0,
+        "overFanoutCap": false,
+        "weightSum": 0,
+        "countsTowardMinWeight": false,
+        "minWeight": 2.0,
+        "minWeightPass": false,
+        "absent": true,
+        "rejectedByCap": 0
+      }
+    },
+    {
+      "id": "REP-04-14",
+      "kind": "communityEligibility",
+      "description": "Only T3/T5 sources, no T1/T2.",
+      "input": {
+        "t1": 0,
+        "t2": 0,
+        "t3": 6,
+        "t5": 6
+      },
+      "expected": {
+        "incompleteData": true,
+        "completeSiteClaim": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-06",
+  "title": "REP-06 — Reader-conduct negatives and completeness",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-06-01",
+      "kind": "readerConductNegative",
+      "description": "Wrong issuer key/signature.",
+      "input": {
+        "signature": false
+      },
+      "expected": {
+        "resolvable": false,
+        "reason": "apw_unresolvable",
+        "excluded": true
+      }
+    },
+    {
+      "id": "REP-06-02",
+      "kind": "readerConductNegative",
+      "description": "Issuer is not the reader TXT k.",
+      "input": {
+        "issuerMatchesReader": false
+      },
+      "expected": {
+        "resolvable": false,
+        "reason": "issuer_not_reader_key",
+        "excluded": true
+      }
+    },
+    {
+      "id": "REP-06-03",
+      "kind": "readerConductNegative",
+      "description": "Issuer equals the reader.",
+      "input": {
+        "issuerIsReader": true
+      },
+      "expected": {
+        "resolvable": true,
+        "excluded": true,
+        "reason": "self_issuer_excluded"
+      }
+    },
+    {
+      "id": "REP-06-04",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS after legacy cutoff.",
+      "input": {
+        "missingJwsAfterCutoff": true
+      },
+      "expected": {
+        "resolvable": false,
+        "reason": "apw_unresolvable",
+        "completeness": "broken"
+      }
+    },
+    {
+      "id": "REP-06-05",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS before cutoff, ignore.",
+      "input": {
+        "missingJwsBeforeCutoff": true,
+        "policy": "ignore"
+      },
+      "expected": {
+        "resolvable": true,
+        "ignored": true,
+        "count": 0
+      }
+    },
+    {
+      "id": "REP-06-06",
+      "kind": "readerConductNegative",
+      "description": "Missing JWS before cutoff, reject.",
+      "input": {
+        "missingJwsBeforeCutoff": true,
+        "policy": "reject"
+      },
+      "expected": {
+        "resolvable": false,
+        "reason": "apw_unresolvable",
+        "completeness": "broken"
+      }
+    },
+    {
+      "id": "REP-06-07",
+      "kind": "readerConductNegative",
+      "description": "JWS hash not present in the chain.",
+      "input": {
+        "hashAnchored": false
+      },
+      "expected": {
+        "resolvable": true,
+        "dropped": true,
+        "count": 0
+      }
+    },
+    {
+      "id": "REP-06-08",
+      "kind": "readerConductNegative",
+      "description": "Unsigned legacy row.",
+      "input": {
+        "unsignedLegacy": true
+      },
+      "expected": {
+        "resolvable": true,
+        "ignored": true,
+        "count": 0
+      }
+    },
+    {
+      "id": "REP-06-09",
+      "kind": "readerConductNegative",
+      "description": "Origin omission / equivocation is not detectable from one chain.",
+      "input": {
+        "omission": true
+      },
+      "expected": {
+        "resolvable": true,
+        "completenessClaim": false,
+        "omissionDetectable": false
+      }
+    },
+    {
+      "id": "REP-06-10",
+      "kind": "readerConductNegative",
+      "description": "T4 activity vs W evidence.",
+      "input": {
+        "t4Only": true
+      },
+      "expected": {
+        "resolvable": true,
+        "t4Activity": true,
+        "wEvidence": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-10",
+  "title": "REP-10 — HSVR and provenance",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-10-01",
+      "kind": "hsvrProvenance",
+      "description": "Complete historical reconstruction.",
+      "input": {
+        "complete": true
+      },
+      "expected": {
+        "status": "complete",
+        "sameScore": true
+      }
+    },
+    {
+      "id": "REP-10-02",
+      "kind": "hsvrProvenance",
+      "description": "Missing historical key.",
+      "input": {
+        "missingKey": true
+      },
+      "expected": {
+        "status": "partial",
+        "reason": "missing_historical_key",
+        "fillWithCurrentScore": false
+      }
+    },
+    {
+      "id": "REP-10-03",
+      "kind": "hsvrProvenance",
+      "description": "Missing attestation/JWS.",
+      "input": {
+        "missingJws": true
+      },
+      "expected": {
+        "status": "partial",
+        "reason": "missing_attestation_jws",
+        "fillWithCurrentScore": false
+      }
+    },
+    {
+      "id": "REP-10-04",
+      "kind": "hsvrProvenance",
+      "description": "Missing DNS/anchor.",
+      "input": {
+        "missingAnchor": true
+      },
+      "expected": {
+        "status": "partial",
+        "reason": "missing_anchor",
+        "fillWithCurrentScore": false
+      }
+    },
+    {
+      "id": "REP-10-05",
+      "kind": "hsvrProvenance",
+      "description": "Rules/snapshot version mismatch.",
+      "input": {
+        "versionMismatch": true
+      },
+      "expected": {
+        "status": "partial",
+        "reason": "rules_or_snapshot_mismatch",
+        "fillWithCurrentScore": false
+      }
+    },
+    {
+      "id": "REP-10-06",
+      "kind": "hsvrProvenance",
+      "description": "Reordered history events.",
+      "input": {
+        "orders": [
+          [
+            5.0,
+            7.0
+          ],
+          [
+            7.0,
+            5.0
+          ]
+        ]
+      },
+      "expected": {
+        "sameResult": true,
+        "score": 6.0
+      }
+    },
+    {
+      "id": "REP-10-07",
+      "kind": "hsvrProvenance",
+      "description": "Current score requested for a missing past event.",
+      "input": {
+        "currentForPast": true
+      },
+      "expected": {
+        "status": "refused",
+        "reason": "current_score_cannot_replace_past"
+      }
+    },
+    {
+      "id": "REP-10-08",
+      "kind": "hsvrProvenance",
+      "description": "Partial history with a high current score.",
+      "input": {
+        "partialHigh": true
+      },
+      "expected": {
+        "status": "partial",
+        "reason": "partial_history",
+        "publicLevel": "pending"
+      }
+    }
+  ]
+}
