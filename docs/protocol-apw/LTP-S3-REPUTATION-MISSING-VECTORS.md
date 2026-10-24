@@ -1,10 +1,10 @@
 # S3-reputation — enumerated vector matrix (REP-01…REP-11)
 
-**Status: static vector specification only. G4 is `PENDING_AUTHORIZATION`; no
-reputation/SVRI execution code, profile or activation is introduced here.**
+**Status: static vector specification. G4 engine implementation is authorized for this static corpus; signed profiles, real-emitter claims, runtime activation and G5 remain outside it. No reputation/SVRI execution code, profile or activation is introduced by this file.**
 This file replaces the earlier family-level list with an enumerated matrix: every
 case has an ID, a boundary condition and an expected invariant. It is the
-documentary evidence the G4 authorization must cite before any TDD starts.
+documentary evidence cited by the G4 authorization; implementation lives in
+`packages/ltp-reputation/` and duplicate dimensions are rejection cases.
 
 Sources: [S3 coverage §S3-reputation](./LTP-S3-COVERAGE.md),
 [G4 gate](./LTP-GATES-AND-AUTHORIZATIONS.md),
@@ -233,10 +233,10 @@ Anchor: `SVRI-v1.0.md` HSVR section; `APW-SPEC-v1.3.md:359`.
 | Case ID | Boundary condition | Expected invariant |
 |---|---|---|
 | REP-11-01 | Every `svri-math.json` case through `apw-resolver` and candidate | Score/priorShare/weight within `1e-9`; counts/flags/level exact |
-| REP-11-02 | Same signed snapshot through `scoreSiteDimensions` and candidate | Per-dimension agreement; no re-implementation drift |
+| REP-11-02 | Duplicate `W-05` dimension supplied as an input | Reject as invalid (`duplicate_dimension`); never aggregate, score or silently repair a duplicate |
 | REP-11-03 | Same input, different order/permutation | Identical result |
 | REP-11-04 | Independent person/language/backend (S4) reproduces published vectors | Independent acceptance; same-author agreement is insufficient |
-| REP-11-05 | Random/adversarial inputs at caps | No divergence beyond tolerance; no boundary flip |
+| REP-11-05 | Adversarial duplicate dimension at caps | Reject as invalid (`duplicate_dimension`); no partial score, aggregation or boundary flip |
 | REP-11-06 | Implementation revision/arithmetic mode/caps recorded | Reproducible evidence; binary64 vs rational declared |
 | REP-11-07 | Signed-rational profile request | Out of scope until a new versioned schema/vectors exist; do not compare bytes to binary64 |
 
@@ -253,8 +253,8 @@ Anchor: `APW-SPEC-v1.3.md:502`; `LTP-SERIALIZATION-DRAFT-v0.1.md:196-202`;
 | V-12 | Emission, `jti`, completeness table | Full `(iss,jti)` conflict matrix, legacy/negative matrix |
 | `svri-projection.json` (7) | Projection arithmetic/flags | Full boundary matrix at 5/7/9, differential oracle |
 
-Existing vectors are necessary but NOT sufficient. REP-01…REP-11 are the missing
-coverage; they must be versioned and reviewed before G4 TDD.
+Existing vectors are necessary but NOT sufficient. REP-01…REP-11 are the added
+coverage; they were versioned, reviewed and corrected after the G4 audit.
 
 ## 4. Evidence that is not a vector
 
@@ -275,5 +275,5 @@ coverage; they must be versioned and reviewed before G4 TDD.
 6. Real-emitter evidence plan exists; otherwise the only honest output is `no_data`.
 7. G4 itself is explicitly authorized in the canonical register.
 
-Until all seven exist, G4 remains `PENDING_AUTHORIZATION` and no reputation/SVRI
-math is written.
+The authorized static engine satisfies this checklist for the corrected corpus.
+Further reputation/SVRI work still requires a separate owner decision.

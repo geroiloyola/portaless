@@ -136,18 +136,31 @@ block a signed profile, real-emitter claim, runtime activation and S4 claim.
 ## 6. Authorized static corpus and engine (2026-10-24)
 
 The static corpus [`vectors/ltp/reputation/v0.1/`](./vectors/ltp/reputation/v0.1/)
-was audited and merged in #107 (manifest digest
-`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`). The fixture-only Python oracle is
+was introduced in #107 (original manifest digest
+`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`) and corrected after the G4 audit.
+The current manifest digest is
+`eDKwJyZNX9tzLjfpZHiV5T85qylOCcenOySK_GSmT6k`. The fixture-only Python oracle is
 `tools/reputation-author.py`.
 
 The owner then authorized the TypeScript engine. `packages/ltp-reputation/`
-implements the 117 cases and matches every literal expected object; a
-differential test compares projection cases with `apw-resolver` within the
-documented 6-decimal/`1e-9` normalization. The engine is not wired to runtime
-configuration, grants, middleware, activation or a signed profile, and S4/real
-emitters remain outside it.
+implements the 117 **decision cases** and matches every literal expected object;
+a differential test runs all 13 `svri-math.json` projections through both this
+package and `apw-resolver` and compares them within the documented
+6-decimal/`1e-9` normalization. The cases receive explicit facts such as
+`validSignature` or `chain`; this package does not parse JWS, verify signatures,
+resolve issuers, fetch DNS or read raw attestations. The engine is not wired to
+runtime configuration, grants, middleware, activation or a signed profile, and
+S4/real emitters remain outside it.
 
 One representation difference is explicit: the audited vectors use the public
 level name `trusted`; the legacy `apw-resolver` returns `reliable` for the same
 level. The differential test normalizes this label and does not rewrite either
 artifact.
+
+**Duplicate dimensions are rejected.** The owner resolved REP-11-02/REP-11-05
+as strict rejection cases: a repeated dimension such as `W-05` is invalid input,
+not an aggregation opportunity. `scoreSiteDimensions` returns one entry per
+dimension, `apw-resolver` rejects duplicates, and the G4 engine now returns
+`{ error: "duplicate_dimension", dimension: "W-05" }`. The corpus therefore
+contains 117 cases with no differential exclusion: projection cases still match
+`apw-resolver`, and the two duplicate cases assert the shared rejection rule.

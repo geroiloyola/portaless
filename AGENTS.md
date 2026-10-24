@@ -76,7 +76,7 @@ must know.
 | SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
 | Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |
 | LTP identity acquisition + verifier (bounded G2/G3) | 🟡 Configured HTTPS DoH/TXT/Index acquisition, shared budget and offline identity verification pass AB-STATIC-01…07 in memory; SSRF/DNS-rebinding/redirect/plaintext defenses and TLS rejection are tested; the connector is Node-only (Cloudflare Workers not covered) and runtime integration/B3 are proposals. External live acceptance, G5, S4/S6 and deployment activation remain open |
-| LTP reputation engine (G4) | 🟡 Deterministic SVRI/reputation engine matches all 117 audited REP-01…REP-11 vectors and differentially checks `apw-resolver` within the documented rounding normalization; runtime activation, signed profile, real emitters, S4 and G5 remain open |
+| LTP reputation engine (G4) | 🟡 Deterministic static decision-case engine matches all 117 audited REP-01…REP-11 vectors, rejects duplicate dimensions, and differentially checks all 13 `svri-math` projections against `apw-resolver` within the documented rounding normalization; it consumes explicit verifier facts, not raw evidence; runtime activation, signed profile, real emitters, S4 and G5 remain open |
 | Plugin SDK (MIT, v0.1.0) | ✅ Shipped |
 | Plugin sandboxing (4 adapters, 7/12 execution paths real) | ✅ Core wired; 5 capabilities still return explicit `501` by design |
 | Plugin installer (HTTP) | 🟡 Behind a flag, off by default (external sandbox review pending) |

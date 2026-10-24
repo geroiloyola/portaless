@@ -210,13 +210,38 @@ describe("live-like transport failure modes", () => {
   });
 
   test("a hanging connect is aborted by the shared deadline", async () => {
+    let aborted = false;
     const transport = new FetchTransport({
       resolve: publicResolver,
-      open: () => new Promise(() => {}),
+      open: request => new Promise((_, reject) => {
+        request.signal?.addEventListener("abort", () => {
+          aborted = true;
+          reject(new LtpFailure("deadline_exceeded", "connector aborted"));
+        }, { once: true });
+      }),
     });
     const started = Date.now();
     await expect(transport.send({ ...base, timeoutMs: 40 })).rejects.toThrow(/deadline/);
     expect(Date.now() - started).toBeLessThan(500);
+    expect(aborted).toBe(true);
+  });
+
+  test("DNS and connect share one deadline instead of each receiving a full timeout", async () => {
+    let opens = 0;
+    const transport = new FetchTransport({
+      resolve: async () => {
+        await new Promise(resolve => setTimeout(resolve, 30));
+        return [{ address: "8.8.8.8", family: 4 }];
+      },
+      open: request => new Promise((_, reject) => {
+        opens += 1;
+        request.signal?.addEventListener("abort", () => reject(new LtpFailure("deadline_exceeded", "connector aborted")), { once: true });
+      }),
+    });
+    const started = Date.now();
+    await expect(transport.send({ ...base, timeoutMs: 45 })).rejects.toThrow(/deadline/);
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(opens).toBe(1);
   });
 });
 
@@ -287,6 +312,22 @@ describe("fail-closed acquisition and budget stress with frozen bytes", () => {
     const outcome = await acquireIdentity({ ...input, subject: "did:apw:127.0.0.1" });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.reason).toBe("ssrf_blocked");
+    expect(transport.calls).toBe(0);
+  });
+
+  test("dnssec-offline-v1 is rejected before DoH instead of being mislabeled as an offline result", async () => {
+    const bank = loadCase("AB-STATIC-01");
+    const transport = new StaticTransport({
+      status: 200, tlsAuthenticated: true, channel: "test", resolverId: bank.config().resolverId,
+      body: bank.refBytes(bank.fixture.A.transcripts[0].response.bodyByteRef),
+    });
+    const { input } = baseInput(bank, transport);
+    const outcome = await acquireIdentity({ ...input, bootstrapProfile: "dnssec-offline-v1" });
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.reason).toBe("bootstrap_unsupported");
+      expect(outcome.consumed).toEqual([false, false]);
+    }
     expect(transport.calls).toBe(0);
   });
 

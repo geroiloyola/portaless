@@ -1,13 +1,14 @@
 # LTP reputation static vectors v0.1 — REP-01…REP-11
 
-**Status: static oracle targets, pending audit. G4 is not authorized for an
-engine implementation. No TypeScript SVRI/reputation logic is introduced here.**
+**Status: audited static oracle targets. The G4 decision-case engine is
+implemented in `packages/ltp-reputation/`; runtime activation, real emitters,
+signed profiles and S4 independence remain outside this corpus.**
 License: CC BY 4.0.
 
 This directory is the machine-readable “Rosetta stone” for the 117 cases in
 [LTP-S3-REPUTATION-MISSING-VECTORS.md](../../../../LTP-S3-REPUTATION-MISSING-VECTORS.md).
 The values are precomputed by a fixture-only Python oracle using binary64
-arithmetic. They are targets for a future engine, not an engine result.
+arithmetic. They are targets for the engine, not an engine result.
 
 ## What is here
 
@@ -43,6 +44,9 @@ cases carry the exact decision, reason, count, flag or cap result.
 - REP-11-04 remains `pending-S4`; same-author agreement is not independence.
 - REP-11-07 is out of scope: a signed rational profile needs its own schema and
   vectors.
+- Duplicate dimension names are invalid. REP-11-02 and REP-11-05 expect an
+  explicit `duplicate_dimension` rejection; duplicates are never aggregated,
+  repaired or scored.
 
 ## Generate and check
 
@@ -55,10 +59,10 @@ Expected summary:
 
 ```json
 {
-  "candidateDigest": "V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc",
+  "candidateDigest": "eDKwJyZNX9tzLjfpZHiV5T85qylOCcenOySK_GSmT6k",
   "families": 11,
   "cases": 117,
-  "engineImplemented": false,
+  "engineImplemented": true,
   "arithmetic": "binary64+tolerance"
 }
 ```
@@ -67,9 +71,9 @@ Expected summary:
 tool is fixture-only: it imports only the standard library, is never imported by
 Portaless, and is not a verifier or engine.
 
-## Audit gate
+## Audit record
 
-Before a TypeScript reputation engine may start, a reviewer must confirm:
+The G4 audit confirmed:
 
 1. All 117 IDs match the matrix and `coverage.json` exactly.
 2. Numeric expectations are reproduced by the Python oracle within `1e-9`, with
@@ -77,7 +81,8 @@ Before a TypeScript reputation engine may start, a reviewer must confirm:
 3. Boundary cases at 5/7/9 and the cross-axis cases are correct.
 4. `REP-09-12/13` remain pending an explicit denominator cap.
 5. `REP-11-04` remains pending an independent S4 oracle.
-6. No TS/runtime engine code was added by this directory.
+6. Duplicate dimensions are rejection cases, not projection inputs.
 
-Until that audit, G4 remains static-only and the TypeScript SVRI engine remains
-blocked.
+The TypeScript decision-case engine is in `packages/ltp-reputation/`. No runtime
+engine, raw-evidence verifier or production integration is introduced by this
+directory. G4 remains a static-scope approval; G5 remains frozen.

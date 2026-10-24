@@ -4,7 +4,7 @@
   "family": "REP-08",
   "title": "REP-08 — Arithmetic and level boundaries",
   "status": "static-oracle-target",
-  "engineImplemented": false,
+  "engineImplemented": true,
   "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
   "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
   "cases": [
@@ -300,13 +300,13 @@
       "input": {
         "dimensions": [
           {
-            "dimension": "W-05",
+            "dimension": "W-01",
             "score": 1.0,
             "count": 1,
             "weightSum": 3.0
           },
           {
-            "dimension": "W-05",
+            "dimension": "W-07",
             "score": 7.0,
             "count": 1,
             "weightSum": 3.0

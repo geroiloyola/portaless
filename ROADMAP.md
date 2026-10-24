@@ -92,7 +92,7 @@ no force pushes, no deletions, and required status checks `build`,
 
 - `[x]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md), with the composed v0.3 corpus closing the reviewed G1 scope.
 
-- `[x]` **G4 reputation engine (static conformance)** — `packages/ltp-reputation/` matches all 117 audited REP-01…REP-11 vectors and differentially checks `apw-resolver` within the documented rounding normalization. Runtime activation, real emitters, signed profile, S4 and G5 remain open.
+- `[x]` **G4 reputation engine (static conformance)** — `packages/ltp-reputation/` is a decision-case evaluator that matches all 117 audited REP-01…REP-11 vectors, rejects duplicate dimensions, and differentially checks all 13 `svri-math` projections against `apw-resolver` within the documented rounding normalization. It consumes explicit verifier facts, not raw evidence. Runtime activation, real emitters, signed profile, S4 and G5 remain open.
 
 - `[ ]` **Identity-engine runtime integration (proposal)** — configuration, one category per DID, explicit owner grants, diagnostics and middleware enforcement are documented in [the proposal](./docs/architecture/ltp-runtime-integration-proposal.md); B3 is unchanged and no code/migration is included. Pending owner decisions.
 

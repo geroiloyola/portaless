@@ -10,7 +10,9 @@ the AB-STATIC-01…07 corpus, not reputation, SVRI profiles or offline DNSSEC.
 - `acquireIdentity()` queries one operator-configured HTTPS DNS-over-HTTPS
   endpoint for `_apw.<domain>`, requires the exact TXT/IN question, `Status: 0`,
   `TC: false` and `AD: true`, then requests a complete identity-only package from
-  one operator-configured Index endpoint.
+  one operator-configured Index endpoint. Only `independent-doh-ad-v1` is
+  implemented; `dnssec-offline-v1` is rejected before any network I/O, so a
+  result can never claim an offline DNSSEC mechanism the engine did not run.
 - `ResourceBudget` reserves HTTP attempts and body bytes **before** I/O,
   conservatively keeps the full byte reservation when the attempt fails or times
   out, refunds only the unused part of a completed response, counts failed
@@ -32,7 +34,10 @@ trailing dots, uppercase and IDN/punycode; IPv6 zones are rejected. It resolves 
 answers once, rejects the whole name if any answer is blocked, and pins the
 verified address in the socket lookup to prevent rebinding. It never follows
 redirects, keeps TLS certificate validation on, caps the streamed body and aborts
-a hanging connect at the shared deadline.
+a hanging connect at the shared deadline. DNS, connect and response share one
+deadline; the abort signal is propagated to the connector and destroys the
+socket. Node's DNS lookup has no cancellation primitive, so a timed-out lookup
+may still finish in the background; its late answer is discarded and never used.
 
 The socket regression binds a real loopback listener and proves the connector
 opens **zero connections** to it; a separate test starts a local TLS server with

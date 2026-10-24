@@ -1,8 +1,38 @@
-import { classifyLevel, endpointScore10, denominatorBits, issuerWeight, orderEntries, projectSvri, TOLERANCE, withinTolerance } from "./projection";
+import { classifyLevel, DuplicateSvriDimensionError, endpointScore10, denominatorBits, issuerWeight, orderEntries, projectSvri, TOLERANCE, withinTolerance } from "./projection";
 import type { ReputationCase, SvriDimension } from "./types";
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60;
 const MAX_EMITTERS = 2;
+
+const INPUT_FIELDS: Record<string, ReadonlySet<string>> = {
+  issuerEligibility: new Set(["aliases", "chain", "distinct", "grace", "keyMatchesDid", "keyTs", "selfIssuer", "validFrom", "validTo"]),
+  attestationIntegrity: new Set(["canonical", "duplicate", "iatInWindow", "kidMatches", "publicKeyOnly", "subjectMatches", "typ", "validSignature"]),
+  attestationUniqueness: new Set(["hasJws", "items", "legacy", "orders", "policies", "stores", "tsAfterCutoff"]),
+  communityEligibility: new Set(["emitters", "minWeight", "t1", "t2", "t3", "t5"]),
+  readerConductMapping: new Set(["attestationSubject", "category", "subject", "t4Count", "value", "values"]),
+  readerConductNegative: new Set(["hashAnchored", "issuerIsReader", "issuerMatchesReader", "missingJwsAfterCutoff", "missingJwsBeforeCutoff", "omission", "policy", "signature", "t4Only", "unsignedLegacy"]),
+  svriNoData: new Set(["counts", "declaredDimensions", "dimensions", "minWeight", "source", "weightSum", "weightSums"]),
+  svriBoundary: new Set(["counts", "denominator", "dimensions", "entries", "j", "numerator", "values"]),
+  workCap: new Set(["actual", "actualEmitters", "cap", "denominators", "minWeight", "weightSum"]),
+  hsvrProvenance: new Set(["complete", "currentForPast", "missingAnchor", "missingJws", "missingKey", "orders", "partialHigh", "versionMismatch"]),
+  differential: new Set(["counts", "dimensions", "orders", "profile", "references", "required", "requiredFields"]),
+};
+
+function assertDecisionInput(kind: string, input: unknown): asserts input is Record<string, any> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`${kind} requires an explicit decision input`);
+  }
+  const keys = Object.keys(input);
+  if (keys.length === 0) throw new Error(`${kind} requires explicit evidence facts`);
+  const allowed = INPUT_FIELDS[kind];
+  const unknown = keys.find(key => !allowed.has(key));
+  if (unknown) throw new Error(`${kind} does not accept input field: ${unknown}`);
+  if (kind === "issuerEligibility") {
+    for (const field of ["keyTs", "validFrom", "validTo"]) {
+      if (!(field in input)) throw new Error(`issuerEligibility requires ${field}`);
+    }
+  }
+}
 
 function absent(value: unknown): boolean {
   return value === undefined || value === null;
@@ -155,7 +185,14 @@ function readerNegative(input: Record<string, any>): Record<string, any> {
 }
 
 function projection(input: Record<string, any>): Record<string, any> {
-  return projectSvri(input.dimensions as SvriDimension[], input.counts);
+  try {
+    return projectSvri(input.dimensions as SvriDimension[], input.counts);
+  } catch (error) {
+    if (error instanceof DuplicateSvriDimensionError) {
+      return { error: error.code, dimension: error.dimension };
+    }
+    throw error;
+  }
 }
 
 function noData(input: Record<string, any>): Record<string, any> {
@@ -217,6 +254,7 @@ function differential(input: Record<string, any>): Record<string, any> {
   if (input.requiredFields) return { requiredFields: input.requiredFields, arithmetic: "binary64", tolerance: TOLERANCE };
   if (input.profile) return { status: "out_of_scope", doNotCompareBytesToBinary64: true };
   const projected = projection(input);
+  if (projected.error) return projected;
   if (input.dimensions?.length === 2 && input.dimensions.every((item: any) => item.score === 1 || item.score === 7)) {
     return { projection: projected, withinTolerance: true };
   }
@@ -224,6 +262,8 @@ function differential(input: Record<string, any>): Record<string, any> {
 }
 
 export function runReputationCase(item: ReputationCase): unknown {
+  if (!item || typeof item.kind !== "string") throw new Error("reputation case requires a kind");
+  assertDecisionInput(item.kind, item.input);
   switch (item.kind) {
     case "issuerEligibility": return issuerDecision(item.input);
     case "attestationIntegrity": return attestationDecision(item.input);

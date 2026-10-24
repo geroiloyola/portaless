@@ -35,6 +35,7 @@ export interface OpenRequest {
   maxBytes: number;
   timeoutMs: number;
   pinned: ResolvedAddress;
+  signal?: AbortSignal;
 }
 
 export interface RawResponse {
@@ -55,18 +56,40 @@ function headerValue(headers: Record<string, string | string[] | undefined>, nam
   return Array.isArray(value) ? value[0] : value;
 }
 
-function withDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+/**
+ * A declared deadline aborts the operation, not just the caller's promise.
+ * The operation receives the signal so sockets can be destroyed and custom
+ * connectors can stop their own work.
+ */
+function withDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new LtpFailure("deadline_exceeded", "transport deadline exceeded")), timeoutMs);
+    timer = setTimeout(() => {
+      const failure = new LtpFailure("deadline_exceeded", "transport deadline exceeded");
+      controller.abort(failure);
+      reject(failure);
+    }, timeoutMs);
   });
-  return Promise.race([promise, timeout]).finally(() => {
+  let started: Promise<T>;
+  try {
+    started = operation(controller.signal);
+  } catch (error) {
+    controller.abort(error);
+    if (timer) clearTimeout(timer);
+    return Promise.reject(error);
+  }
+  return Promise.race([started, timeout]).finally(() => {
     if (timer) clearTimeout(timer);
   });
 }
 
 export function defaultOpen(request: OpenRequest): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
+    if (request.signal?.aborted) {
+      reject(new LtpFailure("deadline_exceeded", "transport aborted"));
+      return;
+    }
     const hostname = request.url.hostname.replace(/^\[|\]$/g, "");
     const literal = isIP(hostname) !== 0;
     const req = httpsRequest({
@@ -121,6 +144,9 @@ export function defaultOpen(request: OpenRequest): Promise<RawResponse> {
       response.on("error", () => reject(new LtpFailure("service_unavailable", "transport response failure")));
       response.on("aborted", () => reject(new LtpFailure("service_unavailable", "transport response aborted")));
     });
+    const onAbort = () => req.destroy(new LtpFailure("deadline_exceeded", "transport aborted"));
+    request.signal?.addEventListener("abort", onAbort, { once: true });
+    req.on("close", () => request.signal?.removeEventListener("abort", onAbort));
     req.on("error", (error: Error & { code?: string }) => {
       if (error instanceof LtpFailure) reject(error);
       else if (error.code === "ETIMEDOUT" || error.code === "ECONNRESET") reject(new LtpFailure("deadline_exceeded", "transport timeout"));
@@ -158,11 +184,15 @@ export class FetchTransport implements LtpTransport {
       throw new LtpFailure("response_limit_exceeded", "invalid response cap");
     }
     const url = assertSafeEndpointUrl(request.url);
-    const pinned = await withDeadline(resolvePinnedAddress(url.hostname, this.resolve), request.timeoutMs);
-    const raw = await withDeadline(this.open({
-      url, method: request.method, headers: request.headers, body: request.body,
-      maxBytes: request.maxBytes, timeoutMs: request.timeoutMs, pinned,
-    }), request.timeoutMs);
+    // One timer and signal cover DNS, connect and response. The two phases
+    // must not each receive a fresh full timeout.
+    const raw = await withDeadline(async signal => {
+      const pinned = await resolvePinnedAddress(url.hostname, this.resolve, signal);
+      return this.open({
+        url, method: request.method, headers: request.headers, body: request.body,
+        maxBytes: request.maxBytes, timeoutMs: request.timeoutMs, pinned, signal,
+      });
+    }, request.timeoutMs);
     if (raw.status >= 300 && raw.status < 400) {
       throw new LtpFailure("bootstrap_unsupported", "redirect_not_allowed");
     }
