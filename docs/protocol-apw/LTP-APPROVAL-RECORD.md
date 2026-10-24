@@ -19,7 +19,7 @@ normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
     "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA"
   },
   "decisionScope": "G1-static-corpus-only",
-  "normativeCommit": "04f334e1aa0a2e50ea3e4df9e5966e4eb88efdc2",
+  "normativeCommit": "cda05806f709ced4b737bf5c1bcedfb5c26f10d2",
   "corpusVersion": "0.3",
   "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
   "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
@@ -42,9 +42,9 @@ normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
     "README.md": "010aa19f9516215ccf4f1a5e1a81e6dcaf1b0e141ed4c9e1375705dc796fcafe",
     "LTP-S3-CORE-CLOSURE-PLAN.md": "3fac0432b27c2e3970b53fe0295060d7f365123cca06a7d753794319bb7cf0ef",
     "vectors/ltp/v0.2/README.md": "600c0a7d16963892c40d606eb18c2e786fbce140ff12fae85e4bd23f43f7ee5b",
-    "LTP-GATES-AND-AUTHORIZATIONS.md": "40f2717b5c1977db3f1bfddec73b2cd658b316288f9efec94f1e154e6f23b822",
+    "LTP-GATES-AND-AUTHORIZATIONS.md": "c7148264e744c99f61e214d5315b3eba08b74a921f24eb183e6d98012f0cd5e8",
     "vectors/ltp/v0.3/README.md": "773f27c1b26562c58c2ba297bd623b44967f717d7af71fe0aeea7144069c60e6",
-    "LTP-G2-G3-IMPLEMENTATION-SCOPE.md": "b30c800df21038ba80dca1737781173443b2363ca0441dcc40dca20f7f441742"
+    "LTP-G2-G3-IMPLEMENTATION-SCOPE.md": "69b178515a78ed1b10ffa473f882963ac524ebb0cfdd33338d4583e2c33b1660"
   }
 }
 ```
