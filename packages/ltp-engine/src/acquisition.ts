@@ -1,4 +1,5 @@
 import canonicalize from "canonicalize";
+import { isIP } from "node:net";
 import { LtpFailure, ResourceBudget } from "./budget";
 import { canonicalBytes, digestJcs, utf8Text } from "./canonical";
 import { jwsDigest, parseCompactJws } from "./jws";
@@ -61,7 +62,22 @@ export type AcquisitionOutcome = AcquisitionSuccess | AcquisitionFailure;
 function domainFromDid(subject: string): string {
   const match = /^did:apw:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)$/.exec(subject);
   if (!match) throw new LtpFailure("unsupported_profile", "invalid did:apw subject");
-  return match[1];
+  const domain = match[1];
+  if (isIP(domain) !== 0) throw new LtpFailure("ssrf_blocked", "IP-literal subject is not a DNS identity");
+  if (`_apw.${domain}`.length > 253) throw new LtpFailure("unsupported_profile", "subject exceeds DNS length");
+  return domain;
+}
+
+function assertConfiguredEndpoint(value: string): void {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new LtpFailure("unsupported_profile", "invalid configured endpoint");
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.hash || url.search) {
+    throw new LtpFailure("unsupported_profile", "configured endpoint must be an exact HTTPS URL");
+  }
 }
 
 export function sortPublicKeys(keys: readonly PublicKeyRecord[]): PublicKeyRecord[] {
@@ -247,6 +263,8 @@ export async function acquireIdentity(input: AcquisitionInput): Promise<Acquisit
       throw new LtpFailure("unsupported_profile", "unsupported acquisition profile");
     }
     if (input.config.redirects !== 0) throw new LtpFailure("bootstrap_unsupported", "redirects must be zero");
+    assertConfiguredEndpoint(input.config.doh);
+    assertConfiguredEndpoint(input.config.index);
     if (!input.policy.resolverIds.includes(input.config.resolverId)) {
       throw new LtpFailure("unsupported_profile", "resolver is not operator-configured");
     }
@@ -254,7 +272,7 @@ export async function acquireIdentity(input: AcquisitionInput): Promise<Acquisit
     const now = () => input.now();
     const hopTimeout = () => Math.min(HOP_TIMEOUT_MS, Math.max(1, input.config.limits.deadlineMs - now()));
 
-    const dohUrl = `${input.config.doh}?name=_apw.${domain}&type=TXT&do=1&cd=0`;
+    const dohUrl = `${input.config.doh}?name=_apw.${encodeURIComponent(domain)}&type=TXT&do=1&cd=0`;
     const dohReservation = budget.reserveHttp(input.config.limits.dohBytes, "A-DOH");
     consumed[0] = true;
     const dohResponse = await input.transport.send({
