@@ -44,7 +44,7 @@ reference runtime, not the name of a protocol service or data format.
 | [LTP Index Draft 0.1](./LTP-INDEX-DRAFT-v0.1.md) | Configured trust-proof distribution service, request/result messages, limits and failure semantics. |
 | [LTP Proof Package Draft 0.1](./LTP-PROOF-PACKAGE-DRAFT-v0.1.md) | Canonical proof container, APW identity/state proofs, LTP Attestations, SVRI Projection recomputation and resumable bootstrap. |
 | [APW Identity Bootstrap Draft 0.1](./APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md) | Independent DoH/AD or locally verified DNSSEC; explicit trust/freshness boundaries. |
-| [S1 serialization and schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md) | Exact hash inputs, null/HTTP semantics, signed integers and unsigned SVRI numerics. Candidate, not approved. |
+| [S1 serialization and schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md) | Exact hash inputs, null/HTTP semantics, signed integers and unsigned SVRI numerics. Accepted under G1. |
 | [S3 static corpus](./vectors/ltp/v0.1/README.md) | Same-author cross-check plus third-party signature tools; coverage blocks corpus approval. |
 | [Artifact classification](./LTP-ARTIFACT-CLASSIFICATION.md) | Deterministic core, optional profiles, runtime and grant-only PR3 dependencies; Draft. |
 | [Extraction preparation](./LTP-EXTRACTION-PLAN.md) | Standalone package, link lint, future release/digest plan; no extraction executed. |
@@ -52,7 +52,7 @@ reference runtime, not the name of a protocol service or data format.
 | [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Core gaps and proposed A/B approval criterion; reputation remains Draft. |
 | [CI/protection observation](./LTP-CI-REVIEW.md) | Standalone static checks consolidated in the required Unit Tests / unit job; no settings changes. |
 | [Canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md) | Single source of authorization scopes/states; corpus integrity and acceptance confer no implementation permission. |
-| [Composed candidate v0.3](./vectors/ltp/v0.3/README.md) | AB-STATIC-01 master plus six negatives joining acquisition/verification bytes and state; static G1 review only. |
+| [Composed corpus v0.3](./vectors/ltp/v0.3/README.md) | AB-STATIC-01 master plus six negatives joining acquisition/verification bytes and state; accepted under G1. |
 
 These owner-approved baseline drafts do not amend the adopted APW v1.3/E-16 formats, rename existing wire
 messages, or establish conformance. Machine-readable vectors with explicit
@@ -66,11 +66,11 @@ person's review is implied by using Python, Node, OpenSSL, JOSE or dnspython.
 
 ## Integration and implementation
 
-**Current G1 review:** [serialization and schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md)
-and the [composed static candidate](./vectors/ltp/v0.3/README.md) are submitted for
-manual sufficiency review. Permissions are defined only by the canonical register
-above; accepting a corpus or merging this PR grants no implementation authority.
-The asset audit is neither a running A/B flow nor a second complete verifier.
+**Current implementation:** G1 is accepted for [serialization/schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md)
+and the [composed v0.3 corpus](./vectors/ltp/v0.3/README.md). The owner separately
+authorized bounded identity-only G2/G3 work; see the
+[implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md). G4/G5 remain blocked.
+The static asset audit is not S4 independence or a deployment claim.
 
 **Integrator guide**: third parties connecting to APW / Portaless / Index APIs should start at [`docs/api/`](../api/) (public well-known endpoints, verification recipes, admin endpoints).
 

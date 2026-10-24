@@ -18,8 +18,9 @@ not independently approved or deployable snapshots.
 | `e3af413` | Scanner fixtures | 28 individually labeled `solo pruebas` findings, exact introducing-commit fingerprints rebound to `9ed8868`; literal key/seed/token/digest non-reuse in tracked production source with an injected negative. No path/rule-wide exclusion. |
 | `4faeccd` | Original approval binding and this guide | Previously bound three data digests to the `246cdc8` text SHA and ten file hashes. Preserved review provenance, not the current tuple. The follow-up below replaces that text binding without changing data digests. |
 
-The owner has not approved S1/S3-core through this rewrite. S3-reputation and S4
-remain Draft/open; no A/B, engine, network, budget or repository extraction starts.
+This guide preserves the historical review series. **G1 was accepted on
+2026-10-24 and the owner separately authorized bounded G2/G3 work.** G4/G5,
+S4 and repository extraction remain outside that authorization.
 
 ## Owner naming follow-up (appended, no new history rewrite)
 
@@ -57,8 +58,9 @@ the future engine, parser, network or scheduler. S4 independence remains open.
 Start with the [canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md), then
 the [v0.3 README](./vectors/ltp/v0.3/README.md) and
 [coverage index](./vectors/ltp/v0.3/coverage.json). G1 sufficiency is pending manual
-review; G2–G5 are blocked. No publication, hash, CI result, acceptance or merge
-automatically changes an authorization state.
+review; G2/G3 later received separate bounded owner decisions while G4/G5 remain
+blocked. No publication, hash, CI result, acceptance or merge automatically
+changes an authorization state.
 
 The total v0.3 digest is **wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA**.
 AB-STATIC-01 binds acquisition bytes to the offline verification input, proposed

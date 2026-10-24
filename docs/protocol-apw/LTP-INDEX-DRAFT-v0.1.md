@@ -212,7 +212,8 @@ storage, clock, crypto and authorization under the declared contracts.
 The owner's architectural baseline and S1–S6 milestones are recorded in
 [standardization status](./LTP-STANDARDIZATION-STATUS.md). Implementation
 permissions are defined only in the [canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md);
-baseline/corpus approval or merge does not open an implementation phase.
+baseline/corpus approval or merge does not open an implementation phase. The
+G2/G3 identity-only work required and received a separate owner decision.
 The following conformance requirements remain mandatory.
 
 Before any production Edge route advertises these profiles, publish independent

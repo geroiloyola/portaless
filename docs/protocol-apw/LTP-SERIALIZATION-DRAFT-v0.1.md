@@ -248,5 +248,6 @@ error requires an explicit reviewed/versioned correction, not an overwrite.
 Implementation permissions are defined solely by
 [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
 Corpus acceptance, hash equality and PR merge never authorize engine programming,
-network adapters or production quota logic. This phase supplies static G1 assets
-only; S4/S6 retain their separate standardization requirements.
+network adapters or production quota logic by themselves. G1 assets are accepted;
+G2/G3 received separate bounded owner decisions, while G4/G5 and S4/S6 retain
+their separate requirements.

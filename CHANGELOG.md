@@ -38,7 +38,9 @@ closed).
 
 ## Unreleased
 
-- **Blocking-review G1 correction.** Adds a single canonical G1–G5 register and the static v0.3 AB-STATIC-01 master plus six negatives, linking acquisition/verification bytes, state and resource facts. Removes combined corpus/implementation authorizations from live docs. G1 sufficiency remains for manual review; G2–G5 are blocked and no resolver, scheduler, engine or budget manager is implemented or enabled. Prior corpus revisions and their signed material are preserved.
+- **G1 accepted; bounded G2/G3 identity-only engine.** The owner accepted the v0.3 composed corpus on 2026-10-24 after linstarkcorp's approval, and separately authorized limited acquisition/network/budget (G2) and verifier (G3) work. Adds `packages/ltp-engine/`: configured HTTPS DoH/TXT and Index acquisition, one shared strict budget/exclusive deadline, and deterministic Ed25519/JCS verification of identity-only proof packages. It matches AB-STATIC-01…07 in memory and includes tamper regressions. G4 (advanced reputation/SVRI), G5 (offline DNSSEC), live deployment activation, S4 independence and S6 publication remain blocked/open.
+
+- **Blocking-review G1 correction.** Adds a single canonical G1–G5 register and the static v0.3 AB-STATIC-01 master plus six negatives, linking acquisition/verification bytes, state and resource facts. Removes combined corpus/implementation authorizations from live docs. At that revision G1 sufficiency remained for manual review and G2–G5 were blocked; the owner accepted G1 and separately authorized bounded G2/G3 on 2026-10-24 (see above). Prior corpus revisions and their signed material are preserved.
 
 - **MCP dependency security update.** Refreshes the transitive Express `body-parser` lock from 2.3.0 to 2.4.0 (and its required `qs` patch) to fix GHSA-27r3-jxmh-p828 / CVE-2026-111181. Adds an isolated compressed-body regression that sends trailing bytes after decoder completion and verifies the process remains available. Audit thresholds and allowlist remain unchanged.
 

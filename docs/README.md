@@ -24,7 +24,8 @@
 ## LTP Stack — APW, LTP Index, SVRI/HSVR — [`protocol-apw/`](./protocol-apw/)
 
 Protocol contracts (CC BY 4.0), separate from their reference implementation
-(`packages/apw-resolver/`, AGPL-3.0). See the
+(`packages/apw-resolver/`, `packages/ltp-engine/`, AGPL-3.0). See the
+[G2/G3 implementation scope](./protocol-apw/LTP-G2-G3-IMPLEMENTATION-SCOPE.md) and
 [LTP Stack architecture](./protocol-apw/LTP-STACK-ARCHITECTURE.md) for identity,
 trust/traceability and output/history responsibilities; paths retain their
 historical names until a separately approved repository migration.

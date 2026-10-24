@@ -47,10 +47,10 @@ test('S3 coverage is a blocking approval gate, not waived by primitive-check suc
   const candidate = json('vectors/ltp/v0.2/coverage.json');
   assert.equal(candidate.areas.length, 6);
   assert(candidate.areas.every(area => area.cases.length > 0));
-  assert.match(matrix, /manual\ncoverage review and owner approval remain pending/);
-  assert.match(matrix, /not approved/);
+  assert.match(matrix, /G1 accepted 2026-10-24/);
+  assert.match(matrix, /G2\/G3 implementation authorized/);
   assert.match(matrix, /LTP-GATES-AND-AUTHORIZATIONS.md/);
-  assert.match(text('LTP-STANDARDIZATION-STATUS.md'), /owner approval remains pending\nmanual S3-core/);
+  assert.match(text('LTP-STANDARDIZATION-STATUS.md'), /S1\/S3-core were accepted under G1 on\n2026-10-24/);
 });
 
 test('future signed SVRI and HSVR cannot silently inherit unsigned binary64 projection encoding', () => {
@@ -77,7 +77,7 @@ test('S3-core closure requires all six A/B evidence packages and separates corpu
   assert.equal(rows.length, 6);
   for (const id of ['01', '02', '03', '04', '05', '06']) assert(rows.some(row => row.startsWith(`| CORE-${id} |`)));
   assert.match(plan, /Any missing prerequisite keeps both\n   deliveries blocked/);
-  assert.match(plan, /sole authorization definitions\/states/);
+  assert.match(plan, /sole authorization\s+definitions\/states/);
   assert.match(plan, /authorized static revision publishes the new total-corpus digest/);
-  assert.match(plan, /No transition to it follows from corpus approval or merge/);
+  assert.match(plan, /No transition to it\s+follows from corpus approval or merge/);
 });

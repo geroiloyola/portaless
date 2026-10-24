@@ -1,18 +1,19 @@
-# Closing S3-core — evidence before authorization to start A/B
+# Closing S3-core — accepted evidence and bounded G2/G3 implementation
 
-**Status: static G1 correction authorized; composed v0.3 awaits manual review. License: CC BY 4.0.**
+**Status: G1 accepted 2026-10-24; bounded G2/G3 implementation authorized; G4/G5 blocked. License: CC BY 4.0.**
 LTP means **Local Trust Protocol**: each node applies its own policy to verified
-evidence. This plan does not implement a verifier, transport, quota or DNSSEC
-validator, approve a corpus, or open Phase 2. The owner controls that decision.
+evidence. The accepted corpus is now consumed by a bounded identity-only
+acquisition/budget layer and deterministic verifier. This plan does not authorize
+reputation, offline DNSSEC, deployment activation or a normative release.
 
 ## What is missing for A/B
 
 The [six core rows](./LTP-S3-COVERAGE.md#s3-core--proposed-prerequisite-for-a-and-b)
-all contain dependencies of A or B. The execution instruction authorized static
-target generation and CI consolidation only. [Candidate v0.2](./vectors/ltp/v0.2/README.md)
-now supplies 285 cases; the following IDs still identify **work packages**, not
-claims that an A/B implementation passed them. Review may identify gaps; none
-can be deferred to reputation merely to approve a digest.
+all contain dependencies of A or B. [Candidate v0.2](./vectors/ltp/v0.2/README.md)
+supplies 285 cases; the following IDs identify **work packages**, not claims that
+the bounded implementation passed every static target. G1 is accepted for the
+identified corpus, and the owner separately authorized G2/G3 for identity-only
+work. Review may identify gaps; none can be deferred to reputation.
 
 The blocking review also requires a composed case. The
 [v0.3 master and negatives](./vectors/ltp/v0.3/README.md) provide producer/consumer
@@ -34,7 +35,7 @@ If an expected outcome or accounting rule is ambiguous, resolve and review that
 contract question first. Do not invent a fixture result by running an unfinished
 engine, or alter a signed golden byte to accommodate later code.
 
-## Closure procedure (still S1/S3, no Phase 2)
+## Closure procedure (G1 accepted; bounded implementation only)
 
 1. **Make coverage explicit.** For each CORE-01…06 requirement, list concrete
    positive/negative fixture IDs, invariant/expected failure, relevant contract
@@ -60,17 +61,17 @@ engine, or alter a signed golden byte to accommodate later code.
    The owner selected consolidation in the already-required `Unit Tests / unit`
    job. The standalone checks now run there without a separate GitHub check;
    protection settings and strict coverage thresholds are unchanged.
-5. **Bind and submit G1.** Once all core requirements and their composition have
-   concrete reviewed targets, regenerate the candidate tuple and normative-prose
-   SHA. Submit only corpus sufficiency to the owner. This is not a request or
-   permission to implement. The sole authorization definitions/states are in
+5. **Record G1 and the separate authorization.** The owner accepted the corpus on
+   2026-10-24 and separately authorized bounded G2/G3 work. The tuple is recorded
+   in [LTP-APPROVAL-RECORD.md](./LTP-APPROVAL-RECORD.md). The sole authorization
+   definitions/states are in
    [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
 
-## Implementation is outside this closure work
+## Bounded implementation, not autonomous expansion
 
 Future controlled-runtime evidence (TLS/SSRF, streaming/cancellation, shared
-accounting and measurements) belongs to separately authorized work, not this
-static correction. No transition to it follows from corpus approval or merge.
-G2–G5 scopes and states are not redeclared here: consult the canonical register.
-S4/S6 and the original A → B → C-before-PR3 sequence retain their existing
-requirements. Static targets are neither runtime evidence nor implementation.
+accounting and measurements) still needs its own acceptance. No transition to it
+follows from corpus approval or merge; G2/G3 required a separate owner decision.
+G4/G5 scopes and states are not redeclared here: consult the canonical register.
+S4/S6 and the original A → B → C-before-PR3 sequence retain their requirements.
+Static targets are neither runtime evidence nor a deployment authorization.

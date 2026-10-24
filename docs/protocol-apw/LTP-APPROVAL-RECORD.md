@@ -1,17 +1,25 @@
-# S1/S3 approval record — candidate, no owner approval entered
+# S1/S3 approval record — accepted G1 decision
 
-**Status: pending owner decision. License: CC BY 4.0.**
-This record binds candidate data **and normative prose**. It is not an approval,
-a signature, a normative release, S4 evidence or permission to start Phase 2.
+**Status: G1 accepted by the owner on 2026-10-24. License: CC BY 4.0.**
+This record binds the reviewed corpus data **and normative prose**. It is not a
+normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
 
 ## Candidate tuple
 
 ```json
 {
-  "status": "pending-owner-decision",
-  "ownerDecision": null,
+  "status": "approved",
+  "ownerDecision": {
+    "decision": "approved",
+    "scope": "G1-static-corpus-only",
+    "decidedAt": "2026-10-24",
+    "reviewer": "linstarkcorp",
+    "reviewedCommit": "3ff080b42481e9321b449cec6e4e78ae5a9c9653",
+    "mergeCommit": "7fd939fda0e2570e5c18dfbe0e555483b52b449f",
+    "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA"
+  },
   "decisionScope": "G1-static-corpus-only",
-  "normativeCommit": "07efe1a69fa9a4a12616edfe93106f28429deb87",
+  "normativeCommit": "f232e58c3e3fabc4735aa8e413fb30711247f112",
   "corpusVersion": "0.3",
   "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
   "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
@@ -19,23 +27,24 @@ a signature, a normative release, S4 evidence or permission to start Phase 2.
   "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA",
   "numericExtensionDigest": "RLmrcBc3SjFN1Mephzw6y7h3N5_mzKN9oLxLRkTZH1g",
   "normativeFiles": {
-    "LTP-SERIALIZATION-DRAFT-v0.1.md": "506874eeca5351079e380da94b34cedb47509e847bb13071930248de07c488d6",
+    "LTP-SERIALIZATION-DRAFT-v0.1.md": "2177d9f5153922519b50e1c4a70091e4063a66ac3072193bc4ece50c09910979",
     "APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md": "25aca430a6f50e3256e51cdf8e4364d5c0acc1708b92063eb19d2854764e3fbd",
-    "LTP-STACK-ARCHITECTURE.md": "deff9b7b0576b1bd5323c9096552ee40be121f90b4b985bb98d386520535fd95",
-    "LTP-ARTIFACT-CLASSIFICATION.md": "72bbc8844e801a0c97cd58e525cef0956fd766b9b9f11d728864f7aa6592a327",
-    "LTP-INDEX-DRAFT-v0.1.md": "c2a8a104e4bfcffc921552f4fcd8be338da315909efe7690791673ced4a61eb1",
+    "LTP-STACK-ARCHITECTURE.md": "1fa86bc13c0d088fe556eb6e2dff4cda72c42d6e3125b80cc6b736d309662bab",
+    "LTP-ARTIFACT-CLASSIFICATION.md": "006d09eded39dd8d7fd6b58efe2afd6589f8316b1a274076c1f2cd5373d571c9",
+    "LTP-INDEX-DRAFT-v0.1.md": "40493018a9c66965c3bc49763978d66a6a394169df000ab672248f412d858b4f",
     "LTP-PROOF-PACKAGE-DRAFT-v0.1.md": "15610e3a57ab4ac317d2fba4f2247caa6370fcd9a044e42da9b0ee7c37433ca6",
-    "LTP-STANDARDIZATION-STATUS.md": "de935966a5eefb2c7f8088af092caffd5dff31206dfb8bb15aafb04c358873a4",
-    "LTP-S3-COVERAGE.md": "3e53d391ee459ad2ae4a14b4b242306dc3aed6de9d9a65958f9f4f1fe1d85b0a",
+    "LTP-STANDARDIZATION-STATUS.md": "4870c6fb212e53101e9210aa9d0c60d381527a76c38498e2dbc20ba902a27cbc",
+    "LTP-S3-COVERAGE.md": "54f93134e092fe1200a5646824c2623ec8df851bd38ddb63a1e1f1e25ed4db9e",
     "vectors/ltp/v0.1/README.md": "d133522fcb1448c1f93cc70e558057b80942421efc2f81d8972b8746ccef6427",
     "LTP-CI-REVIEW.md": "fa6d34696b03c8d3de3d918661a47fc091d936d89ca7b191e76dcd5978215d06",
     "APW-SPEC-v1.3.md": "a768c07e26317a5191c461984b0b12ae644079b9fd735b660f11c37e0ff003f1",
     "SVRI-v1.0.md": "ac14eb1aae745544f5a36ce27736960b99c787fc910225abf5df46debd5273dc",
-    "README.md": "d343ca38255b6b6e4784fb879cd5d3f5e8f01abcdbedd6767220c903c43bbd5a",
-    "LTP-S3-CORE-CLOSURE-PLAN.md": "876e91dba7dad04d58d6800131a511beab19fa2e3b638a766563a38b7ed6d1e3",
+    "README.md": "438e7c36242e5aabf0a7beee70319129df92b28300e126a8c60ce7ba5f0b984a",
+    "LTP-S3-CORE-CLOSURE-PLAN.md": "3fac0432b27c2e3970b53fe0295060d7f365123cca06a7d753794319bb7cf0ef",
     "vectors/ltp/v0.2/README.md": "600c0a7d16963892c40d606eb18c2e786fbce140ff12fae85e4bd23f43f7ee5b",
-    "LTP-GATES-AND-AUTHORIZATIONS.md": "4d17ea9403262c92a1fee3c0a2ac8acc1b3d0ca341404954368cb4e1d3acb196",
-    "vectors/ltp/v0.3/README.md": "773f27c1b26562c58c2ba297bd623b44967f717d7af71fe0aeea7144069c60e6"
+    "LTP-GATES-AND-AUTHORIZATIONS.md": "cd8ca38dee6d691160f4e8bc93007a0f8c22c785ca1896f8339e314804021a61",
+    "vectors/ltp/v0.3/README.md": "773f27c1b26562c58c2ba297bd623b44967f717d7af71fe0aeea7144069c60e6",
+    "LTP-G2-G3-IMPLEMENTATION-SCOPE.md": "43c30c5b3f79ecf799f8c3ca12162f9e3643f376525cd813163e9e1c6dd58c74"
   }
 }
 ```
@@ -75,30 +84,31 @@ text change requires a new normative commit/hash tuple and renewed owner review;
 an asset change requires the affected digest(s), scanner findings and record to
 be reviewed again. Old decisions are not transferred silently to a new tuple.
 
-The [S3-core coverage evidence](./LTP-S3-COVERAGE.md) awaits manual sufficiency
-review under canonical G1. Reputation profiles await their separate suite and
-real emitter evidence. This record approves neither scope. Green CI, publication,
-acceptance or merge never opens A/B, network, budgets or a new engine.
+The [S3-core coverage evidence](./LTP-S3-COVERAGE.md) is accepted for the
+identified G1 corpus. Reputation profiles await their separate suite and real
+emitter evidence. This record does not approve G4 or G5. Green CI, publication,
+acceptance or merge did not open G2/G3; the owner recorded those decisions
+separately in the canonical register.
 
 ## Naming-only follow-up (prior review revision)
 
 The owner selected **Local Trust Protocol** as the expansion of LTP. That naming
-decision does not approve the S1/S3 corpus: `ownerDecision` above remains null.
-That revision superseded the earlier `246cdc8` text pin without changing data
+decision did not itself approve the S1/S3 corpus. That revision superseded the earlier `246cdc8` text pin without changing data
 digests and expanded the byte-hash scope to 14 specification files.
 The same Git revision contains the editorial glossary/ADR/site updates and the
 line-by-line inventory; the portable spec check hashes only specification files
 and imports no runtime code. Historical editions and signed data remain intact.
 
-## Authorized static composition — current candidate
+## Accepted static composition — G1 decision
 
-The correction instruction authorizes static AB-STATIC-01…07 and the canonical
-authorization register, not approval of the resulting corpus. The tuple above
-pins the new total candidate digest and final prose Git SHA with 17 exact
-specification-file hashes. The initial corpus, v0.2, schema bundle and numeric
-extension retain their bytes and commitments. Manual G1 coverage review and the
-owner's final scope decision remain open; `ownerDecision` is null and
-`decisionScope` is `G1-static-corpus-only`. Inclusion of old reputation/math
-fixtures is archival continuity, not approval of advanced profiles or offline
-DNSSEC. No artifact/CI result grants permission to implement A/B, run a resolver,
-acquire network data or enforce budgets. Static targets are not engine results.
+The owner accepted the static AB-STATIC-01…07 corpus after `linstarkcorp`'s
+review. The tuple above pins the accepted total corpus digest and the exact
+specification prose with 18 file hashes. The initial corpus, v0.2, schema bundle
+and numeric extension retain their bytes and commitments. `decisionScope` is
+`G1-static-corpus-only`. Inclusion of old reputation/math fixtures is archival
+continuity, not approval of advanced profiles or offline DNSSEC.
+
+G1 did not itself authorize implementation. The owner recorded separate bounded
+G2/G3 decisions in [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md);
+G4/G5 remain blocked. No artifact/CI result expands that scope. The identity-only
+engine's matching test results are not a deployment or S4 claim.

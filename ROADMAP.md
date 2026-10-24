@@ -88,12 +88,13 @@ no force pushes, no deletions, and required status checks `build`,
 
 ## In development (internal — depends only on Portaless)
 
-- `[ ]` **Composed S3-core sufficiency (G1)** — [AB-STATIC-01…07](./docs/protocol-apw/vectors/ltp/v0.3/README.md) submit acquisition→verification bindings for the blocking review. [Canonical gates](./docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md) are the only authorization register; data/CI/merge cannot grant implementation authority. Manual sufficiency and owner G1 acceptance remain pending.
+- `[x]` **Composed S3-core sufficiency (G1)** — [AB-STATIC-01…07](./docs/protocol-apw/vectors/ltp/v0.3/README.md) were reviewed by linstarkcorp at `3ff080b` and accepted by the owner on 2026-10-24. Corpus `wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA`. [Canonical gates](./docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md) remain the only authorization register.
 
-- `[ ]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) now supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md). Manual coverage/digest review remains open; asset checks do not execute an LTP engine. Digest approval cannot waive a missing prerequisite. Core approval and Phase 2 authorization remain separate owner decisions.
+- `[x]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md), with the composed v0.3 corpus closing the reviewed G1 scope.
 
-- `[ ]` **LTP S1/S3 corpus approval** — [Draft schemas, vectors and cross-checks](./docs/protocol-apw/vectors/ltp/v0.1/README.md) are authored locally with third-party primitive verification, not independent human review. Pending coverage blocks approval; S4 external verification and Phase 2 engine/network/budget work remain gated. [Classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) are review proposals, not a repository migration.
-  The [S3-core A/B criterion](./docs/protocol-apw/LTP-S3-COVERAGE.md) is proposed, not approved; any owner decision must bind the [data and normative-text tuple](./docs/protocol-apw/LTP-APPROVAL-RECORD.md). Current cross-checks share OpenSSL and do not close S4 primitive independence.
+- `[ ]` **Bounded G2/G3 identity-only acquisition + verifier** — `packages/ltp-engine/` implements configured HTTPS DoH/TXT and Index acquisition, shared budget/deadline accounting and deterministic offline verification. It passes AB-STATIC-01…07 in memory. Live TLS/DNS/SSRF acceptance, measurements, deployment activation, S4 independence and S6 publication remain open.
+
+- `[x]` **LTP S1/S3 corpus approval** — schemas and vectors accepted under G1; [classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) remain proposals, not a repository migration. S4 external verification, S6 release, G4 reputation and G5 offline DNSSEC remain gated. Current cross-checks share OpenSSL and do not close S4.
 
 ### Derived-score rendering integrity (completed; see Trust Layer)
 
