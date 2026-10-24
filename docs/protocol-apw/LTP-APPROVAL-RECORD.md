@@ -19,7 +19,7 @@ normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
     "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA"
   },
   "decisionScope": "G1-static-corpus-only",
-  "normativeCommit": "2dfc713663dc1f5f49fb72e66c03b2671bb4f3f4",
+  "normativeCommit": "1b8fb0d425f90baef78f25e10f60ffd01082a40d",
   "corpusVersion": "0.3",
   "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
   "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
@@ -30,19 +30,19 @@ normative release, S4 evidence, a G2–G5 authorization or permission to deploy.
     "LTP-SERIALIZATION-DRAFT-v0.1.md": "2177d9f5153922519b50e1c4a70091e4063a66ac3072193bc4ece50c09910979",
     "APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md": "25aca430a6f50e3256e51cdf8e4364d5c0acc1708b92063eb19d2854764e3fbd",
     "LTP-STACK-ARCHITECTURE.md": "1fa86bc13c0d088fe556eb6e2dff4cda72c42d6e3125b80cc6b736d309662bab",
-    "LTP-ARTIFACT-CLASSIFICATION.md": "006d09eded39dd8d7fd6b58efe2afd6589f8316b1a274076c1f2cd5373d571c9",
+    "LTP-ARTIFACT-CLASSIFICATION.md": "e9977a82d980747d2313777e688c6b55201bd79654d02395d1e1432bacec0064",
     "LTP-INDEX-DRAFT-v0.1.md": "40493018a9c66965c3bc49763978d66a6a394169df000ab672248f412d858b4f",
     "LTP-PROOF-PACKAGE-DRAFT-v0.1.md": "15610e3a57ab4ac317d2fba4f2247caa6370fcd9a044e42da9b0ee7c37433ca6",
-    "LTP-STANDARDIZATION-STATUS.md": "4870c6fb212e53101e9210aa9d0c60d381527a76c38498e2dbc20ba902a27cbc",
-    "LTP-S3-COVERAGE.md": "54f93134e092fe1200a5646824c2623ec8df851bd38ddb63a1e1f1e25ed4db9e",
+    "LTP-STANDARDIZATION-STATUS.md": "29f68c6a23127601641ed736f88eeb5ce7ab7646637531967ee685d0ccb9bb02",
+    "LTP-S3-COVERAGE.md": "61a696c24cd470552906df91fe37c885018da577d7236e77f91cbb31dd29947c",
     "vectors/ltp/v0.1/README.md": "d133522fcb1448c1f93cc70e558057b80942421efc2f81d8972b8746ccef6427",
     "LTP-CI-REVIEW.md": "fa6d34696b03c8d3de3d918661a47fc091d936d89ca7b191e76dcd5978215d06",
     "APW-SPEC-v1.3.md": "a768c07e26317a5191c461984b0b12ae644079b9fd735b660f11c37e0ff003f1",
     "SVRI-v1.0.md": "ac14eb1aae745544f5a36ce27736960b99c787fc910225abf5df46debd5273dc",
-    "README.md": "2350d372e7c2741e282078af1b2cb9674b51a127a13439a162b3eb86c379ecb1",
-    "LTP-S3-CORE-CLOSURE-PLAN.md": "3fac0432b27c2e3970b53fe0295060d7f365123cca06a7d753794319bb7cf0ef",
+    "README.md": "1facd362e8ae4a632d08fbd4e45b36ae59b067584400aba426390ac9e5653c22",
+    "LTP-S3-CORE-CLOSURE-PLAN.md": "cebfa7f27c078c5d86b4a124772d444ef6e85dec4290327fae46025b6a0f2937",
     "vectors/ltp/v0.2/README.md": "600c0a7d16963892c40d606eb18c2e786fbce140ff12fae85e4bd23f43f7ee5b",
-    "LTP-GATES-AND-AUTHORIZATIONS.md": "39bc8f7db3ff6a987fbedb85f718803f53eb48e89196a1f330ba3344d5b77c2d",
+    "LTP-GATES-AND-AUTHORIZATIONS.md": "d9e75dec93e80305165d07c40365b234475d4d6a499e26fe786694599a07a0a4",
     "vectors/ltp/v0.3/README.md": "773f27c1b26562c58c2ba297bd623b44967f717d7af71fe0aeea7144069c60e6",
     "LTP-G2-G3-IMPLEMENTATION-SCOPE.md": "69b178515a78ed1b10ffa473f882963ac524ebb0cfdd33338d4583e2c33b1660"
   }
@@ -110,5 +110,7 @@ continuity, not approval of advanced profiles or offline DNSSEC.
 
 G1 did not itself authorize implementation. The owner recorded separate bounded
 G2/G3 decisions in [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md);
-G4/G5 remain blocked. No artifact/CI result expands that scope. The identity-only
+At the time of the G1 decision G4/G5 remained blocked; the canonical register
+later records a bounded G4 engine authorization. G5 remains pending. No
+artifact/CI result expands that scope. The identity-only
 engine's matching test results are not a deployment or S4 claim.
