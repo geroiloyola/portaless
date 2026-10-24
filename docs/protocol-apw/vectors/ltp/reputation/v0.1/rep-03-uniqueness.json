@@ -1,0 +1,239 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-03",
+  "title": "REP-03 — (iss,jti) uniqueness and conflicts",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-03-01",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti), identical payload, repeated.",
+      "input": {
+        "items": [
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p1"
+          },
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p1"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": 1,
+        "unique": 1,
+        "duplicates": 1,
+        "conflicts": 0,
+        "invalid": 0
+      }
+    },
+    {
+      "id": "REP-03-02",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti), different payload.",
+      "input": {
+        "items": [
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p1"
+          },
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p2"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": 0,
+        "unique": 1,
+        "duplicates": 0,
+        "conflicts": 1,
+        "invalid": 0
+      }
+    },
+    {
+      "id": "REP-03-03",
+      "kind": "attestationUniqueness",
+      "description": "Same (iss,jti) across two stores.",
+      "input": {
+        "stores": [
+          [
+            {
+              "iss": "did:apw:issuer.example",
+              "jti": "j1",
+              "payload": "p1"
+            }
+          ],
+          [
+            {
+              "iss": "did:apw:issuer.example",
+              "jti": "j1",
+              "payload": "p1"
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "accepted": 1,
+        "unique": 1,
+        "duplicates": 1,
+        "conflicts": 0,
+        "invalid": 0
+      }
+    },
+    {
+      "id": "REP-03-04",
+      "kind": "attestationUniqueness",
+      "description": "Same jti, different iss.",
+      "input": {
+        "items": [
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p1"
+          },
+          {
+            "iss": "did:apw:other.example",
+            "jti": "j1",
+            "payload": "p1"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": 2,
+        "unique": 2,
+        "duplicates": 0,
+        "conflicts": 0,
+        "invalid": 0
+      }
+    },
+    {
+      "id": "REP-03-05",
+      "kind": "attestationUniqueness",
+      "description": "Missing iss or jti.",
+      "input": {
+        "items": [
+          {
+            "iss": null,
+            "jti": "j1",
+            "payload": "p1"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": 0,
+        "unique": 0,
+        "duplicates": 0,
+        "conflicts": 0,
+        "invalid": 1
+      }
+    },
+    {
+      "id": "REP-03-06",
+      "kind": "attestationUniqueness",
+      "description": "Permutation of a valid set.",
+      "input": {
+        "orders": [
+          [
+            {
+              "iss": "did:apw:issuer.example",
+              "jti": "j1",
+              "payload": "p1"
+            },
+            {
+              "iss": "did:apw:other.example",
+              "jti": "j1",
+              "payload": "p1"
+            }
+          ],
+          [
+            {
+              "iss": "did:apw:other.example",
+              "jti": "j1",
+              "payload": "p1"
+            },
+            {
+              "iss": "did:apw:issuer.example",
+              "jti": "j1",
+              "payload": "p1"
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "sameResult": true,
+        "accepted": 2,
+        "conflicts": 0
+      }
+    },
+    {
+      "id": "REP-03-07",
+      "kind": "attestationUniqueness",
+      "description": "Duplicate (iss,jti), one valid and one mutated.",
+      "input": {
+        "items": [
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "p1"
+          },
+          {
+            "iss": "did:apw:issuer.example",
+            "jti": "j1",
+            "payload": "mutated"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": 0,
+        "unique": 1,
+        "duplicates": 0,
+        "conflicts": 1,
+        "invalid": 0
+      }
+    },
+    {
+      "id": "REP-03-08",
+      "kind": "attestationUniqueness",
+      "description": "Legacy row without JWS after cutoff.",
+      "input": {
+        "legacy": true,
+        "hasJws": false,
+        "tsAfterCutoff": true
+      },
+      "expected": {
+        "completeness": "broken",
+        "reason": "apw_unresolvable",
+        "count": 0
+      }
+    },
+    {
+      "id": "REP-03-09",
+      "kind": "attestationUniqueness",
+      "description": "Legacy row before cutoff with ignore/reject policy.",
+      "input": {
+        "legacy": true,
+        "hasJws": false,
+        "tsAfterCutoff": false,
+        "policies": [
+          "ignore",
+          "reject"
+        ]
+      },
+      "expected": {
+        "ignore": "ignored",
+        "reject": "apw_unresolvable",
+        "count": 0
+      }
+    }
+  ]
+}

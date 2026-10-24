@@ -1,0 +1,224 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-05",
+  "title": "REP-05 — Reader-conduct categories and values",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-05-01",
+      "kind": "readerConductMapping",
+      "description": "respected_policy true.",
+      "input": {
+        "category": "respected_policy",
+        "value": true
+      },
+      "expected": {
+        "dimension": "R-01",
+        "value": 7.0
+      }
+    },
+    {
+      "id": "REP-05-02",
+      "kind": "readerConductMapping",
+      "description": "respected_policy false.",
+      "input": {
+        "category": "respected_policy",
+        "value": false
+      },
+      "expected": {
+        "dimension": "R-01",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "REP-05-03",
+      "kind": "readerConductMapping",
+      "description": "policy_violation true.",
+      "input": {
+        "category": "policy_violation",
+        "value": true
+      },
+      "expected": {
+        "dimension": "R-01",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "REP-05-04",
+      "kind": "readerConductMapping",
+      "description": "policy_violation false.",
+      "input": {
+        "category": "policy_violation",
+        "value": false
+      },
+      "expected": {
+        "dimension": "R-01",
+        "value": 7.0
+      }
+    },
+    {
+      "id": "REP-05-05",
+      "kind": "readerConductMapping",
+      "description": "rate_respected true/false.",
+      "input": {
+        "category": "rate_respected",
+        "value": [
+          true,
+          false
+        ]
+      },
+      "expected": {
+        "values": [
+          {
+            "dimension": "R-02",
+            "value": 7.0
+          },
+          {
+            "dimension": "R-02",
+            "value": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "REP-05-06",
+      "kind": "readerConductMapping",
+      "description": "paid_as_agreed true/false.",
+      "input": {
+        "category": "paid_as_agreed",
+        "value": [
+          true,
+          false
+        ]
+      },
+      "expected": {
+        "values": [
+          {
+            "dimension": "R-03",
+            "value": 7.0
+          },
+          {
+            "dimension": "R-03",
+            "value": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "REP-05-07",
+      "kind": "readerConductMapping",
+      "description": "redistribution true.",
+      "input": {
+        "category": "redistribution",
+        "value": true
+      },
+      "expected": {
+        "dimension": "R-04",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "REP-05-08",
+      "kind": "readerConductMapping",
+      "description": "Unknown category.",
+      "input": {
+        "category": "unknown",
+        "value": true
+      },
+      "expected": {
+        "error": "unknown_category"
+      }
+    },
+    {
+      "id": "REP-05-09",
+      "kind": "readerConductMapping",
+      "description": "Non-boolean value for a boolean category.",
+      "input": {
+        "category": "respected_policy",
+        "value": 1
+      },
+      "expected": {
+        "error": "non_boolean_value"
+      }
+    },
+    {
+      "id": "REP-05-10",
+      "kind": "readerConductMapping",
+      "description": "Community values 1, 2.5, 4, 5.5, 7 and invalid 0/6/NaN.",
+      "input": {
+        "category": "community",
+        "values": [
+          1,
+          2.5,
+          4,
+          5.5,
+          7,
+          0,
+          6,
+          "NaN"
+        ]
+      },
+      "expected": {
+        "values": [
+          {
+            "dimension": "W-10",
+            "value": 1.0
+          },
+          {
+            "dimension": "W-10",
+            "value": 3.25
+          },
+          {
+            "dimension": "W-10",
+            "value": 5.5
+          },
+          {
+            "error": "community_out_of_range"
+          },
+          {
+            "error": "community_out_of_range"
+          },
+          {
+            "error": "community_out_of_range"
+          },
+          {
+            "error": "community_out_of_range"
+          },
+          {
+            "error": "invalid_community_value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "REP-05-11",
+      "kind": "readerConductMapping",
+      "description": "T4 activity on a site is not W evidence.",
+      "input": {
+        "t4Count": 3
+      },
+      "expected": {
+        "t4Count": 3,
+        "wEvidence": false,
+        "scoreWeight": 0.0
+      }
+    },
+    {
+      "id": "REP-05-12",
+      "kind": "readerConductMapping",
+      "description": "Reader-conduct for a different subject.",
+      "input": {
+        "subject": "did:apw:a.example",
+        "attestationSubject": "did:apw:b.example"
+      },
+      "expected": {
+        "excluded": true,
+        "reason": "subject_mismatch"
+      }
+    }
+  ]
+}

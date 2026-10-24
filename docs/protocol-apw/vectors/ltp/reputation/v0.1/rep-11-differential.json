@@ -1,0 +1,274 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-11",
+  "title": "REP-11 — Differential and independent reproduction",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-11-01",
+      "kind": "differential",
+      "description": "Every svri-math reference case through apw-resolver and candidate.",
+      "input": {
+        "references": [
+          {
+            "id": "prior-only",
+            "score": 5,
+            "publicLevel": "pending"
+          },
+          {
+            "id": "t4-not-w-evidence",
+            "score": 5,
+            "publicLevel": "pending"
+          },
+          {
+            "id": "one-escrow",
+            "score": 5.384615384615385,
+            "publicLevel": "verify"
+          },
+          {
+            "id": "positive-and-negative",
+            "score": 5,
+            "publicLevel": "verify"
+          },
+          {
+            "id": "half-prior-exact",
+            "score": 7.5,
+            "publicLevel": "safe"
+          },
+          {
+            "id": "only-t3-t5-high-score",
+            "score": 9,
+            "publicLevel": "pending"
+          },
+          {
+            "id": "score-five",
+            "score": 5,
+            "publicLevel": "verify"
+          },
+          {
+            "id": "score-seven-inferred",
+            "score": 7,
+            "publicLevel": "verify"
+          },
+          {
+            "id": "score-seven-safe",
+            "score": 7,
+            "publicLevel": "safe"
+          },
+          {
+            "id": "score-nine",
+            "score": 9,
+            "publicLevel": "trusted"
+          },
+          {
+            "id": "below-five-unrounded",
+            "score": 4.999999999999762,
+            "publicLevel": "low"
+          },
+          {
+            "id": "below-nine-unrounded",
+            "score": 8.999999999999888,
+            "publicLevel": "safe"
+          },
+          {
+            "id": "two-dimension-mean",
+            "score": 4.5673076923076925,
+            "publicLevel": "low"
+          }
+        ]
+      },
+      "expected": {
+        "withinTolerance": true,
+        "countsExact": true,
+        "levelsExact": true,
+        "tolerance": 1e-09,
+        "referenceCount": 13
+      }
+    },
+    {
+      "id": "REP-11-02",
+      "kind": "differential",
+      "description": "Same signed snapshot through scoreSiteDimensions and candidate.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 5.2,
+            "count": 1,
+            "weightSum": 3.0
+          },
+          {
+            "dimension": "W-05",
+            "score": 4.0,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "projection": {
+          "version": "1.0",
+          "profile": "ltp-svri-site-v1",
+          "score": 6.0,
+          "t1Count": 1,
+          "t2Count": 0,
+          "t3Count": 0,
+          "t4Count": 0,
+          "t5Count": 0,
+          "incompleteData": false,
+          "isInference": false,
+          "priorShare": 0.5,
+          "effectiveWeight": 6.0,
+          "dimensionCount": 2,
+          "publicLevel": "verify"
+        },
+        "candidate": "future",
+        "reference": "python-oracle"
+      }
+    },
+    {
+      "id": "REP-11-03",
+      "kind": "differential",
+      "description": "Same input, different order/permutation.",
+      "input": {
+        "orders": [
+          [
+            {
+              "dimension": "W-05",
+              "score": 5.2,
+              "count": 1,
+              "weightSum": 3.0
+            },
+            {
+              "dimension": "W-05",
+              "score": 4.0,
+              "count": 1,
+              "weightSum": 3.0
+            }
+          ],
+          [
+            {
+              "dimension": "W-05",
+              "score": 4.0,
+              "count": 1,
+              "weightSum": 3.0
+            },
+            {
+              "dimension": "W-05",
+              "score": 5.2,
+              "count": 1,
+              "weightSum": 3.0
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "sameResult": true,
+        "score": 6.0
+      }
+    },
+    {
+      "id": "REP-11-04",
+      "kind": "differential",
+      "description": "Independent person/language/backend (S4).",
+      "input": {
+        "required": "independent"
+      },
+      "expected": {
+        "status": "pending-S4",
+        "sameAuthorSufficient": false
+      }
+    },
+    {
+      "id": "REP-11-05",
+      "kind": "differential",
+      "description": "Random/adversarial inputs at caps.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 1.0,
+            "count": 1,
+            "weightSum": 0.25
+          },
+          {
+            "dimension": "W-05",
+            "score": 7.0,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "projection": {
+          "version": "1.0",
+          "profile": "ltp-svri-site-v1",
+          "score": 5.0,
+          "t1Count": 1,
+          "t2Count": 1,
+          "t3Count": 0,
+          "t4Count": 0,
+          "t5Count": 0,
+          "incompleteData": false,
+          "isInference": true,
+          "priorShare": 0.6486486486486487,
+          "effectiveWeight": 3.25,
+          "dimensionCount": 2,
+          "publicLevel": "verify"
+        },
+        "withinTolerance": true
+      }
+    },
+    {
+      "id": "REP-11-06",
+      "kind": "differential",
+      "description": "Implementation revision/arithmetic mode/caps recorded.",
+      "input": {
+        "requiredFields": [
+          "implementationRevision",
+          "arithmetic",
+          "caps"
+        ]
+      },
+      "expected": {
+        "requiredFields": [
+          "implementationRevision",
+          "arithmetic",
+          "caps"
+        ],
+        "arithmetic": "binary64",
+        "tolerance": 1e-09
+      }
+    },
+    {
+      "id": "REP-11-07",
+      "kind": "differential",
+      "description": "Signed-rational profile request.",
+      "input": {
+        "profile": "signed-rational"
+      },
+      "expected": {
+        "status": "out_of_scope",
+        "doNotCompareBytesToBinary64": true
+      }
+    }
+  ]
+}

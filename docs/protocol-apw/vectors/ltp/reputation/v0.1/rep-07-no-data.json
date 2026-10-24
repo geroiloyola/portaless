@@ -1,0 +1,280 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-07",
+  "title": "REP-07 — No-data and insufficient evidence",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-07-01",
+      "kind": "svriNoData",
+      "description": "No attestations.",
+      "input": {
+        "dimensions": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 1.0,
+        "effectiveWeight": 0.0,
+        "dimensionCount": 0,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-07-02",
+      "kind": "svriNoData",
+      "description": "Only T3/T5 sources.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 6.4,
+            "count": 6,
+            "weightSum": 12
+          }
+        ],
+        "counts": [
+          0,
+          0,
+          6,
+          0,
+          6
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 9.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 6,
+        "t4Count": 0,
+        "t5Count": 6,
+        "incompleteData": true,
+        "isInference": false,
+        "priorShare": 0.2,
+        "effectiveWeight": 12,
+        "dimensionCount": 1,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-07-03",
+      "kind": "svriNoData",
+      "description": "Below min_weight.",
+      "input": {
+        "weightSum": 1.999999999,
+        "minWeight": 2.0
+      },
+      "expected": {
+        "minWeightPass": false,
+        "subjectAbsent": true
+      }
+    },
+    {
+      "id": "REP-07-04",
+      "kind": "svriNoData",
+      "description": "priorShare exactly 0.5.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 4.0,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "REP-07-05",
+      "kind": "svriNoData",
+      "description": "priorShare just above and below 0.5.",
+      "input": {
+        "weightSums": [
+          2.999999999,
+          3.000000001
+        ]
+      },
+      "expected": {
+        "inference": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "REP-07-06",
+      "kind": "svriNoData",
+      "description": "Zero effective dimensions with T4 activity.",
+      "input": {
+        "dimensions": [],
+        "counts": [
+          0,
+          0,
+          0,
+          3,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 3,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 1.0,
+        "effectiveWeight": 0.0,
+        "dimensionCount": 0,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-07-07",
+      "kind": "svriNoData",
+      "description": "Declared dimension without data.",
+      "input": {
+        "declaredDimensions": [
+          "W-05"
+        ],
+        "dimensions": []
+      },
+      "expected": {
+        "dimensionCount": 0,
+        "score": 5.0,
+        "absentDimensions": [
+          "W-05"
+        ]
+      }
+    },
+    {
+      "id": "REP-07-08",
+      "kind": "svriNoData",
+      "description": "T4 activity only.",
+      "input": {
+        "dimensions": [],
+        "counts": [
+          0,
+          0,
+          0,
+          3,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 3,
+        "t5Count": 0,
+        "incompleteData": true,
+        "isInference": true,
+        "priorShare": 1.0,
+        "effectiveWeight": 0.0,
+        "dimensionCount": 0,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-07-09",
+      "kind": "svriNoData",
+      "description": "Incomplete data with a high raw score.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 6.4,
+            "count": 1,
+            "weightSum": 12
+          }
+        ],
+        "counts": [
+          0,
+          0,
+          6,
+          0,
+          6
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 9.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 6,
+        "t4Count": 0,
+        "t5Count": 6,
+        "incompleteData": true,
+        "isInference": false,
+        "priorShare": 0.2,
+        "effectiveWeight": 12,
+        "dimensionCount": 1,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-07-10",
+      "kind": "svriNoData",
+      "description": "Unknown or malformed source.",
+      "input": {
+        "source": "unknown"
+      },
+      "expected": {
+        "excluded": true,
+        "reason": "unsupported_source",
+        "count": 0
+      }
+    }
+  ]
+}

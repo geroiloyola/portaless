@@ -1,0 +1,464 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-08",
+  "title": "REP-08 — Arithmetic and level boundaries",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-08-01",
+      "kind": "svriBoundary",
+      "description": "Score exactly 5.0.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 4.0,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 5.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "REP-08-02",
+      "kind": "svriBoundary",
+      "description": "Score 4.999999999 just below 5.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 3.9999999994,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 4.999999999,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "low"
+      }
+    },
+    {
+      "id": "REP-08-03",
+      "kind": "svriBoundary",
+      "description": "Score exactly 7.0 with isInference=false.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 5.2,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 7.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "safe"
+      }
+    },
+    {
+      "id": "REP-08-04",
+      "kind": "svriBoundary",
+      "description": "Score 6.999999999 just below 7.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 5.1999999994,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 6.999999999,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "REP-08-05",
+      "kind": "svriBoundary",
+      "description": "Score exactly 9.0, complete, non-inference, T1/T2 present.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 6.4,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 9.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "trusted"
+      }
+    },
+    {
+      "id": "REP-08-06",
+      "kind": "svriBoundary",
+      "description": "Score 8.999999999 just below 9.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 6.3999999994,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 8.999999999000002,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "safe"
+      }
+    },
+    {
+      "id": "REP-08-07",
+      "kind": "svriBoundary",
+      "description": "Two scores equal after 6-decimal rounding.",
+      "input": {
+        "entries": [
+          {
+            "subject": "b",
+            "score": 5.0,
+            "weightSum": 2.0,
+            "count": 2
+          },
+          {
+            "subject": "a",
+            "score": 5.0,
+            "weightSum": 3.0,
+            "count": 1
+          }
+        ]
+      },
+      "expected": {
+        "order": [
+          "a",
+          "b"
+        ],
+        "rule": "score desc, weight desc, count desc, subject asc"
+      }
+    },
+    {
+      "id": "REP-08-08",
+      "kind": "svriBoundary",
+      "description": "Two values within 1e-9.",
+      "input": {
+        "values": [
+          1.0,
+          1.0000000005
+        ]
+      },
+      "expected": {
+        "withinTolerance": true,
+        "exactEqual": false,
+        "tolerance": 1e-09
+      }
+    },
+    {
+      "id": "REP-08-09",
+      "kind": "svriBoundary",
+      "description": "((6.7-1)/6)^2 binary64 vs 0.9025 oracle.",
+      "input": {
+        "j": 6.7
+      },
+      "expected": {
+        "weight": 0.9025000000000001,
+        "oracleDecimal": 0.9025,
+        "withinTolerance": true
+      }
+    },
+    {
+      "id": "REP-08-10",
+      "kind": "svriBoundary",
+      "description": "Score10 endpoints 1 to 0 and 7 to 10.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 1.0,
+            "count": 1,
+            "weightSum": 3.0
+          },
+          {
+            "dimension": "W-05",
+            "score": 7.0,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "score10": [
+          0.0,
+          10.0
+        ],
+        "mean": 5.0
+      }
+    },
+    {
+      "id": "REP-08-11",
+      "kind": "svriBoundary",
+      "description": "Exact rational oracle metadata.",
+      "input": {
+        "numerator": 70,
+        "denominator": 13
+      },
+      "expected": {
+        "value": 5.384615384615385,
+        "rational": {
+          "numerator": 70,
+          "denominator": 13
+        },
+        "wireArithmetic": "binary64",
+        "tolerance": 1e-09
+      }
+    },
+    {
+      "id": "REP-08-12",
+      "kind": "svriBoundary",
+      "description": "Score 7.0 with isInference=true.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 5.2,
+            "count": 1,
+            "weightSum": 0.25
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 7.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": true,
+        "priorShare": 0.9230769230769231,
+        "effectiveWeight": 0.25,
+        "dimensionCount": 1,
+        "publicLevel": "verify"
+      }
+    },
+    {
+      "id": "REP-08-13",
+      "kind": "svriBoundary",
+      "description": "Score 9.0 with incompleteData=true.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 6.4,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          0,
+          0,
+          6,
+          0,
+          6
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 9.0,
+        "t1Count": 0,
+        "t2Count": 0,
+        "t3Count": 6,
+        "t4Count": 0,
+        "t5Count": 6,
+        "incompleteData": true,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "pending"
+      }
+    },
+    {
+      "id": "REP-08-14",
+      "kind": "svriBoundary",
+      "description": "Exact boundary 7.0 with complete/non-inference flags.",
+      "input": {
+        "dimensions": [
+          {
+            "dimension": "W-05",
+            "score": 5.2,
+            "count": 1,
+            "weightSum": 3.0
+          }
+        ],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "version": "1.0",
+        "profile": "ltp-svri-site-v1",
+        "score": 7.0,
+        "t1Count": 1,
+        "t2Count": 0,
+        "t3Count": 0,
+        "t4Count": 0,
+        "t5Count": 0,
+        "incompleteData": false,
+        "isInference": false,
+        "priorShare": 0.5,
+        "effectiveWeight": 3.0,
+        "dimensionCount": 1,
+        "publicLevel": "safe"
+      }
+    }
+  ]
+}

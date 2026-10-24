@@ -1,7 +1,10 @@
 # G4 pre-authorization review — reputation/SVRI arithmetic
 
-**Status: review only. G4 is not authorized. No code, profile, vector or
-activation is introduced by this document. License: CC BY 4.0.**
+**Status: review only. G4 is not authorized for an engine. On 2026-10-24 the
+owner authorized generation of the static REP-01…REP-11 JSON targets only; the
+TypeScript SVRI engine remains blocked until that corpus is audited. No
+implementation, profile or activation is introduced by this document.
+License: CC BY 4.0.**
 G4 remains `PENDING_AUTHORIZATION` in the
 [canonical register](./LTP-GATES-AND-AUTHORIZATIONS.md). This report exists so a
 future owner decision starts from the real implementations, the normative
@@ -128,3 +131,12 @@ matrix, not this summary, is the documentary evidence for vector completeness.
 
 Until those decisions are recorded, G4 remains pending and no reputation/SVRI
 math is implemented in `ltp-engine`.
+
+## 6. Authorized static corpus (2026-10-24)
+
+The owner authorized only the precomputed JSON targets:
+[`vectors/ltp/reputation/v0.1/`](./vectors/ltp/reputation/v0.1/). The fixture-only
+Python oracle is `tools/reputation-author.py`; it is not a Portaless engine. The
+117 REP cases, coverage index and manifest are static audit material. A
+TypeScript implementation, runtime integration, signed profile, real-emitter
+claim, S4 independence and activation are still blocked.

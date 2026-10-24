@@ -1,0 +1,222 @@
+{
+  "format": "ltp-reputation-static-vector",
+  "version": "0.1",
+  "family": "REP-01",
+  "title": "REP-01 — Issuer identity and chain",
+  "status": "static-oracle-target",
+  "engineImplemented": false,
+  "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
+  "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
+  "cases": [
+    {
+      "id": "REP-01-01",
+      "kind": "issuerEligibility",
+      "description": "Valid issuer key, window and complete chain.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "chain": true
+      },
+      "expected": {
+        "eligible": true,
+        "reason": null,
+        "weight": 0.25,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-02",
+      "kind": "issuerEligibility",
+      "description": "Issuer key does not belong to the attested DID.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "keyMatchesDid": false
+      },
+      "expected": {
+        "eligible": false,
+        "reason": "issuer_key_not_bound",
+        "weight": 0.0,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-03",
+      "kind": "issuerEligibility",
+      "description": "Issuer identity/history is missing.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "chain": false
+      },
+      "expected": {
+        "eligible": false,
+        "reason": "issuer_chain_incomplete",
+        "weight": 0.0,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-04",
+      "kind": "issuerEligibility",
+      "description": "Attestation timestamp exactly at validFrom.",
+      "input": {
+        "keyTs": 900,
+        "validFrom": 900,
+        "validTo": 1100
+      },
+      "expected": {
+        "eligible": true,
+        "reason": null,
+        "weight": 0.25,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-05",
+      "kind": "issuerEligibility",
+      "description": "Attestation timestamp exactly at validTo.",
+      "input": {
+        "keyTs": 1100,
+        "validFrom": 900,
+        "validTo": 1100
+      },
+      "expected": {
+        "eligible": true,
+        "reason": null,
+        "weight": 0.25,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-06",
+      "kind": "issuerEligibility",
+      "description": "One second before validFrom and after validTo+grace.",
+      "input": {
+        "keyTs": [
+          899,
+          1701
+        ],
+        "validFrom": 900,
+        "validTo": 1100,
+        "grace": 600
+      },
+      "expected": {
+        "eligible": [
+          false,
+          false
+        ],
+        "reason": [
+          "key_before_valid_from",
+          "key_after_valid_to_and_grace"
+        ]
+      }
+    },
+    {
+      "id": "REP-01-07",
+      "kind": "issuerEligibility",
+      "description": "Retired key at validTo+grace and one second after.",
+      "input": {
+        "keyTs": [
+          1700,
+          1701
+        ],
+        "validFrom": 900,
+        "validTo": 1100,
+        "grace": 600
+      },
+      "expected": {
+        "eligible": [
+          true,
+          false
+        ],
+        "reason": [
+          null,
+          "key_after_valid_to_and_grace"
+        ]
+      }
+    },
+    {
+      "id": "REP-01-08",
+      "kind": "issuerEligibility",
+      "description": "Self-issuer or issuer equal to the reader.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "selfIssuer": true
+      },
+      "expected": {
+        "eligible": false,
+        "reason": "self_issuer_excluded",
+        "weight": 0.0,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-09",
+      "kind": "issuerEligibility",
+      "description": "Incomplete chain or JWS hash not anchored.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "chain": false
+      },
+      "expected": {
+        "eligible": false,
+        "reason": "issuer_chain_incomplete",
+        "weight": 0.0,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 1
+      }
+    },
+    {
+      "id": "REP-01-10",
+      "kind": "issuerEligibility",
+      "description": "Same DID under several domains/aliases.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "aliases": 2,
+        "distinct": 1
+      },
+      "expected": {
+        "eligible": true,
+        "reason": null,
+        "weight": 0.25,
+        "distinctEmitters": 1,
+        "aliasesCollapsed": 2
+      }
+    },
+    {
+      "id": "REP-01-11",
+      "kind": "issuerEligibility",
+      "description": "Two distinct did:apw controlled by one operator.",
+      "input": {
+        "keyTs": 1000,
+        "validFrom": 900,
+        "validTo": 1100,
+        "aliases": 2,
+        "distinct": 2
+      },
+      "expected": {
+        "eligible": true,
+        "reason": null,
+        "weight": 0.25,
+        "distinctEmitters": 2,
+        "aliasesCollapsed": 2
+      }
+    }
+  ]
+}
