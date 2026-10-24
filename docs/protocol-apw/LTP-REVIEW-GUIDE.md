@@ -49,6 +49,11 @@ the future engine, parser, network or scheduler. S4 independence remains open.
 
 ## Composed static v0.3 correction — current candidate
 
+| Commit | What to review |
+|---|---|
+| `07efe1a` | Seven composed static fixtures, byte/algebra/primitive audit, inner-handoff negative, canonical authorization register and live-document reference cleanup; required-unit-job integration. No trace executor or new production implementation. |
+| Follow-up titled `docs(ltp): bind composed candidate to final G1 prose` | Binds **07efe1a69fa9a4a12616edfe93106f28429deb87**, 17 exact spec-file hashes and the v0.3 commitment. G1-only scope; no owner decision entered. Obtain this binding commit's SHA from Git. |
+
 Start with the [canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md), then
 the [v0.3 README](./vectors/ltp/v0.3/README.md) and
 [coverage index](./vectors/ltp/v0.3/coverage.json). G1 sufficiency is pending manual

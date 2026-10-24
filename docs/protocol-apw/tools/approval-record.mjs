@@ -17,13 +17,15 @@ export const normativePaths = [
   'vectors/ltp/v0.1/README.md', 'LTP-CI-REVIEW.md',
   'APW-SPEC-v1.3.md', 'SVRI-v1.0.md', 'README.md', 'LTP-S3-CORE-CLOSURE-PLAN.md',
   'vectors/ltp/v0.2/README.md',
+  'LTP-GATES-AND-AUTHORIZATIONS.md', 'vectors/ltp/v0.3/README.md',
 ];
 export function candidate(normativeCommit) {
   assert.match(normativeCommit, /^[a-f0-9]{40}$/);
-  return { status: 'pending-owner-decision', ownerDecision: null, normativeCommit, corpusVersion: '0.2',
+  return { status: 'pending-owner-decision', ownerDecision: null, decisionScope: 'G1-static-corpus-only', normativeCommit, corpusVersion: '0.3',
     schemaBundleDigest: jcsDigest('schemas/v0.1/manifest.json'),
     originalCorpusDigest: jcsDigest('vectors/ltp/v0.1/manifest.json'),
-    corpusDigest: jcsDigest('vectors/ltp/v0.2/manifest.json'),
+    previousCorpusDigest: jcsDigest('vectors/ltp/v0.2/manifest.json'),
+    corpusDigest: jcsDigest('vectors/ltp/v0.3/manifest.json'),
     numericExtensionDigest: jcsDigest('vectors/ltp/v0.1/numeric-serialization.json'),
     normativeFiles: Object.fromEntries(normativePaths.map(path => [path, hash(read(path), 'hex')])),
   };
