@@ -27,12 +27,12 @@ export function validateOwnerDecision(decision, corpusDigest) {
   if (decision === null) return null;
   assert.deepEqual(Object.keys(decision).sort(), decisionKeys, 'owner decision fields');
   assert.equal(decision.decision, 'approved');
-  assert.equal(decision.scope, 'G1-static-corpus-only');
+  assert.equal(decision.scope, 'G1-static-corpus-only', 'owner decision scope');
   assert.match(decision.decidedAt, /^\d{4}-\d{2}-\d{2}$/);
   assert.match(decision.reviewedCommit, /^[a-f0-9]{40}$/);
   assert.match(decision.mergeCommit, /^[a-f0-9]{40}$/);
   assert.equal(decision.reviewer, 'linstarkcorp');
-  assert.equal(decision.corpusDigest, corpusDigest);
+  assert.equal(decision.corpusDigest, corpusDigest, 'owner decision corpus digest');
   return decision;
 }
 
