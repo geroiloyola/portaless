@@ -11,7 +11,7 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
 | Gate | Scope and acceptance condition | Current state | Effect of a decision |
 |---|---|---|---|
 | **G1** | **S3-core corpus approval.** Sufficient reviewed CORE-01…06 coverage plus the composed A→B master/negatives, exact data/prose commitments and explicit owner acceptance. A matching digest is necessary for identifying data, not proof of sufficient coverage. | **ACCEPTED** (2026-10-24) | Accepts only the identified static corpus scope. The decision is recorded in `LTP-APPROVAL-RECORD.md`; G1 alone grants no implementation permission. |
-| **G2** | **Acquisition, network and budgets.** A future owner decision must separately name the permitted transport/resource scope, revision and required acceptance work. Includes network/budget work even when located in a roadmap B delivery. | **AUTHORIZED** (2026-10-24, bounded) | Only the named identity-only acquisition and budget work may proceed. It does not authorize the verifier by itself, reputation/DNSSEC profiles or deployment activation. |
+| **G2** | **Acquisition, network and budgets.** A future owner decision must separately name the permitted transport/resource scope, revision and required acceptance work. Includes network/budget work even when located in a roadmap B delivery. | **AUTHORIZED** (2026-10-24, bounded; hardening addendum) | Only the named identity-only acquisition, budget and live-egress/SSRF hardening may proceed. It does not authorize the verifier by itself, reputation/DNSSEC profiles or deployment activation. |
 | **G3** | **Verification engine.** A future, separate owner decision must identify the deterministic verification scope and revision. No inference from G1 or G2 is allowed. | **AUTHORIZED** (2026-10-24, bounded) | Only the named deterministic identity verifier may proceed. It grants no network/budget permission beyond G2 and no reputation or offline-DNSSEC permission. |
 | **G4** | **S3-reputation and advanced mathematical profiles.** Reader-conduct issuers, `(iss,jti)`, calibration/provenance and advanced SVRI/HSVR profile targets require their own coverage and review; real reputation claims also need real emitter evidence. | **BLOCKED** | No new profile implementation, conformance or activation is approved here. Existing adopted SVRI v1.0 formulas and behavior are not disabled or rewritten. |
 | **G5** | **Advanced offline DNSSEC.** DS/anchor policy, NSEC/NSEC3, wildcard and algorithm rollover need their own targets, audited/reviewed-library evidence and explicit scope decision. Configured DoH/AD and synthetic RRSIG signatures do not satisfy this scope. | **BLOCKED** | No custom validator, offline-profile implementation, conformance or activation is approved here. |
@@ -29,6 +29,12 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
   unsigned fallback, DNSSEC downgrade, unconfigured origins, production
   activation and changes to deployment quotas. See
   [G2/G3 implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md).
+- **G2 live-egress/SSRF addendum (2026-10-24).** Authorized to harden the real
+  HTTPS connector and add TLS/DNS/SSRF and budget-stress acceptance tests:
+  special-use CIDR/host rejection, DNS pinning against rebinding, redirect and
+  plaintext refusal, streamed byte caps, exclusive deadline and fail-closed
+  malformed-response handling. Production activation and external live traffic
+  remain outside this decision.
 - **G3 authorized, bounded.** Implement a deterministic offline verifier that
   consumes the LTP Proof Package bytes for `apw-identity-proof-v1`, verifies the
   Ed25519/JCS artifacts, the authenticated TXT key binding and full history, and

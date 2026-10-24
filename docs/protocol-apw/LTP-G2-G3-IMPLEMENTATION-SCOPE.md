@@ -52,6 +52,27 @@ issuers or calibration (G4), DS-chain/NSEC/NSEC3/wildcard/rollover or a custom
 offline DNSSEC validator (G5), independent-verifier claims (S4), normative
 release (S6) or runtime conformance beyond the supplied identity-only profile.
 
+## 2026-10-24 hardening addendum — live egress and SSRF
+
+The owner authorized a second bounded G2 increment to harden the real connector:
+
+- Reject plaintext, credentials, fragments, pre-existing endpoint queries, IP-literal
+  subjects and special-use hostnames before DNS or socket work.
+- Reject every special-use/local IPv4 and IPv6 range, including mapped, NAT64,
+  6to4, multicast, link-local, documentation and metadata addresses.
+- Resolve all DNS answers once; reject the whole name if any answer is blocked;
+  pin the verified address in the socket lookup so a later answer cannot redirect
+  the connection (rebinding).
+- Keep TLS certificate validation on, never follow redirects, enforce a streamed
+  byte cap, and abort a hanging connect at the shared deadline.
+- Prove fail-closed behavior for latency, malformed bodies, attempt/byte/signature
+  exhaustion and clock jumps.
+
+Still not authorized by this addendum: production activation, external live
+traffic in CI, shared cross-instance quotas, G4/G5, reputation/SVRI profiles or
+offline DNSSEC. The local socket test proves zero connections to a listening
+loopback server; it does not replace a deployment TLS/SSRF review.
+
 ## Acceptance for this increment
 
 - `tests/unit/ltp-engine-composed.test.ts` executes A→B in memory and matches all

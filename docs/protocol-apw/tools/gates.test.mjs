@@ -37,6 +37,9 @@ test('the bounded G2/G3 scope names the corpus, prohibitions and acceptance evid
   assert.match(scope, /Not permitted by G2:[^\n]*redirect/i);
   assert.match(scope, /Not permitted by G3:[^\n]*reputation/i);
   assert.match(scope, /S4 remains open/);
+  assert.match(scope, /hardening addendum/);
+  assert.match(scope, /pin the verified address/);
+  assert.match(text(registry), /live-egress\/SSRF addendum/);
 });
 
 test('reputation and offline DNSSEC scopes remain separated and S4/S6 evidence independent', () => {
