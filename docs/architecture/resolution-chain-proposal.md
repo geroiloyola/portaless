@@ -7,12 +7,13 @@ defaults, política DNSSEC, protocolo ni grants mediante este documento.
 
 La aprobación queda registrada en el
 [ADR 0003](../decisions/0003-public-and-governed-resource-contract.md) y en el
-[cierre contractual](../protocol-apw/LTP-STANDARDIZATION-STATUS.md). **La programación
-del egress indexado Workers/Edge queda bloqueada hasta fusionar el commit documental
-que contiene esta baseline.** Tras la fusión, la fase siguiente se limita al motor
-y sus pruebas de conformidad/aceptación bajo estos contratos y límites. Su activación
-exige además superar los gates técnicos pendientes. Un PR contra `main` a la vez: geroiloyola abre,
-linstarkcorp revisa y el dueño fusiona. A/B/C son defensas de PR2, no PR3.
+[cierre contractual](../protocol-apw/LTP-STANDARDIZATION-STATUS.md). La baseline
+documental ya fue fusionada en #103; no concede permiso de programación. Las
+definiciones y estados de autorización viven únicamente en el
+[registro canónico G1–G5](../protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md).
+Aceptar datos o fusionar documentación no inicia motor, red ni presupuestos.
+Un PR contra `main` a la vez: geroiloyola abre, linstarkcorp revisa y el dueño
+fusiona. A/B/C conservan su significado de entregas del roadmap, no de permisos.
 
 ## Contratos de estándar neutrales
 

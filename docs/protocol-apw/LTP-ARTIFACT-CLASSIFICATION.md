@@ -19,8 +19,8 @@ An artifact's protocol contract and its hosted implementation are distinct.
 (`did.json`/history) bound existing APW identity acquisition; their shared budget,
 SSRF/TLS negatives and controlled measurements need no new Index envelope or
 scoring profile. This is a dependency finding, **not permission to start them
-in this S1/S3 PR**. Engine/network/budget programming stays frozen until the owner
-approves S1/S3 and explicitly opens that phase.
+in this S1/S3 PR**. Permissions are defined only by the canonical register linked
+below; no corpus acceptance or dependency finding authorizes implementation.
 
 The [approved A → B → C gate](../architecture/resolution-chain-proposal.md)
 still precedes PR3 because the public AT Protocol bridge can reach evidence.
@@ -29,6 +29,6 @@ safety acceptance and eventual Index standard publication are separate gates;
 any change to the approved sequence requires an owner decision. This table does
 not enable PR3, R-05 or a new numeric reader reputation requirement.
 
-The [S3-core approval criterion](./LTP-S3-COVERAGE.md) proposes a future narrower
-owner authorization for A/B while S3-reputation remains Draft. It is not an
-approved replacement for the current S1/S3 gate and starts no implementation.
+This classification grants no permission. The [coverage matrix](./LTP-S3-COVERAGE.md)
+supports G1 review; authorization scopes and states are defined only by
+[LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).

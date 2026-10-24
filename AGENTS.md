@@ -52,6 +52,7 @@ Read in this order — **do not read them all**:
 | To understand the accepted private-node/public-projection MVP contract | `docs/mvp/acceptance-contract.md` |
 | To see what the release actually demonstrates (and what remains external) | `docs/testing/release-acceptance.md` |
 | To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
+| To know which LTP work is actually authorized (G1–G5) | `docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md` |
 
 **If you are an AI agent editing code**: read `AGENT.md` after this file. It
 contains the real-state table, the golden rule, and the security risks you

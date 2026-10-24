@@ -1,0 +1,324 @@
+{
+  "format": "ltp-static-composed-trace",
+  "version": "0.3",
+  "id": "AB-STATIC-02",
+  "variant": "ad-false",
+  "variantOf": "AB-STATIC-01",
+  "authorizationContract": "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates",
+  "execution": "never-run-static-target",
+  "contracts": [
+    "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+    "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+    "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+    "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+    "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+    "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+    "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+  ],
+  "sourceTemplate": {
+    "file": "../v0.2/proofs.json",
+    "pointer": "/proofs/identity-rotation"
+  },
+  "sourceCoreCases": [
+    "CORE-01-valid-root",
+    "CORE-02-valid-txt",
+    "CORE-03-valid-did",
+    "CORE-04-rotation-valid",
+    "CORE-05-service-01-candidate",
+    "CORE-06-remaining-hop-deadline"
+  ],
+  "configByteRef": "PMcu-BXuHwPjB2JUJOpWYRFPI1lyYkZl3S7UDZ9gXWs",
+  "policyByteRef": "WtO6gAhEzJowE71z_vV68n9_1jxiai7AiRTTGKwidgs",
+  "clock": {
+    "acquisitionWallSeconds": 1790000000,
+    "verificationEntryWallSeconds": 1790000000,
+    "verificationFinalWallSeconds": 1790000002,
+    "operationStartMonotonicMs": 0,
+    "deadlineMonotonicMs": 10000
+  },
+  "A": {
+    "transcripts": [
+      {
+        "id": "A-DOH",
+        "configuredEndpoint": "doh",
+        "request": {
+          "method": "GET",
+          "url": "https://resolver.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0",
+          "headers": {
+            "accept": "application/dns-json"
+          }
+        },
+        "response": {
+          "status": 200,
+          "tlsAuthenticated": true,
+          "resolverId": "operator-primary",
+          "bodyByteRef": "M3buxE7xMmT20X-EHLuHozA8nKKaFRRcJJ1SinZw4-o"
+        },
+        "expectedConsumed": true
+      },
+      {
+        "id": "A-PACKAGE",
+        "configuredEndpoint": "index",
+        "request": {
+          "method": "POST",
+          "url": "https://index.fixture.invalid/resolve",
+          "headers": {
+            "content-type": "application/json",
+            "accept": "application/json"
+          },
+          "bodyByteRef": "VQAXVtmEx7qxJB8ah77yJRR3jYMB8T3L8faM0wA6Z9w"
+        },
+        "response": {
+          "status": 200,
+          "tlsAuthenticated": true,
+          "bodyByteRef": "dPXKAbOq4WGQQvVZiCqd-csyzIW0T31YECz--toYalg"
+        },
+        "expectedConsumed": false
+      }
+    ],
+    "selectedTxtByteRef": "RWQUl66anV7eWz-AvyvTO-iExuAwapnW8qo3OliChfQ",
+    "rootByteRef": "RWQUl66anV7eWz-AvyvTO-iExuAwapnW8qo3OliChfQ",
+    "literalSelectedTtlExpiry": 1790000060,
+    "producerHandoffByteRef": "zojLxWEuFiIH7sYq69StdmMiY4blk3uqvf2TqopuQHk",
+    "handoffDelivered": false
+  },
+  "B": {
+    "consumerHandoffByteRef": null,
+    "initialStateByteRef": "sTPZ240zEPZE5eyqF2f-iycuHiYW0jRN7yVWDXADjsA",
+    "declaredSlices": [
+      {
+        "id": "B-LOG-1",
+        "inputStateByteRef": "sTPZ240zEPZE5eyqF2f-iycuHiYW0jRN7yVWDXADjsA",
+        "outputStateByteRef": "8VosOTu6fAABQB0qFhrs7Syc-l8JgY6aM6kO9qSZrZQ"
+      },
+      {
+        "id": "B-LOG-2",
+        "inputStateByteRef": "8VosOTu6fAABQB0qFhrs7Syc-l8JgY6aM6kO9qSZrZQ",
+        "outputStateByteRef": "DEB4FH6tzYYiUs5VAitcxx4Gepdd6_Nxv5SDvM4mKmU"
+      },
+      {
+        "id": "B-LOG-3",
+        "inputStateByteRef": "DEB4FH6tzYYiUs5VAitcxx4Gepdd6_Nxv5SDvM4mKmU",
+        "outputStateByteRef": "H9pdTDzCt9bWHIF8ziLDachjK3GoMKMu-AqbIptNZ6s"
+      }
+    ],
+    "expectedOutgoingRequests": [],
+    "literalFinalOutputByteRef": "jUx4doYKOP3yr71iYxTFpK5hWhJhfb__1aQBZodXw1A"
+  },
+  "byteBindings": {
+    "offeredPackageByteRef": "S6pJnLcR9rsNX-eKMdjpjo8cIrSSlSxoHLqZnL64axQ",
+    "sortedPublicRecordsByteRef": "ll3hDWGl_aSu-xRv7pGF77T9CLXuiZlHrdzlzXVRLeg",
+    "manifestPayloadByteRef": "VpPwWaTM0Jx-tTx1zoYlJ6Nlbp9onMdls5E77FPFcIg",
+    "stableTargetByteRef": "tVKdRpjSRf02rbdVwWrxaEs95zug1IeMrgs94i2rTOI",
+    "didPublicJwkByteRef": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+    "previousHashMatches": [
+      true,
+      true,
+      true
+    ]
+  },
+  "resourceFacts": {
+    "sharedContextByteRef": "5IkFOb5f2po4pDwFeDW8c1lHBszDSc8gm0VrSvhxXVM",
+    "acquisitionElapsedMs": [
+      100,
+      100
+    ],
+    "acquisitionAdmittedElapsedMs": [
+      100
+    ],
+    "countedBodyByteRefs": [
+      "M3buxE7xMmT20X-EHLuHozA8nKKaFRRcJJ1SinZw4-o"
+    ],
+    "verificationProposedElapsedMs": [
+      100,
+      1500,
+      300
+    ],
+    "signatureAttemptsRequested": 5,
+    "verificationTimeline": [
+      {
+        "boundary": "B-BINDINGS",
+        "elapsedMs": 300
+      },
+      {
+        "boundary": "B-LOG-1",
+        "elapsedMs": 800
+      },
+      {
+        "boundary": "B-LOG-2",
+        "elapsedMs": 1300
+      },
+      {
+        "boundary": "B-LOG-3",
+        "elapsedMs": 1800
+      },
+      {
+        "boundary": "B-PROMOTION",
+        "elapsedMs": 2100
+      }
+    ],
+    "deadlineResetAllowed": false,
+    "networkInVerification": 0
+  },
+  "signatures": [
+    {
+      "artifactId": "XLs6FSR0DKu_m0vSoJqx3zg6X2bksjF1NZh8Wqv62GE",
+      "wireByteRef": "XLs6FSR0DKu_m0vSoJqx3zg6X2bksjF1NZh8Wqv62GE",
+      "payloadByteRef": "zIj-ne6zvYECFUq4TaX3EFs77tlmnsw4gEUS27Br4xM",
+      "publicJwkByteRef": "xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc",
+      "signatureValid": true
+    },
+    {
+      "artifactId": "usSUEbjdrGkYdXKfdx4tD6WaCThwSSlCF-uIopifO5Q",
+      "wireByteRef": "usSUEbjdrGkYdXKfdx4tD6WaCThwSSlCF-uIopifO5Q",
+      "payloadByteRef": "aTkfRNIrdJSAKFM3inXMKnK931sqLI9gbYqvgKamtzI",
+      "publicJwkByteRef": "nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk",
+      "signatureValid": true
+    },
+    {
+      "artifactId": "odSmWZg30HLuTKjTPsB0LrZiA323aGfj1lg0KsvG7vU",
+      "wireByteRef": "odSmWZg30HLuTKjTPsB0LrZiA323aGfj1lg0KsvG7vU",
+      "payloadByteRef": "oALzlYNRz-fSglJzsjLveHsCI4wxLnc0aF_mGNxbkpA",
+      "publicJwkByteRef": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+      "signatureValid": true
+    },
+    {
+      "artifactId": "cahO7iuPXVb_4ulyNRuD_U5YTHy3P54ItyHp1a-OJvQ",
+      "wireByteRef": "cahO7iuPXVb_4ulyNRuD_U5YTHy3P54ItyHp1a-OJvQ",
+      "payloadByteRef": "VpPwWaTM0Jx-tTx1zoYlJ6Nlbp9onMdls5E77FPFcIg",
+      "publicJwkByteRef": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+      "signatureValid": true
+    },
+    {
+      "artifactId": "SCm2MAHkCnmIOZNCFtvcfuPYao49K_hgaK-bSJX89W8",
+      "wireByteRef": "SCm2MAHkCnmIOZNCFtvcfuPYao49K_hgaK-bSJX89W8",
+      "payloadByteRef": "vWNIQFdccCWb8QNVrb03PQWcf_s4BfqnpgSps6Pp8Og",
+      "publicJwkByteRef": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+      "signatureValid": true
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "txt-current-jwk",
+      "left": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+      "right": "wRJ736j0f7PNVqUyMTd4DcSR0SgzKvgNtQRBk5HdF5I",
+      "equal": true
+    },
+    {
+      "id": "root-to-handoff",
+      "left": "RWQUl66anV7eWz-AvyvTO-iExuAwapnW8qo3OliChfQ",
+      "right": null,
+      "equal": false
+    },
+    {
+      "id": "operation-scope",
+      "left": "AB-STATIC-02-ctx",
+      "right": "AB-STATIC-02-ctx",
+      "equal": true
+    },
+    {
+      "id": "prefix-policy-continuity",
+      "left": "WtO6gAhEzJowE71z_vV68n9_1jxiai7AiRTTGKwidgs",
+      "right": "WtO6gAhEzJowE71z_vV68n9_1jxiai7AiRTTGKwidgs",
+      "equal": true
+    }
+  ],
+  "mathematicalFacts": [
+    {
+      "id": "handoff-bytes",
+      "kind": "bytes",
+      "left": "zojLxWEuFiIH7sYq69StdmMiY4blk3uqvf2TqopuQHk",
+      "right": null,
+      "expected": "absent"
+    },
+    {
+      "id": "prefix-1-to-2",
+      "kind": "bytes",
+      "left": "8VosOTu6fAABQB0qFhrs7Syc-l8JgY6aM6kO9qSZrZQ",
+      "right": "8VosOTu6fAABQB0qFhrs7Syc-l8JgY6aM6kO9qSZrZQ",
+      "expected": "equal"
+    },
+    {
+      "id": "acquisition-elapsed",
+      "kind": "sum",
+      "values": [
+        100
+      ],
+      "expected": 100
+    },
+    {
+      "id": "remaining-at-handoff",
+      "kind": "sum",
+      "values": [
+        100,
+        9900
+      ],
+      "expected": 10000
+    },
+    {
+      "id": "http-body-byte-sum",
+      "kind": "sum",
+      "values": [
+        461,
+        0
+      ],
+      "expected": 461
+    },
+    {
+      "id": "root-live-at-final",
+      "kind": "lt",
+      "left": 1790000002,
+      "right": 1790000060,
+      "expected": true
+    },
+    {
+      "id": "root-live-at-entry",
+      "kind": "lt",
+      "left": 1790000000,
+      "right": 1790000060,
+      "expected": true
+    },
+    {
+      "id": "body-below-shared-cap",
+      "kind": "lt",
+      "left": 461,
+      "right": 4194304,
+      "expected": true
+    },
+    {
+      "id": "signature-attempt-precalculation",
+      "kind": "sum",
+      "values": [
+        2,
+        1,
+        1,
+        1
+      ],
+      "expected": 5
+    }
+  ],
+  "expected": {
+    "identity": "unverified",
+    "history": "not_started",
+    "proofAccepted": false,
+    "reason": "dnssec_required",
+    "stopsBefore": "A-PACKAGE",
+    "resourceGrant": false,
+    "reputationAdmitted": false,
+    "implementationAuthorized": false,
+    "misconduct": false,
+    "arbitraryOriginCalls": 0,
+    "acquisitionConsumed": [
+      true,
+      false
+    ],
+    "logSlicesConsumed": [
+      false,
+      false,
+      false
+    ],
+    "semanticVerdictObserved": false,
+    "signatureAttemptsConsumed": 0,
+    "effectiveValidUntil": null
+  }
+}

@@ -38,6 +38,8 @@ closed).
 
 ## Unreleased
 
+- **Blocking-review G1 correction.** Adds a single canonical G1–G5 register and the static v0.3 AB-STATIC-01 master plus six negatives, linking acquisition/verification bytes, state and resource facts. Removes combined corpus/implementation authorizations from live docs. G1 sufficiency remains for manual review; G2–G5 are blocked and no resolver, scheduler, engine or budget manager is implemented or enabled. Prior corpus revisions and their signed material are preserved.
+
 - **MCP dependency security update.** Refreshes the transitive Express `body-parser` lock from 2.3.0 to 2.4.0 (and its required `qs` patch) to fix GHSA-27r3-jxmh-p828 / CVE-2026-111181. Adds an isolated compressed-body regression that sends trailing bytes after decoder completion and verifies the process remains available. Audit thresholds and allowlist remain unchanged.
 
 - **S3-core static candidate v0.2.** Publishes 285 literal CORE-01…06 targets with direct contracts, three-key rotation and a signed 1,000-entry history segmented 400/400/200, preserving the initial corpus. The total manifest pins initial/new assets for manual owner review. Original/core author and primitive checks now run inside the already-required Unit Tests/unit job; the separate check is removed, coverage thresholds and protection settings unchanged. No engine, network, budgets or A/B implementation is introduced.

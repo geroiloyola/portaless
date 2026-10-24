@@ -107,9 +107,10 @@ class or hosted service is a normative dependency. The owner has approved the
 three Draft 0.1 contracts as the implementation baseline, including independent
 identity bootstrap and the restrictive resource budget. Final publication still
 requires vectors with explicit authorship and compatible externally reviewed verifiers.
-Workers/Edge indexed-egress programming is blocked until the documentation commit
-containing this baseline is merged; activation remains gated by conformance and
-runtime acceptance.
+Current implementation permissions are defined only in the
+[canonical gates register](./LTP-GATES-AND-AUTHORIZATIONS.md). The baseline merge
+is historical architecture evidence, not a trigger for programming. Static corpus
+approval grants no engine, network, resource or deployment authorization.
 
 ## 5. Future specification repository
 

@@ -12,6 +12,8 @@
     "check:numbers": "python3 vectors/ltp/v0.1/tools/numeric-audit.py",
     "check:core": "node tools/check-core-author.mjs",
     "audit:core": "node tools/core-audit.mjs",
+    "check:ab": "node tools/check-ab-author.mjs",
+    "audit:ab": "node tools/ab-audit.mjs",
     "test": "node --test tools/*.test.mjs"
   },
   "devDependencies": {

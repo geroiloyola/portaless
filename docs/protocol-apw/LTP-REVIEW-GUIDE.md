@@ -26,26 +26,48 @@ remain Draft/open; no A/B, engine, network, budget or repository extraction star
 | Commit | What to review |
 |---|---|
 | `e6df65b` | Local Trust Protocol as unique live expansion; inventory of 24 pre-edit matching lines (10 live, 14 historical, zero signed identifiers); continuity and author credit; old section anchor preserved. Root Vitest naming lint rejects retired/other expansions outside explicit history. CORE-01…06 explains what A/B still need; no vectors or runtime implementation added. |
-| Current commit titled `docs(ltp): refresh prose approval pin after owner naming decision` | Current approval record binds **e6df65b976c63b4e14a2212eb36b68ece021fb18**, 14 exact spec-file hashes and the same three data digests. Review the expanded portable hash scope, mutation rejection, and `ownerDecision: null`. This binding commit's own SHA is obtained from Git, not embedded in itself. |
+| `66e2b03` | Historical naming binding: **e6df65b976c63b4e14a2212eb36b68ece021fb18**, 14 exact spec-file hashes and the same three data digests; `ownerDecision: null`. Superseded by later candidate bindings. |
 
 The current review/approval tuple is always the explicit one in
 [LTP-APPROVAL-RECORD.md](./LTP-APPROVAL-RECORD.md). The naming decision is not
 S3-core coverage acceptance. The subsequent static-execution revision below
 adds targets, not owner approval; a digest cannot waive an A/B prerequisite.
 
-## Authorized S3-core static execution (current review head)
+## Authorized S3-core static execution (v0.2 review history)
 
 | Commit | What to review |
 |---|---|
 | `987c745` | The complete standalone package checks now run inside the existing required Unit Tests/unit job, including pinned Python dependencies. Separate workflow removed; no coverage threshold or protection-setting changes. |
 | `df6e284` | Total versioned v0.2 manifest, all 285 CORE-01…06 case IDs with literal expected results/direct contracts, signature bank, 3-key rotation and signed 1,000-entry segmented chain, resource recipes and negative byte/crypto targets. Check actual primitive evidence separately from the unexecuted semantic verdicts. Initial v0.1/schemas and all production modules are unchanged. |
-| Current record-refresh commit | Pins the new total digest **wpevxHbAUDyL5OVybTC2ANQ8ISby1hkCefwUgfSNeVg**, preserved original/schema/numeric digests and current **df6e284ed81a1b0869c0d7d8a22593921b50641b** prose (15 files). Owner decision remains null and A/B remains blocked. |
+| `5b89748` | Historical v0.2 binding: total digest **wpevxHbAUDyL5OVybTC2ANQ8ISby1hkCefwUgfSNeVg**, preserved original/schema/numeric digests and **df6e284ed81a1b0869c0d7d8a22593921b50641b** prose (15 files). Owner decision remains null and A/B remains blocked. |
 
-Start the manual review with [v0.2 README](./vectors/ltp/v0.2/README.md) and
+For the preserved component candidate, see [v0.2 README](./vectors/ltp/v0.2/README.md) and
 [coverage.json](./vectors/ltp/v0.2/coverage.json). Each area file contains every
 exact input patch, expected result and direct contract reference. The static
 audit verifies hashes, schemas, signatures, encodings and arithmetic facts, not
 the future engine, parser, network or scheduler. S4 independence remains open.
+
+## Composed static v0.3 correction — current candidate
+
+Start with the [canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md), then
+the [v0.3 README](./vectors/ltp/v0.3/README.md) and
+[coverage index](./vectors/ltp/v0.3/coverage.json). G1 sufficiency is pending manual
+review; G2–G5 are blocked. No publication, hash, CI result, acceptance or merge
+automatically changes an authorization state.
+
+The total v0.3 digest is **wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA**.
+AB-STATIC-01 binds acquisition bytes to the offline verification input, proposed
+prefix states, independent root, signed three-key history and shared resource
+context. AB-STATIC-02…07 provide the six controlled negatives. Review the actual
+material references and inner relations, not only the outer manifest commitment.
+The audit checks byte algebra, fixed arithmetic and signature primitives; it
+does not execute the trace or calculate the literal LTP verdicts.
+
+The current [approval tuple](./LTP-APPROVAL-RECORD.md) binds the final prose Git
+SHA, 17 exact spec-file hashes, preserved commitments and v0.3. Its scope is
+`G1-static-corpus-only` with `ownerDecision: null`. The binding follows the prose
+commit to avoid a self-referential SHA; this guide is not part of that hash scope.
+All follow-ups append to the existing Draft PR #104; no new history rewrite.
 
 ## Rewrite verification evidence
 

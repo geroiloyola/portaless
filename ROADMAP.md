@@ -88,6 +88,8 @@ no force pushes, no deletions, and required status checks `build`,
 
 ## In development (internal — depends only on Portaless)
 
+- `[ ]` **Composed S3-core sufficiency (G1)** — [AB-STATIC-01…07](./docs/protocol-apw/vectors/ltp/v0.3/README.md) submit acquisition→verification bindings for the blocking review. [Canonical gates](./docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md) are the only authorization register; data/CI/merge cannot grant implementation authority. Manual sufficiency and owner G1 acceptance remain pending.
+
 - `[ ]` **S3-core evidence for A/B** — [candidate v0.2](./docs/protocol-apw/vectors/ltp/v0.2/README.md) now supplies 285 targets for the six [core work packages](./docs/protocol-apw/LTP-S3-CORE-CLOSURE-PLAN.md). Manual coverage/digest review remains open; asset checks do not execute an LTP engine. Digest approval cannot waive a missing prerequisite. Core approval and Phase 2 authorization remain separate owner decisions.
 
 - `[ ]` **LTP S1/S3 corpus approval** — [Draft schemas, vectors and cross-checks](./docs/protocol-apw/vectors/ltp/v0.1/README.md) are authored locally with third-party primitive verification, not independent human review. Pending coverage blocks approval; S4 external verification and Phase 2 engine/network/budget work remain gated. [Classification](./docs/protocol-apw/LTP-ARTIFACT-CLASSIFICATION.md) and [extraction preparation](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) are review proposals, not a repository migration.

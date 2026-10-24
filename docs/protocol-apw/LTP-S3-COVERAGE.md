@@ -1,15 +1,15 @@
 # S3 coverage split — proposed approval scopes
 
-**Status: v0.2 static target set published for manual review, not approved. License: CC BY 4.0.**
-This is a coverage/dependency review, not an implementation or a change to the
-approved gate. No Phase 2 engine, network, budget or DNSSEC validator is supplied.
+**Status: v0.3 composed G1 candidate submitted for review, not approved. License: CC BY 4.0.**
+This is a static coverage review, not an implementation or an authorization.
+No Phase 2 engine, network, budget or DNSSEC validator is supplied.
 Fixture `proofAccepted` values are future targets, not observed engine verdicts.
 
 ## S3-core — proposed prerequisite for A and B
 
 Scope: existing APW identity via configured validating DoH/AD, `did.json` and
 bounded complete identity history; no reputation, score or offline DNSSEC claim.
-File references below are corpus-relative to `vectors/ltp/v0.1/`.
+Case links below identify their exact preserved corpus revision.
 
 | Core area | Concrete v0.2 case IDs / set | Static coverage submitted for review |
 |---|---|---|
@@ -31,6 +31,26 @@ The [CORE-01…06 closure plan](./LTP-S3-CORE-CLOSURE-PLAN.md) remains the revie
 checklist. If review finds any missing A/B prerequisite, approval of a digest
 alone cannot waive it or start A/B. A target set is not a conformance report.
 
+## Composed coverage added for the blocking review
+
+The [v0.3 master and negatives](./vectors/ltp/v0.3/README.md) join the six component
+areas rather than merely listing their IDs. [coverage.json](./vectors/ltp/v0.3/coverage.json)
+contains all seven exact expected objects and contract references.
+
+| Case | Composed coverage | Literal expected target |
+|---|---|---|
+| [AB-STATIC-01](./vectors/ltp/v0.3/ab-static-01.json) | CORE-01/02 recorded independent DoH → CORE-03 complete identity package → CORE-04 rotation/prefix states → CORE-05 candidate envelope → CORE-06 same scopes/deadline/counts | identity=verified, history=verified, proofAccepted=true; resourceGrant=false |
+| [AB-STATIC-02](./vectors/ltp/v0.3/ab-static-02.json) | Failed A root prevents package consumption and B handoff | dnssec_required; history=not_started |
+| [AB-STATIC-03](./vectors/ltp/v0.3/ab-static-03.json) | Genuine signed material and matching outer package hash, but DID public thumbprint differs from TXT k | key_mismatch; no log slice accepted |
+| [AB-STATIC-04](./vectors/ltp/v0.3/ab-static-04.json) | Same A→B packet, then incompatible policy in B-LOG-2 input state | checkpoint_required; no splice/promotion |
+| [AB-STATIC-05](./vectors/ltp/v0.3/ab-static-05.json) | A uses 5,000 ms; proposed bindings/log/gap use another 5,000 ms on the original 10,000 ms deadline | deadline_exceeded before B-LOG-2; no reset |
+| [AB-STATIC-06](./vectors/ltp/v0.3/ab-static-06.json) | TTL=1 s is live at entry but expired at the 2 s final wall-clock target, within the operation deadline | freshness_unproven; no promotion |
+| [AB-STATIC-07](./vectors/ltp/v0.3/ab-static-07.json) | Exact transfer and repaired outer commitments, but required log signature is a preserved one-bit mutation | bad_signature; history=invalid |
+
+These are static targets, not observations. The reviewer decides sufficiency;
+neither this table nor an audit lifts G1. All seven explicitly deny implementation
+authorization and resource/reputation grants.
+
 ## S3-reputation — remains Draft
 
 | Deferred area | Missing evidence / closure |
@@ -38,31 +58,20 @@ alone cannot waive it or start A/B. A target set is not a conformance report.
 | `reader_conduct` issuers | Full issuer identity/chain/signature/window and completeness vectors, plus real distinct emitter/operator evidence before production reputation claims. |
 | `(iss,jti)` | Conflicting distinct payloads, duplicate retransmission and deterministic selection/counting targets. |
 | Community calibration | Admissible issuer age, calibration/provenance, weight and source-selection boundaries; real emitters do not replace deterministic vectors. |
-| Advanced DNSSEC | DS-chain policy/anchors, NSEC/NSEC3, wildcard/alias confusion and algorithm rollover. Parked here as deferred **optional offline-profile** work, not because DNSSEC is a reputation algorithm or requires reputation emitters. Only an approved audited-library adapter can later claim support. |
 
-No new reputation or offline DNSSEC conformance is approved. S3-reputation stays
-Draft until the deterministic suite is complete and real emitters exist for the
-reputation claims; offline-profile review has its own library/operator evidence.
-Synthetic signed RRSIG examples do not close advanced DNSSEC coverage.
+Reputation evidence belongs to canonical **G4**. Advanced offline DNSSEC is a
+distinct scope under **G5**, not part of the reputation work above. Its DS/anchor,
+NSEC/NSEC3, wildcard and algorithm-rollover requirements are described only in
+the [canonical gates register](./LTP-GATES-AND-AUTHORIZATIONS.md). Synthetic
+RRSIG examples do not demonstrate full offline validation.
 
 ## Proposed S3-core approval criterion — owner decision required
 
-1. Complete every missing core row with fixed keys/time/policy, original bytes,
-   expected positive/negative results, service failures and resource objectives.
-   Demonstrate generation/canonicalization/structure cross-checks; disclose the
-   shared OpenSSL backend and pending S4 independence. Do not claim an engine ran.
-2. Recompute and review the schema/corpus/numeric digests, and bind the normative
-   text commit in the [approval record](./LTP-APPROVAL-RECORD.md). Preserve old
-   candidates; do not alter an expectation to make later implementation pass.
-3. linstarkcorp reviews; the owner explicitly approves **S1 + S3-core for A/B
-   only**, names the record, digests and text SHA, and authorizes that next phase.
-   No approval is entered by this PR or by green CI. Until then A/B stay frozen.
-4. If approved later, A (TXT/DoH) and B (did.json/history) may proceed without
-   publishing the Index standard or completing S3-reputation. This does not
-   activate a route, remove SSRF/TLS/budget acceptance, change approved limits or
-   bypass the existing A → B → C gate before PR3. C/Index, S4/S6, scoring and
-   advanced DNSSEC remain under their own unfinished gates.
-
-The proposed split narrows a future authorization to identity work; it is not a
-declaration that S3-core is closed, that S3-reputation can be waived, or that the
-existing all-S1/S3 approval rule has already changed.
+This matrix is evidence for **G1**, whose acceptance and current state are defined
+only in [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
+Review must cover all core rows and their composition, with fixed keys/time,
+literal outputs, direct contracts and byte-level producer/consumer bindings.
+Any uncovered prerequisite remains a blocker even when hashes match.
+The [approval record](./LTP-APPROVAL-RECORD.md) identifies the candidate tuple;
+accepting that tuple does not authorize a next phase. This file creates no
+implementation, reputation or offline-DNSSEC permission and no alternative gate.

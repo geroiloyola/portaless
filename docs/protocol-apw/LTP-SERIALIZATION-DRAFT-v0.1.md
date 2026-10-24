@@ -245,7 +245,8 @@ Before owner approval the corpus remains a candidate. After approval, changing
 a vector to accommodate code is forbidden: a documented, reviewed vector
 error requires an explicit reviewed/versioned correction, not an overwrite.
 
-**Both prerequisites are required before engine programming:** merge the
-documentation baseline PR and obtain owner approval of S1/S3. S2/S5, network
-adapters and production quota logic are excluded from this phase. Two independent
-full verifiers and a normative v1.0 release belong to S4/S6, not to fixture authoring.
+Implementation permissions are defined solely by
+[LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
+Corpus acceptance, hash equality and PR merge never authorize engine programming,
+network adapters or production quota logic. This phase supplies static G1 assets
+only; S4/S6 retain their separate standardization requirements.

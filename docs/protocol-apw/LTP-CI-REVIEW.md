@@ -19,13 +19,16 @@ This dated snapshot is not a promise that protection cannot change later.
 
 The execution instruction selected the already-required job rather than changing
 GitHub protection. Unit now installs pinned Python fixture dependencies and runs
-`check:author`, `check:numbers`, `audit`, `check:core`, `audit:core` and `npm test`
+`check:author`, `check:numbers`, `audit`, `check:core`, `audit:core`, `check:ab`,
+`audit:ab` and `npm test`
 from the spec package before root Vitest. The separate `cross-check` workflow was
 removed; no separate GitHub check is required or introduced. The six protected
 context names remain unchanged, as do strict production coverage thresholds.
 
 This consolidates fixture checks only. It does not run an LTP engine, make a
 network request from a transcript, implement budgets, approve S3-core or start A/B.
+The sole authorization definitions/states are in
+[LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
 
 ## Apéndice: implementación de referencia
 

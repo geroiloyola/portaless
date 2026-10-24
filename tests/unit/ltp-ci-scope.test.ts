@@ -8,7 +8,7 @@ test('all standalone checks fail the already-required unit job without a separat
   expect(existsSync(new URL('../../.github/workflows/ltp-assets.yml', import.meta.url))).toBe(false);
   expect(unit).toContain('LTP static cross-check (required unit job)');
   expect(unit).toContain('python -m pip install -r docs/protocol-apw/requirements-audit.txt');
-  expect(unit).toContain('npm run check:author && npm run check:numbers && npm run audit && npm run check:core && npm run audit:core && npm test');
+  expect(unit).toContain('npm run check:author && npm run check:numbers && npm run audit && npm run check:core && npm run audit:core && npm run check:ab && npm run audit:ab && npm test');
   expect(unit).not.toContain('continue-on-error:');
   expect(read('.github/workflows/full-tests.yml')).toContain('--coverage.thresholds.lines=68');
   expect(note).toContain('Unit Tests / unit');

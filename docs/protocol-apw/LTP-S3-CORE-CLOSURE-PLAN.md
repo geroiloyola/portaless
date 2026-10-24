@@ -1,6 +1,6 @@
 # Closing S3-core — evidence before authorization to start A/B
 
-**Status: static execution authorized; v0.2 targets generated, manual approval pending. License: CC BY 4.0.**
+**Status: static G1 correction authorized; composed v0.3 awaits manual review. License: CC BY 4.0.**
 LTP means **Local Trust Protocol**: each node applies its own policy to verified
 evidence. This plan does not implement a verifier, transport, quota or DNSSEC
 validator, approve a corpus, or open Phase 2. The owner controls that decision.
@@ -13,6 +13,12 @@ target generation and CI consolidation only. [Candidate v0.2](./vectors/ltp/v0.2
 now supplies 285 cases; the following IDs still identify **work packages**, not
 claims that an A/B implementation passed them. Review may identify gaps; none
 can be deferred to reputation merely to approve a digest.
+
+The blocking review also requires a composed case. The
+[v0.3 master and negatives](./vectors/ltp/v0.3/README.md) provide producer/consumer
+bytes, inherited CORE evidence, policy/root/target joins, shared resource facts
+and literal terminal outputs. Review them against every work package below;
+sufficiency remains a human G1 decision, not a hash result.
 
 | Work ID | Consumer | Static evidence required before closing the row |
 |---|---|---|
@@ -54,23 +60,17 @@ engine, or alter a signed golden byte to accommodate later code.
    The owner selected consolidation in the already-required `Unit Tests / unit`
    job. The standalone checks now run there without a separate GitHub check;
    protection settings and strict coverage thresholds are unchanged.
-5. **Bind and decide.** Once all core requirements have concrete reviewed targets,
-   regenerate the candidate tuple: schema/corpus/numeric digests and exact
-   normative-prose SHA. The owner must explicitly accept the proposed scoped
-   gate, record approval of **S1 + complete S3-core for A/B only**, and authorize
-   the next phase. Coverage acceptance, digest integrity and permission to start
-   are distinct decisions. Until all apply, **A/B cannot start**.
+5. **Bind and submit G1.** Once all core requirements and their composition have
+   concrete reviewed targets, regenerate the candidate tuple and normative-prose
+   SHA. Submit only corpus sufficiency to the owner. This is not a request or
+   permission to implement. The sole authorization definitions/states are in
+   [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md).
 
-## After a future authorization
+## Implementation is outside this closure work
 
-Only then may Phase 2 implement A/B and prove the prescribed negatives against
-controlled local servers, including TLS/SSRF, streaming/cancellation and shared
-budget accounting. A/B cannot advertise runtime acceptance before those tests and
-measurements pass. This later runtime evidence is not a prerequisite to author
-static targets, nor is a static target a substitute for runtime evidence.
-
-S3-reputation (reader-conduct issuers, `(iss,jti)`, community calibration and the
-deferred optional advanced-DNSSEC profile) remains Draft under its own gates.
-Real emitters are needed for real reputation claims, not for completing core
-identity fixtures. C remains required before PR3 through the existing A → B → C
-sequence; approving core does not activate scoring, Index, R-05, S4/S6 or routes.
+Future controlled-runtime evidence (TLS/SSRF, streaming/cancellation, shared
+accounting and measurements) belongs to separately authorized work, not this
+static correction. No transition to it follows from corpus approval or merge.
+G2–G5 scopes and states are not redeclared here: consult the canonical register.
+S4/S6 and the original A → B → C-before-PR3 sequence retain their existing
+requirements. Static targets are neither runtime evidence nor implementation.
