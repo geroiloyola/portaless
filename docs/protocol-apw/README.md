@@ -48,11 +48,13 @@ reference runtime, not the name of a protocol service or data format.
 | [S3 static corpus](./vectors/ltp/v0.1/README.md) | Same-author cross-check plus third-party signature tools; coverage blocks corpus approval. |
 | [Artifact classification](./LTP-ARTIFACT-CLASSIFICATION.md) | Deterministic core, optional profiles, runtime and grant-only PR3 dependencies; Draft. |
 | [Extraction preparation](./LTP-EXTRACTION-PLAN.md) | Standalone package, link lint, future release/digest plan; no extraction executed. |
-| [Approval record](./LTP-APPROVAL-RECORD.md) | Candidate data digests plus exact normative-text commit; no owner decision entered. |
-| [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Core gaps and proposed A/B approval criterion; reputation remains Draft. |
+| [Approval record](./LTP-APPROVAL-RECORD.md) | Accepted G1 data digests, exact normative-text commit and recorded owner decision. |
+| [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Accepted G1 coverage; G2/G3 implementation recorded separately; G4/G5 pending. |
 | [CI/protection observation](./LTP-CI-REVIEW.md) | Standalone static checks consolidated in the required Unit Tests / unit job; no settings changes. |
 | [Canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md) | Single source of authorization scopes/states; corpus integrity and acceptance confer no implementation permission. |
 | [Composed corpus v0.3](./vectors/ltp/v0.3/README.md) | AB-STATIC-01 master plus six negatives joining acquisition/verification bytes and state; accepted under G1. |
+| [G2/G3 implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md) | Accepted identity-only acquisition/verifier; Node-only, Workers not covered, activation pending. |
+| [G4 pre-authorization review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md) | Existing reputation implementations, binary64+tolerance arithmetic, rational risks and differential-test proposal; no G4 code. |
 
 These owner-approved baseline drafts do not amend the adopted APW v1.3/E-16 formats, rename existing wire
 messages, or establish conformance. Machine-readable vectors with explicit
