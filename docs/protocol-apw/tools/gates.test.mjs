@@ -19,7 +19,7 @@ test('there are exactly five canonical authorization gates: G1–G3 accepted, G4
   assert(rows[2].includes('**ACCEPTED**'));
   assert(rows[3].includes('**PENDING_AUTHORIZATION**'));
   assert(rows[4].includes('**PENDING_AUTHORIZATION**'));
-  assert.match(text(registry), /Recorded owner decision — 2026-10-24/);
+  assert.match(text(registry), /Recorded authorization and acceptance history — 2026-10-24/);
   assert.match(text(registry), /G2 and G3 are accepted for the bounded implementation/);
   assert.match(text(registry), /G4 and G5 remain pending/);
   assert.match(scopeText(registry), /Cloudflare Workers are not covered/);

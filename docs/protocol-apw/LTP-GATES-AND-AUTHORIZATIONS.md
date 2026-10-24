@@ -40,14 +40,14 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
   is a proposal only: the identity engine is not wired to configuration,
   categories, grants, diagnostics, middleware enforcement or B3.
 
-## Recorded owner decision — 2026-10-24
+## Recorded authorization and acceptance history — 2026-10-24
 
 - **G1 accepted.** The owner confirms the v0.3 composed corpus
   (`wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA`), normative prose
   `07efe1a69fa9a4a12616edfe93106f28429deb87`, `linstarkcorp`'s approval at
   `3ff080b42481e9321b449cec6e4e78ae5a9c9653` and the merge at
   `7fd939fda0e2570e5c18dfbe0e555483b52b449f`. S1 and S3-core are closed.
-- **G2 authorized, bounded.** Implement configured HTTPS DoH/TXT acquisition,
+- **G2 authorized, then accepted (2026-10-24).** Implement configured HTTPS DoH/TXT acquisition,
   configured Index package acquisition, and a strict shared resource/deadline
   budget under the approved D7 ceilings. The scope excludes redirect following,
   unsigned fallback, DNSSEC downgrade, unconfigured origins, production
@@ -59,12 +59,12 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
   plaintext refusal, streamed byte caps, exclusive deadline and fail-closed
   malformed-response handling. Production activation and external live traffic
   remain outside this decision.
-- **G3 authorized, bounded.** Implement a deterministic offline verifier that
+- **G3 authorized, then accepted (2026-10-24).** Implement a deterministic offline verifier that
   consumes the LTP Proof Package bytes for `apw-identity-proof-v1`, verifies the
   Ed25519/JCS artifacts, the authenticated TXT key binding and full history, and
   matches AB-STATIC-01…07. The scope excludes G4/G5 and any claim of S4
   independence.
-- **G4 and G5 remain blocked.** This decision authorizes no public reputation
+- **G4 and G5 remain pending explicit authorization.** This decision authorizes no public reputation
   mathematics, advanced SVRI/HSVR profile, DS-chain validation, NSEC/NSEC3,
   wildcard handling, algorithm-rollover work, custom offline validator or
   deployment activation.

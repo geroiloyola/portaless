@@ -1,7 +1,8 @@
 # G2/G3 implementation scope — identity-only acquisition and verification
 
-**Status: authorized by the owner on 2026-10-24; implementation in this PR;
-not a release, deployment activation or S4 claim. License: CC BY 4.0.**
+**Status: accepted by the owner on 2026-10-24 (authorized earlier that day);
+implementation in this PR; not a release, deployment activation or S4 claim.
+License: CC BY 4.0.**
 Basis: [canonical gates register](./LTP-GATES-AND-AUTHORIZATIONS.md), G1 decision
 at corpus `wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA`, revised from `main`
 `7fd939fda0e2570e5c18dfbe0e555483b52b449f`.
