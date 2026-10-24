@@ -208,6 +208,7 @@ export type LtpLocalReason =
   | "bootstrap_ambiguous"
   | "bootstrap_unsupported"
   | "identity_not_found"
+  | "ssrf_blocked"
   | "service_unavailable"
   | "proof_incomplete"
   | "proof_mismatch"

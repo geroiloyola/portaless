@@ -58,6 +58,9 @@ export class ResourceBudget {
       throw new LtpFailure("response_limit_exceeded", "composed body allowance reached", stage);
     }
     this.httpAttemptsUsed += 1;
+    // Conservative pre-charge: a failed/timeout attempt keeps the full
+    // reservation. Only a completed response refunds the unused allowance.
+    this.bodyBytesUsed += byteCap;
     let settled = false;
     return {
       settle: (actualBytes: number) => {
@@ -66,10 +69,7 @@ export class ResourceBudget {
         if (!Number.isSafeInteger(actualBytes) || actualBytes < 0 || actualBytes > byteCap) {
           throw new LtpFailure("response_limit_exceeded", "response exceeds its pre-reserved cap", stage);
         }
-        if (this.bodyBytesUsed + actualBytes > this.limits.bodyBytes) {
-          throw new LtpFailure("response_limit_exceeded", "composed body allowance reached", stage);
-        }
-        this.bodyBytesUsed += actualBytes;
+        this.bodyBytesUsed -= byteCap - actualBytes;
       },
     };
   }

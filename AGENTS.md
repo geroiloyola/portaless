@@ -75,7 +75,7 @@ must know.
 | Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
 | SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
 | Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |
-| LTP identity acquisition + verifier (bounded G2/G3) | 🟡 Configured HTTPS DoH/TXT/Index acquisition, shared budget and offline identity verification pass AB-STATIC-01…07 in memory; live TLS/SSRF acceptance, G4/G5, S4/S6 and deployment activation remain open |
+| LTP identity acquisition + verifier (bounded G2/G3) | 🟡 Configured HTTPS DoH/TXT/Index acquisition, shared budget and offline identity verification pass AB-STATIC-01…07 in memory; SSRF/DNS-rebinding/redirect/plaintext defenses and TLS rejection are tested; the connector is Node-only (Cloudflare Workers not covered) and runtime integration/B3 are proposals. External live acceptance, G4/G5, S4/S6 and deployment activation remain open |
 | Plugin SDK (MIT, v0.1.0) | ✅ Shipped |
 | Plugin sandboxing (4 adapters, 7/12 execution paths real) | ✅ Core wired; 5 capabilities still return explicit `501` by design |
 | Plugin installer (HTTP) | 🟡 Behind a flag, off by default (external sandbox review pending) |

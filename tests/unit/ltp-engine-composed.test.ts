@@ -143,6 +143,18 @@ describe("G2 budget and primitive checks", () => {
     expect(() => budget2.reserveSignature("x")).toThrowError(/signature attempt/);
   });
 
+  test("a failed attempt keeps the pre-charged byte reservation and a success refunds only the unused part", () => {
+    const limits = { bodyBytes: 100, dohBytes: 10, packageBytes: 10, signatureAttempts: 1, httpAttempts: 2, deadlineMs: 100 };
+    const failed = new ResourceBudget(limits, () => 0);
+    failed.reserveHttp(10, "A-DOH");
+    expect(failed.bodyBytesUsed).toBe(10);
+    expect(failed.httpAttemptsUsed).toBe(1);
+    const completed = new ResourceBudget(limits, () => 0);
+    completed.reserveHttp(10, "A-DOH").settle(4);
+    expect(completed.bodyBytesUsed).toBe(4);
+    expect(completed.httpAttemptsUsed).toBe(1);
+  });
+
   test("a response above its pre-reserved cap is rejected", () => {
     const budget = new ResourceBudget({ bodyBytes: 100, dohBytes: 8, packageBytes: 8, signatureAttempts: 1, httpAttempts: 1, deadlineMs: 100 }, () => 0);
     const reserve = budget.reserveHttp(8, "A-DOH");
