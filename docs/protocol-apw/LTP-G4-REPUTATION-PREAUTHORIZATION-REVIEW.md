@@ -52,6 +52,15 @@ requires rational or string encoding and a new versioned schema/vectors. That
 future signed profile is not the adopted unsigned projection and is not
 authorized by G4.
 
+> **Mandatory citation for any future G4 authorization.** The adopted SVRI
+> arithmetic is **binary64**, rounded to 6 decimals for ordering and compared
+> with absolute tolerance `1e-9`; levels are classified from unrounded values.
+> The `rational` values in `svri-math.json` are **test-oracle metadata**, not the
+> normative wire arithmetic. Exact fractions are only a future signed-profile
+> option requiring a new versioned schema and vectors. Any G4 authorization must
+> cite this section and the sources above; it must not describe rational
+> arithmetic as the current normative rule.
+
 Consequence: an engine that computes exact fractions and exposes exact decimals
 must still match the published binary64 values within `1e-9` and must not change
 a pending/low/verify/safe/trusted boundary. Exact fraction numerators and
@@ -64,7 +73,11 @@ If a future signed/rational profile is chosen, the denominator of
 `(3 + Σw_i)` is the lcm of emitter-weight denominators and can grow with the
 number of emitters. The approved D7 baseline already caps the inputs:
 
-- 2 unique evidence emitters per resolution (`resolution-chain-proposal.md:382`).
+- **2 unique evidence emitters per resolution is a maximum fan-out cap, not a
+  minimum** (`resolution-chain-proposal.md:382`). The policy minimum is the
+  `min_weight` threshold (default 2.0) per `(subject, category)`, plus the
+  distinct-emitter and minimum-history-age rules (`APW-SPEC-v1.3.md:456-460`);
+  a single emitter may be recorded but can remain below the threshold or weigh 0.
 - 200 reader-conduct candidates per resolution (`:381`).
 - 400 history entries, 16 history keys (`:378-379`).
 - 640 signature attempts, 24 HTTP attempts, 4 MiB, 10 s (`:383-386`).
@@ -84,9 +97,10 @@ require an owner decision; this document sets none.
 3. Run the same signed/attestation snapshot through both implementations and
    compare each W dimension and the SVRI projection. Do not re-implement
    calibration to "match" the oracle.
-4. Property/adversarial cases at the caps: 2 distinct emitters, 200 candidates,
-   16 keys, 400 history entries, duplicate `(iss,jti)`, expired/out-of-window
-   keys, self-attestations, and denominator growth.
+4. Property/adversarial cases at the caps: the **maximum** 2 distinct emitters,
+   200 candidates, 16 keys, 400 history entries, duplicate `(iss,jti)`,
+   expired/out-of-window keys, self-attestations, `min_weight` exactly at and
+   below 2.0, the 7-day emitter-age boundary, and denominator growth.
 5. An independent verifier/person/language/backend (S4) must reproduce the
    published vectors. Same-author agreement is necessary but not sufficient.
 6. Store the implementation revision, arithmetic mode and caps with the
@@ -96,8 +110,9 @@ require an owner decision; this document sets none.
 
 ## 5. Open decisions before any G4 code
 
-- Confirm binary64-with-tolerance remains normative for the adopted unsigned
-  SVRI and that exact fractions are only a future signed-profile option.
+- Any future G4 authorization must cite §2: the adopted unsigned SVRI is
+  binary64 with `1e-9` tolerance; rationals are oracle metadata; exact fractions
+  are only a future signed-profile option with new vectors.
 - Decide whether G4 reuses `apw-resolver` primitives or introduces a separately
   reviewed implementation with differential tests.
 - Set emitter/denominator/work caps and the adversarial test matrix.
