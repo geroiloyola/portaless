@@ -11,10 +11,11 @@ the AB-STATIC-01…07 corpus, not reputation, SVRI profiles or offline DNSSEC.
   endpoint for `_apw.<domain>`, requires the exact TXT/IN question, `Status: 0`,
   `TC: false` and `AD: true`, then requests a complete identity-only package from
   one operator-configured Index endpoint.
-- `ResourceBudget` reserves HTTP attempts and body bytes before I/O, charges
-  actual bytes after the response, counts failed signature attempts and enforces
-  one exclusive 10-second deadline. Limits may be lowered but never raised above
-  the approved D7 ceilings.
+- `ResourceBudget` reserves HTTP attempts and body bytes **before** I/O,
+  conservatively keeps the full byte reservation when the attempt fails or times
+  out, refunds only the unused part of a completed response, counts failed
+  signature attempts and enforces one exclusive 10-second deadline. Limits may
+  be lowered but never raised above the approved D7 ceilings.
 - `verifyHandoff()` consumes the package **bytes** offline. It verifies the
   RFC 7638 thumbprint against TXT `k`, the manifest JWS, the defined key-set
   binding, full-history Ed25519 signatures, `seq`/`prev`/key windows/timestamps,
@@ -26,7 +27,8 @@ the AB-STATIC-01…07 corpus, not reputation, SVRI profiles or offline DNSSEC.
 `FetchTransport` is the real HTTPS transport. Before any socket it rejects
 plaintext, credentials, fragments, configured query injection, IP-literal
 subjects and special-use hostnames/CIDRs (loopback, private, link-local, CGNAT,
-multicast, documentation, metadata, mapped/NAT64/6to4, ULA). It resolves all DNS
+multicast, documentation, metadata, mapped/NAT64/6to4, ULA). Host checks normalize
+trailing dots, uppercase and IDN/punycode; IPv6 zones are rejected. It resolves all DNS
 answers once, rejects the whole name if any answer is blocked, and pins the
 verified address in the socket lookup to prevent rebinding. It never follows
 redirects, keeps TLS certificate validation on, caps the streamed body and aborts

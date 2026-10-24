@@ -25,6 +25,15 @@ const blockedIps = [
 ];
 const allowedIps = ["8.8.8.8", "1.1.1.1", "93.184.216.34", "2606:4700:4700::1111", "2001:4860:4860::8888", "::ffff:8.8.8.8"];
 
+class ThrowingTransport implements LtpTransport {
+  readonly channel = "consumer-https-test";
+  calls = 0;
+  async send(_request: TransportRequest): Promise<TransportResponse> {
+    this.calls += 1;
+    throw new Error("simulated transport failure");
+  }
+}
+
 class StaticTransport implements LtpTransport {
   readonly channel = "consumer-https-test";
   calls = 0;
@@ -63,6 +72,29 @@ describe("SSRF destination policy", () => {
     expect(() => assertSafeEndpointUrl("https://[::1]/dns-query")).toThrow(/blocked/);
     expect(() => assertSafeEndpointUrl("https://localhost/dns-query")).toThrow(/blocked/);
     expect(assertSafeEndpointUrl("https://dns.google/dns-query?name=_apw.example.com&type=TXT").hostname).toBe("dns.google");
+  });
+
+  test("normalizes trailing dots, uppercase, IDN/punycode and IPv6 zones without bypassing the blocklist", () => {
+    for (const value of [
+      "https://localhost./dns-query",
+      "https://LOCALHOST/dns-query",
+      "https://LOCALHOST./dns-query",
+      "https://0.0.0.0/dns-query",
+      "https://[fe80::1%25eth0]/dns-query",
+    ]) {
+      expect(() => assertSafeEndpointUrl(value), value).toThrow(/blocked|invalid/);
+    }
+    expect(() => assertSafeEndpointUrl("https://xn--bcher-kva.example/dns-query")).toThrow(/blocked/);
+    expect(() => assertSafeEndpointUrl("https://bücher.example/dns-query")).toThrow(/blocked/);
+    expect(assertSafeEndpointUrl("https://xn--bcher-kva.com/dns-query").hostname).toBe("xn--bcher-kva.com");
+    expect(isBlockedIp("fe80::1%eth0")).toBe(true);
+    expect(isBlockedHostname("localhost.")).toBe(true);
+    expect(isBlockedHostname("LOCALHOST.")).toBe(true);
+    expect(isBlockedHostname("xn--bcher-kva.example")).toBe(true);
+    // `.example` is blocked for endpoints but must not be applied to a subject did.
+    const bank = loadCase("AB-STATIC-01");
+    expect(bank.subject()).toBe("did:apw:core.vector.example");
+    expect(isBlockedHostname("core.vector.example")).toBe(true);
   });
 
   test("a single blocked DNS answer rejects the whole name instead of selecting a public address", async () => {
@@ -203,6 +235,48 @@ describe("fail-closed acquisition and budget stress with frozen bytes", () => {
     };
   };
 
+  test("failed HTTP attempts keep the conservative body reservation and the attempt count", async () => {
+    const bank = loadCase("AB-STATIC-01");
+    const transport = new ThrowingTransport();
+    const budget = new ResourceBudget(bank.limits(), () => 0);
+    const outcome = await acquireIdentity({
+      subject: bank.subject(), requestId: bank.requestId(), bootstrapProfile: "independent-doh-ad-v1",
+      config: bank.config(), policy: bank.policy(), transport, now: () => 0, budget,
+      wallClockSeconds: bank.fixture.clock.acquisitionWallSeconds,
+      operationId: bank.initialState().context.operationId, clientScope: bank.initialState().context.clientScope,
+    });
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) expect(outcome.reason).toBe("service_unavailable");
+    expect(transport.calls).toBe(1);
+    expect(budget.httpAttemptsUsed).toBe(1);
+    expect(budget.bodyBytesUsed).toBe(bank.limits().dohBytes);
+    expect(budget.signatureAttemptsUsed).toBe(0);
+  });
+
+  test("a failed Ed25519 verification still consumes the signature attempt", async () => {
+    const bank = loadCase("AB-STATIC-07");
+    const clock = new FakeClock(0);
+    const transport = new ReplayTransport(bank, clock);
+    const acquisition = await acquireIdentity({
+      subject: bank.subject(), requestId: bank.requestId(), bootstrapProfile: "independent-doh-ad-v1",
+      config: bank.config(), policy: bank.policy(), transport, now: clock.now,
+      wallClockSeconds: bank.fixture.clock.acquisitionWallSeconds,
+      operationId: bank.initialState().context.operationId, clientScope: bank.initialState().context.clientScope,
+    });
+    expect(acquisition.ok).toBe(true);
+    if (!acquisition.ok) return;
+    const budget = new ResourceBudget(bank.limits(), () => 0);
+    const verify = verifyHandoff({
+      handoff: acquisition.handoff, budget, policy: bank.policy(),
+      states: { initial: bank.initialState(), slices: bank.slices() },
+      now: scriptedClock(bank.fixture.resourceFacts.verificationTimeline.map(entry => entry.elapsedMs)),
+      wallAt: bank.verificationWall,
+    });
+    expect(verify.result.reason).toBe("bad_signature");
+    expect(verify.result.signatureAttemptsConsumed).toBe(4);
+    expect(budget.signatureAttemptsUsed).toBe(4);
+  });
+
   test("an IP-literal subject is rejected before any endpoint call", async () => {
     const bank = loadCase("AB-STATIC-01");
     const transport = new StaticTransport({
@@ -284,7 +358,7 @@ describe("fail-closed acquisition and budget stress with frozen bytes", () => {
 
   test("cumulative body cap rejects the package response", async () => {
     const bank = loadCase("AB-STATIC-01");
-    const config = { ...bank.config(), limits: { ...bank.limits(), bodyBytes: 1000 } };
+    const config = { ...bank.config(), limits: { ...bank.limits(), bodyBytes: 1000, dohBytes: 500 } };
     const clock = new FakeClock(0);
     const outcome = await acquireIdentity({
       subject: bank.subject(), requestId: bank.requestId(), bootstrapProfile: "independent-doh-ad-v1",
