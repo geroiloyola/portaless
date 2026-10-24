@@ -108,6 +108,11 @@ require an owner decision; this document sets none.
    bytes exactly; if it uses binary64, compare values within tolerance and never
    claim byte identity.
 
+The family-level requirements above are enumerated case by case in
+[LTP-S3-REPUTATION-MISSING-VECTORS.md](./LTP-S3-REPUTATION-MISSING-VECTORS.md):
+REP-01…REP-11, with a boundary condition and expected invariant per case. That
+matrix, not this summary, is the documentary evidence for vector completeness.
+
 ## 5. Open decisions before any G4 code
 
 - Any future G4 authorization must cite §2: the adopted unsigned SVRI is
