@@ -1,0 +1,24 @@
+{
+  "name": "ltp-specification-assets",
+  "version": "0.1.0-draft.0",
+  "private": true,
+  "type": "module",
+  "license": "CC-BY-4.0",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "audit": "node vectors/ltp/v0.1/tools/audit.mjs",
+    "audit:external": "node vectors/ltp/v0.1/tools/external-audit.mjs",
+    "check:author": "python3 vectors/ltp/v0.1/tools/author.py --check",
+    "check:numbers": "python3 vectors/ltp/v0.1/tools/numeric-audit.py",
+    "check:core": "node tools/check-core-author.mjs",
+    "audit:core": "node tools/core-audit.mjs",
+    "check:ab": "node tools/check-ab-author.mjs",
+    "audit:ab": "node tools/ab-audit.mjs",
+    "test": "node --test tools/*.test.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "canonicalize": "2.1.0",
+    "jose": "6.2.3"
+  }
+}

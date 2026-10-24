@@ -1,0 +1,1 @@
+{"id":"untrusted-bootstrap-prefix","base":"valid-bootstrap-step-2.json","patch":[{"op":"replace","path":"/local/quarantined","value":null},{"op":"replace","path":"/result/packageDigest","value":"YQMhDSFenGG3boQrQokaOg9U4xRIZKxI2KMFWSb2EyE"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"checkpoint","reason":"checkpoint_required","resourceGrant":false}}

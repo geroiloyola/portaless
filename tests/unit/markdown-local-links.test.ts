@@ -1,4 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +7,7 @@ const root = join(__dirname, "../..");
 
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory() && ["node_modules", ".venv", "__pycache__"].includes(entry.name)) return [];
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return walk(path);
     return path.endsWith(".md") ? [path] : [];
@@ -47,6 +49,16 @@ function markdownFiles(): string[] {
 }
 
 describe("local Markdown links and anchors", () => {
+  it("checks project docs but excludes installed third-party docs in a standalone asset package", () => {
+    const temp = mkdtempSync(join(tmpdir(), "markdown-boundary-"));
+    try {
+      mkdirSync(join(temp, "spec/node_modules/vendor"), { recursive: true });
+      writeFileSync(join(temp, "spec/README.md"), "[project](./contract.md)");
+      writeFileSync(join(temp, "spec/contract.md"), "# Contract");
+      writeFileSync(join(temp, "spec/node_modules/vendor/README.md"), "[upstream](./not-in-tarball.md)");
+      expect(walk(temp).map(path => relative(temp, path)).sort()).toEqual(["spec/README.md", "spec/contract.md"]);
+    } finally { rmSync(temp, { recursive: true, force: true }); }
+  });
   it("README*.md and docs/** have no broken relative target or anchor", () => {
     const problems: string[] = [];
     for (const file of markdownFiles()) {

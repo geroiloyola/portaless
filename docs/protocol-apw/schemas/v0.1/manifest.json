@@ -1,0 +1,13 @@
+{
+  "format": "ltp-schema-bundle",
+  "version": "0.1",
+  "status": "candidate-awaiting-owner-approval",
+  "digestRule": "base64url(SHA256(UTF8(RFC8785-JCS(parsedSchema)))), without padding",
+  "schemas": [
+    {"file": "common.schema.json", "id": "urn:ltp:schemas:0.1:common", "digest": "zgeZo_rYMaF1WQFmKMaGSwR0EisZIx07cM851ooDud0"},
+    {"file": "svri-projection.schema.json", "id": "urn:ltp:schemas:0.1:svri-projection", "digest": "q69I_muzI2tStBbu2AsaSXS5cBrNJZZv9RN1aQr82tI"},
+    {"file": "ltp-proof-package.schema.json", "id": "urn:ltp:schemas:0.1:proof-package", "digest": "IRNke3agKv9MdDBE_BPjHFg4DxR5UPsuhB_J1BOZqBw"},
+    {"file": "ltp-resolution-request.schema.json", "id": "urn:ltp:schemas:0.1:resolution-request", "digest": "h-AZnQxzI56Kwp2spHWkC3OSBF8EpbaOk9JfP9IseFw"},
+    {"file": "ltp-resolution-result.schema.json", "id": "urn:ltp:schemas:0.1:resolution-result", "digest": "8rWRhRUjAH2TJYQCTwfueOCWF4vIv27OwtneLm8e8h4"}
+  ]
+}

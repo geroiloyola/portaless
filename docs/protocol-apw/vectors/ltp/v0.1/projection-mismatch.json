@@ -1,0 +1,1 @@
+{"id":"projection-mismatch","base":"valid-proof-chain.json","patch":[{"op":"replace","path":"/result/package/calculation/projection/score","value":9},{"op":"replace","path":"/result/packageDigest","value":"TlqyN_aVtf3InRrrvcE45EAn6Lm32tCN4arVKqDE80k"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"projection","reason":"projection_mismatch","resourceGrant":false}}

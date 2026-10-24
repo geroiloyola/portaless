@@ -4,7 +4,7 @@
 **Project**: Portaless
 **Date**: October 2026
 **License**: CC BY 4.0 (see [License and governance](#license-and-governance))
-**Status**: the single normative document. Consolidates v1.0 (design), v1.1 (identity and history), v1.2 (section 6, today the Loyal Trust Protocol), and corrections E-1 through E-11 of [`ERRATA.md`](./ERRATA.md) (Spanish, with the historical archive), which are **integrated into the text here**. When this document and any earlier version disagree, v1.3 governs. **Published errata that are not yet consolidated into the text below and are in effect**: E-12 (informative, Index aggregator), E-13 (normative: `community` as an attestation source with a numeric `val`, and the definitions §6.7 required for distinct emitters, `min_weight` and minimum emitter history age), E-14 (normative: the signed pages document `/.well-known/apw-pages.jws`, `typ apw-pages+jws`, and the consumer guards — per-hop fetch, streaming cap, private-range blocking, mandatory cache, sanitized remote render), and E-15 (normative: the publisher-signed plugin manifest, `typ apw-plugin-manifest+jws`, whose signature covers `requestedCapabilities`, and the install rule — install grants nothing, removed capabilities are pruned, expanded ones are never auto-granted, versions are immutable). **E-16 (normative) is integrated by reference in §6.2.1**: SVRI v1.0 is the mandatory LTP projection layer, with the `ltp-svri-site-v1` and `ltp-svri-reader-v1` profiles; its contract is [`SVRI-v1.0.md`](./SVRI-v1.0.md). Fixed test vectors live in [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) and [`vectors/svri/v1.0/`](./vectors/svri/v1.0/), in files independent of the code: an implementation outside Portaless can verify compatibility without reading or running this repository.
+**Status**: the single normative document. Consolidates v1.0 (design), v1.1 (identity and history), v1.2 (section 6, today the Local Trust Protocol), and corrections E-1 through E-11 of [`ERRATA.md`](./ERRATA.md) (Spanish, with the historical archive), which are **integrated into the text here**. When this document and any earlier version disagree, v1.3 governs. **Published errata that are not yet consolidated into the text below and are in effect**: E-12 (informative, Index aggregator), E-13 (normative: `community` as an attestation source with a numeric `val`, and the definitions §6.7 required for distinct emitters, `min_weight` and minimum emitter history age), E-14 (normative: the signed pages document `/.well-known/apw-pages.jws`, `typ apw-pages+jws`, and the consumer guards — per-hop fetch, streaming cap, private-range blocking, mandatory cache, sanitized remote render), and E-15 (normative: the publisher-signed plugin manifest, `typ apw-plugin-manifest+jws`, whose signature covers `requestedCapabilities`, and the install rule — install grants nothing, removed capabilities are pruned, expanded ones are never auto-granted, versions are immutable). **E-16 (normative) is integrated by reference in §6.2.1**: SVRI v1.0 is the mandatory LTP projection layer, with the `ltp-svri-site-v1` and `ltp-svri-reader-v1` profiles; its contract is [`SVRI-v1.0.md`](./SVRI-v1.0.md). Fixed test vectors live in [`APW-VECTORS-v1.3.md`](./APW-VECTORS-v1.3.md) and [`vectors/svri/v1.0/`](./vectors/svri/v1.0/), in files independent of the code: an implementation outside Portaless can verify compatibility without reading or running this repository.
 
 > Spanish archival copy with the same normative content: [`APW-SPEC-v1.3_es.md`](./APW-SPEC-v1.3_es.md). On any discrepancy in numbers, formulas, or keywords, the English file governs.
 
@@ -43,7 +43,11 @@ does not amend existing signed bytes, numerical rules or adopted vector results.
 
 **Authorship and edition.** Author: Gerardo Loyola. The Portaless project edits and publishes versions of this document. Annex A adapts the Veranet Universal Scoring System, by the same author; that does not restrict reimplementing Annex A.
 
-**Name.** Section 6 is called **Loyal Trust Protocol (LTP)**. Earlier versions of the document published it as "Loyola Trust Protocol": same specification, same LTP acronym. When citing, use the name the cited version was published under.
+**Name.** LTP has the unique expansion **Local Trust Protocol**: each node applies its own policy to verified evidence. **LTP Stack** names the complete APW + LTP + SVRI + HSVR stack.
+
+<!-- ltp-continuity:start -->
+**Naming continuity (owner decision, 2026-10-23).** Earlier editions used "Loyal Trust Protocol" or "Loyola Trust Protocol"; these are historical expansions, not current alternatives. The acronym, adopted identifiers, signed bytes, rules and author credit remain unchanged. Cite an archived edition under its published name and state this continuity when relevant. Gerardo Loyola remains credited in authorship and Annex A.
+<!-- ltp-continuity:end -->
 
 **Neutrality and conformance.** This document requires no registration, permission, certification, or trademark licensing to implement. Any project may implement Protocol APW, LTP, or any of their parts, cite them, and declare conformance without any relationship to Portaless. Declaring minimal conformance means: publishing the artifacts this document requires and passing the minimal vectors (V-01, V-03, V-05, V-06, V-08, V-09) citing their IDs. No text outside this document and `ERRATA.md` is normative (principle 5, section 2).
 
@@ -319,7 +323,9 @@ audits trust/traceability, SVRI is the output and HSVR its verifiable history
 LTP Proof Package contracts are [separate drafts](./README.md#proposed-resolution-contracts-not-yet-adopted-or-implemented),
 not changes to the existing `apw-index` wire format or adopted verification rules.
 
-## 6. Reputation-based Read Governance — Loyal Trust Protocol (v1.2 + E-8, E-9)
+<a id="6-reputation-based-read-governance--loyal-trust-protocol-v12--e-8-e-9"></a>
+
+## 6. Reputation-based Read Governance — Local Trust Protocol (v1.2 + E-8, E-9)
 
 ### 6.1 The problem (closes B9)
 
@@ -327,7 +333,7 @@ The web is asymmetric: crawlers identify, profile, and score sites, but sites ca
 
 ### 6.2 Concept
 
-The **Loyal Trust Protocol** (Mutual Trust Reputation) uses APW identity in both directions:
+The **Local Trust Protocol** uses APW identity in both directions. Each node applies its own policy to verified evidence:
 
 1. The site defines read policies over its trust resources and, later, content.
 2. The reader (AI agent, index, another site) authenticates with Web Bot Auth and its `Signature-Agent` origin resolves to `did:apw:<reader-domain>`.

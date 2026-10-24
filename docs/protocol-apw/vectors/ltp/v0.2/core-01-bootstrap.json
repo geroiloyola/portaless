@@ -1,0 +1,430 @@
+{
+  "format": "ltp-static-case-set",
+  "version": "0.2",
+  "area": "CORE-01",
+  "cases": [
+    {
+      "id": "CORE-01-valid-root",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": []
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-forwarded-ad",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/onlineObservation",
+            "value": null
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_incomplete",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-ad-false",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/onlineObservation/AD",
+            "value": false
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "dnssec_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-ad-absent",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "remove",
+            "path": "/local/onlineObservation/AD"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "dnssec_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-resolver-substitution",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/onlineObservation/resolverId",
+            "value": "index-nominated"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-root-key-substitution",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/onlineObservation/manifest/k",
+            "value": "nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-expired-root",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/now",
+            "value": 1790000060
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "freshness_unproven",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-future-observation",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/onlineObservation/receivedAt",
+            "value": 1790000011
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-unsupported-profile",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/request/bootstrapProfile",
+            "value": "provider-trusted-v1"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": false,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-package-policy-install",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/result/package/trustPolicy",
+            "value": {
+              "requireAD": false
+            }
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "vO4Q9Iurc3i9L0VZnU8hqlbry5mz2QP8DbanWua5Oy0"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-package-anchor-install",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/result/package/trustAnchors",
+            "value": [
+              {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "XcQF1qS_7NVKTYXhJ48-eM4YKd308_qNWclkDKbvhmM"
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "gvQOAzwsUQNwv9PISEB1wF_DA-IqrkIbb7wNb4DCtFE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-ttl-before-expiry",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/now",
+            "value": 1790000059
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-known-sequence-rollback",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/local/knownHead",
+            "value": {
+              "seq": 3,
+              "hash": "4zWWYrztRLps-A--1oBC10g-eakbCX4BOftWc6QQllU"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "history",
+        "reason": "anchor_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-01-known-sequence-equivocation",
+      "area": "CORE-01",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints"
+      ],
+      "input": {
+        "target": "bootstrap-local-context",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/local/knownHead",
+            "value": {
+              "seq": 2,
+              "hash": "UMisxrg8xQw1B6gfz0GRp9LA8lu9yAgPsoLlLO_kom0"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "history",
+        "reason": "anchor_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "format": "ltp-total-conformance-candidate",
+  "version": "0.2",
+  "status": "pending-owner-review",
+  "scope": "S1 plus S3-core static targets; no A/B implementation or S4 claim",
+  "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
+  "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
+  "numericExtensionDigest": "RLmrcBc3SjFN1Mephzw6y7h3N5_mzKN9oLxLRkTZH1g",
+  "fixtures": [
+    {
+      "file": "../v0.1/changed-key-window.json",
+      "digest": "1niQwGLWfGC1a6hG4PKsYOrGF105rJPMbG3VEHD7qyA"
+    },
+    {
+      "file": "../v0.1/crypto-ledger.json",
+      "digest": "0T7xoM36cnnYCBm27IecNH1Ebhr8LNuIXWQBqOdgEUs"
+    },
+    {
+      "file": "../v0.1/dnssec-proofs.json",
+      "digest": "XvgDZvzckuQ5VhqyU1Z0AyEavr6UcSTJMLivJYiFeDI"
+    },
+    {
+      "file": "../v0.1/encoding.json",
+      "digest": "dYvRXL8Wh5nZImPiH9LtfdPie7jWoo_9opnSTX_ecXc"
+    },
+    {
+      "file": "../v0.1/expired-checkpoint.json",
+      "digest": "a4ZSPucn68TD9-9uKqnziHScK1lLAT1WaXGt3q4aCtU"
+    },
+    {
+      "file": "../v0.1/expired-key-set.json",
+      "digest": "WqigQqJsGZIFFZ_ylACKOIxKkk3KWAM3lPMVi0ccRXY"
+    },
+    {
+      "file": "../v0.1/expired-root.json",
+      "digest": "RKq3N41hpzGeJs-J33Zy3hWD3Hu8KlN5eSJB4_uRA-Y"
+    },
+    {
+      "file": "../v0.1/forwarded-ad-not-a-root.json",
+      "digest": "SXS7-HiGl4Hs9dDg8DVXwXyui4QfG_ZCf2I_wJbPrYA"
+    },
+    {
+      "file": "../v0.1/inference-flag-mismatch.json",
+      "digest": "hRdnkdPw4iAQQvImZpIGVDXbUmeaQvpxof9rUsaw23Q"
+    },
+    {
+      "file": "../v0.1/invalid-attestation-signature.json",
+      "digest": "_J_xPTF_c0OSNHKg1zFEtat_znB6dJbIrQX5h_yR0u8"
+    },
+    {
+      "file": "../v0.1/invalid-key-binding.json",
+      "digest": "NzT_VL7EkKmVdO9CL21PDFWRbZedAGUQYGxGAN7Qh8Y"
+    },
+    {
+      "file": "../v0.1/invalid-log-signature.json",
+      "digest": "vv1LQr7JEbIvPTqvwyCaQrDBk3fkin4__7k1F7VjlG0"
+    },
+    {
+      "file": "../v0.1/invalid-signature.json",
+      "digest": "Z6cW4Wce6zqxqbFGZpRxhK7Qa9RnFpTc2AHvLF44oj4"
+    },
+    {
+      "file": "../v0.1/missing-negative-evidence.json",
+      "digest": "3iMXWj4RflKZJmNie-4cEDK8wmVA9YTQk-7igJIX6no"
+    },
+    {
+      "file": "../v0.1/missing-null.json",
+      "digest": "NrIu_hXbTB_lcK11l6ygqwJIvtLeAEICw-GN_-TXJNg"
+    },
+    {
+      "file": "../v0.1/offline-expired-rrsig.json",
+      "digest": "myuUiVyTBRAN0ZFecPiY92O7e_D7nxpSKLVgyv_S35g"
+    },
+    {
+      "file": "../v0.1/offline-invalid-txt-signature.json",
+      "digest": "5UZNrLBIDQpma9TEg9ut26JfWZTUpR8gEY5uYADxoaQ"
+    },
+    {
+      "file": "../v0.1/offline-missing-delegation.json",
+      "digest": "QxCo3mpcWUpLwupcqZSuQID3SlXCzRLcDuF9o9RWbZ4"
+    },
+    {
+      "file": "../v0.1/offline-replay-not-online.json",
+      "digest": "WPk1INVc95V8Vk0EBbEaLEERwqyQcfDxf5mdlGrsTDA"
+    },
+    {
+      "file": "../v0.1/package-digest-mismatch.json",
+      "digest": "szpxb4QOfDJCyw72EFj5I8R6SDLn946YzYUfINkHHTU"
+    },
+    {
+      "file": "../v0.1/projection-mismatch.json",
+      "digest": "4ikavRXJhl9VcmWCKWOIT5uVsjR37zUe0xuLs3HxwRc"
+    },
+    {
+      "file": "../v0.1/request-id-mismatch.json",
+      "digest": "NmEEauvai79aWMCeLaKV2oWSb9ItO28Sy4Ksc_uOuIk"
+    },
+    {
+      "file": "../v0.1/retired-draft-alias.json",
+      "digest": "Ch7F4PGBT2RTs5-VRE-Q0TMg8K82S-71_8DS3Zb2OAs"
+    },
+    {
+      "file": "../v0.1/seq-gap.json",
+      "digest": "VDqOAUNP5lipC1wZh9CK6zreXkX4VbZ1uSIQQkJ2Q70"
+    },
+    {
+      "file": "../v0.1/string-null.json",
+      "digest": "cK9IEprI0auUsmAKEUorTBwjO1YFiXC8OTe6ILVPq2c"
+    },
+    {
+      "file": "../v0.1/svri-math.json",
+      "digest": "bWtVs8VtHEnzTCTZKGdpB2WcLCbNZSN8rnmO-Mbgg7c"
+    },
+    {
+      "file": "../v0.1/unknown-checkpoint.json",
+      "digest": "pvuAtfDyHgQRKpmcY_vtMWNsEYgQYqUm40MGq0nx6ZA"
+    },
+    {
+      "file": "../v0.1/unknown-member.json",
+      "digest": "Tr0DSpyFrJ1kevxykclduw_RE2GZRdcgWhpxy0gtMQw"
+    },
+    {
+      "file": "../v0.1/unregistered-issuer.json",
+      "digest": "lHqmFrHWHUDA4BEy_YxkKCCk-LNoi51R9L3rnP9KR9E"
+    },
+    {
+      "file": "../v0.1/unsigned-dns.json",
+      "digest": "O11GTFp3WlJa1RGp41G8kB0jExZG_NKWJo0EnMpe5wY"
+    },
+    {
+      "file": "../v0.1/untrusted-bootstrap-prefix.json",
+      "digest": "MJ1zpTXTV9DIjCAsnpYpcNVCA0MAdv_s3rOIOJRP7pM"
+    },
+    {
+      "file": "../v0.1/valid-bootstrap-step-1.json",
+      "digest": "pJsIdxRi6suLfLOshBIupezCbFB-BufGU2-IIUegHMs"
+    },
+    {
+      "file": "../v0.1/valid-bootstrap-step-2.json",
+      "digest": "FCg3z1Rjr7pAkK7mbuiI_3o7Rklk4jENz0VVRygAxNw"
+    },
+    {
+      "file": "../v0.1/valid-continuation.json",
+      "digest": "Wx0JV7oQti8DU8b9oLvnA3J3zdzzw5Rk-zBhDB4fsEo"
+    },
+    {
+      "file": "../v0.1/valid-identity-only.json",
+      "digest": "q1mw6jEiZ4gm-UMvyxwsIOdX9Izl2nNeXJcVVMUzVWU"
+    },
+    {
+      "file": "../v0.1/valid-offline-dnssec-13.json",
+      "digest": "Jlk6OxocLPFpRry6QxrFICX0SAnnteVTrPi0ppBDbNU"
+    },
+    {
+      "file": "../v0.1/valid-offline-dnssec-15.json",
+      "digest": "NubyCAx2RNJRY4ROR8h5adeYCI7GOxwGTnxUfUxTGGg"
+    },
+    {
+      "file": "../v0.1/valid-offline-dnssec-8.json",
+      "digest": "Hdn6nQ4VFtrDOZClE0dXjQC4WWkrvitvwhUChiOsOtM"
+    },
+    {
+      "file": "../v0.1/valid-proof-chain.json",
+      "digest": "CvxD9Mheb0H-oHoUqAsgf2O3BRnu9NXdwE-nlSQ4PCU"
+    },
+    {
+      "file": "../v0.1/valid-signature-noncanonical-payload.json",
+      "digest": "QBw8aEsWH_lEnr-0cNVKdgd7YxT-TJIopSEbSk5Oz0A"
+    },
+    {
+      "file": "../v0.1/wrong-dns-question.json",
+      "digest": "MAdMlgkZcih3916Uq8BORki5jatOnvnxYxDAcgiYatk"
+    },
+    {
+      "file": "../v0.1/numeric-serialization.json",
+      "digest": "RLmrcBc3SjFN1Mephzw6y7h3N5_mzKN9oLxLRkTZH1g"
+    },
+    {
+      "file": "core-01-bootstrap.json",
+      "digest": "fZHkLgVLOjm_6UUKFlgN7JwsREX8voanQzmECXz4TJ4"
+    },
+    {
+      "file": "core-02-doh.json",
+      "digest": "VUWPrD-GC8WECtesQyaJroKFk2xIJSxEW6Vub9l8MsA"
+    },
+    {
+      "file": "core-03-did.json",
+      "digest": "sBH1i-mbI0tzJlor0N4kgH0OBRnkB9ELAo0P93VjkXI"
+    },
+    {
+      "file": "core-04-history.json",
+      "digest": "4-PxvNg0eEyJRjmPMirx_tXrppZglKeFJc5P-rR3Sz4"
+    },
+    {
+      "file": "core-05-errors.json",
+      "digest": "uWE67-XjllDhQ1qIIPf5D2qgA0Q28MpLdtBPsdCppBY"
+    },
+    {
+      "file": "core-06-resources.json",
+      "digest": "aB9-eOf58KkBgrszaschiDYrTtMMyeAZFrRx8CyJuwg"
+    },
+    {
+      "file": "coverage.json",
+      "digest": "rU5EZKwlWPBQZ_sa7dpiEE_3SnoKHIkmTn0ebMQFRSs"
+    },
+    {
+      "file": "proofs.json",
+      "digest": "uDTcgEwLpFKXita4nV-8SPIYOJoXStlFEMIxAsHhOO4"
+    },
+    {
+      "file": "signatures.json",
+      "digest": "htKY0OLNGQj005bYuP_ZRKIvU_y2n7EiZQ_QvJ7SJ-Y"
+    }
+  ],
+  "coreCases": 285,
+  "signatureArtifacts": 2066
+}

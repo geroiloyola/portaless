@@ -12,6 +12,10 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 
 ## Golden rule before touching any code
 
+**Naming:** LTP = **Local Trust Protocol** (each node's own policy over verified
+evidence); **LTP Stack** = APW + LTP + SVRI + HSVR. Historical expansions belong
+only in continuity/archive notes; identifiers, signed bytes and author credit stay intact.
+
 **Never assume something works because the file exists.** This project explicitly documents, in the code and in `ROADMAP.md`, what is truly implemented and what is a skeleton with `TODO`s. Before building on a module, verify its real state in the table below.
 
 ## Real state map per module (see `ROADMAP.md` for the living detail)
@@ -33,7 +37,7 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 | OpenAI-compatible provider | `packages/ai-provider/` | ✅ Explicit tested subset: server-side API key, configurable HTTPS base URL/model, chat completions, SSE streaming, non-streaming tool calls, bounded timeout/cancellation and sanitized errors. `GET /admin/api/ai-provider` reports the active profile without the key. External endpoints remain unverified until the contract suite runs against them. Connection guide: `docs/openai-compatible-provider.md`. |
 | AT Protocol identity | `packages/identity-atproto/` | ✅ Optional symbiotic bridge with APW: AT handle<->DID resolution per spec (TXT/HTTPS, `did:plc`/`did:web`, signing key + PDS), link confidences (`also_known_as`/`self`/`subdomain`), `buildAtprotoReputation()` join behind public `GET /trust/atproto/:handle`, and admin-managed `alsoKnownAs` links in `/.well-known/did.json`. Whitepaper's own vision (own PDS, comment Lexicons, App View) still unimplemented on purpose — `docs/architecture/identity-atproto.md`. |
 | Cloud Images (APW as cryptographic SSOT) | `packages/cloud-images/` | ✅ Cryptographic base (v0.0.9.10): Cloud Image v1 payload (contentHash, signedAt inside the signed data, contemporaneous public SiteTrustScore, declaredOrigin human\|ai\|mixed), sidecar `{payload, jws}` signed server-side with the site's active Ed25519 key (`typ: apw-image+jws`, JCS; kid must belong to the payload's siteDid), embedding in a PNG private `pAPW` chunk, `cloud_images` store (D1/SQLite/InMemory, unique content_hash = dedupe), admin upload with automatic signing (`POST /admin/api/cloud-images`, 404 without site identity), immutable public serve (`GET /images/:imageId`), local verification (`GET /trust/images/:imageId`, survives key rotation via `listKeys`) and standalone verification against the chained APW registry (`POST /trust/images/verify` — retired keys included, never throws). Honest limits: PNG-only transport, 4 MiB in DB (R2 external), declaredOrigin is a declaration not a detection (moderation future), no UI, EXIF neither read nor stripped — `docs/architecture/cloud-images.md`. |
-| Protocol APW resolver | `packages/apw-resolver/` | ✅ DNS-over-HTTPS resolution, `did:apw` rotation, DNS-anchored history, witnesses/Index and SVRI v1.0 with independent vectors. Public Trust UI shows qualitative SVRI only; detailed counts and HSVR are admin-only. |
+| Protocol APW resolver | `packages/apw-resolver/` | ✅ DNS-over-HTTPS resolution, `did:apw` rotation, DNS-anchored history, witnesses/Index and SVRI v1.0 with published vectors (verificación cruzada, mismo autor; no external review claimed). Public Trust UI shows qualitative SVRI only; detailed counts and HSVR are admin-only. |
 | Plugin SDK | `packages/plugin-sdk/` | ✅ Shipped v0.1.0 (MIT): capability catalog, `validateManifest` and the typed sandbox contract; the catalog/logic parity with the core is pinned by `tests/unit/plugin-sdk-parity.test.ts`. The HTTP installer and the real capability backends remain Phase 11.2 |
 
 ## Where every important document lives
@@ -44,7 +48,7 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 - [`docs/README.md`](./docs/README.md) — index of the whole documentation tree.
 - [`docs/api/`](./docs/api/) — integrator guide for Portaless HTTP APIs (public well-known endpoints, admin endpoints, verification recipes).
 - [`docs/testing/release-acceptance.md`](./docs/testing/release-acceptance.md) — C40–C41 release evidence and the external gates that remain open.
-- [`docs/decisions/0003-public-and-governed-resource-contract.md`](./docs/decisions/0003-public-and-governed-resource-contract.md) — owner-approved architecture and D1–D9 resolution baseline. The independent identity root and restrictive budget are approved; indexed Workers/Edge programming is blocked until the documentary commit is merged. Final protocol publication and runtime activation require the [standardization gates](./docs/protocol-apw/LTP-STANDARDIZATION-STATUS.md); approval is not an implementation claim.
+- [`docs/decisions/0003-public-and-governed-resource-contract.md`](./docs/decisions/0003-public-and-governed-resource-contract.md) — approved architecture/D1–D9 baseline, not implementation permission. Read the sole [G1–G5 authorization register](./docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md) before changing scope. Corpus/CI/merge grant no engine, network or budget authorization; S1–S6 still govern standard publication and acceptance.
 - `docs/architecture/REPO_STRUCTURE_MAP.md` — why the real repo structure differs from the original proposal, and where each thing actually is.
 - `docs/architecture/licensing-boundaries.md` — exact boundary between the AGPL-3.0 core, the MIT Plugin SDK, and third-party projects/plugins.
 - `docs/architecture/mcp-agents.md` — MCP server design, 19 registered tools, per-invocation HTTP identity, and persistent audit.

@@ -1,0 +1,13 @@
+{
+ "id":"valid-bootstrap-step-1","base":"valid-proof-chain.json","patch":[
+  {"op":"replace","path":"/result/status","value":"incomplete"},
+  {"op":"replace","path":"/result/package/identities/0/historyRef","value":"v1at5hfRo-JcnP8GBkdZ-aWXio4lJK0LMGSutilw4aI"},
+  {"op":"replace","path":"/result/package/histories/0/format","value":"bootstrap-segment"},
+  {"op":"replace","path":"/result/package/histories/0/entries","value":[{"seq":1,"jws":"eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUja2V5LTEiLCJ0eXAiOiJhcHctbG9nK2p3cyJ9.eyJhdHQiOiJiM2hKNW9iMWJBZDcxOVJFN0tZOHMzVG1lTEtCbTMzOW5lUUhMRDFqYTRVIiwicHJldiI6bnVsbCwic2VxIjoxLCJ0cyI6IjIwMjYtMDktMjFUMTQ6MTM6MTAuMDAwWiJ9.UhOV_sLZMw9fQNRQ_8WK9lruG5avTXJH8-uOvzxewc5QKT7iBxjsKXEwxcRMUXUNbMrptksxyEAJg82mbuKzBA"}]},
+  {"op":"replace","path":"/result/package/histories/0/id","value":"v1at5hfRo-JcnP8GBkdZ-aWXio4lJK0LMGSutilw4aI"},
+  {"op":"replace","path":"/result/package/attestations","value":["eyJhbGciOiJFZERTQSIsImtpZCI6ImVzY3Jvdy10ZXN0LWtleS0xIiwidHlwIjoiYXB3LWF0dGVzdGF0aW9uK2p3cyJ9.eyJjYXQiOiJjb21wbGV0ZWRfYXNfcHJvbWlzZWQiLCJpYXQiOjE3ODk5OTk5NzAsImlzcyI6ImVzY3Jvdy52ZWN0b3IiLCJqdGkiOiJsdHAtdmVjdG9yLWVzY3Jvdy0xIiwic3JjIjoiZXNjcm93X3JlcG9ydCIsInN1YiI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUiLCJ0eXAiOiJhcHctYXR0ZXN0YXRpb24randzIiwidmFsIjp0cnVlfQ.lclgBQMwmiPCEyWYL0bfANCsZYgYqJ7nrp8tSKck3l61yr_g_9c9R_PcxEj0BMVlsl1J90ur7_W2FA3e8CXMAw"]},
+  {"op":"replace","path":"/result/packageDigest","value":"ISCmbpo-VGxUaJm3F46xkGii4z86DxBsRbbnvYGcqdg"},
+  {"op":"replace","path":"/result/reason","value":"history_step_limit"},
+  {"op":"replace","path":"/result/retryAfterSeconds","value":1}
+ ],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"history","reason":"history_step_limit","resume":{"did":"did:apw:vector.example","targetManifestDigest":"rswuc9RzvY8Q_yrN5Jpk3dGPgRd0P6wqfg9x13PYFpM","rootManifestDigest":"azebiaFfoZV8uoP9By_I0QGiEH-ICjmw-XFnDkrVDxg","keySetDigest":"ItMEuYylS7YtrrowRtrMaz8_p7Ya5tvc3U8Yy6xDpEE","nextSeq":2,"previousHash":"3cciZaFnZ65brGTWkERbcGx9ahRUoUCEthsrYa4Qugs"},"resourceGrant":false}
+}

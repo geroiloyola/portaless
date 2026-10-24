@@ -1,0 +1,1 @@
+{"id":"offline-expired-rrsig","base":"valid-offline-dnssec-15.json","patch":[{"op":"replace","path":"/local/now","value":1790003601},{"op":"replace","path":"/result/packageDigest","value":"ABGJwJhzwxyivIRV7s-bxrZN_28LsqiY00oDzp5FnDA"}],"expected":{"schemaValid":true,"proofAccepted":false,"stage":"bootstrap","reason":"bootstrap_invalid","resourceGrant":false}}

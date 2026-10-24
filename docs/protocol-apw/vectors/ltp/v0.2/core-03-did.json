@@ -1,0 +1,956 @@
+{
+  "format": "ltp-static-case-set",
+  "version": "0.2",
+  "area": "CORE-03",
+  "cases": [
+    {
+      "id": "CORE-03-valid-did",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": []
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-document-subject",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/id",
+            "value": "did:apw:other.example"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "TVZP5GVfd508Cn1YAJ-243ff6cnH5NHSHve0WdSmRP4"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-controller",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod/0/controller",
+            "value": "did:apw:other.example"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "eQphv16wa34BhtcYzF58QJyp_BOhwEAF_sX1MqX2wA8"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-method-kid",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod/0/id",
+            "value": "did:apw:core.vector.example#key-99"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "VWdgvEG37Xr56C_VJsolXl_szG-CE0mkTVb1aRLbG_4"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-public-key-substitution",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod/0/publicKeyJwk/x",
+            "value": "XcQF1qS_7NVKTYXhJ48-eM4YKd308_qNWclkDKbvhmM"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "T3h0IkpJx3QdZpqLZml-n_eL_GAtGvCYoxhM9alCqgQ"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-private-key",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/result/package/identities/0/didDocument/verificationMethod/0/publicKeyJwk/d",
+            "value": "LRLcBTSiqM4-oZ6r7a9F-XK9HwNVGFGDrKl9Nxa87nc"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/historyRef",
+            "value": "U1MpBIOLFnAPtTZHiMBRRYYkc03JGo0BZQA08q0VGl4"
+          },
+          {
+            "op": "add",
+            "path": "/result/package/histories/0/keys/0/publicKeyJwk/d",
+            "value": "LRLcBTSiqM4-oZ6r7a9F-XK9HwNVGFGDrKl9Nxa87nc"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package/histories/0/id",
+            "value": "U1MpBIOLFnAPtTZHiMBRRYYkc03JGo0BZQA08q0VGl4"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "nCbXXU_U5hQyiDdmTI0A4eUp2NyKUCUVkzo6L0vC0U0"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-unsupported-key",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod/0/publicKeyJwk/crv",
+            "value": "X25519"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/historyRef",
+            "value": "UeCjgIDwwi1MVQ6jrUNe3NiE2YJ-oUOvA7oiuOeqDNo"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package/histories/0/keys/0/publicKeyJwk/crv",
+            "value": "X25519"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package/histories/0/id",
+            "value": "UeCjgIDwwi1MVQ6jrUNe3NiE2YJ-oUOvA7oiuOeqDNo"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "iqybj5sJkQ58PRQdcj0XwKBfQ67y_klH30DBFcaPQDA"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-missing-methods",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "7mc4zlKj14g62xLxckf9zYIFVtb3p-DuilBZSn5rlH0"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-missing-document-id",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "remove",
+            "path": "/result/package/identities/0/didDocument/id"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "zJC31Fcpf8jwpkJgkznMseVeleimchBc85Vw9DpbSyA"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-history-reference",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/historyRef",
+            "value": "eKXQi6HgbYSm4PcYVWI1InfqbFsD8zA6laWQN020ev4"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "tiUwTNkTgltdW0hQkkGQtYa5AKjiUzyR5qyJVeaiR4s"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "proof_incomplete",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-identity-missing",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "VbDCj96_6wq-8IFS0g33jzGw6FoZ-LkzU5YI8Ns3SME"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-identity-duplicate",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities",
+            "value": [
+              {
+                "did": "did:apw:core.vector.example",
+                "didDocument": {
+                  "id": "did:apw:core.vector.example",
+                  "verificationMethod": [
+                    {
+                      "id": "did:apw:core.vector.example#key-1",
+                      "type": "JsonWebKey2020",
+                      "controller": "did:apw:core.vector.example",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                      }
+                    }
+                  ]
+                },
+                "manifestJws": {
+                  "$jws": "VNVMGs5thxUg4LR9munjpf5OSzOB3W42D4Ifq_v8XPQ"
+                },
+                "dnsMessages": [],
+                "historyRef": "xwMtV0GQLgrINMEIa1Qz-Sw6VCHxEiHss5TEv3J4690"
+              },
+              {
+                "did": "did:apw:core.vector.example",
+                "didDocument": {
+                  "id": "did:apw:core.vector.example",
+                  "verificationMethod": [
+                    {
+                      "id": "did:apw:core.vector.example#key-1",
+                      "type": "JsonWebKey2020",
+                      "controller": "did:apw:core.vector.example",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                      }
+                    }
+                  ]
+                },
+                "manifestJws": {
+                  "$jws": "VNVMGs5thxUg4LR9munjpf5OSzOB3W42D4Ifq_v8XPQ"
+                },
+                "dnsMessages": [],
+                "historyRef": "xwMtV0GQLgrINMEIa1Qz-Sw6VCHxEiHss5TEv3J4690"
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "Y-5N2jC5XoiboMyOQAXMQjyjCrCFQuOOn7qu5LtnBx4"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "proof_incomplete",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-unused-identity",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../APW-SPEC-v1.3.md#51-didapw-resolution-closes-b1-and-b2"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities",
+            "value": [
+              {
+                "did": "did:apw:core.vector.example",
+                "didDocument": {
+                  "id": "did:apw:core.vector.example",
+                  "verificationMethod": [
+                    {
+                      "id": "did:apw:core.vector.example#key-1",
+                      "type": "JsonWebKey2020",
+                      "controller": "did:apw:core.vector.example",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                      }
+                    }
+                  ]
+                },
+                "manifestJws": {
+                  "$jws": "VNVMGs5thxUg4LR9munjpf5OSzOB3W42D4Ifq_v8XPQ"
+                },
+                "dnsMessages": [],
+                "historyRef": "xwMtV0GQLgrINMEIa1Qz-Sw6VCHxEiHss5TEv3J4690"
+              },
+              {
+                "did": "did:apw:unused.example",
+                "didDocument": {
+                  "id": "did:apw:core.vector.example",
+                  "verificationMethod": [
+                    {
+                      "id": "did:apw:core.vector.example#key-1",
+                      "type": "JsonWebKey2020",
+                      "controller": "did:apw:core.vector.example",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                      }
+                    }
+                  ]
+                },
+                "manifestJws": {
+                  "$jws": "VNVMGs5thxUg4LR9munjpf5OSzOB3W42D4Ifq_v8XPQ"
+                },
+                "dnsMessages": [],
+                "historyRef": "xwMtV0GQLgrINMEIa1Qz-Sw6VCHxEiHss5TEv3J4690"
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "19pSlNMwB154gqZxSkvYtHIopHBnL0s0jL1j3DR6xv8"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "proof_incomplete",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-duplicate-method",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod",
+            "value": [
+              {
+                "id": "did:apw:core.vector.example#key-1",
+                "type": "JsonWebKey2020",
+                "controller": "did:apw:core.vector.example",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                }
+              },
+              {
+                "id": "did:apw:core.vector.example#key-1",
+                "type": "JsonWebKey2020",
+                "controller": "did:apw:core.vector.example",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                }
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "nnxqw4bMnZj6bkzKrzPt1GS2Fv8G3BuJZ37nUNYzfus"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-ambiguous-method",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/didDocument/verificationMethod",
+            "value": [
+              {
+                "id": "did:apw:core.vector.example#key-1",
+                "type": "JsonWebKey2020",
+                "controller": "did:apw:core.vector.example",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "gnWbxt_krO8nBEeRj4i_hc29e4cXgYC8SH1MEjDgFiA"
+                }
+              },
+              {
+                "id": "did:apw:core.vector.example#key-1",
+                "type": "JsonWebKey2020",
+                "controller": "did:apw:core.vector.example",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "XcQF1qS_7NVKTYXhJ48-eM4YKd308_qNWclkDKbvhmM"
+                }
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "xdqaaBYFAE8vJbSo2ejGWtAC20iXBzT4chPdCznl0LM"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-signed-subject",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "nEiZNtaqScbkjbrPV6wx0i6D9F4uwSoe7rxfgycWtvQ"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "metgBDNO5JK6sWttFKmxWUZNCBon9RqhlmcT_C6-PBw"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-signed-txt-fields",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "bp4nZZvyccGAlVaxdxPAx9doo_mAlsWRFjyYbF8ZTsc"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "ggNRerAX6q7O1ewUDCVOgV1KhS0RXtYa-LPVfsEpCzE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-future-manifest",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "xX8lWw8srA6z5XJ_zAz8Rv36e9KGhaeQudJOC16f3Hw"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "DjXD-U3PjvADBlskrp4E_Qns8_c2Ga4wRwhe4bs0tAI"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "freshness_unproven",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-stale-manifest",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "RfFuJdbyjIHCScR_syZmvWq1P0AJ6ozLT7ChiiysHsQ"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "4Eaeku1WRm2dSAP-kPwchFY6OmrZoCwPF06hSzlsiog"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "freshness_unproven",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-unsupported-alg",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "cMj2QBOGITMCOr3MvBBAHlASEjqdNN2EKJiYuaiAaTg"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "O0tX7LXZOnv8MEk5lz6ya1hmGdNQp-kvCjaiFQ2gKEE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "unsupported_algorithm",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-foreign-kid",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "7zmPHhkO0-UqvNsF7RhrNhBmVk1qQdSPMHwjTQm8Q_c"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "QNPEGnEv26Z24k6RSyLBN73zg4acI_IE8dTdo6dS20A"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "key_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-wrong-typ",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "hVmdW0HN84H_TEylKBFptub5E8oHiDh374TkMdzwbM0"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "ZxHZLAzarMlUutMSzxL76piMfUh_Q7bxs5KSHGeKIpY"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "unsupported_profile",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-03-bad-signature",
+      "area": "CORE-03",
+      "contracts": [
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots"
+      ],
+      "input": {
+        "target": "identity-proof",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/package/identities/0/manifestJws/$jws",
+            "value": "n5dW2AA-MV6HgClTU1mHlGk0KSdHjO5-mTBrk6Od21s"
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "0fmsOs6bWCBMuRVN0FzBSD5KPT4x6V6aD1RDiUqCIaI"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "identity",
+        "reason": "bad_signature",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    }
+  ]
+}

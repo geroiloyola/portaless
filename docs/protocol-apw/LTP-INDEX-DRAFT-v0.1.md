@@ -30,6 +30,9 @@ must preserve original signed artifacts and the audience allowed to receive them
 
 ## 2. Endpoint and request
 
+Exact request/result schemas and null/retry/HTTP combinations are in the
+[S1 serialization candidate](./LTP-SERIALIZATION-DRAFT-v0.1.md).
+
 The operator configures the complete HTTPS URL; its path is not an identity root.
 Consumers MUST NOT derive an endpoint from a requester, subject TXT/DID, package
 field, discovery hint or redirect without a separate operator configuration act.
@@ -206,8 +209,10 @@ storage, clock, crypto and authorization under the declared contracts.
 
 ## 8. Adoption gate
 
-The owner's baseline approval and the merge-before-implementation gate are
-recorded in [contract approval and standardization gates](./LTP-STANDARDIZATION-STATUS.md).
+The owner's architectural baseline and S1–S6 milestones are recorded in
+[standardization status](./LTP-STANDARDIZATION-STATUS.md). Implementation
+permissions are defined only in the [canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md);
+baseline/corpus approval or merge does not open an implementation phase.
 The following conformance requirements remain mandatory.
 
 Before any production Edge route advertises these profiles, publish independent

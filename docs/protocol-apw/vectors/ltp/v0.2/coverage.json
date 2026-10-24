@@ -1,0 +1,1763 @@
+{
+  "scope": "S3-core static targets only; manual review pending",
+  "areas": [
+    {
+      "id": "CORE-01",
+      "file": "core-01-bootstrap.json",
+      "cases": [
+        "CORE-01-valid-root",
+        "CORE-01-forwarded-ad",
+        "CORE-01-ad-false",
+        "CORE-01-ad-absent",
+        "CORE-01-resolver-substitution",
+        "CORE-01-root-key-substitution",
+        "CORE-01-expired-root",
+        "CORE-01-future-observation",
+        "CORE-01-unsupported-profile",
+        "CORE-01-package-policy-install",
+        "CORE-01-package-anchor-install",
+        "CORE-01-ttl-before-expiry",
+        "CORE-01-known-sequence-rollback",
+        "CORE-01-known-sequence-equivocation"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-01-valid-root",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-01-forwarded-ad",
+          "reason": "bootstrap_incomplete",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-ad-false",
+          "reason": "dnssec_required",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-ad-absent",
+          "reason": "dnssec_required",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-resolver-substitution",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-root-key-substitution",
+          "reason": "key_mismatch",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-expired-root",
+          "reason": "freshness_unproven",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-future-observation",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-unsupported-profile",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-package-policy-install",
+          "reason": "schema_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-package-anchor-install",
+          "reason": "schema_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-01-ttl-before-expiry",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-01-known-sequence-rollback",
+          "reason": "anchor_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-01-known-sequence-equivocation",
+          "reason": "anchor_mismatch",
+          "stage": "history"
+        }
+      ]
+    },
+    {
+      "id": "CORE-02",
+      "file": "core-02-doh.json",
+      "cases": [
+        "CORE-02-valid-txt",
+        "CORE-02-wrong-question",
+        "CORE-02-wrong-question-type",
+        "CORE-02-wrong-answer-owner",
+        "CORE-02-wrong-answer-type",
+        "CORE-02-truncated",
+        "CORE-02-ad-absent",
+        "CORE-02-ad-false",
+        "CORE-02-ad-string",
+        "CORE-02-tc-absent",
+        "CORE-02-servfail",
+        "CORE-02-nxdomain",
+        "CORE-02-no-txt",
+        "CORE-02-ttl-negative",
+        "CORE-02-ttl-fractional",
+        "CORE-02-ttl-zero",
+        "CORE-02-tls-untrusted",
+        "CORE-02-redirect",
+        "CORE-02-http-unavailable",
+        "CORE-02-cname",
+        "CORE-02-dname",
+        "CORE-02-conflicting-txt",
+        "CORE-02-conflicting-txt-reversed",
+        "CORE-02-duplicate-identical-txt",
+        "CORE-02-split-txt-strings",
+        "CORE-02-domain-uppercase",
+        "CORE-02-domain-trailing-dot",
+        "CORE-02-domain-url-input",
+        "CORE-02-domain-userinfo",
+        "CORE-02-domain-port",
+        "CORE-02-domain-fragment",
+        "CORE-02-domain-unicode",
+        "CORE-02-domain-fqdn-too-long",
+        "CORE-02-endpoint-http",
+        "CORE-02-endpoint-private",
+        "CORE-02-endpoint-credentials",
+        "CORE-02-endpoint-fragment",
+        "CORE-02-endpoint-query",
+        "CORE-02-transport-fallback",
+        "CORE-02-no-downgrade",
+        "CORE-02-ambiguous-no-fallback",
+        "CORE-02-transport-no-fallback"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-02-valid-txt",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-02-wrong-question",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-wrong-question-type",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-wrong-answer-owner",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-wrong-answer-type",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-truncated",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ad-absent",
+          "reason": "dnssec_required",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ad-false",
+          "reason": "dnssec_required",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ad-string",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-tc-absent",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-servfail",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-nxdomain",
+          "reason": "identity_not_found",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-no-txt",
+          "reason": "identity_not_found",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ttl-negative",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ttl-fractional",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ttl-zero",
+          "reason": "freshness_unproven",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-tls-untrusted",
+          "reason": "transport_unavailable",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-redirect",
+          "reason": "redirect_denied",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-http-unavailable",
+          "reason": "transport_unavailable",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-cname",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-dname",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-conflicting-txt",
+          "reason": "bootstrap_ambiguous",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-conflicting-txt-reversed",
+          "reason": "bootstrap_ambiguous",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-duplicate-identical-txt",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-02-split-txt-strings",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-02-domain-uppercase",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-trailing-dot",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-url-input",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-userinfo",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-port",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-fragment",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-unicode",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-domain-fqdn-too-long",
+          "reason": "bootstrap_invalid",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-endpoint-http",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-endpoint-private",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-endpoint-credentials",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-endpoint-fragment",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-endpoint-query",
+          "reason": "bootstrap_unsupported",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-transport-fallback",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-02-no-downgrade",
+          "reason": "dnssec_required",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-ambiguous-no-fallback",
+          "reason": "bootstrap_ambiguous",
+          "stage": "bootstrap"
+        },
+        {
+          "id": "CORE-02-transport-no-fallback",
+          "reason": "transport_unavailable",
+          "stage": "bootstrap"
+        }
+      ]
+    },
+    {
+      "id": "CORE-03",
+      "file": "core-03-did.json",
+      "cases": [
+        "CORE-03-valid-did",
+        "CORE-03-document-subject",
+        "CORE-03-controller",
+        "CORE-03-method-kid",
+        "CORE-03-public-key-substitution",
+        "CORE-03-private-key",
+        "CORE-03-unsupported-key",
+        "CORE-03-missing-methods",
+        "CORE-03-missing-document-id",
+        "CORE-03-history-reference",
+        "CORE-03-identity-missing",
+        "CORE-03-identity-duplicate",
+        "CORE-03-unused-identity",
+        "CORE-03-duplicate-method",
+        "CORE-03-ambiguous-method",
+        "CORE-03-signed-subject",
+        "CORE-03-signed-txt-fields",
+        "CORE-03-future-manifest",
+        "CORE-03-stale-manifest",
+        "CORE-03-unsupported-alg",
+        "CORE-03-foreign-kid",
+        "CORE-03-wrong-typ",
+        "CORE-03-bad-signature"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-03-valid-did",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-03-document-subject",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-controller",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-method-kid",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-public-key-substitution",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-private-key",
+          "reason": "schema_invalid",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-unsupported-key",
+          "reason": "schema_invalid",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-missing-methods",
+          "reason": "schema_invalid",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-missing-document-id",
+          "reason": "schema_invalid",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-history-reference",
+          "reason": "proof_incomplete",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-identity-missing",
+          "reason": "schema_invalid",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-identity-duplicate",
+          "reason": "proof_incomplete",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-unused-identity",
+          "reason": "proof_incomplete",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-duplicate-method",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-ambiguous-method",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-signed-subject",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-signed-txt-fields",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-future-manifest",
+          "reason": "freshness_unproven",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-stale-manifest",
+          "reason": "freshness_unproven",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-unsupported-alg",
+          "reason": "unsupported_algorithm",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-foreign-kid",
+          "reason": "key_mismatch",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-wrong-typ",
+          "reason": "unsupported_profile",
+          "stage": "identity"
+        },
+        {
+          "id": "CORE-03-bad-signature",
+          "reason": "bad_signature",
+          "stage": "identity"
+        }
+      ]
+    },
+    {
+      "id": "CORE-04",
+      "file": "core-04-history.json",
+      "cases": [
+        "CORE-04-rotation-valid",
+        "CORE-04-legacy-fingerprint-kid",
+        "CORE-04-empty-history",
+        "CORE-04-window-start-inclusive",
+        "CORE-04-window-end-inclusive",
+        "CORE-04-window-before-invalid",
+        "CORE-04-window-after-invalid",
+        "CORE-04-keys-reversed",
+        "CORE-04-duplicate-key",
+        "CORE-04-key-id-alias",
+        "CORE-04-fingerprint-substitution",
+        "CORE-04-unsigned-window-extension",
+        "CORE-04-missing-historical-key",
+        "CORE-04-target-terminal-mismatch",
+        "CORE-04-truncated-prefix",
+        "CORE-04-unknown-checkpoint",
+        "CORE-04-seq-gap",
+        "CORE-04-prev-mutation",
+        "CORE-04-timestamp-regression",
+        "CORE-04-unknown-signing-kid",
+        "CORE-04-foreign-signing-kid",
+        "CORE-04-log-bad-signature",
+        "CORE-04-binding-expired",
+        "CORE-04-binding-future",
+        "CORE-04-binding-invalid-interval",
+        "CORE-04-binding-wrong-keyset",
+        "CORE-04-ts-regression-within-window",
+        "CORE-04-dns-anchor-not-in-chain",
+        "CORE-04-signed-head-extends-dns-anchor",
+        "CORE-04-trusted-continuation-pending",
+        "CORE-04-checkpoint-expired",
+        "CORE-04-checkpoint-policy-change",
+        "CORE-04-checkpoint-root-change",
+        "CORE-04-checkpoint-keyset-change",
+        "CORE-04-long-1000-step-1",
+        "CORE-04-long-1000-step-2",
+        "CORE-04-long-1000-step-3",
+        "CORE-04-resume-untrusted-prefix",
+        "CORE-04-resume-target-change",
+        "CORE-04-resume-overlap",
+        "CORE-04-resume-expired",
+        "CORE-04-resume-policy-change",
+        "CORE-04-resume-rules-change",
+        "CORE-04-resume-keyset-change",
+        "CORE-04-resume-root-change",
+        "CORE-04-restart-at-genesis"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-04-rotation-valid",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-legacy-fingerprint-kid",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-empty-history",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-window-start-inclusive",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-window-end-inclusive",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-window-before-invalid",
+          "reason": "ts_outside_key_window",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-window-after-invalid",
+          "reason": "ts_outside_key_window",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-keys-reversed",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-duplicate-key",
+          "reason": "key_kid_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-key-id-alias",
+          "reason": "key_kid_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-fingerprint-substitution",
+          "reason": "key_kid_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-unsigned-window-extension",
+          "reason": "keys_digest_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-missing-historical-key",
+          "reason": "keys_digest_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-target-terminal-mismatch",
+          "reason": "key_set_binding_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-truncated-prefix",
+          "reason": "proof_incomplete",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-unknown-checkpoint",
+          "reason": "checkpoint_required",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-seq-gap",
+          "reason": "seq_gap",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-prev-mutation",
+          "reason": "prev_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-timestamp-regression",
+          "reason": "ts_outside_key_window",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-unknown-signing-kid",
+          "reason": "unknown_key",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-foreign-signing-kid",
+          "reason": "key_kid_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-log-bad-signature",
+          "reason": "bad_signature",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-binding-expired",
+          "reason": "key_set_expired",
+          "stage": "key-set"
+        },
+        {
+          "id": "CORE-04-binding-future",
+          "reason": "freshness_unproven",
+          "stage": "key-set"
+        },
+        {
+          "id": "CORE-04-binding-invalid-interval",
+          "reason": "key_set_expired",
+          "stage": "key-set"
+        },
+        {
+          "id": "CORE-04-binding-wrong-keyset",
+          "reason": "keys_digest_mismatch",
+          "stage": "key-set"
+        },
+        {
+          "id": "CORE-04-ts-regression-within-window",
+          "reason": "ts_regression",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-dns-anchor-not-in-chain",
+          "reason": "head_mismatch",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-signed-head-extends-dns-anchor",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-trusted-continuation-pending",
+          "reason": "history_step_limit",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-checkpoint-expired",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-checkpoint-policy-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-checkpoint-root-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-checkpoint-keyset-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-long-1000-step-1",
+          "reason": "history_step_limit",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-long-1000-step-2",
+          "reason": "history_step_limit",
+          "stage": "history"
+        },
+        {
+          "id": "CORE-04-long-1000-step-3",
+          "reason": null,
+          "stage": "complete"
+        },
+        {
+          "id": "CORE-04-resume-untrusted-prefix",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-target-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-overlap",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-expired",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-policy-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-rules-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-keyset-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-resume-root-change",
+          "reason": "checkpoint_required",
+          "stage": "checkpoint"
+        },
+        {
+          "id": "CORE-04-restart-at-genesis",
+          "reason": "history_step_limit",
+          "stage": "history"
+        }
+      ]
+    },
+    {
+      "id": "CORE-05",
+      "file": "core-05-errors.json",
+      "cases": [
+        "CORE-05-service-01-candidate",
+        "CORE-05-service-02-proof_incomplete",
+        "CORE-05-service-03-checkpoint_required",
+        "CORE-05-service-04-history_step_limit",
+        "CORE-05-service-05-proof_not_available",
+        "CORE-05-service-06-invalid_request",
+        "CORE-05-service-07-unsupported_version",
+        "CORE-05-service-08-unsupported_profile",
+        "CORE-05-service-09-authentication_required",
+        "CORE-05-service-10-access_denied",
+        "CORE-05-service-11-service_unavailable",
+        "CORE-05-service-12-service_unavailable",
+        "CORE-05-service-13-budget_exhausted",
+        "CORE-05-service-14-budget_exhausted",
+        "CORE-05-service-15-request_too_large",
+        "CORE-05-service-16-response_limit_exceeded",
+        "CORE-05-service-17-deadline_exceeded",
+        "CORE-05-unknown-version",
+        "CORE-05-unknown-profile",
+        "CORE-05-request-binding",
+        "CORE-05-subject-binding",
+        "CORE-05-missing-null",
+        "CORE-05-string-null",
+        "CORE-05-retry-zero",
+        "CORE-05-unknown-field",
+        "CORE-05-negative-limit",
+        "CORE-05-digest-mismatch",
+        "CORE-05-parser-duplicate",
+        "CORE-05-parser-escaped-duplicate",
+        "CORE-05-parser-bom",
+        "CORE-05-parser-invalid-utf8",
+        "CORE-05-parser-surrogate",
+        "CORE-05-parser-nan",
+        "CORE-05-parser-infinity",
+        "CORE-05-parser-unsafe-integer",
+        "CORE-05-parser-truncated-json",
+        "CORE-05-retry-leading-zero",
+        "CORE-05-retry-plus",
+        "CORE-05-retry-null-token"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-05-service-01-candidate",
+          "reason": null,
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-02-proof_incomplete",
+          "reason": "proof_incomplete",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-03-checkpoint_required",
+          "reason": "checkpoint_required",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-04-history_step_limit",
+          "reason": "history_step_limit",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-05-proof_not_available",
+          "reason": "proof_not_available",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-06-invalid_request",
+          "reason": "invalid_request",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-07-unsupported_version",
+          "reason": "unsupported_version",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-08-unsupported_profile",
+          "reason": "unsupported_profile",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-09-authentication_required",
+          "reason": "authentication_required",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-10-access_denied",
+          "reason": "access_denied",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-11-service_unavailable",
+          "reason": "service_unavailable",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-12-service_unavailable",
+          "reason": "service_unavailable",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-13-budget_exhausted",
+          "reason": "budget_exhausted",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-14-budget_exhausted",
+          "reason": "budget_exhausted",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-15-request_too_large",
+          "reason": "request_too_large",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-16-response_limit_exceeded",
+          "reason": "response_limit_exceeded",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-service-17-deadline_exceeded",
+          "reason": "deadline_exceeded",
+          "stage": "service"
+        },
+        {
+          "id": "CORE-05-unknown-version",
+          "reason": "unsupported_version",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-unknown-profile",
+          "reason": "unsupported_profile",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-request-binding",
+          "reason": "request_binding_mismatch",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-subject-binding",
+          "reason": "request_binding_mismatch",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-missing-null",
+          "reason": "schema_invalid",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-string-null",
+          "reason": "schema_invalid",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-retry-zero",
+          "reason": "schema_invalid",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-unknown-field",
+          "reason": "schema_invalid",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-negative-limit",
+          "reason": "schema_invalid",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-digest-mismatch",
+          "reason": "digest_mismatch",
+          "stage": "envelope"
+        },
+        {
+          "id": "CORE-05-parser-duplicate",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-escaped-duplicate",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-bom",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-invalid-utf8",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-surrogate",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-nan",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-infinity",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-unsafe-integer",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-parser-truncated-json",
+          "reason": "invalid_json",
+          "stage": "parse"
+        },
+        {
+          "id": "CORE-05-retry-leading-zero",
+          "reason": "invalid_request",
+          "stage": "http"
+        },
+        {
+          "id": "CORE-05-retry-plus",
+          "reason": "invalid_request",
+          "stage": "http"
+        },
+        {
+          "id": "CORE-05-retry-null-token",
+          "reason": "invalid_request",
+          "stage": "http"
+        }
+      ]
+    },
+    {
+      "id": "CORE-06",
+      "file": "core-06-resources.json",
+      "cases": [
+        "CORE-06-fqdnCharacters-below",
+        "CORE-06-fqdnCharacters-at",
+        "CORE-06-fqdnCharacters-over",
+        "CORE-06-dnsAnswers-below",
+        "CORE-06-dnsAnswers-at",
+        "CORE-06-dnsAnswers-over",
+        "CORE-06-dohBytes-below",
+        "CORE-06-dohBytes-at",
+        "CORE-06-dohBytes-over",
+        "CORE-06-txtBytes-below",
+        "CORE-06-txtBytes-at",
+        "CORE-06-txtBytes-over",
+        "CORE-06-didBytes-below",
+        "CORE-06-didBytes-at",
+        "CORE-06-didBytes-over",
+        "CORE-06-didMethods-below",
+        "CORE-06-didMethods-at",
+        "CORE-06-didMethods-over",
+        "CORE-06-historyPageEntries-below",
+        "CORE-06-historyPageEntries-at",
+        "CORE-06-historyPageEntries-over",
+        "CORE-06-historyPageBytes-below",
+        "CORE-06-historyPageBytes-at",
+        "CORE-06-historyPageBytes-over",
+        "CORE-06-historyPages-below",
+        "CORE-06-historyPages-at",
+        "CORE-06-historyPages-over",
+        "CORE-06-historyEntries-below",
+        "CORE-06-historyEntries-at",
+        "CORE-06-historyEntries-over",
+        "CORE-06-historyDocumentKeys-below",
+        "CORE-06-historyDocumentKeys-at",
+        "CORE-06-historyDocumentKeys-over",
+        "CORE-06-resolutionDistinctKeys-below",
+        "CORE-06-resolutionDistinctKeys-at",
+        "CORE-06-resolutionDistinctKeys-over",
+        "CORE-06-signatureAttempts-below",
+        "CORE-06-signatureAttempts-at",
+        "CORE-06-signatureAttempts-over",
+        "CORE-06-httpAttempts-below",
+        "CORE-06-httpAttempts-at",
+        "CORE-06-httpAttempts-over",
+        "CORE-06-bodyBytes-below",
+        "CORE-06-bodyBytes-at",
+        "CORE-06-bodyBytes-over",
+        "CORE-06-individualBodyBytes-below",
+        "CORE-06-individualBodyBytes-at",
+        "CORE-06-individualBodyBytes-over",
+        "CORE-06-activeTotal-below",
+        "CORE-06-activeTotal-at",
+        "CORE-06-activeTotal-over",
+        "CORE-06-activeClient-below",
+        "CORE-06-activeClient-at",
+        "CORE-06-activeClient-over",
+        "CORE-06-activeHost-below",
+        "CORE-06-activeHost-at",
+        "CORE-06-activeHost-over",
+        "CORE-06-clientWindowAttempts-below",
+        "CORE-06-clientWindowAttempts-at",
+        "CORE-06-clientWindowAttempts-over",
+        "CORE-06-clientWindowBytes-below",
+        "CORE-06-clientWindowBytes-at",
+        "CORE-06-clientWindowBytes-over",
+        "CORE-06-originWindowAttempts-below",
+        "CORE-06-originWindowAttempts-at",
+        "CORE-06-originWindowAttempts-over",
+        "CORE-06-originWindowBytes-below",
+        "CORE-06-originWindowBytes-at",
+        "CORE-06-originWindowBytes-over",
+        "CORE-06-quotaBuckets-below",
+        "CORE-06-quotaBuckets-at",
+        "CORE-06-quotaBuckets-over",
+        "CORE-06-cacheHostsPerClass-below",
+        "CORE-06-cacheHostsPerClass-at",
+        "CORE-06-cacheHostsPerClass-over",
+        "CORE-06-progressStates-below",
+        "CORE-06-progressStates-at",
+        "CORE-06-progressStates-over",
+        "CORE-06-checkpoints-below",
+        "CORE-06-checkpoints-at",
+        "CORE-06-checkpoints-over",
+        "CORE-06-globalDeadlineMs-before",
+        "CORE-06-globalDeadlineMs-at",
+        "CORE-06-globalDeadlineMs-after",
+        "CORE-06-hopDeadlineMs-before",
+        "CORE-06-hopDeadlineMs-at",
+        "CORE-06-hopDeadlineMs-after",
+        "CORE-06-positiveCacheSeconds-before",
+        "CORE-06-positiveCacheSeconds-at",
+        "CORE-06-positiveCacheSeconds-after",
+        "CORE-06-negativeCacheSeconds-before",
+        "CORE-06-negativeCacheSeconds-at",
+        "CORE-06-negativeCacheSeconds-after",
+        "CORE-06-checkpointRetentionSeconds-before",
+        "CORE-06-checkpointRetentionSeconds-at",
+        "CORE-06-checkpointRetentionSeconds-after",
+        "CORE-06-quotaWindowSeconds-before",
+        "CORE-06-quotaWindowSeconds-at",
+        "CORE-06-quotaWindowSeconds-after",
+        "CORE-06-nested-shared-signatures",
+        "CORE-06-failed-signatures-count",
+        "CORE-06-nested-shared-body",
+        "CORE-06-retry-does-not-reset",
+        "CORE-06-resume-same-window",
+        "CORE-06-cache-hit-no-ttl-slide",
+        "CORE-06-dependency-expiry-clamp",
+        "CORE-06-remaining-hop-deadline",
+        "CORE-06-abort-before-acquisition",
+        "CORE-06-abort-stream",
+        "CORE-06-abort-crypto",
+        "CORE-06-single-flight-host",
+        "CORE-06-client-scope-preserved",
+        "CORE-06-origin-scope-preserved",
+        "CORE-06-client-request-cannot-raise-cap",
+        "CORE-06-client-request-can-lower-cap",
+        "CORE-06-redirect-cap-zero",
+        "CORE-06-quota-error-not-negative-cache",
+        "CORE-06-transient-error-not-negative-cache",
+        "CORE-06-pending-not-negative-cache",
+        "CORE-06-stale-on-error-forbidden",
+        "CORE-06-wall-clock-backward-no-extension"
+      ],
+      "expectedResults": [
+        {
+          "id": "CORE-06-fqdnCharacters-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-fqdnCharacters-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-fqdnCharacters-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dnsAnswers-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dnsAnswers-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dnsAnswers-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dohBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dohBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dohBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-txtBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-txtBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-txtBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didMethods-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didMethods-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-didMethods-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageEntries-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageEntries-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageEntries-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPageBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPages-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPages-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyPages-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyEntries-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyEntries-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyEntries-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyDocumentKeys-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyDocumentKeys-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-historyDocumentKeys-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-resolutionDistinctKeys-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-resolutionDistinctKeys-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-resolutionDistinctKeys-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-signatureAttempts-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-signatureAttempts-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-signatureAttempts-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-httpAttempts-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-httpAttempts-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-httpAttempts-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-bodyBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-bodyBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-bodyBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-individualBodyBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-individualBodyBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-individualBodyBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeTotal-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeTotal-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeTotal-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeClient-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeClient-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeClient-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeHost-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeHost-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-activeHost-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowAttempts-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowAttempts-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowAttempts-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-clientWindowBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowAttempts-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowAttempts-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowAttempts-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowBytes-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowBytes-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-originWindowBytes-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaBuckets-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaBuckets-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaBuckets-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-cacheHostsPerClass-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-cacheHostsPerClass-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-cacheHostsPerClass-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-progressStates-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-progressStates-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-progressStates-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpoints-below",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpoints-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpoints-over",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-globalDeadlineMs-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-globalDeadlineMs-at",
+          "reason": "deadline_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-globalDeadlineMs-after",
+          "reason": "deadline_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-hopDeadlineMs-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-hopDeadlineMs-at",
+          "reason": "deadline_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-hopDeadlineMs-after",
+          "reason": "deadline_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-positiveCacheSeconds-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-positiveCacheSeconds-at",
+          "reason": "freshness_unproven",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-positiveCacheSeconds-after",
+          "reason": "freshness_unproven",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-negativeCacheSeconds-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-negativeCacheSeconds-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-negativeCacheSeconds-after",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpointRetentionSeconds-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpointRetentionSeconds-at",
+          "reason": "checkpoint_required",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-checkpointRetentionSeconds-after",
+          "reason": "checkpoint_required",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaWindowSeconds-before",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaWindowSeconds-at",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quotaWindowSeconds-after",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-nested-shared-signatures",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-failed-signatures-count",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-nested-shared-body",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-retry-does-not-reset",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-resume-same-window",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-cache-hit-no-ttl-slide",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-dependency-expiry-clamp",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-remaining-hop-deadline",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-abort-before-acquisition",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-abort-stream",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-abort-crypto",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-single-flight-host",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-client-scope-preserved",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-origin-scope-preserved",
+          "reason": "limit_exceeded",
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-client-request-cannot-raise-cap",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-client-request-can-lower-cap",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-redirect-cap-zero",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-quota-error-not-negative-cache",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-transient-error-not-negative-cache",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-pending-not-negative-cache",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-stale-on-error-forbidden",
+          "reason": null,
+          "stage": "resource-objective"
+        },
+        {
+          "id": "CORE-06-wall-clock-backward-no-extension",
+          "reason": null,
+          "stage": "resource-objective"
+        }
+      ]
+    }
+  ]
+}

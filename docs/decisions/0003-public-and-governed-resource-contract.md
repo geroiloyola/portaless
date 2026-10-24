@@ -15,6 +15,11 @@
 
 ## Summary
 
+**Naming (owner decision, 2026-10-23):** LTP means **Local Trust Protocol**;
+each node applies its own policy to verified evidence. **LTP Stack** is APW +
+LTP + SVRI + HSVR. This editorial clarification changes no grants, limits, routes,
+format identifiers or signed bytes and authorizes no implementation phase.
+
 Portaless distinguishes **publication state** from **read-access class**:
 
 - **Publication state** answers whether a revision is approved for publication:
@@ -394,12 +399,12 @@ remaining policy choices for later enforcement phases are not invented by this a
 | D8 | A → B → C before PR3, including the public AT bridge; shared engine and budget, distinct endpoint authorization/projections. |
 | D9 | Edge-first ingress and approximate per-instance quotas; no claim of a distributed/global quota or real independent reputation emitters. |
 
-**Merge gate:** programming the indexed-egress Workers/Edge route is blocked
-until the documentation commit containing this approved baseline is merged into
-`main`. After merge, the next phase is exclusively implementing and verifying
-the engine against these contracts and limits. The merge is not permission to
-activate Edge: final publication, independent vectors/verifiers and runtime
-acceptance remain mandatory under the [closure checklist](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
+**Authorization boundary:** the baseline documentation was merged in PR #103;
+that historical prerequisite is not a programming permission. Current scopes
+and states are defined solely by the [canonical G1–G5 register](../protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md).
+Neither merge nor corpus acceptance authorizes engine, network or budget work.
+Standardization/runtime acceptance also retain the requirements in the
+[closure checklist](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
 
 ### External-search identity and freshness
 

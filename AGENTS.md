@@ -13,6 +13,10 @@ modules: commerce, plugin sandboxing, AI-agent identification (Web Bot Auth),
 MCP server (so an AI agent can edit pages directly), and a modular dashboard.
 Core is AGPL-3.0; the Protocol APW spec is CC BY 4.0; the Plugin SDK is MIT.
 
+LTP means **Local Trust Protocol**: each node applies its own policy to verified
+evidence. **LTP Stack** is APW + LTP + SVRI + HSVR; this naming does not rename
+wire identifiers, paths or signed artifacts.
+
 ## The new-user story (this is the product's north star)
 
 A person should be able to start in the APW/LTP world with **three free
@@ -48,6 +52,7 @@ Read in this order — **do not read them all**:
 | To understand the accepted private-node/public-projection MVP contract | `docs/mvp/acceptance-contract.md` |
 | To see what the release actually demonstrates (and what remains external) | `docs/testing/release-acceptance.md` |
 | To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
+| To know which LTP work is actually authorized (G1–G5) | `docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md` |
 
 **If you are an AI agent editing code**: read `AGENT.md` after this file. It
 contains the real-state table, the golden rule, and the security risks you

@@ -29,6 +29,10 @@ Protocol contracts (CC BY 4.0), separate from their reference implementation
 trust/traceability and output/history responsibilities; paths retain their
 historical names until a separately approved repository migration.
 
+**LTP = Local Trust Protocol:** each node applies its own policy to verified
+evidence. **LTP Stack** denotes APW + LTP + SVRI + HSVR. The
+[glossary](./glossary.md) defines these names and the unrelated RFC 5326 collision.
+
 | Document | Language | Status |
 |---|---|---|
 | [`protocol-apw/README.md`](./protocol-apw/README.md) | English | Protocol overview, Veranet vision, license/governance, real status |

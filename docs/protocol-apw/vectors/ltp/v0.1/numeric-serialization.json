@@ -1,0 +1,18 @@
+{
+  "status": "candidate-extension-not-part-of-original-corpus-manifest",
+  "cases": [
+    {"wire":"0", "canonical":"0", "signedInteger":true},
+    {"wire":"-0.0", "canonical":"0", "signedInteger":true},
+    {"wire":"1.0", "canonical":"1", "signedInteger":true},
+    {"wire":"1e3", "canonical":"1000", "signedInteger":true},
+    {"wire":"9007199254740991", "canonical":"9007199254740991", "signedInteger":true},
+    {"wire":"-9007199254740991", "canonical":"-9007199254740991", "signedInteger":true},
+    {"wire":"1e-7", "canonical":"1e-7", "signedInteger":false},
+    {"wire":"0.000001", "canonical":"0.000001", "signedInteger":false},
+    {"wire":"1.25", "canonical":"1.25", "signedInteger":false},
+    {"wire":"0.1", "canonical":"0.1", "signedInteger":false},
+    {"wire":"\"9007199254740992\"", "canonical":"\"9007199254740992\"", "signedInteger":true},
+    {"wire":"{\"numerator\":\"6\",\"denominator\":\"7\"}", "canonical":"{\"denominator\":\"7\",\"numerator\":\"6\"}", "signedInteger":true}
+  ],
+  "rejectedSignedNumbers": ["9007199254740992", "-9007199254740992", "1e21"]
+}

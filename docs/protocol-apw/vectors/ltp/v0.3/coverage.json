@@ -1,0 +1,273 @@
+{
+  "format": "ltp-composed-coverage",
+  "version": "0.3",
+  "scope": "G1 review only",
+  "cases": [
+    {
+      "id": "AB-STATIC-01",
+      "file": "ab-static-01.json",
+      "variant": "valid-composition",
+      "expected": {
+        "identity": "verified",
+        "history": "verified",
+        "proofAccepted": true,
+        "reason": null,
+        "stopsBefore": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          true,
+          true,
+          true
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 5,
+        "effectiveValidUntil": 1790000060
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-02",
+      "file": "ab-static-02.json",
+      "variant": "ad-false",
+      "expected": {
+        "identity": "unverified",
+        "history": "not_started",
+        "proofAccepted": false,
+        "reason": "dnssec_required",
+        "stopsBefore": "A-PACKAGE",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          false
+        ],
+        "logSlicesConsumed": [
+          false,
+          false,
+          false
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 0,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-03",
+      "file": "ab-static-03.json",
+      "variant": "did-key-mismatch",
+      "expected": {
+        "identity": "unverified",
+        "history": "not_started",
+        "proofAccepted": false,
+        "reason": "key_mismatch",
+        "stopsBefore": "B-LOG-1",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          false,
+          false,
+          false
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 0,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-04",
+      "file": "ab-static-04.json",
+      "variant": "policy-changes-between-prefix-states",
+      "expected": {
+        "identity": "unverified",
+        "history": "partial",
+        "proofAccepted": false,
+        "reason": "checkpoint_required",
+        "stopsBefore": "B-LOG-2",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          true,
+          false,
+          false
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 3,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-05",
+      "file": "ab-static-05.json",
+      "variant": "shared-deadline-no-reset",
+      "expected": {
+        "identity": "unavailable",
+        "history": "partial",
+        "proofAccepted": false,
+        "reason": "deadline_exceeded",
+        "stopsBefore": "B-LOG-2",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          true,
+          false,
+          false
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 3,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-06",
+      "file": "ab-static-06.json",
+      "variant": "root-expires-before-promotion",
+      "expected": {
+        "identity": "unavailable",
+        "history": "verified",
+        "proofAccepted": false,
+        "reason": "freshness_unproven",
+        "stopsBefore": "B-PROMOTION",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          true,
+          true,
+          true
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 5,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    },
+    {
+      "id": "AB-STATIC-07",
+      "file": "ab-static-07.json",
+      "variant": "required-log-signature-mutated",
+      "expected": {
+        "identity": "unverified",
+        "history": "invalid",
+        "proofAccepted": false,
+        "reason": "bad_signature",
+        "stopsBefore": "B-LOG-3",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "implementationAuthorized": false,
+        "misconduct": false,
+        "arbitraryOriginCalls": 0,
+        "acquisitionConsumed": [
+          true,
+          true
+        ],
+        "logSlicesConsumed": [
+          true,
+          true,
+          false
+        ],
+        "semanticVerdictObserved": false,
+        "signatureAttemptsConsumed": 4,
+        "effectiveValidUntil": null
+      },
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#4-identityproof-and-independent-roots",
+        "../../../LTP-PROOF-PACKAGE-DRAFT-v0.1.md#5-historyproof-completeness-and-checkpoints",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger",
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../../architecture/resolution-chain-proposal.md#approved-resource-limits",
+        "../../../LTP-GATES-AND-AUTHORIZATIONS.md#canonical-gates"
+      ]
+    }
+  ]
+}

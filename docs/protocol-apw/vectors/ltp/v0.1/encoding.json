@@ -1,0 +1,20 @@
+{
+ "id":"encoding","cases":[
+  {"id":"null-explicit","input":{"a":null},"canonicalUtf8":"{\"a\":null}","canonicalHex":"7b2261223a6e756c6c7d","digest":"0JH5yDwJH3llL-h4Y3Wz_kzghhpW9b-6_tvkMYd_8Og"},
+  {"id":"member-absent","input":{},"canonicalUtf8":"{}","canonicalHex":"7b7d","digest":"RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o"},
+  {"id":"unicode-utf16-order","input":{"\ue000":"private","😀":"astral","a":"é"},"canonicalUtf8":"{\"a\":\"é\",\"😀\":\"astral\",\"\ue000\":\"private\"}","canonicalHex":"7b2261223a22c3a9222c22f09f9880223a2261737472616c222c22ee8080223a2270726976617465227d","digest":"OulCs0vbzldfdRKwLO2FjByKZ-Rg0kFILLkb0o4hlBs"},
+  {"id":"unicode-not-normalized","input":{"nfc":"é","nfd":"e\u0301"},"canonicalUtf8":"{\"nfc\":\"é\",\"nfd\":\"e\u0301\"}","canonicalHex":"7b226e6663223a22c3a9222c226e6664223a2265cc81227d","digest":"eerkONEF6FL4bqWY_92pFkM4b60LTzNrlBUo0w-_FVg"},
+  {"id":"number-not-string","input":{"n":1,"s":"1"},"canonicalUtf8":"{\"n\":1,\"s\":\"1\"}","canonicalHex":"7b226e223a312c2273223a2231227d","digest":"u7Wn5lQXkmHidJl7itFuWosofW2Wt3rQHbDkyzvU9us"},
+  {"id":"number-spellings","input":[-0.0,1e-7,1e-6,1.25],"canonicalUtf8":"[0,1e-7,0.000001,1.25]","canonicalHex":"5b302c31652d372c302e3030303030312c312e32355d","digest":"KGXfli2_1nW34Tms_KIEXrbmbQegoFJswbvFhUsgOJI"},
+  {"id":"array-order-a","input":[1,2],"canonicalUtf8":"[1,2]","canonicalHex":"5b312c325d","digest":"SaZHF9XUyxmVLm6sKUZBXPaHmtrPmQjn2HIzLTLG5oQ"},
+  {"id":"array-order-b","input":[2,1],"canonicalUtf8":"[2,1]","canonicalHex":"5b322c315d","digest":"rxofwRC2CUxIWCsO-DVTy3kI16Q2VCTu8o5272yI1jA"}
+ ],"invalidJson":[
+  {"id":"duplicate-member","wireHex":"7b2261223a312c2261223a327d","expected":"invalid_json"},
+  {"id":"escaped-duplicate","wireHex":"7b2261223a312c225c7530303631223a327d","expected":"invalid_json"},
+  {"id":"bom","wireHex":"efbbbf7b7d","expected":"invalid_json"},
+  {"id":"invalid-utf8","wireHex":"7b2261223a22ff227d","expected":"invalid_json"},
+  {"id":"lone-surrogate","wireHex":"7b2261223a225c7564383030227d","expected":"invalid_json"},
+  {"id":"nan","wireHex":"7b2261223a4e614e7d","expected":"invalid_json"},
+  {"id":"unsafe-integer","wireHex":"7b2261223a393030373139393235343734303939327d","expected":"invalid_json"}
+ ]
+}

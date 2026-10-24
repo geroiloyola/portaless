@@ -1,0 +1,1 @@
+{"id":"retired-draft-alias","base":"valid-proof-chain.json","patch":[{"op":"replace","path":"/result/package/typ","value":"apw-proof-package"},{"op":"replace","path":"/result/packageDigest","value":"sGM830nxZzBwn2Gv47CbKPrgkzSfJeCzbQNmE_0a6iQ"}],"expected":{"schemaValid":false,"proofAccepted":false,"stage":"schema","reason":"unsupported_profile","resourceGrant":false}}

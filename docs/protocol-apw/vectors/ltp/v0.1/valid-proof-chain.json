@@ -1,0 +1,50 @@
+{
+  "id": "valid-proof-chain",
+  "request": {
+    "typ": "ltp-resolution-request", "version": "0.1", "requestId": "QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8", "subject": "did:apw:vector.example", "profile": "ltp-site-log-proof-v1", "bootstrapProfile": "independent-doh-ad-v1", "checkpointIds": [], "resume": [],
+    "limits": {"maxPackageBytes": 524288, "maxSignatureVerifications": 640, "deadlineMs": 10000}
+  },
+  "result": {
+    "typ": "ltp-resolution-result", "version": "0.1", "requestId": "QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8", "subject": "did:apw:vector.example", "profile": "ltp-site-log-proof-v1", "bootstrapProfile": "independent-doh-ad-v1", "status": "candidate",
+    "package": {
+      "typ": "ltp-proof-package", "version": "0.1", "profile": "ltp-site-log-proof-v1", "subject": "did:apw:vector.example", "bootstrapProfile": "independent-doh-ad-v1",
+      "identities": [{
+        "did": "did:apw:vector.example",
+        "didDocument": {"id": "did:apw:vector.example", "verificationMethod": [{"id": "did:apw:vector.example#key-1", "type": "JsonWebKey2020", "controller": "did:apw:vector.example", "publicKeyJwk": {"crv": "Ed25519", "kty": "OKP", "x": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg"}}]},
+        "manifestJws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUja2V5LTEiLCJ0eXAiOiJhcHctbWFuaWZlc3QrandzIn0.eyJjb250ZW50S2luZHMiOlsibWl4ZWQiXSwiZGlkIjoiZGlkOmFwdzp2ZWN0b3IuZXhhbXBsZSIsImgiOiI3YmlTRUJIRy13SGlzdkxsZy10cnNXVnZzR04wWk1MeHUwdEIxQXpiWE9VIiwiaWF0IjoxNzkwMDAwMDAwLCJrIjoiMUlHMnRNSDdKMndiSlpuT2Y4TEp6UWl0S2Y3TE12b0FFbHN1RE1WTTU0WSIsInJnIjpmYWxzZSwic2l0ZUlkIjoidmVjdG9yLmV4YW1wbGUiLCJ0cnVzdFVybCI6Ii90cnVzdC92ZWN0b3IuZXhhbXBsZSIsInYiOjJ9.emba6WFJg5Brf4H5wPIUBvwnghCxUse5noxtBUTl8d0AbTz1Mp5zaxVuUPNKShgVX6TS2lzes_XE4tf3izKACg",
+        "dnsMessages": [], "historyRef": "aGX5Ej3FYLOwiR46alWkC0MohK7aoIFt4YExNI2BFMc"
+      }],
+      "histories": [{
+        "did": "did:apw:vector.example", "format": "full", "checkpointRef": null, "startSeq": 1,
+        "keys": [{"keyId": "did:apw:vector.example#key-1", "fingerprint": "1IG2tMH7J2wbJZnOf8LJzQitKf7LMvoAElsuDMVM54Y", "publicKeyJwk": {"crv": "Ed25519", "kty": "OKP", "x": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg"}, "validFrom": "2026-01-01T00:00:00.000Z", "validTo": null}],
+        "keySetJws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUja2V5LTEiLCJ0eXAiOiJhcHcta2V5LXNldCtqd3MifQ.eyJkaWQiOiJkaWQ6YXB3OnZlY3Rvci5leGFtcGxlIiwiZXhwIjoxNzkwMDAwMDYwLCJpYXQiOjE3OTAwMDAwMDAsImtleXNEaWdlc3QiOiJJdE1FdVl5bFM3WXRycm93UnRyTWF6OF9wN1lhNXR2YzNVOFl5NnhEcEVFIiwidGVybWluYWwiOnsiaGFzaCI6IjdiaVNFQkhHLXdIaXN2TGxnLXRyc1dWdnNHTjBaTUx4dTB0QjFBemJYT1UiLCJzZXEiOjJ9LCJ2ZXJzaW9uIjoiMC4xIn0.pT2dYumvePwv9_8_nUA8L4Wx-2DJL1NGA0d7POdMhu0TfriRImfNYint4HVcwsDmqDqo90MnccXqgH0-2QJlCw",
+        "entries": [
+          {"seq": 1, "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUja2V5LTEiLCJ0eXAiOiJhcHctbG9nK2p3cyJ9.eyJhdHQiOiJiM2hKNW9iMWJBZDcxOVJFN0tZOHMzVG1lTEtCbTMzOW5lUUhMRDFqYTRVIiwicHJldiI6bnVsbCwic2VxIjoxLCJ0cyI6IjIwMjYtMDktMjFUMTQ6MTM6MTAuMDAwWiJ9.UhOV_sLZMw9fQNRQ_8WK9lruG5avTXJH8-uOvzxewc5QKT7iBxjsKXEwxcRMUXUNbMrptksxyEAJg82mbuKzBA"},
+          {"seq": 2, "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUja2V5LTEiLCJ0eXAiOiJhcHctbG9nK2p3cyJ9.eyJhdHQiOiJBU1FFNmp3b3JoMjhnYVlrM2FvTE9JVTM3bl9TR3JfdFpOclljNkZuUjVBIiwicHJldiI6IjNjY2laYUZuWjY1YnJHVFdrRVJiY0d4OWFoUlVvVUNFdGhzcllhNFF1Z3MiLCJzZXEiOjIsInRzIjoiMjAyNi0wOS0yMVQxNDoxMzoxMS4wMDBaIn0.QNTmmGICeMVXmtNqdSa8NB5mjFWtwsBqID_ntZtVJVhjWT0IMuwgqOUK-BBHf4DcLi1GqPlM58aDxTjjSTsYDw"}
+        ],
+        "terminal": {"seq": 2, "hash": "7biSEBHG-wHisvLlg-trsWVvsGN0ZMLxu0tB1AzbXOU"}, "id": "aGX5Ej3FYLOwiR46alWkC0MohK7aoIFt4YExNI2BFMc"
+      }],
+      "attestations": [
+        "eyJhbGciOiJFZERTQSIsImtpZCI6ImVzY3Jvdy10ZXN0LWtleS0xIiwidHlwIjoiYXB3LWF0dGVzdGF0aW9uK2p3cyJ9.eyJjYXQiOiJjb21wbGV0ZWRfYXNfcHJvbWlzZWQiLCJpYXQiOjE3ODk5OTk5NzAsImlzcyI6ImVzY3Jvdy52ZWN0b3IiLCJqdGkiOiJsdHAtdmVjdG9yLWVzY3Jvdy0xIiwic3JjIjoiZXNjcm93X3JlcG9ydCIsInN1YiI6ImRpZDphcHc6dmVjdG9yLmV4YW1wbGUiLCJ0eXAiOiJhcHctYXR0ZXN0YXRpb24randzIiwidmFsIjp0cnVlfQ.lclgBQMwmiPCEyWYL0bfANCsZYgYqJ7nrp8tSKck3l61yr_g_9c9R_PcxEj0BMVlsl1J90ur7_W2FA3e8CXMAw",
+        "eyJhbGciOiJFZERTQSIsImtpZCI6ImVzY3Jvdy10ZXN0LWtleS0xIiwidHlwIjoiYXB3LWF0dGVzdGF0aW9uK2p3cyJ9.eyJjYXQiOiJkaXNwdXRlZCIsImlhdCI6MTc4OTk5OTk3MSwiaXNzIjoiZXNjcm93LnZlY3RvciIsImp0aSI6Imx0cC12ZWN0b3ItZXNjcm93LTIiLCJzcmMiOiJlc2Nyb3dfcmVwb3J0Iiwic3ViIjoiZGlkOmFwdzp2ZWN0b3IuZXhhbXBsZSIsInR5cCI6ImFwdy1hdHRlc3RhdGlvbitqd3MiLCJ2YWwiOnRydWV9.cit40GprzOiwJ6KKvPYxTPfGJQr14YwnZvaMVrn-jkQU8uLGNRvRVNnaqNfkeRp7TEOtm5MZiZO9caYXgKVLDg"
+      ],
+      "issuerBindings": [{"iss": "escrow.vector", "src": "escrow_report", "kid": "escrow-test-key-1", "kind": "local-trust-key", "ref": "escrow-fixture"}],
+      "calculation": {
+        "profile": "ltp-svri-site-v1", "rulesVersion": "ltp-svri-site-v1", "coverage": "subject-log-snapshot", "snapshot": {"did": "did:apw:vector.example", "seq": 2, "head": "7biSEBHG-wHisvLlg-trsWVvsGN0ZMLxu0tB1AzbXOU"}, "evaluatedAt": 1790000000, "evidenceSetDigest": "GsUji_fpwhFYAZjvLNcZr236efmiUU1rP2v9vTahruc",
+        "projection": {"version": "1.0", "profile": "ltp-svri-site-v1", "score": 5, "t1Count": 2, "t2Count": 0, "t3Count": 0, "t4Count": 0, "t5Count": 0, "incompleteData": false, "isInference": true, "priorShare": 0.8571428571428571, "effectiveWeight": 0.5, "dimensionCount": 1, "rulesVersion": "ltp-svri-site-v1"}
+      },
+      "assembledAt": 1790000000, "expiresAt": 1790000060
+    },
+    "packageDigest": "nOMU4XoN8ioy2WgPnZzi9Y-zD-fzm7SOnIvxP1bX1Kk", "reason": null, "retryAfterSeconds": null
+  },
+  "local": {
+    "now": 1790000010,
+    "policy": {"rulesVersion": "ltp-svri-site-v1", "clockSkewSeconds": 0, "maxSnapshotAgeSeconds": 60, "issuerRecords": [{"id": "escrow-fixture", "iss": "escrow.vector", "src": "escrow_report", "kid": "escrow-test-key-1", "publicKeyJwk": {"crv": "Ed25519", "kty": "OKP", "x": "Kay64UG8yvCyLhqU000LxzYeUm0L_hLIl5S8kyKWbdc"}, "validFrom": 1789996400, "validUntil": 1790003600, "R05": 4}], "requiresOnlineObservation": false},
+    "policyDigest": "DtsyAKHwV71GJOX4JLuxuUrwby97QVDzJligC1WZGts", "checkpoints": [], "quarantined": null,
+    "onlineObservation": {"channel": "independent-doh-fixture", "resolverId": "operator-fixture", "receivedAt": 1790000000, "validUntil": 1790000060, "question": "_apw.vector.example", "AD": true, "TC": false, "Status": 0, "manifest": {"v": 2, "siteId": "vector.example", "trustUrl": "/trust/vector.example", "contentKinds": ["mixed"], "k": "1IG2tMH7J2wbJZnOf8LJzQitKf7LMvoAElsuDMVM54Y", "h": "7biSEBHG-wHisvLlg-trsWVvsGN0ZMLxu0tB1AzbXOU", "rg": false}},
+    "trustAnchors": [], "resourceGrant": false
+  },
+  "expected": {"schemaValid": true, "proofAccepted": true, "stage": "complete", "reason": null,
+    "projection": {"version": "1.0", "profile": "ltp-svri-site-v1", "score": 5, "t1Count": 2, "t2Count": 0, "t3Count": 0, "t4Count": 0, "t5Count": 0, "incompleteData": false, "isInference": true, "priorShare": 0.8571428571428571, "effectiveWeight": 0.5, "dimensionCount": 1, "rulesVersion": "ltp-svri-site-v1"},
+    "publicLevel": "verify", "rational": {"score": {"numerator": "5", "denominator": "1"}, "priorShare": {"numerator": "6", "denominator": "7"}, "effectiveWeight": {"numerator": "1", "denominator": "2"}}, "resourceGrant": false}
+}

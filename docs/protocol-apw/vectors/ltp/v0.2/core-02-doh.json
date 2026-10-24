@@ -1,0 +1,1739 @@
+{
+  "format": "ltp-static-case-set",
+  "version": "0.2",
+  "area": "CORE-02",
+  "cases": [
+    {
+      "id": "CORE-02-valid-txt",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": []
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-wrong-question",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Question/0/name",
+            "value": "_apw.other.example."
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.other.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "ZVSfne6UZSenw8RPteGpiNISZvnNQp3c99sJtKUHnlk"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-wrong-question-type",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Question/0/type",
+            "value": 1
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":1}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "Jw84BXHTFfM8-w5PNhATqSM8i0WEzOeNDj9i5KuptXE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-wrong-answer-owner",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/name",
+            "value": "_apw.other.example."
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.other.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "cDXgpuvpyqKG2xQUvASx3SgRibXYa74wcbFXjYWi0Hk"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-wrong-answer-type",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/type",
+            "value": 1
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":1}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "3h9tbS6Sb6N6UAGjitZw6zUCWVbc-RJZ2lcxTsp8gMM"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-truncated",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/TC",
+            "value": true
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":true}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "d63Ucbfnfeg6SfeEygxtcBQ3Qlk6Bi8robiLQ6MwvKY"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ad-absent",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "remove",
+            "path": "/transport/response/json/AD"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "0afAWPTR_62tXwBHor69Oc1tJFnjtCcd6O4xEmwOqAo"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "dnssec_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ad-false",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/AD",
+            "value": false
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":false,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "sCq07FQlw5ybL7-1Qng8CNBLDD4MMZMiw-kfSAyV_YM"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "dnssec_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ad-string",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/AD",
+            "value": "true"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":\"true\",\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "0ksENUIXGb7XI4R0kOIwRNsXvuInL4yupy_OHs0dZHc"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-tc-absent",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "remove",
+            "path": "/transport/response/json/TC"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "ZhOhIj0a6J3F7z09UsV0rOewPOM0VszUTLhDl5zRuHE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-servfail",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Status",
+            "value": 2
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":2,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "bPQAhdknxGcehKO_f2HYLCsOMZaXxQKOvar0bGWsyHo"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-nxdomain",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Status",
+            "value": 3
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":3,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "ZPfIBjoUkt4YqWk1uTLYr1NssFh24Z9EDKpzYJzyPPQ"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "identity_not_found",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-no-txt",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "HCqV24Azt44VOtNffMhwNSqVPTHpW10sS200vOJA_g4"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "identity_not_found",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ttl-negative",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/TTL",
+            "value": -1
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":-1,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "qIc91lRbZ4PR3lsDPWw36rB0C4llNsMjLwYcM5xK20Y"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ttl-fractional",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/TTL",
+            "value": 0.5
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":0.5,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "uah-cimm5OiJ-0NdQBRtw_M-qlBehBeFFYc-XWjvZQo"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-ttl-zero",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/TTL",
+            "value": 0
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":0,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "RqFrFXJ5RqWtOZQ_qCW10Vz9LF0Tgiyes7M01JUyCbE"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "freshness_unproven",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-tls-untrusted",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/tlsAuthenticated",
+            "value": false
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "transport_unavailable",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-redirect",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/transport/response/location",
+            "value": "https://subject.invalid/private"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/http",
+            "value": 302
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "redirect_denied",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedHttp": 401,
+        "retryAfter": null
+      }
+    },
+    {
+      "id": "CORE-02-http-unavailable",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/http",
+            "value": 503
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "transport_unavailable",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-cname",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/type",
+            "value": 5
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":5}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "xFMFZ6GYerCzy5E0iMtjgg_A9z219XSov9w0BjiURUs"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-dname",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules",
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/type",
+            "value": 39
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":39}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "DZAkZ9VCckHhWBhMUTqhfZRctEeRFFNmC7SAGOiemMU"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-conflicting-txt",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": [
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              },
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16},{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "5SZ2xyDiJOMFv2s5mu8PbGkMcPaAVJNlkgBPDxdXZGk"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_ambiguous",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-conflicting-txt-reversed",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": [
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              },
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16},{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "XfON466g3aDwnFJ_FdGqCGvsdVlWFU-t88ffz72m9aA"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_ambiguous",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-duplicate-identical-txt",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer",
+            "value": [
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              },
+              {
+                "name": "_apw.core.vector.example.",
+                "type": 16,
+                "TTL": 60,
+                "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16},{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "DKHK-_vf4p4fWCrnP0ouYzcWsmj_Gs1JcMga8naBXKc"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-split-txt-strings",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/response/json/Answer/0/data",
+            "value": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\" \"\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyUtf8",
+            "value": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\" \\\"\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}"
+          },
+          {
+            "op": "replace",
+            "path": "/transport/response/bodyDigest",
+            "value": "1qjHf7uq8v3a2U08dftco5zU2ZTFrO7aD-FFv0JhXWs"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-02-domain-uppercase",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "Core.example"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-trailing-dot",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "core.example."
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-url-input",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "https://core.example"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-userinfo",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "a@core.example"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-port",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "core.example:443"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-fragment",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "core.example#x"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-unicode",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "café.example"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-domain-fqdn-too-long",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#2-shared-parsing-and-binding-rules"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/inputDomain",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-endpoint-http",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints/0",
+            "value": "http://resolver.fixture.invalid/dns-query"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-endpoint-private",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints/0",
+            "value": "https://127.0.0.1/dns-query"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-endpoint-credentials",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints/0",
+            "value": "https://user:solo-pruebas@resolver.fixture.invalid/dns-query"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-endpoint-fragment",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints/0",
+            "value": "https://resolver.fixture.invalid/dns-query#x"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-endpoint-query",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints/0",
+            "value": "https://resolver.fixture.invalid/dns-query?upstream=attacker"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_unsupported",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 0
+      }
+    },
+    {
+      "id": "CORE-02-transport-fallback",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/policy/resolverIds",
+            "value": [
+              "operator-primary",
+              "operator-backup"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/local/policy/fallbackOnTransportFailure",
+            "value": true
+          },
+          {
+            "op": "replace",
+            "path": "/local/policyDigest",
+            "value": "6V4ZLJmRzs0QXEMpKNcD5h2y_eyIL69m9iLhxEV0tg4"
+          },
+          {
+            "op": "add",
+            "path": "/transport/attempts",
+            "value": [
+              {
+                "request": {
+                  "method": "GET",
+                  "url": "https://resolver.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0"
+                },
+                "response": null,
+                "error": "transport_failure"
+              },
+              {
+                "request": {
+                  "method": "GET",
+                  "url": "https://backup.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0"
+                },
+                "response": {
+                  "http": 200,
+                  "tlsAuthenticated": true,
+                  "resolverId": "operator-backup",
+                  "json": {
+                    "Status": 0,
+                    "TC": false,
+                    "AD": true,
+                    "Question": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16
+                      }
+                    ],
+                    "Answer": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16,
+                        "TTL": 60,
+                        "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+                      }
+                    ]
+                  },
+                  "bodyUtf8": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}",
+                  "bodyDigest": "c1pbE0RT2LfMWul7bzLdOM9icq08MuW_H5sdhiGJ5QI"
+                },
+                "error": null
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints",
+            "value": [
+              "https://resolver.fixture.invalid/dns-query",
+              "https://backup.fixture.invalid/dns-query"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": true,
+        "stage": "complete",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 2,
+        "sameBudget": true
+      }
+    },
+    {
+      "id": "CORE-02-no-downgrade",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/policy/resolverIds",
+            "value": [
+              "operator-primary",
+              "operator-backup"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/local/policyDigest",
+            "value": "FYZPf--rGWHNitkD1v9QHQI2wZXqU5pq2LeqLHupkHA"
+          },
+          {
+            "op": "add",
+            "path": "/transport/attempts",
+            "value": [
+              {
+                "request": {
+                  "method": "GET",
+                  "url": "https://resolver.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0"
+                },
+                "response": {
+                  "http": 200,
+                  "tlsAuthenticated": true,
+                  "resolverId": "operator-primary",
+                  "json": {
+                    "Status": 0,
+                    "TC": false,
+                    "AD": false,
+                    "Question": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16
+                      }
+                    ],
+                    "Answer": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16,
+                        "TTL": 60,
+                        "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+                      }
+                    ]
+                  },
+                  "bodyUtf8": "{\"AD\":false,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}",
+                  "bodyDigest": "sCq07FQlw5ybL7-1Qng8CNBLDD4MMZMiw-kfSAyV_YM"
+                },
+                "error": null
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints",
+            "value": [
+              "https://resolver.fixture.invalid/dns-query",
+              "https://backup.fixture.invalid/dns-query"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "dnssec_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 1,
+        "sameBudget": true
+      }
+    },
+    {
+      "id": "CORE-02-ambiguous-no-fallback",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/policy/resolverIds",
+            "value": [
+              "operator-primary",
+              "operator-backup"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/local/policyDigest",
+            "value": "FYZPf--rGWHNitkD1v9QHQI2wZXqU5pq2LeqLHupkHA"
+          },
+          {
+            "op": "add",
+            "path": "/transport/attempts",
+            "value": [
+              {
+                "request": {
+                  "method": "GET",
+                  "url": "https://resolver.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0"
+                },
+                "response": {
+                  "http": 200,
+                  "tlsAuthenticated": true,
+                  "resolverId": "operator-primary",
+                  "json": {
+                    "Status": 0,
+                    "TC": false,
+                    "AD": true,
+                    "Question": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16
+                      }
+                    ],
+                    "Answer": [
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16,
+                        "TTL": 60,
+                        "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+                      },
+                      {
+                        "name": "_apw.core.vector.example.",
+                        "type": 16,
+                        "TTL": 60,
+                        "data": "\"{\\\"contentKinds\\\":[\\\"mixed\\\"],\\\"h\\\":\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\",\\\"k\\\":\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\",\\\"rg\\\":false,\\\"siteId\\\":\\\"core.vector.example\\\",\\\"trustUrl\\\":\\\"/trust/core.vector.example\\\",\\\"v\\\":2}\""
+                      }
+                    ]
+                  },
+                  "bodyUtf8": "{\"AD\":true,\"Answer\":[{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"xn9NOAjK6dwI1EF1I3kzhdh5Z22NImEseXSF1y05vEc\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16},{\"TTL\":60,\"data\":\"\\\"{\\\\\\\"contentKinds\\\\\\\":[\\\\\\\"mixed\\\\\\\"],\\\\\\\"h\\\\\\\":\\\\\\\"BGPbR0Z0Y2Hqrrv2Y_MFAeUn1Wp3nXYjaipNi444u6E\\\\\\\",\\\\\\\"k\\\\\\\":\\\\\\\"nn_VAPWnlJLmeOnk3wENGyZ3tm2Ati7CG0nOTUuh_Zk\\\\\\\",\\\\\\\"rg\\\\\\\":false,\\\\\\\"siteId\\\\\\\":\\\\\\\"core.vector.example\\\\\\\",\\\\\\\"trustUrl\\\\\\\":\\\\\\\"/trust/core.vector.example\\\\\\\",\\\\\\\"v\\\\\\\":2}\\\"\",\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Question\":[{\"name\":\"_apw.core.vector.example.\",\"type\":16}],\"Status\":0,\"TC\":false}",
+                  "bodyDigest": "5SZ2xyDiJOMFv2s5mu8PbGkMcPaAVJNlkgBPDxdXZGk"
+                },
+                "error": null
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints",
+            "value": [
+              "https://resolver.fixture.invalid/dns-query",
+              "https://backup.fixture.invalid/dns-query"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "bootstrap_ambiguous",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 1,
+        "sameBudget": true
+      }
+    },
+    {
+      "id": "CORE-02-transport-no-fallback",
+      "area": "CORE-02",
+      "contracts": [
+        "../../../APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md#3-profile-independent-doh-ad-v1"
+      ],
+      "input": {
+        "target": "doh-transcript",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/local/policy/resolverIds",
+            "value": [
+              "operator-primary",
+              "operator-backup"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/local/policyDigest",
+            "value": "FYZPf--rGWHNitkD1v9QHQI2wZXqU5pq2LeqLHupkHA"
+          },
+          {
+            "op": "add",
+            "path": "/transport/attempts",
+            "value": [
+              {
+                "request": {
+                  "method": "GET",
+                  "url": "https://resolver.fixture.invalid/dns-query?name=_apw.core.vector.example&type=TXT&do=1&cd=0"
+                },
+                "response": null,
+                "error": "transport_failure"
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/transport/configuredEndpoints",
+            "value": [
+              "https://resolver.fixture.invalid/dns-query",
+              "https://backup.fixture.invalid/dns-query"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "bootstrap",
+        "reason": "transport_unavailable",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "expectedTransportCalls": 1,
+        "sameBudget": true
+      }
+    }
+  ]
+}

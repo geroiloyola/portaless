@@ -54,6 +54,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci --no-audit --no-fund
 
+      - name: Instalar herramientas aisladas de especificación
+        run: npm ci --prefix docs/protocol-apw --ignore-scripts --no-audit --no-fund
+
       - name: Correr todos los tests con cobertura
         run: >
           npx vitest run

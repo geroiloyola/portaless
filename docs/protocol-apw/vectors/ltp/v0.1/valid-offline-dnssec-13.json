@@ -1,0 +1,16 @@
+{
+ "id":"valid-offline-dnssec-13","base":"valid-proof-chain.json","patch":[
+  {"op":"replace","path":"/request/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/package/bootstrapProfile","value":"dnssec-offline-v1"},
+  {"op":"replace","path":"/result/package/identities/0/dnsMessages","value":[
+   "AACEAAABAAIAAAAAAAAwAAEAADAAAQAAADwARAEBAw188nsYjQNPfopSOAMEtRrDwIlp4nfyGzWmC0j8R2aZeAd3VRDbjtBAKT2axp90MNu6fa3mPOmCKZ4Et50ieHPRAAAuAAEAAAA8AFMAMA0AAAAAPGqxSZBqsS1w9_AAP7rGPa4eYaLRdeYo2fWKp8jPnDZ0A_VErHQ8mx-XSi8TUAbeSbX2g_XFLbagDymZ9ZjLjqvxX0rgUTyAPIXRsg",
+   "AACEAAABAAIAAAAAB2V4YW1wbGUAACsAAQdleGFtcGxlAAArAAEAAAA8ACQDMg0CP83tKjRwn9P0FEHGPz99cXotV8_YQ50c6uhQtLy7AF0HZXhhbXBsZQAALgABAAAAPABTACsNAQAAADxqsUmQarEtcPfwALSlB_tDefXQA536W-KUI1ddPbLbrLL68VAjFsy5Yjjxa8pRCca5AYKMs0C1uqclr_Rr6X7HMR2xbaYY-NixoBA",
+   "AACEAAABAAIAAAAAB2V4YW1wbGUAADAAAQdleGFtcGxlAAAwAAEAAAA8AEQBAQMNXsvk0aYzCkTI9--VHUvxZebGtyHvramF-0FmG8bn_WyHNGQMSZj_fjdLBs4aZKLs2CqwNjhPuD2aebEnon1QMgdleGFtcGxlAAAuAAEAAAA8AFsAMA0BAAAAPGqxSZBqsS1wAzIHZXhhbXBsZQC-yFkXls0d8Vl3ldzJiY63RYh--h-NJU2l_0uZd20Dbc6Dmw-Xs6WUz9mNUGX40I8Lgk3adsUrzT2ag-7TPurK",
+   "AACEAAABAAIAAAAABF9hcHcGdmVjdG9yB2V4YW1wbGUAABAAAQRfYXB3BnZlY3RvcgdleGFtcGxlAAAQAAEAAAA8AM3MeyJjb250ZW50S2luZHMiOlsibWl4ZWQiXSwiaCI6IjdiaVNFQkhHLXdIaXN2TGxnLXRyc1dWdnNHTjBaTUx4dTB0QjFBemJYT1UiLCJrIjoiMUlHMnRNSDdKMndiSlpuT2Y4TEp6UWl0S2Y3TE12b0FFbHN1RE1WTTU0WSIsInJnIjpmYWxzZSwic2l0ZUlkIjoidmVjdG9yLmV4YW1wbGUiLCJ0cnVzdFVybCI6Ii90cnVzdC92ZWN0b3IuZXhhbXBsZSIsInYiOjJ9BF9hcHcGdmVjdG9yB2V4YW1wbGUAAC4AAQAAADwAWwAQDQMAAAA8arFJkGqxLXADMgdleGFtcGxlAMsbrTP9FJ8CaP7baB38Hjgv-2Vft0u3QM9e6DSFlR3DSoGJNPQTQ6Q7SUlK__A4H6nshMjshQwj1b4xckLFUm4"
+  ]},
+  {"op":"replace","path":"/local/onlineObservation","value":null},
+  {"op":"replace","path":"/local/trustAnchors","value":[{"owner":".","dnskeyRdata":"AQEDDXzyexiNA09-ilI4AwS1GsPAiWnid_IbNaYLSPxHZpl4B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E"}]},
+  {"op":"replace","path":"/result/packageDigest","value":"hD0mlpwLduLjQHis_o99FVFSxFQyMsLTU7LQ9B4b0Rk"}
+ ],"expected":{"schemaValid":true,"proofAccepted":true,"stage":"complete","reason":null,"resourceGrant":false,"observation":"offline","signatureValidUntil":1790003600,"publicLevel":"verify","projection":{"version":"1.0","profile":"ltp-svri-site-v1","score":5,"t1Count":2,"t2Count":0,"t3Count":0,"t4Count":0,"t5Count":0,"incompleteData":false,"isInference":true,"priorShare":0.8571428571428571,"effectiveWeight":0.5,"dimensionCount":1,"rulesVersion":"ltp-svri-site-v1"}}
+}

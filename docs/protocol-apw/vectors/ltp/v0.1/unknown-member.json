@@ -1,0 +1,1 @@
+{"id":"unknown-member","base":"valid-proof-chain.json","patch":[{"op":"add","path":"/result/package/verified","value":true},{"op":"replace","path":"/result/packageDigest","value":"6Dxvy7Co5nLI6n7U8GJQpkYo4g18hYNPhqDMSvR3syE"}],"expected":{"schemaValid":false,"proofAccepted":false,"stage":"schema","reason":"schema_invalid","resourceGrant":false}}

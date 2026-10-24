@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - name: Instalar dependencias
         run: npm ci --no-audit --no-fund
+      - name: Instalar herramientas aisladas de especificación
+        run: npm ci --prefix docs/protocol-apw --ignore-scripts --no-audit --no-fund
       - name: Run tests
         run: npm test
       - name: Verificar exportación pública con marcadores privados sintéticos

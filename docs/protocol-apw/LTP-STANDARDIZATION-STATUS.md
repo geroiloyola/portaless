@@ -34,8 +34,8 @@ owner for a decision rather than silently changing the baseline.
 |---|---|---|
 | S1 | Complete unambiguous interoperability definitions. | Pin exact serialization for the APW TXT manifest hashed by `rootManifestDigest`; complete nested schema/type constraints and status/reason/null/HTTP combinations. Publish valid and invalid examples so independent engines do not infer local runtime structures. |
 | S2 | Specify and test comprehensive budget accounting. | The numerical baseline is approved. Define how package/decoded DNS bytes, DNSSEC operations, manifest/key-set signatures, nested issuers, retries and resumed steps consume it; prove shared caps, cancellation and no reset on a cache hit/retry. This accounting must not create a bypass around the approved limits. |
-| S3 | Publish independent executable conformance vectors for all three new contracts. | Fixed keys, clocks, roots, trust-policy inputs, checkpoints, original JWS bytes, canonical digests and expected result/error classes. Cover both bootstrap profiles, substitution/AD/replay, key windows, multi-step history, omitted/duplicate evidence, SVRI boundaries and every supported failure class. Existing APW/SVRI vectors do not cover these new formats. |
-| S4 | Obtain agreement from at least two independent verifiers. | Record verifier identities/revisions and complete vector results. Two wrappers over one verifier, languages listed in prose, or the reference runtime's own tests are not independent verification. This is an existing contract adoption gate, not a certification fee or vendor approval requirement. |
+| S3 | Publish executable conformance vectors for all three new contracts with explicit authorship. | [v0.3 composed candidate](./vectors/ltp/v0.3/README.md) adds AB-STATIC-01…07 to preserved v0.2/v0.1. Candidate is **verificación cruzada (mismo autor)**; manual sufficiency review remains pending under canonical G1. No expected semantic outcome was executed by an LTP engine. |
+| S4 | Obtain agreement from at least two independent verifiers. | Another person's verifier in another language with another primitive backend must record identity/revision/backend and complete results. OpenSSL CLI, Node/jose and cryptography/dnspython share the OpenSSL family; they cross-check encoding/canonicalization/structure, not primitive independence. This gate is still open. |
 | S5 | Publish security/resource/privacy acceptance evidence. | Controlled HTTPS/DNS fixtures must demonstrate zero arbitrary-origin consumer calls, no silent fallback, authenticated issuer/root handling, bounded hostile input, expiry/revocation behavior and audience separation. Report acquisition and local verification separately. Runtime activation additionally needs actual adapter/integration evidence. |
 | S6 | Publish a versioned normative release after S1–S5. | Record the final version/date, stable filenames and identifiers, dependency/errata references, vectors and verifier results; update status/index links consistently. Keep unchanged deployed identifiers and distinguish `apw-index` from the package service. Record the release through the normal reviewed PR and owner merge process. |
 
@@ -46,20 +46,23 @@ only for profiles whose complete requirements it actually passes.
 
 ## 3. Phase boundary and Edge gate
 
-1. **Before this documentation commit is merged into `main`:** indexed-egress
-   implementation for Workers/Edge is blocked. A local commit or open PR does
-   not satisfy the merge gate. The merge must contain this approved baseline;
-   materially different revisions need renewed approval.
-2. **After merge:** the next phase is exclusively the engine and its associated
-   conformance/acceptance work needed to meet these contracts and the approved
-   restrictive budget. It does not authorize a different trust model, unrelated
-   features, PR3 or reputation admission.
-3. **Before activation or advertising production Edge support:** satisfy the
-   relevant adoption gates above and the actual runtime integration gates in
-   [LTP Index §8](./LTP-INDEX-DRAFT-v0.1.md#8-adoption-gate),
-   [LTP Proof Package §9](./LTP-PROOF-PACKAGE-DRAFT-v0.1.md#9-required-independent-conformance-vectors)
-   and the [A/B/C plan](../architecture/resolution-chain-proposal.md). Merge
-   permission to start programming is not permission to enable the route.
+**Authorization source:** [LTP-GATES-AND-AUTHORIZATIONS.md](./LTP-GATES-AND-AUTHORIZATIONS.md)
+is the sole G1–G5 register. This file retains S1–S6 milestones and does not define
+another set of implementation permissions. **S1/S3 owner approval remains pending
+manual S3-core coverage review**, including the composed A→B case.
+
+The baseline PR #103 was merged by the owner on 2026-10-23. Its documentary
+baseline prerequisite is already satisfied and grants no permission to implement.
+The current correction instruction permits static G1 artifacts and checks only.
+Neither accepting the corpus nor merging #104 starts a subsequent phase.
+Implementation scopes require separate future decisions under the canonical
+register; no automatic transition is specified here.
+
+Deployment/runtime acceptance still requires the relevant S1–S6 evidence,
+[LTP Index §8](./LTP-INDEX-DRAFT-v0.1.md#8-adoption-gate),
+[LTP Proof Package §9](./LTP-PROOF-PACKAGE-DRAFT-v0.1.md#9-required-independent-conformance-vectors)
+and the [A/B/C plan](../architecture/resolution-chain-proposal.md). No standard,
+runtime, reputation or offline-DNSSEC conformance is asserted by static fixtures.
 
 Document-only approval changes no code, active defaults or deployed behavior.
 Until final publication, the three filenames retain `DRAFT-v0.1` and their

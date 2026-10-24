@@ -1,0 +1,1392 @@
+{
+  "format": "ltp-static-case-set",
+  "version": "0.2",
+  "area": "CORE-05",
+  "cases": [
+    {
+      "id": "CORE-05-service-01-candidate",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": []
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": null,
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 200,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-02-proof_incomplete",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "incomplete"
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "proof_incomplete"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "proof_incomplete",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 200,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-03-checkpoint_required",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "incomplete"
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "checkpoint_required"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 1
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "checkpoint_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 200,
+        "httpHeaders": {
+          "retry-after": "1"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-service-04-history_step_limit",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "incomplete"
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "history_step_limit"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 1
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "history_step_limit",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 200,
+        "httpHeaders": {
+          "retry-after": "1"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-service-05-proof_not_available",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "no_data"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "proof_not_available"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "proof_not_available",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 200,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-06-invalid_request",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "unsupported"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "invalid_request"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "invalid_request",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-07-unsupported_version",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "unsupported"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "unsupported_version"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "unsupported_version",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-08-unsupported_profile",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "unsupported"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "unsupported_profile"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "unsupported_profile",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-09-authentication_required",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "denied"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "authentication_required"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "authentication_required",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 401,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-10-access_denied",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "denied"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "access_denied"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "access_denied",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 403,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-11-service_unavailable",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "unavailable"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "service_unavailable"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 2
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "service_unavailable",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 503,
+        "httpHeaders": {
+          "retry-after": "2"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-service-12-service_unavailable",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "unavailable"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "service_unavailable"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "service_unavailable",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 503,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-13-budget_exhausted",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "limit_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "budget_exhausted"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 3
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "budget_exhausted",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 429,
+        "httpHeaders": {
+          "retry-after": "3"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-service-14-budget_exhausted",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "limit_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "budget_exhausted"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 3
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "budget_exhausted",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 503,
+        "httpHeaders": {
+          "retry-after": "3"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-service-15-request_too_large",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "limit_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "request_too_large"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "request_too_large",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 413,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-16-response_limit_exceeded",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "limit_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "response_limit_exceeded"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "response_limit_exceeded",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 503,
+        "httpHeaders": {}
+      }
+    },
+    {
+      "id": "CORE-05-service-17-deadline_exceeded",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping",
+        "../../../LTP-INDEX-DRAFT-v0.1.md#7-reasons-portability-and-implementation-isolation"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/status",
+            "value": "limit_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/package",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": null
+          },
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "deadline_exceeded"
+          },
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 1
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "service",
+        "reason": "deadline_exceeded",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 503,
+        "httpHeaders": {
+          "retry-after": "1"
+        }
+      }
+    },
+    {
+      "id": "CORE-05-unknown-version",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/request/version",
+            "value": "9.9"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "unsupported_version",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": false,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-unknown-profile",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/request/profile",
+            "value": "unknown-v9"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "unsupported_profile",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": false,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-request-binding",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/requestId",
+            "value": "EW7u-DuHdTEKqgLyQ0AU34dbdro3bZuIj-k-W7KMhUo"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "request_binding_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-subject-binding",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/subject",
+            "value": "did:apw:other.example"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "request_binding_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-missing-null",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "remove",
+            "path": "/result/retryAfterSeconds"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-string-null",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/reason",
+            "value": "null"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-retry-zero",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/retryAfterSeconds",
+            "value": 0
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-unknown-field",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "add",
+            "path": "/result/verified",
+            "value": true
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": false,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-negative-limit",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/request/limits/deadlineMs",
+            "value": -1
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "schema_invalid",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": false,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-digest-mismatch",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#3-canonical-serialization-and-hash-ledger"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [
+          {
+            "op": "replace",
+            "path": "/result/packageDigest",
+            "value": "azlsJhIxoznOAmD_QM1NU_mlI38PBeapAvh5MuA1QKU"
+          }
+        ]
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "envelope",
+        "reason": "digest_mismatch",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false
+      }
+    },
+    {
+      "id": "CORE-05-parser-duplicate",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a312c2261223a327d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-escaped-duplicate",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a312c225c7530303631223a327d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-bom",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "efbbbf7b7d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-invalid-utf8",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a22ff227d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-surrogate",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a225c7564383030227d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-nan",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a4e614e7d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-infinity",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a496e66696e6974797d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-unsafe-integer",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a393030373139393235343734303939327d"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-parser-truncated-json",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#2-input-bytes-and-null-versus-absence"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "rawJsonHex": "7b2261223a"
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "parse",
+        "reason": "invalid_json",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "CORE-05-retry-leading-zero",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "httpHeaders": {
+          "retry-after": "01"
+        }
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "http",
+        "reason": "invalid_request",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpHeadersAccepted": false
+      }
+    },
+    {
+      "id": "CORE-05-retry-plus",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "httpHeaders": {
+          "retry-after": "+1"
+        }
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "http",
+        "reason": "invalid_request",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpHeadersAccepted": false
+      }
+    },
+    {
+      "id": "CORE-05-retry-null-token",
+      "area": "CORE-05",
+      "contracts": [
+        "../../../LTP-SERIALIZATION-DRAFT-v0.1.md#6-result-nulls-reasons-and-http-mapping"
+      ],
+      "input": {
+        "target": "service-or-parser",
+        "base": "identity-single",
+        "patch": [],
+        "httpHeaders": {
+          "retry-after": "null"
+        }
+      },
+      "expected": {
+        "proofAccepted": false,
+        "stage": "http",
+        "reason": "invalid_request",
+        "resourceGrant": false,
+        "reputationAdmitted": false,
+        "requestSchemaValid": true,
+        "resultSchemaValid": true,
+        "arbitraryOriginCalls": 0,
+        "misconduct": false,
+        "httpHeadersAccepted": false
+      }
+    }
+  ]
+}
