@@ -1,6 +1,6 @@
 # Closing S3-core — accepted evidence and bounded G2/G3 implementation
 
-**Status: G1 accepted 2026-10-24; bounded G2/G3 implementation authorized; G4/G5 blocked. License: CC BY 4.0.**
+**Status: G1 accepted 2026-10-24; bounded G2/G3 implementation authorized; G4 decision-case engine implemented and in final approval review; G5 blocked. License: CC BY 4.0.**
 LTP means **Local Trust Protocol**: each node applies its own policy to verified
 evidence. The accepted corpus is now consumed by a bounded identity-only
 acquisition/budget layer and deterministic verifier. This plan does not authorize

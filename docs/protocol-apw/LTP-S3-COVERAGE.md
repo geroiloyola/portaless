@@ -1,6 +1,6 @@
 # S3 coverage split — proposed approval scopes
 
-**Status: G1 accepted 2026-10-24; G2/G3 implementation authorized, G4/G5 blocked. License: CC BY 4.0.**
+**Status: G1 accepted 2026-10-24; G2/G3 implementation authorized; G4 decision-case engine implemented and in final approval review; G5 blocked. License: CC BY 4.0.**
 The corpus is accepted for the identified static scope. A bounded identity-only
 engine now consumes it under the separate [G2/G3 authorization](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md).
 No reputation, public SVRI profile or offline DNSSEC validator is supplied.

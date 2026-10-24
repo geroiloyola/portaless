@@ -1,7 +1,7 @@
 # LTP gates and authorizations — canonical scope register
 
-**Status: G1–G3 accepted; G4 engine implementation authorized on 2026-10-24;
-G5 remains pending explicit owner authorization. License: CC BY 4.0.**
+**Status: G1–G3 accepted; the G4 decision-case engine is implemented and in
+final approval review; G5 remains pending explicit owner authorization. License: CC BY 4.0.**
 This is the single definition of G1–G5, their scopes and current authorization
 states. Other live documents reference this register instead of defining another
 permission table. LTP means Local Trust Protocol: local policy over verified evidence.
@@ -29,11 +29,13 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
 - **G3 accepted, bounded.** The deterministic offline identity verifier consumes
   the package bytes, matches AB-STATIC-01…07 and rejects hostile/tampered inputs.
   It remains limited to `apw-identity-proof-v1` full history.
-- **G4 engine authorized on 2026-10-24.** The audited 117-case corpus
-  (`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`) is implemented in
+- **G4 engine authorized on 2026-10-24.** The original audited 117-case corpus
+  (`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`) was corrected after the G4
+  audit to reject duplicate dimensions; the current manifest digest is
+  `eDKwJyZNX9tzLjfpZHiV5T85qylOCcenOySK_GSmT6k`. The corpus is implemented in
   `packages/ltp-reputation/`; the TypeScript engine matches all 117 literal
-  targets and passes a differential check against `apw-resolver` within the
-  documented rounding normalization. Signed profiles, real-emitter claims,
+  targets, rejects `duplicate_dimension`, and passes a differential check
+  against `apw-resolver` within the documented rounding normalization. Signed profiles, real-emitter claims,
   runtime integration/activation and S4 independence remain pending. The
   [G4 review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md) records the
   arithmetic and differential constraints. The

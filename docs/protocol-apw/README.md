@@ -49,7 +49,7 @@ reference runtime, not the name of a protocol service or data format.
 | [Artifact classification](./LTP-ARTIFACT-CLASSIFICATION.md) | Deterministic core, optional profiles, runtime and grant-only PR3 dependencies; Draft. |
 | [Extraction preparation](./LTP-EXTRACTION-PLAN.md) | Standalone package, link lint, future release/digest plan; no extraction executed. |
 | [Approval record](./LTP-APPROVAL-RECORD.md) | Accepted G1 data digests, exact normative-text commit and recorded owner decision. |
-| [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Accepted G1 coverage; G2/G3 implementation recorded separately; G4/G5 pending. |
+| [S3 scoped coverage](./LTP-S3-COVERAGE.md) | Accepted G1 coverage; G2/G3 implementation recorded separately; G4 engine implemented and in final approval review; G5 pending. |
 | [CI/protection observation](./LTP-CI-REVIEW.md) | Standalone static checks consolidated in the required Unit Tests / unit job; no settings changes. |
 | [Canonical G1–G5 register](./LTP-GATES-AND-AUTHORIZATIONS.md) | Single source of authorization scopes/states; corpus integrity and acceptance confer no implementation permission. |
 | [Composed corpus v0.3](./vectors/ltp/v0.3/README.md) | AB-STATIC-01 master plus six negatives joining acquisition/verification bytes and state; accepted under G1. |
@@ -71,7 +71,7 @@ person's review is implied by using Python, Node, OpenSSL, JOSE or dnspython.
 **Current implementation:** G1 is accepted for [serialization/schemas](./LTP-SERIALIZATION-DRAFT-v0.1.md)
 and the [composed v0.3 corpus](./vectors/ltp/v0.3/README.md). The owner separately
 authorized bounded identity-only G2/G3 work; see the
-[implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md). G4/G5 remain blocked.
+[implementation scope](./LTP-G2-G3-IMPLEMENTATION-SCOPE.md). The G4 decision-case engine is implemented and in final approval review; G5 remains blocked.
 The static asset audit is not S4 independence or a deployment claim.
 
 **Integrator guide**: third parties connecting to APW / Portaless / Index APIs should start at [`docs/api/`](../api/) (public well-known endpoints, verification recipes, admin endpoints).

@@ -54,7 +54,7 @@ another set of implementation permissions. **S1/S3-core were accepted under G1 o
 The baseline PR #103 was merged by the owner on 2026-10-23. **PR #104 was reviewed
 by linstarkcorp and merged at `7fd939f`**; that merge did not itself open G2/G3.
 The owner then recorded separate bounded G2/G3 authorizations for the identity-only
-acquisition/budget layer and deterministic verifier. G4/G5 remain blocked, and
+acquisition/budget layer and deterministic verifier. The G4 decision-case engine is implemented and in final approval review; G5 remains blocked, and
 no automatic transition is specified here. Deployment and wider runtime
 acceptance still require the relevant S1–S6 evidence.
 
