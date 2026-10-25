@@ -194,7 +194,7 @@ manifests **2 valid**, Playwright **75 passed**, CI **10/10**.
 - [ ] Failed attempts keep HTTP/byte/signature charges.
 - [ ] AB-STATIC-01…07 still match exactly; verifier files unchanged.
 - [ ] Workers limitation and DoH smoke prerequisites are explicit.
-- [ ] Gate states are G1–G3 accepted, G4/G5 pending.
+- [ ] Gate states at the #106 review revision are G1–G3 accepted, G4/G5 pending; the canonical register records the later G4 engine authorization.
 - [ ] Approval record re-pin matches the final prose commit.
 
 Do not approve or merge from this guide; linstarkcorp reviews and the owner

@@ -4,7 +4,7 @@
   "family": "REP-11",
   "title": "REP-11 — Differential and independent reproduction",
   "status": "static-oracle-target",
-  "engineImplemented": false,
+  "engineImplemented": true,
   "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
   "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
   "cases": [
@@ -92,7 +92,7 @@
     {
       "id": "REP-11-02",
       "kind": "differential",
-      "description": "Same signed snapshot through scoreSiteDimensions and candidate.",
+      "description": "Duplicate W-05 dimension is rejected, never aggregated or scored.",
       "input": {
         "dimensions": [
           {
@@ -117,24 +117,8 @@
         ]
       },
       "expected": {
-        "projection": {
-          "version": "1.0",
-          "profile": "ltp-svri-site-v1",
-          "score": 6.0,
-          "t1Count": 1,
-          "t2Count": 0,
-          "t3Count": 0,
-          "t4Count": 0,
-          "t5Count": 0,
-          "incompleteData": false,
-          "isInference": false,
-          "priorShare": 0.5,
-          "effectiveWeight": 6.0,
-          "dimensionCount": 2,
-          "publicLevel": "verify"
-        },
-        "candidate": "future",
-        "reference": "python-oracle"
+        "error": "duplicate_dimension",
+        "dimension": "W-05"
       }
     },
     {
@@ -145,13 +129,13 @@
         "orders": [
           [
             {
-              "dimension": "W-05",
+              "dimension": "W-01",
               "score": 5.2,
               "count": 1,
               "weightSum": 3.0
             },
             {
-              "dimension": "W-05",
+              "dimension": "W-07",
               "score": 4.0,
               "count": 1,
               "weightSum": 3.0
@@ -159,13 +143,13 @@
           ],
           [
             {
-              "dimension": "W-05",
+              "dimension": "W-07",
               "score": 4.0,
               "count": 1,
               "weightSum": 3.0
             },
             {
-              "dimension": "W-05",
+              "dimension": "W-01",
               "score": 5.2,
               "count": 1,
               "weightSum": 3.0
@@ -193,7 +177,7 @@
     {
       "id": "REP-11-05",
       "kind": "differential",
-      "description": "Random/adversarial inputs at caps.",
+      "description": "Adversarial duplicate dimension at caps is rejected.",
       "input": {
         "dimensions": [
           {
@@ -218,23 +202,8 @@
         ]
       },
       "expected": {
-        "projection": {
-          "version": "1.0",
-          "profile": "ltp-svri-site-v1",
-          "score": 5.0,
-          "t1Count": 1,
-          "t2Count": 1,
-          "t3Count": 0,
-          "t4Count": 0,
-          "t5Count": 0,
-          "incompleteData": false,
-          "isInference": true,
-          "priorShare": 0.6486486486486487,
-          "effectiveWeight": 3.25,
-          "dimensionCount": 2,
-          "publicLevel": "verify"
-        },
-        "withinTolerance": true
+        "error": "duplicate_dimension",
+        "dimension": "W-05"
       }
     },
     {

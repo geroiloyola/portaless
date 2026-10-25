@@ -1,73 +1,73 @@
 {
   "format": "ltp-reputation-static-vectors",
   "version": "0.1",
-  "status": "pending-audit",
-  "scope": "G4 static vectors only; TypeScript reputation engine not implemented",
-  "authorization": "Owner authorized static JSON generation on 2026-10-24; engine remains blocked until these files are audited",
+  "status": "audited",
+  "scope": "G4 static vectors; duplicate dimensions are rejection cases; TypeScript decision-case engine implemented",
+  "authorization": "Owner authorized the G4 static corpus and engine; duplicate dimensions are rejected by policy on 2026-10-24",
   "sourceMatrixCommit": "f90abdb0952031ab5fed6020dc19f92294417f88",
   "oracle": "python3 standard library, binary64; fixture-only, not a Portaless engine",
   "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
   "totalCases": 117,
-  "engineImplemented": false,
+  "engineImplemented": true,
   "fixtures": [
     {
       "file": "coverage.json",
-      "digest": "MYwckqdwJOUcm8V2pmsnpzAq7jLbiqi9Kp59jOeXGZE",
+      "digest": "4tlcGIcvfkoKjLBtArWJs7zYnIPM4Ok41kckvbgG-Lg",
       "cases": 117
     },
     {
       "file": "rep-01-issuer.json",
-      "digest": "luFNQTdD_sA4IciBL_rgu_sj5Li6BhmR_2M1Pkyz194",
+      "digest": "JGIw6DSuqLNzI9kPJIesB3-giO91KTWcmESdNDE993c",
       "cases": 11
     },
     {
       "file": "rep-02-attestation.json",
-      "digest": "VDV15ULioWD2sRiIVyb1et4yt8cyCCFE53AjPL1Cxl4",
+      "digest": "kKcHsQul6ot6TsZ0UbQNdcKixzxfgltdtnbScd52XoE",
       "cases": 9
     },
     {
       "file": "rep-03-uniqueness.json",
-      "digest": "5zEtGGZ4m3Ow7NiOOpJpEYHg7PNw72fKf10gMAzDltQ",
+      "digest": "OT46vBPenprWiM2YFmtQSZJ9zsieqVVqc2B2nsOQzo8",
       "cases": 9
     },
     {
       "file": "rep-04-eligibility.json",
-      "digest": "0yYC5TCu51lw6e7QdZWE7sVbcxW30oLrnDdH0xkeGXo",
+      "digest": "3DFCMXdZNPMQ1jSl9cWCwUXGJG3adUGfaMRlC4C_sPk",
       "cases": 14
     },
     {
       "file": "rep-05-reader-conduct.json",
-      "digest": "2imG6c4X6A_EoIDpX3J-op8W49ECeEkqMJp3N4E2qjg",
+      "digest": "U_HEITZ0BPweVqd9VsxZo-hBpVbv8fXzatl37PaueIo",
       "cases": 12
     },
     {
       "file": "rep-06-negatives.json",
-      "digest": "FT0dXp9AJjLalfW4CsWOuzjM6fyFlH0oMdvQ5lYwtrU",
+      "digest": "PAxcHLv2G__c4kOsCTFqqdKOxfSYucvZtPUbACt_xZc",
       "cases": 10
     },
     {
       "file": "rep-07-no-data.json",
-      "digest": "xzaMTFGVqJVq768hQLQ6Enyjoju9gNSDWX-ycEnBayY",
+      "digest": "OLOU7zzYDHcq2RCyCRWYmPETWz4dg_dnrtD2ZdjNA4Y",
       "cases": 10
     },
     {
       "file": "rep-08-boundaries.json",
-      "digest": "FrTXVxoMiTVGvrD_bpIloxDY_i1SY8pkL2cqGYDrc9E",
+      "digest": "Mu9RjWpso6MstY6NKw6hDBpvdjyECfMo3-kdzdk6u14",
       "cases": 14
     },
     {
       "file": "rep-09-caps.json",
-      "digest": "8OQ_uIQGtEfFd9jOgZsxaPsgNHYMvSreyysDS5KXuIY",
+      "digest": "zuRXrrpZRH8WAGF4LrBiym8YZNS9Bg1UC31-kgcqIRA",
       "cases": 13
     },
     {
       "file": "rep-10-hsvr.json",
-      "digest": "7kwjmZ954Dx81pr3y1H3ttph66ZdhAKDn192XdoBIDo",
+      "digest": "ta3E_dzS7qvpB7R0wzyvxsjyoR1oCeMzUrU8GHAMkMU",
       "cases": 8
     },
     {
       "file": "rep-11-differential.json",
-      "digest": "2FKSkgi7k_Fk2SlAKTuZ1w1NPc5-d9SYWQiARmrdpWU",
+      "digest": "GufRbxFTWbmJnTAmRDsqcekDYe02TrsfzWBh9ILh9kQ",
       "cases": 7
     }
   ]

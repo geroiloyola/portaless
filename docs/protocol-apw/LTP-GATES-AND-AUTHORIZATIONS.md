@@ -1,8 +1,7 @@
 # LTP gates and authorizations — canonical scope register
 
-**Status: G1, G2 and G3 accepted for the bounded identity-only implementation
-recorded on 2026-10-24; G4 and G5 remain pending explicit owner authorization.
-License: CC BY 4.0.**
+**Status: G1–G3 accepted; the G4 decision-case engine is implemented and in
+final approval review; G5 remains pending explicit owner authorization. License: CC BY 4.0.**
 This is the single definition of G1–G5, their scopes and current authorization
 states. Other live documents reference this register instead of defining another
 permission table. LTP means Local Trust Protocol: local policy over verified evidence.
@@ -14,7 +13,7 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
 | **G1** | **S3-core corpus approval.** Sufficient reviewed CORE-01…06 coverage plus the composed A→B master/negatives, exact data/prose commitments and explicit owner acceptance. A matching digest is necessary for identifying data, not proof of sufficient coverage. | **ACCEPTED** (2026-10-24) | Accepts only the identified static corpus scope. The decision is recorded in `LTP-APPROVAL-RECORD.md`; G1 alone grants no implementation permission. |
 | **G2** | **Acquisition, network and budgets.** A future owner decision must separately name the permitted transport/resource scope, revision and required acceptance work. Includes network/budget work even when located in a roadmap B delivery. | **ACCEPTED** (2026-10-24, bounded; Node-only) | Accepts the named identity-only acquisition, budget and live-egress/SSRF implementation. It does not authorize the verifier by itself, Cloudflare Workers coverage, reputation/DNSSEC profiles or deployment activation. |
 | **G3** | **Verification engine.** A future, separate owner decision must identify the deterministic verification scope and revision. No inference from G1 or G2 is allowed. | **ACCEPTED** (2026-10-24, bounded) | Accepts the named deterministic identity verifier. It grants no network/budget permission beyond G2, no Workers coverage and no reputation or offline-DNSSEC permission. |
-| **G4** | **S3-reputation and advanced mathematical profiles.** Reader-conduct issuers, `(iss,jti)`, calibration/provenance and advanced SVRI/HSVR profile targets require their own coverage and review; real reputation claims also need real emitter evidence. | **PENDING_AUTHORIZATION** | No new profile implementation, conformance or activation is approved. Existing adopted SVRI v1.0 formulas and behavior are not disabled or rewritten. |
+| **G4** | **S3-reputation and advanced mathematical profiles.** Reader-conduct issuers, `(iss,jti)`, calibration/provenance and advanced SVRI/HSVR profile targets require their own coverage and review; real reputation claims also need real emitter evidence. | **AUTHORIZED** (2026-10-24, engine; S4/real emitters/activation pending) | Authorizes the deterministic SVRI/reputation engine against the audited REP-01…REP-11 corpus. It does not authorize a signed profile, real-emitter claim, runtime activation or S4 independence. |
 | **G5** | **Advanced offline DNSSEC.** DS/anchor policy, NSEC/NSEC3, wildcard and algorithm rollover need their own targets, audited/reviewed-library evidence and explicit scope decision. Configured DoH/AD and synthetic RRSIG signatures do not satisfy this scope. | **PENDING_AUTHORIZATION** | No custom validator, offline-profile implementation, conformance or activation is approved. |
 
 ## Status recorded 2026-10-24
@@ -30,12 +29,16 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
 - **G3 accepted, bounded.** The deterministic offline identity verifier consumes
   the package bytes, matches AB-STATIC-01…07 and rejects hostile/tampered inputs.
   It remains limited to `apw-identity-proof-v1` full history.
-- **G4 and G5 are pending explicit owner authorization.** No reputation/SVRI
-  profile math, reader-conduct issuers, DS-chain/NSEC/NSEC3/wildcard/rollover or
-  custom offline DNSSEC validator is authorized. The
-  [G4 pre-authorization review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md)
-  records existing implementations, normative arithmetic and the differential
-  tests/caps required before any future decision. The
+- **G4 engine authorized on 2026-10-24.** The original audited 117-case corpus
+  (`V186mjIqxbDz6mHC0W_gN9YsoBJ7oDAqrBkOiJGZPyc`) was corrected after the G4
+  audit to reject duplicate dimensions; the current manifest digest is
+  `eDKwJyZNX9tzLjfpZHiV5T85qylOCcenOySK_GSmT6k`. The corpus is implemented in
+  `packages/ltp-reputation/`; the TypeScript engine matches all 117 literal
+  targets, rejects `duplicate_dimension`, and passes a differential check
+  against `apw-resolver` within the documented rounding normalization. Signed profiles, real-emitter claims,
+  runtime integration/activation and S4 independence remain pending. The
+  [G4 review](./LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md) records the
+  arithmetic and differential constraints. The
   [runtime integration proposal](../architecture/ltp-runtime-integration-proposal.md)
   is a proposal only: the identity engine is not wired to configuration,
   categories, grants, diagnostics, middleware enforcement or B3.
@@ -64,10 +67,11 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
   Ed25519/JCS artifacts, the authenticated TXT key binding and full history, and
   matches AB-STATIC-01…07. The scope excludes G4/G5 and any claim of S4
   independence.
-- **G4 and G5 remain pending explicit authorization.** This decision authorizes no public reputation
-  mathematics, advanced SVRI/HSVR profile, DS-chain validation, NSEC/NSEC3,
-  wildcard handling, algorithm-rollover work, custom offline validator or
-  deployment activation.
+- **G4 engine authorized (2026-10-24); G5 remains pending.** The earlier
+  "G4 blocked" wording is superseded by the engine authorization above. This
+  history authorizes no signed public profile, real-emitter claim, DS-chain
+  validation, NSEC/NSEC3, wildcard handling, algorithm-rollover work, custom
+  offline validator or deployment activation.
 - The authorization revision starts from `main` at
   `7fd939fda0e2570e5c18dfbe0e555483b52b449f`. Code changes use the normal PR,
   review and owner-merge process. The owner may narrow or revoke this scope in a
@@ -77,9 +81,10 @@ permission table. LTP means Local Trust Protocol: local policy over verified evi
 
 - G1 acceptance did not open G2 or G3. Those are separate, later, explicitly
   bounded owner decisions recorded above.
-- G2 and G3 are accepted for the bounded implementation above; they do not open
-  G4 or G5. G4 and G5 remain pending a later explicit owner decision. A future
-  G4 decision never opens G5, and a G5 decision never opens G4.
+- G2 and G3 are accepted for the bounded implementation above; they did not open
+  G4 or G5. G4 later received a separate engine authorization; G5 remains
+  pending a later explicit owner decision. A G4 decision never opens G5, and a
+  G5 decision never opens G4.
 - Hash equality, a signed artifact, a record tuple, green CI, PR approval/merge,
   candidate publication or the existence of a test does not grant scope beyond
   the recorded decision. The owner decision, not the artifact, is the authority.

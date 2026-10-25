@@ -259,6 +259,9 @@ export async function acquireIdentity(input: AcquisitionInput): Promise<Acquisit
   const budget = input.budget ?? new ResourceBudget(input.config.limits, input.now);
   try {
     const domain = domainFromDid(input.subject);
+    if (input.bootstrapProfile !== "independent-doh-ad-v1") {
+      throw new LtpFailure("bootstrap_unsupported", "only independent-doh-ad-v1 is implemented");
+    }
     if (input.config.profile !== "configured-doh-and-index") {
       throw new LtpFailure("unsupported_profile", "unsupported acquisition profile");
     }

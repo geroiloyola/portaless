@@ -170,7 +170,8 @@ export function assertSafeEndpointUrl(value: string): URL {
  * exact address the socket must use. The caller pins this result in its lookup
  * callback, so a second DNS answer cannot redirect the connection (rebinding).
  */
-export async function resolvePinnedAddress(hostname: string, resolver?: ResolveHook): Promise<ResolvedAddress> {
+export async function resolvePinnedAddress(hostname: string, resolver?: ResolveHook, signal?: AbortSignal): Promise<ResolvedAddress> {
+  if (signal?.aborted) throw new LtpFailure("deadline_exceeded", "dns resolution aborted");
   const host = normalizedHost(hostname);
   if (isBlockedHostname(host)) throw new LtpFailure("ssrf_blocked", "blocked_endpoint_host");
   const version = isIP(host);
@@ -181,8 +182,12 @@ export async function resolvePinnedAddress(hostname: string, resolver?: ResolveH
       ? await resolver(host)
       : (await lookup(host, { all: true, verbatim: true })) as ResolvedAddress[];
   } catch {
+    if (signal?.aborted) throw new LtpFailure("deadline_exceeded", "dns resolution aborted");
     throw new LtpFailure("service_unavailable", "dns_resolution_failed");
   }
+  // Node's resolver API has no cancellation primitive. The caller is still
+  // released at the deadline, but a late answer must never be used after abort.
+  if (signal?.aborted) throw new LtpFailure("deadline_exceeded", "dns resolution aborted");
   if (!Array.isArray(answers) || answers.length === 0) {
     throw new LtpFailure("service_unavailable", "dns_resolution_empty");
   }

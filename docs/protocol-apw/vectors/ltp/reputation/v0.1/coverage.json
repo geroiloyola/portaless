@@ -831,7 +831,7 @@
       "family": "REP-11",
       "file": "rep-11-differential.json",
       "kind": "differential",
-      "description": "Same signed snapshot through scoreSiteDimensions and candidate."
+      "description": "Duplicate W-05 dimension is rejected, never aggregated or scored."
     },
     {
       "id": "REP-11-03",
@@ -852,7 +852,7 @@
       "family": "REP-11",
       "file": "rep-11-differential.json",
       "kind": "differential",
-      "description": "Random/adversarial inputs at caps."
+      "description": "Adversarial duplicate dimension at caps is rejected."
     },
     {
       "id": "REP-11-06",

@@ -4,7 +4,7 @@
   "family": "REP-01",
   "title": "REP-01 — Issuer identity and chain",
   "status": "static-oracle-target",
-  "engineImplemented": false,
+  "engineImplemented": true,
   "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
   "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
   "cases": [

@@ -3,8 +3,8 @@
 
 This tool precomputes the REP-01…REP-11 JSON targets using Python's binary64
 arithmetic. It is NOT the Portaless reputation engine, is never imported by the
-runtime, and does not implement an SVRI verifier. The TypeScript engine remains
-blocked until these static files are audited.
+runtime, and does not implement an SVRI verifier. The audited TypeScript engine
+lives in packages/ltp-reputation and consumes these literal targets.
 """
 import argparse
 import base64
@@ -90,6 +90,9 @@ def dimension(score, weight_sum, count=1, name="W-05"):
 
 
 def project(dimensions, t1=0, t2=0, t3=0, t4=0, t5=0):
+    names = [item["dimension"] for item in dimensions]
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate dimension is not a projection input")
     if dimensions:
         score10 = [10.0 * (item["score"] - 1.0) / 6.0 for item in dimensions]
         score = sum(score10) / len(score10)
@@ -511,7 +514,7 @@ def build_rep08():
         case("REP-08-07", "svriBoundary", "Two scores equal after 6-decimal rounding.", {"entries": [{"subject": "b", "score": 5.0, "weightSum": 2.0, "count": 2}, {"subject": "a", "score": 5.0, "weightSum": 3.0, "count": 1}]}, {"order": ["a", "b"], "rule": "score desc, weight desc, count desc, subject asc"}),
         case("REP-08-08", "svriBoundary", "Two values within 1e-9.", {"values": [1.0, 1.0 + 5e-10]}, {"withinTolerance": True, "exactEqual": False, "tolerance": TOLERANCE}),
         case("REP-08-09", "svriBoundary", "((6.7-1)/6)^2 binary64 vs 0.9025 oracle.", {"j": 6.7}, {"weight": issuer_weight(6.7), "oracleDecimal": 0.9025, "withinTolerance": abs(issuer_weight(6.7) - 0.9025) <= TOLERANCE}),
-        case("REP-08-10", "svriBoundary", "Score10 endpoints 1 to 0 and 7 to 10.", {"dimensions": [dimension(1.0, 3.0), dimension(7.0, 3.0)], "counts": [1, 1, 0, 0, 0]}, {"score10": [0.0, 10.0], "mean": 5.0}),
+        case("REP-08-10", "svriBoundary", "Score10 endpoints 1 to 0 and 7 to 10.", {"dimensions": [dimension(1.0, 3.0, name="W-01"), dimension(7.0, 3.0, name="W-07")], "counts": [1, 1, 0, 0, 0]}, {"score10": [0.0, 10.0], "mean": 5.0}),
         case("REP-08-11", "svriBoundary", "Exact rational oracle metadata.", {"numerator": 70, "denominator": 13}, {"value": 70 / 13, "rational": {"numerator": 70, "denominator": 13}, "wireArithmetic": "binary64", "tolerance": TOLERANCE}),
         case("REP-08-12", "svriBoundary", "Score 7.0 with isInference=true.", {"dimensions": [dimension(5.2, 0.25)], "counts": [1, 0, 0, 0, 0]}, target(7.0, weight_sum=0.25)),
         case("REP-08-13", "svriBoundary", "Score 9.0 with incompleteData=true.", {"dimensions": [dimension(6.4, 3.0)], "counts": [0, 0, 6, 0, 6]}, target(9.0, weight_sum=3.0, t1=0, t2=0, t3=6, t5=6)),
@@ -590,13 +593,14 @@ def build_rep11():
         }
         for item in source["cases"]
     ]
-    dims = [dimension(5.2, 3.0), dimension(4.0, 3.0)]
+    dims = [dimension(5.2, 3.0, name="W-01"), dimension(4.0, 3.0, name="W-07")]
+    duplicate_dims = [dimension(5.2, 3.0, name="W-05"), dimension(4.0, 3.0, name="W-05")]
     cases = [
         case("REP-11-01", "differential", "Every svri-math reference case through apw-resolver and candidate.", {"references": reference}, {"withinTolerance": True, "countsExact": True, "levelsExact": True, "tolerance": TOLERANCE, "referenceCount": len(reference)}),
-        case("REP-11-02", "differential", "Same signed snapshot through scoreSiteDimensions and candidate.", {"dimensions": dims, "counts": [1, 0, 0, 0, 0]}, {"projection": project(dims, 1, 0, 0, 0, 0), "candidate": "future", "reference": "python-oracle"}),
+        case("REP-11-02", "differential", "Duplicate W-05 dimension is rejected, never aggregated or scored.", {"dimensions": duplicate_dims, "counts": [1, 0, 0, 0, 0]}, {"error": "duplicate_dimension", "dimension": "W-05"}),
         case("REP-11-03", "differential", "Same input, different order/permutation.", {"orders": [dims, list(reversed(dims))]}, {"sameResult": True, "score": project(dims, 1, 0, 0, 0, 0)["score"]}),
         case("REP-11-04", "differential", "Independent person/language/backend (S4).", {"required": "independent"}, {"status": "pending-S4", "sameAuthorSufficient": False}),
-        case("REP-11-05", "differential", "Random/adversarial inputs at caps.", {"dimensions": [dimension(1.0, 0.25), dimension(7.0, 3.0)], "counts": [1, 1, 0, 0, 0]}, {"projection": project([dimension(1.0, 0.25), dimension(7.0, 3.0)], 1, 1, 0, 0, 0), "withinTolerance": True}),
+        case("REP-11-05", "differential", "Adversarial duplicate dimension at caps is rejected.", {"dimensions": [dimension(1.0, 0.25), dimension(7.0, 3.0)], "counts": [1, 1, 0, 0, 0]}, {"error": "duplicate_dimension", "dimension": "W-05"}),
         case("REP-11-06", "differential", "Implementation revision/arithmetic mode/caps recorded.", {"requiredFields": ["implementationRevision", "arithmetic", "caps"]}, {"requiredFields": ["implementationRevision", "arithmetic", "caps"], "arithmetic": "binary64", "tolerance": TOLERANCE}),
         case("REP-11-07", "differential", "Signed-rational profile request.", {"profile": "signed-rational"}, {"status": "out_of_scope", "doNotCompareBytesToBinary64": True}),
     ]
@@ -616,7 +620,7 @@ def build_families():
             "family": family,
             "title": title,
             "status": "static-oracle-target",
-            "engineImplemented": False,
+            "engineImplemented": True,
             "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
             "source": "LTP-S3-REPUTATION-MISSING-VECTORS.md",
             "cases": cases,
@@ -662,14 +666,14 @@ def assemble():
     manifest = {
         "format": "ltp-reputation-static-vectors",
         "version": "0.1",
-        "status": "pending-audit",
-        "scope": "G4 static vectors only; TypeScript reputation engine not implemented",
-        "authorization": "Owner authorized static JSON generation on 2026-10-24; engine remains blocked until these files are audited",
+        "status": "audited",
+        "scope": "G4 static vectors; duplicate dimensions are rejection cases; TypeScript decision-case engine implemented",
+        "authorization": "Owner authorized the G4 static corpus and engine; duplicate dimensions are rejected by policy on 2026-10-24",
         "sourceMatrixCommit": "f90abdb0952031ab5fed6020dc19f92294417f88",
         "oracle": "python3 standard library, binary64; fixture-only, not a Portaless engine",
         "arithmetic": "binary64 + absolute 1e-9 tolerance; rationals are oracle metadata",
         "totalCases": 117,
-        "engineImplemented": False,
+        "engineImplemented": True,
         "fixtures": [
             {"file": name, "digest": digest(files[name]), "cases": len(files[name]["cases"]) if name != "coverage.json" else 117}
             for name in sorted(files)
@@ -697,7 +701,7 @@ def main():
         "candidateDigest": digest(files["manifest.json"]),
         "families": 11,
         "cases": 117,
-        "engineImplemented": False,
+        "engineImplemented": True,
         "arithmetic": "binary64+tolerance",
     }, indent=2))
 

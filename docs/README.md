@@ -24,7 +24,7 @@
 ## LTP Stack — APW, LTP Index, SVRI/HSVR — [`protocol-apw/`](./protocol-apw/)
 
 Protocol contracts (CC BY 4.0), separate from their reference implementation
-(`packages/apw-resolver/`, `packages/ltp-engine/`, AGPL-3.0). The
+(`packages/apw-resolver/`, `packages/ltp-engine/`, `packages/ltp-reputation/`, AGPL-3.0). The
 [G4 pre-authorization review](./protocol-apw/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md)
 and the [runtime integration proposal](./architecture/ltp-runtime-integration-proposal.md)
 record pending decisions without enabling them. See the
