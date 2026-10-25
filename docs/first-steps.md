@@ -10,6 +10,11 @@ criptográfica propia** (Protocol APW), editable desde el navegador.
 **Lo que necesitás**: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 instalado y abierto. Nada más.
 
+> Para la prueba externa P1/P2, usá el
+> [Protocolo de adopción P1/P2](./testing/p1-p2-adoption-protocol.md). Esta guía
+> usa el runtime Node local; GitHub Pages solo no puede servir los endpoints
+> dinámicos de APW.
+
 ---
 
 ## Paso 1 — Levantá Portaless (1 minuto)
@@ -26,7 +31,7 @@ está corriendo en tu computadora.
 
 ## Paso 2 — Creá tu cuenta de administrador (2 minutos)
 
-1. Abrí [http://localhost:4321/setup](http://localhost:4321/setup) en tu navegador.
+1. Abrí [http://localhost:3000/setup](http://localhost:3000/setup) en tu navegador.
 2. Necesitás el **código de configuración**. Mirá los logs con:
    `docker compose logs portaless` — buscá el bloque `CODIGO DE
    CONFIGURACION` (también queda en `/data/SETUP_CODE.txt` dentro del
@@ -35,11 +40,12 @@ está corriendo en tu computadora.
    como mínimo**. El código vence en 60 minutos; si se agota, reiniciá el
    contenedor con `docker compose restart` para generar uno nuevo.
 
-> **Importante**: si generaste una clave de cifrado (Paso 5), guardala en
-> un lugar seguro. Sin ella nadie —ni vos— puede descifrar la identidad
+> **Importante**: la clave de cifrado de la identidad se genera dentro de
+> `/data` si no definís `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY`. Guardala
+> aparte del volumen: sin ella nadie —ni vos— puede descifrar la identidad
 > del sitio.
 
-Listo: entrás a [http://localhost:4321/admin](http://localhost:4321/admin)
+Listo: entrás a [http://localhost:3000/admin](http://localhost:3000/admin)
 con tu usuario y contraseña.
 
 ## Paso 3 — El asistente de 3 pasos (3 minutos)
