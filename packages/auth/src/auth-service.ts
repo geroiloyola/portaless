@@ -56,11 +56,19 @@ import type { EmailSender } from "./email-sender";
 import { sharedInMemoryMfaChallengeStore } from "./ephemeral-auth-store";
 import { EMAIL_STEPUP_MAX_ATTEMPTS, EMAIL_STEPUP_TTL_MS } from "./email-stepup-store";
 import { EmailBackendUnavailableError } from "./email-sender";
-import { verifyPassword } from "./password";
+import { verifyPassword, hashPassword, passwordNeedsRehash } from "./password";
 import { verifyTotpCode, generateTotpSecret, buildTotpUri } from "./totp";
 
 const MFA_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 export const MFA_MAX_ATTEMPTS = 5;
+
+// M-02: un usuario inexistente debe costar lo mismo que uno existente con
+// password incorrecta. El hash dummy se calcula una vez por proceso.
+let dummyPasswordHashPromise: Promise<string> | null = null;
+function dummyPasswordHash(): Promise<string> {
+  dummyPasswordHashPromise ??= Promise.resolve(hashPassword(`portaless-dummy:${randomBytes(16).toString("hex")}`));
+  return dummyPasswordHashPromise;
+}
 
 const MFA_EXPIRED_ERROR = "El código de verificación expiró. Inicia sesión de nuevo.";
 
@@ -115,13 +123,16 @@ export class AuthService {
 
   async login(username: string, plainPassword: string): Promise<LoginResult> {
     const user = await this.users.findByUsername(username);
-    if (!user) {
+    const passwordHash = user?.passwordHash ?? await dummyPasswordHash();
+    const valid = verifyPassword(plainPassword, passwordHash);
+    if (!user || !valid) {
       return { success: false, error: "Usuario o contraseña incorrectos." };
     }
 
-    const valid = verifyPassword(plainPassword, user.passwordHash);
-    if (!valid) {
-      return { success: false, error: "Usuario o contraseña incorrectos." };
+    // A-08: migra el hash viejo en el primer login exitoso. No invalida la
+    // sesion que se esta creando; el resto de sesiones sigue igual.
+    if (passwordNeedsRehash(user.passwordHash)) {
+      await this.users.setPasswordByUsername(user.username, plainPassword);
     }
 
     if (user.totpSecret) {
@@ -170,8 +181,7 @@ export class AuthService {
       return { success: false, error: MFA_EXPIRED_ERROR };
     }
 
-    const session = await this.sessions.create(user.username, user.role);
-    session.mfaVerified = true;
+    const session = await this.sessions.create(user.username, user.role, { mfaVerified: true });
     return { success: true, session };
   }
 
@@ -394,11 +404,11 @@ export class AuthService {
     await this.sessions.destroy(token);
   }
 
-  async validateSession(token: string | null): Promise<{ username: string; role: Role } | null> {
+  async validateSession(token: string | null): Promise<{ username: string; role: Role; mfaVerified: boolean } | null> {
     if (!token) return null;
     const session = await this.sessions.get(token);
     if (!session) return null;
-    return { username: session.username, role: session.role };
+    return { username: session.username, role: session.role, mfaVerified: session.mfaVerified === true };
   }
 
   canWrite(role: Role): boolean {

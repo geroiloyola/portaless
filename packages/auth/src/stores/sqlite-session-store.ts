@@ -8,6 +8,7 @@
 
 import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "../types";
+import { hashOpaqueToken } from "../token-hash";
 import type { SessionStore } from "../session-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
@@ -34,13 +35,15 @@ export class SqliteSessionStore implements SessionStore {
         username TEXT NOT NULL,
         role TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        expires_at TEXT NOT NULL
+        expires_at TEXT NOT NULL,
+        mfa_verified INTEGER NOT NULL DEFAULT 0
       );
     `);
   }
 
-  async create(username: string, role: Role): Promise<SessionRecord> {
+  async create(username: string, role: Role, options: { mfaVerified?: boolean } = {}): Promise<SessionRecord> {
     const token = randomBytes(32).toString("hex");
+    const tokenHash = hashOpaqueToken(token);
     const now = new Date();
     const record: SessionRecord = {
       token,
@@ -48,19 +51,21 @@ export class SqliteSessionStore implements SessionStore {
       role,
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + SESSION_TTL_MS).toISOString(),
+      mfaVerified: Boolean(options.mfaVerified),
     };
 
     this.db
-      .prepare("INSERT INTO sessions (token, username, role, created_at, expires_at) VALUES (?, ?, ?, ?, ?)")
-      .run(record.token, record.username, record.role, record.createdAt, record.expiresAt);
+      .prepare("INSERT INTO sessions (token, username, role, created_at, expires_at, mfa_verified) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(tokenHash, record.username, record.role, record.createdAt, record.expiresAt, record.mfaVerified ? 1 : 0);
 
     return record;
   }
 
   async get(token: string): Promise<SessionRecord | null> {
+    const tokenHash = hashOpaqueToken(token);
     const row = this.db
-      .prepare("SELECT token, username, role, created_at, expires_at FROM sessions WHERE token = ?")
-      .get(token) as { token: string; username: string; role: Role; created_at: string; expires_at: string } | undefined;
+      .prepare("SELECT token, username, role, created_at, expires_at, mfa_verified FROM sessions WHERE token = ?")
+      .get(tokenHash) as { token: string; username: string; role: Role; created_at: string; expires_at: string; mfa_verified: number } | undefined;
 
     if (!row) return null;
 
@@ -75,11 +80,12 @@ export class SqliteSessionStore implements SessionStore {
       role: row.role,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      mfaVerified: Boolean(row.mfa_verified),
     };
   }
 
   async destroy(token: string): Promise<void> {
-    this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    this.db.prepare("DELETE FROM sessions WHERE token = ?").run(hashOpaqueToken(token));
   }
 
   async destroyAllForUser(username: string): Promise<number> {

@@ -32,6 +32,8 @@ import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/sit
 import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
 import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { readJsonBodyLimited } from "../../_shared/public-body.js";
+import { allowPublicEgress } from "../../_shared/public-egress.js";
 
 const TRANSACTION_OUTCOMES = ["completed_as_promised", "refunded_no_delivery", "disputed"];
 
@@ -51,18 +53,25 @@ export async function onRequestPost(context) {
   const siteId = params?.siteId;
   if (!siteId) return json({ error: "missing_site_id" }, 400);
 
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:escrow-report:ip",
+    ipLimit: 20,
+    actorLimit: 20,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes. Reintenta mas tarde." }, 429);
+  }
+
+  const bodyResult = await readJsonBodyLimited(request, 64 * 1024);
+  if (!bodyResult.ok) {
+    return json({ error: bodyResult.error }, bodyResult.status);
+  }
+
   const apiKey = extractBearerToken(request);
   if (!apiKey) {
     return json({ error: "missing_api_key", message: "Se requiere el header Authorization: Bearer <api_key>." }, 401);
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body" }, 400);
-  }
-
+  const body = bodyResult.value;
   const { transactionOutcome, escrowProvider, amountCurrency, attestation } = body ?? {};
 
   if (typeof escrowProvider !== "string" || !escrowProvider.trim()) {
@@ -84,6 +93,15 @@ export async function onRequestPost(context) {
       { error: "provider_not_authorized", message: `El proveedor '${providerId}' no esta autorizado, o la API key no coincide.` },
       403
     );
+  }
+
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:escrow-report:actor",
+    ipLimit: 1000,
+    actorLimit: 20,
+    actor: providerId,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes para este proveedor. Reintenta mas tarde." }, 429);
   }
 
   if (typeof attestation !== "string" || !attestation) {

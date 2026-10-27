@@ -216,10 +216,14 @@ export async function verifyWebBotAuthRequest(
   }
   if (!cryptoOk) return { verified: false, reason: "signature_verification_failed" };
 
+  // M-01: sin nonce no hay anti-replay. La firma sigue siendo valida, pero
+  // una firma reutilizable durante 300 s no es atribucion confiable.
+  if (!parsed.nonce) return { verified: false, reason: "missing_nonce" };
+
   // El nonce se consume DESPUES de validar la firma: si no, cualquiera sin la
   // clave podria sondear que nonces ya se usaron. Con options.env se usa el
   // store compartido (D1/SQLite); sin env, el store en memoria del proceso.
-  if (parsed.nonce) {
+  {
     const nowMs = Date.now();
     const store = options?.env ? await createWebBotAuthNonceStore(options.env) : memoryNonceStore;
     const isFirstUse = await store.registerIfUnseen(parsed.nonce, nowMs, NONCE_WINDOW_MS);

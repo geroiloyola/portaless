@@ -8,6 +8,7 @@
 import type { PasswordResetRequest } from "../types";
 import type { PasswordResetStore } from "../password-reset-store";
 import { randomBytes } from "node:crypto";
+import { hashOpaqueToken } from "../token-hash";
 import { openSqlite } from "../../../sqlite-driver/src/open";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
@@ -52,31 +53,32 @@ export class SqlitePasswordResetStore implements PasswordResetStore {
       .prepare(
         "INSERT INTO password_reset_requests (token, username, created_at, expires_at) VALUES (?, ?, ?, ?)"
       )
-      .run(record.token, record.username, record.createdAt, record.expiresAt);
+      .run(hashOpaqueToken(token), record.username, record.createdAt, record.expiresAt);
 
     return record;
   }
 
   async consume(token: string): Promise<PasswordResetRequest | null> {
+    const tokenHash = hashOpaqueToken(token);
     const row = this.db
       .prepare(
         "SELECT token, username, created_at, expires_at, used_at FROM password_reset_requests WHERE token = ?"
       )
-      .get(token) as
+      .get(tokenHash) as
       | { token: string; username: string; created_at: string; expires_at: string; used_at: string | null }
       | undefined;
 
     if (!row) return null;
     if (row.used_at) return null;
     if (new Date(row.expires_at).getTime() < Date.now()) {
-      this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").run(token);
+      this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").run(tokenHash);
       return null;
     }
 
     const usedAt = new Date().toISOString();
     const info = this.db
       .prepare("UPDATE password_reset_requests SET used_at = ? WHERE token = ? AND used_at IS NULL")
-      .run(usedAt, token);
+      .run(usedAt, tokenHash);
     if (info.changes !== 1) return null;
 
     return {
@@ -93,7 +95,7 @@ export class SqlitePasswordResetStore implements PasswordResetStore {
   }
 
   async delete(token: string): Promise<void> {
-    this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").run(token);
+    this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").run(hashOpaqueToken(token));
   }
 
   close(): void {

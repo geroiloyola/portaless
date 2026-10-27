@@ -50,7 +50,7 @@ async function generateKeyPair() {
 interface SignedRequestOptions {
   privateKey: CryptoKey;
   keyId: string;
-  nonce?: string;
+  nonce?: string | null;
   created?: number;
   expires?: number;
   method?: string;
@@ -66,11 +66,12 @@ async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> 
   const expires = opts.expires ?? created + 300;
   const agentHeader = opts.signatureAgentHeader ?? `"${OPERATOR_ORIGIN}"`;
 
+  const nonce = opts.nonce === null ? null : (opts.nonce ?? `test-${crypto.randomUUID()}`);
   const paramsLine =
     `(${opts.components ?? DEFAULT_COMPONENTS})` +
     `;created=${created};expires=${expires}` +
     `;keyid="${opts.keyId}";alg="ed25519"` +
-    (opts.nonce ? `;nonce="${opts.nonce}"` : "") +
+    (nonce ? `;nonce="${nonce}"` : "") +
     `;tag="web-bot-auth"`;
 
   const unsigned = new Request(url, {
@@ -131,6 +132,14 @@ describe("verifyWebBotAuthRequest (middleware)", () => {
     expect(result.keyRecord?.keyId).toBe(KEY_ID);
     expect(result.keyRecord?.operator).toBe(OPERATOR_ORIGIN);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("M-01: rechaza una firma valida sin nonce", async () => {
+    const { privateKey, publicKeyX } = await generateKeyPair();
+    mockDirectoryOnce(publicKeyX);
+    const request = await buildSignedRequest({ privateKey, keyId: KEY_ID, nonce: null });
+    const result = await verifyWebBotAuthRequest(request);
+    expect(result).toMatchObject({ verified: false, reason: "missing_nonce" });
   });
 
   it("fails closed before directory egress when opt-in budget lacks its production secret", async () => {

@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   username TEXT NOT NULL,
   role TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL
+  expires_at TEXT NOT NULL,
+  mfa_verified INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_username ON sessions(username);

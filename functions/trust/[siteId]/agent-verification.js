@@ -45,6 +45,8 @@ import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/sit
 import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
 import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { readJsonBodyLimited } from "../../_shared/public-body.js";
+import { allowPublicEgress } from "../../_shared/public-egress.js";
 
 const AGENT_CATEGORIES = [
   "https_and_headers",
@@ -63,6 +65,19 @@ export async function onRequestPost(context) {
 
   const siteId = params?.siteId;
   if (!siteId) return json({ error: "missing_site_id" }, 400);
+
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:agent-verification:ip",
+    ipLimit: 20,
+    actorLimit: 20,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes. Reintenta mas tarde." }, 429);
+  }
+
+  const bodyResult = await readJsonBodyLimited(request, 64 * 1024);
+  if (!bodyResult.ok) {
+    return json({ error: bodyResult.error }, bodyResult.status);
+  }
 
   // Capa 1: identidad.
   const identity = await verifyWebBotAuthRequest(request, env.JWKS_CACHE);
@@ -89,13 +104,16 @@ export async function onRequestPost(context) {
     );
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body" }, 400);
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:agent-verification:actor",
+    ipLimit: 1000,
+    actorLimit: 20,
+    actor: identity.agentKeyId,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes para este agente. Reintenta mas tarde." }, 429);
   }
 
+  const body = bodyResult.value;
   const { category, verified, detail, attestation } = body ?? {};
 
   if (!AGENT_CATEGORIES.includes(category)) {

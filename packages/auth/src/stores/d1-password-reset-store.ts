@@ -7,6 +7,7 @@
 
 import { randomBytes } from "node:crypto";
 import type { PasswordResetRequest } from "../types";
+import { hashOpaqueToken } from "../token-hash";
 import type { PasswordResetStore } from "../password-reset-store";
 import type { D1DatabaseLike } from "./d1-users-store";
 
@@ -29,31 +30,32 @@ export class D1PasswordResetStore implements PasswordResetStore {
       .prepare(
         "INSERT INTO password_reset_requests (token, username, created_at, expires_at) VALUES (?, ?, ?, ?)"
       )
-      .bind(record.token, record.username, record.createdAt, record.expiresAt)
+      .bind(hashOpaqueToken(token), record.username, record.createdAt, record.expiresAt)
       .run();
 
     return record;
   }
 
   async consume(token: string): Promise<PasswordResetRequest | null> {
+    const tokenHash = hashOpaqueToken(token);
     const row = await this.db
       .prepare(
         "SELECT token, username, created_at, expires_at, used_at FROM password_reset_requests WHERE token = ?"
       )
-      .bind(token)
+      .bind(tokenHash)
       .first<{ token: string; username: string; created_at: string; expires_at: string; used_at: string | null }>();
 
     if (!row) return null;
     if (row.used_at) return null;
     if (new Date(row.expires_at).getTime() < Date.now()) {
-      await this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").bind(token).run();
+      await this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").bind(tokenHash).run();
       return null;
     }
 
     const usedAt = new Date().toISOString();
     await this.db
       .prepare("UPDATE password_reset_requests SET used_at = ? WHERE token = ?")
-      .bind(usedAt, token)
+      .bind(usedAt, tokenHash)
       .run();
 
     return {
@@ -70,6 +72,6 @@ export class D1PasswordResetStore implements PasswordResetStore {
   }
 
   async delete(token: string): Promise<void> {
-    await this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").bind(token).run();
+    await this.db.prepare("DELETE FROM password_reset_requests WHERE token = ?").bind(hashOpaqueToken(token)).run();
   }
 }

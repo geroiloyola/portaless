@@ -60,6 +60,10 @@ describe("2FA (TOTP)", () => {
     const finalResult = await auth.completeMfaLogin(loginResult.mfaChallengeToken!, secondCode);
     expect(finalResult.success).toBe(true);
     expect(finalResult.session?.mfaVerified).toBe(true);
+    expect(await auth.validateSession(finalResult.session!.token)).toMatchObject({
+      username: "carol",
+      mfaVerified: true,
+    });
   });
 
   it("completeMfaLogin rechaza un codigo incorrecto sin emitir sesion", async () => {

@@ -90,7 +90,8 @@ describe("POST /trust/images/verify", () => {
 
     const soloSidecar = await verify.onRequestPost(ctx({ sidecar }));
     expect(soloSidecar.status).toBe(200);
-    expect(mocked.verifySidecarRemote.mock.calls[1][1]).toEqual({ imageBase64: undefined });
+    expect(mocked.verifySidecarRemote.mock.calls[1][1]).toMatchObject({ imageBase64: undefined });
+    expect(typeof mocked.verifySidecarRemote.mock.calls[1][1].fetchImpl).toBe("function");
   });
 
   it("propaga un resultado invalido sin transformarlo", async () => {

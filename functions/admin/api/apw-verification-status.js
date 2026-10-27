@@ -55,6 +55,7 @@ import {
 } from "../../../packages/apw-resolver/src/index";
 import { createSiteIdentityStore, createAttestationLogStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { buildSiteManifest } from "../../../packages/apw-resolver/src/did-apw/site-manifest.ts";
+import { publicOriginFromEnv } from "../../_shared/public-origin.js";
 
 const TXT_PRACTICAL_LIMIT_BYTES = 512;
 const SITE_ID = "default";
@@ -120,15 +121,32 @@ export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
 
-  const domain = new URL(context.request.url).hostname;
-  const result = await resolveApwManifest(domain);
   const local = await loadKeyThumbprint(context.env);
+  const configuredHost = publicOriginFromEnv(context.env)
+    ? new URL(publicOriginFromEnv(context.env)).hostname
+    : null;
+  const requestHost = new URL(context.request.url).hostname;
+  const observedHost = configuredHost ?? requestHost;
+  const identityDomain = local?.did?.startsWith("did:apw:")
+    ? local.did.slice("did:apw:".length)
+    : null;
+  // M-03: con identidad, el dominio del TXT sale SIEMPRE del DID. El Host
+  // solo sirve para un bootstrap sin identidad (o la URL publica declarada).
+  const domain = identityDomain ?? configuredHost ?? requestHost;
+  const hostMismatch = Boolean(identityDomain && observedHost !== identityDomain);
+
+  const result = await resolveApwManifest(domain);
   const head = local ? await loadHistoryHead(context.env) : null;
   const h = head?.entryHash ?? null;
   const identity = local ? await resolveApwIdentity(domain) : null;
 
   return json({
     domain,
+    hostMismatch,
+    requestHost: observedHost,
+    warning: hostMismatch
+      ? `El host publico (${configuredHost}) no coincide con el dominio de la identidad (${identityDomain}). El TXT se genera para la identidad.`
+      : null,
     verified: result.resolved,
     reason: result.reason,
     manifest: result.manifest ?? null,
