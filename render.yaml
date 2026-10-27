@@ -14,6 +14,8 @@ services:
       mountPath: /data
       sizeGB: 1
     envVars:
+      - key: PORTALESS_PUBLIC_URL
+        sync: false
       - key: PORTALESS_SQLITE_PATH
         value: /data/portaless.db
       # Generar con `openssl rand -base64 32` y cargarla en el dashboard.

@@ -122,6 +122,8 @@ describe("endpoint real /admin/password-reset/request tras el runtime Node", () 
     cleanup.push(() => server.close());
     const address = server.address();
     const base = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
+    // El runtime lee env en vivo; el origen publico es el puerto efimero real.
+    env.PORTALESS_PUBLIC_URL = base;
 
     async function requestReset(username: string, extraHeaders: Record<string, string> = {}) {
       const res = await fetch(`${base}/admin/password-reset/request`, {

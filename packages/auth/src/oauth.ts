@@ -116,7 +116,13 @@ export async function exchangeCodeForProfile(
     throw new Error(`OAuth userinfo fallo (${config.provider}): HTTP ${userRes.status}`);
   }
 
-  const profile = (await userRes.json()) as { sub?: string; id?: string | number; email?: string; name?: string };
+  const profile = (await userRes.json()) as {
+    sub?: string;
+    id?: string | number;
+    email?: string;
+    email_verified?: boolean;
+    name?: string;
+  };
   const subject = profile.sub ?? (profile.id !== undefined ? String(profile.id) : undefined);
   if (!subject) {
     throw new Error(`OAuth userinfo (${config.provider}) no devolvio un identificador estable (sub/id).`);
@@ -127,5 +133,8 @@ export async function exchangeCodeForProfile(
     subject,
     email: profile.email,
     displayName: profile.name,
+    // Solo el booleano explicito cuenta. Un proveedor que omite el claim no
+    // autoriza vinculacion automatica por email.
+    emailVerified: profile.email_verified === true,
   };
 }

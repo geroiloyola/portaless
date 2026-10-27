@@ -85,6 +85,8 @@ export async function startBrowserTestServer() {
       server.once("error", fail); // si el puerto pertenece a otro proceso, no lo toca
       server.listen(BROWSER_TEST_PORT, "127.0.0.1", ok);
     });
+    // El runtime lee el env en vivo; el origen publico es el puerto efimero real.
+    fixture.env.PORTALESS_PUBLIC_URL = BROWSER_TEST_BASE_URL;
     startupComplete = true;
     console.log(`[browser-test-server] listo en ${BROWSER_TEST_BASE_URL} (staging id: ${fixture.id}; credenciales sintéticas no impresas)`);
     if (signalRequested) await cleanup();

@@ -83,7 +83,13 @@ function context(request: Request, next = async () => new Response("static")) {
     headers.set("origin", new URL(request.url).origin);
     request = new Request(request, { headers });
   }
-  return { request, env: {}, data: {}, params: {}, next } as any;
+  return {
+    request,
+    env: { PORTALESS_PUBLIC_URL: new URL(request.url).origin },
+    data: {},
+    params: {},
+    next,
+  } as any;
 }
 
 describe("functions/admin/login.js", () => {
@@ -156,7 +162,7 @@ describe("functions/admin/login.js", () => {
     expect(res!.headers.get("set-cookie")).toContain("Secure");
   });
 
-  it("limita fallos por usuario y mantiene el error uniforme incluso con contraseña correcta", async () => {
+  it("A-01: no bloquea una contraseña correcta tras 10 fallos de terceros", async () => {
     const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
     await users.createUser("login-bruteforce", "Correct-Password-123!", "admin");
     for (let i = 0; i < 10; i++) {
@@ -166,11 +172,13 @@ describe("functions/admin/login.js", () => {
       })));
       expect(res!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
     }
-    const blockedCorrectPassword = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+    const correct = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
       username: "login-bruteforce",
       password: "Correct-Password-123!",
     })));
-    expect(blockedCorrectPassword!.headers.get("location")).toBe("http://x.test/admin/login?error=1");
+    expect(correct!.status).toBe(302);
+    expect(correct!.headers.get("location")).toBe("http://x.test/admin/");
+    expect(correct!.headers.get("set-cookie")).toContain("portaless_session=");
   });
 
   it("usuario con 2FA: redirige a /admin/login-mfa con el challenge", async () => {
@@ -249,7 +257,7 @@ describe("functions/admin/login-mfa.js", () => {
     expect(await res!.json()).toEqual({ success: true });
     const cookie = res!.headers.get("set-cookie")!;
     expect(cookie).toContain("portaless_session=");
-    expect(cookie).toContain("SameSite=Lax");
+    expect(cookie).toContain("SameSite=Strict");
     expect(cookie).not.toContain("Secure");
 
     // Un solo uso: reintentar con el mismo challenge ya consumido falla

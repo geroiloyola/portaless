@@ -49,7 +49,8 @@ export async function onRequestGet(context) {
   }
   if (!key) return json({ error: "signing_key_unavailable" }, 503);
 
-  const domain = new URL(request.url).hostname;
+  // El dominio sale de la identidad firmada, nunca del Host de la request.
+  const domain = identity.did.replace(/^did:apw:/, "");
   const h = await loadHistoryHead(env);
   const manifest = buildSiteManifest(domain, key.kid, h);
 

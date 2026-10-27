@@ -19,7 +19,7 @@ let env: Record<string, unknown>;
 
 beforeAll(async () => {
   await applySchema(DB, { quiet: true });
-  env = { PORTALESS_SQLITE_PATH: DB };
+  env = { PORTALESS_SQLITE_PATH: DB, PORTALESS_PUBLIC_URL: "http://x.test" };
 });
 
 afterAll(() => {

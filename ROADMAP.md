@@ -24,6 +24,7 @@ Read this table first; every row links to the section that justifies it. A row i
 | Product modules: real admin activity feed, no mock panels | `[~]` one module partially shipped | [Phase 10](#phase-10--product-modules) |
 | AI interoperability: MCP connection profile + OpenAI-compatible provider | `[~]` MCP local flow verified; provider subset contract-tested; **external ChatGPT/provider `not_run`** | [Editor, MCP, onboarding, CI, self-host](#editor-mcp-onboarding-ci-self-host) |
 | Release acceptance: docs reconciliation + clean-install/upgrade/privacy/publication evidence | `[~]` local C40–C41 evidence passes; **ChatGPT/API/Cloudum/real GitHub/independent review open** | [`release-acceptance.md`](./docs/testing/release-acceptance.md) |
+| Web/auth security review (2026-10-27) | `[~]` **P0 closed**; P1/P2 findings remain open | [Security review](#security-review--p0-closure-2026-10-27) |
 | Commercial seam: MIT plugin SDK 0.1.0, HTTP installer behind a flag, capability backends | `[~]` items 1–2 shipped; **item 3 deliberately not** | [Phase 11](#phase-11--the-commercial-seam) |
 | A real network: second operator, second implementation, external domain in an Index | `[ ]` **blocked on people, not on code** | [External](#external-depends-on-a-third-party) |
 | Edge sandbox adapters verified against real accounts; independent security review | `[~]` one command / one guide away, needs an operator and a reviewer | [External](#external-depends-on-a-third-party) |
@@ -83,6 +84,68 @@ no force pushes, no deletions, and required status checks `build`,
 - `[x]` Onboarding: 5-step wizard (intent templates, GitHub App OAuth with PKCE, one-time `did:apw` + admin-credentials export), deferred dashboard checklist (APW verification banner with exact TXT), terminal-less first-run `/setup` on the Node runtime.
 - `[x]` CI on Node 24 (`npm test` blocks), production `validateManifest()` on every manifest, coverage suite (baseline 47.43% lines; floors 68/67/66/65), setup smoke, `docker-smoke` job.
 - `[x]` Self-host ready: Node runtime for Pages Functions (routing, prefixed middleware, `env.ASSETS`, `/healthz`, no silent memory fallback), `better-sqlite3` everywhere, `engines.node >= 24`, Docker multi-stage + `docker-compose.yml` + `railway.json` + `render.yaml` (`/data` volume).
+
+---
+
+## Security review — P0 closure (2026-10-27)
+
+External review of `67ab71f` (v0.0.11). The cryptographic core was praised; the
+web/auth layer had two critical bypasses and several high-severity gaps that
+blocked a safe P1/P2 run. **P0 is closed in this change; P1 and P2 are not.**
+Every reviewed finding is recorded here with its current state, so nothing is
+silently dropped.
+
+### P0 — closed before any external deployment
+
+| ID | Severity | Finding | Status | Evidence / residual |
+|---|---|---|---|---|
+| C-01 | Critical | OAuth login bypassed TOTP for users with `totpSecret` | `[x]` fixed | `loginWithOAuth()` now returns `mfaRequired` + challenge and emits no session; OAuth callback redirects to `/admin/login-mfa`. Tests: `auth-2fa-reset-oauth.test.ts`, `oauth-callback-endpoint.test.ts`. |
+| C-02 | Critical | OAuth auto-link used only the derived email, allowing account takeover and overwriting another subject | `[x]` fixed | Link requires `emailVerified === true` and an exact normalized match with the stored account email; a different existing OAuth binding is rejected. Tests: C-02 cases in `auth-2fa-reset-oauth.test.ts`. Residual (P1): linking from an already-authenticated session with step-up remains the safer long-term flow. |
+| A-01 | High | Login rate limit counted attempts before password verification, letting third parties lock out a valid admin; the tunnel IP bucket was global | `[x]` fixed | Password is verified first; only failures are recorded and a valid credential is never rejected by the bucket. `recordLoginFailure()` replaces `allowLoginAttempt()`. Tests: `admin-login-endpoints.test.ts` (10 failures then correct password succeeds), `auth-persistent-mfa-ratelimit.test.ts`. Residual (P1): explicit account hard-lock/backoff policy and mandatory TOTP for admins are not implemented. |
+| A-02 | High | CSRF origin check trusted the Host-derived `request.url` | `[x]` fixed | `isTrustedRequestOrigin()` uses only `PORTALESS_PUBLIC_URL`; without it the check fails closed. `PORTALESS_PUBLIC_URL` is mandatory at self-host startup and has a Compose default. Tests: `request-origin.test.ts` (Host+Origin spoof, missing URL). |
+| A-03 | High | Dynamic public documents reflected Host | `[x]` fixed | MCP profile, `policy_url`, page canonical and APW manifest domain no longer use Host; MCP returns `503 public_origin_not_configured` instead of reflecting it. Tests: `mcp-profile.test.ts`, `request-origin.test.ts`. Residual (P1): review every future absolute-URL document against `publicOriginFromEnv()`. |
+| A-04 | High | Session cookie lacked `Secure` behind Cloudflare Tunnel; SameSite differed across login paths | `[x]` fixed | Node runtime computes the protocol from trusted `X-Forwarded-Proto`/public HTTPS URL and exposes an internal header; one `sessionCookie()` helper emits `HttpOnly; SameSite=Strict; Secure` behind TLS for password, MFA and OAuth. OAuth redirect URIs use the public origin. Tests: `request-protocol.test.ts`, `admin-login-endpoints.test.ts`, `oauth-callback-endpoint.test.ts`. |
+| A-06 | High | GitHub deployment OAuth start/callback used different user IDs, so callback always returned 403 | `[x]` fixed | Both use `context.data.user.username`; same fix applied to the GitHub App manifest start/callback. Contract test: `github-oauth-endpoints.test.ts` exercises start→callback and a different-session rejection. |
+
+### P1 — required before the public P1/P2 test
+
+| ID | Severity | Finding | Status | Next action |
+|---|---|---|---|---|
+| A-05 | High | Public `/trust/*` endpoints accept large bodies and do unbounded outbound work | `[ ]` open | Add `readBodyLimited`, per-IP/actor egress budgets, timeouts and the hardened directory fetcher to community attestation, image verify, agent verification and escrow report. |
+| A-07 | High | No CSP or security headers in Node/Cloudflare targets | `[ ]` open | Add one header policy to the Node response path and `public/_headers`; keep the admin frame-ancestors `none`. |
+| A-08 | High | Session/reset tokens stored in clear; scrypt cost `N=2^14` | `[ ]` open | Store hashes only, migrate active sessions, raise scrypt to `2^17` with rehash-on-login. |
+| M-01 | Medium | Web Bot Auth nonce is optional, allowing replay within 300 s | `[ ]` open | Require nonce or deduplicate `(keyId, signature-input, created)` in `webbotauth_nonces`. |
+| M-02 | Medium | Login timing reveals whether a username exists | `[ ]` open | Verify against a dummy scrypt hash when the user does not exist. |
+| M-03 | Medium | `apw-verification-status` derives the TXT domain from Host instead of the DID | `[ ]` open | Derive from `identity.did` and warn when the request host differs. (APW manifest domain already fixed under A-03.) |
+| M-04 | Medium | Witness/index/peer sync use global `fetch` without timeout or safe fetcher | `[ ]` open | Inject `env.__PORTALESS_DIRECTORY_FETCHER`, add `AbortSignal.timeout`, cap pages per sync. |
+| M-05 | Medium | `mfaVerified` is written in memory but never persisted or read | `[ ]` open | Add `mfa_verified` to sessions, persist/validate it, and use it for sensitive-action guards. |
+| M-06 | Medium | SameSite was inconsistent across login/MFA/OAuth | `[x]` fixed | Session cookie is now `SameSite=Strict` everywhere. The OAuth state cookie remains `SameSite=Lax` deliberately: it must survive the provider's cross-site redirect and is not the session. |
+| M-07 | Medium | Generic OAuth has a fixed scope, no provider state binding and only partial email verification | `[ ]` open | Per-provider scope; `portaless_oauth_state_<provider>`; verify provider matches state; keep `emailVerified` propagation added in C-02. |
+| M-08 | Medium | Publication child process inherits all environment secrets | `[ ]` open | Pass an explicit env allowlist to `spawn`. |
+| M-09 | Medium | Blocking file I/O and full response buffering per request | `[ ]` open | Stream static files and web response bodies. |
+| M-10 | Medium | Runtime-created tables are absent from `schema.sql` (D1 parity) | `[ ]` open | Move `password_change_events` and `site_trust_read_policies` into schema sources and regenerate. |
+| M-11 | Medium | `node:fs` in a Function and missing `compatibility_flags` | `[ ]` open | Add `nodejs_compat` or move FS behind a guarded dynamic import; document the runtime matrix. |
+
+### P2 / structural debt
+
+| ID | Severity | Finding | Status | Next action |
+|---|---|---|---|---|
+| B-01…B-06 | Low | Cookie regex, missing `_headers`, parse-before-size and related hygiene (the report groups them without per-item detail) | `[ ]` open | Triage each item in the P2 batch; do not treat the group as one fix. |
+| E-01 | Structural | Index publishes witness observations, not a site directory/ranking | `[ ]` open | Keep the README wording as observation cache until witness admission policy exists. |
+| E-02 | Structural | Manual DNS `h` anchoring conflicts with automatic `reader_conduct` head changes | `[ ]` open | Design automatic anchoring or freeze semantics before federation scale. |
+| E-03 | Structural | Identity domain is not validated against the public host | `[ ]` open | Enforce `identity.domain === public host` with a blocking warning (overlaps M-03). |
+| E-04 | Structural | P1/P2 protocol says unanchored witness statements are skipped; code accepts them | `[ ]` open | Either enforce anchoring in `collectWitnessStatements()` or correct the protocol; decide before the external run. |
+| E-05 | Structural | Static/Cloudflare/Node parity is implicit | `[ ]` open | Publish and test a feature × runtime matrix. |
+| E-06 | Structural | Client-IP rules duplicated between auth and trust-layer | `[ ]` open | Move to one shared net package. |
+| E-07 | Structural | Package trust boundaries overlap and are not enforced | `[ ]` open | Add `ARCHITECTURE.md` dependency graph plus an import-boundary check. |
+| E-08 | Structural | Composite flows lacked contract tests (the A-06 bug was one) | `[~]` partial | Added start→callback and OAuth MFA/link coverage; still missing login→MFA→cookie and witness→sync→index end-to-end contracts. |
+| E-09 | Structural | Documentation volume outruns verified claims | `[ ]` open | Add `npm run verify:claims` for countable README claims. |
+| E-10 | Structural | Bus factor 1 | `[ ]` open | Governance item: second maintainer with merge capacity; the Beta remains invite-only. |
+
+**P0 exit evidence:** full suite `2388 passed / 2 skipped`, 269 files; build
+`79 pages`; Playwright `75/75`; manifest validation OK. New regression tests
+cover C-01, C-02, A-01, A-02, A-03, A-04 and A-06. No runtime LTP integration,
+gate change or G5 work was performed.
 
 ---
 

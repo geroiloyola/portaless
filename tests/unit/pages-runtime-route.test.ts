@@ -16,7 +16,7 @@ import type { PageLayout } from "../../packages/atomic-elements/src/types";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-paginas-route-"));
 const DB = join(tmp, "portaless.db");
-const env = { PORTALESS_SQLITE_PATH: DB };
+const env = { PORTALESS_SQLITE_PATH: DB, PORTALESS_PUBLIC_URL: "http://x.test" };
 
 beforeAll(async () => {
   await applySchema(DB, { quiet: true });

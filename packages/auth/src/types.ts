@@ -51,4 +51,5 @@ export interface OAuthProfile {
   subject: string;     // "sub" (o "id") devuelto por el proveedor -- identificador estable.
   email?: string;
   displayName?: string;
+  emailVerified?: boolean; // true solo si el proveedor afirma email_verified === true.
 }

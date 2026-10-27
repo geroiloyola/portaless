@@ -45,6 +45,7 @@ describe("MCP interoperability profile", () => {
   it("serves the profile as public well-known JSON without credentials", async () => {
     const response = await onRequestGet({
       request: new Request("https://site.example/.well-known/portaless-mcp.json"),
+      env: { PORTALESS_PUBLIC_URL: "https://site.example" },
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
@@ -52,6 +53,28 @@ describe("MCP interoperability profile", () => {
     expect(body.endpoint.url).toBe("https://site.example/mcp");
     expect(body.tools).toHaveLength(19);
     expect(JSON.stringify(body)).not.toContain("Bearer ey");
+  });
+
+  it("A-03: ignores a spoofed Host header", async () => {
+    const response = await onRequestGet({
+      request: new Request("https://site.example/.well-known/portaless-mcp.json", {
+        headers: { host: "evil.attacker.example" },
+      }),
+      env: { PORTALESS_PUBLIC_URL: "https://site.example" },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).endpoint.url).toBe("https://site.example/mcp");
+  });
+
+  it("A-03: fails closed without PORTALESS_PUBLIC_URL instead of reflecting Host", async () => {
+    const response = await onRequestGet({
+      request: new Request("https://evil.attacker.example/.well-known/portaless-mcp.json", {
+        headers: { host: "evil.attacker.example" },
+      }),
+      env: {},
+    });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
   it("matches the tools the real McpServer registers", async () => {

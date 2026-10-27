@@ -251,7 +251,7 @@ Or start the self-hosted runtime and create the admin from the browser:
 
 ```bash
 npm run build
-PORTALESS_SQLITE_PATH=./portaless.db npm start
+PORTALESS_SQLITE_PATH=./portaless.db PORTALESS_PUBLIC_URL=http://localhost:3000 npm start
 # Open http://localhost:3000/setup and enter the setup code printed in the logs
 ```
 
@@ -261,7 +261,7 @@ See the [Authentication](#authentication) section for the full detail, including
 
 ## Configuration
 
-All environment variables are optional — Portaless works out of the box, serving just the base static site. The one functional exception is `IP_HASH_SALT`: without it the community vote endpoint (`POST /trust/:siteId/vote`) fails closed with `500 server_misconfigured` instead of using a public development salt, because a public salt makes an IPv4 hash reversible by brute force.
+All environment variables are optional for the static site. The self-hosted runtime has two functional exceptions: `PORTALESS_PUBLIC_URL` is **required** (CSRF, `.well-known` and OAuth use it as the only trusted origin; it is never derived from `Host`), and `IP_HASH_SALT` is required for community votes — without it `POST /trust/:siteId/vote` fails closed with `500 server_misconfigured` instead of using a public development salt, because a public salt makes an IPv4 hash reversible by brute force.
 
 | Variable | Module | Description |
 |---|---|---|
@@ -273,9 +273,10 @@ All environment variables are optional — Portaless works out of the box, servi
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | Protocol APW (`did:apw`) | Base64 key that encrypts the site's private identity key at rest. In the Node runtime, if it's missing, one is generated inside the data volume and `/setup` warns you to move it to a platform secret |
 | `PORTALESS_SITE_NAME` / `PORTALESS_SITE_DESCRIPTION` | AI discovery | Name and summary shown at the top of `/llms.txt` |
 | `PORTALESS_SETUP_CODE` | Self-hosting (first run) | Optional setup code set by your platform; if omitted, one is generated and printed in the logs (valid 60 minutes, 5 attempts, single use) |
+| `PORTALESS_PUBLIC_URL` | Self-hosting, CSRF, OAuth, `.well-known` | **Required to start the Node runtime.** Public origin (`https://your-domain.example` behind TLS). Docker Compose defaults it to `http://localhost:3000`; Railway/Render must set it explicitly. It is the only trusted origin for CSRF checks, public documents and OAuth redirects |
 | `PORTALESS_DATA_DIR` / `PORT` / `HOST` | Self-hosting | Data directory for secrets (default: the SQLite file's folder, `/data` in Docker), and the listening port/host (default `3000` / `0.0.0.0`) |
 | `PORTALESS_ADMIN_USERNAME` / `PORTALESS_ADMIN_PASSWORD` | Authentication | Credentials for the first admin user, used by `npm run setup` |
-| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence, via `better-sqlite3` — no special Node version requirement beyond the project minimum (Node ≥ 24, see Prerequisites). Required by `npm start` |
+| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence, via `better-sqlite3` — no special Node version requirement beyond the project minimum (Node ≥ 24, see Prerequisites). Required by `npm start`, together with `PORTALESS_PUBLIC_URL` |
 | `PORTALESS_OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` / `_AUTH_URL` / `_TOKEN_URL` / `_USERINFO_URL` | Authentication (OAuth/SSO) | Configuration for each external login provider (e.g. `PORTALESS_OAUTH_GOOGLE_CLIENT_ID`) — without this, login via that provider simply won't appear as an option |
 | `PORTALESS_DEV_MODE` | Authentication (password recovery) | `1` so the recovery endpoint returns the token in the response, useful only for local development without a configured mail server |
 | `DB` (binding, not a traditional env var) | Authentication, Permissions, Trust Layer, Pages | Cloudflare D1 binding, configured in `wrangler.toml` |
@@ -346,7 +347,7 @@ Full guide: [`docs/DEPLOY_CLOUDFLARE_PAGES.md`](./docs/DEPLOY_CLOUDFLARE_PAGES.m
 
 ### Self-hosted (Node, Docker, Railway, Render)
 
-`npm start` runs the self-hosted Node runtime (`server/node-runtime.mjs`), which executes the same `functions/` as Cloudflare Pages — including the Trust Layer middleware — with SQLite persistence and an `env.ASSETS` binding equivalent to Pages. It requires `PORTALESS_SQLITE_PATH` and exposes `GET /healthz`.
+`npm start` runs the self-hosted Node runtime (`server/node-runtime.mjs`), which executes the same `functions/` as Cloudflare Pages — including the Trust Layer middleware — with SQLite persistence and an `env.ASSETS` binding equivalent to Pages. It requires `PORTALESS_SQLITE_PATH` and `PORTALESS_PUBLIC_URL` and exposes `GET /healthz`.
 
 For containers, the repo includes a multi-stage `Dockerfile` (`node:24-bookworm-slim`), `docker-compose.yml`, `railway.json`, and `render.yaml`, all with a persistent volume at `/data`. On first boot, open `/setup` and enter the one-time setup code printed in the logs (also saved to `/data/SETUP_CODE.txt`) to create the first admin. Full guide: [`docs/self-hosting.md`](./docs/self-hosting.md). Railway and Render have not been verified with real deployments yet — see [`docs/self-hosting-verification.md`](./docs/self-hosting-verification.md).
 

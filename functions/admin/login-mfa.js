@@ -22,6 +22,7 @@ import {
 } from "../../packages/auth/src/store-factory.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
+import { sessionCookie } from "../_shared/request-security.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -70,17 +71,8 @@ export async function onRequestPost(context) {
     });
   }
 
-  const cookieFlags = [
-    `portaless_session=${result.session.token}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=86400",
-  ];
-  if (new URL(request.url).protocol === "https:") cookieFlags.push("Secure");
-
   const headers = new Headers({ "Content-Type": "application/json" });
-  headers.append("Set-Cookie", cookieFlags.join("; "));
+  headers.append("Set-Cookie", sessionCookie(result.session.token, request, env));
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers });
 }

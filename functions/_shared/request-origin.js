@@ -9,23 +9,21 @@ function originFrom(value) {
   }
 }
 
-/** Check browser provenance for state-changing routes without trusting Host alone. */
+/**
+ * Check browser provenance for state-changing routes without trusting Host.
+ *
+ * PORTALESS_PUBLIC_URL is the only trusted origin. request.url is built from
+ * the Host header in self-host, so using it here would degenerate into
+ * "Origin equals Host" and let a DNS-rebinding/non-browser client pass.
+ */
 export function isTrustedRequestOrigin(request, env = {}, { requireOrigin = false } = {}) {
   const fetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
   if (fetchSite === "cross-site") return false;
 
+  const configuredOrigin = originFrom(env?.PORTALESS_PUBLIC_URL);
+  if (!configuredOrigin) return false;
+
   const source = request.headers.get("origin") || request.headers.get("referer");
   if (!source) return !requireOrigin;
-
-  const sourceOrigin = originFrom(source);
-  if (!sourceOrigin) return false;
-
-  const expected = new Set();
-  const requestOrigin = originFrom(request.url);
-  if (requestOrigin) expected.add(requestOrigin);
-  if (typeof env.PORTALESS_PUBLIC_URL === "string" && env.PORTALESS_PUBLIC_URL.trim()) {
-    const configuredOrigin = originFrom(env.PORTALESS_PUBLIC_URL.trim());
-    if (configuredOrigin) expected.add(configuredOrigin);
-  }
-  return expected.has(sourceOrigin);
+  return originFrom(source) === configuredOrigin;
 }

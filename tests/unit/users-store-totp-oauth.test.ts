@@ -283,9 +283,15 @@ describe("AuthService + users store real (integracion)", () => {
     expect(await store.listUsers()).toHaveLength(1);
 
     // Camino de vinculacion: el username derivado (el email) ya existe como
-    // usuario password -> linkOAuthAccount sin tocar su provider ni password.
-    await store.createUser("eve@example.com", "Eve-Pass-1!", "viewer");
-    const linked = await auth.loginWithOAuth({ provider: "github", subject: "eve-gh", email: "eve@example.com" });
+    // usuario password y el proveedor confirma que el email es suyo ->
+    // linkOAuthAccount sin tocar su provider ni password.
+    await store.createUser("eve@example.com", "Eve-Pass-1!", "viewer", "eve@example.com");
+    const linked = await auth.loginWithOAuth({
+      provider: "github",
+      subject: "eve-gh",
+      email: "eve@example.com",
+      emailVerified: true,
+    });
     expect(linked.success).toBe(true);
     expect(linked.session?.username).toBe("eve@example.com");
     const eve = await store.findByOAuthSubject("github", "eve-gh");

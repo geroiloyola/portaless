@@ -7,6 +7,7 @@ import {
 } from "./disposable-staging.mjs";
 
 const baseUrl = `http://127.0.0.1:${process.env.PORT || 3000}`;
+const publicOrigin = "https://portaless-staging.example.invalid";
 const webhookInspector = "http://portaless-stage-webhook:4181";
 
 async function waitFor(url, label, timeoutMs = 30_000) {
@@ -43,7 +44,7 @@ if (llms.includes(STAGING_DRAFT_MARKER) || llms.includes(STAGING_ARCHIVE_MARKER)
 
 const reset = await fetch(`${baseUrl}/admin/password-reset/request`, {
   method: "POST",
-  headers: { "content-type": "application/json", origin: new URL(baseUrl).origin },
+  headers: { "content-type": "application/json", origin: publicOrigin },
   body: JSON.stringify({ username: STAGING_ADMIN_USER }),
 });
 if (!reset.ok || (await reset.json()).devToken) throw new Error("Password reset did not use the fake delivery backend.");
@@ -53,7 +54,7 @@ const inboxResponse = await fetch(`${webhookInspector}/messages`, {
 if (!inboxResponse.ok) throw new Error("Could not inspect synthetic webhook inbox.");
 const inbox = await inboxResponse.json();
 const resetMessage = inbox.messages?.find((message) => message.to === STAGING_ADMIN_EMAIL);
-if (!resetMessage || !resetMessage.text.includes("https://portaless-staging.example.invalid/admin/password-reset?token=")) {
+if (!resetMessage || !resetMessage.text.includes(`${publicOrigin}/admin/password-reset?token=`)) {
   throw new Error("Synthetic password-reset email was not delivered with a trusted URL.");
 }
 

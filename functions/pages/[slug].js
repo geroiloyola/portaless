@@ -27,6 +27,7 @@
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
+import { publicOriginFromEnv } from "../_shared/public-origin.js";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
 import { renderPage } from "../../packages/atomic-elements/src/render.ts";
 import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history.ts";
@@ -177,11 +178,10 @@ function esc(value) {
   );
 }
 
-export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null } = {}) {
+export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null, publicOrigin = null } = {}) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
-  const origin = new URL(request.url).origin;
-  const canonical = `${origin}/pages/${encodeURIComponent(layout.slug)}`;
+  const canonical = publicOrigin ? `${publicOrigin}/pages/${encodeURIComponent(layout.slug)}` : null;
   // Tema por pagina (paridad con BaseLayout.astro). Solo los builtins: la
   // pagina servida desde la base tampoco consulta la tabla theme_packs
   // aqui (el catalogo efectivo se arma en el MCP); un nombre que no
@@ -203,8 +203,8 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
   }));
   const discoveryMeta = preview
     ? '<meta name="robots" content="noindex, nofollow, noarchive" />'
-    : `<link rel="canonical" href="${esc(canonical)}" />`;
-  const jsonLdScript = preview ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
+    : canonical ? `<link rel="canonical" href="${esc(canonical)}" />` : "";
+  const jsonLdScript = preview || !canonical ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
   const headerHtml = renderPublicHeaderHtml({
     base: "/",
     locale: SITE_LANG,
@@ -320,7 +320,7 @@ export async function onRequestGet(context) {
     ? await pageStore.listPublicRevisionsByPublicationId?.(layout.publicationId).catch(() => [])
     : [];
   const revisionHistory = projectPublicRevisionHistory(revisions ?? []);
-  return new Response(renderShell(layout, bodyHtml, request, { revisionHistory }), {
+  return new Response(renderShell(layout, bodyHtml, request, { revisionHistory, publicOrigin: publicOriginFromEnv(env) }), {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
 }

@@ -8,6 +8,9 @@
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
 4. En "Environment variables" agrega (si corresponde):
+   - `PORTALESS_PUBLIC_URL` — **obligatoria** en producción: el origen HTTPS
+     real (`https://tu-dominio.example`). CSRF, `.well-known` y OAuth la usan
+     como única fuente de verdad; no se deriva del header `Host`.
    - `PORTALESS_SITE_URL`
    - `PORTALESS_BASE_PATH` (solo si sirves el sitio bajo un subpath)
    - `ENABLE_COMMERCE` / `ENABLE_TRUST_LAYER`

@@ -22,7 +22,7 @@ import {
   RESET_LIMIT_PER_USER,
   RESET_WINDOW_MS,
 } from "../../packages/auth/src/password-reset-rate-limit.ts";
-import { allowLoginAttempt, clearLoginFailures, LOGIN_LIMIT_PER_USER, LOGIN_WINDOW_MS } from "../../packages/auth/src/login-rate-limit.ts";
+import { recordLoginFailure, clearLoginFailures, LOGIN_LIMIT_PER_IP, LOGIN_LIMIT_PER_USER, LOGIN_WINDOW_MS } from "../../packages/auth/src/login-rate-limit.ts";
 
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 const cleanups: Array<() => void> = [];
@@ -149,16 +149,29 @@ describe("Rate limit de /admin/password-reset/request", () => {
 describe("rate limit de login", () => {
   const now = Date.UTC(2026, 8, 30, 12, 0, 0);
 
-  it("limita por usuario y limpia el bucket tras autenticación correcta", async () => {
+  it("cuenta solo fallos por usuario y limpia el bucket tras autenticación correcta", async () => {
     const store = new InMemoryRateLimitStore();
-    let last: Awaited<ReturnType<typeof allowLoginAttempt>> | undefined;
+    let last: Awaited<ReturnType<typeof recordLoginFailure>> | undefined;
     for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
-      last = await allowLoginAttempt(store, `198.51.100.${i}`, "admin", now);
-      expect(last.allowed).toBe(true);
+      last = await recordLoginFailure(store, `198.51.100.${i}`, "admin", now);
+      expect(last.overLimit).toBe(false);
     }
-    expect((await allowLoginAttempt(store, "198.51.100.99", "ADMIN", now)).allowed).toBe(false);
+    expect((await recordLoginFailure(store, "198.51.100.99", "ADMIN", now)).overLimit).toBe(true);
     await clearLoginFailures(store, last!.buckets, last!.windowStart);
-    expect((await allowLoginAttempt(store, "198.51.100.99", "admin", now)).allowed).toBe(true);
+    const afterClear = await recordLoginFailure(store, "198.51.100.99", "admin", now);
+    expect(afterClear.overLimit).toBe(false);
+    expect(afterClear.userFailures).toBe(1);
+  });
+
+  it("el bucket por IP tambien cuenta fallos, sin impedir que el endpoint verifique una credencial valida", async () => {
+    const store = new InMemoryRateLimitStore();
+    let last: Awaited<ReturnType<typeof recordLoginFailure>> | undefined;
+    for (let i = 0; i < LOGIN_LIMIT_PER_IP; i++) {
+      last = await recordLoginFailure(store, "203.0.113.50", `user-${i}`, now);
+      expect(last.overLimit).toBe(false);
+    }
+    expect((await recordLoginFailure(store, "203.0.113.50", "otro", now)).overLimit).toBe(true);
+    await clearLoginFailures(store, last!.buckets, last!.windowStart);
   });
 
   it("clear se comparte entre conexiones SQLite y conserva otras ventanas", async () => {
@@ -169,13 +182,13 @@ describe("rate limit de login", () => {
       first.close();
       second.close();
     });
-    const attempt = await allowLoginAttempt(first, "203.0.113.8", "owner", now);
-    expect((await allowLoginAttempt(second, "203.0.113.9", "owner", now)).allowed).toBe(true);
+    const attempt = await recordLoginFailure(first, "203.0.113.8", "owner", now);
+    expect((await recordLoginFailure(second, "203.0.113.9", "owner", now)).overLimit).toBe(false);
     await clearLoginFailures(second, attempt.buckets, attempt.windowStart);
     for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
-      expect((await allowLoginAttempt(first, `192.0.2.${i}`, "owner", now)).allowed).toBe(true);
+      expect((await recordLoginFailure(first, `192.0.2.${i}`, "owner", now)).overLimit).toBe(false);
     }
-    expect((await allowLoginAttempt(first, "192.0.2.90", "owner", now)).allowed).toBe(false);
-    expect((await allowLoginAttempt(first, "192.0.2.90", "owner", now + LOGIN_WINDOW_MS)).allowed).toBe(true);
+    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now)).overLimit).toBe(true);
+    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now + LOGIN_WINDOW_MS)).overLimit).toBe(false);
   });
 });

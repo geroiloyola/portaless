@@ -148,6 +148,93 @@ describe("OAuth/SSO", () => {
     expect(first.session?.username).toBe(second.session?.username);
   });
 
+  it("C-01: un usuario OAuth con TOTP recibe mfaRequired y no obtiene sesion", async () => {
+    const { users, auth } = buildAuth();
+    const created = await auth.loginWithOAuth({
+      provider: "google",
+      subject: "sub-mfa",
+      email: "mfa@example.com",
+      emailVerified: true,
+    });
+    expect(created.success).toBe(true);
+
+    const { secret } = await auth.beginTotpEnrollment("mfa@example.com");
+    const code = computeCodeForTest(secret, Math.floor(Date.now() / 1000 / 30));
+    expect(await auth.confirmTotpEnrollment("mfa@example.com", secret, code)).toBe(true);
+
+    const result = await auth.loginWithOAuth({ provider: "google", subject: "sub-mfa" });
+    expect(result.success).toBe(false);
+    expect(result.mfaRequired).toBe(true);
+    expect(result.mfaChallengeToken).toBeTruthy();
+    expect(result.session).toBeUndefined();
+    expect(await users.findByOAuthSubject("google", "sub-mfa")).toBeTruthy();
+
+    const final = await auth.completeMfaLogin(
+      result.mfaChallengeToken!,
+      computeCodeForTest(secret, Math.floor(Date.now() / 1000 / 30))
+    );
+    expect(final.success).toBe(true);
+    expect(final.session?.mfaVerified).toBe(true);
+  });
+
+  it("C-02: no vincula una cuenta existente con email no verificado", async () => {
+    const { users, auth } = buildAuth();
+    await users.createUser("victim@example.com", "Victim-Pass-123!", "admin", "victim@example.com");
+
+    const result = await auth.loginWithOAuth({
+      provider: "github",
+      subject: "attacker-sub",
+      email: "victim@example.com",
+      emailVerified: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.session).toBeUndefined();
+    expect(await users.findByOAuthSubject("github", "attacker-sub")).toBeNull();
+    expect((await users.findByUsername("victim@example.com"))?.oauthSubject).toBeUndefined();
+  });
+
+  it("C-02: no vincula si el email verificado no coincide con el email guardado", async () => {
+    const { users, auth } = buildAuth();
+    // El username derivado coincide con una cuenta existente, pero el email
+    // guardado en esa cuenta es otro: el match de username no basta.
+    await users.createUser("shared@example.com", "Victim-Pass-123!", "admin", "real@example.com");
+
+    const result = await auth.loginWithOAuth({
+      provider: "github",
+      subject: "attacker-sub",
+      email: "shared@example.com",
+      emailVerified: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(await users.findByOAuthSubject("github", "attacker-sub")).toBeNull();
+  });
+
+  it("C-02: vincula solo con email verificado coincidente y no pisa otro subject", async () => {
+    const { users, auth } = buildAuth();
+    await users.createUser("victim@example.com", "Victim-Pass-123!", "admin", "victim@example.com");
+
+    const linked = await auth.loginWithOAuth({
+      provider: "github",
+      subject: "legit-sub",
+      email: "victim@example.com",
+      emailVerified: true,
+    });
+    expect(linked.success).toBe(true);
+    expect((await users.findByUsername("victim@example.com"))?.oauthSubject).toBe("legit-sub");
+
+    const overwrite = await auth.loginWithOAuth({
+      provider: "github",
+      subject: "attacker-sub",
+      email: "victim@example.com",
+      emailVerified: true,
+    });
+    expect(overwrite.success).toBe(false);
+    expect(overwrite.session).toBeUndefined();
+    expect((await users.findByUsername("victim@example.com"))?.oauthSubject).toBe("legit-sub");
+  });
+
   it("loadOAuthProviderConfig devuelve null si el proveedor no esta configurado", () => {
     const config = oauth.loadOAuthProviderConfig("google", {}, "https://example.com/callback");
     expect(config).toBeNull();
@@ -170,11 +257,33 @@ describe("OAuth/SSO", () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "tok" }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ sub: "sub-789", email: "j@example.com" }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ sub: "sub-789", email: "j@example.com", email_verified: true }) });
 
     const profile = await oauth.exchangeCodeForProfile(config!, "code", "verifier", mockFetch as any);
     expect(profile.subject).toBe("sub-789");
+    expect(profile.emailVerified).toBe(true);
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("exchangeCodeForProfile solo marca emailVerified con email_verified === true", async () => {
+    const config = oauth.loadOAuthProviderConfig(
+      "google",
+      {
+        PORTALESS_OAUTH_GOOGLE_CLIENT_ID: "id",
+        PORTALESS_OAUTH_GOOGLE_CLIENT_SECRET: "secret",
+        PORTALESS_OAUTH_GOOGLE_AUTH_URL: "https://accounts.google.com/o/oauth2/auth",
+        PORTALESS_OAUTH_GOOGLE_TOKEN_URL: "https://oauth2.googleapis.com/token",
+        PORTALESS_OAUTH_GOOGLE_USERINFO_URL: "https://openidconnect.googleapis.com/v1/userinfo",
+      },
+      "https://example.com/callback"
+    );
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "tok" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ sub: "sub-790", email: "j@example.com", email_verified: "true" }) });
+
+    const profile = await oauth.exchangeCodeForProfile(config!, "code", "verifier", mockFetch as any);
+    expect(profile.emailVerified).toBe(false);
   });
 });
 

@@ -3,7 +3,7 @@ import { onRequest } from "../../functions/admin/_middleware.js";
 
 function context(request: Request) {
   const next = vi.fn(async () => new Response("next"));
-  return { ctx: { request, env: {}, data: {}, params: {}, next } as any, next };
+  return { ctx: { request, env: { PORTALESS_PUBLIC_URL: new URL(request.url).origin }, data: {}, params: {}, next } as any, next };
 }
 
 describe("admin mutation origin/body guard", () => {
