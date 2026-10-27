@@ -52,7 +52,7 @@ jobs:
       - name: Runtime Docker desechable con red interna y servicios fake
         run: npm run staging:docker:create -- --image=portaless:ci --check-only
       - name: Arrancar contenedor
-        run: docker run -d --name portaless -p 3000:3000 -v portaless-data:/data portaless:ci
+        run: docker run -d --name portaless -p 3000:3000 -v portaless-data:/data -e PORTALESS_PUBLIC_URL=http://127.0.0.1:3000 portaless:ci
       - name: Esperar /healthz
         run: |
           for i in $(seq 1 60); do
