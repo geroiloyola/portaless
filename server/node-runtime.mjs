@@ -17,7 +17,14 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 // (packages/trust-layer/src/net/client-ip.ts) lo lee solo cuando
 // env.__PORTALESS_RUNTIME === "node".
 export const CLIENT_IP_HEADER = "x-portaless-client-ip";
-const SPOOFABLE_IP_HEADERS = new Set(["cf-connecting-ip", "true-client-ip", CLIENT_IP_HEADER]);
+export const REQUEST_PROTO_HEADER = "x-portaless-request-proto";
+const SPOOFABLE_HEADERS = new Set([
+  "cf-connecting-ip",
+  "true-client-ip",
+  CLIENT_IP_HEADER,
+  "x-forwarded-proto",
+  REQUEST_PROTO_HEADER,
+]);
 
 function normalizeIp(ip) { if (!ip) return ""; const value = String(ip).trim(); return value.startsWith("::ffff:") ? value.slice(7) : value; }
 export function parseTrustedProxies(value) { return String(value || "").split(",").map(normalizeIp).filter(Boolean); }
@@ -33,6 +40,30 @@ export function resolveClientIp(socketIp, forwardedFor, trustedProxies = []) {
   const chain = String(forwardedFor || "").split(",").map(normalizeIp).filter(Boolean);
   for (let i = chain.length - 1; i >= 0; i--) { if (!trustedProxies.includes(chain[i])) return chain[i]; }
   return remote;
+}
+
+function protocolFromPublicUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (url.protocol === "https:") return "https";
+    if (url.protocol === "http:") return "http";
+  } catch { /* sin URL publica valida */ }
+  return null;
+}
+
+// X-Forwarded-Proto solo cuenta si la conexion viene de un proxy confiable
+// (misma regla exacta que X-Forwarded-For). PORTALESS_PUBLIC_URL https manda:
+// un tunel TLS puede llegar al runtime como http y la cookie igual debe ser
+// Secure. El header crudo del cliente nunca se propaga al handler.
+export function resolveRequestProtocol(socketIp, forwardedProto, trustedProxies = [], publicUrl = "") {
+  const publicProtocol = protocolFromPublicUrl(publicUrl);
+  if (publicProtocol === "https") return "https";
+  const remote = normalizeIp(socketIp);
+  if (trustedProxies.length && trustedProxies.includes(remote)) {
+    const proto = String(forwardedProto || "").split(",")[0].trim().toLowerCase();
+    if (proto === "https" || proto === "http") return proto;
+  }
+  return publicProtocol || "http";
 }
 
 // B5: el safe-fetcher resuelve y valida una IP; este transporte se conecta a
@@ -98,7 +129,7 @@ function routeFromFile(functionsDir, file) { const relativePath = relative(funct
 function middlewarePrefix(functionsDir, file) { const parts = relative(functionsDir, file).split(sep); parts.pop(); return "/" + parts.filter(Boolean).join("/"); }
 function isPrefix(pathname, prefix) { return prefix === "/" || pathname === prefix || pathname.startsWith(prefix + "/"); }
 function methodHandler(module, method) { const suffix = method[0] + method.slice(1).toLowerCase(); return module[`onRequest${suffix}`] || module.onRequest || null; }
-function requestFromNode(req, trustedProxies = []) { const origin = `http://${req.headers.host || "localhost"}`; const headers = new Headers(); for (const [key, value] of Object.entries(req.headers)) { if (SPOOFABLE_IP_HEADERS.has(key.toLowerCase())) continue; if (Array.isArray(value)) value.forEach((item) => headers.append(key, item)); else if (value !== undefined) headers.set(key, value); } const clientIp = resolveClientIp(req.socket?.remoteAddress, req.headers["x-forwarded-for"], trustedProxies); if (clientIp) headers.set(CLIENT_IP_HEADER, clientIp); const hasBody = !["GET", "HEAD"].includes(req.method || "GET"); return new Request(new URL(req.url || "/", origin), { method: req.method, headers, body: hasBody ? Readable.toWeb(req) : undefined, duplex: hasBody ? "half" : undefined }); }
+function requestFromNode(req, trustedProxies = [], env = {}) { const protocol = resolveRequestProtocol(req.socket?.remoteAddress, req.headers["x-forwarded-proto"], trustedProxies, env.PORTALESS_PUBLIC_URL); const origin = `${protocol}://${req.headers.host || "localhost"}`; const headers = new Headers(); for (const [key, value] of Object.entries(req.headers)) { if (SPOOFABLE_HEADERS.has(key.toLowerCase())) continue; if (Array.isArray(value)) value.forEach((item) => headers.append(key, item)); else if (value !== undefined) headers.set(key, value); } const clientIp = resolveClientIp(req.socket?.remoteAddress, req.headers["x-forwarded-for"], trustedProxies); if (clientIp) headers.set(CLIENT_IP_HEADER, clientIp); headers.set(REQUEST_PROTO_HEADER, protocol); const hasBody = !["GET", "HEAD"].includes(req.method || "GET"); return new Request(new URL(req.url || "/", origin), { method: req.method, headers, body: hasBody ? Readable.toWeb(req) : undefined, duplex: hasBody ? "half" : undefined }); }
 async function sendNodeResponse(response, res) { res.statusCode = response.status; res.statusMessage = response.statusText || res.statusMessage; for (const [key, value] of response.headers) res.setHeader(key, value); const setCookies = typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : []; if (setCookies.length) res.setHeader("set-cookie", setCookies); if (!response.body) return res.end(); res.end(Buffer.from(await response.arrayBuffer())); }
 // Paridad con Cloudflare Pages: si una Function no exporta handler para el metodo,
 // Pages continua hacia los assets estaticos. Solo se cae al estatico si el archivo
@@ -168,7 +199,8 @@ return createServer(async (req, res) => {
     return sendNodeResponse(Response.json({ error: "server_busy" }, { status: 503, headers: { "retry-after": "1" } }), res);
   }
   activeRequests += 1;
-  try { const request = requestFromNode(req, trustedProxies); const url = new URL(request.url); if (url.pathname === "/healthz") return sendNodeResponse(Response.json({ ok: true, runtime: "portaless-node", sqlite: Boolean(env.PORTALESS_SQLITE_PATH) }), res); const route = handlers.find((entry) => entry.matcher.test(url.pathname)); const activeMiddleware = middlewares.filter((entry) => isPrefix(url.pathname, entry.prefix)); const data = {}; const params = {}; if (route) { const match = url.pathname.match(route.matcher); route.keys.forEach((key, index) => { params[key] = decodeURIComponent(match[index + 1]); }); } const context = { request, env: runtimeEnv, params, data, next: null }; const finish = async () => { context.next = () => staticResponse(staticDir, url.pathname); if (!route) return context.next(); const module = await load(route.file); const handler = methodHandler(module, request.method); if (!handler) { if (staticFileExists(staticDir, url.pathname)) return staticResponse(staticDir, url.pathname); const allowed = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"].filter((method) => methodHandler(module, method)); return new Response("Method Not Allowed", { status: 405, headers: { allow: allowed.join(", ") } }); } return handler(context); }; let middlewareIndex = 0; context.next = async () => { if (middlewareIndex >= activeMiddleware.length) return finish(); const entry = activeMiddleware[middlewareIndex++]; const module = await load(entry.file); if (typeof module.onRequest !== "function") throw new Error(`Middleware sin onRequest: ${entry.file}`); return module.onRequest(context); }; return sendNodeResponse(await context.next(), res); } catch (error) { console.error("[Portaless Node Runtime]", error); return sendNodeResponse(Response.json({ error: "internal_server_error" }, { status: 500 }), res); } finally { activeRequests -= 1; } });
+  try { const request = requestFromNode(req, trustedProxies, env); const url = new URL(request.url); if (url.pathname === "/healthz") return sendNodeResponse(Response.json({ ok: true, runtime: "portaless-node", sqlite: Boolean(env.PORTALESS_SQLITE_PATH) }), res); const route = handlers.find((entry) => entry.matcher.test(url.pathname)); const activeMiddleware = middlewares.filter((entry) => isPrefix(url.pathname, entry.prefix)); const data = {}; const params = {}; if (route) { const match = url.pathname.match(route.matcher); route.keys.forEach((key, index) => { params[key] = decodeURIComponent(match[index + 1]); }); } const context = { request, env: runtimeEnv, params, data, next: null }; const finish = async () => { context.next = () => staticResponse(staticDir, url.pathname); if (!route) return context.next(); const module = await load(route.file); const handler = methodHandler(module, request.method); if (!handler) { if (staticFileExists(staticDir, url.pathname)) return staticResponse(staticDir, url.pathname); const allowed = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"].filter((method) => methodHandler(module, method)); return new Response("Method Not Allowed", { status: 405, headers: { allow: allowed.join(", ") } }); } return handler(context); }; let middlewareIndex = 0; context.next = async () => { if (middlewareIndex >= activeMiddleware.length) return finish(); const entry = activeMiddleware[middlewareIndex++]; const module = await load(entry.file); if (typeof module.onRequest !== "function") throw new Error(`Middleware sin onRequest: ${entry.file}`); return module.onRequest(context); }; return sendNodeResponse(await context.next(), res); } catch (error) { console.error("[Portaless Node Runtime]", error); return sendNodeResponse(Response.json({ error: "internal_server_error" }, { status: 500 }), res); } finally { activeRequests -= 1; } });
 }
-export async function startSelfHostServer(options = {}) { const env = options.env || process.env; if (!env.PORTALESS_SQLITE_PATH) throw new Error("PORTALESS_SQLITE_PATH es obligatoria para iniciar Portaless self-hosted."); const server = await createSelfHostServer(options); const port = Number(env.PORT || 3000); const host = env.HOST || "0.0.0.0"; await new Promise((ok, fail) => { server.once("error", fail); server.listen(port, host, ok); }); console.log(`Portaless self-hosted escuchando en http://${host}:${port}`); return server; }
+export function validatePublicUrl(value) { const raw = String(value || "").trim(); if (!raw) return null; try { const url = new URL(raw); if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) return null; return url.origin; } catch { return null; } }
+export async function startSelfHostServer(options = {}) { const env = options.env || process.env; if (!env.PORTALESS_SQLITE_PATH) throw new Error("PORTALESS_SQLITE_PATH es obligatoria para iniciar Portaless self-hosted."); if (!validatePublicUrl(env.PORTALESS_PUBLIC_URL)) throw new Error("PORTALESS_PUBLIC_URL es obligatoria y debe ser una URL http(s) valida para iniciar Portaless self-hosted."); const server = await createSelfHostServer(options); const port = Number(env.PORT || 3000); const host = env.HOST || "0.0.0.0"; await new Promise((ok, fail) => { server.once("error", fail); server.listen(port, host, ok); }); console.log(`Portaless self-hosted escuchando en http://${host}:${port} (publico: ${validatePublicUrl(env.PORTALESS_PUBLIC_URL)})`); return server; }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) startSelfHostServer().catch((error) => { console.error("No se pudo iniciar Portaless:", error.message); process.exit(1); });

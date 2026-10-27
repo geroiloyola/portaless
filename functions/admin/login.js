@@ -19,10 +19,11 @@ import {
   createMfaChallengeStore,
   createRateLimitStore,
 } from "../../packages/auth/src/store-factory.ts";
-import { allowLoginAttempt, clearLoginFailures } from "../../packages/auth/src/login-rate-limit.ts";
+import { recordLoginFailure, clearLoginFailures, loginRateLimitBuckets, LOGIN_WINDOW_MS } from "../../packages/auth/src/login-rate-limit.ts";
 import { clientIpFromHeaders } from "../../packages/auth/src/password-reset-rate-limit.ts";
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
+import { sessionCookie } from "../_shared/request-security.js";
 
 export async function onRequestGet(context) {
   return context.next();
@@ -59,40 +60,32 @@ export async function onRequestPost(context) {
   }
 
   const rateLimitStore = await createRateLimitStore(env);
-  const rate = await allowLoginAttempt(rateLimitStore, clientIpFromHeaders(request.headers, env), username);
-  if (!rate.allowed) {
-    return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
-  }
+  const clientIp = clientIpFromHeaders(request.headers, env);
 
+  // Verificar PRIMERO. Un fallo de terceros no puede bloquear una credencial
+  // valida: el rate limit solo cuenta fallos, nunca rechaza antes de verificar.
   const result = await authService.login(username, password);
 
   if (result.mfaRequired && result.mfaChallengeToken) {
-    await clearLoginFailures(rateLimitStore, rate.buckets, rate.windowStart);
+    const buckets = loginRateLimitBuckets(clientIp, username);
+    await clearLoginFailures(rateLimitStore, buckets, Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS);
     const redirectUrl = new URL("/admin/login-mfa", request.url);
     redirectUrl.searchParams.set("challenge", result.mfaChallengeToken);
     return Response.redirect(redirectUrl.toString(), 302);
   }
 
   if (!result.success || !result.session) {
+    await recordLoginFailure(rateLimitStore, clientIp, username);
     return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
   }
 
-  await clearLoginFailures(rateLimitStore, rate.buckets, rate.windowStart);
-
-  const isSecureContext = new URL(request.url).protocol === "https:";
-  const cookieFlags = [
-    `portaless_session=${result.session.token}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Strict",
-    `Max-Age=${24 * 60 * 60}`,
-  ];
-  if (isSecureContext) cookieFlags.push("Secure");
+  const buckets = loginRateLimitBuckets(clientIp, username);
+  await clearLoginFailures(rateLimitStore, buckets, Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS);
 
   return new Response(null, {
     status: 302,
     headers: {
-      "Set-Cookie": cookieFlags.join("; "),
+      "Set-Cookie": sessionCookie(result.session.token, request, env),
       Location: new URL("/admin/", request.url).toString(),
     },
   });

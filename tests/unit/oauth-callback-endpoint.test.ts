@@ -9,12 +9,13 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("../../packages/auth/src/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
+  const { sharedInMemoryMfaChallengeStore } = await import("../../packages/auth/src/ephemeral-auth-store");
   const users = new InMemoryUsersStore();
   const sessions = new InMemorySessionStore();
   return {
     createUsersStore: async () => users,
     createSessionStore: async () => sessions,
-    createMfaChallengeStore: async () => ({ issue: async () => ({ token: "t" }), consume: async () => null }),
+    createMfaChallengeStore: async () => sharedInMemoryMfaChallengeStore,
     createPasswordResetStore: async () => ({ invalidateAllForUser: async () => {} }),
   };
 });
@@ -44,7 +45,7 @@ function get(opts: { origin?: string; query?: string; stateCookie?: string | nul
   }
   const context = {
     request: new Request(`${origin}/admin/oauth/${opts.provider ?? "github"}/callback?${query}`, { headers }),
-    env,
+    env: { ...env, PORTALESS_PUBLIC_URL: origin },
     params: { provider: opts.provider ?? "github" },
     data: {},
     next: async () => new Response("static"),
@@ -91,12 +92,49 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     const session = cookies.find((c) => c.startsWith("portaless_session="))!;
     expect(session).toContain("Path=/");
     expect(session).toContain("HttpOnly");
-    expect(session).toContain("SameSite=Lax");
+    expect(session).toContain("SameSite=Strict");
     expect(session).toContain("Max-Age=86400");
     expect(session).not.toContain("Secure");
     const cleared = cookies.find((c) => c.startsWith("portaless_oauth_state="))!;
     expect(cleared).toContain("Max-Age=0");
     expect(cleared).toContain("Path=/admin/oauth/github/callback");
+  });
+
+  it("C-01: un usuario OAuth con TOTP va a login-mfa y no recibe cookie de sesion", async () => {
+    const factory = await import("../../packages/auth/src/store-factory");
+    const users = await factory.createUsersStore({});
+    await users.createUser("oauth-mfa@example.com", "OAuth-Mfa-Pass-123!", "admin", "oauth-mfa@example.com");
+    await users.setTotpSecret("oauth-mfa@example.com", "OAUTHMFA2FASECRET");
+    await users.linkOAuthAccount("oauth-mfa@example.com", "github", "gh-mfa-1");
+    oauth.exchangeCodeForProfile.mockResolvedValueOnce({
+      provider: "github",
+      subject: "gh-mfa-1",
+      email: "oauth-mfa@example.com",
+      emailVerified: true,
+    });
+
+    const res = await get();
+    expect(res.status).toBe(302);
+    const redirect = new URL(location(res));
+    expect(redirect.pathname).toBe("/admin/login-mfa");
+    expect(redirect.searchParams.get("challenge")).toBeTruthy();
+    const cookies = res.headers.getSetCookie();
+    expect(cookies.some((c) => c.startsWith("portaless_session="))).toBe(false);
+    expect(cookies.find((c) => c.startsWith("portaless_oauth_state="))).toContain("Max-Age=0");
+  });
+
+  it("sin PORTALESS_PUBLIC_URL falla cerrado en vez de usar Host", async () => {
+    const request = new Request("http://evil.attacker.example/admin/oauth/github/callback?code=abc&state=st-1", {
+      headers: { Cookie: "portaless_oauth_state=st-1:verifier-1" },
+    });
+    const res = await callback.onRequestGet({
+      request,
+      env,
+      params: { provider: "github" },
+      data: {},
+      next: async () => new Response("static"),
+    } as any);
+    expect(res.status).toBe(503);
   });
 
   it("sobre https ambas cookies llevan Secure; el usuario OAuth se crea en el store", async () => {

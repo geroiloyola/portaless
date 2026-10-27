@@ -2,6 +2,7 @@
 import { createDeploymentOAuthStore } from "../../../../../../packages/deploy-engine/src/oauth-store";
 import { createProviderConfigStore, GITHUB_APP_PROVIDER_ID } from "../../../../../../packages/deploy-engine/src/providers-config-store";
 import { beginGitHubManifest } from "../../../../../../packages/deploy-engine/src/github-manifest";
+import { publicOriginFromEnv } from "../../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {
   const user = context.data?.user;
@@ -16,6 +17,9 @@ function json(body, status = 200) {
 export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
+  if (typeof g.user.username !== "string" || !g.user.username) return json({ error: "Sesion sin usuario" }, 401);
+  const origin = publicOriginFromEnv(context.env);
+  if (!origin) return json({ error: "public_origin_not_configured" }, 503);
   if (!context.env?.PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY) {
     return json({ error: "Falta PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: sin ella no se pueden guardar los secretos de la App" }, 501);
   }
@@ -25,8 +29,8 @@ export async function onRequestGet(context) {
   }
   const html = await beginGitHubManifest(
     await createDeploymentOAuthStore(context.env),
-    String(g.user.id ?? g.user.email),
-    new URL(context.request.url).origin
+    g.user.username,
+    origin
   );
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }

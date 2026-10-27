@@ -16,18 +16,41 @@ export function loginRateLimitBuckets(ip: string, username: string) {
   ] as const;
 }
 
-/** Counts each attempt; successful password/MFA handoff clears its two buckets. */
-export async function allowLoginAttempt(
+export interface LoginFailureState {
+  buckets: readonly [string, string];
+  windowStart: number;
+  ipFailures: number;
+  userFailures: number;
+  /** true cuando la ventana supera el umbral. Solo informativo: una credencial valida nunca se bloquea por esto. */
+  overLimit: boolean;
+}
+
+/**
+ * Registra UN fallo de login (nunca un exito).
+ *
+ * El endpoint verifica la contrasena primero. Si es correcta, no llama a esta
+ * funcion y emite sesion/MFA aunque terceros hayan agotado el bucket. Asi un
+ * atacante no puede bloquear al administrador legitimo con intentos fallidos.
+ * Los contadores quedan para auditoria y para un futuro lock explicito de
+ * cuenta, que debe ser una decision del operador y no un efecto del rate limit.
+ */
+export async function recordLoginFailure(
   store: RateLimitStore,
   ip: string,
   username: string,
   now = Date.now(),
-): Promise<{ allowed: boolean; buckets: readonly [string, string]; windowStart: number }> {
+): Promise<LoginFailureState> {
   const buckets = loginRateLimitBuckets(ip, username);
   const windowStart = Math.floor(now / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
-  const ipCount = await store.hit(buckets[0], windowStart);
-  const userCount = await store.hit(buckets[1], windowStart);
-  return { allowed: ipCount <= LOGIN_LIMIT_PER_IP && userCount <= LOGIN_LIMIT_PER_USER, buckets, windowStart };
+  const ipFailures = await store.hit(buckets[0], windowStart);
+  const userFailures = await store.hit(buckets[1], windowStart);
+  return {
+    buckets,
+    windowStart,
+    ipFailures,
+    userFailures,
+    overLimit: ipFailures > LOGIN_LIMIT_PER_IP || userFailures > LOGIN_LIMIT_PER_USER,
+  };
 }
 
 export async function clearLoginFailures(

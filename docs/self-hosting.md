@@ -171,6 +171,12 @@ remitente de autenticación separado, configurado mediante variables de entorno:
   credenciales, para no enviar enlaces de recuperación en claro.
 - **`none`**: apaga el envío; `email:send` responde `501`.
 
+`PORTALESS_PUBLIC_URL` es **obligatoria** para arrancar el runtime Node: es la
+única fuente de verdad para el origen CSRF, los documentos `.well-known` y los
+redirects OAuth. No se deriva del header `Host`. En Docker Compose el valor por
+defecto es `http://localhost:3000`; detrás de un túnel o proxy TLS debe ser la
+URL HTTPS pública real.
+
 Para los correos de recuperación (y la abstracción auth EmailSender), configura
 el webhook o estas variables en el entorno del servidor —no en el repositorio ni
 en la base de datos—:
@@ -234,8 +240,9 @@ se respalda con git.
 | Variable | Default | Uso |
 |---|---|---|
 | `PORT` | `3000` | Puerto HTTP. Railway y Render lo inyectan solos |
+| `PORTALESS_PUBLIC_URL` | `http://localhost:3000` solo en Docker Compose | **Obligatoria** para arrancar. Origen público real (HTTPS detrás de túnel/proxy). Es la única fuente de verdad para CSRF, `.well-known` y redirects OAuth; nunca se usa el header `Host` |
 | `PORTALESS_SQLITE_PATH` | `/data/portaless.db` | Archivo SQLite |
-| `PORTALESS_TRUSTED_PROXIES` | vacía | IPs de proxies confiables delante del servidor (separadas por coma, coincidencia exacta). `X-Forwarded-For` solo se usa si la conexión viene de una de esas IPs; sin la lista, manda la IP del socket y los headers de IP del cliente (incluido `CF-Connecting-IP`) se descartan. Detrás de un proxy (Railway, Render, nginx) es necesario para que los rate limits por IP —login, MFA, password reset— identifiquen al cliente real y no al proxy |
+| `PORTALESS_TRUSTED_PROXIES` | vacía | IPs de proxies confiables delante del servidor (separadas por coma, coincidencia exacta). `X-Forwarded-For` y `X-Forwarded-Proto` solo se usan si la conexión viene de una de esas IPs; sin la lista, manda la IP/protocolo del socket y los headers del cliente (incluido `CF-Connecting-IP`) se descartan. Detrás de un proxy (Railway, Render, nginx) es necesario para que los rate limits y la cookie `Secure` identifiquen al cliente y al TLS reales, no al proxy |
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | generada en `/data` | Clave AES-GCM de la identidad del sitio |
 | `PORTALESS_OPENAI_API_KEY` / `_BASE_URL` / `_MODEL` / `_TIMEOUT_MS` | sin default | Perfil de proveedor OpenAI-compatible: clave server-side, endpoint HTTPS, modelo y timeout opcional. No es una conexión MCP ni implica compatibilidad universal. Ver [`openai-compatible-provider.md`](./openai-compatible-provider.md) |
 | `PORTALESS_SETUP_CODE` | generado | Código de configuración fijo |

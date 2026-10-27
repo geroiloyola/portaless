@@ -14,7 +14,7 @@
     "dev": "astro dev",
     "start": "tsx scripts/start-docker.mjs",
     "start:self-host": "tsx scripts/start-docker.mjs",
-    "self-host:dev": "PORTALESS_SQLITE_PATH=./portaless.db tsx scripts/start-docker.mjs",
+    "self-host:dev": "PORTALESS_SQLITE_PATH=./portaless.db PORTALESS_PUBLIC_URL=http://localhost:3000 tsx scripts/start-docker.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "setup": "tsx scripts/setup.mjs",

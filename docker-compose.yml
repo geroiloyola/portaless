@@ -10,6 +10,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      PORTALESS_PUBLIC_URL: ${PORTALESS_PUBLIC_URL:-http://localhost:3000}
       PORTALESS_SQLITE_PATH: /data/portaless.db
       # Recomendado: generar con `openssl rand -base64 32` y guardarla fuera del volumen.
       # PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ${PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY}
