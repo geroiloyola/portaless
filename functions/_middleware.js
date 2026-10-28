@@ -49,6 +49,7 @@ import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
 import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
+import { publicOriginFromEnv } from "./_shared/public-origin.js";
 import { migrationStatus } from "../packages/persistence-migrations/src/gate.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
@@ -225,7 +226,9 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({
       error: "unsigned_automated_request",
       message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
-      policy_url: `${new URL(request.url).origin}/.well-known/portaless-content-policy.json`,
+      policy_url: publicOriginFromEnv(env)
+        ? `${publicOriginFromEnv(env)}/.well-known/portaless-content-policy.json`
+        : "/.well-known/portaless-content-policy.json",
     }), { status: 403, headers: { "content-type": "application/json" } });
   }
 
@@ -258,7 +261,8 @@ export async function onRequest(context) {
     await recordAgentAccess(ledgerStore, { operatorKeyId: "unverified", charged: false, amountUsd: 0, policyViolation: true });
     return Response.json({ error: "verification_failed", reason: result.reason }, { status: 401, headers: { "cache-control": "no-store" } });
   }
-  const origin = new URL(request.url).origin;
+  const publicOrigin = publicOriginFromEnv(env);
+  const origin = publicOrigin || new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
   // override que el dueno escribio desde /admin/agents; si no hay override se
   // lee el asset de siempre.
@@ -288,7 +292,9 @@ export async function onRequest(context) {
       unit: rule.unit,
       settlement: "not_available",
       message: "Este sitio cobra el acceso de agentes pero todavia no tiene un medio de pago verificable. No reintentes con un comprobante: no se acepta ninguno.",
-      policy_url: `${origin}/.well-known/portaless-content-policy.json`,
+      policy_url: publicOrigin
+        ? `${publicOrigin}/.well-known/portaless-content-policy.json`
+        : "/.well-known/portaless-content-policy.json",
     }), { status: 402, headers: { "content-type": "application/json" } });
   }
 

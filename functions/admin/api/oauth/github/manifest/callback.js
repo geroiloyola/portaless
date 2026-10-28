@@ -2,6 +2,7 @@
 import { createDeploymentOAuthStore } from "../../../../../../packages/deploy-engine/src/oauth-store";
 import { createProviderConfigStore } from "../../../../../../packages/deploy-engine/src/providers-config-store";
 import { completeGitHubManifest, escapeHtml } from "../../../../../../packages/deploy-engine/src/github-manifest";
+import { publicOriginFromEnv } from "../../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {
   const user = context.data?.user;
@@ -16,6 +17,8 @@ function json(body, status = 200) {
 export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
+  if (typeof g.user.username !== "string" || !g.user.username) return json({ error: "Sesion sin usuario" }, 401);
+  if (!publicOriginFromEnv(context.env)) return json({ error: "public_origin_not_configured" }, 503);
   const encryptionKey = context.env?.PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY;
   if (!encryptionKey) return json({ error: "Falta PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY" }, 501);
 
@@ -27,7 +30,7 @@ export async function onRequestGet(context) {
       encryptionKey,
     },
     { code: reqUrl.searchParams.get("code"), state: reqUrl.searchParams.get("state") },
-    String(g.user.id ?? g.user.email)
+    g.user.username
   );
 
   if (r.ok) return Response.redirect(r.installUrl, 302);

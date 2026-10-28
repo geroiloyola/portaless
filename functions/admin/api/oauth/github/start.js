@@ -1,5 +1,6 @@
 import { createDeploymentOAuthStore } from "../../../../../packages/deploy-engine/src/oauth-store";
 import { readGitHubOAuthConfig, beginGitHubOAuth } from "../../../../../packages/deploy-engine/src/github-oauth";
+import { publicOriginFromEnv } from "../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {
   // Mismo contrato que el resto de /admin: _middleware.js expone context.data.user.
@@ -15,7 +16,10 @@ function json(body, status = 200) {
 export async function onRequestGet(context) {
   const g = requireAdmin(context);
   if (g.error) return g.error;
-  const cfg = await readGitHubOAuthConfig(context.env, new URL(context.request.url).origin);
+  if (typeof g.user.username !== "string" || !g.user.username) return json({ error: "Sesion sin usuario" }, 401);
+  const origin = publicOriginFromEnv(context.env);
+  if (!origin) return json({ error: "public_origin_not_configured" }, 503);
+  const cfg = await readGitHubOAuthConfig(context.env, origin);
   if (!cfg) {
     return json({
       error: "GitHub App no configurada. Registrala en 1 clic via /admin/api/oauth/github/manifest/start, " +
@@ -23,6 +27,6 @@ export async function onRequestGet(context) {
     }, 501);
   }
   const store = await createDeploymentOAuthStore(context.env);
-  const url = await beginGitHubOAuth(cfg, store, String(g.user.id ?? g.user.email));
+  const url = await beginGitHubOAuth(cfg, store, g.user.username);
   return Response.redirect(url, 302);
 }

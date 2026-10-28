@@ -14,7 +14,7 @@ import { AuthService } from "../../packages/auth/src/auth-service";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-pwd-confirm-"));
 const dbPath = join(tmp, "auth.db");
-const env = { PORTALESS_SQLITE_PATH: dbPath };
+const env = { PORTALESS_SQLITE_PATH: dbPath, PORTALESS_PUBLIC_URL: "http://x.test" };
 
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });

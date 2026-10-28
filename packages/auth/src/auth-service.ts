@@ -344,8 +344,26 @@ export class AuthService {
       const derivedUsername = deriveUsernameFromProfile(profile);
       const existingByUsername = await this.users.findByUsername(derivedUsername);
       if (existingByUsername) {
-        await this.users.linkOAuthAccount(derivedUsername, profile.provider, profile.subject);
-        user = await this.users.findByUsername(derivedUsername);
+        // Vincular una cuenta existente por email SOLO si el proveedor lo
+        // declara verificado y coincide con el email guardado. Nunca por el
+        // username derivado a solas, y nunca pisando otro binding OAuth.
+        const profileEmail = normalizeEmail(profile.email);
+        const accountEmail = normalizeEmail(existingByUsername.email);
+        if (!profile.emailVerified || !profileEmail || !accountEmail || profileEmail !== accountEmail) {
+          return {
+            success: false,
+            error: "No se puede vincular automáticamente. Inicia sesión con contraseña y vincula el proveedor desde el panel.",
+          };
+        }
+        const alreadyBoundToAnotherProvider =
+          Boolean(existingByUsername.oauthSubject) &&
+          (existingByUsername.oauthSubject !== profile.subject ||
+            existingByUsername.oauthProvider !== profile.provider);
+        if (alreadyBoundToAnotherProvider) {
+          return { success: false, error: "Esta cuenta ya está vinculada a otro proveedor." };
+        }
+        await this.users.linkOAuthAccount(existingByUsername.username, profile.provider, profile.subject);
+        user = await this.users.findByUsername(existingByUsername.username);
       } else {
         user = await this.users.createOAuthUser(derivedUsername, profile.provider, profile.subject, defaultRole, profile.email);
       }
@@ -353,6 +371,19 @@ export class AuthService {
 
     if (!user) {
       return { success: false, error: "No fue posible completar el inicio de sesión con el proveedor externo." };
+    }
+
+    // OAuth no puede saltar el segundo factor: un usuario con TOTP activo
+    // recibe el mismo challenge que login() y no obtiene sesion hasta
+    // completeMfaLogin().
+    if (user.totpSecret) {
+      const challengeToken = randomBytes(24).toString("hex");
+      await this.mfaChallenges.create(challengeToken, {
+        username: user.username,
+        role: user.role,
+        expiresAt: Date.now() + MFA_CHALLENGE_TTL_MS,
+      });
+      return { success: false, mfaRequired: true, mfaChallengeToken: challengeToken };
     }
 
     const session = await this.sessions.create(user.username, user.role);
@@ -375,7 +406,13 @@ export class AuthService {
   }
 }
 
+function normalizeEmail(value: string | undefined): string | null {
+  const normalized = value?.trim().toLowerCase();
+  return normalized || null;
+}
+
 function deriveUsernameFromProfile(profile: OAuthProfile): string {
-  if (profile.email) return profile.email.toLowerCase();
+  const email = normalizeEmail(profile.email);
+  if (email) return email;
   return `${profile.provider}:${profile.subject}`;
 }
