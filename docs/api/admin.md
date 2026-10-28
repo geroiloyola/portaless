@@ -83,7 +83,7 @@ APW verification checklist state for the dashboard, including the structured `an
 
 ### `GET|PUT /admin/api/site-identity`
 
-Read/update the site's APW identity (key history, rotation state). Rotation is a step-up action; the private key of a retired key is deleted at rotation.
+Read/update the site's APW identity (key history, rotation state). Creation/rotation rejects `domain_mismatch` when `domain` differs from the host of `PORTALESS_PUBLIC_URL`. Rotation is a step-up action; the private key of a retired key is deleted at rotation.
 
 ### `GET|POST|DELETE /admin/api/apw-atproto-links`
 

@@ -169,7 +169,7 @@ describe("functions/admin/login.js", () => {
     expect(res!.headers.get("set-cookie")).toContain("Secure");
   });
 
-  it("A-01: no bloquea una contraseña correcta tras 10 fallos de terceros", async () => {
+  it("A-01: el bucket de usuario no bloquea una contraseña correcta tras 10 fallos de terceros", async () => {
     const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
     await users.createUser("login-bruteforce", "Correct-Password-123!", "admin");
     for (let i = 0; i < 10; i++) {
@@ -241,6 +241,28 @@ describe("functions/admin/login.js", () => {
       expect(loginSpy).not.toHaveBeenCalled();
     } finally {
       loginSpy.mockRestore();
+      await store.clear(bucket, windowStart);
+    }
+  });
+
+  it("A-01: al agotar el presupuesto de IP, la contraseña correcta también recibe 429 (deliberado)", async () => {
+    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    await users.createUser("attempt-correct", "Correct-Password-123!", "admin");
+    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
+    const bucket = loginAttemptBucket("unknown");
+    for (let i = 0; i < LOGIN_ATTEMPT_LIMIT_PER_IP; i++) await store.hit(bucket, windowStart);
+
+    try {
+      const correct = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+        username: "attempt-correct",
+        password: "Correct-Password-123!",
+      })));
+      expect(correct!.status).toBe(429);
+      expect(Number(correct!.headers.get("retry-after"))).toBeGreaterThan(0);
+      expect(await correct!.json()).toMatchObject({ success: false, error: "rate_limited" });
+      expect(correct!.headers.get("set-cookie")).toBeNull();
+    } finally {
       await store.clear(bucket, windowStart);
     }
   });

@@ -66,7 +66,10 @@ export async function startBrowserTestServer() {
   process.once("SIGTERM", onSignal);
 
   try {
-    fixture = await createDisposableStaging({ rootDir: process.env.PORTALESS_BROWSER_STAGING_ROOT });
+    fixture = await createDisposableStaging({
+      rootDir: process.env.PORTALESS_BROWSER_STAGING_ROOT,
+      publicUrl: BROWSER_TEST_BASE_URL,
+    });
     activeFixtureId = fixture.id;
     activeFixtureRoot = fixture.rootDir;
     if (signalRequested) {

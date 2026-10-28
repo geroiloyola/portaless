@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Genera schema.sql (raiz) concatenando sus 31 fuentes reales en orden:
+// Genera schema.sql (raiz) concatenando sus 33 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 26 addendums de schema-additions/*.sql.
+//   atomic-elements, apw-resolver) + 28 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -31,8 +31,10 @@ const SOURCES = [
   { label: "@portaless/trust-layer -- ledger de uso por agentes", path: "packages/trust-layer/src/ledger/schema.sql" },
   { label: "@portaless/atomic-elements -- paginas persistidas", path: "packages/atomic-elements/src/persistence/stores/schema.sql" },
   { path: "schema-additions/password-reset.sql", selfBanner: true },
+  { path: "schema-additions/password-change-events.sql", selfBanner: true },
   { path: "schema-additions/plugin-registry.sql", selfBanner: true },
   { path: "schema-additions/site-trust-score.sql", selfBanner: true },
+  { path: "schema-additions/site-trust-read-policies.sql", selfBanner: true },
   { path: "schema-additions/authorized-agents.sql", selfBanner: true },
   { path: "schema-additions/authorized-escrow-providers.sql", selfBanner: true },
   { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/apw-resolver/schema.sql" },

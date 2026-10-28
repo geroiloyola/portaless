@@ -19,6 +19,7 @@
 import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { generateApwDid } from "../../../packages/apw-resolver/src/did-apw/generate.ts";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { publicOriginFromEnv } from "../../_shared/public-origin.js";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 
 const SITE_ID = "default";
@@ -39,6 +40,16 @@ function json(body, status) {
 
 function canWrite(role) {
   return role === "admin";
+}
+
+function domainMatchesPublicOrigin(domain, env) {
+  const origin = publicOriginFromEnv(env);
+  if (!origin) return true;
+  try {
+    return new URL(origin).hostname.toLowerCase() === domain.trim().toLowerCase();
+  } catch {
+    return false;
+  }
 }
 
 function unauthenticated() {
@@ -76,9 +87,15 @@ export async function onRequestPost(context) {
   if (domain !== undefined && (typeof domain !== "string" || !domain.trim())) {
     return json({ error: "invalid_body", message: "domain debe ser un string no vacio." }, 400);
   }
-
   const store = await createSiteIdentityStore(env);
   const existing = await store.get(SITE_ID);
+  const effectiveDomain = typeof domain === "string" ? domain : existing?.domain;
+  if (effectiveDomain && !domainMatchesPublicOrigin(effectiveDomain, env)) {
+    return json(
+      { error: "domain_mismatch", message: "domain debe coincidir con el host de PORTALESS_PUBLIC_URL." },
+      400
+    );
+  }
 
   if (rotate === true) {
     if (!existing) {

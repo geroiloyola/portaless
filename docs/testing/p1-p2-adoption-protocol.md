@@ -131,6 +131,7 @@ cat > .env <<EOF
 PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')
 PORTALESS_SETUP_CODE=$(openssl rand -hex 4)
 PORTALESS_PUBLIC_URL=https://p1.example.com
+PORTALESS_TRUSTED_PROXIES=127.0.0.1,::1
 IP_HASH_SALT=$(openssl rand -hex 32)
 EOF
 chmod 600 .env
@@ -146,6 +147,7 @@ services:
       PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: ${PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY}
       PORTALESS_SETUP_CODE: ${PORTALESS_SETUP_CODE}
       PORTALESS_PUBLIC_URL: ${PORTALESS_PUBLIC_URL}
+      PORTALESS_TRUSTED_PROXIES: ${PORTALESS_TRUSTED_PROXIES}
       IP_HASH_SALT: ${IP_HASH_SALT}
 EOF
 ```
@@ -198,16 +200,15 @@ Verify public HTTPS:
 curl -fsS -o /dev/null -w '%{http_code}\n' https://p1.example.com/healthz
 ```
 
-`PORTALESS_TRUSTED_PROXIES` is intentionally not set for this pilot. Client-IP
-rate limits therefore see the tunnel/proxy address: after 20 failed logins from
-any client, further failures can answer `429`, and after 60 total attempts the
-pre-hash budget can answer `429` for every client behind the tunnel until the
-15-minute window rolls over. A correct password still bypasses the failure
-bucket, but it does not bypass the IP attempt budget. Do not run a brute-force
-demo. This does not affect APW identity, publication or Index discovery. For
-production, configure the trusted proxy exactly as documented in
-`docs/self-hosting.md`; without it, the IP buckets are shared by all clients
-behind the proxy.
+`PORTALESS_TRUSTED_PROXIES=127.0.0.1,::1` is set in `.env` and passed by the
+Compose override. `cloudflared` connects from loopback, so the runtime trusts its
+`X-Forwarded-For` and the IP buckets follow the real client instead of the
+tunnel. If Docker rewrites the source to the bridge gateway (for example
+`172.17.0.1`), add that exact address too; matching is exact, never a CIDR range.
+Without this, all clients share one bucket: 60 attempts from any client would
+block every client for 15 minutes. This does not affect APW identity, publication
+or Index discovery. For production, keep the trusted proxy list exact and
+minimal, as documented in `docs/self-hosting.md`.
 
 ### 5.3 Complete setup
 
@@ -237,8 +238,8 @@ Do not use this endpoint for a brute-force demo before the rest of the test. Aft
 `Retry-After`; the correct password still works because the per-user bucket does
 not reject. After 60 total attempts from that IP, the pre-hash budget also
 returns `429` until the 15-minute window rolls over, including for a correct
-password. Wait for the window or configure `PORTALESS_TRUSTED_PROXIES` so the
-budget follows the real client IP.
+password. With `PORTALESS_TRUSTED_PROXIES` set, that only affects the client that
+spent the budget; without it, it affects every client behind the tunnel.
 
 ## 6. P1 — create APW identity and publish
 

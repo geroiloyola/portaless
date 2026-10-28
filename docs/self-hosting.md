@@ -176,9 +176,16 @@ remitente de autenticación separado, configurado mediante variables de entorno:
 
 `PORTALESS_PUBLIC_URL` es **obligatoria** para arrancar el runtime Node: es la
 única fuente de verdad para el origen CSRF, los documentos `.well-known` y los
-redirects OAuth. No se deriva del header `Host`. En Docker Compose el valor por
-defecto es `http://localhost:3000`; detrás de un túnel o proxy TLS debe ser la
-URL HTTPS pública real.
+redirects OAuth. No se deriva del header `Host`. Los tres perfiles de Docker
+Compose fallan explícitamente si falta; no hay default `localhost`. Detrás de un
+túnel o proxy TLS debe ser la URL HTTPS pública real.
+
+`PORTALESS_TRUSTED_PROXIES` es igual de importante en la práctica cuando hay un
+proxy delante: debe listar las IPs exactas del proxy (sin rangos CIDR). Sin esa
+lista, el runtime ignora `X-Forwarded-For`/`X-Forwarded-Proto` y todos los
+clientes comparten la IP del proxy para rate limits y cookies `Secure`. Para un
+Cloudflare Tunnel que llega desde loopback, `127.0.0.1,::1`; si Docker presenta
+el gateway del bridge como origen, agregá también esa IP exacta.
 
 Para los correos de recuperación (y la abstracción auth EmailSender), configura
 el webhook o estas variables en el entorno del servidor —no en el repositorio ni

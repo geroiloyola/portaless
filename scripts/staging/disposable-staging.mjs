@@ -134,6 +134,7 @@ export async function createDisposableStaging({
   rootDir = join(tmpdir(), "portaless-disposable-staging"),
   seed = true,
   startFakes = true,
+  publicUrl,
 } = {}) {
   await mkdir(rootDir, { recursive: true, mode: 0o700 });
   const rootReal = await realpath(rootDir);
@@ -164,6 +165,7 @@ export async function createDisposableStaging({
       PORTALESS_SQLITE_PATH: dbPath,
       PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: encryptionKey,
       PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT: "3",
+      ...(publicUrl ? { PORTALESS_PUBLIC_URL: publicUrl } : {}),
     };
 
     if (seed) {
@@ -180,7 +182,8 @@ export async function createDisposableStaging({
       const { createSiteIdentityStore } = await import(join(root, "packages/apw-resolver/src/did-apw/store-factory.ts"));
       const { generateApwDid } = await import(join(root, "packages/apw-resolver/src/did-apw/generate.ts"));
       const identityStore = await createSiteIdentityStore(env);
-      await identityStore.create("default", await generateApwDid(`staging-${id}.example.invalid`), STAGING_ADMIN_USER);
+      const identityDomain = publicUrl ? new URL(publicUrl).hostname : `staging-${id}.example.invalid`;
+      await identityStore.create("default", await generateApwDid(identityDomain), STAGING_ADMIN_USER);
       await identityStore.close?.();
 
       const { createPageStore } = await import(join(root, "packages/atomic-elements/src/persistence/store-factory.ts"));
