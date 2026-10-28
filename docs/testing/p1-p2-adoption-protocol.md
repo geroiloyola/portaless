@@ -1,7 +1,7 @@
 # P1/P2 external adoption protocol — Portaless official Beta
 
 **Status: executable test protocol. Not a release, gate change or authorization.**
-Baseline: `main` at `7334e95` (PR #108 merge), 2026-10-25.
+Baseline: `main` at `e2bc25f` (PR #112 merge), 2026-10-27.
 License: CC BY 4.0 for this protocol.
 
 This is the minimum real-world test for the existing official Beta exit criterion:
@@ -76,11 +76,33 @@ Each operator needs:
 The reference commit is:
 
 ```bash
-export PORTALESS_REF=7334e95
+export PORTALESS_REF=e2bc25f
 ```
 
 Record the actual `git rev-parse HEAD` in the evidence. If the test starts after a
 newer `main`, use that commit and record it; do not mix commits between P1 and P2.
+
+### 4.1 Runtime abuse controls (current behavior)
+
+These are part of the system under test, not optional hardening:
+
+- **Public origin.** `PORTALESS_PUBLIC_URL` is mandatory. The Compose files have
+  no default and fail explicitly when it is missing. It must be the real HTTPS
+  origin for P1/P2.
+- **Login rate limit.** After `LOGIN_LIMIT_PER_IP` (20) failed attempts from the
+  same client IP inside the 15-minute window, `/admin/login` returns `429` with
+  `Retry-After` and `{"error":"rate_limited"}`. The per-user bucket is recorded
+  but never rejects, so a correct password still emits a session. This is the
+  anti-lockout property.
+- **Scrypt concurrency.** At most `PORTALESS_LOGIN_CONCURRENCY` (default `4`)
+  password verifications run at once. Each scrypt `N=2^17` uses ~128 MiB.
+- **Public `/trust/*` egress.** Public POST endpoints cap the body (64 KiB; 8 MiB
+  for image verification), enforce per-IP/actor hourly budgets, and resolve APW
+  data through a hardened fetcher with time, byte and request caps. A budget
+  rejection is `429 rate_limited`; an oversized body is `413`.
+- **Cloudflare Pages.** The dynamic page Function loads `node:fs`/`node:url`
+  lazily and `wrangler.toml` declares `nodejs_compat`. The Node runtime remains
+  the reference for P1/P2.
 
 ## 5. P1 — install the Node runtime
 
@@ -169,9 +191,12 @@ curl -fsS -o /dev/null -w '%{http_code}\n' https://p1.example.com/healthz
 ```
 
 `PORTALESS_TRUSTED_PROXIES` is intentionally not set for this pilot. Client-IP
-rate limits may see the tunnel/proxy address; this does not affect APW identity,
-publication or Index discovery. For production, configure the trusted proxy
-exactly as documented in `docs/self-hosting.md`.
+rate limits therefore see the tunnel/proxy address: after 20 failed logins from
+any client, `/admin/login` can answer `429` for further failures, but a correct
+password still emits a session. This does not affect APW identity, publication or
+Index discovery. For production, configure the trusted proxy exactly as
+documented in `docs/self-hosting.md`; without it, the IP bucket is shared by all
+clients behind the proxy.
 
 ### 5.3 Complete setup
 
@@ -195,6 +220,11 @@ grep -q portaless_session p1.cookies
 
 Expected: `302` and a `portaless_session` cookie. If 2FA is enabled, complete the
 browser MFA flow instead.
+
+Do not use this endpoint for a brute-force demo before the rest of the test. After
+20 failed attempts from the same IP, failures return `429 rate_limited` with
+`Retry-After`; the correct password still works because the per-user bucket does
+not reject.
 
 ## 6. P1 — create APW identity and publish
 
@@ -396,8 +426,16 @@ curl -sS -b p2.cookies https://p2.example.com/admin/api/apw-verification-status 
   | jq '{verified, anchor, identity: {did: .identity.did, k: .identity.k, h: .identity.h, verified: .identity.verified}}'
 ```
 
-Expected: `anchor.status: "up_to_date"`. If P2's witness statement remains
-unanchored, the Index sync will skip it as `statement_not_anchored`.
+Expected: `anchor.status: "up_to_date"`.
+
+**Current code behavior (E-04):** the Index sync verifies P2's chain, the witness
+statement signature and the `(iss, jti)` uniqueness. It does **not** require the
+witness statement to be anchored in P2's current TXT `h`; `statement_not_anchored`
+is only returned when the referenced `seq` is absent from the fetched page. This
+protocol is deliberately stricter: do not record a passing result if
+`anchor.status` is not `up_to_date`. An unanchored witness may still be accepted
+by the code, but it is not valid evidence for this test. Fix DNS and re-run §8.2
+before §8.3.
 
 ### 8.3 Synchronize P1 into P2's Index
 
@@ -578,7 +616,7 @@ operator mistakes.
 | APW `verified:false` | TXT missing, wrong name/value, propagation, or `did.json` unreachable | Re-read `txtRecord`, verify `dig`, check `/.well-known/did.json` |
 | `anchor.status: stale` | New history entry but old `h` in TXT | Update TXT with the new `txtRecord.value`, wait, re-check |
 | Witness `logged:false` | P1 chain invalid/unreachable, P2 identity missing, or duplicate | Record reason; do not proceed |
-| Index `statement_not_anchored` | P2 witness entry not anchored in P2 TXT `h` | Update P2 TXT, wait, re-run sync |
+| Index `statement_not_anchored` | The referenced witness `seq` is absent from the fetched P2 log page (not merely unanchored in TXT) | Re-verify P2 history and TXT; do not record the run |
 | Index `head_mismatch` | P1 changed after P2 witnessed | Freeze P1, re-record witness, update P2 TXT, re-sync |
 | Index `witnessesSkipped` includes P2 | P2 chain/TXT or statement invalid | Re-verify P2 identity/history; do not hide the skip |
 | P2 Index has no P1 | Sync used wrong domain/witness or P1 index not public | Check `domain`, `witnesses`, P1 endpoints |

@@ -26,6 +26,9 @@ Si no la definís, Portaless la genera dentro de `/data` y `/setup` muestra un a
 ## Docker Compose
 
 ```bash
+# Sin default en el compose: declará el origen real antes de arrancar.
+touch .env
+grep -q '^PORTALESS_PUBLIC_URL=' .env || echo 'PORTALESS_PUBLIC_URL=http://localhost:3000' >> .env   # local; HTTPS en producción
 docker compose up -d
 docker compose logs portaless
 ```
@@ -240,8 +243,9 @@ se respalda con git.
 | Variable | Default | Uso |
 |---|---|---|
 | `PORT` | `3000` | Puerto HTTP. Railway y Render lo inyectan solos |
-| `PORTALESS_PUBLIC_URL` | `http://localhost:3000` solo en Docker Compose | **Obligatoria** para arrancar. Origen público real (HTTPS detrás de túnel/proxy). Es la única fuente de verdad para CSRF, `.well-known` y redirects OAuth; nunca se usa el header `Host` |
+| `PORTALESS_PUBLIC_URL` | **sin default** | **Obligatoria** para arrancar. Origen público real (HTTPS detrás de túnel/proxy). Es la única fuente de verdad para CSRF, `.well-known` y redirects OAuth; nunca se usa el header `Host`. Docker Compose falla explícitamente si no la declarás |
 | `PORTALESS_SQLITE_PATH` | `/data/portaless.db` | Archivo SQLite |
+| `PORTALESS_LOGIN_CONCURRENCY` | `4` | Máximo de verificaciones scrypt simultáneas. Cada scrypt `N=2^17` usa ~128 MiB; el resto de logins espera turno |
 | `PORTALESS_TRUSTED_PROXIES` | vacía | IPs de proxies confiables delante del servidor (separadas por coma, coincidencia exacta). `X-Forwarded-For` y `X-Forwarded-Proto` solo se usan si la conexión viene de una de esas IPs; sin la lista, manda la IP/protocolo del socket y los headers del cliente (incluido `CF-Connecting-IP`) se descartan. Detrás de un proxy (Railway, Render, nginx) es necesario para que los rate limits y la cookie `Secure` identifiquen al cliente y al TLS reales, no al proxy |
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | generada en `/data` | Clave AES-GCM de la identidad del sitio |
 | `PORTALESS_OPENAI_API_KEY` / `_BASE_URL` / `_MODEL` / `_TIMEOUT_MS` | sin default | Perfil de proveedor OpenAI-compatible: clave server-side, endpoint HTTPS, modelo y timeout opcional. No es una conexión MCP ni implica compatibilidad universal. Ver [`openai-compatible-provider.md`](./openai-compatible-provider.md) |

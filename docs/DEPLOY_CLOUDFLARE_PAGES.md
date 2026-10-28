@@ -25,6 +25,10 @@
 
 Cloudflare Pages ejecuta las `functions/` de Portaless: login, admin, Trust
 Layer, endpoints MCP HTTP y APIs administrativas, con D1 como persistencia.
+Las Functions requieren `compatibility_flags = ["nodejs_compat"]`; el
+`wrangler.toml` del repo ya lo declara. La Function de páginas carga
+`node:fs`/`node:url` de forma dinámica y cae al shell inline si el runtime no
+expone filesystem.
 No ejecuta el build de publicación: el nodo canónico y `/admin/publish`
 necesitan Node self-hosted, porque `workerd` no tiene `child_process` ni
 build tools. En Cloudflare, `POST /admin/api/publication` responde

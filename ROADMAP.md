@@ -101,7 +101,7 @@ so nothing is silently dropped.
 |---|---|---|---|---|
 | C-01 | Critical | OAuth login bypassed TOTP for users with `totpSecret` | `[x]` fixed | `loginWithOAuth()` now returns `mfaRequired` + challenge and emits no session; OAuth callback redirects to `/admin/login-mfa`. Tests: `auth-2fa-reset-oauth.test.ts`, `oauth-callback-endpoint.test.ts`. |
 | C-02 | Critical | OAuth auto-link used only the derived email, allowing account takeover and overwriting another subject | `[x]` fixed | Link requires `emailVerified === true` and an exact normalized match with the stored account email; a different existing OAuth binding is rejected. Tests: C-02 cases in `auth-2fa-reset-oauth.test.ts`. Residual (P1): linking from an already-authenticated session with step-up remains the safer long-term flow. |
-| A-01 | High | Login rate limit counted attempts before password verification, letting third parties lock out a valid admin; the tunnel IP bucket was global | `[x]` fixed | Password is verified first; only failures are recorded and a valid credential is never rejected by the bucket. `recordLoginFailure()` replaces `allowLoginAttempt()`. Tests: `admin-login-endpoints.test.ts` (10 failures then correct password succeeds), `auth-persistent-mfa-ratelimit.test.ts`. Residual (P1): explicit account hard-lock/backoff policy and mandatory TOTP for admins are not implemented. |
+| A-01 | High | Login rate limit counted attempts before password verification, letting third parties lock out a valid admin; the tunnel IP bucket was global | `[x]` fixed | Password is verified first; only failures are recorded. The IP bucket now rejects with `429 rate_limited` + `Retry-After`; the user bucket never rejects, so a valid credential still enters. `PORTALESS_LOGIN_CONCURRENCY` (default 4) bounds simultaneous scrypt calls. Tests: `admin-login-endpoints.test.ts`, `auth-persistent-mfa-ratelimit.test.ts`, `login-concurrency.test.ts`. Residual: mandatory TOTP for admins remains a product decision. |
 | A-02 | High | CSRF origin check trusted the Host-derived `request.url` | `[x]` fixed | `isTrustedRequestOrigin()` uses only `PORTALESS_PUBLIC_URL`; without it the check fails closed. `PORTALESS_PUBLIC_URL` is mandatory at self-host startup and has a Compose default. Tests: `request-origin.test.ts` (Host+Origin spoof, missing URL). |
 | A-03 | High | Dynamic public documents reflected Host | `[x]` fixed | MCP profile, `policy_url`, page canonical and APW manifest domain no longer use Host; MCP returns `503 public_origin_not_configured` instead of reflecting it. Tests: `mcp-profile.test.ts`, `request-origin.test.ts`. Residual (P1): review every future absolute-URL document against `publicOriginFromEnv()`. |
 | A-04 | High | Session cookie lacked `Secure` behind Cloudflare Tunnel; SameSite differed across login paths | `[x]` fixed | Node runtime computes the protocol from trusted `X-Forwarded-Proto`/public HTTPS URL and exposes an internal header; one `sessionCookie()` helper emits `HttpOnly; SameSite=Strict; Secure` behind TLS for password, MFA and OAuth. OAuth redirect URIs use the public origin. Tests: `request-protocol.test.ts`, `admin-login-endpoints.test.ts`, `oauth-callback-endpoint.test.ts`. |
@@ -120,10 +120,14 @@ so nothing is silently dropped.
 | M-04 | Medium | Witness/index/peer sync use global `fetch` without timeout or safe fetcher | `[x]` fixed | All three use `createBoundedPublicFetch`; `resolveApwHistory` accepts `maxPages` and fails closed when the page cap is reached. |
 | M-05 | Medium | `mfaVerified` is written in memory but never persisted or read | `[x]` fixed | `sessions.mfa_verified` persists across SQLite/D1/memory; `create(..., { mfaVerified })` and `validateSession()` expose it. Tests: `session-token-hash.test.ts`, `auth-2fa-reset-oauth.test.ts`. |
 | M-06 | Medium | SameSite was inconsistent across login/MFA/OAuth | `[x]` fixed | Session cookie is now `SameSite=Strict` everywhere. The OAuth state cookie remains `SameSite=Lax` deliberately: it must survive the provider's cross-site redirect and is not the session. |
+| N-01 | Regression | Minimal/private Compose profiles crashed without `PORTALESS_PUBLIC_URL`; the main Compose silently defaulted to localhost | `[x]` fixed | Both profiles declare the variable and all Compose files fail explicitly when it is missing; docs updated. |
+| N-02 | Regression | `setup/complete` compared `Origin` against `request.url`, returning 403 behind a TLS proxy | `[x]` fixed | Uses `publicOriginFromEnv(env)`; test covers HTTPS origin behind an HTTP request. |
+| N-03 | Medium | MFA challenge attempts were bounded per challenge but not per IP | `[~]` partial | The IP bucket now rejects repeated **failed** logins, so the password-guessing loop is throttled. A holder of a valid password can still request new MFA challenges; a dedicated challenge-issuance budget remains P2. |
 
-**P1 exit evidence:** full suite `2405 passed / 2 skipped`, 272 files; build
+**P1 exit evidence:** full suite `2412 passed / 2 skipped`, 274 files; build
 `79 pages`; Playwright `75/75`; manifest validation OK. New regression tests
-cover A-05, A-07, A-08, M-01 through M-06.
+cover A-05, A-07, A-08, M-01 through M-06, M-11, N-01 and N-02; N-03 is
+partial and E-04 is documentation.
 
 ### P2 / structural debt
 
@@ -133,12 +137,12 @@ cover A-05, A-07, A-08, M-01 through M-06.
 | M-08 | Medium | Publication child process inherits all environment secrets | `[ ]` open | Pass an explicit env allowlist to `spawn`. |
 | M-09 | Medium | Blocking file I/O and full response buffering per request | `[ ]` open | Stream static files and web response bodies. |
 | M-10 | Medium | Runtime-created tables are absent from `schema.sql` (D1 parity) | `[ ]` open | Move `password_change_events` and `site_trust_read_policies` into schema sources and regenerate. |
-| M-11 | Medium | `node:fs` in a Function and missing `compatibility_flags` | `[ ]` open | Add `nodejs_compat` or move FS behind a guarded dynamic import; document the runtime matrix. |
+| M-11 | Medium | `node:fs` in a Function and missing `compatibility_flags` | `[x]` fixed | `functions/pages/[slug].js` loads `node:fs`/`node:url` through a guarded dynamic import; `wrangler.toml` declares `nodejs_compat`. Test: `cloudflare-pages-compat.test.ts`. |
 | B-01…B-06 | Low | Cookie regex, missing `_headers`, parse-before-size and related hygiene (the report groups them without per-item detail) | `[ ]` open | Triage each item in the P2 batch; do not treat the group as one fix. |
 | E-01 | Structural | Index publishes witness observations, not a site directory/ranking | `[ ]` open | Keep the README wording as observation cache until witness admission policy exists. |
 | E-02 | Structural | Manual DNS `h` anchoring conflicts with automatic `reader_conduct` head changes | `[ ]` open | Design automatic anchoring or freeze semantics before federation scale. |
 | E-03 | Structural | Identity domain is not validated against the public host | `[ ]` open | Enforce `identity.domain === public host` with a blocking warning (overlaps M-03). |
-| E-04 | Structural | P1/P2 protocol says unanchored witness statements are skipped; code accepts them | `[ ]` open | Either enforce anchoring in `collectWitnessStatements()` or correct the protocol; decide before the external run. |
+| E-04 | Structural | P1/P2 protocol says unanchored witness statements are skipped; code accepts them | `[x]` fixed | Protocol now states the actual code behavior and keeps anchoring as a stricter evidence requirement; `statement_not_anchored` is documented only for a missing `seq`. |
 | E-05 | Structural | Static/Cloudflare/Node parity is implicit | `[ ]` open | Publish and test a feature × runtime matrix. |
 | E-06 | Structural | Client-IP rules duplicated between auth and trust-layer | `[ ]` open | Move to one shared net package. |
 | E-07 | Structural | Package trust boundaries overlap and are not enforced | `[ ]` open | Add `ARCHITECTURE.md` dependency graph plus an import-boundary check. |

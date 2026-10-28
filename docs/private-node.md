@@ -8,7 +8,7 @@ private-network deployment does not grant plugins any additional capability.
 Use the bounded profile:
 
 ```bash
-docker compose -f docker-compose.minimal.yml up -d
+PORTALESS_PUBLIC_URL=http://localhost:3000 docker compose -f docker-compose.minimal.yml up -d
 ```
 
 It sets:
@@ -34,7 +34,7 @@ optional.
 ## Private network (C38)
 
 ```bash
-docker compose -f docker-compose.private.yml up -d
+PORTALESS_PUBLIC_URL=https://your-private-node.example docker compose -f docker-compose.private.yml up -d
 ```
 
 This profile publishes **no app ports**. The app is only on the internal Docker
