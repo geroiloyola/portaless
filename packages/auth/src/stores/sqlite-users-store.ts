@@ -128,7 +128,7 @@ export class SqliteUsersStore implements UsersStore {
 
     const record: UserRecord = {
       username,
-      passwordHash: hashPassword(plainPassword),
+      passwordHash: await hashPassword(plainPassword),
       role,
       createdAt: new Date().toISOString(),
       email,
@@ -158,7 +158,7 @@ export class SqliteUsersStore implements UsersStore {
   async setPasswordByUsername(username: string, plainPassword: string): Promise<void> {
     const result = this.db
       .prepare("UPDATE users SET password_hash = ? WHERE username = ?")
-      .run(hashPassword(plainPassword), username) as { changes: number };
+      .run(await hashPassword(plainPassword), username) as { changes: number };
     if (!result?.changes) throw new Error(`El usuario "${username}" no existe.`);
   }
 
@@ -206,7 +206,7 @@ export class SqliteUsersStore implements UsersStore {
 
     const record: UserRecord = {
       username,
-      passwordHash: oauthFallbackPasswordHash(),
+      passwordHash: await oauthFallbackPasswordHash(),
       role,
       createdAt: new Date().toISOString(),
       email,

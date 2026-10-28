@@ -18,17 +18,17 @@ function legacyHash(password: string): string {
 }
 
 describe("password scrypt (A-08)", () => {
-  it("usa N=2^17 y el formato con costo explicito", () => {
-    const hash = hashPassword("Correct-Password-123!");
+  it("usa N=2^17 y el formato con costo explicito", async () => {
+    const hash = await hashPassword("Correct-Password-123!");
     expect(hash.startsWith(`scrypt:${SCRYPT_COST_N}:`)).toBe(true);
-    expect(verifyPassword("Correct-Password-123!", hash)).toBe(true);
-    expect(verifyPassword("wrong", hash)).toBe(false);
+    await expect(verifyPassword("Correct-Password-123!", hash)).resolves.toBe(true);
+    await expect(verifyPassword("wrong", hash)).resolves.toBe(false);
     expect(passwordNeedsRehash(hash)).toBe(false);
   });
 
-  it("acepta el formato historico N=2^14 y lo marca para rehash", () => {
+  it("acepta el formato historico N=2^14 y lo marca para rehash", async () => {
     const hash = legacyHash("Legacy-Password-123!");
-    expect(verifyPassword("Legacy-Password-123!", hash)).toBe(true);
+    await expect(verifyPassword("Legacy-Password-123!", hash)).resolves.toBe(true);
     expect(passwordNeedsRehash(hash)).toBe(true);
   });
 
@@ -42,7 +42,7 @@ describe("password scrypt (A-08)", () => {
     expect(result.success).toBe(true);
     const updated = await users.findByUsername("legacy");
     expect(updated?.passwordHash.startsWith(`scrypt:${SCRYPT_COST_N}:`)).toBe(true);
-    expect(verifyPassword("Legacy-Password-123!", updated!.passwordHash)).toBe(true);
+    await expect(verifyPassword("Legacy-Password-123!", updated!.passwordHash)).resolves.toBe(true);
   });
 
   it("M-02: un usuario inexistente no retorna antes de ejecutar scrypt", async () => {

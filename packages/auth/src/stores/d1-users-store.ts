@@ -121,7 +121,7 @@ export class D1UsersStore implements UsersStore {
 
     const record: UserRecord = {
       username,
-      passwordHash: hashPassword(plainPassword),
+      passwordHash: await hashPassword(plainPassword),
       role,
       createdAt: new Date().toISOString(),
       email,
@@ -155,7 +155,7 @@ export class D1UsersStore implements UsersStore {
     await this.ensure();
     const result = await this.db
       .prepare("UPDATE users SET password_hash = ? WHERE username = ?")
-      .bind(hashPassword(plainPassword), username)
+      .bind(await hashPassword(plainPassword), username)
       .run() as { success?: boolean; meta?: { changes?: number } };
     if (result?.meta?.changes === 0) throw new Error(`El usuario "${username}" no existe.`);
   }
@@ -213,7 +213,7 @@ export class D1UsersStore implements UsersStore {
 
     const record: UserRecord = {
       username,
-      passwordHash: oauthFallbackPasswordHash(),
+      passwordHash: await oauthFallbackPasswordHash(),
       role,
       createdAt: new Date().toISOString(),
       email,

@@ -38,7 +38,7 @@ export class InMemoryUsersStore implements UsersStore {
     }
     const record: UserRecord = {
       username,
-      passwordHash: hashPassword(plainPassword),
+      passwordHash: await hashPassword(plainPassword),
       role,
       createdAt: new Date().toISOString(),
       email,
@@ -55,7 +55,7 @@ export class InMemoryUsersStore implements UsersStore {
   async setPasswordByUsername(username: string, plainPassword: string): Promise<void> {
     const record = this.users.get(username);
     if (!record) throw new Error(`El usuario "${username}" no existe.`);
-    record.passwordHash = hashPassword(plainPassword);
+    record.passwordHash = await hashPassword(plainPassword);
   }
 
   async setTotpSecret(username: string, secret: string): Promise<void> {
@@ -98,7 +98,7 @@ export class InMemoryUsersStore implements UsersStore {
     }
     const record: UserRecord = {
       username,
-      passwordHash: oauthFallbackPasswordHash(),
+      passwordHash: await oauthFallbackPasswordHash(),
       role,
       createdAt: new Date().toISOString(),
       email,
@@ -112,7 +112,7 @@ export class InMemoryUsersStore implements UsersStore {
 }
 
 /** Usuarios OAuth no usan password propio -- se genera un hash aleatorio inutilizable como fallback defensivo. */
-export function oauthFallbackPasswordHash(): string {
+export async function oauthFallbackPasswordHash(): Promise<string> {
   return hashPassword(`oauth-managed:${Math.random().toString(36)}:${Date.now()}`);
 }
 

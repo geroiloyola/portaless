@@ -9,7 +9,13 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { createHmac } from "node:crypto";
-import { LOGIN_LIMIT_PER_IP, LOGIN_WINDOW_MS, loginRateLimitBuckets } from "../../packages/auth/src/login-rate-limit";
+import {
+  LOGIN_ATTEMPT_LIMIT_PER_IP,
+  LOGIN_LIMIT_PER_IP,
+  LOGIN_WINDOW_MS,
+  loginAttemptBucket,
+  loginRateLimitBuckets,
+} from "../../packages/auth/src/login-rate-limit";
 
 vi.mock("../../packages/auth/src/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
@@ -206,6 +212,67 @@ describe("functions/admin/login.js", () => {
     })));
     expect(correct!.status).toBe(302);
     expect(correct!.headers.get("location")).toBe("http://x.test/admin/");
+  });
+
+  it("A-01: 24 requests ya bloqueados responden 429 sin ejecutar scrypt ni bloquear el event loop", async () => {
+    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    await users.createUser("attempt-budget", "Correct-Password-123!", "admin");
+    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
+    const bucket = loginAttemptBucket("unknown");
+    for (let i = 0; i < LOGIN_ATTEMPT_LIMIT_PER_IP; i++) await store.hit(bucket, windowStart);
+    const { AuthService } = await import("../../packages/auth/src/auth-service");
+    const loginSpy = vi.spyOn(AuthService.prototype, "login");
+
+    try {
+      const healthTick = new Promise((resolve) => setTimeout(resolve, 0));
+      const limited = await Promise.all(
+        Array.from({ length: 24 }, () => login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+          username: "attempt-budget",
+          password: "wrong-password",
+        }))))
+      );
+      await healthTick;
+      for (const response of limited) {
+        expect(response!.status).toBe(429);
+        expect(response!.headers.get("retry-after")).toBeTruthy();
+        expect(await response!.json()).toMatchObject({ success: false, error: "rate_limited" });
+      }
+      expect(loginSpy).not.toHaveBeenCalled();
+    } finally {
+      loginSpy.mockRestore();
+      await store.clear(bucket, windowStart);
+    }
+  });
+
+  it("responde 503 server_busy cuando la cola de scrypt está llena", async () => {
+    await seedUsers();
+    const { __resetLoginConcurrencyForTests, runWithLoginConcurrency } = await import(
+      "../../functions/_shared/login-concurrency.js"
+    );
+    __resetLoginConcurrencyForTests();
+    const env = {
+      PORTALESS_PUBLIC_URL: "http://x.test",
+      PORTALESS_LOGIN_CONCURRENCY: "1",
+      PORTALESS_LOGIN_QUEUE_MAX: "0",
+    };
+    let release;
+    const first = runWithLoginConcurrency(env, () => new Promise((resolve) => { release = resolve; }));
+    try {
+      const ctx = context(formRequest("http://x.test/admin/login", {
+        username: "admin",
+        password: "Admin-Pass-1!",
+      }));
+      ctx.env = env;
+      const busy = await login.onRequestPost(ctx);
+      expect(busy!.status).toBe(503);
+      expect(busy!.headers.get("retry-after")).toBe("2");
+      expect(await busy!.json()).toEqual({ success: false, error: "server_busy" });
+    } finally {
+      release("done");
+      await first;
+      __resetLoginConcurrencyForTests();
+    }
   });
 
   it("usuario con 2FA: redirige a /admin/login-mfa con el challenge", async () => {

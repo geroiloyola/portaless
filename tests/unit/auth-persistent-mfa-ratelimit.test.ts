@@ -22,7 +22,15 @@ import {
   RESET_LIMIT_PER_USER,
   RESET_WINDOW_MS,
 } from "../../packages/auth/src/password-reset-rate-limit.ts";
-import { recordLoginFailure, clearLoginFailures, LOGIN_LIMIT_PER_IP, LOGIN_LIMIT_PER_USER, LOGIN_WINDOW_MS } from "../../packages/auth/src/login-rate-limit.ts";
+import {
+  clearLoginFailures,
+  LOGIN_ATTEMPT_LIMIT_PER_IP,
+  LOGIN_LIMIT_PER_IP,
+  LOGIN_LIMIT_PER_USER,
+  LOGIN_WINDOW_MS,
+  recordLoginAttempt,
+  recordLoginFailure,
+} from "../../packages/auth/src/login-rate-limit.ts";
 
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 const cleanups: Array<() => void> = [];
@@ -148,6 +156,19 @@ describe("Rate limit de /admin/password-reset/request", () => {
 
 describe("rate limit de login", () => {
   const now = Date.UTC(2026, 8, 30, 12, 0, 0);
+
+  it("el presupuesto de intentos por IP rechaza el request 61 sin mirar el usuario", async () => {
+    const store = new InMemoryRateLimitStore();
+    let last: Awaited<ReturnType<typeof recordLoginAttempt>> | undefined;
+    for (let i = 0; i < LOGIN_ATTEMPT_LIMIT_PER_IP; i++) {
+      last = await recordLoginAttempt(store, "203.0.113.77", now);
+      expect(last.overLimit).toBe(false);
+    }
+    const over = await recordLoginAttempt(store, "203.0.113.77", now);
+    expect(over.attempts).toBe(LOGIN_ATTEMPT_LIMIT_PER_IP + 1);
+    expect(over.overLimit).toBe(true);
+    expect((await recordLoginAttempt(store, "203.0.113.78", now)).overLimit).toBe(false);
+  });
 
   it("cuenta solo fallos por usuario y limpia el bucket tras autenticación correcta", async () => {
     const store = new InMemoryRateLimitStore();

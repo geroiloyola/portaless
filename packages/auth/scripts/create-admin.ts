@@ -27,7 +27,7 @@ async function main() {
     process.exit(1);
   }
 
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
   const createdAt = new Date().toISOString();
 
   if (sqlitePath) {

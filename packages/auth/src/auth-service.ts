@@ -66,7 +66,7 @@ export const MFA_MAX_ATTEMPTS = 5;
 // password incorrecta. El hash dummy se calcula una vez por proceso.
 let dummyPasswordHashPromise: Promise<string> | null = null;
 function dummyPasswordHash(): Promise<string> {
-  dummyPasswordHashPromise ??= Promise.resolve(hashPassword(`portaless-dummy:${randomBytes(16).toString("hex")}`));
+  dummyPasswordHashPromise ??= hashPassword(`portaless-dummy:${randomBytes(16).toString("hex")}`);
   return dummyPasswordHashPromise;
 }
 
@@ -124,7 +124,7 @@ export class AuthService {
   async login(username: string, plainPassword: string): Promise<LoginResult> {
     const user = await this.users.findByUsername(username);
     const passwordHash = user?.passwordHash ?? await dummyPasswordHash();
-    const valid = verifyPassword(plainPassword, passwordHash);
+    const valid = await verifyPassword(plainPassword, passwordHash);
     if (!user || !valid) {
       return { success: false, error: "Usuario o contraseña incorrectos." };
     }
@@ -213,7 +213,7 @@ export class AuthService {
 
     if (hasPassword) {
       if (!creds.password) return { ok: false, reason: "password_required" };
-      if (!verifyPassword(creds.password, user.passwordHash)) return { ok: false, reason: "invalid_password" };
+      if (!(await verifyPassword(creds.password, user.passwordHash))) return { ok: false, reason: "invalid_password" };
     }
     if (hasTotp) {
       if (!creds.totpCode) return { ok: false, reason: "totp_required" };
