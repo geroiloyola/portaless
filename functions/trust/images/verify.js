@@ -20,6 +20,10 @@
 
 import { parseSidecar } from "../../../packages/cloud-images/src/payload.ts";
 import { verifySidecarRemote } from "../../../packages/cloud-images/src/verify-remote.ts";
+import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
+import { readJsonBodyLimited } from "../../_shared/public-body.js";
+import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 
 function json(body, status, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -31,14 +35,21 @@ function json(body, status, extraHeaders = {}) {
 const CORS = { "access-control-allow-origin": "*", "cache-control": "no-store" };
 
 export async function onRequestPost(context) {
-  const { request } = context;
+  const { request, env } = context;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body", message: "El cuerpo debe ser JSON valido." }, 400, CORS);
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:images-verify:ip",
+    ipLimit: 20,
+    actorLimit: 20,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes. Reintenta mas tarde." }, 429, CORS);
   }
+
+  const bodyResult = await readJsonBodyLimited(request, 8 * 1024 * 1024);
+  if (!bodyResult.ok) {
+    return json({ error: bodyResult.error, message: "El cuerpo debe ser JSON valido dentro del limite permitido." }, bodyResult.status, CORS);
+  }
+  const body = bodyResult.value;
 
   const sidecar = parseSidecar(body?.sidecar);
   if (!sidecar) {
@@ -50,6 +61,12 @@ export async function onRequestPost(context) {
   }
 
   const imageBase64 = typeof body?.imageBase64 === "string" ? body.imageBase64 : undefined;
-  const result = await verifySidecarRemote(sidecar, { imageBase64 });
+  const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 10, deadlineMs: 6000 });
+  const result = await verifySidecarRemote(sidecar, {
+    imageBase64,
+    fetchImpl,
+    resolveHistory: (domain, options) => resolveApwHistory(domain, fetchImpl, options),
+    resolveDid: (domain, fetch) => resolveApwIdentity(domain, fetch),
+  });
   return json(result, 200, CORS);
 }

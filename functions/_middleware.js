@@ -50,6 +50,7 @@ import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-polic
 import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
 import { publicOriginFromEnv } from "./_shared/public-origin.js";
+import { withSecurityHeaders } from "./_shared/security-headers.js";
 import { migrationStatus } from "../packages/persistence-migrations/src/gate.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
@@ -188,6 +189,10 @@ async function migrationsGate(env) {
 }
 
 export async function onRequest(context) {
+  return withSecurityHeaders(await handleRequest(context));
+}
+
+async function handleRequest(context) {
   const { request, env, next } = context;
   // GATE de migraciones (fail-closed): si la base esta detras del codigo (o
   // adelante), 503 en vez de dejar que una columna ausente rompa una query a

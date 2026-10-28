@@ -8,6 +8,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { createSafeFetcher } from "../packages/apw-resolver/src/federation/safe-fetch.ts";
+import { withSecurityHeaders } from "../functions/_shared/security-headers.js";
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8" };
 
@@ -130,7 +131,7 @@ function middlewarePrefix(functionsDir, file) { const parts = relative(functions
 function isPrefix(pathname, prefix) { return prefix === "/" || pathname === prefix || pathname.startsWith(prefix + "/"); }
 function methodHandler(module, method) { const suffix = method[0] + method.slice(1).toLowerCase(); return module[`onRequest${suffix}`] || module.onRequest || null; }
 function requestFromNode(req, trustedProxies = [], env = {}) { const protocol = resolveRequestProtocol(req.socket?.remoteAddress, req.headers["x-forwarded-proto"], trustedProxies, env.PORTALESS_PUBLIC_URL); const origin = `${protocol}://${req.headers.host || "localhost"}`; const headers = new Headers(); for (const [key, value] of Object.entries(req.headers)) { if (SPOOFABLE_HEADERS.has(key.toLowerCase())) continue; if (Array.isArray(value)) value.forEach((item) => headers.append(key, item)); else if (value !== undefined) headers.set(key, value); } const clientIp = resolveClientIp(req.socket?.remoteAddress, req.headers["x-forwarded-for"], trustedProxies); if (clientIp) headers.set(CLIENT_IP_HEADER, clientIp); headers.set(REQUEST_PROTO_HEADER, protocol); const hasBody = !["GET", "HEAD"].includes(req.method || "GET"); return new Request(new URL(req.url || "/", origin), { method: req.method, headers, body: hasBody ? Readable.toWeb(req) : undefined, duplex: hasBody ? "half" : undefined }); }
-async function sendNodeResponse(response, res) { res.statusCode = response.status; res.statusMessage = response.statusText || res.statusMessage; for (const [key, value] of response.headers) res.setHeader(key, value); const setCookies = typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : []; if (setCookies.length) res.setHeader("set-cookie", setCookies); if (!response.body) return res.end(); res.end(Buffer.from(await response.arrayBuffer())); }
+async function sendNodeResponse(rawResponse, res) { const response = withSecurityHeaders(rawResponse); res.statusCode = response.status; res.statusMessage = response.statusText || res.statusMessage; for (const [key, value] of response.headers) res.setHeader(key, value); const setCookies = typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : []; if (setCookies.length) res.setHeader("set-cookie", setCookies); if (!response.body) return res.end(); res.end(Buffer.from(await response.arrayBuffer())); }
 // Paridad con Cloudflare Pages: si una Function no exporta handler para el metodo,
 // Pages continua hacia los assets estaticos. Solo se cae al estatico si el archivo
 // existe de verdad (no el fallback 404.html).

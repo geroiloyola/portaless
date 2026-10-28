@@ -20,6 +20,8 @@ import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/
 import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
 import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { readJsonBodyLimited } from "../../_shared/public-body.js";
+import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 
 const COMMUNITY_CATEGORIES = [
   "perceived_trustworthiness",
@@ -53,9 +55,9 @@ function peekIssuer(jws) {
  * Devuelve null si no se puede resolver: el emisor entonces no acredita
  * antiguedad (fail-closed, E-13).
  */
-async function emitterFirstSeenIat(domain) {
+async function emitterFirstSeenIat(domain, fetchImpl) {
   try {
-    const history = await resolveApwHistory(domain, fetch, { includeEntries: true });
+    const history = await resolveApwHistory(domain, fetchImpl, { includeEntries: true });
     if (!history?.verified || !Array.isArray(history.attestations) || history.attestations.length === 0) return null;
     let earliest = null;
     for (const ref of history.attestations) {
@@ -74,12 +76,19 @@ export async function onRequestPost(context) {
   const siteId = params?.siteId;
   if (!siteId) return json({ error: "missing_site_id" }, 400);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json_body" }, 400);
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:community-attestation:ip",
+    ipLimit: 10,
+    actorLimit: 10,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes. Reintenta mas tarde." }, 429);
   }
+
+  const bodyResult = await readJsonBodyLimited(request, 64 * 1024);
+  if (!bodyResult.ok) {
+    return json({ error: bodyResult.error }, bodyResult.status);
+  }
+  const body = bodyResult.value;
 
   const jws = body?.attestation;
   if (typeof jws !== "string" || !jws.trim()) {
@@ -99,8 +108,9 @@ export async function onRequestPost(context) {
     return json({ error: "invalid_issuer", message: "`iss` debe ser un did:apw:<dominio>." }, 400);
   }
   const emitterDomain = iss.slice(APW_DID_PREFIX.length);
+  const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 10, deadlineMs: 6000 });
 
-  const identity = await resolveApwIdentity(emitterDomain, fetch);
+  const identity = await resolveApwIdentity(emitterDomain, fetchImpl);
   if (!identity.verified || !identity.didDocument) {
     return json({ error: "issuer_unresolvable", reason: identity.reason }, 403);
   }
@@ -146,7 +156,7 @@ export async function onRequestPost(context) {
     );
   }
 
-  const firstSeen = await emitterFirstSeenIat(emitterDomain);
+  const firstSeen = await emitterFirstSeenIat(emitterDomain, fetchImpl);
 
   try {
     await store.record({

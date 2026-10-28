@@ -19,6 +19,7 @@
 // (DNS, plc.directory, el propio handle) -- ver identity-atproto.md.
 
 import { buildAtprotoReputation } from "../../../packages/identity-atproto/src/reputation.ts";
+import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 
 const STATUS_BY_REASON = {
   invalid_handle: 400,
@@ -46,9 +47,21 @@ function json(body, status, extraHeaders = {}) {
 }
 
 export async function onRequestGet(context) {
-  const { params, env } = context;
+  const { params, env, request } = context;
 
-  const result = await buildAtprotoReputation(params?.handle, { env });
+  if (!(await allowPublicEgress(env, request, {
+    action: "trust:atproto:ip",
+    ipLimit: 30,
+    actorLimit: 30,
+  }))) {
+    return json({ error: "rate_limited", message: "Demasiadas solicitudes. Reintenta mas tarde." }, 429, {
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*",
+    });
+  }
+
+  const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 12, deadlineMs: 8000 });
+  const result = await buildAtprotoReputation(params?.handle, { env, fetchImpl });
 
   if (!result.resolved) {
     const status = STATUS_BY_REASON[result.reason] ?? 404;

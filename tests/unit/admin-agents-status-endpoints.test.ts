@@ -157,8 +157,8 @@ describe("functions/admin/api/apw-verification-status.js", () => {
     expect(body.txtRecord.value).not.toContain('"k"'); // v1 sin clave: no hay identidad
   });
 
-  async function seedIdentity() {
-    const keyPair = await generateApwDid("mysite.example");
+  async function seedIdentity(domain = "mysite.example") {
+    const keyPair = await generateApwDid(domain);
     const identityStore = (storeFactory as any).__identityStore;
     await identityStore.create("default", keyPair, "admin");
     return { keyPair, k: await jwkThumbprint(keyPair.publicKeyJwk) };
@@ -210,5 +210,16 @@ describe("functions/admin/api/apw-verification-status.js", () => {
     const body = await res.json();
     expect(body.anchor.status).toBe("no_txt");
     expect(body.identity.did).toBe("did:apw:mysite.example");
+  });
+
+  it("M-03: el dominio del TXT sale del DID, no del Host", async () => {
+    await seedIdentity("p1.example.com");
+    apw.resolveApwManifest.mockResolvedValueOnce({ resolved: false, reason: "txt_not_found", domain: "p1.example.com" });
+    const res = await apwStatus.onRequestGet(ctx({ user: admin, url }));
+    const body = await res.json();
+    expect(body.domain).toBe("p1.example.com");
+    expect(body.txtRecord.name).toBe("_apw.p1.example.com");
+    expect(body.hostMismatch).toBe(true);
+    expect(body.warning).toContain("p1.example.com");
   });
 });

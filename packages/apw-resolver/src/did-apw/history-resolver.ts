@@ -69,6 +69,8 @@ export interface ResolveHistoryOptions {
   includeEntries?: boolean;
   /** Incluye la lista de claves del log (ventanas validFrom/validTo), ya verificada. */
   includeKeys?: boolean;
+  /** Techo de paginas para callers con presupuesto (default 40). Una cadena incompleta falla cerrada. */
+  maxPages?: number;
 }
 
 const PAGE_LIMIT = 500;
@@ -122,8 +124,10 @@ export async function resolveApwHistory(
   const entries: ChainEntry[] = [];
   let keys: ChainKey[] | null = null;
   let from = 1;
+  let hasMore = false;
+  const pageCap = Math.min(Math.max(Math.trunc(options.maxPages ?? MAX_PAGES), 1), MAX_PAGES);
 
-  for (let page = 0; page < MAX_PAGES; page++) {
+  for (let page = 0; page < pageCap; page++) {
     let doc: any;
     try {
       const res = await fetchImpl(`https://${host}/.well-known/apw-log.json?from=${from}&limit=${PAGE_LIMIT}`, {
@@ -140,10 +144,12 @@ export async function resolveApwHistory(
     if (doc.did !== `did:apw:${host}`) return { verified: false, reason: 'did_mismatch', domain: host };
     if (keys === null) keys = doc.keys.map(toChainKey);
     for (const e of doc.entries) entries.push({ seq: e.seq, jws: e.jws });
-    if (doc.next === null || doc.next === undefined) break;
+    if (doc.next === null || doc.next === undefined) { hasMore = false; break; }
     from = Number(doc.next);
     if (!Number.isInteger(from) || from < 1) return { verified: false, reason: 'invalid_log_document', domain: host };
+    hasMore = true;
   }
+  if (hasMore) return { verified: false, reason: 'log_unreachable', domain: host };
 
   const result = await verifyChain(entries, keys ?? [], {
     anchorHead: manifest.h ?? null,

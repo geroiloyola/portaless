@@ -7,18 +7,23 @@ operador todavía requiere verificación en la instalación concreta.
 
 ## Qué existe hoy
 
-- `packages/auth/src/password.ts` — hashing con `scrypt`, comparación
-  resistente a ataques de temporización.
+- `packages/auth/src/password.ts` — hashing con `scrypt` `N=2^17` (maxmem
+  explícito), comparación resistente a ataques de temporización y
+  rehash-on-login para hashes históricos `N=2^14`.
 - `packages/auth/src/totp.ts` (v0.0.9.4) — TOTP (RFC 6238) sin
   dependencias externas, compatible con Google Authenticator/Authy/
   1Password.
-- `packages/auth/src/password-reset-store.ts` (v0.0.9.4) — tokens de
-  recuperación de un solo uso, vida de 30 minutos. **Solo implementación
-  en memoria por ahora** -- D1/SQLite reales para este store quedan fuera
-  de alcance de v0.0.9.4, ver ROADMAP.md.
+- `packages/auth/src/password-reset-store.ts` — tokens de recuperación de
+  un solo uso, vida de 30 minutos, con backends D1/SQLite reales. El token
+  usable solo se devuelve al crear el pedido; en reposo se guarda
+  `SHA-256(token)`.
 - `packages/auth/src/oauth.ts` (v0.0.9.4) — Authorization Code + PKCE
   (RFC 7636) sin librería externa, configurable por variables de entorno
   para cualquier proveedor (no atado a Google/GitHub específicamente).
+- `packages/auth/src/session-store.ts` + stores D1/SQLite — el token de
+  sesión se devuelve una sola vez al cliente; en reposo se guarda
+  `SHA-256(token)`. `mfa_verified` se persiste y `validateSession()` lo
+  expone para acciones sensibles.
 - `packages/auth/src/auth-service.ts` — único punto de entrada. `login()`
   devuelve `mfaRequired:true` en vez de una sesión si el usuario tiene
   2FA activo; agrega `completeMfaLogin`, `beginTotpEnrollment`,

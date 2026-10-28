@@ -5,6 +5,7 @@
 
 import { randomBytes } from "node:crypto";
 import type { PasswordResetRequest } from "./types";
+import { hashOpaqueToken } from "./token-hash";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutos -- vida corta a proposito.
 
@@ -27,16 +28,17 @@ export class InMemoryPasswordResetStore implements PasswordResetStore {
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + RESET_TOKEN_TTL_MS).toISOString(),
     };
-    this.requests.set(token, record);
+    this.requests.set(hashOpaqueToken(token), { ...record, token: hashOpaqueToken(token) });
     return record;
   }
 
   async consume(token: string): Promise<PasswordResetRequest | null> {
-    const record = this.requests.get(token);
+    const tokenHash = hashOpaqueToken(token);
+    const record = this.requests.get(tokenHash);
     if (!record) return null;
     if (record.usedAt) return null;
     if (new Date(record.expiresAt).getTime() < Date.now()) {
-      this.requests.delete(token);
+      this.requests.delete(tokenHash);
       return null;
     }
     record.usedAt = new Date().toISOString();
@@ -50,6 +52,6 @@ export class InMemoryPasswordResetStore implements PasswordResetStore {
   }
 
   async delete(token: string): Promise<void> {
-    this.requests.delete(token);
+    this.requests.delete(hashOpaqueToken(token));
   }
 }

@@ -195,6 +195,12 @@ export const MIGRATIONS: readonly Migration[] = [
     statements: RESOLUTION_BUDGET_CONFIG_STATEMENTS,
     createsTables: { resolution_budget_config: ["id", "config_json", "revision", "updated_at", "updated_by"] },
   },
+  {
+    version: 11,
+    name: "session_mfa_verified",
+    statements: [],
+    addColumns: [{ table: "sessions", column: "mfa_verified", type: "INTEGER NOT NULL DEFAULT 0" }],
+  },
 ];
 
 /**
@@ -205,7 +211,7 @@ export const MIGRATIONS: readonly Migration[] = [
  */
 export const REQUIRED_SCHEMA_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   users: ["username", "password_hash", "role", "created_at", "email", "provider", "totp_secret", "totp_enabled_at", "oauth_provider", "oauth_subject"],
-  sessions: ["token", "username", "role", "created_at", "expires_at"],
+  sessions: ["token", "username", "role", "created_at", "expires_at", "mfa_verified"],
   auth_mfa_challenges: ["token", "username", "role", "expires_at", "failed_attempts"],
   auth_rate_limits: ["bucket", "window_start", "count"],
   permission_grants: ["subject_type", "subject_id", "capability_id", "granted", "granted_at", "granted_by"],

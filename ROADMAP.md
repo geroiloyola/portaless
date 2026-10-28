@@ -24,7 +24,7 @@ Read this table first; every row links to the section that justifies it. A row i
 | Product modules: real admin activity feed, no mock panels | `[~]` one module partially shipped | [Phase 10](#phase-10--product-modules) |
 | AI interoperability: MCP connection profile + OpenAI-compatible provider | `[~]` MCP local flow verified; provider subset contract-tested; **external ChatGPT/provider `not_run`** | [Editor, MCP, onboarding, CI, self-host](#editor-mcp-onboarding-ci-self-host) |
 | Release acceptance: docs reconciliation + clean-install/upgrade/privacy/publication evidence | `[~]` local C40–C41 evidence passes; **ChatGPT/API/Cloudum/real GitHub/independent review open** | [`release-acceptance.md`](./docs/testing/release-acceptance.md) |
-| Web/auth security review (2026-10-27) | `[~]` **P0 closed**; P1/P2 findings remain open | [Security review](#security-review--p0-closure-2026-10-27) |
+| Web/auth security review (2026-10-27) | `[~]` **P0 + P1 auth/web closed**; P2 findings remain open | [Security review](#security-review--p0p1-closure-2026-10-27) |
 | Commercial seam: MIT plugin SDK 0.1.0, HTTP installer behind a flag, capability backends | `[~]` items 1–2 shipped; **item 3 deliberately not** | [Phase 11](#phase-11--the-commercial-seam) |
 | A real network: second operator, second implementation, external domain in an Index | `[ ]` **blocked on people, not on code** | [External](#external-depends-on-a-third-party) |
 | Edge sandbox adapters verified against real accounts; independent security review | `[~]` one command / one guide away, needs an operator and a reviewer | [External](#external-depends-on-a-third-party) |
@@ -87,13 +87,13 @@ no force pushes, no deletions, and required status checks `build`,
 
 ---
 
-## Security review — P0 closure (2026-10-27)
+## Security review — P0/P1 closure (2026-10-27)
 
 External review of `67ab71f` (v0.0.11). The cryptographic core was praised; the
 web/auth layer had two critical bypasses and several high-severity gaps that
-blocked a safe P1/P2 run. **P0 is closed in this change; P1 and P2 are not.**
-Every reviewed finding is recorded here with its current state, so nothing is
-silently dropped.
+blocked a safe P1/P2 run. **P0 and the authorized P1 batch are closed; P2
+remains open.** Every reviewed finding is recorded here with its current state,
+so nothing is silently dropped.
 
 ### P0 — closed before any external deployment
 
@@ -107,29 +107,33 @@ silently dropped.
 | A-04 | High | Session cookie lacked `Secure` behind Cloudflare Tunnel; SameSite differed across login paths | `[x]` fixed | Node runtime computes the protocol from trusted `X-Forwarded-Proto`/public HTTPS URL and exposes an internal header; one `sessionCookie()` helper emits `HttpOnly; SameSite=Strict; Secure` behind TLS for password, MFA and OAuth. OAuth redirect URIs use the public origin. Tests: `request-protocol.test.ts`, `admin-login-endpoints.test.ts`, `oauth-callback-endpoint.test.ts`. |
 | A-06 | High | GitHub deployment OAuth start/callback used different user IDs, so callback always returned 403 | `[x]` fixed | Both use `context.data.user.username`; same fix applied to the GitHub App manifest start/callback. Contract test: `github-oauth-endpoints.test.ts` exercises start→callback and a different-session rejection. |
 
-### P1 — required before the public P1/P2 test
+### P1 — closed before the public P1/P2 test
 
 | ID | Severity | Finding | Status | Next action |
 |---|---|---|---|---|
-| A-05 | High | Public `/trust/*` endpoints accept large bodies and do unbounded outbound work | `[ ]` open | Add `readBodyLimited`, per-IP/actor egress budgets, timeouts and the hardened directory fetcher to community attestation, image verify, agent verification and escrow report. |
-| A-07 | High | No CSP or security headers in Node/Cloudflare targets | `[ ]` open | Add one header policy to the Node response path and `public/_headers`; keep the admin frame-ancestors `none`. |
-| A-08 | High | Session/reset tokens stored in clear; scrypt cost `N=2^14` | `[ ]` open | Store hashes only, migrate active sessions, raise scrypt to `2^17` with rehash-on-login. |
-| M-01 | Medium | Web Bot Auth nonce is optional, allowing replay within 300 s | `[ ]` open | Require nonce or deduplicate `(keyId, signature-input, created)` in `webbotauth_nonces`. |
-| M-02 | Medium | Login timing reveals whether a username exists | `[ ]` open | Verify against a dummy scrypt hash when the user does not exist. |
-| M-03 | Medium | `apw-verification-status` derives the TXT domain from Host instead of the DID | `[ ]` open | Derive from `identity.did` and warn when the request host differs. (APW manifest domain already fixed under A-03.) |
-| M-04 | Medium | Witness/index/peer sync use global `fetch` without timeout or safe fetcher | `[ ]` open | Inject `env.__PORTALESS_DIRECTORY_FETCHER`, add `AbortSignal.timeout`, cap pages per sync. |
-| M-05 | Medium | `mfaVerified` is written in memory but never persisted or read | `[ ]` open | Add `mfa_verified` to sessions, persist/validate it, and use it for sensitive-action guards. |
+| A-05 | High | Public `/trust/*` endpoints accept large bodies and do unbounded outbound work | `[x]` fixed | `readBodyLimited` + per-IP/actor hourly budgets on community attestation, image verify, agent verification, escrow report and ATProto; APW resolution uses the hardened fetcher with byte/time/request caps; witness/index sync use the same fetcher with page caps. Tests: `apw-community-attestations.test.ts`, `request-protocol.test.ts`, `security-headers.test.ts`. |
+| A-07 | High | No CSP or security headers in Node/Cloudflare targets | `[x]` fixed | One policy in `functions/_shared/security-headers.js` applied by the Node runtime and the global middleware; `public/_headers` carries the Cloudflare equivalent. Tests: `security-headers.test.ts`. Residual P2: inline scripts still require `'unsafe-inline'`; nonce/hash and a per-site analytics allowlist remain. |
+| A-08 | High | Session/reset tokens stored in clear; scrypt cost `N=2^14` | `[x]` fixed | Session and reset stores persist SHA-256(token) only; `mfa_verified` is migration v11; scrypt is `N=2^17` with maxmem and rehash-on-login for legacy hashes. Existing sessions/reset tokens are invalidated by the hash change. Tests: `password-scrypt.test.ts`, `session-token-hash.test.ts`, `d1-password-reset-store.test.ts`. Residual: validate the 128 MiB scrypt working set under Cloudflare Workers' memory ceiling; self-host Node is the reference runtime. |
+| M-01 | Medium | Web Bot Auth nonce is optional, allowing replay within 300 s | `[x]` fixed | Missing nonce now returns `missing_nonce`; replay still returns `nonce_replayed`. Tests: Ed25519 + ML-DSA in `webbotauth-verify*.test.ts`. |
+| M-02 | Medium | Login timing reveals whether a username exists | `[x]` fixed | Missing users verify against a per-process dummy scrypt hash. Test: `password-scrypt.test.ts`. |
+| M-03 | Medium | `apw-verification-status` derives the TXT domain from Host instead of the DID | `[x]` fixed | With an identity, the domain comes from `identity.did`; the response includes `hostMismatch`/`warning` when the observed host differs. Test: `admin-agents-status-endpoints.test.ts`. |
+| M-04 | Medium | Witness/index/peer sync use global `fetch` without timeout or safe fetcher | `[x]` fixed | All three use `createBoundedPublicFetch`; `resolveApwHistory` accepts `maxPages` and fails closed when the page cap is reached. |
+| M-05 | Medium | `mfaVerified` is written in memory but never persisted or read | `[x]` fixed | `sessions.mfa_verified` persists across SQLite/D1/memory; `create(..., { mfaVerified })` and `validateSession()` expose it. Tests: `session-token-hash.test.ts`, `auth-2fa-reset-oauth.test.ts`. |
 | M-06 | Medium | SameSite was inconsistent across login/MFA/OAuth | `[x]` fixed | Session cookie is now `SameSite=Strict` everywhere. The OAuth state cookie remains `SameSite=Lax` deliberately: it must survive the provider's cross-site redirect and is not the session. |
-| M-07 | Medium | Generic OAuth has a fixed scope, no provider state binding and only partial email verification | `[ ]` open | Per-provider scope; `portaless_oauth_state_<provider>`; verify provider matches state; keep `emailVerified` propagation added in C-02. |
-| M-08 | Medium | Publication child process inherits all environment secrets | `[ ]` open | Pass an explicit env allowlist to `spawn`. |
-| M-09 | Medium | Blocking file I/O and full response buffering per request | `[ ]` open | Stream static files and web response bodies. |
-| M-10 | Medium | Runtime-created tables are absent from `schema.sql` (D1 parity) | `[ ]` open | Move `password_change_events` and `site_trust_read_policies` into schema sources and regenerate. |
-| M-11 | Medium | `node:fs` in a Function and missing `compatibility_flags` | `[ ]` open | Add `nodejs_compat` or move FS behind a guarded dynamic import; document the runtime matrix. |
+
+**P1 exit evidence:** full suite `2405 passed / 2 skipped`, 272 files; build
+`79 pages`; Playwright `75/75`; manifest validation OK. New regression tests
+cover A-05, A-07, A-08, M-01 through M-06.
 
 ### P2 / structural debt
 
 | ID | Severity | Finding | Status | Next action |
 |---|---|---|---|---|
+| M-07 | Medium | Generic OAuth has a fixed scope, no provider state binding and only partial email verification | `[ ]` open | Per-provider scope; `portaless_oauth_state_<provider>`; verify provider matches state; keep `emailVerified` propagation added in C-02. |
+| M-08 | Medium | Publication child process inherits all environment secrets | `[ ]` open | Pass an explicit env allowlist to `spawn`. |
+| M-09 | Medium | Blocking file I/O and full response buffering per request | `[ ]` open | Stream static files and web response bodies. |
+| M-10 | Medium | Runtime-created tables are absent from `schema.sql` (D1 parity) | `[ ]` open | Move `password_change_events` and `site_trust_read_policies` into schema sources and regenerate. |
+| M-11 | Medium | `node:fs` in a Function and missing `compatibility_flags` | `[ ]` open | Add `nodejs_compat` or move FS behind a guarded dynamic import; document the runtime matrix. |
 | B-01…B-06 | Low | Cookie regex, missing `_headers`, parse-before-size and related hygiene (the report groups them without per-item detail) | `[ ]` open | Triage each item in the P2 batch; do not treat the group as one fix. |
 | E-01 | Structural | Index publishes witness observations, not a site directory/ranking | `[ ]` open | Keep the README wording as observation cache until witness admission policy exists. |
 | E-02 | Structural | Manual DNS `h` anchoring conflicts with automatic `reader_conduct` head changes | `[ ]` open | Design automatic anchoring or freeze semantics before federation scale. |

@@ -12,15 +12,21 @@ const state = vi.hoisted(() => ({
   identity: {} as Record<string, any>,
   history: {} as Record<string, any>,
   env: {} as Record<string, unknown>,
+  lastFetch: null as any,
 }));
 
 vi.mock("../../packages/apw-resolver/src/index.ts", () => ({
-  resolveApwIdentity: async (domain: string) =>
-    state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` },
+  resolveApwIdentity: async (domain: string, fetchImpl: any) => {
+    state.lastFetch = fetchImpl;
+    return state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` };
+  },
 }));
 
 vi.mock("../../packages/apw-resolver/src/did-apw/history-resolver.ts", () => ({
-  resolveApwHistory: async (domain: string) => state.history[domain] ?? { verified: false, reason: "no_history", domain },
+  resolveApwHistory: async (domain: string, fetchImpl: any) => {
+    state.lastFetch = fetchImpl;
+    return state.history[domain] ?? { verified: false, reason: "no_history", domain };
+  },
 }));
 
 import { ATTESTATION_TYP } from "../../packages/trust-layer/src/site-trust/attestation";
@@ -92,6 +98,7 @@ beforeEach(() => {
   state.env = { PORTALESS_SQLITE_PATH: join(tmp, `community-${dbSeq}.db`) };
   state.identity = {};
   state.history = {};
+  state.lastFetch = null;
 });
 
 describe("InMemoryCommunityAttestationsStore (E-13)", () => {
@@ -210,6 +217,31 @@ describe("POST /trust/:siteId/community-attestation (E-13)", () => {
     const again = await endpoint.onRequestPost(ctx({ attestation: jws }));
     expect(again.status).toBe(409);
     expect((await again.json()).error).toBe("duplicate_attestation");
+  });
+
+  it("A-05: rechaza cuerpos mayores a 64 KiB antes de parsear", async () => {
+    const res = await endpoint.onRequestPost(ctx("x".repeat(65 * 1024)));
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("request_too_large");
+  });
+
+  it("A-05: limita por IP antes del trabajo de red", async () => {
+    for (let i = 0; i < 10; i++) {
+      expect((await endpoint.onRequestPost(ctx({}))).status).toBe(401);
+    }
+    const limited = await endpoint.onRequestPost(ctx({}));
+    expect(limited.status).toBe(429);
+    expect((await limited.json()).error).toBe("rate_limited");
+  });
+
+  it("A-05: usa el fetcher endurecido inyectado, no fetch global", async () => {
+    const safe = vi.fn(async () => ({ ok: true, status: 200, text: "{}" }));
+    state.env.__PORTALESS_DIRECTORY_FETCHER = safe;
+    const { jws } = await signAttestation(keys.privateJwk);
+    expect((await endpoint.onRequestPost(ctx({ attestation: jws }))).status).toBe(200);
+    expect(typeof state.lastFetch).toBe("function");
+    await state.lastFetch("https://veracier.example/.well-known/did.json");
+    expect(safe).toHaveBeenCalled();
   });
 
   it("429 si el mismo emisor reemite la misma categoria antes de 24h", async () => {

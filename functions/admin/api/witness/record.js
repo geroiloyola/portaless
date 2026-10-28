@@ -27,6 +27,7 @@ import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw
 import { signWitnessStatement } from "../../../../packages/apw-resolver/src/did-apw/witness.ts";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
 import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
+import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 
 const SITE_ID = "default";
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
@@ -66,7 +67,8 @@ export async function onRequestPost(context) {
     return json({ error: "self_witness", message: "Un sitio no puede ser testigo de si mismo." }, 400);
   }
 
-  const history = await resolveApwHistory(domain);
+  const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 30, deadlineMs: 10000, maxBytes: 512 * 1024 });
+  const history = await resolveApwHistory(domain, fetchImpl, { maxPages: 10 });
   if (!history.verified) {
     return json({ error: "subject_history_unverified", reason: history.reason, message: "La cadena del sujeto no verifico contra su TXT y su apw-log.json." }, 422);
   }

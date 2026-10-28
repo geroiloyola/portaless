@@ -23,6 +23,7 @@
 
 import { createWitnessIndexStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 import { syncWitnessIndex } from "../../../../packages/apw-resolver/src/did-apw/witness-index.ts";
 
 const SITE_ID = "default";
@@ -39,9 +40,9 @@ function normalizeDomain(value) {
   return typeof value === "string" ? value.trim().toLowerCase().replace(/[.]$/, "") : "";
 }
 
-async function fetchText(url) {
+async function fetchText(url, fetchImpl) {
   try {
-    const res = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    const res = await fetchImpl(url);
     if (!res.ok) return null;
     const text = await res.text();
     if (text.length > MAX_TEXT_BYTES) return null;
@@ -51,8 +52,8 @@ async function fetchText(url) {
   }
 }
 
-function resolveHistory(domain) {
-  return resolveApwHistory(domain, fetch, { includeEntries: true, includeKeys: true });
+function resolveHistory(domain, fetchImpl) {
+  return resolveApwHistory(domain, fetchImpl, { includeEntries: true, includeKeys: true, maxPages: 10 });
 }
 
 export async function onRequestPost(context) {
@@ -99,7 +100,11 @@ export async function onRequestPost(context) {
 
   try {
     const store = await createWitnessIndexStore(env);
-    const entry = await syncWitnessIndex({ fetchText, resolveHistory }, store, { siteId: SITE_ID, domain, witnesses, weights });
+    const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 120, deadlineMs: 30000, maxBytes: 2_000_000 });
+    const entry = await syncWitnessIndex({
+      fetchText: (url) => fetchText(url, fetchImpl),
+      resolveHistory: (domain) => resolveHistory(domain, fetchImpl),
+    }, store, { siteId: SITE_ID, domain, witnesses, weights });
     return json({ synced: entry }, 200);
   } catch (err) {
     const code = String(err && err.message);

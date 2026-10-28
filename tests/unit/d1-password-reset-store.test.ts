@@ -12,6 +12,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { D1PasswordResetStore } from "../../packages/auth/src/stores/d1-password-reset-store";
+import { hashOpaqueToken } from "../../packages/auth/src/token-hash";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-d1-pwd-reset-"));
 const dbPath = join(tmp, "auth.db");
@@ -64,6 +65,9 @@ describe("D1PasswordResetStore", () => {
     expect(record.token).toMatch(/^[0-9a-f]{64}$/);
     const ttl = new Date(record.expiresAt).getTime() - new Date(record.createdAt).getTime();
     expect(ttl).toBe(30 * 60 * 1000);
+    // A-08: en reposo solo vive SHA-256(token), nunca el token usable.
+    expect(db.prepare("SELECT token FROM password_reset_requests WHERE token = ?").get(record.token)).toBeUndefined();
+    expect(db.prepare("SELECT token FROM password_reset_requests WHERE token = ?").get(hashOpaqueToken(record.token))).toBeTruthy();
   });
 
   it("consume es un solo uso: primera vez devuelve el record, segunda null", async () => {
@@ -78,9 +82,9 @@ describe("D1PasswordResetStore", () => {
   it("token expirado: consume lo borra y devuelve null", async () => {
     const record = await store.create("admin");
     db.prepare("UPDATE password_reset_requests SET expires_at = ? WHERE token = ?")
-      .run(new Date(Date.now() - 1000).toISOString(), record.token);
+      .run(new Date(Date.now() - 1000).toISOString(), hashOpaqueToken(record.token));
     expect(await store.consume(record.token)).toBeNull();
-    const row = db.prepare("SELECT token FROM password_reset_requests WHERE token = ?").get(record.token);
+    const row = db.prepare("SELECT token FROM password_reset_requests WHERE token = ?").get(hashOpaqueToken(record.token));
     expect(row).toBeUndefined();
   });
 

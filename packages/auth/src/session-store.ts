@@ -11,11 +11,12 @@
 
 import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "./types";
+import { hashOpaqueToken } from "./token-hash";
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas.
 
 export interface SessionStore {
-  create(username: string, role: Role): Promise<SessionRecord>;
+  create(username: string, role: Role, options?: { mfaVerified?: boolean }): Promise<SessionRecord>;
   get(token: string): Promise<SessionRecord | null>;
   destroy(token: string): Promise<void>;
   /** Cierra todas las sesiones del usuario. Devuelve cuantas cerro. */
@@ -25,8 +26,9 @@ export interface SessionStore {
 export class InMemorySessionStore implements SessionStore {
   private sessions = new Map<string, SessionRecord>();
 
-  async create(username: string, role: Role): Promise<SessionRecord> {
+  async create(username: string, role: Role, options: { mfaVerified?: boolean } = {}): Promise<SessionRecord> {
     const token = randomBytes(32).toString("hex");
+    const tokenHash = hashOpaqueToken(token);
     const now = new Date();
     const record: SessionRecord = {
       token,
@@ -34,23 +36,26 @@ export class InMemorySessionStore implements SessionStore {
       role,
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + SESSION_TTL_MS).toISOString(),
+      mfaVerified: Boolean(options.mfaVerified),
     };
-    this.sessions.set(token, record);
+    // At rest only the hash; the plaintext token is returned once to the caller.
+    this.sessions.set(tokenHash, { ...record, token: tokenHash });
     return record;
   }
 
   async get(token: string): Promise<SessionRecord | null> {
-    const record = this.sessions.get(token);
+    const tokenHash = hashOpaqueToken(token);
+    const record = this.sessions.get(tokenHash);
     if (!record) return null;
     if (new Date(record.expiresAt).getTime() < Date.now()) {
-      this.sessions.delete(token);
+      this.sessions.delete(tokenHash);
       return null;
     }
     return record;
   }
 
   async destroy(token: string): Promise<void> {
-    this.sessions.delete(token);
+    this.sessions.delete(hashOpaqueToken(token));
   }
 
   async destroyAllForUser(username: string): Promise<number> {

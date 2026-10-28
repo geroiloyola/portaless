@@ -47,7 +47,7 @@ interface SignedRequestOptions {
   keyId?: string;
   /** Parametro alg en Signature-Input; undefined = omitirlo (draft-03 lo deja opcional). */
   algParam?: string;
-  nonce?: string;
+  nonce?: string | null;
   created?: number;
   expires?: number;
 }
@@ -58,12 +58,13 @@ async function buildSignedRequest(opts: SignedRequestOptions): Promise<Request> 
   const expires = opts.expires ?? created + 300;
   const agentHeader = `"${OPERATOR_ORIGIN}"`;
 
+  const nonce = opts.nonce === null ? null : (opts.nonce ?? `test-${crypto.randomUUID()}`);
   const paramsLine =
     `(${DEFAULT_COMPONENTS})` +
     `;created=${created};expires=${expires}` +
     `;keyid="${opts.keyId ?? KEY_ID}"` +
     (opts.algParam ? `;alg="${opts.algParam}"` : "") +
-    (opts.nonce ? `;nonce="${opts.nonce}"` : "") +
+    (nonce ? `;nonce="${nonce}"` : "") +
     `;tag="web-bot-auth"`;
 
   const unsigned = new Request(url, {
@@ -230,6 +231,14 @@ describe("verifyWebBotAuthRequest (middleware) -- ML-DSA", () => {
     const request = await buildSignedRequest({ keys: attacker.keys, impl: ml_dsa65 });
     const result = await verifyWebBotAuthRequest(request);
     expect(result).toMatchObject({ verified: false, reason: "signature_verification_failed" });
+  });
+
+  it("M-01: ML-DSA tambien exige nonce", async () => {
+    const { keys, pub } = makeMlDsaKey("ML-DSA-65");
+    mockDirectoryOnce(pub);
+    const request = await buildSignedRequest({ keys, impl: ml_dsa65, nonce: null });
+    const result = await verifyWebBotAuthRequest(request);
+    expect(result).toMatchObject({ verified: false, reason: "missing_nonce" });
   });
 
   it("el anti-replay por nonce también aplica en el camino ML-DSA", async () => {

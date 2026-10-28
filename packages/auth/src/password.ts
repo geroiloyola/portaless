@@ -5,34 +5,70 @@
 // estandar de Node desde la v10 y es resistente a ataques por hardware
 // especializado (ASIC/GPU) gracias a su alto costo de memoria.
 //
-// Si en el futuro este proyecto necesita hashing mas configurable o
-// migra a un entorno donde argon2 sea mas facil de instalar, sustituir
-// esta implementacion sin cambiar la interfaz publica (hashPassword /
-// verifyPassword) hacia el resto del sistema.
+// A-08: N=2^17 (OWASP 2024+). El formato incluye N para poder verificar
+// hashes viejos y rehashear al autenticar:
+//   scrypt:<N>:<salt-hex>:<hash-hex>
+// El formato historico de 3 partes (scrypt:<salt>:<hash>) se sigue
+// aceptando como N=2^14 y se marca para rehash.
 
 import { scryptSync, randomBytes, timingSafeEqual } from "node:crypto";
 
 const SCRYPT_KEYLEN = 64;
-const SCRYPT_COST_N = 16384; // 2^14 -- balance razonable de seguridad/latencia para login interactivo.
+export const SCRYPT_COST_N = 1 << 17;
+export const LEGACY_SCRYPT_COST_N = 1 << 14;
+const MIN_SCRYPT_N = 1 << 10;
+const MAX_SCRYPT_N = 1 << 20;
+// 128 * N * r = 128 MiB para N=2^17, r=8; Node exige maxmem > ese valor.
+const SCRYPT_MAXMEM = 160 * 1024 * 1024;
+
+interface ParsedHash {
+  n: number;
+  salt: Buffer;
+  expected: Buffer;
+  legacy: boolean;
+}
+
+function parseHash(storedHash: string): ParsedHash | null {
+  const parts = String(storedHash).split(":");
+  if (parts[0] !== "scrypt") return null;
+  let n: number;
+  let saltHex: string;
+  let hashHex: string;
+  let legacy: boolean;
+  if (parts.length === 4) {
+    n = Number(parts[1]);
+    saltHex = parts[2];
+    hashHex = parts[3];
+    legacy = false;
+  } else if (parts.length === 3) {
+    n = LEGACY_SCRYPT_COST_N;
+    saltHex = parts[1];
+    hashHex = parts[2];
+    legacy = true;
+  } else {
+    return null;
+  }
+  if (!Number.isSafeInteger(n) || n < MIN_SCRYPT_N || n > MAX_SCRYPT_N) return null;
+  if (!/^[0-9a-f]+$/i.test(saltHex) || !/^[0-9a-f]+$/i.test(hashHex)) return null;
+  return { n, salt: Buffer.from(saltHex, "hex"), expected: Buffer.from(hashHex, "hex"), legacy };
+}
 
 export function hashPassword(plainPassword: string): string {
   const salt = randomBytes(16);
-  const derived = scryptSync(plainPassword, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST_N });
-  return `scrypt:${salt.toString("hex")}:${derived.toString("hex")}`;
+  const derived = scryptSync(plainPassword, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST_N, maxmem: SCRYPT_MAXMEM });
+  return `scrypt:${SCRYPT_COST_N}:${salt.toString("hex")}:${derived.toString("hex")}`;
 }
 
 export function verifyPassword(plainPassword: string, storedHash: string): boolean {
-  const parts = storedHash.split(":");
-  if (parts.length !== 3 || parts[0] !== "scrypt") return false;
+  const parsed = parseHash(storedHash);
+  if (!parsed) return false;
+  const derived = scryptSync(plainPassword, parsed.salt, SCRYPT_KEYLEN, { N: parsed.n, maxmem: SCRYPT_MAXMEM });
+  if (derived.length !== parsed.expected.length) return false;
+  return timingSafeEqual(derived, parsed.expected);
+}
 
-  const [, saltHex, hashHex] = parts;
-  const salt = Buffer.from(saltHex, "hex");
-  const expected = Buffer.from(hashHex, "hex");
-
-  const derived = scryptSync(plainPassword, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST_N });
-
-  // timingSafeEqual evita que un atacante infiera el hash correcto
-  // midiendo cuanto tarda la comparacion (ataque de temporizacion).
-  if (derived.length !== expected.length) return false;
-  return timingSafeEqual(derived, expected);
+/** true si el hash usa el formato/costo viejo y debe rehashearse al autenticar. */
+export function passwordNeedsRehash(storedHash: string): boolean {
+  const parsed = parseHash(storedHash);
+  return !parsed || parsed.legacy || parsed.n < SCRYPT_COST_N;
 }
