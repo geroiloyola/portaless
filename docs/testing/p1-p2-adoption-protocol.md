@@ -1,7 +1,7 @@
 # P1/P2 external adoption protocol — Portaless official Beta
 
 **Status: executable test protocol. Not a release, gate change or authorization.**
-Baseline: `main` at `e2bc25f` (PR #112 merge), 2026-10-27.
+Baseline: `main` after PR #113 (post-audit login hardening), 2026-10-28.
 License: CC BY 4.0 for this protocol.
 
 This is the minimum real-world test for the existing official Beta exit criterion:
@@ -73,10 +73,10 @@ Each operator needs:
 - `cloudflared` installed;
 - outbound HTTPS.
 
-The reference commit is:
+The reference commit is the PR #113 merge commit on `main`:
 
 ```bash
-export PORTALESS_REF=e2bc25f
+export PORTALESS_REF=$(git rev-parse origin/main)
 ```
 
 Record the actual `git rev-parse HEAD` in the evidence. If the test starts after a
@@ -89,13 +89,21 @@ These are part of the system under test, not optional hardening:
 - **Public origin.** `PORTALESS_PUBLIC_URL` is mandatory. The Compose files have
   no default and fail explicitly when it is missing. It must be the real HTTPS
   origin for P1/P2.
-- **Login rate limit.** After `LOGIN_LIMIT_PER_IP` (20) failed attempts from the
-  same client IP inside the 15-minute window, `/admin/login` returns `429` with
-  `Retry-After` and `{"error":"rate_limited"}`. The per-user bucket is recorded
-  but never rejects, so a correct password still emits a session. This is the
+- **Login attempt budget (pre-hash).** `/admin/login` counts every valid-form
+  attempt per client IP before running scrypt. After
+  `PORTALESS_LOGIN_ATTEMPTS_PER_IP` (default `60`) attempts inside the 15-minute
+  window, it returns `429` with `Retry-After` and
+  `{"error":"rate_limited"}` without executing the hash.
+- **Login failure limit (post-verification).** After `LOGIN_LIMIT_PER_IP` (20)
+  failed credentials from the same IP, further failures also return `429`. The
+  per-user bucket is recorded but never rejects, so a correct password still
+  emits a session while the IP attempt budget is not exhausted. This is the
   anti-lockout property.
-- **Scrypt concurrency.** At most `PORTALESS_LOGIN_CONCURRENCY` (default `4`)
-  password verifications run at once. Each scrypt `N=2^17` uses ~128 MiB.
+- **Scrypt concurrency.** Password hashing is asynchronous, so it no longer
+  blocks the event loop. At most `PORTALESS_LOGIN_CONCURRENCY` (default `4`)
+  verifications run at once. Each scrypt `N=2^17` uses ~128 MiB. The bounded
+  queue holds at most 32 requests for 2 s; a full or timed-out queue returns
+  `503 server_busy` without hashing.
 - **Public `/trust/*` egress.** Public POST endpoints cap the body (64 KiB; 8 MiB
   for image verification), enforce per-IP/actor hourly budgets, and resolve APW
   data through a hardened fetcher with time, byte and request caps. A budget
@@ -192,11 +200,14 @@ curl -fsS -o /dev/null -w '%{http_code}\n' https://p1.example.com/healthz
 
 `PORTALESS_TRUSTED_PROXIES` is intentionally not set for this pilot. Client-IP
 rate limits therefore see the tunnel/proxy address: after 20 failed logins from
-any client, `/admin/login` can answer `429` for further failures, but a correct
-password still emits a session. This does not affect APW identity, publication or
-Index discovery. For production, configure the trusted proxy exactly as
-documented in `docs/self-hosting.md`; without it, the IP bucket is shared by all
-clients behind the proxy.
+any client, further failures can answer `429`, and after 60 total attempts the
+pre-hash budget can answer `429` for every client behind the tunnel until the
+15-minute window rolls over. A correct password still bypasses the failure
+bucket, but it does not bypass the IP attempt budget. Do not run a brute-force
+demo. This does not affect APW identity, publication or Index discovery. For
+production, configure the trusted proxy exactly as documented in
+`docs/self-hosting.md`; without it, the IP buckets are shared by all clients
+behind the proxy.
 
 ### 5.3 Complete setup
 
@@ -224,7 +235,10 @@ browser MFA flow instead.
 Do not use this endpoint for a brute-force demo before the rest of the test. After
 20 failed attempts from the same IP, failures return `429 rate_limited` with
 `Retry-After`; the correct password still works because the per-user bucket does
-not reject.
+not reject. After 60 total attempts from that IP, the pre-hash budget also
+returns `429` until the 15-minute window rolls over, including for a correct
+password. Wait for the window or configure `PORTALESS_TRUSTED_PROXIES` so the
+budget follows the real client IP.
 
 ## 6. P1 — create APW identity and publish
 
