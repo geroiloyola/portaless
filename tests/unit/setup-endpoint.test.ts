@@ -20,14 +20,26 @@ describe("setup endpoints", () => {
   });
 
   it("complete rechaza JSON invalido y requests de otro origen", async () => {
-    const env = { __PORTALESS_FIRST_RUN: { complete: async () => ({ status: 201, body: {} }) } };
+    const env = { PORTALESS_PUBLIC_URL: "http://localhost", __PORTALESS_FIRST_RUN: { complete: async () => ({ status: 201, body: {} }) } };
     expect((await complete({ request: post("no-json"), env } as any)).status).toBe(400);
     expect((await complete({ request: post("{}", { origin: "https://evil.example" }), env } as any)).status).toBe(403);
   });
 
+  it("N-02: acepta el Origin HTTPS real detrás de un proxy TLS", async () => {
+    const env = {
+      PORTALESS_PUBLIC_URL: "https://p1.example.com",
+      __PORTALESS_FIRST_RUN: { complete: async () => ({ status: 201, body: { success: true } }) },
+    };
+    const res = await complete({
+      request: post(JSON.stringify({ code: "C", username: "u", password: "p" }), { origin: "https://p1.example.com" }),
+      env,
+    } as any);
+    expect(res.status).toBe(201);
+  });
+
   it("complete delega en el servicio y propaga su status", async () => {
     let received: unknown;
-    const env = { __PORTALESS_FIRST_RUN: { complete: async (input: unknown) => { received = input; return { status: 410, body: { success: false, error: "setup_disabled" } }; } } };
+    const env = { PORTALESS_PUBLIC_URL: "http://localhost", __PORTALESS_FIRST_RUN: { complete: async (input: unknown) => { received = input; return { status: 410, body: { success: false, error: "setup_disabled" } }; } } };
     const res = await complete({ request: post(JSON.stringify({ code: "C", username: "u", password: "p", role: "x" }), { origin: "http://localhost" }), env } as any);
     expect(res.status).toBe(410);
     expect(received).toEqual({ code: "C", username: "u", password: "p" });

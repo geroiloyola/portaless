@@ -5,7 +5,7 @@
 // contrasena incorrecta (step-up) y la rotacion real, que cambia el did
 // y muestra la clave nueva una sola vez.
 //
-// El server de tests siembra una identidad (did:apw:browser-test.example),
+// El server de tests siembra una identidad para el host publico de staging,
 // asi que la pantalla arranca SIEMPRE en el camino "ya hay identidad".
 import { test, expect } from "@playwright/test";
 import { login, BROWSER_TEST_ADMIN_PASSWORD } from "./helpers";

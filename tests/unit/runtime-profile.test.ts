@@ -27,6 +27,14 @@ describe("C37/C38 private-node runtime profile", () => {
     expect(compose.split("tailscale:")[0]).not.toMatch(/^\s+ports:/m);
   });
 
+  it("N-01: every Compose profile requires PORTALESS_PUBLIC_URL explicitly", () => {
+    for (const file of ["docker-compose.yml", "docker-compose.minimal.yml", "docker-compose.private.yml"]) {
+      const compose = readFileSync(join(root, file), "utf8");
+      expect(compose, file).toContain("PORTALESS_PUBLIC_URL: ${PORTALESS_PUBLIC_URL:?PORTALESS_PUBLIC_URL is required}");
+      expect(compose, file).not.toContain(":-http://localhost:3000");
+    }
+  });
+
   it("declares the reference resource budget and evaluates measurements", () => {
     expect(MINIMAL_RUNTIME_PROFILE.diskBudgetBytes).toBe(20 * 1024 * 1024 * 1024);
     expect(REFERENCE_RESOURCE_BUDGET).toEqual({ rssBytes: 2 * 1024 * 1024 * 1024, diskBytes: 20 * 1024 * 1024 * 1024 });

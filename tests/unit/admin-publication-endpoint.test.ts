@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
 import { __resetPublicationRunStoreForTests } from "../../packages/deploy-engine/src/publication-store";
-import { onRequestGet, onRequestPost } from "../../functions/admin/api/publication.js";
+import { onRequestGet, onRequestPost, publicationChildEnv } from "../../functions/admin/api/publication.js";
 
 const dirs: string[] = [];
 afterEach(() => { __resetPublicationRunStoreForTests(); for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
@@ -35,6 +35,29 @@ describe("C34 admin publication endpoint", () => {
     const env = await envWithPublishedPage();
     expect((await onRequestGet(context(null, env))).status).toBe(401);
     expect((await onRequestGet(context({ role: "viewer" }, env))).status).toBe(403);
+  });
+
+  it("M-08: el hijo de publicacion recibe solo el env allowlisted", () => {
+    const env = publicationChildEnv({
+      PATH: "/usr/bin",
+      PORTALESS_SQLITE_PATH: "/data/portaless.db",
+      PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: "encryption-key",
+      PUBLIC_SITE_MODE: "beta",
+      PORTALESS_LOGIN_ATTEMPTS_PER_IP: "60",
+      AWS_SECRET_ACCESS_KEY: "must-not-leak",
+      OPENAI_API_KEY: "must-not-leak",
+    }, { hash: "snapshot-hash", siteId: "default" });
+
+    expect(env).toMatchObject({
+      PATH: "/usr/bin",
+      PORTALESS_SQLITE_PATH: "/data/portaless.db",
+      PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: "encryption-key",
+      PUBLIC_SITE_MODE: "beta",
+      PORTALESS_PUBLISH_SNAPSHOT: '{"hash":"snapshot-hash","siteId":"default"}',
+    });
+    expect(env.PORTALESS_LOGIN_ATTEMPTS_PER_IP).toBeUndefined();
+    expect(env.AWS_SECRET_ACCESS_KEY).toBeUndefined();
+    expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
   it("publishes the current approved snapshot, is idempotent, and exposes status", async () => {

@@ -66,8 +66,8 @@ function post(body: unknown, headers: Record<string, string> = {}) {
   });
 }
 
-function ctx(request: Request, username: string | null, role = "admin") {
-  return { request, env: {}, data: username ? { user: { username, role } } : {} } as never;
+function ctx(request: Request, username: string | null, role = "admin", env: Record<string, unknown> = {}) {
+  return { request, env, data: username ? { user: { username, role } } : {} } as never;
 }
 
 describe("POST /admin/api/site-identity con rotate", () => {
@@ -93,6 +93,24 @@ describe("POST /admin/api/site-identity con rotate", () => {
     expect(rotated.previousDid).toBe(first.identity.did);
     expect(rotated.identity.publicKeyJwk).not.toEqual(first.identity.publicKeyJwk);
     expect(rotated.privateKeyJwk).toBeTruthy();
+  });
+
+  it("E-03: rechaza un domain distinto del host de PORTALESS_PUBLIC_URL", async () => {
+    const res = await siteIdentity.onRequestPost(
+      ctx(post({ rotate: true, confirm: "ROTAR", password: "correcta", domain: "evil.example" }), "admin", "admin", {
+        PORTALESS_PUBLIC_URL: "https://ejemplo.com",
+      })
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("domain_mismatch");
+
+    const reuseMismatch = await siteIdentity.onRequestPost(
+      ctx(post({ rotate: true, confirm: "ROTAR", password: "correcta" }), "admin", "admin", {
+        PORTALESS_PUBLIC_URL: "https://otro.example",
+      })
+    );
+    expect(reuseMismatch.status).toBe(400);
+    expect((await reuseMismatch.json()).error).toBe("domain_mismatch");
   });
 
   it("con 2FA activo, la contrasena sola no alcanza", async () => {

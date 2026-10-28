@@ -26,6 +26,9 @@ Si no la definís, Portaless la genera dentro de `/data` y `/setup` muestra un a
 ## Docker Compose
 
 ```bash
+# Sin default en el compose: declará el origen real antes de arrancar.
+touch .env
+grep -q '^PORTALESS_PUBLIC_URL=' .env || echo 'PORTALESS_PUBLIC_URL=http://localhost:3000' >> .env   # local; HTTPS en producción
 docker compose up -d
 docker compose logs portaless
 ```
@@ -173,9 +176,16 @@ remitente de autenticación separado, configurado mediante variables de entorno:
 
 `PORTALESS_PUBLIC_URL` es **obligatoria** para arrancar el runtime Node: es la
 única fuente de verdad para el origen CSRF, los documentos `.well-known` y los
-redirects OAuth. No se deriva del header `Host`. En Docker Compose el valor por
-defecto es `http://localhost:3000`; detrás de un túnel o proxy TLS debe ser la
-URL HTTPS pública real.
+redirects OAuth. No se deriva del header `Host`. Los tres perfiles de Docker
+Compose fallan explícitamente si falta; no hay default `localhost`. Detrás de un
+túnel o proxy TLS debe ser la URL HTTPS pública real.
+
+`PORTALESS_TRUSTED_PROXIES` es igual de importante en la práctica cuando hay un
+proxy delante: debe listar las IPs exactas del proxy (sin rangos CIDR). Sin esa
+lista, el runtime ignora `X-Forwarded-For`/`X-Forwarded-Proto` y todos los
+clientes comparten la IP del proxy para rate limits y cookies `Secure`. Para un
+Cloudflare Tunnel que llega desde loopback, `127.0.0.1,::1`; si Docker presenta
+el gateway del bridge como origen, agregá también esa IP exacta.
 
 Para los correos de recuperación (y la abstracción auth EmailSender), configura
 el webhook o estas variables en el entorno del servidor —no en el repositorio ni
@@ -240,8 +250,10 @@ se respalda con git.
 | Variable | Default | Uso |
 |---|---|---|
 | `PORT` | `3000` | Puerto HTTP. Railway y Render lo inyectan solos |
-| `PORTALESS_PUBLIC_URL` | `http://localhost:3000` solo en Docker Compose | **Obligatoria** para arrancar. Origen público real (HTTPS detrás de túnel/proxy). Es la única fuente de verdad para CSRF, `.well-known` y redirects OAuth; nunca se usa el header `Host` |
+| `PORTALESS_PUBLIC_URL` | **sin default** | **Obligatoria** para arrancar. Origen público real (HTTPS detrás de túnel/proxy). Es la única fuente de verdad para CSRF, `.well-known` y redirects OAuth; nunca se usa el header `Host`. Docker Compose falla explícitamente si no la declarás |
 | `PORTALESS_SQLITE_PATH` | `/data/portaless.db` | Archivo SQLite |
+| `PORTALESS_LOGIN_ATTEMPTS_PER_IP` | `60` | Presupuesto barato de intentos de login por IP y ventana de 15 minutos, consultado **antes** de scrypt. Al agotarse responde `429 rate_limited` con `Retry-After` sin ejecutar el hash. Nunca rechaza por usuario: el anti-lockout de A-01 sigue intacto |
+| `PORTALESS_LOGIN_CONCURRENCY` | `4` | Máximo de verificaciones scrypt **asíncronas** simultáneas (clamp 1–64). Cada scrypt `N=2^17` usa ~128 MiB. La cola de espera está acotada a 32 entradas y 2 s (`PORTALESS_LOGIN_QUEUE_MAX`, `PORTALESS_LOGIN_QUEUE_TIMEOUT_MS`); si se llena o vence responde `503 server_busy` en vez de encolar indefinidamente |
 | `PORTALESS_TRUSTED_PROXIES` | vacía | IPs de proxies confiables delante del servidor (separadas por coma, coincidencia exacta). `X-Forwarded-For` y `X-Forwarded-Proto` solo se usan si la conexión viene de una de esas IPs; sin la lista, manda la IP/protocolo del socket y los headers del cliente (incluido `CF-Connecting-IP`) se descartan. Detrás de un proxy (Railway, Render, nginx) es necesario para que los rate limits y la cookie `Secure` identifiquen al cliente y al TLS reales, no al proxy |
 | `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | generada en `/data` | Clave AES-GCM de la identidad del sitio |
 | `PORTALESS_OPENAI_API_KEY` / `_BASE_URL` / `_MODEL` / `_TIMEOUT_MS` | sin default | Perfil de proveedor OpenAI-compatible: clave server-side, endpoint HTTPS, modelo y timeout opcional. No es una conexión MCP ni implica compatibilidad universal. Ver [`openai-compatible-provider.md`](./openai-compatible-provider.md) |

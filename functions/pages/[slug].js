@@ -24,8 +24,6 @@
 //   - SEO minimo: title/description/canonical/JSON-LD WebPage basico
 //     (el SeoHead/JsonLd completos de Astro quedan para el build).
 
-import { fileURLToPath } from "node:url";
-import fs from "node:fs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
 import { publicOriginFromEnv } from "../_shared/public-origin.js";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
@@ -46,10 +44,28 @@ import {
   themeStyleDecl,
 } from "../../packages/atomic-elements/src/themes/theme-pack.ts";
 
-const GLOBAL_CSS_PATH = fileURLToPath(new URL("../../src/styles/global.css", import.meta.url));
-const ELEMENTS_CSS_PATH = fileURLToPath(
-  new URL("../../packages/atomic-elements/src/styles/elements.css", import.meta.url)
-);
+// M-11: Cloudflare Pages must be able to load this Function without a
+// top-level node:fs import. The filesystem is loaded lazily and every read
+// still fails soft to the inline fallback when the runtime has no checkout.
+let nodeFileSystem = null;
+
+async function loadNodeFileSystem() {
+  if (nodeFileSystem !== null) return nodeFileSystem;
+  try {
+    const [fsModule, urlModule] = await Promise.all([import("node:fs"), import("node:url")]);
+    const fs = fsModule.default ?? fsModule;
+    const fileURLToPath = urlModule.fileURLToPath;
+    nodeFileSystem = {
+      fs,
+      globalCssPath: fileURLToPath(new URL("../../src/styles/global.css", import.meta.url)),
+      elementsCssPath: fileURLToPath(new URL("../../packages/atomic-elements/src/styles/elements.css", import.meta.url)),
+      postsDir: fileURLToPath(new URL("../../src/content/posts", import.meta.url)),
+    };
+  } catch {
+    nodeFileSystem = false;
+  }
+  return nodeFileSystem;
+}
 
 // Paridad con el build estatico (BaseLayout/Header/Footer de Astro): el
 // header solo anuncia las publicaciones si el sitio tiene alguna, y la
@@ -65,9 +81,9 @@ let postsLinkShown = null;
 function showPostsLink() {
   if (postsLinkShown !== null) return postsLinkShown;
   try {
-    const dir = fileURLToPath(new URL("../../src/content/posts", import.meta.url));
-    postsLinkShown = fs
-      .readdirSync(dir)
+    if (!nodeFileSystem) throw new Error("node_fs_unavailable");
+    postsLinkShown = nodeFileSystem.fs
+      .readdirSync(nodeFileSystem.postsDir)
       .some((name) => /\.(md|mdx)$/.test(name) && !name.startsWith("_"));
   } catch {
     postsLinkShown = true;
@@ -113,7 +129,8 @@ let cachedGlobalCss = null;
 function globalCss() {
   if (cachedGlobalCss !== null) return cachedGlobalCss;
   try {
-    cachedGlobalCss = fs.readFileSync(GLOBAL_CSS_PATH, "utf8");
+    if (!nodeFileSystem) throw new Error("node_fs_unavailable");
+    cachedGlobalCss = nodeFileSystem.fs.readFileSync(nodeFileSystem.globalCssPath, "utf8");
   } catch {
     cachedGlobalCss = CSS_FALLBACK;
   }
@@ -127,7 +144,8 @@ let cachedElementsCss = null;
 function elementsCss() {
   if (cachedElementsCss !== null) return cachedElementsCss;
   try {
-    cachedElementsCss = fs.readFileSync(ELEMENTS_CSS_PATH, "utf8");
+    if (!nodeFileSystem) throw new Error("node_fs_unavailable");
+    cachedElementsCss = nodeFileSystem.fs.readFileSync(nodeFileSystem.elementsCssPath, "utf8");
   } catch {
     cachedElementsCss = "";
   }
@@ -320,6 +338,7 @@ export async function onRequestGet(context) {
     ? await pageStore.listPublicRevisionsByPublicationId?.(layout.publicationId).catch(() => [])
     : [];
   const revisionHistory = projectPublicRevisionHistory(revisions ?? []);
+  await loadNodeFileSystem();
   return new Response(renderShell(layout, bodyHtml, request, { revisionHistory, publicOrigin: publicOriginFromEnv(env) }), {
     headers: { "content-type": "text/html; charset=utf-8" },
   });

@@ -1,7 +1,7 @@
 # Instalá tu sitio en 10 minutos
 
 Guía para vos, no para un programador. Si sabés usar Docker y un navegador,
-llegás hasta el final. No hace falta terminal más allá de un único comando,
+llegás hasta el final. No hace falta terminal más allá de un par de comandos,
 ni saber TypeScript, ni tocar la base de datos.
 
 Al terminar vas a tener **un sitio publicado con tu identidad
@@ -23,6 +23,9 @@ Abrí una terminal y pegá este comando en la carpeta donde descargaste el
 proyecto:
 
 ```bash
+# El compose no inventa el origen público: declaralo antes de arrancar.
+touch .env
+grep -q '^PORTALESS_PUBLIC_URL=' .env || echo 'PORTALESS_PUBLIC_URL=http://localhost:3000' >> .env
 docker compose up -d
 ```
 

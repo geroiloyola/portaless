@@ -1,4 +1,4 @@
-// Hashing de contrasenas usando scrypt del modulo nativo "node:crypto" --
+// Hashing de contrasenas usando scrypt asincrono del modulo nativo "node:crypto" --
 // deliberadamente NO se usa una libreria externa como bcrypt/argon2 para
 // evitar dependencias nativas que requieran compilacion (node-gyp), algo
 // que complica despliegues self-hosted simples. scrypt es parte del
@@ -11,7 +11,7 @@
 // El formato historico de 3 partes (scrypt:<salt>:<hash>) se sigue
 // aceptando como N=2^14 y se marca para rehash.
 
-import { scryptSync, randomBytes, timingSafeEqual } from "node:crypto";
+import { scrypt, randomBytes, timingSafeEqual } from "node:crypto";
 
 const SCRYPT_KEYLEN = 64;
 export const SCRYPT_COST_N = 1 << 17;
@@ -53,16 +53,25 @@ function parseHash(storedHash: string): ParsedHash | null {
   return { n, salt: Buffer.from(saltHex, "hex"), expected: Buffer.from(hashHex, "hex"), legacy };
 }
 
-export function hashPassword(plainPassword: string): string {
+function deriveKey(plainPassword: string, salt: Buffer, n: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(plainPassword, salt, SCRYPT_KEYLEN, { N: n, maxmem: SCRYPT_MAXMEM }, (error, derived) => {
+      if (error) reject(error);
+      else resolve(derived);
+    });
+  });
+}
+
+export async function hashPassword(plainPassword: string): Promise<string> {
   const salt = randomBytes(16);
-  const derived = scryptSync(plainPassword, salt, SCRYPT_KEYLEN, { N: SCRYPT_COST_N, maxmem: SCRYPT_MAXMEM });
+  const derived = await deriveKey(plainPassword, salt, SCRYPT_COST_N);
   return `scrypt:${SCRYPT_COST_N}:${salt.toString("hex")}:${derived.toString("hex")}`;
 }
 
-export function verifyPassword(plainPassword: string, storedHash: string): boolean {
+export async function verifyPassword(plainPassword: string, storedHash: string): Promise<boolean> {
   const parsed = parseHash(storedHash);
   if (!parsed) return false;
-  const derived = scryptSync(plainPassword, parsed.salt, SCRYPT_KEYLEN, { N: parsed.n, maxmem: SCRYPT_MAXMEM });
+  const derived = await deriveKey(plainPassword, parsed.salt, parsed.n);
   if (derived.length !== parsed.expected.length) return false;
   return timingSafeEqual(derived, parsed.expected);
 }

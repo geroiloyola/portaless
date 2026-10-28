@@ -113,8 +113,8 @@ async function assertFullSurface(store: SqliteUsersStore | D1UsersStore | InMemo
   // setPasswordByUsername (regression del item anterior) sigue funcionando.
   await store.setPasswordByUsername("alice", "Alice-Pass-2!");
   const afterPassword = await store.findByUsername("alice");
-  expect(verifyPassword("Alice-Pass-2!", afterPassword!.passwordHash)).toBe(true);
-  expect(verifyPassword("Alice-Pass-1!", afterPassword!.passwordHash)).toBe(false);
+  await expect(verifyPassword("Alice-Pass-2!", afterPassword!.passwordHash)).resolves.toBe(true);
+  await expect(verifyPassword("Alice-Pass-1!", afterPassword!.passwordHash)).resolves.toBe(false);
 
   // TOTP: set + clear, y error explicito si el usuario no existe.
   await store.setTotpSecret("alice", "JBSWY3DPEHPK3PXP");
@@ -145,8 +145,8 @@ async function assertFullSurface(store: SqliteUsersStore | D1UsersStore | InMemo
   const foundBob = await store.findByOAuthSubject("google", "go-99");
   expect(foundBob?.username).toBe("bob");
   expect(foundBob?.role).toBe("viewer");
-  expect(verifyPassword("bob@example.com", foundBob!.passwordHash)).toBe(false);
-  expect(verifyPassword("oauth-managed", foundBob!.passwordHash)).toBe(false);
+  await expect(verifyPassword("bob@example.com", foundBob!.passwordHash)).resolves.toBe(false);
+  await expect(verifyPassword("oauth-managed", foundBob!.passwordHash)).resolves.toBe(false);
   await expect(store.createOAuthUser("bob", "google", "go-100", "viewer")).rejects.toThrow(/ya existe/);
   await expect(store.setPasswordByUsername("no-existe", "x")).rejects.toThrow(/no existe/);
 
@@ -297,7 +297,7 @@ describe("AuthService + users store real (integracion)", () => {
     const eve = await store.findByOAuthSubject("github", "eve-gh");
     expect(eve?.username).toBe("eve@example.com");
     expect(eve?.provider).toBe("password"); // no se pisa el provider de la cuenta original
-    expect(verifyPassword("Eve-Pass-1!", eve!.passwordHash)).toBe(true); // la password sigue siendo la suya
+    await expect(verifyPassword("Eve-Pass-1!", eve!.passwordHash)).resolves.toBe(true); // la password sigue siendo la suya
     store.close();
   });
 });

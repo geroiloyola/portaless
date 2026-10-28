@@ -7,9 +7,9 @@ operador todavía requiere verificación en la instalación concreta.
 
 ## Qué existe hoy
 
-- `packages/auth/src/password.ts` — hashing con `scrypt` `N=2^17` (maxmem
-  explícito), comparación resistente a ataques de temporización y
-  rehash-on-login para hashes históricos `N=2^14`.
+- `packages/auth/src/password.ts` — hashing con `scrypt` asíncrono `N=2^17`
+  (maxmem explícito, sin bloquear el event loop), comparación resistente a
+  ataques de temporización y rehash-on-login para hashes históricos `N=2^14`.
 - `packages/auth/src/totp.ts` (v0.0.9.4) — TOTP (RFC 6238) sin
   dependencias externas, compatible con Google Authenticator/Authy/
   1Password.
@@ -30,7 +30,8 @@ operador todavía requiere verificación en la instalación concreta.
   `confirmTotpEnrollment`, `disableTotp`, `requestPasswordReset`,
   `completePasswordReset`, `loginWithOAuth`.
 - `functions/admin/login.js` — **endpoint POST real**: recibe el
-  formulario, llama a `AuthService.login()`, y responde con
+  formulario, aplica un presupuesto de intentos por IP antes de scrypt,
+  llama a `AuthService.login()` con concurrencia acotada, y responde con
   `Set-Cookie: portaless_session=...; HttpOnly; SameSite=Strict;
   Max-Age=86400` (+ `Secure` si la request llego por HTTPS).
 

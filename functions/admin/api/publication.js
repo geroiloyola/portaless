@@ -34,6 +34,26 @@ async function currentSnapshot(env, siteId) {
   return snapshotFromLayouts(siteId, layouts);
 }
 
+// M-08: the publisher child gets only the variables it needs. Never inherit
+// the full process environment (OAuth secrets, SMTP, provider keys, etc.).
+const PUBLICATION_ENV_KEYS = new Set([
+  "PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "CI",
+  "NODE_OPTIONS", "NODE_PATH", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE", "SSL_CERT_DIR",
+  "PORTALESS_SQLITE_PATH", "PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY",
+  "PORTALESS_PUBLIC_URL", "PORTALESS_BASE_PATH", "PORTALESS_SITE_URL",
+  "PORTALESS_SITE_NAME", "PORTALESS_SITE_DESCRIPTION", "SITE_LANG", "ENABLE_COMMERCE",
+]);
+
+export function publicationChildEnv(sourceEnv = {}, snapshot) {
+  const env = {};
+  for (const [key, value] of Object.entries(sourceEnv)) {
+    if (typeof value !== "string") continue;
+    if (PUBLICATION_ENV_KEYS.has(key) || key.startsWith("PUBLIC_")) env[key] = value;
+  }
+  env.PORTALESS_PUBLISH_SNAPSHOT = JSON.stringify(snapshot);
+  return env;
+}
+
 function mapPublisherFailure(stderr) {
   if (/stale_publication_snapshot/.test(stderr)) return "stale_publication_snapshot";
   if (/GitHub no esta configurado|No hay un token de GitHub|No se pudo determinar el usuario/.test(stderr)) return "github_not_connected";
@@ -56,10 +76,7 @@ async function runPublisher(env, snapshot, mode = "publish") {
   const args = [tsx, script, ...(mode === "retire" ? ["--retire"] : [])];
   const child = spawn(process.execPath, args, {
     cwd: root,
-    env: {
-      ...process.env,
-      PORTALESS_PUBLISH_SNAPSHOT: JSON.stringify(snapshot),
-    },
+    env: publicationChildEnv(process.env, snapshot),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let stdout = "";
