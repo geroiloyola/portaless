@@ -154,12 +154,14 @@ describe("rate limit de login", () => {
     let last: Awaited<ReturnType<typeof recordLoginFailure>> | undefined;
     for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
       last = await recordLoginFailure(store, `198.51.100.${i}`, "admin", now);
-      expect(last.overLimit).toBe(false);
+      expect(last.userOverLimit).toBe(false);
     }
-    expect((await recordLoginFailure(store, "198.51.100.99", "ADMIN", now)).overLimit).toBe(true);
+    const overUser = await recordLoginFailure(store, "198.51.100.99", "ADMIN", now);
+    expect(overUser.userOverLimit).toBe(true);
+    expect(overUser.ipOverLimit).toBe(false);
     await clearLoginFailures(store, last!.buckets, last!.windowStart);
     const afterClear = await recordLoginFailure(store, "198.51.100.99", "admin", now);
-    expect(afterClear.overLimit).toBe(false);
+    expect(afterClear.userOverLimit).toBe(false);
     expect(afterClear.userFailures).toBe(1);
   });
 
@@ -168,9 +170,10 @@ describe("rate limit de login", () => {
     let last: Awaited<ReturnType<typeof recordLoginFailure>> | undefined;
     for (let i = 0; i < LOGIN_LIMIT_PER_IP; i++) {
       last = await recordLoginFailure(store, "203.0.113.50", `user-${i}`, now);
-      expect(last.overLimit).toBe(false);
+      expect(last.ipOverLimit).toBe(false);
     }
-    expect((await recordLoginFailure(store, "203.0.113.50", "otro", now)).overLimit).toBe(true);
+    const overIp = await recordLoginFailure(store, "203.0.113.50", "otro", now);
+    expect(overIp.ipOverLimit).toBe(true);
     await clearLoginFailures(store, last!.buckets, last!.windowStart);
   });
 
@@ -183,12 +186,12 @@ describe("rate limit de login", () => {
       second.close();
     });
     const attempt = await recordLoginFailure(first, "203.0.113.8", "owner", now);
-    expect((await recordLoginFailure(second, "203.0.113.9", "owner", now)).overLimit).toBe(false);
+    expect((await recordLoginFailure(second, "203.0.113.9", "owner", now)).userOverLimit).toBe(false);
     await clearLoginFailures(second, attempt.buckets, attempt.windowStart);
     for (let i = 0; i < LOGIN_LIMIT_PER_USER; i++) {
-      expect((await recordLoginFailure(first, `192.0.2.${i}`, "owner", now)).overLimit).toBe(false);
+      expect((await recordLoginFailure(first, `192.0.2.${i}`, "owner", now)).userOverLimit).toBe(false);
     }
-    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now)).overLimit).toBe(true);
-    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now + LOGIN_WINDOW_MS)).overLimit).toBe(false);
+    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now)).userOverLimit).toBe(true);
+    expect((await recordLoginFailure(first, "192.0.2.90", "owner", now + LOGIN_WINDOW_MS)).userOverLimit).toBe(false);
   });
 });

@@ -24,6 +24,7 @@ import { clientIpFromHeaders } from "../../packages/auth/src/password-reset-rate
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { sessionCookie } from "../_shared/request-security.js";
+import { runWithLoginConcurrency } from "../_shared/login-concurrency.js";
 
 export async function onRequestGet(context) {
   return context.next();
@@ -64,7 +65,8 @@ export async function onRequestPost(context) {
 
   // Verificar PRIMERO. Un fallo de terceros no puede bloquear una credencial
   // valida: el rate limit solo cuenta fallos, nunca rechaza antes de verificar.
-  const result = await authService.login(username, password);
+  // El semáforo acota cuántos scrypt N=2^17 corren a la vez (memoria/CPU).
+  const result = await runWithLoginConcurrency(env, () => authService.login(username, password));
 
   if (result.mfaRequired && result.mfaChallengeToken) {
     const buckets = loginRateLimitBuckets(clientIp, username);
@@ -75,7 +77,20 @@ export async function onRequestPost(context) {
   }
 
   if (!result.success || !result.session) {
-    await recordLoginFailure(rateLimitStore, clientIp, username);
+    const state = await recordLoginFailure(rateLimitStore, clientIp, username);
+    // Solo la IP rechaza. El bucket de usuario se registra para auditoría,
+    // pero nunca bloquea: bloquear por usuario es el DoS original de A-01.
+    if (state.ipOverLimit) {
+      const retryAfter = Math.max(1, Math.ceil((state.windowStart + LOGIN_WINDOW_MS - Date.now()) / 1000));
+      return new Response(JSON.stringify({ success: false, error: "rate_limited" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Retry-After": String(retryAfter),
+        },
+      });
+    }
     return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
   }
 

@@ -7,6 +7,8 @@
 // En Cloudflare Pages no existe env.__PORTALESS_FIRST_RUN y responde 404:
 // D1 sigue usando exclusivamente `npm run setup:d1`.
 
+import { publicOriginFromEnv } from "../../_shared/public-origin.js";
+
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 }
@@ -17,7 +19,10 @@ export async function onRequestPost(context) {
   if (!firstRun || typeof firstRun.complete !== "function") return json({ error: "not_found" }, 404);
 
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return json({ success: false, error: "cross_origin_forbidden" }, 403);
+  const publicOrigin = publicOriginFromEnv(env);
+  if (origin && (!publicOrigin || origin !== publicOrigin)) {
+    return json({ success: false, error: "cross_origin_forbidden" }, 403);
+  }
 
   let body;
   try {

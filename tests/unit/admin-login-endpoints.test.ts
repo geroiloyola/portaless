@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { createHmac } from "node:crypto";
+import { LOGIN_LIMIT_PER_IP, LOGIN_WINDOW_MS, loginRateLimitBuckets } from "../../packages/auth/src/login-rate-limit";
 
 vi.mock("../../packages/auth/src/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
@@ -179,6 +180,32 @@ describe("functions/admin/login.js", () => {
     expect(correct!.status).toBe(302);
     expect(correct!.headers.get("location")).toBe("http://x.test/admin/");
     expect(correct!.headers.get("set-cookie")).toContain("portaless_session=");
+  });
+
+  it("A-01/N-03: 429 + Retry-After cuando el bucket de IP supera el límite", async () => {
+    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    await users.createUser("rate-ip", "Correct-Password-123!", "admin");
+    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
+    const [ipBucket] = loginRateLimitBuckets("unknown", "rate-ip");
+    for (let i = 0; i < LOGIN_LIMIT_PER_IP; i++) await store.hit(ipBucket, windowStart);
+
+    const limited = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+      username: "rate-ip",
+      password: "wrong-password",
+    })));
+    expect(limited!.status).toBe(429);
+    expect(limited!.headers.get("content-type")).toContain("application/json");
+    expect(Number(limited!.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(await limited!.json()).toMatchObject({ success: false, error: "rate_limited" });
+
+    // La credencial válida sigue entrando: el bucket de usuario no bloquea.
+    const correct = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
+      username: "rate-ip",
+      password: "Correct-Password-123!",
+    })));
+    expect(correct!.status).toBe(302);
+    expect(correct!.headers.get("location")).toBe("http://x.test/admin/");
   });
 
   it("usuario con 2FA: redirige a /admin/login-mfa con el challenge", async () => {

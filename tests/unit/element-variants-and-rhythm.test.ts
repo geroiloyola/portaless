@@ -347,7 +347,7 @@ describe("grillas responsivas por hoja, no inline", () => {
   it("la hoja la cargan build, editor y shell runtime (paridad de las 3 superficies)", () => {
     expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("styles/elements.css");
     expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("styles/elements.css");
-    expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("ELEMENTS_CSS_PATH");
+    expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("elementsCssPath");
   });
 
   it("FeatureGrid usa min(100%, ...) en el minmax (no desborda en 320px)", () => {

@@ -8,6 +8,8 @@ services:
     mem_limit: 2g
     cpus: 1.0
     environment:
+      # Obligatoria: sin default. Exportala o declarala en .env.
+      PORTALESS_PUBLIC_URL: ${PORTALESS_PUBLIC_URL:?PORTALESS_PUBLIC_URL is required}
       PORTALESS_SQLITE_PATH: /data/portaless.db
       PORTALESS_MAX_CONCURRENT_REQUESTS: "8"
       NODE_OPTIONS: "--max-old-space-size=1536"

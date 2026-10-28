@@ -21,8 +21,10 @@ export interface LoginFailureState {
   windowStart: number;
   ipFailures: number;
   userFailures: number;
-  /** true cuando la ventana supera el umbral. Solo informativo: una credencial valida nunca se bloquea por esto. */
-  overLimit: boolean;
+  /** true cuando la IP supera el umbral; login.js responde 429 en ese caso. */
+  ipOverLimit: boolean;
+  /** true cuando el usuario supera el umbral. NUNCA se usa para rechazar: sería el lockout original. */
+  userOverLimit: boolean;
 }
 
 /**
@@ -49,7 +51,8 @@ export async function recordLoginFailure(
     windowStart,
     ipFailures,
     userFailures,
-    overLimit: ipFailures > LOGIN_LIMIT_PER_IP || userFailures > LOGIN_LIMIT_PER_USER,
+    ipOverLimit: ipFailures > LOGIN_LIMIT_PER_IP,
+    userOverLimit: userFailures > LOGIN_LIMIT_PER_USER,
   };
 }
 
