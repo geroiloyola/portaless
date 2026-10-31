@@ -187,6 +187,62 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     }
   });
 
+  it("A5: matriz sin red de User-Agents declarados", async () => {
+    const blocked = [
+      "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+      "Twitterbot/1.0",
+      "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)",
+      "LinkedInBot/1.0 (compatible; Mozilla/5.0)",
+      "Discordbot/2.0; +https://discordapp.com",
+      "Mozilla/5.0 (compatible; GPTBot/1.0; +https://openai.com/gptbot)",
+      "ChatGPT-User/1.0",
+      "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
+      "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+      "UptimeRobot/2.0",
+    ];
+    const allowed = [
+      "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+      "WhatsApp/2.23.20.0",
+      "feedly/1.0 (+http://www.feedly.com/fetcher.html)",
+      "Mozilla/5.0 (compatible; Google-Extended/1.0)",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+    ];
+
+    for (const ua of blocked) {
+      const { context, next } = makeContext(
+        new Request("https://mysite.example/pages/foo", { headers: { "user-agent": ua } }),
+        env
+      );
+      const res = await onRequest(context);
+      expect(res!.status, ua).toBe(403);
+      expect((await res!.json()).error, ua).toBe("unsigned_automated_request");
+      expect(next, ua).not.toHaveBeenCalled();
+    }
+
+    for (const ua of allowed) {
+      const { context, next } = makeContext(
+        new Request("https://mysite.example/pages/foo", { headers: { "user-agent": ua } }),
+        env
+      );
+      const res = await onRequest(context);
+      expect(await res!.text(), ua).toBe("PASO-AL-SIGUIENTE");
+      expect(next, ua).toHaveBeenCalled();
+    }
+
+    for (const path of ["/robots.txt", "/llms.txt", "/sitemap.xml", "/.well-known/did.json"]) {
+      const { context, next } = makeContext(
+        new Request(`https://mysite.example${path}`, {
+          headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+        }),
+        env
+      );
+      const res = await onRequest(context);
+      expect(await res!.text(), path).toBe("PASO-AL-SIGUIENTE");
+      expect(next, path).toHaveBeenCalled();
+    }
+  });
+
   it("una UA de navegador sin firma pasa al siguiente", async () => {
     const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "Mozilla/5.0 (Macintosh) Safari/605.1.15" },

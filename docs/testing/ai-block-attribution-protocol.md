@@ -30,7 +30,7 @@ Rutas exentas para cualquier agente (sin firma): `/robots.txt`, `/llms.txt`, `/s
 | LinkedInBot | sí (`bot`) | 403 / 200 públicas |
 | Discordbot | sí (`bot`) | 403 / 200 públicas |
 | feedly | no | pasa (200) |
-| UptimeRobot | no | pasa (200) |
+| UptimeRobot | sí (`bot` dentro de “Robot”) | 403 / 200 públicas |
 | GPTBot | sí (`bot`, `gpt`) | 403 / 200 públicas |
 | ChatGPT-User | sí (`gpt`) | 403 / 200 públicas |
 | PerplexityBot | sí (`bot`) | 403 / 200 públicas |
@@ -38,7 +38,9 @@ Rutas exentas para cualquier agente (sin firma): `/robots.txt`, `/llms.txt`, `/s
 | Google-Extended | no | pasa (200) |
 | Navegador común | no | pasa (200) |
 
-Nota: la detección es por User-Agent declarado. Un cliente que se haga pasar por navegador no queda bloqueado.
+Nota: la detección es por User-Agent declarado. Un cliente que se haga pasar por navegador no queda bloqueado. `UptimeRobot` entra por la subcadena `bot` de “Robot”, no porque sea un crawler de IA.
+
+Test sin red: `tests/unit/trust-layer-middleware.test.ts` → `A5: matriz sin red de User-Agents declarados` (403 para los declarados, 200 para los no detectados y rutas públicas exentas).
 
 ## 3. Tabla de resultados esperados
 
