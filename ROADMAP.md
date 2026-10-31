@@ -602,3 +602,30 @@ and [`docs/testing/release-evidence.json`](./docs/testing/release-evidence.json)
 8. Manually test `/admin/security`, `/admin/wizard/rotate-identity`, and the step-4 rotation link.
 9. Review PR #56's `build` job log (19s vs 1.5–3 min) and confirm it ran everything.
 10. When regenerating `package-lock.json` on Windows, use recent npm (`npx npm@11 install --package-lock-only`): npm 11.6 skipped optional deps and broke `npm ci` on Linux.
+
+---
+
+## Field trial and open decisions (2026-10-30)
+
+First field trial registered: an operator assisted by the maintainer, on Windows 10 with Cloudflare Tunnel, domain listashare.com, Trust Layer active. It does **not** meet Phase 4/5 exit criteria. Record: `docs/testing/field-trials/2026-10-30-listashare.md`.
+
+Open decisions for the owner (not taken by this document):
+
+- B3: whether to implement network verification for search engines and whether to load policy before rejecting unsigned bots.
+- Where the node lives (PC + tunnel, server, Cloudflare Pages + D1, or private node + static projection).
+- Whether to keep public example content with real channels.
+- Whether wizard templates remain as options.
+- Whether Spanish is part of the starter.
+- Where the marketing site lives.
+- Whether to activate private vulnerability reporting.
+
+Pending entries (no criteria marked):
+
+- First field trial, operator assisted by maintainer.
+- Windows 10 end of general support (2025-10-14); guide as draft only.
+- Trusted proxy configuration behind Cloudflare Tunnel (N-04) verified in docs, not in a real tunnel.
+- Identity resolution from static hosting with the node off: not available (`.well-known/*` are functions).
+- Pay Per Crawl availability in a real zone: not verified.
+- Starter/demo split (PR-B1/B2): design only, pending owner approval.
+- Claims audit (A8): redactions proposed, not applied (PR-C).
+- Human trial pack and security review guide: published, not executed.
