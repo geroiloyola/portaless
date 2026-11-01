@@ -81,3 +81,12 @@ Para reproducir con un agente propio se necesita una clave de prueba y un direct
 - No distingue un bot que se hace pasar por navegador.
 - No prueba disponibilidad de Cloudflare Pay Per Crawl (ver `pay-per-crawl-field-trial.md`).
 - No prueba G4/G5 ni `ltp-engine` (inactivos).
+
+## 6. Monitoreo y `/healthz` (E4)
+
+- **Node `/healthz`:** se responde antes de despachar middlewares (`server/node-runtime.mjs:206`). UptimeRobot/Pingdom reciben `200` y no pasan por Trust Layer.
+- **Cloudflare Pages:** no hay `/healthz` del runtime Node. Si existe una ruta estática o Function, el middleware global se aplica.
+- **Rutas no exentas:** `/` y `/rss.xml` no están en `isPublicBotRoute` (`packages/trust-layer/src/policy/public-bot-routes.ts:12-18`); un monitor cuyo UA contiene `bot` recibe `403 unsigned_automated_request` (`functions/_middleware.js:62-65,220-235`).
+- **Rutas exentas:** `/robots.txt`, `/llms.txt`, `/sitemap.xml`, `/.well-known/*` y `/blog/*.md` pasan sin firma.
+- **UptimeRobot:** su UA contiene `bot` dentro de “Robot”; el test A5 confirma `403` en `/pages/foo`. Pingdom se comporta igual si su UA contiene `bot`; la cadena exacta de Pingdom no se verificó: **NO VERIFICABLE**.
+- **Mitigación actual:** para Node, monitorear `/healthz`; para Pages/estático, usar `/sitemap.xml` (exento) o un monitor con UA que no contenga `bot`. No hay allowlist de monitores ni cambio de comportamiento en PR-A.
