@@ -11,6 +11,10 @@ Registro de decisiones tomadas por el dueño. Este documento no implementa nada:
 | D5 | B3 y C1 | B3 DIFERIDO; C1 ACCIÓN DEL DUEÑO | B3 sin PR hasta contraste; C1 no es PR de código |
 | D6 | Perfiles de despliegue | DECIDIDO | Documentación en PR-A/#114; sin PR de código |
 | D7 | Starter canónico | DECIDIDO a nivel de principio | PR-B1/B2 (no iniciados) |
+| D8 | Contenido personal y demo ficticia | DECIDIDO (opción C) | PR-B1/B2 (no iniciados) |
+| D9 | Plantillas del wizard | DECIDIDO | PR-B1/B2 (no iniciados) |
+| D10 | Idioma del starter | DECIDIDO | PR-B1/B2 (no iniciados) |
+| D11 | Sitio de marketing | DECIDIDO | PR-B1/B2 (no iniciados) |
 
 ## D1 — Nombre/dominio
 
@@ -169,11 +173,90 @@ Registro de decisiones tomadas por el dueño. Este documento no implementa nada:
 
 **PR asociado:** PR-B1/B2 (no iniciados).
 
+## D8 — Contenido personal y demo ficticia
+
+**Estado:** DECIDIDO (opción C, B1.6-1).
+
+**Decisión:** ningún dato real ni canal propio del dueño en el repo. Todos los casos de uso se conservan como ejemplo en el perfil de demo, con datos ficticios, y siguen visibles en el sitio público de demostración como prueba viva. No se publican activos por defecto en un clon. El sitio real del dueño vive en su propio repositorio.
+
+**Casos de uso que se conservan en el perfil demo:** creador/influencer, músico y merch, evento/club, boutique, portafolio, lanzamiento, servicios y link-in-bio.
+
+**Criterio de ficticio:** nombres inventados; sin enlaces sociales reales; sin etiquetas de afiliado; sin fotos de personas reales; imágenes con licencia verificada; etiqueta visible “Demo content, fictional”. El patrón de enlaces propuesto está en [`docs/testing/demo-fictional-links-pattern.md`](../testing/demo-fictional-links-pattern.md).
+
+**Opciones consideradas:** (a) mantener contenido real; (b) retirar los casos de uso; (c) conservarlos con datos ficticios. Se eligió (c).
+
+| Opción | Ventajas | Desventajas | Encaje |
+|---|---|---|---|
+| A) Mantener real | Sin trabajo | Datos personales/canales reales en el repo | No |
+| B) Retirar casos | Menos superficie | Se pierde la prueba viva | No |
+| C) Ficticio en demo | Conserva ejemplos y prueba viva sin datos reales | Requiere inventario y auditoría de imágenes | Sí |
+
+**Racional:** preservar la demostración pública y los tests sin exponer datos del dueño.
+
+**Consecuencias:** PR-B1 clasifica y audita; el dueño exporta su sitio real a su propio repositorio antes de PR-B2; el historial de Git conserva el contenido antiguo y no se puede borrar reescribiendo una rama.
+
+**PR asociado:** PR-B1/B2 (no iniciados).
+
+## D9 — Plantillas del wizard
+
+**Estado:** DECIDIDO (B1.6-2).
+
+**Decisión:** las plantillas del wizard se conservan como opciones (son código en `packages/onboarding`). El starter usa la canónica.
+
+**Opciones consideradas:** (a) retirarlas; (b) conservarlas como opciones; (c) convertirlas en el starter. Se eligió (b).
+
+| Opción | Ventajas | Desventajas | Encaje |
+|---|---|---|---|
+| Retirar | Menos código | Pierde el onboarding existente | No |
+| Conservar como opciones | No rompe el wizard | Hay que alinear copy/idioma | Sí |
+| Convertirlas en starter | Menos decisiones | El starter deja de ser mínimo | No |
+
+**Consecuencias:** el starter no depende de las plantillas; el wizard puede seguir generando opciones. El hallazgo de idioma/copy está en [`docs/testing/admin-panel-language.md`](../testing/admin-panel-language.md).
+
+**PR asociado:** PR-B1/B2 (no iniciados).
+
+## D10 — Idioma del starter
+
+**Estado:** DECIDIDO (B1.6-3).
+
+**Decisión:** el starter es solo en inglés. El mecanismo i18n permanece. El español vive en el perfil de demo y en las guías cuyo idioma esté declarado (por ejemplo `docs/first-steps.md`).
+
+**Opciones consideradas:** (a) starter bilingüe; (b) starter solo inglés; (c) starter solo español. Se eligió (b).
+
+| Opción | Ventajas | Desventajas | Encaje |
+|---|---|---|---|
+| Bilingüe | Cobertura inmediata | Más contenido y tests en el clon | No |
+| Solo inglés | Starter mínimo y coherente | El español queda en demo/guías | Sí |
+| Solo español | Audiencia local | Contradice el canon actual en inglés | No |
+
+**Consecuencias:** `/es/` no se publica por defecto en el starter; el perfil demo conserva la proyección en español.
+
+**PR asociado:** PR-B1/B2 (no iniciados).
+
+## D11 — Sitio de marketing
+
+**Estado:** DECIDIDO (B1.6-4).
+
+**Decisión:** el sitio de marketing de Portaless permanece en este repositorio como perfil de demo, desplegado por el workflow de GitHub Pages. Se reevalúa mudarlo cuando evolucione a otro ritmo que el producto o al extraer la especificación LTP.
+
+**Opciones consideradas:** (a) moverlo ahora a otro repo; (b) dejarlo como perfil demo; (c) eliminarlo. Se eligió (b).
+
+| Opción | Ventajas | Desventajas | Encaje |
+|---|---|---|---|
+| Mover ahora | Separación temprana | Trabajo y riesgo de tests/workflow | No |
+| Perfil demo | Conserva la demo y el deploy actual | Sigue acoplado al repo | Sí |
+| Eliminar | Menos contenido | Pierde la prueba viva | No |
+
+**Consecuencias:** PR-B1 debe separar el perfil demo del starter; el workflow de Pages sigue usando el perfil demo.
+
+**PR asociado:** PR-B1/B2 (no iniciados).
+
 ## Tareas que siguen siendo del dueño
 
 - C1: activar Private Vulnerability Reporting; luego el agente verifica con `gh api` y actualiza `SECURITY.md`.
-- Responder A2 y B1.6; aprobar o corregir las redacciones de A8; autorizar cada PR de la cola.
+- Responder A2; aprobar o corregir las redacciones de A8; autorizar cada PR de la cola.
 - Prueba de contraste de bloqueo de IA y observación de cabeceras del túnel.
+- Exportar su sitio real a su propio repositorio antes de PR-B2.
 - Artículo real del blog para el demo y cronometrar la instalación con una persona ajena.
 - Endurecer el nodo: `HOST=127.0.0.1`, Cloudflare Access o TOTP para `/admin`, copia de seguridad de `.env` y `data/`.
 - Asesoría legal sobre el nombre/dominio, si procede.
