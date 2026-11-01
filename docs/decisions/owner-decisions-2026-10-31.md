@@ -213,6 +213,11 @@ Registro de decisiones tomadas por el dueño. Este documento no implementa nada:
 
 **Consecuencias:** el starter no depende de las plantillas; el wizard puede seguir generando opciones. El hallazgo de idioma/copy está en [`docs/testing/admin-panel-language.md`](../testing/admin-panel-language.md).
 
+**Requisito para PR-B1 (E6):** las plantillas del wizard deben ser locale-aware y no generar enlaces a la raíz de plataformas. Hoy `packages/onboarding/src/intent-to-layout.ts:86-129` genera copy español y `https://instagram.com/` / `https://tiktok.com/@` como placeholders.
+
+- **Cobertura actual:** `tests/unit/demo-pages-links.test.ts:28-63` prohíbe raíces peladas en `src/content/pages/*.json`, pero **no ejecuta** las plantillas del wizard ni escanea su salida.
+- **Faltaría:** un test que ejecute `TemplateIntentToLayout.generate()` para cada plantilla y verifique (a) copy en el locale solicitado, (b) enlaces internos o `example.org` de demo, (c) ausencia de `instagram.com/`, `tiktok.com/@`, `youtube.com/`, `open.spotify.com/`, `music.apple.com/` y `bandcamp.com/` como raíz. Nombre propuesto: `tests/unit/onboarding-locale-links.test.ts` (no implementado).
+
 **PR asociado:** PR-B1/B2 (no iniciados).
 
 ## D10 — Idioma del starter
