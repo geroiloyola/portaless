@@ -13,6 +13,14 @@ blob-report/
 !.env.example
 !.env.*.example
 
+data/
+cloudflared
+cloudflared.exe
+.cloudflared/
+/config.yml
+cloudflared-credentials*.json
+*.tunnel.json
+
 *.db
 *.sqlite
 *.sqlite3
