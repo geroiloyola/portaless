@@ -6,6 +6,11 @@ no se inician con este documento. Decisiones aplicables: [D1–D11](owner-decisi
 LTP = Local Trust Protocol; LTP Stack = APW + LTP + SVRI + HSVR.
 G4/G5 siguen PENDING_AUTHORIZATION; `packages/ltp-engine` permanece inactivo.
 
+**Actualización del dueño, 2026-11-01:** D11 queda decidido como repositorio
+separado `portaless-templates` para demo/marketing y contenido de plantillas
+ficticias. Sustituye la ubicación anterior de D11; no implica extracción ahora.
+La propuesta adicional de nombres permanece en un borrador sin PR.
+
 ## 1. Hechos y clasificación
 
 Clases: **A** starter canónico; **B** marketing/demo; **C** sistema/motor;
@@ -103,7 +108,14 @@ Los nombres tras el primero son relativos a `docs/screenshots/`.
 |---|---|---|---|
 | A. Flag y filtros sobre archivos mezclados | Movimiento inicial pequeño | Cada glob/copia debe filtrar; riesgo de incluir demo por error | No |
 | B. Perfiles físicos + catálogo único de build | Ausencia comprobable de demo en starter; comparte motor | Ajustar loaders, rutas, publicación y tests | **Sí** |
-| C. Marketing en repo independiente ahora | Separación física | Duplicación y migración del workflow; contradice D11 | No ahora |
+| C. Repo separado de contenido `portaless-templates` | Separa marketing y datos ficticios del núcleo | Versionado, disponibilidad, integración y transición del workflow requieren diseño | **Decidido como destino D11** |
+
+Implementación propuesta en dos pasos: primero opción B (perfiles autónomos en
+`portaless`), después opción C (extracción a `portaless-templates`) mediante PR
+separado y autorización escrita. `portaless-templates` contendrá demo/marketing,
+layouts y contenidos ficticios; el generador `packages/onboarding/` y sus
+plantillas programáticas D9 siguen siendo código del núcleo. Las ubicaciones de
+abajo son transitorias, no una decisión de duplicar cánones permanentemente.
 
 Propuesta B: `PORTALESS_SITE_PROFILE=starter|demo`, ausencia = `starter`.
 Valor desconocido aborta build; nunca cae silenciosamente a demo. El perfil elige
@@ -355,6 +367,7 @@ D8–D11 ya están decididas; no volver a tratarlas como preguntas. Requieren re
 | Tema | Opciones | Recomendación / condición |
 |---|---|---|
 | Directorios y selección | A/B/C de §2 | B, `starter|demo`, validar con dueño antes de B2 |
+| Ubicación demo/marketing | Repositorio mezclado / extracción | D11 actualizado: `portaless-templates`; primero perfil autónomo, luego extracción autorizada |
 | Enlaces ficticios | Landing interna / externos reservados | Landing interna; ningún path externo supuesto funcional |
 | Imágenes sin licencia individual | Recuperar evidencia / arte original | No publicar las no verificadas; arte original sin personas |
 | Panel español | Traducir en B2 / PR i18n aparte | PR aparte; wizard EN por defecto sí forma parte del diseño B2 |
