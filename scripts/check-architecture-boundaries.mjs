@@ -331,6 +331,60 @@ export function findCycles(adjacency) {
   return cycles.sort((a, b) => a.join(",").localeCompare(b.join(",")));
 }
 
+export function checkLicenses(root) {
+  const violations = [];
+  const checkPkg = (relPkgJson, expectedLicense, requireLicenseFile = false) => {
+    const full = resolve(root, relPkgJson);
+    if (!existsSync(full)) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(full, "utf8"));
+    } catch {
+      violations.push({ file: relPkgJson, reason: "invalid-package-json", expected: expectedLicense, actual: null });
+      return;
+    }
+    if (parsed.license !== expectedLicense) {
+      violations.push({
+        file: relPkgJson,
+        reason: "license-mismatch",
+        expected: expectedLicense,
+        actual: parsed.license ?? null,
+      });
+    }
+    if (requireLicenseFile) {
+      const licPath = resolve(dirname(full), "LICENSE");
+      if (!existsSync(licPath)) {
+        violations.push({
+          file: relative(root, licPath).replaceAll("\\", "/"),
+          reason: "missing-license-file",
+          expected: expectedLicense,
+          actual: null,
+        });
+      }
+    }
+  };
+
+  checkPkg("package.json", "AGPL-3.0-or-later");
+  checkPkg("docs/protocol-apw/package.json", "CC-BY-4.0");
+  checkPkg("packages/plugin-sdk/package.json", "MIT");
+
+  const packagesDir = resolve(root, "packages");
+  if (existsSync(packagesDir)) {
+    for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name === "plugin-sdk") continue;
+      const meta = PACKAGE_LAYERS[entry.name];
+      if (!meta) continue;
+      const relPkg = `packages/${entry.name}/package.json`;
+      if (meta.org === "verared") {
+        checkPkg(relPkg, "Apache-2.0", true);
+      } else {
+        checkPkg(relPkg, "AGPL-3.0-or-later", false);
+      }
+    }
+  }
+  return violations;
+}
+
 export function analyzeTree(root) {
   const files = [];
   walkFiles(resolve(root, "packages"), root, files);
@@ -408,17 +462,20 @@ export function analyzeTree(root) {
   const deepSrcAll = [...deepSrcPackages, ...deepSrcL5];
   const deepSrcVerared = deepSrcAll.filter((e) => e.toOrg === "verared").length;
   const deepSrcGeroiloyola = deepSrcAll.filter((e) => e.toOrg === "geroiloyola").length;
+  const licenseViolationItems = checkLicenses(root);
 
   const exportReady = {
     zeroVeraredReverseImports: veraredReverseImports.length === 0,
     zeroCycles: cycles.length === 0,
     zeroDeepSrcImports: deepSrcPackages.length + deepSrcL5.length === 0,
     zeroLayerViolations: layerViolations.length === 0,
+    zeroLicenseViolations: licenseViolationItems.length === 0,
     ready:
       veraredReverseImports.length === 0 &&
       cycles.length === 0 &&
       deepSrcPackages.length + deepSrcL5.length === 0 &&
-      layerViolations.length === 0,
+      layerViolations.length === 0 &&
+      licenseViolationItems.length === 0,
   };
 
   return {
@@ -440,11 +497,16 @@ export function analyzeTree(root) {
       byType: violationsByType,
       veraredReverseCount: veraredReverseImports.length,
     },
+    licenseViolations: {
+      total: licenseViolationItems.length,
+      items: licenseViolationItems,
+    },
     exportReady,
     details: {
       layerViolations,
       deepSrcPackages,
       deepSrcL5,
+      licenseViolations: licenseViolationItems,
     },
   };
 }
@@ -457,7 +519,7 @@ export function formatMarkdownSummary(report) {
       ? "0"
       : `${report.cycles.length} (${report.cycles.map((c) => c.join(" <-> ")).join("; ")})`;
   const lines = [
-    "### Architecture Boundaries Baseline (E-07 · report mode)",
+    "### Architecture Boundaries Gate (E-07)",
     "",
     "| Metric | Count | Status |",
     "|---|---:|---|",
@@ -469,6 +531,7 @@ export function formatMarkdownSummary(report) {
     `| Package dependency cycles | ${cycleText} | ${ok(report.exportReady.zeroCycles)} |`,
     `| Layer / org violations (total) | ${report.layerViolations.total} | ${ok(report.exportReady.zeroLayerViolations)} |`,
     `| \`verared\` -> \`geroiloyola\` / L1->L2 / spec->code | ${report.layerViolations.veraredReverseCount} | ${ok(report.exportReady.zeroVeraredReverseImports)} |`,
+    `| License boundary violations | ${report.licenseViolations.total} | ${ok(report.exportReady.zeroLicenseViolations)} |`,
     `| **Export-Ready (Wave 1 -> Wave 2)** | — | **${report.exportReady.ready ? "READY" : "NOT READY"}** |`,
     "",
   ];
@@ -495,6 +558,10 @@ export function formatTextReport(report) {
   for (const [k, count] of Object.entries(report.layerViolations.byType).sort()) {
     lines.push(`    - ${k}: ${count}`);
   }
+  lines.push(`  license violations: ${report.licenseViolations.total}`);
+  for (const lv of report.licenseViolations.items) {
+    lines.push(`    - ${lv.file}: ${lv.reason} (expected ${lv.expected}, got ${lv.actual})`);
+  }
   lines.push(
     `  export-ready (Wave 1 -> Wave 2): ${report.exportReady.ready ? "READY" : "NOT READY"}`,
   );
@@ -502,10 +569,15 @@ export function formatTextReport(report) {
 }
 
 function main() {
-  const args = new Set(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const args = new Set(argv);
   const strict = args.has("--strict");
   const json = args.has("--json");
-  const root = fileURLToPath(new URL("../", import.meta.url));
+  const rootFlagIdx = argv.indexOf("--root");
+  const root =
+    rootFlagIdx !== -1 && argv[rootFlagIdx + 1]
+      ? resolve(argv[rootFlagIdx + 1])
+      : fileURLToPath(new URL("../", import.meta.url));
   const report = analyzeTree(root);
 
   if (json) {
