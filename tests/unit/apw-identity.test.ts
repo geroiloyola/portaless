@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
   identity: null as unknown,
   links: [] as Array<{ siteId: string; handle: string; addedAt: string }>,
 }));
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identity }),
   // Puente AT: did.json lista los vinculos como alsoKnownAs (opcional).
   createSiteAtprotoLinksStore: async () => ({

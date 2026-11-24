@@ -8,7 +8,7 @@
 //
 // Publico igual que /trust/:siteId. 404 si el imageId no existe.
 
-import { createCloudImageStore } from "../../packages/cloud-images/src/store.ts";
+import { createCloudImageStore } from "@portaless/trust-storage-adapters";
 
 function json(body, status) {
   return new Response(JSON.stringify(body), {

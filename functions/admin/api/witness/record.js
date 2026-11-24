@@ -22,7 +22,7 @@
 // (wt-<hash(iss|sub|seq|head)>): repetir la observacion del mismo head
 // choca con el indice unico (site_id, att_hash) y responde already_recorded.
 
-import { createSiteIdentityStore, createAttestationLogStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
 import { signWitnessStatement } from "../../../../packages/apw-resolver/src/did-apw/witness.ts";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";

@@ -17,12 +17,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Database from "better-sqlite3";
 
-import {
-  SqlAgentAccessPolicyStore,
-  InMemoryAgentAccessPolicyStore,
-  validateAgentAccessPolicy,
-  INVALID_AGENT_ACCESS_POLICY,
-} from "../../packages/trust-layer/src/policy/agent-access-store";
+import { InMemoryAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "../../packages/trust-layer/src/policy/agent-access-store";
+import { SqlAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
 import { resolveContentPolicy, loadContentPolicy } from "../../packages/trust-layer/src/policy/load-policy";
 import { defaultContentPolicy, type ContentPolicyManifest } from "../../packages/trust-layer/src/policy/manifest-schema";
 
@@ -208,8 +204,8 @@ describe("/admin/api/agents", () => {
 
   beforeEach(async () => {
     await sharedStore.clear();
-    vi.doMock("../../packages/trust-layer/src/policy/agent-access-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/trust-layer/src/policy/agent-access-store")>();
+    vi.doMock("@portaless/trust-storage-adapters", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
       return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
     });
   });
@@ -379,8 +375,8 @@ describe("el feed de actividad registra el cambio de politica (6a)", () => {
   beforeEach(async () => {
     await sharedStore.clear();
     activity.length = 0;
-    vi.doMock("../../packages/trust-layer/src/policy/agent-access-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/trust-layer/src/policy/agent-access-store")>();
+    vi.doMock("@portaless/trust-storage-adapters", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
       return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
     });
     vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {

@@ -11,7 +11,7 @@
 // que esta vista muestra el historial del emisor *visto desde este sitio*. Su
 // historial global vive en su propia cadena APW (5.4), que no se consulta aqui.
 
-import { createCommunityAttestationsStore } from "../../../packages/trust-layer/src/site-trust/community-attestations.ts";
+import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";
 const COMMUNITY_CATEGORIES = [

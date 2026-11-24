@@ -28,14 +28,14 @@ import type {
   CommunityTrustCategory,
   EscrowTrustReport,
   EscrowTransactionOutcome,
-} from "../site-trust-score";
+} from "../../trust-layer/src/site-trust/site-trust-score";
 import {
   ATTESTATION_INDEXES,
   DUPLICATE_ATTESTATION_JTI,
   isDuplicateColumnError,
   isUniqueViolation,
-} from "../site-trust-score";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+} from "../../trust-layer/src/site-trust/site-trust-score";
+import { openSqlite } from "../../sqlite-driver/src/open";
 
 interface SelfRow {
   site_id: string;

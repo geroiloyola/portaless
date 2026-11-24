@@ -16,10 +16,13 @@
 // sin JWS (como antes) y la respuesta informa signed:false: la firma es
 // aditiva y no bloquea al admin que no completo el Paso 4 del wizard.
 
-import { createSiteTrustScoreStore } from "../../../../packages/trust-layer/src/site-trust/store-factory.ts";
-import { createSiteIdentityStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import {
+  createAttestationLogStore,
+  createSiteIdentityStore,
+  createSiteTrustScoreStore,
+} from "@portaless/trust-storage-adapters";
 import { signSelfAttestation } from "../../../../packages/apw-resolver/src/did-apw/site-jws.ts";
-import { recordInSiteHistory } from "../../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { recordInSiteHistoryWithStores } from "../../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
 
 const SITE_ID = "default";
 
@@ -104,7 +107,11 @@ export async function onRequestPut(context) {
 
   if (!signature.signed) return json({ ok: true, signed: false, reason: signature.reason }, 200);
 
-  const history = await recordInSiteHistory(env, signature.did, signature.jws);
+  const history = await recordInSiteHistoryWithStores(
+    { identityStore: await createSiteIdentityStore(env), logStore: await createAttestationLogStore(env) },
+    signature.did,
+    signature.jws,
+  );
   return json(
     { ok: true, signed: true, jti: signature.jti, attestation: signature.jws, logged: history.logged, logReason: history.reason },
     200

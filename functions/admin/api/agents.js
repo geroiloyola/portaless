@@ -21,11 +21,12 @@
 // PUT    /admin/api/agents -> guarda el override (validado) en el store
 // DELETE /admin/api/agents -> borra el override: vuelve a asset/default
 
-import { createAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "../../../packages/trust-layer/src/policy/agent-access-store.ts";
+import { validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "../../../packages/trust-layer/src/policy/agent-access-store.ts";
+import { createAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
 import { resolveContentPolicy, CONTENT_POLICY_WELL_KNOWN_PATH } from "../../../packages/trust-layer/src/policy/load-policy.ts";
 import { defaultContentPolicy } from "../../../packages/trust-layer/src/policy/manifest-schema.ts";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
-import { readUnsignedBotRejections } from "../../../packages/trust-layer/src/ledger/unsigned-bot-metrics.ts";
+import { readUnsignedBotRejections } from "@portaless/trust-storage-adapters";
 import { trustedIngressStatus } from "../../../packages/trust-layer/src/net/trusted-ingress-status.ts";
 
 function canWrite(role) {

@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/apw-resolver/src/did-apw/store-factory")>();
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
   const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
   const { InMemoryAttestationLogStore } = await import("../../packages/apw-resolver/src/did-apw/attestation-log-store");
   const identity = new InMemorySiteIdentityStore({
@@ -29,7 +29,7 @@ import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate
 import { signSelfAttestation } from "../../packages/apw-resolver/src/did-apw/site-jws";
 import { signWitnessStatement } from "../../packages/apw-resolver/src/did-apw/witness";
 import { appendAttestation } from "../../packages/apw-resolver/src/did-apw/history-log";
-import * as apwStoreFactory from "../../packages/apw-resolver/src/did-apw/store-factory";
+import * as apwStoreFactory from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";
 const HEAD = "AaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaA"; // 43 chars

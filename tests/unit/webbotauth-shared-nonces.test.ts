@@ -18,7 +18,10 @@ import {
   __resetDirectoryCacheForTests,
   __resetNonceStoreForTests,
 } from "../../packages/trust-layer/src/webbotauth/verify";
-import { __resetNonceStoreFactoryForTests } from "../../packages/trust-layer/src/webbotauth/nonce-store";
+import {
+  createWebBotAuthNonceStore,
+  __resetNonceStoreFactoryForTests,
+} from "@portaless/trust-storage-adapters";
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
@@ -120,10 +123,10 @@ describe("verifyWebBotAuthRequest -- nonces compartidos entre instancias (option
     mockDirectoryOnce(publicKeyX);
     mockDirectoryOnce(publicKeyX);
 
-    const first = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-same" }), { env });
+    const first = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-same" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(first.verified).toBe(true);
 
-    const replay = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-same" }), { env });
+    const replay = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-same" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(replay.verified).toBe(false);
     expect(replay.reason).toBe("nonce_replayed");
   });
@@ -134,14 +137,14 @@ describe("verifyWebBotAuthRequest -- nonces compartidos entre instancias (option
     mockDirectoryOnce(publicKeyX);
 
     // Worker A (proceso 1): consume el nonce.
-    const workerA = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-cross" }), { env });
+    const workerA = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-cross" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(workerA.verified).toBe(true);
 
     // Worker B: simula un proceso aparte limpiando el cache del factory --
     // abre una instancia NUEVA sobre el MISMO archivo SQLite.
     __resetNonceStoreFactoryForTests();
 
-    const workerB = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-cross" }), { env });
+    const workerB = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-cross" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(workerB.verified).toBe(false);
     expect(workerB.reason).toBe("nonce_replayed");
   });
@@ -151,12 +154,12 @@ describe("verifyWebBotAuthRequest -- nonces compartidos entre instancias (option
     mockDirectoryOnce(publicKeyX);
     mockDirectoryOnce(publicKeyX);
 
-    const a = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-de-a" }), { env });
+    const a = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-de-a" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(a.verified).toBe(true);
 
     __resetNonceStoreFactoryForTests(); // "otro proceso"
 
-    const b = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-de-b" }), { env });
+    const b = await verifyWebBotAuthRequest(await buildSignedRequest(privateKey, { nonce: "n-de-b" }), { env, createNonceStore: createWebBotAuthNonceStore });
     expect(b.verified).toBe(true);
   });
 

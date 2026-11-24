@@ -7,16 +7,11 @@ const state = vi.hoisted(() => ({
   logEntries: [] as any[],
 }));
 
-vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createSiteTrustScoreStore: async () => ({ getSnapshot: async () => state.snapshot }),
-}));
-vi.mock("../../packages/trust-layer/src/site-trust/community-attestations.ts", () => ({
   createCommunityAttestationsStore: async () => ({ listBySite: async () => [] }),
-}));
-vi.mock("../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts", () => ({
   createAuthorizedEscrowProvidersStore: async () => ({ getPublicKeyJwk: async () => null }),
-}));
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identity, listKeys: async () => state.identityKeys }),
   createAttestationLogStore: async () => ({ list: async (_siteId: string, from: number, limit: number) => state.logEntries.filter((entry: any) => entry.seq >= from).slice(0, limit) }),
 }));

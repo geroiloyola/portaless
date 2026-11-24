@@ -43,20 +43,20 @@ import {
   verifyWebBotAuthRequest,
   recordAgentAccess,
 } from "../packages/trust-layer/src/index.ts";
-import { createUsageLedgerStore } from "../packages/trust-layer/src/ledger/store-factory.ts";
-import { recordUnsignedBotRejection } from "../packages/trust-layer/src/ledger/unsigned-bot-metrics.ts";
+import { createUsageLedgerStore, createWebBotAuthNonceStore } from "@portaless/trust-storage-adapters";
+import { recordUnsignedBotRejection } from "@portaless/trust-storage-adapters";
 import { isPublicBotRoute } from "../packages/trust-layer/src/policy/public-bot-routes.ts";
 import { loadContentPolicy } from "../packages/trust-layer/src/policy/load-policy.ts";
-import { createAgentAccessPolicyStore } from "../packages/trust-layer/src/policy/agent-access-store.ts";
+import { createAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
 import { publicOriginFromEnv } from "./_shared/public-origin.js";
 import { withSecurityHeaders } from "./_shared/security-headers.js";
 import { migrationStatus } from "../packages/persistence-migrations/src/gate.ts";
 import { resolvePayPerCrawl } from "../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
-import { createSettlementActivationStore } from "../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
+import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
 import { readerHostFromOperator } from "../packages/apw-resolver/src/scoring/reader-identity.ts";
 import { resolveApwManifest } from "../packages/apw-resolver/src/index.ts";
-import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
 import { maybeAutoEmitReaderConduct } from "../packages/apw-resolver/src/scoring/reader-conduct-auto.ts";
 
 function looksLikeAutomatedAgent(request) {
@@ -239,6 +239,7 @@ async function handleRequest(context) {
 
   const result = await verifyWebBotAuthRequest(request, {
     env,
+    createNonceStore: createWebBotAuthNonceStore,
     // Solo el runtime Node lo expone: resuelve y valida una IP y conecta a
     // ella (DNS pinning). En edge no existe y el verificador usa su default.
     directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,

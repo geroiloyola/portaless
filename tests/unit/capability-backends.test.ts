@@ -14,7 +14,7 @@ import {
   notConfigured,
 } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
 import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
-import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import type { CapabilityError } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
 import { applySchema } from "../../scripts/setup.mjs";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";

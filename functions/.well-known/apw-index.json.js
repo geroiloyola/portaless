@@ -16,7 +16,7 @@
 //
 // Ruta publica: /.well-known/* pasa por isPublicBotRoute().
 
-import { createSiteIdentityStore, createWitnessIndexStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createWitnessIndexStore } from "@portaless/trust-storage-adapters";
 import { buildIndexDocument, parseSubjectEntry } from "../../packages/apw-resolver/src/did-apw/witness-index.ts";
 
 const SITE_ID = "default";

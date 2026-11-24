@@ -16,7 +16,7 @@
 // (default 100, max 500). Ruta publica: /.well-known/* pasa por
 // isPublicBotRoute().
 
-import { createSiteIdentityStore, createAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";
 const DEFAULT_LIMIT = 100;

@@ -12,15 +12,13 @@ const state = vi.hoisted(() => ({
   agentKid: "agent-kid-1",
 }));
 
-vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createSiteTrustScoreStore: async () => state.trust,
-}));
-vi.mock("../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts", async (importOriginal) => {
-  const actual: any = await importOriginal();
-  return { ...actual, createAuthorizedEscrowProvidersStore: async () => state.escrow };
-});
-vi.mock("../../packages/trust-layer/src/site-trust/authorized-agents.ts", () => ({
+  createAuthorizedEscrowProvidersStore: async () => state.escrow,
   createAuthorizedAgentsStore: async () => ({ isAuthorized: async () => true }),
+  createSiteIdentityStore: async () => state.identity,
+  createAttestationLogStore: async () => state.log,
 }));
 vi.mock("../../packages/trust-layer/src/site-trust/web-bot-auth.ts", async (importOriginal) => {
   const actual: any = await importOriginal();
@@ -30,10 +28,6 @@ vi.mock("../../packages/trust-layer/src/site-trust/web-bot-auth.ts", async (impo
     resolveAgentDirectoryKey: async (_signatureAgent: string, keyId: string) => (keyId === state.agentKid ? state.agentJwk : null),
   };
 });
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
-  createSiteIdentityStore: async () => state.identity,
-  createAttestationLogStore: async () => state.log,
-}));
 
 import { ATTESTATION_TYP, verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
 import { InMemorySiteTrustScoreStore, DUPLICATE_ATTESTATION_JTI } from "../../packages/trust-layer/src/site-trust/site-trust-score";

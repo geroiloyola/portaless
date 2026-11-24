@@ -16,8 +16,8 @@
 //
 // Publico igual que GET /trust/:siteId: CORS *, cache corto.
 
-import { createCloudImageStore } from "../../../packages/cloud-images/src/store.ts";
-import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createCloudImageStore } from "@portaless/trust-storage-adapters";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { sha256Hash } from "../../../packages/cloud-images/src/payload.ts";
 import { verifyCloudImageSidecar } from "../../../packages/cloud-images/src/sign.ts";
 import { isPng, extractPng, stripPng } from "../../../packages/cloud-images/src/png.ts";

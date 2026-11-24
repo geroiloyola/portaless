@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { applySchema } from "../../scripts/setup.mjs";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { createSiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/store-factory";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { verifyCloudImageSidecar } from "../../packages/cloud-images/src/sign";
 import { extractPng, stripPng, crc32, PNG_SIGNATURE } from "../../packages/cloud-images/src/png";
 import { sha256Hash, encodeBase64, decodeBase64, MAX_IMAGE_BYTES } from "../../packages/cloud-images/src/payload";
@@ -162,7 +162,7 @@ describe("POST /admin/api/cloud-images", () => {
     const signature = await verifyCloudImageSidecar(record.sidecar, [{ keyId: kid, kid, publicKeyJwk }]);
     expect(signature.ok).toBe(true);
 
-    const storeBytes = (await (await import("../../packages/cloud-images/src/store")).createCloudImageStore(env)).get(record.imageId);
+    const storeBytes = (await (await import("@portaless/trust-storage-adapters")).createCloudImageStore(env)).get(record.imageId);
     const entry = await storeBytes;
     expect(entry).not.toBeNull();
     expect(extractPng(entry!.bytes)).toBe(JSON.stringify(record.sidecar));

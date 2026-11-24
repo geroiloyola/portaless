@@ -25,7 +25,7 @@ import type { CapabilityId, CapabilityHostBridge } from "../types";
 import { createPageStore } from "../../../atomic-elements/src/persistence/store-factory";
 import { createPluginStorageStore } from "../registry/plugin-storage";
 import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "../registry/plugin-email-quota";
-import { createUsageLedgerStore } from "../../../trust-layer/src/ledger/store-factory";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
 import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
 import { EmailSendError, sendEmail } from "../../../email-transport/src/send";

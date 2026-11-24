@@ -53,7 +53,7 @@ import {
   jwkThumbprint,
   APW_TXT_PREFIX,
 } from "../../../packages/apw-resolver/src/index";
-import { createSiteIdentityStore, createAttestationLogStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 import { buildSiteManifest } from "../../../packages/apw-resolver/src/did-apw/site-manifest.ts";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
 

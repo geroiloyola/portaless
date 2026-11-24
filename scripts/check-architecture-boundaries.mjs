@@ -45,6 +45,7 @@ export const PACKAGE_LAYERS = Object.freeze({
   "sqlite-driver": { layer: "Node-L0", org: "geroiloyola" },
   "persistence-migrations": { layer: "Node-L0", org: "geroiloyola" },
   "email-transport": { layer: "Node-L0", org: "geroiloyola" },
+  "trust-storage-adapters": { layer: "Node-L0", org: "geroiloyola" },
   // L3 CMS kernel
   "atomic-elements": { layer: "L3", org: "geroiloyola" },
   "deploy-engine": { layer: "L3", org: "geroiloyola" },
@@ -72,6 +73,7 @@ export const INTRA_LAYER_ALLOWLIST = new Set([
   "cloud-images->trust-layer",
   "identity-atproto->trust-layer",
   "persistence-migrations->sqlite-driver",
+  "trust-storage-adapters->sqlite-driver",
   "deploy-engine->atomic-elements",
   "dashboard->auth",
   "plugin-sandbox->permissions",

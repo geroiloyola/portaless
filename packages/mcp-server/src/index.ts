@@ -34,7 +34,7 @@ import { elementRegistry, elementPalette } from "../../atomic-elements/src/eleme
 import { coreCatalog } from "../../atomic-elements/src/elements/element-pack.js";
 import { createPermissionStore } from "../../permissions/src/store-factory.js";
 import { createPluginRegistryStore } from "../../plugin-sandbox/src/registry/store-factory.js";
-import { createUsageLedgerStore } from "../../trust-layer/src/ledger/store-factory.js";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import { createSiteSkinStore } from "../../dashboard/src/skin-engine/site-skin-store.js";
 import { createMcpAuditLogStore } from "./audit/persistent-audit-log-store.js";
 import { createEnvAgentIdentityResolver } from "./permissions/agent-identity.js";

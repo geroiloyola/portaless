@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
 import { InMemoryUsageLedgerStore, recordAgentAccess } from "../../packages/trust-layer/src/ledger/log-writer";
-import { SqliteUsageLedgerStore } from "../../packages/trust-layer/src/ledger/sqlite-log-store";
+import { SqliteUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import type { UsageLogPeriod } from "../../packages/trust-layer/src/ledger/log-schema";
 import { emitReaderConduct } from "../../packages/apw-resolver/src/scoring/reader-conduct-emitter";
 import { signSiteJws, ATTESTATION_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";

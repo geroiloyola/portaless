@@ -19,6 +19,7 @@
 // (DNS, plc.directory, el propio handle) -- ver identity-atproto.md.
 
 import { buildAtprotoReputation } from "../../../packages/identity-atproto/src/reputation.ts";
+import { createSiteIdentityStore, createSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
 import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 
 const STATUS_BY_REASON = {
@@ -61,7 +62,12 @@ export async function onRequestGet(context) {
   }
 
   const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 12, deadlineMs: 8000 });
-  const result = await buildAtprotoReputation(params?.handle, { env, fetchImpl });
+  const result = await buildAtprotoReputation(params?.handle, {
+    env,
+    fetchImpl,
+    createSiteIdentityStore,
+    createSiteTrustScoreStore,
+  });
 
   if (!result.resolved) {
     const status = STATUS_BY_REASON[result.reason] ?? 404;

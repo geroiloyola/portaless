@@ -6,9 +6,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ snapshot: null as any }));
-vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
-  createSiteTrustScoreStore: async () => ({ getSnapshot: async () => state.snapshot }),
-}));
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
+  return {
+    ...actual,
+    createSiteTrustScoreStore: async () => ({ getSnapshot: async () => state.snapshot }),
+  };
+});
 
 beforeEach(() => {
   state.snapshot = {

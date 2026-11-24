@@ -84,12 +84,22 @@ describe("GET /trust/atproto/:handle", () => {
     expect(await res.json()).toEqual(join);
     expect(res.headers.get("cache-control")).toBe("public, max-age=300");
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
-    expect(build).toHaveBeenCalledWith("username.wikipedia.org", { env: { some: "env" }, fetchImpl: expect.any(Function) });
+    expect(build).toHaveBeenCalledWith("username.wikipedia.org", {
+      env: { some: "env" },
+      fetchImpl: expect.any(Function),
+      createSiteIdentityStore: expect.any(Function),
+      createSiteTrustScoreStore: expect.any(Function),
+    });
   });
 
   it("params.handle ausente llega tal cual al builder (que responde invalido)", async () => {
     build.mockResolvedValueOnce(unresolved("invalid_handle", ""));
     expect((await onRequestGet(context(undefined, {}))).status).toBe(400);
-    expect(build).toHaveBeenCalledWith(undefined, { env: {}, fetchImpl: expect.any(Function) });
+    expect(build).toHaveBeenCalledWith(undefined, {
+      env: {},
+      fetchImpl: expect.any(Function),
+      createSiteIdentityStore: expect.any(Function),
+      createSiteTrustScoreStore: expect.any(Function),
+    });
   });
 });

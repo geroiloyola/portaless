@@ -15,7 +15,7 @@
 // al dia; cache corta. Ruta publica: /.well-known/* ya pasa sin firma por
 // isPublicBotRoute(). Sin identidad responde 404, como did.json.
 
-import { createSiteIdentityStore, createAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 import { buildSiteManifest } from "../../packages/apw-resolver/src/did-apw/site-manifest.ts";
 import { signSiteManifest } from "../../packages/apw-resolver/src/did-apw/site-jws.ts";
 

@@ -10,14 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { applySchema } from "../../scripts/setup.mjs";
-import {
-  D1CloudImageStore,
-  SqliteCloudImageStore,
-  InMemoryCloudImageStore,
-  createCloudImageStore,
-  CLOUD_IMAGES_TABLE_DDL,
-  type CloudImageStore,
-} from "../../packages/cloud-images/src/store";
+import { InMemoryCloudImageStore, CLOUD_IMAGES_TABLE_DDL, type CloudImageStore } from "../../packages/cloud-images/src/store";
+import { D1CloudImageStore, SqliteCloudImageStore, createCloudImageStore } from "@portaless/trust-storage-adapters";
 import { buildCloudImagePayload, sha256Hash, encodeBase64, type CloudImageSidecar } from "../../packages/cloud-images/src/payload";
 import { signCloudImage } from "../../packages/cloud-images/src/sign";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";

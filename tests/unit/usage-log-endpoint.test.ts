@@ -116,7 +116,7 @@ describe("functions/.well-known/portaless-usage-log.json.js", () => {
     const fakeDb = makeFakeD1();
     const env = { DB: fakeDb };
 
-    const { createUsageLedgerStore } = await import("../../packages/trust-layer/src/ledger/store-factory.ts");
+    const { createUsageLedgerStore } = await import("@portaless/trust-storage-adapters");
     const { recordAgentAccess } = await import("../../packages/trust-layer/src/ledger/log-writer.ts");
     const store = await createUsageLedgerStore(env);
 

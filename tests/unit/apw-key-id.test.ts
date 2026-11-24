@@ -18,7 +18,7 @@ import { applyColumnMigrations } from "../../packages/persistence-migrations/src
 
 
 const state = vi.hoisted(() => ({ identity: null as any, log: null as any }));
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteIdentityStore: async () => state.identity,
   createAttestationLogStore: async () => state.log,
 }));

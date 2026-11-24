@@ -6,9 +6,9 @@
 // abrir (ALTER TABLE ADD COLUMN si falta); sus filas quedan con null. Un
 // reader_did ya guardado no se pisa (COALESCE). reader_did va AL FINAL de
 // los parametros: el orden de las 10 columnas originales no cambia.
-import type { UsageLogPeriod, AgentUsageEntry } from "./log-schema";
-import type { UsageLedgerStore } from "./log-writer";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import type { UsageLogPeriod, AgentUsageEntry } from "../../trust-layer/src/ledger/log-schema";
+import type { UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
+import { openSqlite } from "../../sqlite-driver/src/open";
 
 interface RowType {
   period: string; operator_key_id: string; operator_name_claimed: string | null; reader_did?: string | null;

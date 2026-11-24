@@ -11,11 +11,9 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("../../packages/permissions/src/store-factory.ts", () => ({ createPermissionStore: async () => state.permissions }));
-vi.mock("../../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts", async (orig) => ({
-  ...(await orig<object>()),
+vi.mock("@portaless/trust-storage-adapters", async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   createSettlementActivationStore: async () => state.activations,
-}));
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identity }),
 }));
 vi.mock("../../packages/plugin-sandbox/src/registry/store-factory.ts", () => ({

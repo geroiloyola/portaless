@@ -17,8 +17,8 @@ vi.mock("../../packages/apw-resolver/src/did-apw/history-resolver", async (impor
   return { ...original, resolveApwHistory: history.resolveApwHistory };
 });
 
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/apw-resolver/src/did-apw/store-factory")>();
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
   const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
   const { InMemoryAttestationLogStore } = await import("../../packages/apw-resolver/src/did-apw/attestation-log-store");
   const identity = new InMemorySiteIdentityStore({
@@ -37,7 +37,7 @@ vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async (importOr
 import * as self from "../../functions/admin/site-trust/[siteId]/self";
 import * as witness from "../../functions/admin/api/witness/record";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import * as apwStoreFactory from "../../packages/apw-resolver/src/did-apw/store-factory";
+import * as apwStoreFactory from "@portaless/trust-storage-adapters";
 
 const admin = { username: "admin", role: "admin" };
 const viewer = { username: "v", role: "viewer" };

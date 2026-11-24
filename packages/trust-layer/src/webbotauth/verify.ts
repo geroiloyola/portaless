@@ -42,9 +42,9 @@ import {
 import { parseSignatureAgent, parseWebBotAuthSignatureInput } from "./headers";
 import { isMlDsaJwk, jwkKeyAlgorithm, normalizeAlgParam, verifyMlDsaSignature } from "./ml-dsa";
 import {
-  createWebBotAuthNonceStore,
   InMemoryWebBotAuthNonceStore,
   type NonceStoreFactoryEnv,
+  type WebBotAuthNonceStore,
 } from "./nonce-store";
 import type { SafeFetcher } from "@portaless/net";
 import { DirectoryResolver, normalizeDirectoryOrigin } from "./directory-fetch";
@@ -84,15 +84,6 @@ export async function __fetchOperatorKeyDirectoryForTests(origin: string, fetche
   return result.ok ? result.directory : null;
 }
 
-// v0.0.9: unicidad de nonce contra replay, ver ROADMAP.md. v0.0.9.31:
-// ahora compartido entre instancias. Si el caller pasa options.env (con
-// env.DB / env.PORTALESS_SQLITE_PATH) el nonce se registra en
-// webbotauth_nonces (D1/SQLite con TTL, patron auth_mfa_challenges) -- asi
-// multiples workers de Cloudflare, dos instancias Docker, etc. comparten
-// la misma ventana y un replay contra OTRO proceso se detecta. Sin env
-// (dev local, tests, o un despliegue single-process sin estado) se cae al
-// store en memoria de siempre, que NO comparte estado entre procesos
-// (el factory avisa si no hay backend configurado).
 const NONCE_WINDOW_MS = MAX_SIGNATURE_AGE_SECONDS * 1000;
 const memoryNonceStore = new InMemoryWebBotAuthNonceStore();
 
@@ -102,6 +93,8 @@ export function __resetNonceStoreForTests(): void {
 }
 
 export interface VerifyWebBotAuthOptions {
+  nonceStore?: WebBotAuthNonceStore;
+  createNonceStore?: (env: NonceStoreFactoryEnv) => Promise<WebBotAuthNonceStore>;
   env?: NonceStoreFactoryEnv & {
     PORTALESS_WBA_RESERVED_ORIGINS?: string;
     PORTALESS_RESOLUTION_BUDGET_ENABLED?: string;
@@ -223,7 +216,11 @@ export async function verifyWebBotAuthRequest(
   // store compartido (D1/SQLite); sin env, el store en memoria del proceso.
   {
     const nowMs = Date.now();
-    const store = options?.env ? await createWebBotAuthNonceStore(options.env) : memoryNonceStore;
+    const store =
+      options?.nonceStore ??
+      (options?.createNonceStore && options?.env
+        ? await options.createNonceStore(options.env)
+        : memoryNonceStore);
     const isFirstUse = await store.registerIfUnseen(parsed.nonce, nowMs, NONCE_WINDOW_MS);
     if (!isFirstUse) return { verified: false, reason: "nonce_replayed" };
   }

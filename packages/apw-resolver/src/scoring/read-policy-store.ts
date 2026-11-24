@@ -168,70 +168,6 @@ function rowToRecord(row: any): ReadPolicyRecord {
   };
 }
 
-const UPSERT_SQL = `INSERT INTO site_trust_read_policies
-    (site_id, enabled, require_apw_identity, min_r01, min_r01_weight, min_r05, min_r05_weight, public_overrides, on_fail, updated_at, updated_by)
-  VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
-  ON CONFLICT(site_id) DO UPDATE SET
-    enabled = excluded.enabled,
-    min_r01 = excluded.min_r01,
-    min_r01_weight = excluded.min_r01_weight,
-    min_r05 = excluded.min_r05,
-    min_r05_weight = excluded.min_r05_weight,
-    public_overrides = excluded.public_overrides,
-    on_fail = excluded.on_fail,
-    updated_at = excluded.updated_at,
-    updated_by = excluded.updated_by`;
-
-/** A.6: la columna del override se agrega sola a bases creadas antes de existir. */
-
-function isDuplicateColumnError(err: unknown): boolean {
-  return /duplicate column/i.test(String((err as Error)?.message));
-}
-
-export class SqlReadPolicyStore implements ReadPolicyStore {
-  private schemaReady: Promise<void> | null = null;
-
-  constructor(private readonly sql: SqlAdapter) {}
-
-  private ensureSchema(): Promise<void> {
-    if (!this.schemaReady) {
-      this.schemaReady = (async () => {
-        await this.sql.run(READ_POLICIES_DDL);
-      })();
-      this.schemaReady.catch(() => {
-        this.schemaReady = null;
-      });
-    }
-    return this.schemaReady;
-  }
-
-  async get(siteId: string): Promise<ReadPolicyRecord | null> {
-    await this.ensureSchema();
-    const row = await this.sql.first("SELECT * FROM site_trust_read_policies WHERE site_id = ?", [siteId]);
-    return row ? rowToRecord(row) : null;
-  }
-
-  async save(input: ReadPolicyInput): Promise<ReadPolicyRecord> {
-    validateReadPolicyInput(input);
-    const publicOverrides = normalizePublicOverrides(input.publicOverrides);
-    await this.ensureSchema();
-    const updatedAt = new Date().toISOString();
-    await this.sql.run(UPSERT_SQL, [
-      input.siteId,
-      input.enabled ? 1 : 0,
-      input.minR01,
-      input.minR01Weight,
-      input.minR05,
-      input.minR05Weight,
-      publicOverrides.length ? JSON.stringify(publicOverrides) : null,
-      input.onFail,
-      updatedAt,
-      input.updatedBy,
-    ]);
-    return { ...input, publicOverrides, requireApwIdentity: true, updatedAt };
-  }
-}
-
 export class InMemoryReadPolicyStore implements ReadPolicyStore {
   private rows = new Map<string, ReadPolicyRecord>();
 
@@ -251,19 +187,4 @@ export class InMemoryReadPolicyStore implements ReadPolicyStore {
     this.rows.set(input.siteId, record);
     return { ...record, publicOverrides: [...record.publicOverrides] };
   }
-}
-
-let memoryFallback: InMemoryReadPolicyStore | null = null;
-
-export async function createReadPolicyStore(env: { DB?: unknown; PORTALESS_SQLITE_PATH?: string }): Promise<ReadPolicyStore> {
-  if (env?.DB) return new SqlReadPolicyStore(new D1Adapter(env.DB as any));
-  if (env?.PORTALESS_SQLITE_PATH) {
-    const { openSqlite } = await import("../../../sqlite-driver/src/open");
-    return new SqlReadPolicyStore(new SqliteAdapter(await openSqlite(env.PORTALESS_SQLITE_PATH)));
-  }
-  if (!memoryFallback) {
-    console.warn("[Portaless APW] Sin DB ni PORTALESS_SQLITE_PATH. Politica de lectura en memoria.");
-    memoryFallback = new InMemoryReadPolicyStore();
-  }
-  return memoryFallback;
 }
