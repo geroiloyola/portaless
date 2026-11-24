@@ -5,40 +5,40 @@ import {
   SqliteSiteIdentityStore,
   InMemorySiteIdentityStore,
   type SiteIdentityStore,
-} from "../../apw-resolver/src/did-apw/site-identity-store";
+} from "@portaless/apw-resolver/did-apw";
 import {
   D1AttestationLogStore,
   SqliteAttestationLogStore,
   InMemoryAttestationLogStore,
   type AttestationLogStore,
-} from "../../apw-resolver/src/did-apw/attestation-log-store";
+} from "@portaless/apw-resolver/did-apw";
 import {
   D1ReaderConductJtiStore,
   SqliteReaderConductJtiStore,
   InMemoryReaderConductJtiStore,
   type ReaderConductJtiStore,
-} from "../../apw-resolver/src/scoring/reader-conduct-jti-store";
+} from "@portaless/apw-resolver/scoring";
 import {
   D1WitnessIndexStore,
   SqliteWitnessIndexStore,
   InMemoryWitnessIndexStore,
   type WitnessIndexStore,
-} from "../../apw-resolver/src/did-apw/witness-index-store";
+} from "@portaless/apw-resolver/did-apw";
 import {
   LINKS_TABLE_DDL,
   InMemorySiteAtprotoLinksStore,
   type SiteAtprotoLink,
   type SiteAtprotoLinksStore,
-} from "../../apw-resolver/src/did-apw/atproto-links-store";
+} from "@portaless/apw-resolver/did-apw";
 import {
   recordInSiteHistoryWithStores,
   type HistoryRecordResult,
-} from "../../apw-resolver/src/did-apw/record-attestation";
+} from "@portaless/apw-resolver/did-apw";
 import {
   D1Adapter,
   SqliteAdapter,
   type SqlAdapter,
-} from "../../apw-resolver/src/did-apw/sql-adapter";
+} from "@portaless/apw-resolver/did-apw";
 import {
   READ_POLICIES_DDL,
   InMemoryReadPolicyStore,
@@ -48,7 +48,7 @@ import {
   type ReadPolicyInput,
   type ReadPolicyRecord,
   type ReadPolicyStore,
-} from "../../apw-resolver/src/scoring/read-policy-store";
+} from "@portaless/apw-resolver/scoring";
 
 interface D1Like {
   prepare(sql: string): {

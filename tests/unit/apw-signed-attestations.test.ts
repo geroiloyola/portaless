@@ -20,7 +20,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   createSiteIdentityStore: async () => state.identity,
   createAttestationLogStore: async () => state.log,
 }));
-vi.mock("../../packages/trust-layer/src/site-trust/web-bot-auth.ts", async (importOriginal) => {
+vi.mock("@portaless/trust-layer/site-trust", async (importOriginal) => {
   const actual: any = await importOriginal();
   return {
     ...actual,

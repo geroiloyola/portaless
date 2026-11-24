@@ -22,11 +22,11 @@
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
-import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
-import { signSiteJws, ATTESTATION_TYP } from "../../../../packages/apw-resolver/src/did-apw/site-jws.ts";
-import { resolveApwManifest } from "../../../../packages/apw-resolver/src/index.ts";
-import { emitReaderConduct } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-emitter.ts";
-import { collectEmittedJtis } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-jti-store.ts";
+import { appendAttestation } from "@portaless/apw-resolver/did-apw";
+import { signSiteJws, ATTESTATION_TYP } from "@portaless/apw-resolver/did-apw";
+import { resolveApwManifest } from "@portaless/apw-resolver/resolver";
+import { emitReaderConduct } from "@portaless/apw-resolver/scoring";
+import { collectEmittedJtis } from "@portaless/apw-resolver/scoring";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";

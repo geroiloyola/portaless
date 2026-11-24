@@ -18,10 +18,10 @@
 
 import { createCloudImageStore } from "@portaless/trust-storage-adapters";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { sha256Hash } from "../../../packages/cloud-images/src/payload.ts";
-import { verifyCloudImageSidecar } from "../../../packages/cloud-images/src/sign.ts";
-import { isPng, extractPng, stripPng } from "../../../packages/cloud-images/src/png.ts";
-import { IMAGE_SITE_ID } from "../../../packages/cloud-images/src/trust.ts";
+import { sha256Hash } from "@portaless/cloud-images";
+import { verifyCloudImageSidecar } from "@portaless/cloud-images";
+import { isPng, extractPng, stripPng } from "@portaless/cloud-images";
+import { IMAGE_SITE_ID } from "@portaless/cloud-images";
 
 const SITE_ID = IMAGE_SITE_ID;
 

@@ -1,7 +1,7 @@
 import { createRateLimitStore } from "../../packages/auth/src/store-factory.ts";
 import { allowActionRequest } from "../../packages/auth/src/action-rate-limit.ts";
 import { clientIpFromHeaders } from "../../packages/auth/src/password-reset-rate-limit.ts";
-import { createSafeFetcher } from "../../packages/apw-resolver/src/federation/safe-fetch.ts";
+import { createSafeFetcher } from "@portaless/apw-resolver/federation";
 
 export const PUBLIC_TRUST_WINDOW_MS = 60 * 60 * 1000;
 

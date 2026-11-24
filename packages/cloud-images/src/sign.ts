@@ -17,9 +17,9 @@ import {
   jcs,
   type SiteSigningKey,
   type SiteJwsFailure,
-} from "../../apw-resolver/src/did-apw/site-jws";
-import { jwkThumbprint } from "../../apw-resolver/src/did-apw/fingerprint";
-import { parseDidKeyId } from "../../apw-resolver/src/did-apw/key-id";
+} from "@portaless/apw-resolver/did-apw";
+import { jwkThumbprint } from "@portaless/apw-resolver/did-apw";
+import { parseDidKeyId } from "@portaless/apw-resolver/did-apw";
 import type { CloudImagePayload, CloudImageSidecar } from "./payload";
 
 export const IMAGE_TYP = "apw-image+jws";

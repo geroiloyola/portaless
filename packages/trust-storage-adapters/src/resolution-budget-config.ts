@@ -7,7 +7,7 @@ import {
   type ResolutionBudgetConfigRecord,
   type ResolutionBudgetConfigStore,
   type ResolutionBudgetConfiguration,
-} from "../../trust-layer/src/net/resolution-budget-config";
+} from "@portaless/trust-layer/net";
 
 const SELECT =
   "SELECT config_json, revision, updated_at, updated_by FROM resolution_budget_config WHERE id = 1";

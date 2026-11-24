@@ -1,6 +1,6 @@
 ---
 import { getPublicSvriLevel } from "../../lib/svri-public-level";
-import type { SvriSiteDetail } from "../../../packages/apw-resolver/src/scoring/svri";
+import type { SvriSiteDetail } from "@portaless/apw-resolver/scoring";
 
 interface Props { data?: SvriSiteDetail; siteId?: string }
 const { data, siteId = "default" } = Astro.props;

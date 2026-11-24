@@ -29,10 +29,14 @@ vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identityRow }),
 }));
 
-vi.mock("../../packages/apw-resolver/src/did-apw/history-resolver.ts", () => ({
-  resolveApwHistory: async (domain: string) =>
-    state.histories[domain] ?? { verified: false, reason: "manifest_not_resolved", domain },
-}));
+vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+  return {
+    ...actual,
+    resolveApwHistory: async (domain: string) =>
+      state.histories[domain] ?? { verified: false, reason: "manifest_not_resolved", domain },
+  };
+});
 
 vi.stubGlobal(
   "fetch",

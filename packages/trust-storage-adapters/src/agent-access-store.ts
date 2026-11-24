@@ -1,6 +1,6 @@
 // Portaless node SQLite/D1 storage adapters for agent access policy (Node-L0).
 import { openSqlite } from "../../sqlite-driver/src/open";
-import type { ContentPolicyManifest } from "../../trust-layer/src/policy/manifest-schema";
+import type { ContentPolicyManifest } from "@portaless/trust-layer/policy";
 import {
   AGENT_ACCESS_POLICY_DDL,
   INVALID_AGENT_ACCESS_POLICY,
@@ -9,7 +9,7 @@ import {
   validateAgentAccessPolicy,
   type AgentAccessPolicyRecord,
   type AgentAccessPolicyStore,
-} from "../../trust-layer/src/policy/agent-access-store";
+} from "@portaless/trust-layer/policy";
 
 const READ_SQL = "SELECT policy_json, updated_at, updated_by FROM agent_access_policy WHERE id = 1";
 const UPSERT_SQL = `INSERT INTO agent_access_policy (id, policy_json, updated_at, updated_by)

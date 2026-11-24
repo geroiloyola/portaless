@@ -28,16 +28,16 @@ import {
   createSiteIdentityStore,
   createSiteTrustScoreStore,
 } from "@portaless/trust-storage-adapters";
-import { captureSiteTrust, IMAGE_SITE_ID } from "../../../packages/cloud-images/src/trust.ts";
+import { captureSiteTrust, IMAGE_SITE_ID } from "@portaless/cloud-images";
 import {
   buildCloudImagePayload,
   decodeBase64,
   sha256Hash,
   isDeclaredOrigin,
   MAX_IMAGE_BYTES,
-} from "../../../packages/cloud-images/src/payload.ts";
-import { signCloudImage } from "../../../packages/cloud-images/src/sign.ts";
-import { embedPng, isPng } from "../../../packages/cloud-images/src/png.ts";
+} from "@portaless/cloud-images";
+import { signCloudImage } from "@portaless/cloud-images";
+import { embedPng, isPng } from "@portaless/cloud-images";
 import { createRateLimitStore } from "../../../packages/auth/src/store-factory.ts";
 import { allowActionRequest } from "../../../packages/auth/src/action-rate-limit.ts";
 import { clientIpFromHeaders } from "../../../packages/auth/src/password-reset-rate-limit.ts";

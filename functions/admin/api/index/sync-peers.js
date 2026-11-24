@@ -16,9 +16,9 @@
 // escucha este nodo.
 
 import { createWitnessIndexStore, createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
-import { syncIndexPeers } from "../../../../packages/apw-resolver/src/did-apw/witness-index.ts";
+import { syncIndexPeers } from "@portaless/apw-resolver/did-apw";
 
 const SITE_ID = "default";
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;

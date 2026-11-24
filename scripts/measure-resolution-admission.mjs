@@ -1,6 +1,6 @@
 // Local in-process admission overhead only. No requests go to third-party hosts.
 // Run: node --import tsx scripts/measure-resolution-admission.mjs
-import { ResolutionBudget, RESOLUTION_BUDGET_PROPOSAL } from "../packages/trust-layer/src/net/resolution-budget.ts";
+import { ResolutionBudget, RESOLUTION_BUDGET_PROPOSAL } from "@portaless/trust-layer/net";
 
 const rows = [];
 for (const maxBuckets of [128, 1024, 4096]) {

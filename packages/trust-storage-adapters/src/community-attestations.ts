@@ -8,7 +8,7 @@ import {
   type CommunityAttestationsStore,
   type D1DatabaseLike,
   type RecordCommunityAttestationInput,
-} from "../../trust-layer/src/site-trust/community-attestations";
+} from "@portaless/trust-layer/site-trust";
 const COLUMNS = "iss, jti, site_id, sub, category, val, iat, jws, emitter_first_seen_iat, received_at";
 
 function isUniqueViolation(err: unknown): boolean {

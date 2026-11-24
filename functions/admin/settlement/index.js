@@ -16,13 +16,13 @@ import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
-import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import { listPayPerCrawlProviders } from "@portaless/trust-layer/billing";
 import { encryptToken } from "../../../packages/deploy-engine/src/token-crypto.ts";
 import {
   activateProvider,
   deactivateProvider,
   hostFromApwDomain,
-} from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-service.ts";
+} from "@portaless/trust-layer/billing";
 
 const SITE_ID = "default";
 

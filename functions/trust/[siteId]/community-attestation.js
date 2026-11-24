@@ -15,11 +15,11 @@
 // no al registrar: aca solo se captura `emitterFirstSeenIat` (la primera entrada
 // verificada del historial del emisor, 5.4) para que el scoring sea puro.
 
-import { DUPLICATE_COMMUNITY_JTI } from "../../../packages/trust-layer/src/site-trust/community-attestations.ts";
+import { DUPLICATE_COMMUNITY_JTI } from "@portaless/trust-layer/site-trust";
 import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
-import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
-import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { verifyAttestation } from "@portaless/trust-layer/site-trust";
+import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
+import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";

@@ -18,7 +18,7 @@
 // Nunca lanza en parseo: parseSidecar/validatePayload devuelven null ante
 // cualquier shape hostil (mismo principio defensivo que parseApwManifest).
 
-import type { projectTrustView } from "../../apw-resolver/src/scoring/policy";
+import type { projectTrustView } from "@portaless/apw-resolver/scoring";
 
 export type DeclaredOrigin = "human" | "ai" | "mixed";
 

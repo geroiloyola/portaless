@@ -11,7 +11,7 @@ import type { PermissionStore } from "../../../permissions/src/permission-store"
 import type { PermissionSubjectType } from "../../../permissions/src/types";
 import type { CapabilityId } from "../../../plugin-sandbox/src/types";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

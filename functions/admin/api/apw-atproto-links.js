@@ -12,7 +12,7 @@
 // DELETE /admin/api/apw-atproto-links -> baja { handle }
 
 import { createSiteAtprotoLinksStore } from "@portaless/trust-storage-adapters";
-import { resolvableHandle } from "../../../packages/identity-atproto/src/handle.ts";
+import { resolvableHandle } from "@portaless/identity-atproto";
 
 const SITE_ID = "default";
 

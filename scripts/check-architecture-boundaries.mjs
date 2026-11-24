@@ -405,6 +405,10 @@ export function analyzeTree(root) {
       (e.violation === "contracts-to-portaless" && e.fromUnit === "docs/protocol-apw"),
   );
 
+  const deepSrcAll = [...deepSrcPackages, ...deepSrcL5];
+  const deepSrcVerared = deepSrcAll.filter((e) => e.toOrg === "verared").length;
+  const deepSrcGeroiloyola = deepSrcAll.filter((e) => e.toOrg === "geroiloyola").length;
+
   const exportReady = {
     zeroVeraredReverseImports: veraredReverseImports.length === 0,
     zeroCycles: cycles.length === 0,
@@ -424,6 +428,10 @@ export function analyzeTree(root) {
       packages: deepSrcPackages.length,
       l5: deepSrcL5.length,
       total: deepSrcPackages.length + deepSrcL5.length,
+      byTargetOrg: {
+        verared: deepSrcVerared,
+        geroiloyola: deepSrcGeroiloyola,
+      },
     },
     packageEntryImports: packageEntryImports.length,
     cycles,
@@ -455,6 +463,8 @@ export function formatMarkdownSummary(report) {
     "|---|---:|---|",
     `| Deep \`packages/*/src/\` imports (packages) | ${report.deepSrcImports.packages} | ${ok(report.deepSrcImports.packages === 0)} |`,
     `| Deep \`packages/*/src/\` imports (L5: src/functions/server/scripts) | ${report.deepSrcImports.l5} | ${ok(report.deepSrcImports.l5 === 0)} |`,
+    `| Deep \`packages/*/src/\` imports -> \`verared\` | ${report.deepSrcImports.byTargetOrg.verared} | ${ok(report.deepSrcImports.byTargetOrg.verared === 0)} |`,
+    `| Deep \`packages/*/src/\` imports -> \`geroiloyola\` | ${report.deepSrcImports.byTargetOrg.geroiloyola} | ${ok(report.deepSrcImports.byTargetOrg.geroiloyola === 0)} |`,
     `| Public package-entry imports (\`@portaless/*\` / \`@verared/*\`) | ${report.packageEntryImports} | info |`,
     `| Package dependency cycles | ${cycleText} | ${ok(report.exportReady.zeroCycles)} |`,
     `| Layer / org violations (total) | ${report.layerViolations.total} | ${ok(report.exportReady.zeroLayerViolations)} |`,
@@ -473,7 +483,7 @@ export function formatMarkdownSummary(report) {
 export function formatTextReport(report) {
   const lines = [
     `[check-architecture-boundaries] scanned ${report.scannedFiles} non-test files`,
-    `  deep packages/*/src/ imports: ${report.deepSrcImports.total} (packages: ${report.deepSrcImports.packages}, L5: ${report.deepSrcImports.l5})`,
+    `  deep packages/*/src/ imports: ${report.deepSrcImports.total} (packages: ${report.deepSrcImports.packages}, L5: ${report.deepSrcImports.l5}; target verared: ${report.deepSrcImports.byTargetOrg.verared}, geroiloyola: ${report.deepSrcImports.byTargetOrg.geroiloyola})`,
     `  public package-entry imports: ${report.packageEntryImports}`,
     `  package cycles: ${report.cycles.length}${
       report.cycles.length

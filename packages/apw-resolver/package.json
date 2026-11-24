@@ -23,6 +23,22 @@
     "./full": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./resolver": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./did-apw": {
+      "types": "./src/did-apw/index.ts",
+      "import": "./src/did-apw/index.ts"
+    },
+    "./scoring": {
+      "types": "./src/scoring/index.ts",
+      "import": "./src/scoring/index.ts"
+    },
+    "./federation": {
+      "types": "./src/federation/index.ts",
+      "import": "./src/federation/index.ts"
     }
   },
   "files": [

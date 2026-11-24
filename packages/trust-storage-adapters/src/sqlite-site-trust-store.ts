@@ -28,13 +28,13 @@ import type {
   CommunityTrustCategory,
   EscrowTrustReport,
   EscrowTransactionOutcome,
-} from "../../trust-layer/src/site-trust/site-trust-score";
+} from "@portaless/trust-layer/site-trust";
 import {
   ATTESTATION_INDEXES,
   DUPLICATE_ATTESTATION_JTI,
   isDuplicateColumnError,
   isUniqueViolation,
-} from "../../trust-layer/src/site-trust/site-trust-score";
+} from "@portaless/trust-layer/site-trust";
 import { openSqlite } from "../../sqlite-driver/src/open";
 
 interface SelfRow {

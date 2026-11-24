@@ -16,8 +16,8 @@
 //
 // Todas las dependencias son inyectables (sin red real en tests).
 
-import { resolveApwHistory } from "../../apw-resolver/src/did-apw/history-resolver";
-import { resolveApwIdentity } from "../../apw-resolver/src/index";
+import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
+import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
 import { parseSidecar, sha256Hash, decodeBase64, type CloudImagePayload } from "./payload";
 import { decodeJwsHeader, imageKidBelongsToDid, verifyCloudImageSidecar, type VerificationKey } from "./sign";
 import { isPng, stripPng } from "./png";

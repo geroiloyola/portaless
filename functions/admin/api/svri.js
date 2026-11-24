@@ -1,13 +1,13 @@
 import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
 import { createAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
-import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { resolveAgentDirectoryKey } from "../../../packages/trust-layer/src/site-trust/web-bot-auth.ts";
-import { assertSafeUrl } from "../../../packages/apw-resolver/src/federation/safe-fetch.ts";
+import { verifyAttestation } from "@portaless/trust-layer/site-trust";
+import { resolveAgentDirectoryKey } from "@portaless/trust-layer/site-trust";
+import { assertSafeUrl } from "@portaless/apw-resolver/federation";
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
-import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
-import { jwkThumbprint } from "../../../packages/apw-resolver/src/did-apw/fingerprint.ts";
-import { reconstructSvriHistory } from "../../../packages/apw-resolver/src/scoring/svri-history.ts";
+import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
+import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
+import { jwkThumbprint } from "@portaless/apw-resolver/did-apw";
+import { reconstructSvriHistory } from "@portaless/apw-resolver/scoring";
 
 const LOG_PAGE_SIZE = 500;
 const MAX_LOG_ENTRIES = 20_000;

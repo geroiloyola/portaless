@@ -14,7 +14,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PageStore } from "../../../atomic-elements/src/persistence/page-store";
 import type { PermissionStore } from "../../../permissions/src/permission-store";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

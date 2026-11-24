@@ -32,12 +32,12 @@ import {
   validateReaderGrant,
 } from "../../../packages/permissions/src/reader-bypass.ts";
 import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
-import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import { listPayPerCrawlProviders } from "@portaless/trust-layer/billing";
 import {
   BILLING_CAPABILITY,
   SETTLEMENT_SUBJECT_TYPE,
   isSettlementGrant,
-} from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-service.ts";
+} from "@portaless/trust-layer/billing";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
