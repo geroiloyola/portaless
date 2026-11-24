@@ -1,4 +1,4 @@
-import { createSafeFetcher, isPrivateIp, type SafeFetcher } from "../../../apw-resolver/src/federation/safe-fetch";
+import { createSafeFetcher, isPrivateIp, type SafeFetcher } from "@portaless/net";
 import type { ResolutionBudget } from "../net/resolution-budget";
 
 export const DIRECTORY_FETCH_IN_FLIGHT_MAX = 8;

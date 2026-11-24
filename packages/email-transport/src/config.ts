@@ -71,40 +71,7 @@ export function isEmailTemplateId(value: unknown): value is string {
   return typeof value === "string" && TEMPLATE_ID_RE.test(value);
 }
 
-/** ¿La IPv4 cae en un rango privado/reservado (SSRF)? */
-function isPrivateIpv4(ip: string): boolean {
-  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!m) return false;
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  if (a === 0 || a === 10 || a === 127) return true; // 0/8, 10/8, loopback
-  if (a === 169 && b === 254) return true; // link-local / metadata (169.254.169.254)
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16/12
-  if (a === 192 && b === 168) return true; // 192.168/16
-  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64/10
-  return false;
-}
-
-/** Host interno/reservado (SSRF). No cubre DNS-rebinding (defense-in-depth). */
-function isPrivateHost(host: string): boolean {
-  const h = host.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, ""); // corchetes IPv6 y punto DNS final
-  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
-  if (h.includes(":")) {
-    if (h === "::1" || h === "::") return true;
-    if (h.startsWith("fe80") || h.startsWith("fc") || h.startsWith("fd")) return true; // link-local / ULA
-    const mapped = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/); // IPv4-mapped, dotted
-    if (mapped) return isPrivateIpv4(mapped[1]);
-    // WHATWG URL canonicalizes [::ffff:127.0.0.1] to [::ffff:7f00:1].
-    const mappedHex = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-    if (mappedHex) {
-      const hi = Number.parseInt(mappedHex[1], 16);
-      const lo = Number.parseInt(mappedHex[2], 16);
-      return isPrivateIpv4(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
-    }
-    return false;
-  }
-  return isPrivateIpv4(h);
-}
+import { isPrivateHost } from "@portaless/net";
 
 /** Canonicaliza host names before identity comparison or transport use. */
 export function normalizeEmailHost(value: unknown): string | null {
