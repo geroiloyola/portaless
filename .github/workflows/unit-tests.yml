@@ -73,7 +73,7 @@ jobs:
         working-directory: docs/protocol-apw
         run: npm run check:author && npm run check:numbers && npm run audit && npm run check:core && npm run audit:core && npm run check:ab && npm run audit:ab && npm test
 
-      - name: Architecture boundaries report (E-07, non-blocking)
+      - name: Architecture boundaries gate (E-07, blocking)
         run: npm run check:boundaries
 
       - name: vitest tests/unit

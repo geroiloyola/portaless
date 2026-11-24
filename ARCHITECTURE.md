@@ -216,15 +216,15 @@ green (Vitest, Astro build, manifest validation, Playwright) with zero new
 
 | Order | PR scope | Closes / advances |
 |---|---|---|
-| **W1.0** *(this PR)* | Governance baseline: `ARCHITECTURE.md` + `docs/architecture/licensing-boundaries.md` (two-org split, `Apache-2.0` decision, live nomenclature rules, Wave 1/Wave 2 plan, Export-Ready gate) | Documentation half of **E-07** |
-| **W1.1** | CI import-boundary checker in **report mode** (lists all 181 deep imports, cycles and layer violations without failing CI yet) | Starts **E-07** enforcement |
-| **W1.2** | Create `packages/net` (future `@verared/net`): unify `safe-fetch`, `ltp-engine/src/ssrf.ts`, egress budgets and neutral client-IP trust helper; re-export from `apw-resolver` for compatibility | Closes **E-06**; breaks L2 → L1 half of cycle 1 |
-| **W1.3** | Break cycles: move attestation verification to L1, move runtime `reader_conduct` ledger glue to L2 (cycle 1 closed); unify capability vocabulary between `permissions` and `plugin-sandbox` (cycle 2 closed) | **0 cycles** across the monorepo |
-| **W1.4** | Extract L1/L2 storage ports + `InMemory*` stores; move all 14 `Sqlite*`/`D1*` stores plus `activation-service.ts` and `unsigned-bot-metrics.ts` into Portaless Node L0/L5 | **0 imports** from `verared`-bound packages to `sqlite-driver` or L3 |
-| **W1.5** | CMS internal hygiene: move `draft-filter` to `atomic-elements`, inject `plugin-sandbox` capability backends via ports, move plugin `host-bridge.ts` files to L5 | Sandbox & plugins cleanly separated |
-| **W1.6** | Add `exports` maps to all packages and migrate all **181** deep `src/` imports to public package entry points | Public API boundaries enforced |
-| **W1.7** | Live nomenclature & spec sanitization: replace standalone `LTP` / `LTP Stack` → `Local Trust Protocol` / `Vera Trust Stack`, `Portaless Index` → `Witness Index` (normative), `Veranet` → `Verared` (live), `community attester` (normative); move Portaless mentions in `docs/protocol-apw/` to reference appendices; update `scripts/check-ltp-naming.mjs` and `tests/unit/ltp-naming.test.ts` (never touching Level A bytes, `vectors/` or `LTP-APPROVAL-RECORD.md` hashes) | Neutral `verared` prose ready |
-| **W1.8** | Switch CI import-boundary checker to **blocking (fail) mode**; update `package.json` license metadata of `verared`-bound packages to `Apache-2.0` (only when authorized) | Closes **E-07**; satisfies Export-Ready gate |
+| **W1.0** *(PR #116)* | Governance baseline: `ARCHITECTURE.md` + `docs/architecture/licensing-boundaries.md` (two-org split, `Apache-2.0` decision, live nomenclature rules, Wave 1/Wave 2 plan, Export-Ready gate) | ✅ Documentation half of **E-07** |
+| **W1.1** *(PR #117)* | CI import-boundary checker in **report mode** (lists all deep imports, cycles and layer violations without failing CI yet) | ✅ Starts **E-07** enforcement |
+| **W1.2** *(PR #118)* | Create `packages/net` (future `@verared/net`): unify `safe-fetch`, `ltp-engine/src/ssrf.ts`, egress budgets and neutral client-IP trust helper; re-export from `apw-resolver` for compatibility | ✅ Closes **E-06**; breaks L2 → L1 half of cycle 1 |
+| **W1.3** *(PR #119)* | Break cycles: move attestation verification to L1, move runtime `reader_conduct` ledger glue to L2 (cycle 1 closed); unify capability vocabulary between `permissions` and `plugin-sandbox` (cycle 2 closed) | ✅ **0 cycles** across the monorepo |
+| **W1.4** *(PR #120)* | Extract L1/L2 storage ports + `InMemory*` stores; move all 14 `Sqlite*`/`D1*` stores plus `activation-service.ts` and `unsigned-bot-metrics.ts` into Portaless Node L0/L5 | ✅ **0 imports** from `verared`-bound packages to `sqlite-driver` or L3 |
+| **W1.5** *(PR #121)* | CMS internal hygiene: move `draft-filter` to `atomic-elements`, inject `plugin-sandbox` capability backends via ports, move plugin `host-bridge.ts` files to L5 | ✅ **0 layer/org violations** across the monorepo |
+| **W1.6a / W1.6b** *(PR #122, PR #123)* | Add strict `exports` maps to all `verared` and `geroiloyola` packages and migrate all deep `src/` imports to public package entry points | ✅ **0 deep `src/` imports** across `packages/*` and L5 |
+| **W1.7** *(PR #124)* | Live nomenclature & spec sanitization (`Local Trust Protocol`, `Vera Trust Stack`, `Witness Index`, `Verared`, `community attester`) + `Apache-2.0` license alignment on the 7 `verared` packages without touching Level A bytes, `vectors/` or `LTP-APPROVAL-RECORD.md` hashes | ✅ Neutral `verared` prose & `Apache-2.0` licensing ready |
+| **W1.8** *(this PR)* | Switch CI import-boundary checker to **blocking (`--strict`) mode** with org-license lock in CI and `verify-release.mjs` | ✅ Closes **E-07**; satisfies **Export-Ready (Wave 1 → Wave 2)** gate |
 
 ### Export-Ready Checklist (Gate: Wave 1 → Wave 2)
 
@@ -234,7 +234,7 @@ Wave 2 **must not start** until every item below is verified true in CI on
 - [x] **Zero reverse imports:** `packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}` have **0** imports to `sqlite-driver`, `persistence-migrations`, `email-transport`, `dashboard`, `permissions`, `deploy-engine`, `atomic-elements`, `auth`, `plugin-sandbox`, `src/`, `functions/` or `server/`.
 - [x] **Zero cycles:** the entire workspace dependency graph is a DAG.
 - [x] **Zero deep `src/` imports:** all cross-package and L5 `../.../src/...` imports are replaced by declared `exports` entry points.
-- [ ] **CI boundary enforcement active:** the import-boundary check runs in **blocking mode** (`E-07` closed — W1.8).
+- [x] **CI boundary enforcement active:** `scripts/check-architecture-boundaries.mjs --strict` runs in **blocking mode** in CI and `scripts/verify-release.mjs`, including automatic per-org license verification (`E-07` closed — W1.8).
 - [x] **Spec neutrality verified:** live unpinned `docs/protocol-apw/` prose uses neutral terms (`Witness Index`, `community attester`, `Local Trust Protocol`, `Vera Trust Stack`, `Verared`), and all `LTP-APPROVAL-RECORD.md` / G1 vector digests remain byte-identical.
 - [x] **Full verification green on Node 24:** Vitest, Astro build, manifest validation, Playwright browser suite, and `docs/protocol-apw` standalone test/audit suite all pass with zero added skips.
 - [x] **License metadata aligned:** `licensing-boundaries.md` and the 7 `verared`-bound packages reflect `CC BY 4.0` (spec) and `Apache-2.0` (stack).

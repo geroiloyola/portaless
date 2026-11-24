@@ -127,22 +127,47 @@ describe("analyzeTree synthetic boundary graphs", () => {
     expect(findCycles(adj)).toEqual([["a", "b"]]);
   });
 
-  test("formatMarkdownSummary renders the 4 metrics and Export-Ready status", () => {
+  test("formatMarkdownSummary renders the metrics and Export-Ready status", () => {
     const root = makeTempRepo({
       "packages/net/src/index.ts": `export const ok = true;\n`,
     });
     const report = analyzeTree(root);
     const md = formatMarkdownSummary(report);
-    expect(md).toContain("Architecture Boundaries Baseline");
+    expect(md).toContain("Architecture Boundaries Gate");
+    expect(md).toContain("License boundary violations");
     expect(md).toContain("Export-Ready (Wave 1 -> Wave 2)");
     expect(md).toContain("**READY**");
   });
+
+  test("detects license mismatches and missing LICENSE files across org boundaries", () => {
+    const root = makeTempRepo({
+      "package.json": JSON.stringify({ name: "root", license: "MIT" }),
+      "docs/protocol-apw/package.json": JSON.stringify({ name: "spec", license: "Apache-2.0" }),
+      "packages/plugin-sdk/package.json": JSON.stringify({ name: "@portaless/plugin-sdk", license: "AGPL-3.0-or-later" }),
+      "packages/net/package.json": JSON.stringify({ name: "@portaless/net", license: "AGPL-3.0-or-later" }),
+      "packages/apw-resolver/package.json": JSON.stringify({ name: "@portaless/apw-resolver", license: "Apache-2.0" }),
+      "packages/auth/package.json": JSON.stringify({ name: "@portaless/auth", license: "MIT" }),
+    });
+    const report = analyzeTree(root);
+    expect(report.licenseViolations.total).toBe(7);
+    expect(report.exportReady.zeroLicenseViolations).toBe(false);
+    expect(report.exportReady.ready).toBe(false);
+    const reasons = report.licenseViolations.items.map((i) => `${i.file}:${i.reason}`);
+    expect(reasons).toContain("package.json:license-mismatch");
+    expect(reasons).toContain("docs/protocol-apw/package.json:license-mismatch");
+    expect(reasons).toContain("packages/plugin-sdk/package.json:license-mismatch");
+    expect(reasons).toContain("packages/net/package.json:license-mismatch");
+    expect(reasons).toContain("packages/net/LICENSE:missing-license-file");
+    expect(reasons).toContain("packages/apw-resolver/LICENSE:missing-license-file");
+    expect(reasons).toContain("packages/auth/package.json:license-mismatch");
+  });
 });
 
-describe("repository baseline scan and CLI --report behavior", () => {
+describe("repository scan and CLI --report / --strict behavior", () => {
   const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
+  const scriptPath = join(repoRoot, "scripts/check-architecture-boundaries.mjs");
 
-  test("scans the real repository without errors and keeps Contracts clean", () => {
+  test("scans the real repository without errors and satisfies Export-Ready", () => {
     const report = analyzeTree(repoRoot);
     expect(report.scannedFiles).toBeGreaterThan(100);
     expect(report.layerViolations.byType["contracts-to-portaless"] ?? 0).toBe(0);
@@ -152,6 +177,8 @@ describe("repository baseline scan and CLI --report behavior", () => {
     expect(report.deepSrcImports.l5).toBe(0);
     expect(report.deepSrcImports.byTargetOrg.verared).toBe(0);
     expect(report.deepSrcImports.byTargetOrg.geroiloyola).toBe(0);
+    expect(report.licenseViolations.total).toBe(0);
+    expect(report.exportReady.zeroLicenseViolations).toBe(true);
     expect(report.exportReady.ready).toBe(true);
   });
 
@@ -160,7 +187,7 @@ describe("repository baseline scan and CLI --report behavior", () => {
     const summaryPath = join(dir, "summary.md");
     const res = spawnSync(
       process.execPath,
-      [join(repoRoot, "scripts/check-architecture-boundaries.mjs"), "--report"],
+      [scriptPath, "--report"],
       {
         cwd: repoRoot,
         env: { ...process.env, GITHUB_STEP_SUMMARY: summaryPath },
@@ -170,7 +197,58 @@ describe("repository baseline scan and CLI --report behavior", () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain("[check-architecture-boundaries]");
     const summary = readFileSync(summaryPath, "utf8");
-    expect(summary).toContain("### Architecture Boundaries Baseline");
+    expect(summary).toContain("### Architecture Boundaries Gate");
     expect(summary).toContain("Export-Ready (Wave 1 -> Wave 2)");
   });
+
+  test("CLI --strict exits 0 on the real repository", () => {
+    const res = spawnSync(process.execPath, [scriptPath, "--strict"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("license violations: 0");
+    expect(res.stdout).toContain("export-ready (Wave 1 -> Wave 2): READY");
+  });
+
+  test("CLI --strict exits 1 on a synthetic repo with a deep src/ import", () => {
+    const root = makeTempRepo({
+      "src/lib/leak.ts": `import { x } from "../../packages/net/src/safe-fetch";\nexport { x };\n`,
+    });
+    const res = spawnSync(process.execPath, [scriptPath, "--strict", "--root", root], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("deep packages/*/src/ imports: 1");
+    expect(res.stdout).toContain("export-ready (Wave 1 -> Wave 2): NOT READY");
+  });
+
+  test("CLI --strict exits 1 on a synthetic repo with a layer/org violation", () => {
+    const root = makeTempRepo({
+      "packages/trust-layer/src/leak.ts": `import { db } from "@portaless/sqlite-driver";\nexport { db };\n`,
+    });
+    const res = spawnSync(process.execPath, [scriptPath, "--strict", "--root", root], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("verared-to-geroiloyola: 1");
+    expect(res.stdout).toContain("export-ready (Wave 1 -> Wave 2): NOT READY");
+  });
+
+  test("CLI --strict exits 1 on a synthetic repo with a license violation", () => {
+    const root = makeTempRepo({
+      "packages/net/package.json": JSON.stringify({ name: "@portaless/net", license: "AGPL-3.0-or-later" }),
+      "packages/net/src/index.ts": `export const ok = true;\n`,
+    });
+    const res = spawnSync(process.execPath, [scriptPath, "--strict", "--root", root], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("license violations: 2");
+    expect(res.stdout).toContain("export-ready (Wave 1 -> Wave 2): NOT READY");
+  });
 });
+
