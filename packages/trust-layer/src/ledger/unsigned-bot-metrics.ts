@@ -1,5 +1,10 @@
-import { SITE_SETTINGS_TABLE_DDL } from "../../../dashboard/src/site-settings/site-settings-store";
 import { openSqlite } from "../../../sqlite-driver/src/open";
+
+const SITE_SETTINGS_TABLE_DDL =
+  "CREATE TABLE IF NOT EXISTS site_settings (" +
+  "key TEXT PRIMARY KEY, " +
+  "value TEXT NOT NULL DEFAULT '', " +
+  "updated_at TEXT NOT NULL)";
 
 export const BOT_FAMILIES = ["googlebot", "bingbot", "other", "unknown"] as const;
 type Family = typeof BOT_FAMILIES[number];

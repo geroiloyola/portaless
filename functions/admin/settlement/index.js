@@ -17,6 +17,7 @@ import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
 import { createSettlementActivationStore } from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
 import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
+import { encryptToken } from "../../../packages/deploy-engine/src/token-crypto.ts";
 import {
   activateProvider,
   deactivateProvider,
@@ -100,6 +101,7 @@ export async function onRequestPost(context) {
   const out = await activateProvider(providerId, credentials, user.username, {
     activationStore,
     permissionStore,
+    encryptCredential: encryptToken,
     encryptionKey: env.PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY,
     siteHost: hostFromApwDomain(identity?.domain),
   });

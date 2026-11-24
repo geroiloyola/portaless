@@ -16,9 +16,20 @@
 // El periodo es el del ledger (mensual). emissionPeriod distinto de "month"
 // requiere un ledger con esa granularidad (ver reader-conduct-config.ts).
 
-import type { UsageLogPeriod } from "../../../trust-layer/src/ledger/log-schema";
 import { ATTESTATION_TYP } from "../did-apw/site-jws";
 import { conductFor, conductJti } from "./reader-conduct-config";
+
+export interface ReaderUsageAgent {
+  operatorKeyId: string;
+  readerDid?: string | null;
+  requestsTotal: number;
+  policyViolationsDetected: number;
+}
+
+export interface ReaderUsagePeriod {
+  period: string;
+  agents: ReaderUsageAgent[];
+}
 
 export interface ConductSigner {
   /** did:apw:<este sitio> */
@@ -44,7 +55,7 @@ export interface EmitReaderConductResult {
   skipped: Array<{ operatorKeyId: string; readerDid: string | null; reason: EmitSkipReason; cat?: string }>;
 }
 
-export async function emitReaderConduct(period: UsageLogPeriod, deps: EmitReaderConductDeps): Promise<EmitReaderConductResult> {
+export async function emitReaderConduct(period: ReaderUsagePeriod, deps: EmitReaderConductDeps): Promise<EmitReaderConductResult> {
   const out: EmitReaderConductResult = { period: period.period, emitted: [], skipped: [] };
   const iat = Math.floor((deps.nowMs ?? Date.now()) / 1000);
   const keyCache = new Map<string, string | null>();

@@ -21,12 +21,11 @@
 // Opt-out: env.APW_AUTO_EMIT_CONDUCT = "false" desactiva la emision
 // automatica (la manual del admin sigue disponible).
 
-import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
 import type { AttestationLogStore } from "../did-apw/attestation-log-store";
 import type { SiteIdentityStore } from "../did-apw/site-identity-store";
 import { appendAttestation } from "../did-apw/history-log";
 import { ATTESTATION_TYP, signSiteJws } from "../did-apw/site-jws";
-import { emitReaderConduct, type EmitReaderConductResult } from "./reader-conduct-emitter";
+import { emitReaderConduct, type EmitReaderConductResult, type ReaderUsagePeriod } from "./reader-conduct-emitter";
 import { conductFor, periodKey } from "./reader-conduct-config";
 import {
   collectEmittedJtis,
@@ -35,10 +34,14 @@ import {
 
 export const SITE_ID = "default";
 
+export interface ReaderUsageLedgerPort {
+  readPeriod(period: string): Promise<ReaderUsagePeriod | null>;
+}
+
 export interface AutoEmitDeps {
   identity: SiteIdentityStore;
   log: AttestationLogStore;
-  ledger: UsageLedgerStore;
+  ledger: ReaderUsageLedgerPort;
   jtiStore: ReaderConductJtiStore;
   resolveTxtKey(host: string): Promise<string | null>;
   nowMs?: number;

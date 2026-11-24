@@ -26,7 +26,7 @@ import { resolveApwHistory, type ApwHistoryResult } from "../did-apw/history-res
 import { resolveApwManifest } from "../index";
 import { jwkThumbprint, publicJwkMembers } from "../did-apw/fingerprint";
 import { sha256B64Url } from "../did-apw/history-log";
-import { verifyAttestation } from "../../../trust-layer/src/site-trust/attestation";
+import { verifyAttestation } from "../did-apw/attestation";
 import { readerConductToDimension, type ScoredAttestation } from "./scoring";
 import { READER_CONDUCT_CONFIG } from "./reader-conduct-config";
 

@@ -6,11 +6,20 @@
 // El dominio del sitio sale de la identidad APW (site_identity.domain): en
 // Portaless el dominio lo define Protocol APW. Sin identidad APW no se activa.
 
-import { encryptToken } from "../../../../deploy-engine/src/token-crypto";
-import type { PermissionStore } from "../../../../permissions/src/permission-store";
 import type { SettlementActivationStore } from "./activation-store";
 import { getPayPerCrawlProvider } from "./resolve";
 import type { ProviderCredentials } from "./types";
+
+export interface SettlementGrantStore {
+  setGrant(input: {
+    subject: { type: string; id: string; displayName?: string };
+    capabilityId: string;
+    granted: boolean;
+    grantedBy?: string;
+  }): Promise<unknown>;
+}
+
+export type CredentialEncryptor = (plaintext: string, encryptionKey: string) => Promise<string>;
 
 export const BILLING_CAPABILITY = "billing:pay-per-crawl";
 export const SETTLEMENT_SUBJECT_TYPE = "settlement-provider";
@@ -31,7 +40,8 @@ export function hostFromApwDomain(domain: unknown): string | null {
 
 export interface ActivationDeps {
   activationStore: SettlementActivationStore;
-  permissionStore: PermissionStore;
+  permissionStore: SettlementGrantStore;
+  encryptCredential: CredentialEncryptor;
   encryptionKey: string | undefined;
   siteHost: string | null;
   fetch?: typeof fetch;
@@ -58,7 +68,7 @@ export async function activateProvider(
   const check = await provider.verifyActivation(credentials, { siteHost: deps.siteHost, fetch: deps.fetch });
   if (!check.ok) return { ok: false, status: 400, error: "verification_failed", reason: check.reason };
 
-  const credentialEnc = await encryptToken(JSON.stringify(credentials), deps.encryptionKey);
+  const credentialEnc = await deps.encryptCredential(JSON.stringify(credentials), deps.encryptionKey);
   const metadata = check.metadata ?? {};
   await deps.activationStore.save({
     providerId: provider.id,

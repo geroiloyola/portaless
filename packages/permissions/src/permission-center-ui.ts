@@ -32,7 +32,7 @@ import {
   RISK_ORDER,
   type CapabilityDefinition,
   type CapabilityRisk,
-} from "../../plugin-sandbox/src/capabilities/capability-registry";
+} from "../../plugin-sdk/src/index";
 import { READ_GOVERNANCE_BYPASS_CAPABILITY, isReaderDid, readerSubject } from "./reader-bypass";
 
 export interface PermissionCenterOptions {
