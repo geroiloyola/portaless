@@ -61,8 +61,8 @@ async function buildSignedRequest(
     `;nonce="${opts.nonce}"` +
     `;tag="web-bot-auth"`;
 
-  const authority = new URL(url).host;
-  const signatureBase = `"@authority": ${authority}\n"signature-agent": ${agentHeader}\n"@signature-params": ${paramsLine}`;
+  const u = new URL(url);
+  const signatureBase = `"@method": GET\n"@authority": ${u.host}\n"@path": ${u.pathname}\n"signature-agent": ${agentHeader}\n"@signature-params": ${paramsLine}`;
 
   const signatureBytes = new Uint8Array(
     await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(signatureBase))
