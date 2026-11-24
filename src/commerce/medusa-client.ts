@@ -1,4 +1,4 @@
-import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "../../server/plugins/commerce-host-bridge";
+import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "./host-bridge";
 import { registerCommerceCatalogProvider } from "../../packages/atomic-elements/src/commerce-provider";
 import type { Product } from "./types";
 

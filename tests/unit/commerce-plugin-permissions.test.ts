@@ -38,7 +38,7 @@ import {
   sandboxedFetchProducts,
   sandboxedIsCommerceEnabled,
   __resetCommerceAdapterForTests,
-} from "../../server/plugins/commerce-host-bridge";
+} from "../../src/commerce/host-bridge";
 
 const config = { medusaUrl: "https://tienda.test" };
 const subject = { type: "plugin", id: "commerce-plugin" };
