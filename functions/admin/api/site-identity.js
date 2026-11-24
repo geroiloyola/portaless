@@ -16,7 +16,7 @@
 //   - domain es opcional al rotar: si no viene, se reusa el actual.
 // Sin rotate, el comportamiento es el mismo de antes (409 si ya existe).
 
-import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { generateApwDid } from "../../../packages/apw-resolver/src/did-apw/generate.ts";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";

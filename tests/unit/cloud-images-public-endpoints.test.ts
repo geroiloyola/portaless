@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { applySchema } from "../../scripts/setup.mjs";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { createSiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/store-factory";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { crc32, PNG_SIGNATURE } from "../../packages/cloud-images/src/png";
 import { encodeBase64 } from "../../packages/cloud-images/src/payload";
 import * as adminImages from "../../functions/admin/api/cloud-images";

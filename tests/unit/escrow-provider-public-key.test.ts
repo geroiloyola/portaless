@@ -4,17 +4,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ store: null as any }));
-vi.mock("../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts", async (importOriginal) => {
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const actual: any = await importOriginal();
   return { ...actual, createAuthorizedEscrowProvidersStore: async () => state.store };
 });
 
-import {
-  InMemoryAuthorizedEscrowProvidersStore,
-  SqliteAuthorizedEscrowProvidersStore,
-  hashApiKey,
-  type AuthorizedEscrowProvidersStore,
-} from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey, type AuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
+import { SqliteAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 
 const PROVIDER = "escrow-acme";
 

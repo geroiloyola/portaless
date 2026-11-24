@@ -19,7 +19,7 @@
 // historial completo hasta reunir `limit` statements de testigo. Ruta
 // publica: /.well-known/* pasa por isPublicBotRoute().
 
-import { createSiteIdentityStore, createAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 import { WITNESS_TYP } from "../../packages/apw-resolver/src/did-apw/witness.ts";
 
 const SITE_ID = "default";

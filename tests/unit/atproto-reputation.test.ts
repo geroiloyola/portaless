@@ -36,7 +36,7 @@ beforeAll(async () => {
     PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.from(randomBytes(32)).toString("base64"),
   };
   const { generateApwDid } = await import("../../packages/apw-resolver/src/did-apw/generate");
-  const { createSiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/store-factory");
+  const { createSiteIdentityStore } = await import("@portaless/trust-storage-adapters");
   const keyPair = await generateApwDid(SITE);
   expect(keyPair.did).toBe(SITE_DID);
   await (await createSiteIdentityStore(localEnv)).create("default", keyPair, "test");
@@ -349,7 +349,11 @@ describe("default fetchSiteTrust (no inyectado)", () => {
 
   it("local: identidad did:apw:<siteId> en esta instancia -> lee el store sin fetch", async () => {
     const fetchImpl = vi.fn(async () => { throw new Error("no deberia haber fetch en el camino local"); });
-    const result = await buildAtprotoReputation(HANDLE, deps({ ...linkDeps(), env: localEnv, fetchImpl }));
+    const { createSiteIdentityStore, createSiteTrustScoreStore } = await import("@portaless/trust-storage-adapters");
+    const result = await buildAtprotoReputation(
+      HANDLE,
+      deps({ ...linkDeps(), env: localEnv, fetchImpl, createSiteIdentityStore, createSiteTrustScoreStore }),
+    );
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(result.apw?.trust).toMatchObject({

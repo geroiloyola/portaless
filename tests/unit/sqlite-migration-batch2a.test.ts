@@ -3,17 +3,10 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  createAuthorizedAgentsStore,
-  InMemoryAuthorizedAgentsStore,
-  SqliteAuthorizedAgentsStore,
-} from "../../packages/trust-layer/src/site-trust/authorized-agents";
-import {
-  createAuthorizedEscrowProvidersStore,
-  InMemoryAuthorizedEscrowProvidersStore,
-  SqliteAuthorizedEscrowProvidersStore,
-  hashApiKey,
-} from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { InMemoryAuthorizedAgentsStore } from "../../packages/trust-layer/src/site-trust/authorized-agents";
+import { createAuthorizedAgentsStore, SqliteAuthorizedAgentsStore } from "@portaless/trust-storage-adapters";
+import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey } from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { createAuthorizedEscrowProvidersStore, SqliteAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 
 const tmpPath = () => join(mkdtempSync(join(tmpdir(), "portaless-b2a-")), "db.sqlite");
 

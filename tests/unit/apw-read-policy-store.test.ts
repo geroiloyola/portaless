@@ -3,13 +3,8 @@ import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
 import { SqliteAdapter } from "../../packages/apw-resolver/src/did-apw/sql-adapter";
-import {
-  SqlReadPolicyStore,
-  InMemoryReadPolicyStore,
-  READ_POLICY_DEFAULTS,
-  INVALID_READ_POLICY,
-  toReadPolicy,
-} from "../../packages/apw-resolver/src/scoring/read-policy-store";
+import { InMemoryReadPolicyStore, READ_POLICY_DEFAULTS, INVALID_READ_POLICY, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store";
+import { SqlReadPolicyStore } from "@portaless/trust-storage-adapters";
 import { DEFAULT_GOVERNED_POLICY } from "../../packages/apw-resolver/src/scoring/policy";
 
 const base = { siteId: "default", enabled: true, ...READ_POLICY_DEFAULTS, updatedBy: "admin" };

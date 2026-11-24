@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createPermissionStore } from "../../packages/permissions/src/store-factory";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
 import { SqlitePermissionStore } from "../../packages/permissions/src/stores/sqlite-permission-store";
-import { createSiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/store-factory";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { SqliteSiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
 import { SqliteUsersStore } from "../../packages/auth/src/stores/sqlite-users-store";
 import { onRequestGet as adminStatus } from "../../functions/admin/api/wizard/admin-status.js";

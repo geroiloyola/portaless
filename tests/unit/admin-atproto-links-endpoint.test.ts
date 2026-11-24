@@ -12,8 +12,8 @@ const shared = vi.hoisted(() => ({
   store: undefined as import("../../packages/apw-resolver/src/did-apw/atproto-links-store").SiteAtprotoLinksStore | undefined,
 }));
 
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/apw-resolver/src/did-apw/store-factory")>();
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
   const { InMemorySiteAtprotoLinksStore } = await import("../../packages/apw-resolver/src/did-apw/atproto-links-store");
   shared.store ??= new InMemorySiteAtprotoLinksStore();
   return {

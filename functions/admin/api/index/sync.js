@@ -21,7 +21,7 @@
 // Fail-closed: un testigo inaccesible o con cadena rota se saltea y viaja
 // en witnessesSkipped; jamas guarda observaciones que no verifiquen.
 
-import { createWitnessIndexStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createWitnessIndexStore } from "@portaless/trust-storage-adapters";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 import { syncWitnessIndex } from "../../../../packages/apw-resolver/src/did-apw/witness-index.ts";

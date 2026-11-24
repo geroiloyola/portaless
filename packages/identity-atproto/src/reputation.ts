@@ -96,6 +96,10 @@ export interface AtprotoReputationDeps {
   fetchSiteTrust?: (siteId: string) => Promise<SiteTrustView | null>;
   /** Atestaciones reader_conduct del lector (inyectable). */
   loadConduct?: (host: string) => Promise<ReaderConductResult>;
+  /** Fabrica de identidad local (inyectable; evita acoplar L2 a SQLite). */
+  createSiteIdentityStore?: (env: Record<string, unknown>) => Promise<{ get(siteId: string): Promise<{ did?: string } | null> }>;
+  /** Fabrica de SiteTrustScore local (inyectable; evita acoplar L2 a SQLite). */
+  createSiteTrustScoreStore?: (env: Record<string, unknown>) => Promise<{ getSnapshot(siteId: string): Promise<SiteSnapshotLike> }>;
 }
 
 /** Limitaciones estructurales siempre presentes (honestidad del proyecto). */
@@ -134,18 +138,20 @@ function countsFromSnapshot(snapshot: SiteSnapshotLike): Record<string, number> 
  * GET https://<siteId>/trust/<siteId> del sitio remoto. Ambos caminos
  * devuelven SOLO el nivel publico (aggregates + PUBLIC_DIMENSIONS).
  */
-function defaultFetchSiteTrust(env: AtprotoReputationEnv | undefined, fetchImpl: typeof fetch) {
+function defaultFetchSiteTrust(
+  env: AtprotoReputationEnv | undefined,
+  fetchImpl: typeof fetch,
+  stores: Pick<AtprotoReputationDeps, "createSiteIdentityStore" | "createSiteTrustScoreStore"> = {},
+) {
   return async (siteId: string): Promise<SiteTrustView | null> => {
     const trustUrl = `https://${siteId}/trust/${siteId}`;
-    // Local solo si este deployment es el sitio: identidad did:apw:<siteId>.
-    if (env && (env.DB || env.PORTALESS_SQLITE_PATH)) {
+    // Local solo si este deployment es el sitio y el host inyecto los puertos de almacenamiento.
+    if (env && (env.DB || env.PORTALESS_SQLITE_PATH) && stores.createSiteIdentityStore && stores.createSiteTrustScoreStore) {
       try {
-        const { createSiteIdentityStore } = await import("../../apw-resolver/src/did-apw/store-factory");
-        const identity = await createSiteIdentityStore(env as Record<string, unknown>);
+        const identity = await stores.createSiteIdentityStore(env as Record<string, unknown>);
         const record = await identity.get("default");
         if (record?.did === `did:apw:${siteId}`) {
-          const { createSiteTrustScoreStore } = await import("../../trust-layer/src/site-trust/store-factory");
-          const store = await createSiteTrustScoreStore(env as Record<string, unknown>);
+          const store = await stores.createSiteTrustScoreStore(env as Record<string, unknown>);
           const snapshot = await store.getSnapshot(siteId);
           return {
             siteId,
@@ -272,7 +278,12 @@ export async function buildAtprotoReputation(rawHandle: unknown, deps: AtprotoRe
   const limitations: string[] = [...STATIC_LIMITATIONS];
   if (link) {
     const candidate = candidates.find((entry) => entry.siteId === link.siteId)!;
-    const fetchSiteTrust = deps.fetchSiteTrust ?? defaultFetchSiteTrust(deps.env, fetchImpl);
+    const fetchSiteTrust =
+      deps.fetchSiteTrust ??
+      defaultFetchSiteTrust(deps.env, fetchImpl, {
+        createSiteIdentityStore: deps.createSiteIdentityStore,
+        createSiteTrustScoreStore: deps.createSiteTrustScoreStore,
+      });
     let trust: SiteTrustView | null = null;
     try {
       trust = await fetchSiteTrust(link.siteId);

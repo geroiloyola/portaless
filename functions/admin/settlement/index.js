@@ -12,10 +12,10 @@
 // verifyActivation() OK. Recien ahi se escriben la activacion y el grant.
 
 import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
-import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
-import { createSettlementActivationStore } from "../../../packages/trust-layer/src/billing/pay-per-crawl/activation-store.ts";
+import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
 import { listPayPerCrawlProviders } from "../../../packages/trust-layer/src/billing/pay-per-crawl/resolve.ts";
 import { encryptToken } from "../../../packages/deploy-engine/src/token-crypto.ts";
 import {

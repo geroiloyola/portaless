@@ -50,13 +50,13 @@ export async function captureSiteTrust(
   deps: CaptureTrustDeps = {}
 ): Promise<ImageTrust | null> {
   try {
-    const createTrustStore =
-      deps.createTrustStore ??
-      (async (realEnv: Record<string, unknown>) => {
-        const { createSiteTrustScoreStore } = await import("../../trust-layer/src/site-trust/store-factory");
-        return createSiteTrustScoreStore(realEnv) as Promise<TrustStoreLike>;
-      });
-    const store = await createTrustStore(env);
+    const store: TrustStoreLike = deps.createTrustStore
+      ? await deps.createTrustStore(env)
+      : {
+          async getSnapshot(siteId: string): Promise<SiteTrustSnapshotLike> {
+            return { siteId, self: [], agent: [], community: [], escrowReports: [] };
+          },
+        };
     const snapshot = await store.getSnapshot(IMAGE_SITE_ID);
     const now = deps.now ?? (() => new Date());
     return {

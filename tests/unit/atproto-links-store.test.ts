@@ -12,14 +12,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { applySchema } from "../../scripts/setup.mjs";
-import {
-  D1SiteAtprotoLinksStore,
-  SqliteSiteAtprotoLinksStore,
-  InMemorySiteAtprotoLinksStore,
-  createSiteAtprotoLinksStore,
-  LINKS_TABLE_DDL,
-  type SiteAtprotoLinksStore,
-} from "../../packages/apw-resolver/src/did-apw/atproto-links-store";
+import { InMemorySiteAtprotoLinksStore, LINKS_TABLE_DDL, type SiteAtprotoLinksStore } from "../../packages/apw-resolver/src/did-apw/atproto-links-store";
+import { D1SiteAtprotoLinksStore, SqliteSiteAtprotoLinksStore, createSiteAtprotoLinksStore } from "@portaless/trust-storage-adapters";
 import { buildDidDocument, parseApwDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-atproto-links-"));
@@ -104,7 +98,7 @@ describe.each(backends())("$name SiteAtprotoLinksStore", ({ make }) => {
 
 describe("createSiteAtprotoLinksStore (factory)", () => {
   it("elige SQLite con PORTALESS_SQLITE_PATH, D1 con env.DB, si no InMemory", async () => {
-    const { createSiteAtprotoLinksStore } = await import("../../packages/apw-resolver/src/did-apw/store-factory");
+    const { createSiteAtprotoLinksStore } = await import("@portaless/trust-storage-adapters");
 
     const file = join(tmp, `factory-${Math.random().toString(36).slice(2)}.db`);
     copyFileSync(TEMPLATE, file);

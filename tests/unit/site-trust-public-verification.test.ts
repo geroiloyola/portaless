@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ snapshot: null as any }));
-vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteTrustScoreStore: async () => ({ getSnapshot: async () => state.snapshot }),
 }));
 

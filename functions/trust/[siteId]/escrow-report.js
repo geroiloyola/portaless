@@ -27,11 +27,16 @@
 // Rutas de import: este archivo esta a tres niveles de la raiz del repo
 // (functions/trust/[siteId]/), asi que el prefijo es ../../../packages/.
 
-import { hashApiKey, createAuthorizedEscrowProvidersStore } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
-import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
+import { hashApiKey } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+import {
+  createAttestationLogStore,
+  createAuthorizedEscrowProvidersStore,
+  createSiteIdentityStore,
+  createSiteTrustScoreStore,
+} from "@portaless/trust-storage-adapters";
 import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { recordInSiteHistoryWithStores } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress } from "../../_shared/public-egress.js";
 
@@ -151,6 +156,10 @@ export async function onRequestPost(context) {
     throw err;
   }
 
-  const history = await recordInSiteHistory(env, subject, attestation);
+  const history = await recordInSiteHistoryWithStores(
+    { identityStore: await createSiteIdentityStore(env), logStore: await createAttestationLogStore(env) },
+    subject,
+    attestation,
+  );
   return json({ ok: true, logged: history.logged }, 200);
 }

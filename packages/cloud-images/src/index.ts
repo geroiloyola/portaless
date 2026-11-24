@@ -49,9 +49,6 @@ export {
 export {
   CLOUD_IMAGES_TABLE_DDL,
   CLOUD_IMAGES_HASH_INDEX_DDL,
-  createCloudImageStore,
-  D1CloudImageStore,
-  SqliteCloudImageStore,
   InMemoryCloudImageStore,
   type CloudImageRecord,
   type CloudImagePutInput,

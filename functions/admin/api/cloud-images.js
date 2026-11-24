@@ -23,8 +23,11 @@
 // Seguridad: sesion (context.data.user) + canWrite(role) server-side,
 // igual que apw-atproto-links.js.
 
-import { createSiteIdentityStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
-import { createCloudImageStore } from "../../../packages/cloud-images/src/store.ts";
+import {
+  createCloudImageStore,
+  createSiteIdentityStore,
+  createSiteTrustScoreStore,
+} from "@portaless/trust-storage-adapters";
 import { captureSiteTrust, IMAGE_SITE_ID } from "../../../packages/cloud-images/src/trust.ts";
 import {
   buildCloudImagePayload,
@@ -149,7 +152,7 @@ export async function onRequestPost(context) {
     siteId: SITE_ID,
     siteDid: identity.did,
     signedAt: new Date().toISOString(),
-    trust: await captureSiteTrust(env),
+    trust: await captureSiteTrust(env, { createTrustStore: createSiteTrustScoreStore }),
   });
   const jws = await signCloudImage(payload, { keyId: key.keyId, privateKeyJwk: key.privateKeyJwk });
   const sidecar = { payload, jws };

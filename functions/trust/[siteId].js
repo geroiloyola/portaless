@@ -29,10 +29,14 @@
 // permitir, `projection` esta arriba con las dimensiones gobernadas
 // incluidas (`governed: "granted"`). El nivel publico nunca se oculta.
 
-import { createSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/store-factory.ts";
-import { createCommunityAttestationsStore } from "../../packages/trust-layer/src/site-trust/community-attestations.ts";
+import {
+  createSiteTrustScoreStore,
+  createCommunityAttestationsStore,
+  createReadPolicyStore,
+  createWebBotAuthNonceStore,
+} from "@portaless/trust-storage-adapters";
 import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts";
-import { createReadPolicyStore, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
+import { toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
 import { evaluatePolicy, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy.ts";
 import { scoreSiteDimensions } from "../../packages/apw-resolver/src/scoring/site-dimensions.ts";
 import { buildSiteSvriDetail } from "../../packages/apw-resolver/src/scoring/svri.ts";
@@ -227,7 +231,10 @@ export async function onRequestGet(context) {
   // El middleware ya verifico la firma (y consumio el nonce); si no corrio, se verifica aca.
   let wba = data?.webBotAuth ?? null;
   if (!wba && request.headers.get("Signature-Agent")) {
-    wba = await verifyWebBotAuthRequest(request, { env });
+    wba = await verifyWebBotAuthRequest(request, {
+      env,
+      createNonceStore: createWebBotAuthNonceStore,
+    });
   }
 
   const reader = await resolveReaderState(wba, defaultReaderResolvers());

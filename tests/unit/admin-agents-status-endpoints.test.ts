@@ -9,12 +9,6 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("../../packages/trust-layer/src/site-trust/authorized-agents", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/trust-layer/src/site-trust/authorized-agents")>();
-  const store = new original.InMemoryAuthorizedAgentsStore();
-  return { ...original, createAuthorizedAgentsStore: async () => store };
-});
-
 const apw = vi.hoisted(() => ({
   resolveApwManifest: vi.fn(),
   resolveApwIdentity: vi.fn(),
@@ -24,13 +18,18 @@ vi.mock("../../packages/apw-resolver/src/index", async (importOriginal) => {
   return { ...original, resolveApwManifest: apw.resolveApwManifest, resolveApwIdentity: apw.resolveApwIdentity };
 });
 
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async () => {
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  const { InMemoryAuthorizedAgentsStore } = await import("../../packages/trust-layer/src/site-trust/authorized-agents");
   const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
+  const agentsStore = new InMemoryAuthorizedAgentsStore();
   const key = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
   const env = { PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: key };
   const identity = new InMemorySiteIdentityStore(env);
   const log = { head: async () => null as any };
   return {
+    ...original,
+    createAuthorizedAgentsStore: async () => agentsStore,
     createSiteIdentityStore: async () => identity,
     createAttestationLogStore: async () => log,
     __identityStore: identity,
@@ -42,7 +41,7 @@ import * as authorizedAgents from "../../functions/admin/api/authorized-agents";
 import * as apwStatus from "../../functions/admin/api/apw-verification-status";
 import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
 import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import * as storeFactory from "../../packages/apw-resolver/src/did-apw/store-factory";
+import * as storeFactory from "@portaless/trust-storage-adapters";
 
 function ctx(opts: { user?: { username: string; role: string } | null; body?: unknown; url?: string; rawBody?: string } = {}) {
   const headers: Record<string, string> = {};

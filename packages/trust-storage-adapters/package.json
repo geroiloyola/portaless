@@ -1,0 +1,15 @@
+{
+  "name": "@portaless/trust-storage-adapters",
+  "version": "0.1.0",
+  "description": "Portaless node SQLite and Cloudflare D1 storage adapters for the Vera Trust Stack (Node-L0).",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "dependencies": {}
+}

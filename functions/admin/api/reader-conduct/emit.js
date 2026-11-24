@@ -21,13 +21,13 @@
 
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
-import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
 import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
 import { signSiteJws, ATTESTATION_TYP } from "../../../../packages/apw-resolver/src/did-apw/site-jws.ts";
 import { resolveApwManifest } from "../../../../packages/apw-resolver/src/index.ts";
 import { emitReaderConduct } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-emitter.ts";
 import { collectEmittedJtis } from "../../../../packages/apw-resolver/src/scoring/reader-conduct-jti-store.ts";
-import { createUsageLedgerStore } from "../../../../packages/trust-layer/src/ledger/store-factory.ts";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;

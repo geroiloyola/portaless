@@ -18,7 +18,7 @@
 //   solo cambia su estado (misma semantica que un PATCH de estado en
 //   cualquier API REST).
 
-import { createAuthorizedAgentsStore } from "../../../packages/trust-layer/src/site-trust/authorized-agents.ts";
+import { createAuthorizedAgentsStore } from "@portaless/trust-storage-adapters";
 
 function canWrite(role) {
   return role === "admin";

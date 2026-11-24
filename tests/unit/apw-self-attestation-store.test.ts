@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
-import { SqliteSiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/stores/sqlite-site-trust-store.ts";
+import { SqliteSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
 import { InMemorySiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 
 const base = {

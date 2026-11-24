@@ -1,9 +1,9 @@
-import { createCommunityAttestationsStore } from "../../../packages/trust-layer/src/site-trust/community-attestations.ts";
-import { createAuthorizedEscrowProvidersStore } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
+import { createAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
 import { resolveAgentDirectoryKey } from "../../../packages/trust-layer/src/site-trust/web-bot-auth.ts";
 import { assertSafeUrl } from "../../../packages/apw-resolver/src/federation/safe-fetch.ts";
-import { createSiteIdentityStore, createAttestationLogStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
 import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
 import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
 import { jwkThumbprint } from "../../../packages/apw-resolver/src/did-apw/fingerprint.ts";

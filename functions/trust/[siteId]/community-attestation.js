@@ -15,7 +15,8 @@
 // no al registrar: aca solo se captura `emitterFirstSeenIat` (la primera entrada
 // verificada del historial del emisor, 5.4) para que el scoring sea puro.
 
-import { createCommunityAttestationsStore, DUPLICATE_COMMUNITY_JTI } from "../../../packages/trust-layer/src/site-trust/community-attestations.ts";
+import { DUPLICATE_COMMUNITY_JTI } from "../../../packages/trust-layer/src/site-trust/community-attestations.ts";
+import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
 import { resolveApwIdentity } from "../../../packages/apw-resolver/src/index.ts";
 import { resolveApwHistory } from "../../../packages/apw-resolver/src/did-apw/history-resolver.ts";

@@ -27,7 +27,7 @@
 // UsageLogPeriod vacio con agents:[] (200, no 404) -- es un estado valido
 // ("todavia no hubo trafico de agentes este mes"), no un error.
 
-import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory.ts";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 
 function currentPeriod() {
   const now = new Date();

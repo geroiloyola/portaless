@@ -21,10 +21,8 @@
 // ella el proveedor queda autorizado pero no puede reportar (el endpoint
 // exige una atestacion firmada).
 
-import {
-  createAuthorizedEscrowProvidersStore,
-  INVALID_PUBLIC_KEY_JWK,
-} from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+import { INVALID_PUBLIC_KEY_JWK } from "../../../packages/trust-layer/src/site-trust/authorized-escrow-providers.ts";
+import { createAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 
 const INVALID_KEY_MESSAGE = 'publicKeyJwk debe ser una clave publica Ed25519: { "kty": "OKP", "crv": "Ed25519", "x": "..." }.';
 

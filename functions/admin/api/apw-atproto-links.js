@@ -11,7 +11,7 @@
 //        /.well-known/did.json como tambienKnownAs: ["at://<handle>"])
 // DELETE /admin/api/apw-atproto-links -> baja { handle }
 
-import { createSiteAtprotoLinksStore } from "../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createSiteAtprotoLinksStore } from "@portaless/trust-storage-adapters";
 import { resolvableHandle } from "../../../packages/identity-atproto/src/handle.ts";
 
 const SITE_ID = "default";

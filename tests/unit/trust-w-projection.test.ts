@@ -14,11 +14,9 @@ const state = vi.hoisted(() => ({
   publicOverrides: [] as string[],
 }));
 
-vi.mock("../../packages/trust-layer/src/site-trust/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createSiteTrustScoreStore: async () => ({ getSnapshot: async () => state.snapshot }),
-}));
-
-vi.mock("../../packages/apw-resolver/src/scoring/read-policy-store.ts", () => ({
   createReadPolicyStore: async () => ({
     get: async () => ({
       siteId: "default",
@@ -27,6 +25,9 @@ vi.mock("../../packages/apw-resolver/src/scoring/read-policy-store.ts", () => ({
       publicOverrides: state.publicOverrides,
     }),
   }),
+}));
+
+vi.mock("../../packages/apw-resolver/src/scoring/read-policy-store.ts", () => ({
   toReadPolicy: (record: any) =>
     record && record.enabled
       ? {

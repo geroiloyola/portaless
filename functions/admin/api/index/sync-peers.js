@@ -15,7 +15,7 @@
 // pares + TXT/.well-known de terceros); el endpoint solo decide QUE nodos
 // escucha este nodo.
 
-import { createWitnessIndexStore, createSiteIdentityStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createWitnessIndexStore, createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 import { syncIndexPeers } from "../../../../packages/apw-resolver/src/did-apw/witness-index.ts";

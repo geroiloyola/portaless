@@ -14,8 +14,8 @@
 // Sin step-up: solo se guarda una lista de hostnames publicos; nada
 // sensible viaja ni se verifica en este endpoint.
 
-import { createWitnessIndexStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
-import { createSiteIdentityStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createWitnessIndexStore } from "@portaless/trust-storage-adapters";
+import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;

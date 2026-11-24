@@ -22,9 +22,9 @@ import {
   DIRECTORY_FETCH_COLD_MAX,
 } from "../../packages/trust-layer/src/webbotauth/verify";
 import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
-import { __resetNonceStoreFactoryForTests } from "../../packages/trust-layer/src/webbotauth/nonce-store";
-import { createUsageLedgerStore } from "../../packages/trust-layer/src/ledger/store-factory";
-import { readUnsignedBotRejections, __flushUnsignedBotMetricsForTests } from "../../packages/trust-layer/src/ledger/unsigned-bot-metrics";
+import { __resetNonceStoreFactoryForTests } from "@portaless/trust-storage-adapters";
+import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
+import { readUnsignedBotRejections, __flushUnsignedBotMetricsForTests } from "@portaless/trust-storage-adapters";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "mw-key-1";

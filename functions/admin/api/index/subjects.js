@@ -9,7 +9,7 @@
 // Seguridad: sesion + rol admin. La publicacion para terceros es el
 // documento plano de /.well-known/apw-index.json.
 
-import { createWitnessIndexStore } from "../../../../packages/apw-resolver/src/did-apw/store-factory.ts";
+import { createWitnessIndexStore } from "@portaless/trust-storage-adapters";
 import { parseSubjectEntry } from "../../../../packages/apw-resolver/src/did-apw/witness-index.ts";
 
 const SITE_ID = "default";

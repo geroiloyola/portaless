@@ -1,8 +1,5 @@
-import {
-  createResolutionBudgetConfigStore,
-  INVALID_RESOLUTION_BUDGET_CONFIG,
-  RESOLUTION_BUDGET_CONFIG_CONFLICT,
-} from "../../../packages/trust-layer/src/net/resolution-budget-config.ts";
+import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT } from "../../../packages/trust-layer/src/net/resolution-budget-config.ts";
+import { createResolutionBudgetConfigStore } from "@portaless/trust-storage-adapters";
 import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";

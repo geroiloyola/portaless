@@ -39,7 +39,7 @@ vi.mock("../../packages/auth/src/store-factory", async () => {
     createPasswordResetStore: async () => resets,
   };
 });
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory", async () => {
+vi.mock("@portaless/trust-storage-adapters", async () => {
   const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
   const key = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
   const store = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: key });

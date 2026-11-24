@@ -1,17 +1,10 @@
-// packages/apw-resolver/src/did-apw/record-attestation.ts
-//
-// Anota en el historial encadenado del sitio (5.4) una atestacion que ya fue
-// verificada y guardada en SiteTrustScore (5.3). Solo si el `sub` de la
-// atestacion es el DID de ESTE sitio: una atestacion sobre otro siteId se
-// guarda en el score pero no entra en este historial.
-//
-// Nunca lanza: si el historial falla (sin identidad, sin clave de cifrado,
-// error de base), el reporte ya quedo guardado y el caller informa
-// logged:false. Una atestacion repetida cuenta como ya registrada.
+// Pure APW site-history recorder port (L1).
+// Environment-backed factory `recordInSiteHistory(env, ...)` lives in
+// `@portaless/trust-storage-adapters` (Node-L0).
 
-import { createSiteIdentityStore, createAttestationLogStore } from "./store-factory";
+import type { SiteIdentityStore } from "./site-identity-store";
 import { appendAttestation } from "./history-log";
-import { LOG_DUPLICATE_ATTESTATION } from "./attestation-log-store";
+import { LOG_DUPLICATE_ATTESTATION, type AttestationLogStore } from "./attestation-log-store";
 
 const SITE_ID = "default";
 
@@ -21,18 +14,26 @@ export interface HistoryRecordResult {
   seq?: number;
 }
 
-export async function recordInSiteHistory(
-  env: Record<string, any>,
+export interface SiteHistoryRecorderDeps {
+  identityStore: SiteIdentityStore;
+  logStore: AttestationLogStore;
+  siteId?: string;
+}
+
+export async function recordInSiteHistoryWithStores(
+  deps: SiteHistoryRecorderDeps,
   subjectDid: string,
-  attestationJws: string
+  attestationJws: string,
 ): Promise<HistoryRecordResult> {
+  const siteId = deps.siteId ?? SITE_ID;
   try {
-    const identityStore = await createSiteIdentityStore(env);
-    const identity = await identityStore.get(SITE_ID);
+    const identity = await deps.identityStore.get(siteId);
     if (!identity) return { logged: false, reason: "site_identity_not_found" };
     if (identity.did !== subjectDid) return { logged: false, reason: "subject_not_this_site" };
-    const log = await createAttestationLogStore(env);
-    const entry = await appendAttestation({ identity: identityStore, log, siteId: SITE_ID }, attestationJws);
+    const entry = await appendAttestation(
+      { identity: deps.identityStore, log: deps.logStore, siteId },
+      attestationJws,
+    );
     return { logged: true, seq: entry.seq };
   } catch (err) {
     if ((err as Error)?.message === LOG_DUPLICATE_ATTESTATION) return { logged: true, reason: "already_logged" };

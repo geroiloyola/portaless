@@ -4,14 +4,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { RESOLUTION_BUDGET_CONFIG_DDL } from "../../packages/persistence-migrations/src/ddl";
-import {
-  INVALID_RESOLUTION_BUDGET_CONFIG,
-  RESOLUTION_BUDGET_CONFIG_CONFLICT,
-  SqliteResolutionBudgetConfigStore,
-  D1ResolutionBudgetConfigStore,
-  validateResolutionBudgetConfiguration,
-  type ResolutionBudgetConfiguration,
-} from "../../packages/trust-layer/src/net/resolution-budget-config";
+import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT, validateResolutionBudgetConfiguration, type ResolutionBudgetConfiguration } from "../../packages/trust-layer/src/net/resolution-budget-config";
+import { SqliteResolutionBudgetConfigStore, D1ResolutionBudgetConfigStore } from "@portaless/trust-storage-adapters";
 
 const dirs: string[] = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop()!, { recursive: true, force: true }); });

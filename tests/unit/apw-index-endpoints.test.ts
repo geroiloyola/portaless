@@ -26,7 +26,7 @@ const state = vi.hoisted(() => ({
   docs: {} as Record<string, any>,
 }));
 
-vi.mock("../../packages/apw-resolver/src/did-apw/store-factory.ts", () => ({
+vi.mock("@portaless/trust-storage-adapters", () => ({
   createWitnessIndexStore: async () => state.store,
   createSiteIdentityStore: async () => ({ get: async () => state.identityRow }),
 }));

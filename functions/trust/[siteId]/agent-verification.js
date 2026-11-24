@@ -40,11 +40,15 @@ import {
   resolveAgentDirectoryKey,
   parseSignatureAgent,
 } from "../../../packages/trust-layer/src/site-trust/web-bot-auth.ts";
-import { createAuthorizedAgentsStore } from "../../../packages/trust-layer/src/site-trust/authorized-agents.ts";
-import { createSiteTrustScoreStore } from "../../../packages/trust-layer/src/site-trust/store-factory.ts";
+import {
+  createAttestationLogStore,
+  createAuthorizedAgentsStore,
+  createSiteIdentityStore,
+  createSiteTrustScoreStore,
+} from "@portaless/trust-storage-adapters";
 import { DUPLICATE_ATTESTATION_JTI } from "../../../packages/trust-layer/src/site-trust/site-trust-score.ts";
 import { verifyAttestation } from "../../../packages/trust-layer/src/site-trust/attestation.ts";
-import { recordInSiteHistory } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
+import { recordInSiteHistoryWithStores } from "../../../packages/apw-resolver/src/did-apw/record-attestation.ts";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress } from "../../_shared/public-egress.js";
 
@@ -178,6 +182,10 @@ export async function onRequestPost(context) {
     throw err;
   }
 
-  const history = await recordInSiteHistory(env, subject, attestation);
+  const history = await recordInSiteHistoryWithStores(
+    { identityStore: await createSiteIdentityStore(env), logStore: await createAttestationLogStore(env) },
+    subject,
+    attestation,
+  );
   return json({ ok: true, logged: history.logged }, 200);
 }
