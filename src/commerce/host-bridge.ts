@@ -1,31 +1,20 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NodeIsolatedVmAdapter } from "../../plugin-sandbox/src/adapters/node-isolated-vm";
-import type { PluginManifest, GrantedCapabilities } from "../../plugin-sandbox/src/types";
-import { createPermissionStore } from "../../permissions/src/store-factory";
+import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
+import type { PluginManifest, GrantedCapabilities } from "../../packages/plugin-sandbox/src/types";
+import { createPermissionStore } from "../../packages/permissions/src/store-factory";
 
-// v0.0.9.30 -- FIX DE SEGURIDAD: antes, granted era TODO lo que pedia el
-// manifiesto (requestedCapabilities). El commerce-plugin se autoconcedia
-// sus capacidades y el Centro de Permisos (/admin/permissions) no tenia
-// ningun efecto sobre el. Ahora se aplica la misma regla que
-// SandboxRuntime: granted = lo que el admin concedio para el subject
-// { type: "plugin", id: manifest.name } INTERSECCION lo que declara el
-// manifiesto. Una capacidad concedida pero no declarada nunca llega al
-// plugin, y una declarada pero no concedida tampoco.
+// Host bridge del nodo Portaless (L5) para commerce-plugin.
+// El paquete packages/commerce-plugin solo contiene el artefacto del plugin
+// (manifest.json + src/plugin-entry.js), sin importar internos del core.
 //
-// Consecuencia visible: hasta que el admin conceda network:fetch al
-// commerce-plugin, la tienda no muestra productos (isCommerceEnabled
-// devuelve false y fetchProducts lanza con un mensaje que dice que
-// conceder). Los permisos se leen en cada llamada: una revocacion aplica
-// en el proximo render, sin reiniciar.
-//
-// Los permisos se leen de process.env: este archivo solo corre en Node
-// self-hosted (isolated-vm no existe en workerd), donde el store se
-// resuelve via PORTALESS_SQLITE_PATH.
+// Regla de seguridad (v0.0.9.30): granted = lo que el admin concedio para el
+// subject { type: "plugin", id: manifest.name } INTERSECCION lo que declara el
+// manifiesto.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PLUGIN_ROOT = join(__dirname, "..");
+const PLUGIN_ROOT = join(__dirname, "../../packages/commerce-plugin");
 
 export interface CommerceConfig {
   medusaUrl: string;
@@ -84,16 +73,6 @@ async function loadPluginArtifacts(config: CommerceConfig): Promise<{ manifest: 
   return { manifest: cachedManifest, code: cachedCode as string, granted };
 }
 
-// v0.0.9: pool de isolates reutilizables -- ver ROADMAP.md "Pool de
-// isolates reutilizables para el commerce-plugin". Antes, cada llamada a
-// runPluginAction() (es decir, cada fetchProducts/fetchProductByHandle
-// invocado en cada render de pagina) creaba y destruia un ivm.Isolate
-// completo, que es la parte mas costosa de todo el ciclo -- ver la nota
-// que quedaba explicita en README.md: "Cada fetchProducts() crea un
-// nuevo isolate (sin pool reutilizable)". COMMERCE_POOL_MAX_ISOLATES
-// limita cuantos isolates V8 puede haber vivos simultaneamente para este
-// plugin -- suficiente para paralelismo real (varias requests HTTP
-// concurrentes al sitio) sin dejar crecer el consumo de memoria sin tope.
 const COMMERCE_POOL_MAX_ISOLATES = 4;
 
 function getAdapter(): NodeIsolatedVmAdapter {
@@ -153,12 +132,6 @@ export async function sandboxedFetchProducts(config: CommerceConfig): Promise<an
   return Array.isArray(result) ? result : [];
 }
 
-// NOTA: esta funcion asume que plugin-entry.js (el codigo que corre DENTRO
-// del isolate) ya reconoce action: "fetchProductByHandle". Si plugin-entry.js
-// todavia no implementa esa rama, esta funcion no falla: el plugin
-// simplemente no reconoceria la accion y el resultado dependera de su
-// manejo por defecto (revisar plugin-entry.js si fetchProductByHandle
-// retorna siempre null en runtime).
 export async function sandboxedFetchProductByHandle(config: CommerceConfig, handle: string): Promise<any | null> {
   const result = await runPluginAction(config, {
     action: "fetchProductByHandle",

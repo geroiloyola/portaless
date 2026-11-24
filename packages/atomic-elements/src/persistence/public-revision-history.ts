@@ -1,7 +1,7 @@
 import type { PageLayout } from "../types";
 import type { PageRevisionEvidence, PublicPageRevision } from "./page-store";
 import { pageContentHash, pagePublicContent, validateRevisionEvidence } from "./revision-history";
-import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "./draft-filter";
 
 export const PUBLIC_REVISION_HISTORY_FORMAT = "portaless-public-revision-history/v1" as const;
 

@@ -16,6 +16,7 @@
 // y se topean en MAX_COLUMNS / MAX_LIMIT. Antes ?limit=100000 le pedia
 // 100000 productos a Medusa en cada vista previa del editor.
 
+import "../../../src/commerce/medusa-client.ts";
 import { elementRegistry } from "../../../packages/atomic-elements/src/elements/registry.ts";
 
 export const MAX_COLUMNS = 6;

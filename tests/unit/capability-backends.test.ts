@@ -7,12 +7,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  createCapabilityHostBridge,
   dispatchCapability,
   hasCapabilityBackend,
   CAPABILITY_BACKENDS,
   notConfigured,
 } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { createPortalessCapabilityHostBridge as createCapabilityHostBridge } from "../../server/plugins/capability-host-bridge";
 import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox/src/registry/plugin-storage";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import type { CapabilityError } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";

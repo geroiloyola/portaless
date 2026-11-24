@@ -1,5 +1,6 @@
 import type { PageLayout, ElementNode } from "../types";
 import { pageUrlPath, productUrlPath } from "./urls";
+import { getCommerceCatalogProvider } from "../commerce-provider";
 
 /**
  * Vocabulario cerrado de tipos de contenido que un sitio puede declarar
@@ -89,14 +90,13 @@ async function resolveProductGridProducts(node: ElementNode): Promise<any[]> {
   if (props?.source !== "medusa") return [];
 
   try {
-    const { isCommerceEnabled, fetchProducts } = await import(
-      /* @vite-ignore */ "../../../../src/commerce/medusa-client"
-    );
-    const enabled = await isCommerceEnabled();
+    const provider = getCommerceCatalogProvider();
+    if (!provider) return [];
+    const enabled = await provider.isCommerceEnabled();
     if (!enabled) return [];
 
     const limit = typeof props.limit === "number" ? props.limit : 6;
-    return (await fetchProducts()).slice(0, limit);
+    return (await provider.fetchProducts()).slice(0, limit);
   } catch {
     // Mismo criterio que renderHTMLAsync: un error de red/config no debe
     // tumbar la generacion de JSON-LD de toda la pagina -- se omite el

@@ -1,6 +1,6 @@
 import type { PageLayout } from "../types";
 import type { PageRevisionEvidence, PageRevisionMetadata } from "./page-store";
-import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "./draft-filter";
 
 export interface BuiltPageRevision {
   layout: PageLayout;
