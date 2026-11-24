@@ -7,16 +7,18 @@ cerrar el codigo de su plugin debe resolverse leyendo este documento primero.
 
 ## Resumen ejecutivo
 
-| Componente | Licencia | Repositorio |
+| Componente | Licencia | Repositorio (actual → objetivo) |
 |---|---|---|
-| Portaless core (CMS, dashboard, auth, Trust Layer, Centro de Permisos, motor del sandbox) | AGPL-3.0 | Este repo (`geroiloyola/portaless`) |
-| Especificacion Protocol APW (`docs/protocol-apw/`: spec, errata, vectores) | CC BY 4.0 | Este repo, en el mismo arbol que el core |
-| Plugin SDK (tipos, interfaces, contratos del capability bridge) | MIT | Este repo (`packages/plugin-sdk`, publicado v0.1.0) |
+| Portaless core / nodo canonico (CMS, dashboard, auth, Centro de Permisos, motor del sandbox, MCP, persistencia SQLite/D1 y adaptadores del nodo) | **AGPL-3.0-or-later** | `geroiloyola/portaless` |
+| Especificacion del **Vera Trust Stack** (APW, Local Trust Protocol, SVRI, HSVR: `docs/protocol-apw/`: spec, errata, esquemas y vectores) | **CC BY 4.0** | Hoy en `geroiloyola/portaless` → destino `verared/vera-trust-spec` (`@verared/spec`) |
+| Implementacion de referencia neutral **Vera Trust Stack** (L0-net, L1 y nucleo L2 sin CMS ni SQLite: `@verared/net`, `apw`, `local-trust`, `reputation`, `trust-layer`, `cloud-images`, `identity-atproto`, `cli`) | **Apache-2.0** *(decision de cambio desde `AGPL-3.0-or-later`; ver seccion 7.1)* | Hoy en `geroiloyola/portaless` (aun declarados `AGPL-3.0-or-later` hasta la transicion de Tanda 1/2) → destino `verared/vera-trust-stack` |
+| Plugin SDK (tipos, interfaces, contratos del capability bridge) | **MIT** | `geroiloyola/portaless` (`packages/plugin-sdk`, v0.1.0; extraccion opcional a `geroiloyola/portaless-plugin-sdk`) |
+| Plantillas y demo ficticia (`portaless-templates`, D11) | Por activo verificado (gate PR-B1) | Hoy en `geroiloyola/portaless` → destino `geroiloyola/portaless-templates` |
 | AppPlace (tienda oficial curada) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | AppLibre (registro comunitario) | Proyecto aparte, no cubierto por este LICENSE | Repositorio independiente |
 | Plugins de terceros individuales | Libre eleccion del autor (abierta o cerrada) | Repos independientes de cada autor |
 
-## 1. Por que el core es AGPL-3.0 y no una licencia permisiva
+## 1. Por que el core de Portaless es AGPL-3.0 y no una licencia permisiva
 
 Portaless es una plataforma completa (CMS + comercio + dashboard + sandbox de
 plugins + capa de confianza criptografica), no una libreria utilitaria. El
@@ -111,15 +113,47 @@ licencia que elija, abierta o cerrada, siempre que:
   (`tests/unit/plugin-sdk-parity.test.ts`); ver `AGENT.md` para el estado real
   vigente y `CONTRIBUTING.md` para la nota de titularidad y el DCO.
 
-## 7. La especificacion Protocol APW no esta bajo AGPL
+## 7. La especificacion del Vera Trust Stack no esta bajo AGPL
 
-La especificacion (`docs/protocol-apw/`) es un documento normativo publicado
-bajo **CC BY 4.0**, distinto del core. Reimplementar el protocolo en cualquier
-lenguaje, traducirlo o citarlo comercialmente no crea ninguna obligacion
-AGPL: el texto del estandar no es obra derivada del codigo, ni el codigo es
-obra derivada del texto. El vinculo entre ambos es solo de atribucion y de
-verificacion (los vectores de `APW-VECTORS-v1.3.md`), nunca de licencia.
+La especificacion (`docs/protocol-apw/`, destino `github.com/verared/vera-trust-spec`)
+es un documento normativo publicado bajo **CC BY 4.0**, distinto del core.
+Reimplementar el protocolo en cualquier lenguaje, traducirlo o citarlo
+comercialmente no crea ninguna obligacion AGPL: el texto del estandar no es
+obra derivada del codigo, ni el codigo es obra derivada del texto. El vinculo
+entre ambos es solo de atribucion y de verificacion (los vectores de
+`APW-VECTORS-v1.3.md` y los corpora de conformidad), nunca de licencia.
 Ver "Licencia y gobernanza" en `docs/protocol-apw/APW-SPEC-v1.3.md`.
+
+### 7.1 Cambio de licencia de `verared/vera-trust-stack` (L0-net, L1 y nucleo L2): de `AGPL-3.0-or-later` a `Apache-2.0`
+
+**Decision de gobernanza (2026-11-24):** los paquetes de implementacion de
+referencia neutral destinados a la fundacion `github.com/verared/vera-trust-stack`
+(`@verared/net`, `@verared/apw`, `@verared/local-trust`, `@verared/reputation`,
+`@verared/trust-layer`, `@verared/cloud-images`, `@verared/identity-atproto` y
+`@verared/cli`) cambian su licencia objetivo desde **`AGPL-3.0-or-later`** hacia
+**`Apache-2.0`**.
+
+- **Justificacion normativa:** maximizar la adopcion mundial en CDNs,
+  navegadores, proxies, gateways de agentes y CMS (incluidos sistemas
+  propietarios), aportando ademas una clausula explicita de patentes.
+- **Compatibilidad con `geroiloyola/portaless`:** `Apache-2.0` es 100%
+  compatible con `AGPL-3.0-or-later`. El nodo Portaless consume `@verared/*`
+  como dependencias externas fijadas y conserva su propia licencia
+  `AGPL-3.0-or-later` para el CMS, la persistencia SQLite/D1, los adaptadores
+  del nodo, el sandbox y el servidor MCP.
+- **Transparencia verificable:** la confianza en la capa no depende de copyleft
+  viral en la libreria, sino de la especificacion abierta (`CC BY 4.0`), las
+  firmas criptograficas auditables y los vectores deterministas de conformidad;
+  cualquier implementacion modificada que altere las reglas falla la
+  verificacion publica.
+- **Dependencias de terceros verificadas:** las dependencias directas de L1/L2
+  (`canonicalize` Apache-2.0, `web-bot-auth` Apache-2.0, `@noble/post-quantum`
+  MIT) no presentan conflicto con `Apache-2.0`; `better-sqlite3` (MIT) y los 14
+  stores SQLite/D1 permanecen en `geroiloyola/portaless`.
+- **Estado actual honesto en el arbol:** los `package.json` actuales de L1/L2
+  en `geroiloyola/portaless` siguen declarando `AGPL-3.0-or-later` hasta que se
+  complete el desacople de **Tanda 1** y se ejecute el PR de transicion/exportacion
+  autorizado hacia **Tanda 2** (ver [`ARCHITECTURE.md`](../../ARCHITECTURE.md)).
 
 ## 8. Preguntas frecuentes para desarrolladores de plugins
 
