@@ -162,7 +162,7 @@ describe("POST /admin/api/cloud-images", () => {
     const signature = await verifyCloudImageSidecar(record.sidecar, [{ keyId: kid, kid, publicKeyJwk }]);
     expect(signature.ok).toBe(true);
 
-    const storeBytes = (await (await import("../../packages/cloud-images/src/store")).createCloudImageStore(env)).get(record.imageId);
+    const storeBytes = (await (await import("@portaless/trust-storage-adapters")).createCloudImageStore(env)).get(record.imageId);
     const entry = await storeBytes;
     expect(entry).not.toBeNull();
     expect(extractPng(entry!.bytes)).toBe(JSON.stringify(record.sidecar));

@@ -204,8 +204,8 @@ describe("/admin/api/agents", () => {
 
   beforeEach(async () => {
     await sharedStore.clear();
-    vi.doMock("../../packages/trust-layer/src/policy/agent-access-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/trust-layer/src/policy/agent-access-store")>();
+    vi.doMock("@portaless/trust-storage-adapters", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
       return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
     });
   });
@@ -375,8 +375,8 @@ describe("el feed de actividad registra el cambio de politica (6a)", () => {
   beforeEach(async () => {
     await sharedStore.clear();
     activity.length = 0;
-    vi.doMock("../../packages/trust-layer/src/policy/agent-access-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/trust-layer/src/policy/agent-access-store")>();
+    vi.doMock("@portaless/trust-storage-adapters", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
       return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
     });
     vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {

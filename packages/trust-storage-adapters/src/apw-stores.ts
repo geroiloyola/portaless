@@ -256,7 +256,7 @@ function rowToReadPolicyRecord(row: Record<string, unknown>): ReadPolicyRecord {
     minR05: row.min_r05 === null || row.min_r05 === undefined ? null : Number(row.min_r05),
     minR05Weight: Number(row.min_r05_weight ?? 0),
     publicOverrides: parseStoredOverrides(row.public_overrides),
-    onFail: row.on_fail === "degrade" ? "degrade" : "deny",
+    onFail: String(row.on_fail) as ReadPolicyRecord["onFail"],
     updatedAt: String(row.updated_at),
     updatedBy: String(row.updated_by),
   };
