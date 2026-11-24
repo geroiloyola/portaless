@@ -26,7 +26,7 @@ código fuente ni APIs privadas para cumplir el contrato.
 El concepto principal es **LTP: confianza y trazabilidad**. APW define identidad
 y estructura del intercambio P2P; LTP evalúa esa estructura, JWS y testigos;
 SVRI es el vector de salida y HSVR su histórico verificable. La separación y
-compatibilidad están en [LTP Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+compatibilidad están en [Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
 
 La definición de mensajes, pruebas y validación vive separada de este plan:
 

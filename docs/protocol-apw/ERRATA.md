@@ -309,7 +309,7 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 
 **Fecha**: Octubre 2026
 
-**Problema**: 5.7 (parrafo informativo "Aggregator") y la seccion 7 ("Future") marcaban como "fuera del alcance de esta version" dos puntos del Portaless Index: la calibracion de pesos estilo A.4.4 (un testigo gana peso acertando con el consenso) y la sincronizacion push/gossip entre nodos indice (cada nodo solo hacia pull de sus propios testigos). La implementacion de referencia ya cubre ambos; la frase "out of scope for this version" queda superada SOLO en esos dos puntos, sin cambiar ningun requisito normative de v1.3 (el agregador sigue siendo informativo; el documento publico sigue siendo plano y sin firma; la verificacion fail-closed de los cuatro verificadores de 5.7 no cambia).
+**Problema**: 5.7 (parrafo informativo "Aggregator") y la seccion 7 ("Future") marcaban como "fuera del alcance de esta version" dos puntos del Witness Index: la calibracion de pesos estilo A.4.4 (un testigo gana peso acertando con el consenso) y la sincronizacion push/gossip entre nodos indice (cada nodo solo hacia pull de sus propios testigos). La implementacion de referencia ya cubre ambos; la frase "out of scope for this version" queda superada SOLO en esos dos puntos, sin cambiar ningun requisito normative de v1.3 (el agregador sigue siendo informativo; el documento publico sigue siendo plano y sin firma; la verificacion fail-closed de los cuatro verificadores de 5.7 no cambia).
 
 **Texto vigente**:
 
@@ -319,7 +319,7 @@ El factor 1.5, el numero de rondas y P son valores por defecto de esta version, 
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/witness-index.ts` (`witnessCalibrationFactor`, calibracion en `syncWitnessIndex`, `syncIndexPeers`), `witness-index-store.ts` (tablas `witness_calibration` y `witness_index_peers`), `functions/admin/api/index/peers.js`, `functions/admin/api/index/sync-peers.js` y el panel `/admin/witness-index`; tests `tests/unit/apw-witness-index-phase5.test.ts`, `tests/unit/apw-index-peers-endpoints.test.ts` y los casos nuevos de `apw-witness-index-store.test.ts`.
 
-## E-13 — Atestaciones comunitarias firmadas: identidad del Veracier, emisor distinto, umbral de antiguedad y `min_weight` (APW v1.3, 5.3, 6.6, 6.7 y Anexo A)
+## E-13 — Atestaciones comunitarias firmadas: identidad del `community attester`, emisor distinto, umbral de antiguedad y `min_weight` (APW v1.3, 5.3, 6.6, 6.7 y Anexo A)
 
 **Fecha**: Octubre 2026
 
@@ -331,7 +331,7 @@ Esta errata **cierra B7 y las tres definiciones pendientes de 6.7**. No cambia e
 
 - **`community` entra a la cadena como fuente de atestacion** (5.3). El enum `src` pasa a ser `agent | escrow_report | self | reader_conduct | community`.
 - **`val` numerico solo para `community`**: en una atestacion con `src: community`, el paso 8 de la verificacion exige que `val` sea un entero de 1 a 5 en lugar de un booleano. En `val` se conserva el booleano para todas las demas fuentes; el cambio es exclusivo de `community` y no relaja ninguna otra validacion. La escala a la dimension sigue la tabla de A.4.1 (1 -> 1.0, 2 -> 2.5, 3 -> 4.0, 4 -> 5.5, 5 -> 7.0).
-- **Quien puede emitir (el Veracier)**: el `iss` de una atestacion `community` es un `did:apw:<domain>` (el Veracier), resuelto como cualquier identidad APW (5.1). Es coherente con la seccion 2 (principio 1) y A.1 (principio 6): **el modelo puntua sitios y operadores, que son dominios, no personas**. Un emisor tiene que controlar un dominio con su `k` publicada en el TXT; quien no tenga dominio no puede emitir. `sub` es el `did:apw:<domain>` del sitio evaluado.
+- **Quien puede emitir (el `community attester`)**: el `iss` de una atestacion `community` es un `did:apw:<domain>` (el `community attester`), resuelto como cualquier identidad APW (5.1). Es coherente con la seccion 2 (principio 1) y A.1 (principio 6): **el modelo puntua sitios y operadores, que son dominios, no personas**. Un emisor tiene que controlar un dominio con su `k` publicada en el TXT; quien no tenga dominio no puede emitir. `sub` es el `did:apw:<domain>` del sitio evaluado.
 - **`jti` unico por emisor** no cambia (paso 6 de 5.3): repetir un `jti` de un mismo `iss` responde `409`.
 - **Emisor distinto**: dos atestaciones son de emisores distintos si y solo si el `did:apw` del `iss` es distinto. **Un operador que controla varios dominios cuenta como varios emisores**: el protocolo no puede distinguir eso sin una identidad de persona, y la seccion 2 la excluye a proposito. El costo de un dominio es la defensa (6.7), no una garantia.
 - **Ultima atestacion por emisor**: para puntuar, de cada `(iss, sub, categoria)` cuenta **solo la atestacion mas reciente**. No es la primera, ni la suma; reemitir reemplaza.
@@ -382,13 +382,13 @@ Esta errata **cierra B7 y las tres definiciones pendientes de 6.7**. No cambia e
 
 **Implementacion**: `packages/apw-resolver/src/did-apw/plugin-manifest.ts` (firma/verificacion), `packages/plugin-sandbox/src/registry/plugin-artifacts.ts` (store troceado), `packages/plugin-sandbox/src/install/reconcile.ts` (reconciliacion), `functions/admin/api/plugins/install.js` y `uninstall.js` (tras `PORTALESS_PLUGIN_INSTALLER`), y `PLUGIN_MANIFEST_TYP` en el SDK (`packages/plugin-sdk`); tests en `tests/unit/apw-plugin-manifest.test.ts`, `tests/unit/plugin-artifacts.test.ts` y `tests/unit/plugin-install-endpoint.test.ts`.
 
-## E-16 — SVRI: fidelidad de proyección LTP y reconstrucción histórica (normativa)
+## E-16 — SVRI: fidelidad de proyección de Local Trust Protocol y reconstrucción histórica (normativa)
 
 **Fecha**: Octubre 2026
 
-**Problema**: el previo neutral de LTP es necesario para el cálculo bayesiano, pero no es una firma ni una evaluación observada. Un número sin procedencia puede confundir evidencia del sitio, evidencia externa y el previo matemático. APW tampoco define un único agregado entre dimensiones ni una interfaz que exponga su dependencia de inferencia.
+**Problema**: el previo neutral de Local Trust Protocol es necesario para el cálculo bayesiano, pero no es una firma ni una evaluación observada. Un número sin procedencia puede confundir evidencia del sitio, evidencia externa y el previo matemático. APW tampoco define un único agregado entre dimensiones ni una interfaz que exponga su dependencia de inferencia.
 
-**Texto vigente**: SVRI v1.0 se define en [`SVRI-v1.0.md`](./SVRI-v1.0.md), suplemento normativo CC BY 4.0 de LTP. El perfil `ltp-svri-site-v1` conserva las fórmulas y pesos por dimensión de LTP, excluye filas sin JWS verificado, escala 1–7 a 0–10 y promedia dimensiones W con peso efectivo. Los tiers son T1 `escrow_report`, T2 `self`, T3 `community`, T4 `reader_conduct` (actividad firmada de lector; no fuente W del sitio) y T5 `agent` (emisión automatizada atribuida; la firma no prueba ausencia de intervención humana). El previo es inferencia, no una fuente ni un tier; las emisiones T4 del sitio se cuentan como actividad, pero no se puntúan como evidencia W propia.
+**Texto vigente**: SVRI v1.0 se define en [`SVRI-v1.0.md`](./SVRI-v1.0.md), suplemento normativo CC BY 4.0 de Local Trust Protocol. El perfil `ltp-svri-site-v1` conserva las fórmulas y pesos por dimensión de Local Trust Protocol, excluye filas sin JWS verificado, escala 1–7 a 0–10 y promedia dimensiones W con peso efectivo. Los tiers son T1 `escrow_report`, T2 `self`, T3 `community`, T4 `reader_conduct` (actividad firmada de lector; no fuente W del sitio) y T5 `agent` (emisión automatizada atribuida; la firma no prueba ausencia de intervención humana). El previo es inferencia, no una fuente ni un tier; las emisiones T4 del sitio se cuentan como actividad, pero no se puntúan como evidencia W propia.
 
 `incompleteData` es verdadero cuando `t1Count + t2Count === 0`; `isInference` es verdadero cuando la contribución del previo supera 0.5. Por tanto, T1/T2 hacen que la evaluación esté completa según este criterio, pero no garantizan por sí solas que el previo deje de predominar. Sin dimensiones con peso efectivo, el valor interno es el previo neutral mapeado a 5/10, nunca una medición.
 

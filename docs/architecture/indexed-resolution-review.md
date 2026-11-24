@@ -18,7 +18,7 @@ las mismas reglas sin importar módulos o código de Portaless.
 El concepto principal es confianza y trazabilidad: **APW** identifica y estructura
 el intercambio P2P; **LTP** audita historiales, evidencias y testigos; **SVRI**
 expresa la salida; **HSVR** conserva su histórico verificable. Véase
-[LTP Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+[Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
 
 Contratos de estándar redactados bajo CC BY 4.0, separados de este análisis de
 implementación:

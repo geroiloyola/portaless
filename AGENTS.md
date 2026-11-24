@@ -11,11 +11,11 @@ A lightweight open-source CMS on Astro that compiles to static HTML. No paid
 hosting required for the base case (GitHub Pages or Cloudflare Pages). Optional
 modules: commerce, plugin sandboxing, AI-agent identification (Web Bot Auth),
 MCP server (so an AI agent can edit pages directly), and a modular dashboard.
-Core is AGPL-3.0; the Protocol APW spec is CC BY 4.0; the Plugin SDK is MIT.
+Core is AGPL-3.0; the Protocol APW spec is CC BY 4.0; the Vera Trust Stack packages (`verared`-bound L0-net/L1/L2) are Apache-2.0; the Plugin SDK is MIT.
 
-LTP means **Local Trust Protocol**: each node applies its own policy to verified
-evidence. **LTP Stack** is APW + LTP + SVRI + HSVR; this naming does not rename
-wire identifiers, paths or signed artifacts.
+**Local Trust Protocol** means each node applies its own policy to verified
+evidence. **Vera Trust Stack** is APW + Local Trust Protocol + SVRI + HSVR; this
+naming does not rename wire identifiers, paths or signed artifacts.
 
 ## The new-user story (this is the product's north star)
 

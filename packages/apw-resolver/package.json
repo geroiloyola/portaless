@@ -2,7 +2,7 @@
   "name": "@portaless/apw-resolver",
   "version": "0.1.0",
   "description": "Standalone client/resolver for Protocol APW: resolve did:apw identities, verify site manifests (DNS TXT), chained history, and JWS signatures. Zero Portaless dependencies — only Web APIs + canonicalize (JCS).",
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "keywords": [
     "apw",
     "did",
@@ -43,7 +43,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && esbuild src/standalone.ts src/index.ts --bundle --format=esm --platform=neutral --external:canonicalize --outdir=dist && esbuild conformance/cli.ts --bundle --format=esm --platform=node --external:canonicalize --outfile=dist/conformance/cli.js",

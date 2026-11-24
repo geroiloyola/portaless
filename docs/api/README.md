@@ -4,7 +4,7 @@ This directory documents HTTP surfaces for **APW identity/state**, **LTP trust
 and Index services**, **SVRI/HSVR outputs**, and the **Portaless reference runtime**.
 Existing routes and wire identifiers retain their published names; the proposed
 LTP Index proof-package service is separately specified and not yet implemented.
-See [LTP Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md). All docs in English;
+See [Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md). All docs in English;
 the Spanish archive of longer-form documentation lives in `*_es.md` files at the root.
 
 > **Status**: alpha. HTTP endpoints listed below are implemented and covered by tests in this repository, but have not yet been exercised against large-scale third-party production traffic. The new proof-package contracts linked above remain unimplemented. Report issues via GitHub issues.
