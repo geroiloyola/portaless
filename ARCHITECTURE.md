@@ -105,7 +105,7 @@ wires concrete SQLite/D1 stores and runtime adapters together.
 | Component | Target license | Current state in tree | Rationale |
 |---|---|---|---|
 | `verared/vera-trust-spec` (`docs/protocol-apw/`) | **CC BY 4.0** | Already `CC-BY-4.0` | Open standard; independent reimplementation creates no copyleft obligation. |
-| `verared/vera-trust-stack` (L0-net, L1, L2 neutral) | **Apache-2.0** *(changed from `AGPL-3.0-or-later`)* | `packages/*/package.json` still declare `AGPL-3.0-or-later` until the Wave 1/Wave 2 transition PR | **Maximum worldwide adoption:** CDNs, browsers, proxies and proprietary CMSs can adopt `@verared/*` directly with an explicit patent grant. **100% compatible** with `geroiloyola/portaless` (`AGPL-3.0-or-later`). Transparency of the trust layer is guaranteed by the open specification and deterministic conformance vectors (any modified implementation that diverges fails verification), not by viral copyleft on the library. |
+| `verared/vera-trust-stack` (L0-net, L1, L2 neutral) | **Apache-2.0** *(changed from `AGPL-3.0-or-later`)* | `Apache-2.0` in all 7 `verared`-bound `packages/*/package.json` + `LICENSE` (workspace names stay `@portaless/*` until Wave 2 export) | **Maximum worldwide adoption:** CDNs, browsers, proxies and proprietary CMSs can adopt `@verared/*` directly with an explicit patent grant. **100% compatible** with `geroiloyola/portaless` (`AGPL-3.0-or-later`). Transparency of the trust layer is guaranteed by the open specification and deterministic conformance vectors (any modified implementation that diverges fails verification), not by viral copyleft on the library. |
 | `geroiloyola/portaless` (node L0, L3, L4, L5, SQLite/D1 adapters) | **AGPL-3.0-or-later** | `AGPL-3.0-or-later` | Protects the full CMS platform against closed-source SaaS forks. |
 | `@portaless/plugin-sdk` | **MIT** | `MIT` (v0.1.0) | Clean legal boundary for third-party plugins. |
 
@@ -231,13 +231,13 @@ green (Vitest, Astro build, manifest validation, Playwright) with zero new
 Wave 2 **must not start** until every item below is verified true in CI on
 `geroiloyola/portaless`:
 
-- [ ] **Zero reverse imports:** `packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}` have **0** imports to `sqlite-driver`, `persistence-migrations`, `email-transport`, `dashboard`, `permissions`, `deploy-engine`, `atomic-elements`, `auth`, `plugin-sandbox`, `src/`, `functions/` or `server/`.
-- [ ] **Zero cycles:** the entire workspace dependency graph is a DAG.
-- [ ] **Zero deep `src/` imports:** all 181 cross-package `../.../src/...` imports are replaced by declared `exports` entry points.
-- [ ] **CI boundary enforcement active:** the import-boundary check runs in **blocking mode** (`E-07` closed).
-- [ ] **Spec neutrality verified:** `docs/protocol-apw/` has zero normative references to Portaless, Linstark, Cloudum or `Veranet` (reference-implementation appendix and historical/authorship records only), and all `LTP-APPROVAL-RECORD.md` / G1 vector digests remain byte-identical.
-- [ ] **Full verification green on Node 24:** Vitest, Astro build, manifest validation, Playwright browser suite, and `docs/protocol-apw` standalone test/audit suite all pass with zero added skips.
-- [ ] **License metadata aligned:** `licensing-boundaries.md` and the `verared`-bound packages reflect `CC BY 4.0` (spec) and `Apache-2.0` (stack).
+- [x] **Zero reverse imports:** `packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}` have **0** imports to `sqlite-driver`, `persistence-migrations`, `email-transport`, `dashboard`, `permissions`, `deploy-engine`, `atomic-elements`, `auth`, `plugin-sandbox`, `src/`, `functions/` or `server/`.
+- [x] **Zero cycles:** the entire workspace dependency graph is a DAG.
+- [x] **Zero deep `src/` imports:** all cross-package and L5 `../.../src/...` imports are replaced by declared `exports` entry points.
+- [ ] **CI boundary enforcement active:** the import-boundary check runs in **blocking mode** (`E-07` closed — W1.8).
+- [x] **Spec neutrality verified:** live unpinned `docs/protocol-apw/` prose uses neutral terms (`Witness Index`, `community attester`, `Local Trust Protocol`, `Vera Trust Stack`, `Verared`), and all `LTP-APPROVAL-RECORD.md` / G1 vector digests remain byte-identical.
+- [x] **Full verification green on Node 24:** Vitest, Astro build, manifest validation, Playwright browser suite, and `docs/protocol-apw` standalone test/audit suite all pass with zero added skips.
+- [x] **License metadata aligned:** `licensing-boundaries.md` and the 7 `verared`-bound packages reflect `CC BY 4.0` (spec) and `Apache-2.0` (stack).
 
 ### Wave 2 — Export to `github.com/verared/*` (after connecting the `verared` account)
 

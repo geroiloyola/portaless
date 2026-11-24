@@ -12,8 +12,8 @@ A lightweight, open-source, Astro-based CMS designed to deploy without paid host
 
 ## Golden rule before touching any code
 
-**Naming:** LTP = **Local Trust Protocol** (each node's own policy over verified
-evidence); **LTP Stack** = APW + LTP + SVRI + HSVR. Historical expansions belong
+**Naming:** **Local Trust Protocol** (each node's own policy over verified
+evidence); **Vera Trust Stack** = APW + Local Trust Protocol + SVRI + HSVR. Historical expansions belong
 only in continuity/archive notes; identifiers, signed bytes and author credit stay intact.
 
 **Never assume something works because the file exists.** This project explicitly documents, in the code and in `ROADMAP.md`, what is truly implemented and what is a skeleton with `TODO`s. Before building on a module, verify its real state in the table below.

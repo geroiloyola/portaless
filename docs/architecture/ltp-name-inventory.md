@@ -50,11 +50,18 @@ name in hyphenated lowercase (outside this query).
 
 ## Live naming rule after the decision
 
-LTP means **Local Trust Protocol**: each node applies its own policy to verified
-evidence. **LTP Stack** is APW + LTP + SVRI + HSVR. Attribution to Gerardo Loyola
-remains in authorship and Annex A. This is an editorial name/meaning clarification,
-not a change to formulas, keys, signed bytes, profiles, routes or protocol scope.
+- **Local Trust Protocol** (full name in live prose; avoid standalone `LTP` to prevent collision with Linux Test Project and RFC 5326): each node applies its own policy to verified evidence.
+- **Vera Trust Stack** (replaces `LTP Stack` in live prose): APW + Local Trust Protocol + SVRI + HSVR under the neutral `verared` governance umbrella.
+- **Witness Index** (normative term in `docs/protocol-apw/`; Portaless product documentation/UX retains **Portaless Index**).
+- **`community attester`** (normative term in `docs/protocol-apw/`; Portaless product UX and `/trust/veracier/*` routes retain **Veracier**).
+- **Verared** (unifies live mentions of the earlier network name; *"Veranet Universal Scoring System"* is preserved only in Annex A as historical attribution to Gerardo Loyola).
 
-CI checks live documents/site text and permits former expansions only in marked
-continuity/history notes or classified archival files/released changelog sections.
-The snapshot above is a historical inventory, not an alternative naming policy.
+Attribution to Gerardo Loyola remains in authorship and Annex A. This is an
+editorial name/meaning clarification, not a change to formulas, keys, signed
+bytes, Level A wire identifiers (`did:apw`, `ltp-svri-site-v1`, `urn:ltp:schemas:0.1:*`, etc.),
+profiles, routes, or hash-pinned `LTP-APPROVAL-RECORD.md` files.
+
+CI checks live documents/site text and permits former expansions or retired names
+only in marked continuity/history notes, hash-pinned approval files, or classified
+archival files/released changelog sections. The snapshot above is a historical
+inventory, not an alternative naming policy.

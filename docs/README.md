@@ -22,26 +22,26 @@
 | [`openai-compatible-provider.md`](./openai-compatible-provider.md) | English | How to configure and check the OpenAI-compatible provider, including the minimal Python mock; explicit subset and external-verification limits |
 | [`private-node.md`](./private-node.md) | English | C37–C39: minimal/private Docker profiles, Tailscale, backups and the resource budget |
 
-## LTP Stack — APW, LTP Index, SVRI/HSVR — [`protocol-apw/`](./protocol-apw/)
+## Vera Trust Stack — APW, Witness Index, SVRI/HSVR — [`protocol-apw/`](./protocol-apw/)
 
 Protocol contracts (CC BY 4.0), separate from their reference implementation
-(`packages/apw-resolver/`, `packages/ltp-engine/`, `packages/ltp-reputation/`, AGPL-3.0). The
+(`packages/apw-resolver/`, `packages/ltp-engine/`, `packages/ltp-reputation/`, Apache-2.0). The
 [G4 pre-authorization review](./protocol-apw/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md)
 and the [runtime integration proposal](./architecture/ltp-runtime-integration-proposal.md)
 record pending decisions without enabling them. See the
 [G2/G3 implementation scope](./protocol-apw/LTP-G2-G3-IMPLEMENTATION-SCOPE.md) and
-[LTP Stack architecture](./protocol-apw/LTP-STACK-ARCHITECTURE.md) for identity,
+[Vera Trust Stack architecture](./protocol-apw/LTP-STACK-ARCHITECTURE.md) for identity,
 trust/traceability and output/history responsibilities; paths retain their
 historical names until a separately approved repository migration.
 
-**LTP = Local Trust Protocol:** each node applies its own policy to verified
-evidence. **LTP Stack** denotes APW + LTP + SVRI + HSVR. The
+**Local Trust Protocol:** each node applies its own policy to verified
+evidence. **Vera Trust Stack** denotes APW + Local Trust Protocol + SVRI + HSVR. The
 [glossary](./glossary.md) defines these names and the unrelated RFC 5326 collision.
 
 | Document | Language | Status |
 |---|---|---|
-| [`protocol-apw/README.md`](./protocol-apw/README.md) | English | Protocol overview, Veranet vision, license/governance, real status |
-| [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, LTP witness/evidence evaluation and scoring, SVRI/HSVR contracts; current LTP Index witness-directory representation |
+| [`protocol-apw/README.md`](./protocol-apw/README.md) | English | Protocol overview, Verared vision, license/governance, real status |
+| [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, Local Trust Protocol witness/evidence evaluation and scoring, SVRI/HSVR contracts; current Witness Index directory representation |
 | [`protocol-apw/APW-VECTORS-v1.3.md`](./protocol-apw/APW-VECTORS-v1.3.md) | English (canonical) | **Test vectors** V-01..V-13 for independent implementations |
 | [`protocol-apw/APW-SPEC-v1.3_es.md`](./protocol-apw/APW-SPEC-v1.3_es.md) · [`APW-VECTORS-v1.3_es.md`](./protocol-apw/APW-VECTORS-v1.3_es.md) | Spanish archives | Full-context Spanish copies of the current normative set |
 | [`protocol-apw/ERRATA.md`](./protocol-apw/ERRATA.md) | Spanish (historical) | Errata E-1..E-10; integrated into v1.3 |

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Neutral network safety, SSRF/DNS-rebinding guards, egress budgets, and client-IP trust rules (L0-net, future @verared/net).",
   "type": "module",
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "main": "./src/index.ts",
   "exports": {
     ".": {

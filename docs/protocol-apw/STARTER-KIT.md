@@ -188,7 +188,7 @@ useful thing to build, and it is enough to claim minimal conformance.
 
 A **node** is a bigger choice: running one lets you *publish* your own
 `did:apw` identity and log, *serve* your content's signed artifacts, and
-*participate* in the network (witness peers, run a Portaless Index aggregator).
+*participate* in the network (witness peers, run a Witness Index aggregator).
 That is a Portaless deployment, not a protocol step; start at
 [`../self-hosting.md`](../self-hosting.md) and the install guide
 [`../first-steps.md`](../first-steps.md). **Honest limit:** the discovery

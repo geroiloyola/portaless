@@ -150,10 +150,13 @@ referencia neutral destinados a la fundacion `github.com/verared/vera-trust-stac
   (`canonicalize` Apache-2.0, `web-bot-auth` Apache-2.0, `@noble/post-quantum`
   MIT) no presentan conflicto con `Apache-2.0`; `better-sqlite3` (MIT) y los 14
   stores SQLite/D1 permanecen en `geroiloyola/portaless`.
-- **Estado actual honesto en el arbol:** los `package.json` actuales de L1/L2
-  en `geroiloyola/portaless` siguen declarando `AGPL-3.0-or-later` hasta que se
-  complete el desacople de **Tanda 1** y se ejecute el PR de transicion/exportacion
-  autorizado hacia **Tanda 2** (ver [`ARCHITECTURE.md`](../../ARCHITECTURE.md)).
+- **Estado actual honesto en el arbol:** los 7 `package.json` del bloque
+  `verared` (`packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}`)
+  ya declaran `"license": "Apache-2.0"` e incluyen su archivo `LICENSE`
+  Apache-2.0; los paquetes del nodo `geroiloyola` permanecen en
+  `AGPL-3.0-or-later`, `packages/plugin-sdk` en `MIT` y `docs/protocol-apw/` en
+  `CC-BY-4.0`. Los nombres de workspace `@portaless/*` se conservan hasta la
+  extraccion fisica de **Tanda 2** (ver [`ARCHITECTURE.md`](../../ARCHITECTURE.md)).
 
 ## 8. Preguntas frecuentes para desarrolladores de plugins
 

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Identidad AT Protocol (handles did:plc/did:web, tambien known as, resolucion TXT+HTTPS) y puente opcional de reputacion con APW (did:apw). Ver docs/architecture/identity-atproto.md.",
   "private": true,
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./src/index.ts",
   "exports": {

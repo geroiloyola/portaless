@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Deterministic LTP acquisition and verification engine for identity-only APW proof packages (G2/G3).",
   "type": "module",
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
