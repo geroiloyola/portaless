@@ -10,6 +10,15 @@
 
 import { rmSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+async function loadCompatModule(publicSpecifier, legacySegments) {
+  try {
+    return await import(publicSpecifier);
+  } catch {
+    return await import(pathToFileURL(resolve(process.cwd(), ...legacySegments)).href);
+  }
+}
 
 // Frozen snapshot descriptor. This script is copied into historical tags in CI,
 // where the current persistence-migrations package may not exist yet.
@@ -53,7 +62,10 @@ async function main() {
     throw new Error(`Versión histórica inválida: ${targetVersion}`);
   }
 
-  const { createPageStore } = await import("@portaless/atomic-elements/store-factory");
+  const { createPageStore } = await loadCompatModule(
+    "@portaless/atomic-elements/store-factory",
+    ["packages", "atomic-elements", "src", "persistence", "store-factory.ts"],
+  );
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: out });
   await store.save({
     version: "0.1",
@@ -64,7 +76,10 @@ async function main() {
   });
 
   // Una fila de skin con un accent reconocible (debe sobrevivir intacta).
-  const { openSqlite } = await import("@portaless/sqlite-driver");
+  const { openSqlite } = await loadCompatModule(
+    "@portaless/sqlite-driver",
+    ["packages", "sqlite-driver", "src", "open.ts"],
+  );
   const db = await openSqlite(out);
   db.prepare("INSERT OR REPLACE INTO site_skin (site_id, skin, tokens_json, updated_at) VALUES (?, ?, ?, ?)").run(
     "default",

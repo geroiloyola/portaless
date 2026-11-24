@@ -61,7 +61,7 @@ describe("pagina estatica [slug].astro resuelve el tema", () => {
 
 describe("shell runtime functions/pages/[slug].js emite el tema", () => {
   it("importa los mismos helpers puros desde theme-pack", () => {
-    expect(runtimeFn).toMatch(/from "\.\.\/\.\.\/packages\/atomic-elements\/src\/themes\/theme-pack\.ts"/);
+    expect(runtimeFn).toMatch(/from "@portaless\/atomic-elements\/themes"/);
     expect(runtimeFn).toContain("BUILTIN_THEMES");
     expect(runtimeFn).toContain("resolveThemePack(BUILTIN_THEMES, layout.theme)");
     expect(runtimeFn).toContain("themeStyleDecl(pageTheme)");
