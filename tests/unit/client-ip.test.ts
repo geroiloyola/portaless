@@ -4,7 +4,17 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSelfHostServer, parseTrustedProxies, resolveClientIp } from "../../server/node-runtime.mjs";
-import { getClientIp, NODE_CLIENT_IP_HEADER } from "@verared/trust-layer/net";
+import { normalizeClientIp } from "@verared/net";
+
+const NODE_CLIENT_IP_HEADER = "x-portaless-client-ip";
+
+function getClientIp(request: Request, env: Record<string, unknown> = {}): string | null {
+  const raw =
+    env.__PORTALESS_RUNTIME === "node"
+      ? request.headers.get(NODE_CLIENT_IP_HEADER)
+      : request.headers.get("CF-Connecting-IP");
+  return normalizeClientIp(raw);
+}
 
 const cleanup: Array<() => void> = [];
 afterEach(() => {

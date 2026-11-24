@@ -14,9 +14,9 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY package.json package-lock.json .npmrc ./
+COPY package.json package-lock.json ./
 COPY packages ./packages
-RUN npm ci
+RUN npm_config_allow_remote=root npm ci
 COPY . .
 RUN npm run build \
   && node scripts/prune-build-inputs.mjs /app \

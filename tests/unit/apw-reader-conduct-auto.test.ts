@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { maybeAutoEmitReaderConduct } from "@verared/apw/scoring";
-import { conductJti, periodKey } from "@verared/apw/scoring";
 import {
   InMemoryReaderConductJtiStore,
   SqliteReaderConductJtiStore,
   collectEmittedJtis,
 } from "@verared/apw/scoring";
+
+function periodKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+async function conductJti(issuerDid: string, readerDid: string, period: string, cat: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${issuerDid}|${readerDid}|${period}|${cat}`));
+  return `rc-${Buffer.from(digest).toString("base64url")}`;
+}
 import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
 import { appendAttestation } from "@verared/apw/did-apw";
 import { signSiteJws, ATTESTATION_TYP } from "@verared/apw/did-apw";
