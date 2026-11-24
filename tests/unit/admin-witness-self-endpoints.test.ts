@@ -10,10 +10,8 @@
 import { describe, it, expect, vi } from "vitest";
 
 const history = vi.hoisted(() => ({ resolveApwHistory: vi.fn() }));
-vi.mock("../../packages/apw-resolver/src/did-apw/history-resolver", async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import("../../packages/apw-resolver/src/did-apw/history-resolver")
-  >();
+vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
   return { ...original, resolveApwHistory: history.resolveApwHistory };
 });
 

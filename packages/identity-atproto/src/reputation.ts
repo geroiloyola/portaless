@@ -33,11 +33,11 @@ import {
   type ResolveIdentityResult,
 } from "./resolve";
 
-import { resolveApwIdentity, type ApwIdentityResult } from "../../apw-resolver/src/index";
-import { loadReaderConduct, type ReaderConductResult } from "../../apw-resolver/src/scoring/reader-attestations";
-import { scoreSubject, type DimensionScore } from "../../apw-resolver/src/scoring/scoring";
-import { scoreSiteDimensions, type SiteSnapshotLike } from "../../apw-resolver/src/scoring/site-dimensions";
-import { projectTrustView } from "../../apw-resolver/src/scoring/policy";
+import { resolveApwIdentity, type ApwIdentityResult } from "@portaless/apw-resolver/resolver";
+import { loadReaderConduct, type ReaderConductResult } from "@portaless/apw-resolver/scoring";
+import { scoreSubject, type DimensionScore } from "@portaless/apw-resolver/scoring";
+import { scoreSiteDimensions, type SiteSnapshotLike } from "@portaless/apw-resolver/scoring";
+import { projectTrustView } from "@portaless/apw-resolver/scoring";
 
 export interface AtprotoReputationEnv {
   DB?: unknown;

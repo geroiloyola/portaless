@@ -5,7 +5,7 @@ import {
   type AuthorizedAgentsStore,
   type D1DatabaseLike,
   type GrantAuthorizedAgentInput,
-} from "../../trust-layer/src/site-trust/authorized-agents";
+} from "@portaless/trust-layer/site-trust";
 
 function rowToAuthorizedAgent(row: any): AuthorizedAgent {
   return {

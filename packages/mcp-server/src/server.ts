@@ -22,7 +22,7 @@ import type { ThemePack } from "../../atomic-elements/src/themes/theme-pack";
 import type { PermissionStore } from "../../permissions/src/permission-store";
 import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
-import type { UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
+import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { SiteSkinStore } from "../../dashboard/src/skin-engine/site-skin-store";
 import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";

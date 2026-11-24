@@ -10,8 +10,8 @@ import type { APIRoute } from "astro";
 import { getSiteUrl } from "../lib/seo";
 import { joinSiteUrl } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, isCompleteManifest, readContentPolicyManifest } from "../lib/content-policy";
-import { generateRobotsTxt } from "../../packages/trust-layer/src/policy/robots-generator";
-import { defaultContentPolicy, type ContentPolicyManifest } from "../../packages/trust-layer/src/policy/manifest-schema";
+import { generateRobotsTxt } from "@portaless/trust-layer/policy";
+import { defaultContentPolicy, type ContentPolicyManifest } from "@portaless/trust-layer/policy";
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = getSiteUrl(site);

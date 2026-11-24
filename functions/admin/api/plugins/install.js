@@ -24,8 +24,8 @@
 //     que `POST /admin/api/plugins/run` lo ejecuta desde la base sin depender
 //     del filesystem (cierra el 503 de workerd).
 
-import { resolveApwIdentity } from "../../../../packages/apw-resolver/src/index.ts";
-import { verifyPluginManifest } from "../../../../packages/apw-resolver/src/did-apw/plugin-manifest.ts";
+import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
+import { verifyPluginManifest } from "@portaless/apw-resolver/did-apw";
 import { validateManifest } from "../../../../packages/plugin-sandbox/src/manifest/manifest-schema.ts";
 import { createPluginArtifactStore, sha256Hex, MAX_ARTIFACT_BYTES } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
 import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";

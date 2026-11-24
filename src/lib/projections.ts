@@ -18,7 +18,7 @@
 import { buildRssXml, escapeXml } from "./rss";
 import { buildLlmsTxt, joinSiteUrl, type LlmsTxtSection } from "./llms-txt";
 import { buildSitemapXml } from "./sitemap";
-import { buildSiteManifest } from "../../packages/apw-resolver/src/did-apw/site-manifest";
+import { buildSiteManifest } from "@portaless/apw-resolver/did-apw";
 
 export interface Canon {
   kind: "post";

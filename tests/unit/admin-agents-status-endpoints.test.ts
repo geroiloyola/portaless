@@ -13,8 +13,8 @@ const apw = vi.hoisted(() => ({
   resolveApwManifest: vi.fn(),
   resolveApwIdentity: vi.fn(),
 }));
-vi.mock("../../packages/apw-resolver/src/index", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/apw-resolver/src/index")>();
+vi.mock("@portaless/apw-resolver/resolver", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/apw-resolver/resolver")>();
   return { ...original, resolveApwManifest: apw.resolveApwManifest, resolveApwIdentity: apw.resolveApwIdentity };
 });
 

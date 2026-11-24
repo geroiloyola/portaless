@@ -17,7 +17,7 @@
 // Sin rotate, el comportamiento es el mismo de antes (409 si ya existe).
 
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { generateApwDid } from "../../../packages/apw-resolver/src/did-apw/generate.ts";
+import { generateApwDid } from "@portaless/apw-resolver/did-apw";
 import { AuthService } from "../../../packages/auth/src/auth-service.ts";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
 import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";

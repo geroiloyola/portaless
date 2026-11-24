@@ -52,9 +52,9 @@ import {
   serializeApwManifest,
   jwkThumbprint,
   APW_TXT_PREFIX,
-} from "../../../packages/apw-resolver/src/index";
+} from "@portaless/apw-resolver/resolver";
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { buildSiteManifest } from "../../../packages/apw-resolver/src/did-apw/site-manifest.ts";
+import { buildSiteManifest } from "@portaless/apw-resolver/did-apw";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
 
 const TXT_PRACTICAL_LIMIT_BYTES = 512;

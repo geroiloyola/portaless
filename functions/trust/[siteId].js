@@ -35,12 +35,12 @@ import {
   createReadPolicyStore,
   createWebBotAuthNonceStore,
 } from "@portaless/trust-storage-adapters";
-import { verifyWebBotAuthRequest } from "../../packages/trust-layer/src/index.ts";
-import { toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store.ts";
-import { evaluatePolicy, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy.ts";
-import { scoreSiteDimensions } from "../../packages/apw-resolver/src/scoring/site-dimensions.ts";
-import { buildSiteSvriDetail } from "../../packages/apw-resolver/src/scoring/svri.ts";
-import { resolveReaderState, defaultReaderResolvers } from "../../packages/apw-resolver/src/scoring/reader-identity.ts";
+import { verifyWebBotAuthRequest } from "@portaless/trust-layer";
+import { toReadPolicy } from "@portaless/apw-resolver/scoring";
+import { evaluatePolicy, projectTrustView } from "@portaless/apw-resolver/scoring";
+import { scoreSiteDimensions } from "@portaless/apw-resolver/scoring";
+import { buildSiteSvriDetail } from "@portaless/apw-resolver/scoring";
+import { resolveReaderState, defaultReaderResolvers } from "@portaless/apw-resolver/scoring";
 import { createPermissionStore } from "../../packages/permissions/src/store-factory.ts";
 import { hasReadGovernanceBypass } from "../../packages/permissions/src/reader-bypass.ts";
 

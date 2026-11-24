@@ -15,8 +15,8 @@ const mocked = vi.hoisted(() => ({
   }))
 }));
 
-vi.mock("../../packages/cloud-images/src/verify-remote", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/cloud-images/src/verify-remote")>();
+vi.mock("@portaless/cloud-images", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/cloud-images")>();
   return { ...original, verifySidecarRemote: mocked.verifySidecarRemote };
 });
 

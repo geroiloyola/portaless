@@ -1,4 +1,4 @@
-import { classifySvriLevel, type SvriLevel, type SvriProjection } from "../../packages/apw-resolver/src/scoring/svri";
+import { classifySvriLevel, type SvriLevel, type SvriProjection } from "@portaless/apw-resolver/scoring";
 
 export type SvriPublicInput = Pick<SvriProjection, "score" | "incompleteData" | "isInference" | "t1Count" | "t2Count"> |
   { publicLevel?: SvriLevel };

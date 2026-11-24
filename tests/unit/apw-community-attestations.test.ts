@@ -15,19 +15,27 @@ const state = vi.hoisted(() => ({
   lastFetch: null as any,
 }));
 
-vi.mock("../../packages/apw-resolver/src/index.ts", () => ({
-  resolveApwIdentity: async (domain: string, fetchImpl: any) => {
-    state.lastFetch = fetchImpl;
-    return state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` };
-  },
-}));
+vi.mock("@portaless/apw-resolver/resolver", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@portaless/apw-resolver/resolver")>();
+  return {
+    ...actual,
+    resolveApwIdentity: async (domain: string, fetchImpl: any) => {
+      state.lastFetch = fetchImpl;
+      return state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` };
+    },
+  };
+});
 
-vi.mock("../../packages/apw-resolver/src/did-apw/history-resolver.ts", () => ({
-  resolveApwHistory: async (domain: string, fetchImpl: any) => {
-    state.lastFetch = fetchImpl;
-    return state.history[domain] ?? { verified: false, reason: "no_history", domain };
-  },
-}));
+vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+  return {
+    ...actual,
+    resolveApwHistory: async (domain: string, fetchImpl: any) => {
+      state.lastFetch = fetchImpl;
+      return state.history[domain] ?? { verified: false, reason: "no_history", domain };
+    },
+  };
+});
 
 import { ATTESTATION_TYP } from "../../packages/trust-layer/src/site-trust/attestation";
 import {

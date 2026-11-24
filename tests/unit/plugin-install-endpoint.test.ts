@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   password: "correct",
 }));
 
-vi.mock("../../packages/apw-resolver/src/index", () => ({
+vi.mock("@portaless/apw-resolver/resolver", () => ({
   resolveApwIdentity: async (domain: string) =>
     state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` },
 }));

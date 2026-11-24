@@ -23,9 +23,9 @@
 // choca con el indice unico (site_id, att_hash) y responde already_recorded.
 
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { appendAttestation } from "../../../../packages/apw-resolver/src/did-apw/history-log.ts";
-import { signWitnessStatement } from "../../../../packages/apw-resolver/src/did-apw/witness.ts";
-import { resolveApwHistory } from "../../../../packages/apw-resolver/src/did-apw/history-resolver.ts";
+import { appendAttestation } from "@portaless/apw-resolver/did-apw";
+import { signWitnessStatement } from "@portaless/apw-resolver/did-apw";
+import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
 import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 

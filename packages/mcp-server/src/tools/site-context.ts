@@ -8,7 +8,7 @@ import type { PermissionStore } from "../../../permissions/src/permission-store"
 import type { SiteSkinStore } from "../../../dashboard/src/skin-engine/site-skin-store";
 import { resolveThemePack, type ThemePack } from "../../../atomic-elements/src/themes/theme-pack";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

@@ -10,7 +10,7 @@ import {
   type D1DatabaseLike,
   type GrantAuthorizedEscrowProviderInput,
   type GrantAuthorizedEscrowProviderResult,
-} from "../../trust-layer/src/site-trust/authorized-escrow-providers";
+} from "@portaless/trust-layer/site-trust";
 const SET_PUBLIC_KEY_SQL = "UPDATE authorized_escrow_providers SET public_key_jwk = ? WHERE provider_id = ?";
 function isDuplicateColumnError(err: unknown): boolean {
   return /duplicate column/i.test(String((err as Error)?.message));

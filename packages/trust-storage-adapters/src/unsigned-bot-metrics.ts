@@ -4,7 +4,7 @@ import {
   BOT_FAMILIES,
   unsignedBotFamily,
   type UnsignedBotFamily,
-} from "../../trust-layer/src/ledger/unsigned-bot-metrics";
+} from "@portaless/trust-layer/ledger";
 
 export { BOT_FAMILIES, unsignedBotFamily };
 

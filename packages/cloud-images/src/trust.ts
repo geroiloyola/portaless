@@ -7,8 +7,8 @@
 // leer, el payload se firma igual con trust: null (la firma no depende
 // de la reputacion; la reputacion es dato adicional y honesto).
 
-import { scoreSiteDimensions } from "../../apw-resolver/src/scoring/site-dimensions";
-import { projectTrustView } from "../../apw-resolver/src/scoring/policy";
+import { scoreSiteDimensions } from "@portaless/apw-resolver/scoring";
+import { projectTrustView } from "@portaless/apw-resolver/scoring";
 import type { ImageTrust } from "./payload";
 
 /** El sitio propio usa siteId "default" (misma convencion que

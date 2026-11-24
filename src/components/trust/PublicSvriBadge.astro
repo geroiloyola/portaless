@@ -1,6 +1,6 @@
 ---
 import { getPublicSvriLevel } from "../../lib/svri-public-level";
-import type { SvriLevel } from "../../../packages/apw-resolver/src/scoring/svri";
+import type { SvriLevel } from "@portaless/apw-resolver/scoring";
 
 interface Props { level?: SvriLevel }
 const { level = "pending" } = Astro.props;

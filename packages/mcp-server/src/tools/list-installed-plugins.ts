@@ -14,7 +14,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PluginRegistryStore } from "../../../plugin-sandbox/src/registry/plugin-registry";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-writer";
+import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 

@@ -31,22 +31,23 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("../../packages/apw-resolver/src/scoring/read-policy-store.ts", () => ({
-  toReadPolicy: (record: any) =>
-    record && record.enabled
-      ? {
-          resource: "/trust/*",
-          action: "read",
-          require: { identity: "apw_verified", "R-01": { min: record.minR01, min_weight: record.minR01Weight } },
-          on_fail: record.onFail,
-        }
-      : null,
-}));
-
-vi.mock("../../packages/apw-resolver/src/scoring/reader-identity.ts", () => ({
-  resolveReaderState: async () => state.reader,
-  defaultReaderResolvers: () => ({}),
-}));
+vi.mock("@portaless/apw-resolver/scoring", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@portaless/apw-resolver/scoring")>();
+  return {
+    ...actual,
+    toReadPolicy: (record: any) =>
+      record && record.enabled
+        ? {
+            resource: "/trust/*",
+            action: "read",
+            require: { identity: "apw_verified", "R-01": { min: record.minR01, min_weight: record.minR01Weight } },
+            on_fail: record.onFail,
+          }
+        : null,
+    resolveReaderState: async () => state.reader,
+    defaultReaderResolvers: () => ({}),
+  };
+});
 
 vi.mock("../../packages/permissions/src/store-factory.ts", () => ({
   createPermissionStore: async () => {

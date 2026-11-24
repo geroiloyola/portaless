@@ -1,6 +1,6 @@
 // Portaless node factories for UsageLedgerStore and SiteTrustScoreStore (Node-L0).
-import { InMemoryUsageLedgerStore, type UsageLedgerStore } from "../../trust-layer/src/ledger/log-writer";
-import { InMemorySiteTrustScoreStore, type SiteTrustScoreStore } from "../../trust-layer/src/site-trust/site-trust-score";
+import { InMemoryUsageLedgerStore, type UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import { InMemorySiteTrustScoreStore, type SiteTrustScoreStore } from "@portaless/trust-layer/site-trust";
 import { SqliteUsageLedgerStore } from "./sqlite-log-store";
 import { SqliteSiteTrustScoreStore } from "./sqlite-site-trust-store";
 
@@ -13,7 +13,7 @@ export interface LedgerStoreFactoryEnv {
 
 export async function createUsageLedgerStore(env: LedgerStoreFactoryEnv): Promise<UsageLedgerStore> {
   if (env.DB) {
-    const { D1UsageLedgerStore } = await import("../../trust-layer/src/ledger/d1-log-store");
+    const { D1UsageLedgerStore } = await import("@portaless/trust-layer/ledger");
     return new D1UsageLedgerStore(env.DB as any);
   }
   if (env.PORTALESS_SQLITE_PATH) {
@@ -33,7 +33,7 @@ export async function createSiteTrustScoreStore(
 ): Promise<SiteTrustScoreStore> {
   if (env.DB) {
     const { D1SiteTrustScoreStore } = await import(
-      "../../trust-layer/src/site-trust/stores/d1-site-trust-store"
+      "@portaless/trust-layer/site-trust"
     );
     return new D1SiteTrustScoreStore(env.DB as any);
   }
