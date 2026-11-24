@@ -20,7 +20,7 @@ import {
   getAnalyticsSettings,
   saveAnalyticsSettings,
   ANALYTICS_PROVIDERS,
-} from "../../../packages/dashboard/src/site-settings/site-settings-store.ts";
+} from "@portaless/dashboard/site-settings";
 
 function canWrite(role) {
   return role === "admin";

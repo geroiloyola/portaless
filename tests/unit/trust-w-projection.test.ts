@@ -45,7 +45,7 @@ vi.mock("@portaless/apw-resolver/scoring", async (importOriginal) => {
   };
 });
 
-vi.mock("../../packages/permissions/src/store-factory.ts", () => ({
+vi.mock("@portaless/permissions/store-factory", () => ({
   createPermissionStore: async () => ({
     getGrantsFor: async (subject: any) =>
       state.permissionGrants.filter((g) => g.subject.type === subject.type && g.subject.id === subject.id),

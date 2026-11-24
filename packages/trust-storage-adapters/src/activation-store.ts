@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 storage adapters for pay-per-crawl settlement activations (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   InMemorySettlementActivationStore,
   SETTLEMENT_ACTIVATIONS_DDL,

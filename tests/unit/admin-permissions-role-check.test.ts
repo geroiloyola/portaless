@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 // Fase 11.2: PUT /admin/permissions exige step-up. Se mockea AuthService para
 // que la verificacion reforzada dependa de `password` sin montar el store real.
-vi.mock("../../packages/auth/src/auth-service", () => ({
+vi.mock("@portaless/auth/service", () => ({
   AuthService: class {
     async verifyStepUp(_username: string, creds: { password?: string; totpCode?: string }) {
       if (creds.password === "correct") return { ok: true };

@@ -21,7 +21,7 @@ async function deps() {
   const [{ mkdir, readdir, readFile }, { dirname, join, resolve }, portability] = await Promise.all([
     import("node:fs/promises"),
     import("node:path"),
-    import("../../../packages/portability/src/index.ts"),
+    import("@portaless/portability"),
   ]);
   return { mkdir, readdir, readFile, dirname, join, resolve, ...portability };
 }

@@ -24,14 +24,14 @@
 //   - tope de 200 paginas listadas: un sitio con miles de filas no debe
 //     pagar N queries en cada GET de un archivo de descubrimiento.
 
-import { createPageStore } from "../packages/atomic-elements/src/persistence/store-factory.ts";
-import { validatePageLayout } from "../packages/atomic-elements/src/persistence/page-schema.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
 import {
   joinSiteUrl,
   mergeDbPagesIntoLlmsTxt,
 } from "../src/lib/llms-txt.ts";
 import { ROUTES } from "../src/lib/routes.ts";
-import { isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 const MAX_DB_PAGES = 200;
 

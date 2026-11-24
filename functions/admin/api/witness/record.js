@@ -26,7 +26,7 @@ import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/t
 import { appendAttestation } from "@portaless/apw-resolver/did-apw";
 import { signWitnessStatement } from "@portaless/apw-resolver/did-apw";
 import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
-import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
 
 const SITE_ID = "default";

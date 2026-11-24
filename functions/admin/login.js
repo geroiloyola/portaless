@@ -12,13 +12,13 @@
 // login-mfa.js lo encuentra aunque la request siguiente caiga en otro isolate
 // de Cloudflare o el self-host se haya reiniciado.
 
-import { AuthService } from "../../packages/auth/src/auth-service.ts";
+import { AuthService } from "@portaless/auth/service";
 import {
   createUsersStore,
   createSessionStore,
   createMfaChallengeStore,
   createRateLimitStore,
-} from "../../packages/auth/src/store-factory.ts";
+} from "@portaless/auth/store-factory";
 import {
   recordLoginAttempt,
   loginAttemptLimit,
@@ -26,8 +26,8 @@ import {
   clearLoginFailures,
   loginRateLimitBuckets,
   LOGIN_WINDOW_MS,
-} from "../../packages/auth/src/login-rate-limit.ts";
-import { clientIpFromHeaders } from "../../packages/auth/src/password-reset-rate-limit.ts";
+} from "@portaless/auth/login-rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { sessionCookie } from "../_shared/request-security.js";

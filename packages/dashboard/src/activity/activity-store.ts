@@ -43,7 +43,7 @@
 // schema-additions/activity-events.sql; el store trae su DDL para arrancar
 // en SQLite/InMemory vacio.
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export interface ActivityEvent {
   id: number;

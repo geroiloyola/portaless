@@ -11,7 +11,7 @@
 // valores pasan por sanitizeTokens() en el emisor (defensa en
 // profundidad) -- ver site-skin-store.ts.
 
-import { createSiteSkinStore, resolveActiveSkin, emitSiteSkinCss, SITE_ID } from "../../packages/dashboard/src/skin-engine/site-skin-store.ts";
+import { createSiteSkinStore, resolveActiveSkin, emitSiteSkinCss, SITE_ID } from "@portaless/dashboard/skin-store";
 
 export async function onRequestGet(context) {
   const { env } = context;

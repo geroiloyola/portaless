@@ -22,7 +22,7 @@ vi.mock("../../packages/auth/src/totp", () => ({
   generateTotpSecret: () => "SECRET",
   buildTotpUri: () => "otpauth://totp/test",
 }));
-vi.mock("../../packages/auth/src/store-factory", async () => {
+vi.mock("@portaless/auth/store-factory", async () => {
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
   const sessions = new InMemorySessionStore();
   const usersStore = {
@@ -48,7 +48,7 @@ vi.mock("@portaless/trust-storage-adapters", async () => {
 
 // Fase 10: se captura emitActivity() para probar que el cambio de contrasena
 // alimenta el feed de actividad (un solo escritor) sin tocar el store real.
-vi.mock("../../packages/dashboard/src/activity/activity-store", () => ({
+vi.mock("@portaless/dashboard/activity", () => ({
   emitActivity: async (_env: unknown, input: Record<string, unknown>) => {
     shared.activity.push(input);
   },

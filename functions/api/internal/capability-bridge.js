@@ -39,8 +39,8 @@
 // el body (se deriva del token, para que un bootstrap comprometido no
 // pueda mentir su propia identidad).
 
-import { createCapabilityTokenStore } from "../../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory";
-import { dispatchCapability } from "../../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { createCapabilityTokenStore } from "@portaless/plugin-sandbox/capability-token-store-factory";
+import { dispatchCapability } from "@portaless/plugin-sandbox/capability-backends";
 import { createPortalessCapabilityHostBridge } from "../../../server/plugins/capability-host-bridge";
 
 // Frontera de seguridad: por el bridge solo pueden pedirse las capacidades

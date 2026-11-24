@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   executed: [] as Set<string>[],
 }));
 
-vi.mock("../../packages/plugin-sandbox/src/adapters/node-isolated-vm", () => ({
+vi.mock("@portaless/plugin-sandbox/node-isolated-vm", () => ({
   NodeIsolatedVmAdapter: class {
     poolStats = { idle: 0, live: 0, max: 4 };
     async isAvailable() {
@@ -25,7 +25,7 @@ vi.mock("../../packages/plugin-sandbox/src/adapters/node-isolated-vm", () => ({
   },
 }));
 
-vi.mock("../../packages/permissions/src/store-factory", () => ({
+vi.mock("@portaless/permissions/store-factory", () => ({
   createPermissionStore: async () => ({
     getGrantsFor: async (subject: { type: string; id: string }) => {
       state.queried.push({ type: subject.type, id: subject.id });

@@ -345,8 +345,8 @@ describe("grillas responsivas por hoja, no inline", () => {
   });
 
   it("la hoja la cargan build, editor y shell runtime (paridad de las 3 superficies)", () => {
-    expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("styles/elements.css");
-    expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("styles/elements.css");
+    expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("@portaless/atomic-elements/elements.css");
+    expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("@portaless/atomic-elements/elements.css");
     expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("elementsCssPath");
   });
 

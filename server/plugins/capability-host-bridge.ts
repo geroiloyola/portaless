@@ -6,12 +6,12 @@
 import {
   createCapabilityHostBridge,
   type CapabilityBackendEnv,
-} from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
-import type { CapabilityHostBridge } from "../../packages/plugin-sandbox/src/types";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import { isPubliclyPublishable } from "../../packages/atomic-elements/src/persistence/draft-filter";
-import { createSiteSettingsStore } from "../../packages/dashboard/src/site-settings/site-settings-store";
-import { emitActivity } from "../../packages/dashboard/src/activity/activity-store";
+} from "@portaless/plugin-sandbox/capability-backends";
+import type { CapabilityHostBridge } from "@portaless/plugin-sandbox/types";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { isPubliclyPublishable } from "@portaless/atomic-elements/draft-filter";
+import { createSiteSettingsStore } from "@portaless/dashboard/site-settings";
+import { emitActivity } from "@portaless/dashboard/activity";
 
 export function createPortalessCapabilityHostBridge(
   env: CapabilityBackendEnv = {}

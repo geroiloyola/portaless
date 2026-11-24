@@ -8,7 +8,7 @@
 // los parametros: el orden de las 10 columnas originales no cambia.
 import type { UsageLogPeriod, AgentUsageEntry } from "@portaless/trust-layer/ledger";
 import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface RowType {
   period: string; operator_key_id: string; operator_name_claimed: string | null; reader_did?: string | null;

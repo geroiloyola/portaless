@@ -20,7 +20,7 @@ import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapt
 import { verifyAttestation } from "@portaless/trust-layer/site-trust";
 import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
 import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 

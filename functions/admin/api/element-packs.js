@@ -20,7 +20,7 @@
 // y rutea por path, asi que este archivo sirve en Cloudflare Pages y en
 // self-host sin registro adicional.
 
-import { createElementPackStore } from "../../../packages/atomic-elements/src/persistence/element-pack-store-factory";
+import { createElementPackStore } from "@portaless/atomic-elements/element-pack-store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

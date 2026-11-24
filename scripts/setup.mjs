@@ -102,8 +102,8 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
       // El schema maestro es el bootstrap de una base realmente nueva. El
       // ledger recibe solo el baseline; las versiones posteriores se registran
       // al aplicar cada delta, en orden y dentro de su propia transaccion.
-      const { MIGRATIONS } = await import("../packages/persistence-migrations/src/index.ts");
-      const { recordAppliedMigration, migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+      const { MIGRATIONS } = await import("@portaless/persistence-migrations");
+      const { recordAppliedMigration, migrateSqlite } = await import("@portaless/persistence-migrations/runner");
       db.exec("BEGIN");
       try {
         db.exec(schemaSql);
@@ -119,7 +119,7 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
       db.close();
       // Una base existente nunca recibe el schema actual a ciegas. La ruta de
       // upgrade lee su ledger, respalda y aplica solo migraciones numeradas.
-      const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+      const { migrateSqlite } = await import("@portaless/persistence-migrations/runner");
       await migrateSqlite(sqlitePath);
     }
 
@@ -144,8 +144,8 @@ export async function applySchema(sqlitePath = defaultSqlitePath(), { quiet = fa
 async function createInitialAdmin(sqlitePath, adminUsername, adminPasswordFromEnv) {
   console.log(`\n[2/2] Creando usuario admin inicial ("${adminUsername}") si no existe ninguno ...`);
 
-  const { SqliteUsersStore } = await import("../packages/auth/src/stores/sqlite-users-store.ts");
-  const { ensureInitialAdmin } = await import("../packages/auth/src/users-store.ts");
+  const { SqliteUsersStore } = await import("@portaless/auth/sqlite-users-store");
+  const { ensureInitialAdmin } = await import("@portaless/auth/users-store");
 
   const usersStore = await SqliteUsersStore.open(sqlitePath);
   let password = null;

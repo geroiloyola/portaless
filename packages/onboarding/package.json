@@ -1,0 +1,16 @@
+{
+  "name": "@portaless/onboarding",
+  "version": "0.1.0",
+  "description": "Onboarding intent-to-layout generator for Portaless (L3).",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "./src/intent-to-layout.ts",
+  "exports": {
+    ".": {
+      "types": "./src/intent-to-layout.ts",
+      "import": "./src/intent-to-layout.ts"
+    }
+  },
+  "dependencies": {}
+}

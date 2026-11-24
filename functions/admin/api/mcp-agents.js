@@ -19,7 +19,7 @@
 // (pless_mcp_...). El cliente MCP remoto lo configura como header
 // "Authorization: Bearer <token>".
 
-import { createMcpAgentTokenStore } from "../../../packages/mcp-server/src/permissions/agent-token-store.ts";
+import { createMcpAgentTokenStore } from "@portaless/mcp-server/agent-tokens";
 
 function canWrite(role) {
   return role === "admin";

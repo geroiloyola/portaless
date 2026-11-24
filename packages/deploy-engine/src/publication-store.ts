@@ -1,7 +1,7 @@
 // Durable publication-run state (C34). Rows contain identifiers and outcome
 // metadata only: no page content, tokens, provider responses or error bodies.
 
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export type PublicationRunStatus =
   | "queued"

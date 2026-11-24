@@ -1,9 +1,9 @@
 // Admin-only connection status for C35. Tokens are read server-side and never
 // returned; each provider is validated with a real read-only call.
 
-import { checkPrivateNode, checkGitHubConnection, checkCloudflareConnection } from "../../../../packages/deploy-engine/src/connection-validator.ts";
-import { createDeploymentOAuthStore } from "../../../../packages/deploy-engine/src/oauth-store.ts";
-import { readGitHubOAuthConfig, getGitHubAccessToken } from "../../../../packages/deploy-engine/src/github-oauth.ts";
+import { checkPrivateNode, checkGitHubConnection, checkCloudflareConnection } from "@portaless/deploy-engine/connection-validator";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { readGitHubOAuthConfig, getGitHubAccessToken } from "@portaless/deploy-engine/github-oauth";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });

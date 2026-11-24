@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("../../packages/auth/src/store-factory", async () => {
+vi.mock("@portaless/auth/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
   const { sharedInMemoryMfaChallengeStore } = await import("../../packages/auth/src/ephemeral-auth-store");
@@ -21,8 +21,8 @@ vi.mock("../../packages/auth/src/store-factory", async () => {
 });
 
 const oauth = vi.hoisted(() => ({ exchangeCodeForProfile: vi.fn() }));
-vi.mock("../../packages/auth/src/oauth", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/auth/src/oauth")>();
+vi.mock("@portaless/auth/oauth", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/auth/oauth")>();
   return { ...original, exchangeCodeForProfile: oauth.exchangeCodeForProfile };
 });
 
@@ -101,7 +101,7 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
   });
 
   it("C-01: un usuario OAuth con TOTP va a login-mfa y no recibe cookie de sesion", async () => {
-    const factory = await import("../../packages/auth/src/store-factory");
+    const factory = await import("@portaless/auth/store-factory");
     const users = await factory.createUsersStore({});
     await users.createUser("oauth-mfa@example.com", "OAuth-Mfa-Pass-123!", "admin", "oauth-mfa@example.com");
     await users.setTotpSecret("oauth-mfa@example.com", "OAUTHMFA2FASECRET");
@@ -148,7 +148,7 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     for (const cookie of res.headers.getSetCookie()) {
       expect(cookie).toContain("Secure");
     }
-    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
     const created = await users.findByUsername("nuevo@example.com");
     expect(created?.provider).toBe("oauth"); // metodo de auth
     expect(created?.oauthProvider).toBe("github"); // proveedor real

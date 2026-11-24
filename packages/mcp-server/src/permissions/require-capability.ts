@@ -5,8 +5,8 @@
 // ser un atajo que le de a un agente mas poder del que tendria un
 // plugin humano").
 
-import type { PermissionStore } from "../../../permissions/src/permission-store";
-import type { CapabilityId } from "../../../plugin-sandbox/src/types";
+import type { PermissionStore } from "@portaless/permissions/store";
+import type { CapabilityId } from "@portaless/plugin-sandbox/types";
 import type { AgentIdentity } from "./types";
 import { agentIdentityToSubject } from "./types";
 

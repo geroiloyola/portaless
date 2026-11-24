@@ -35,9 +35,9 @@
 // documenta wrangler.toml), ahora usa env.DB como las demas factories. Ver
 // el comentario extenso en persistence/store-factory.ts.
 
-import { validatePageLayout } from "../../../packages/atomic-elements/src/persistence/page-schema";
-import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { emitActivity } from "@portaless/dashboard/activity";
 
 function canWrite(role) {
   return role === "admin";

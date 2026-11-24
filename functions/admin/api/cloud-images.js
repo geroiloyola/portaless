@@ -38,9 +38,9 @@ import {
 } from "@portaless/cloud-images";
 import { signCloudImage } from "@portaless/cloud-images";
 import { embedPng, isPng } from "@portaless/cloud-images";
-import { createRateLimitStore } from "../../../packages/auth/src/store-factory.ts";
-import { allowActionRequest } from "../../../packages/auth/src/action-rate-limit.ts";
-import { clientIpFromHeaders } from "../../../packages/auth/src/password-reset-rate-limit.ts";
+import { createRateLimitStore } from "@portaless/auth/store-factory";
+import { allowActionRequest } from "@portaless/auth/rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 const SITE_ID = IMAGE_SITE_ID;

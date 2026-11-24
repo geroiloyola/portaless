@@ -19,12 +19,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SqlitePageStore } from "../packages/atomic-elements/src/persistence/stores/sqlite-page-store.ts";
-import { createDeploymentOAuthStore } from "../packages/deploy-engine/src/oauth-store.ts";
-import { readGitHubOAuthConfig, getGitHubAccessToken, GITHUB_PROVIDER } from "../packages/deploy-engine/src/github-oauth.ts";
-import { publishStaticSite, retireStaticSite } from "../packages/deploy-engine/src/github-static-publish.ts";
-import { snapshotFromLayouts } from "../packages/deploy-engine/src/publication-snapshot.ts";
-import { excludeDraftPages, isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
+import { SqlitePageStore } from "@portaless/atomic-elements/sqlite-page-store";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { readGitHubOAuthConfig, getGitHubAccessToken, GITHUB_PROVIDER } from "@portaless/deploy-engine/github-oauth";
+import { publishStaticSite, retireStaticSite } from "@portaless/deploy-engine/github-static-publish";
+import { snapshotFromLayouts } from "@portaless/deploy-engine/publication-snapshot";
+import { excludeDraftPages, isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import {
   copyPublicBuildInputs,
   copyPublicDocs,

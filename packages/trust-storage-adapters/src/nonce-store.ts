@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 storage adapters for Web Bot Auth anti-replay nonces (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   InMemoryWebBotAuthNonceStore,
   NONCES_DDL,

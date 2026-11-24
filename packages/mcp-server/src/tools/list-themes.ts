@@ -13,8 +13,8 @@
 // pagina (mismo criterio con el que list_page_components no exige capaz).
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ThemePack } from "../../../atomic-elements/src/themes/theme-pack";
-import { BUILTIN_THEMES, resolveThemePack } from "../../../atomic-elements/src/themes/theme-pack";
+import type { ThemePack } from "@portaless/atomic-elements/themes";
+import { BUILTIN_THEMES, resolveThemePack } from "@portaless/atomic-elements/themes";
 
 const TOOL_NAME = "list_themes";
 

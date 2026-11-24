@@ -1,0 +1,64 @@
+{
+  "name": "@portaless/deploy-engine",
+  "version": "0.1.0",
+  "description": "Publication orchestration, OAuth/provider credentials, static publish, and runtime profiles for Portaless (L3).",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "./src/draft-filter.ts",
+  "exports": {
+    "./draft-filter": {
+      "types": "./src/draft-filter.ts",
+      "import": "./src/draft-filter.ts"
+    },
+    "./connection-validator": {
+      "types": "./src/connection-validator.ts",
+      "import": "./src/connection-validator.ts"
+    },
+    "./github-manifest": {
+      "types": "./src/github-manifest.ts",
+      "import": "./src/github-manifest.ts"
+    },
+    "./github-oauth": {
+      "types": "./src/github-oauth.ts",
+      "import": "./src/github-oauth.ts"
+    },
+    "./github-static-publish": {
+      "types": "./src/github-static-publish.ts",
+      "import": "./src/github-static-publish.ts"
+    },
+    "./oauth-store": {
+      "types": "./src/oauth-store.ts",
+      "import": "./src/oauth-store.ts"
+    },
+    "./providers-config-store": {
+      "types": "./src/providers-config-store.ts",
+      "import": "./src/providers-config-store.ts"
+    },
+    "./publication-orchestrator": {
+      "types": "./src/publication-orchestrator.ts",
+      "import": "./src/publication-orchestrator.ts"
+    },
+    "./publication-snapshot": {
+      "types": "./src/publication-snapshot.ts",
+      "import": "./src/publication-snapshot.ts"
+    },
+    "./publication-store": {
+      "types": "./src/publication-store.ts",
+      "import": "./src/publication-store.ts"
+    },
+    "./resource-budget": {
+      "types": "./src/resource-budget.ts",
+      "import": "./src/resource-budget.ts"
+    },
+    "./runtime-profile": {
+      "types": "./src/runtime-profile.ts",
+      "import": "./src/runtime-profile.ts"
+    },
+    "./token-crypto": {
+      "types": "./src/token-crypto.ts",
+      "import": "./src/token-crypto.ts"
+    }
+  },
+  "dependencies": {}
+}

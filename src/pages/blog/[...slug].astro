@@ -9,7 +9,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
 import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
-import { isPubliclyPublishable } from "../../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts", ({ id, data }) => isPubliclyPublishable({

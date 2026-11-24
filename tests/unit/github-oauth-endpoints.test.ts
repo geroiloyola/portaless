@@ -2,20 +2,20 @@
 // Antes start guardaba "undefined" (g.user.id ?? g.user.email) y callback
 // comparaba contra "admin", asi que GitHub siempre respondia 403.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { InMemoryDeploymentOAuthStore } from "../../packages/deploy-engine/src/oauth-store";
+import { InMemoryDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
 
 const mocks = vi.hoisted(() => ({
   store: null as any,
   readConfig: vi.fn(),
 }));
 
-vi.mock("../../packages/deploy-engine/src/oauth-store", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/deploy-engine/src/oauth-store")>();
+vi.mock("@portaless/deploy-engine/oauth-store", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/deploy-engine/oauth-store")>();
   return { ...original, createDeploymentOAuthStore: async () => mocks.store };
 });
 
-vi.mock("../../packages/deploy-engine/src/github-oauth", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/deploy-engine/src/github-oauth")>();
+vi.mock("@portaless/deploy-engine/github-oauth", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/deploy-engine/github-oauth")>();
   return { ...original, readGitHubOAuthConfig: mocks.readConfig };
 });
 

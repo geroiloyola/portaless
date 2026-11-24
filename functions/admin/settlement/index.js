@@ -11,13 +11,13 @@
 // (si no, cf-pay-per-crawl se puede falsificar), identidad APW del sitio y
 // verifyActivation() OK. Recien ahi se escriben la activacion y el grant.
 
-import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
 import { listPayPerCrawlProviders } from "@portaless/trust-layer/billing";
-import { encryptToken } from "../../../packages/deploy-engine/src/token-crypto.ts";
+import { encryptToken } from "@portaless/deploy-engine/token-crypto";
 import {
   activateProvider,
   deactivateProvider,

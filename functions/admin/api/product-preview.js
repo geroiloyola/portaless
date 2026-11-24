@@ -17,7 +17,7 @@
 // 100000 productos a Medusa en cada vista previa del editor.
 
 import "../../../src/commerce/medusa-client.ts";
-import { elementRegistry } from "../../../packages/atomic-elements/src/elements/registry.ts";
+import { elementRegistry } from "@portaless/atomic-elements/registry";
 
 export const MAX_COLUMNS = 6;
 export const MAX_LIMIT = 24;

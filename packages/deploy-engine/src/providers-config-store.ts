@@ -4,7 +4,7 @@
 // deployment_credentials: aca vive la identidad de la App, alla los tokens
 // de usuario que esa App emite.
 import { encryptToken, decryptToken } from "./token-crypto";
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export const GITHUB_APP_PROVIDER_ID = "github_app";
 

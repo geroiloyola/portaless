@@ -6,10 +6,10 @@
 // the existing publish script through an injectable runner; Cloudflare returns
 // an explicit 503 instead of pretending it can build.
 
-import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory.ts";
-import { createPublicationRunStore } from "../../../packages/deploy-engine/src/publication-store.ts";
-import { createPublicationOrchestrator, PublicationError } from "../../../packages/deploy-engine/src/publication-orchestrator.ts";
-import { snapshotFromLayouts } from "../../../packages/deploy-engine/src/publication-snapshot.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createPublicationRunStore } from "@portaless/deploy-engine/publication-store";
+import { createPublicationOrchestrator, PublicationError } from "@portaless/deploy-engine/publication-orchestrator";
+import { snapshotFromLayouts } from "@portaless/deploy-engine/publication-snapshot";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

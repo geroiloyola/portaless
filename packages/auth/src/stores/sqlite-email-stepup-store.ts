@@ -6,7 +6,7 @@
 
 import type { EmailStepUpChallenge, EmailStepUpStore } from "../email-stepup-store";
 import { EMAIL_STEPUP_DDL } from "./d1-email-stepup-store";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 type ChallengeRow = { username: string; code_hash: string; expires_at: number; failed_attempts: number };
 

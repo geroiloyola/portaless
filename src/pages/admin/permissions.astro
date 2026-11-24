@@ -15,7 +15,7 @@
 // vote.js) y se pasa como onVote a renderPermissionCenter -- habilita el
 // formulario de voto interactivo del badge de trustScore.
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import "../../../packages/permissions/src/permission-center-ui.css";
+import "@portaless/permissions/ui.css";
 ---
 <BaseLayout title="Centro de Permisos — Portaless Admin">
   <div class="pc-page-header">
@@ -34,8 +34,8 @@ import "../../../packages/permissions/src/permission-center-ui.css";
 </BaseLayout>
 
 <script>
-  import { renderPermissionCenter } from "../../../packages/permissions/src/permission-center-ui";
-  import type { PermissionGrant } from "../../../packages/permissions/src/types";
+  import { renderPermissionCenter } from "@portaless/permissions/ui";
+  import type { PermissionGrant } from "@portaless/permissions/types";
 
   const loadingEl = document.getElementById("pc-loading")!;
   const errorEl = document.getElementById("pc-load-error")!;

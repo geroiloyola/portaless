@@ -17,7 +17,7 @@ import {
   loginRateLimitBuckets,
 } from "../../packages/auth/src/login-rate-limit";
 
-vi.mock("../../packages/auth/src/store-factory", async () => {
+vi.mock("@portaless/auth/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
   const { InMemoryRateLimitStore } = await import("../../packages/auth/src/ephemeral-auth-store");
@@ -65,7 +65,7 @@ function currentTotpCode(secret: string, now = Date.now()): string {
 }
 
 async function seedUsers() {
-  const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+  const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
   if (!(await users.findByUsername("admin"))) {
     await users.createUser("admin", "Admin-Pass-1!", "admin");
   }
@@ -170,7 +170,7 @@ describe("functions/admin/login.js", () => {
   });
 
   it("A-01: el bucket de usuario no bloquea una contraseña correcta tras 10 fallos de terceros", async () => {
-    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
     await users.createUser("login-bruteforce", "Correct-Password-123!", "admin");
     for (let i = 0; i < 10; i++) {
       const res = await login.onRequestPost(context(formRequest("http://x.test/admin/login", {
@@ -189,9 +189,9 @@ describe("functions/admin/login.js", () => {
   });
 
   it("A-01/N-03: 429 + Retry-After cuando el bucket de IP supera el límite", async () => {
-    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
     await users.createUser("rate-ip", "Correct-Password-123!", "admin");
-    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const store = await (await import("@portaless/auth/store-factory")).createRateLimitStore({});
     const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
     const [ipBucket] = loginRateLimitBuckets("unknown", "rate-ip");
     for (let i = 0; i < LOGIN_LIMIT_PER_IP; i++) await store.hit(ipBucket, windowStart);
@@ -215,9 +215,9 @@ describe("functions/admin/login.js", () => {
   });
 
   it("A-01: 24 requests ya bloqueados responden 429 sin ejecutar scrypt ni bloquear el event loop", async () => {
-    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
     await users.createUser("attempt-budget", "Correct-Password-123!", "admin");
-    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const store = await (await import("@portaless/auth/store-factory")).createRateLimitStore({});
     const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
     const bucket = loginAttemptBucket("unknown");
     for (let i = 0; i < LOGIN_ATTEMPT_LIMIT_PER_IP; i++) await store.hit(bucket, windowStart);
@@ -246,9 +246,9 @@ describe("functions/admin/login.js", () => {
   });
 
   it("A-01: al agotar el presupuesto de IP, la contraseña correcta también recibe 429 (deliberado)", async () => {
-    const users = await (await import("../../packages/auth/src/store-factory")).createUsersStore({});
+    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
     await users.createUser("attempt-correct", "Correct-Password-123!", "admin");
-    const store = await (await import("../../packages/auth/src/store-factory")).createRateLimitStore({});
+    const store = await (await import("@portaless/auth/store-factory")).createRateLimitStore({});
     const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
     const bucket = loginAttemptBucket("unknown");
     for (let i = 0; i < LOGIN_ATTEMPT_LIMIT_PER_IP; i++) await store.hit(bucket, windowStart);

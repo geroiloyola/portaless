@@ -14,22 +14,22 @@
 // packages/auth/src/password-reset-rate-limit.ts). Al pasarse se responde el
 // mismo 200 que en un pedido valido, sin generar token.
 
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { AuthService } from "@portaless/auth/service";
 import {
   createUsersStore,
   createSessionStore,
   createPasswordResetStore,
   createRateLimitStore,
-} from "../../../packages/auth/src/store-factory.ts";
+} from "@portaless/auth/store-factory";
 import {
   allowPasswordResetRequest,
   clientIpFromHeaders,
-} from "../../../packages/auth/src/password-reset-rate-limit.ts";
-import { createEmailSender } from "../../../packages/auth/src/email-sender.ts";
+} from "@portaless/auth/password-reset-rate-limit";
+import { createEmailSender } from "@portaless/auth/email-sender";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
-import { EmailSendError } from "../../../packages/email-transport/src/send.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
+import { EmailSendError } from "@portaless/email-transport/send";
 
 const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 

@@ -5,8 +5,8 @@
 // solo devuelve { username, role }: antes se usaba String(user.id ?? user.email), que
 // siempre valia "undefined" y dejaba todas las credenciales con el mismo dueno.
 
-import { createDeploymentOAuthStore } from "../../../../../packages/deploy-engine/src/oauth-store";
-import { readGitHubOAuthConfig, completeGitHubOAuth } from "../../../../../packages/deploy-engine/src/github-oauth";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { readGitHubOAuthConfig, completeGitHubOAuth } from "@portaless/deploy-engine/github-oauth";
 import { publicOriginFromEnv } from "../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {

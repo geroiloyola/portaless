@@ -18,8 +18,8 @@
 // El envio real del codigo lo hace AuthService.requestEmailStepUpCode();
 // aqui vive solo la transporte.
 
-import { isEmailAddress, normalizeEmailHost, normalizeWebhookUrl, type EmailProviderSettings } from "../../email-transport/src/config";
-import { EmailDeliveryUnknownError, EmailSendError, sendEmail } from "../../email-transport/src/send";
+import { isEmailAddress, normalizeEmailHost, normalizeWebhookUrl, type EmailProviderSettings } from "@portaless/email-transport/config";
+import { EmailDeliveryUnknownError, EmailSendError, sendEmail } from "@portaless/email-transport/send";
 
 export interface EmailMessage {
   to: string;

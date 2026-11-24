@@ -25,8 +25,8 @@ import type { CapabilityId, CapabilityHostBridge } from "../types";
 import { createPluginStorageStore } from "../registry/plugin-storage";
 import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "../registry/plugin-email-quota";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
-import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
-import { EmailSendError, sendEmail } from "../../../email-transport/src/send";
+import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "@portaless/email-transport/config";
+import { EmailSendError, sendEmail } from "@portaless/email-transport/send";
 
 export interface CapabilityPageRecord {
   slug: string;

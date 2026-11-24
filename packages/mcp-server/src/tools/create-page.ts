@@ -22,16 +22,16 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "../../../atomic-elements/src/persistence/page-store";
-import type { PageLayout, ElementNode } from "../../../atomic-elements/src/types";
-import type { PermissionStore } from "../../../permissions/src/permission-store";
+import type { PageStore } from "@portaless/atomic-elements/page-store";
+import type { PageLayout, ElementNode } from "@portaless/atomic-elements/types";
+import type { PermissionStore } from "@portaless/permissions/store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
-import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
+import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
 
 const TOOL_NAME = "create_page";
 const CAPABILITY_ID = "content:write";

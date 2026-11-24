@@ -40,11 +40,11 @@
 //     en env (PORTALESS_CLOUDFLARE_* / PORTALESS_DENO_*); sin ellas el
 //     registry cae a isolated-vm, igual que el resto del sistema.
 
-import { runPluginInProduction } from "../../../../packages/plugin-sandbox/src/runtime/production-plugin-runner.ts";
+import { runPluginInProduction } from "@portaless/plugin-sandbox/production-plugin-runner";
 import { createPortalessCapabilityHostBridge } from "../../../../server/plugins/capability-host-bridge.ts";
-import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
-import { createPluginArtifactStore, sha256Hex } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
-import { validateManifest } from "../../../../packages/plugin-sandbox/src/manifest/manifest-schema.ts";
+import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
+import { createPluginArtifactStore, sha256Hex } from "@portaless/plugin-sandbox/plugin-artifacts";
+import { validateManifest } from "@portaless/plugin-sandbox/manifest-schema";
 
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9._-]*$/i;
 const DEFAULT_PLUGIN_DIR = "packages/plugin-sandbox/examples";

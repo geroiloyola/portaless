@@ -7,7 +7,7 @@
 import type { ThemePack } from "../../themes/theme-pack";
 import { validateThemePack } from "../../themes/theme-pack";
 import type { ThemePackStore } from "../theme-pack-store";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface ThemeRow {
   name: string;

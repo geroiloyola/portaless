@@ -1,5 +1,5 @@
-import { openSqlite } from "../../../sqlite-driver/src/open";
-import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL } from "../../../persistence-migrations/src/ddl";
+import { openSqlite } from "@portaless/sqlite-driver";
+import { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL } from "@portaless/persistence-migrations/ddl";
 import type { AuditLogEntry, AuditLogStore } from "./types";
 
 export { MCP_AUDIT_APPEND_ONLY_DDL, MCP_AUDIT_INDEX_DDL, MCP_AUDIT_NO_DELETE_DDL, MCP_AUDIT_TABLE_DDL };

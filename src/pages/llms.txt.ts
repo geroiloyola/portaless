@@ -20,7 +20,7 @@ import { buildLlmsTxt, joinSiteUrl, publishedPosts } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, readContentPolicy } from "../lib/content-policy";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 import { ROUTES } from "../lib/routes";
-import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 interface PageJson {
   slug?: string;

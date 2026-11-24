@@ -26,17 +26,17 @@
 
 import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
 import { verifyPluginManifest } from "@portaless/apw-resolver/did-apw";
-import { validateManifest } from "../../../../packages/plugin-sandbox/src/manifest/manifest-schema.ts";
-import { createPluginArtifactStore, sha256Hex, MAX_ARTIFACT_BYTES } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
-import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
-import { reconcileGrants } from "../../../../packages/plugin-sandbox/src/install/reconcile.ts";
-import { createPermissionStore } from "../../../../packages/permissions/src/store-factory.ts";
-import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
-import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
-import { createRateLimitStore } from "../../../../packages/auth/src/store-factory.ts";
-import { allowActionRequest } from "../../../../packages/auth/src/action-rate-limit.ts";
-import { clientIpFromHeaders } from "../../../../packages/auth/src/password-reset-rate-limit.ts";
+import { validateManifest } from "@portaless/plugin-sandbox/manifest-schema";
+import { createPluginArtifactStore, sha256Hex, MAX_ARTIFACT_BYTES } from "@portaless/plugin-sandbox/plugin-artifacts";
+import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
+import { reconcileGrants } from "@portaless/plugin-sandbox/install-reconcile";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
+import { emitActivity } from "@portaless/dashboard/activity";
+import { createRateLimitStore } from "@portaless/auth/store-factory";
+import { allowActionRequest } from "@portaless/auth/rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../../_shared/read-body-limited.js";
 
 const APW_DID_PREFIX = "did:apw:";

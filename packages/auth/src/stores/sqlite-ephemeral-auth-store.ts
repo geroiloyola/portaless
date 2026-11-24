@@ -8,7 +8,7 @@
 import type { Role } from "../types";
 import type { MfaChallengeRecord, MfaChallengeStore, RateLimitStore } from "../ephemeral-auth-store";
 import { MFA_CHALLENGES_DDL, RATE_LIMITS_DDL } from "./d1-ephemeral-auth-store";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 type ChallengeRow = { username: string; role: Role; expires_at: number; failed_attempts: number };
 

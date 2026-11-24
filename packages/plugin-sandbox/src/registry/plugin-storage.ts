@@ -16,7 +16,7 @@
 // de SqlitePluginStorageStore y el ensure() de D1 crean la tabla al vuelo, para
 // bases creadas antes de esta version.
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export const MAX_STORAGE_VALUE_BYTES = 64 * 1024; // 64 KiB por valor
 export const MAX_STORAGE_KEYS_PER_PLUGIN = 256;

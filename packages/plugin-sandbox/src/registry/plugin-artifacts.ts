@@ -17,7 +17,7 @@
 // Mismo patron D1 -> SQLite -> InMemory que el resto del repo. DDL tambien en
 // schema-additions/plugin-artifacts.sql (schema.sql lo regenera).
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import { validateManifest } from "../manifest/manifest-schema";
 import type { PluginManifest } from "../types";
 

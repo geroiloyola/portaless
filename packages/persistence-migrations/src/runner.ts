@@ -9,7 +9,7 @@
 //   - FAIL-CLOSED: una base mas nueva que el codigo no migra (assertCompatible).
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { openSqlite } from "../../sqlite-driver/src/open.ts";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   BASELINE_REQUIRED_COLUMNS,
   MIGRATIONS,

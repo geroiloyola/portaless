@@ -2,7 +2,7 @@
 // y credenciales cifradas por proveedor. D1 / SQLite / memoria.
 // v0.0.9.27: el factory abre SQLite via openSqlite() (driver unico + guardia
 // de runtime workerd), en vez de importar better-sqlite3 directo.
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export interface OAuthStateRecord {
   state: string;

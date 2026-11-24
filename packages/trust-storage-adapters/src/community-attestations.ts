@@ -1,4 +1,4 @@
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   COMMUNITY_ATTESTATIONS_INDEXES_SQL,
   COMMUNITY_ATTESTATIONS_TABLE_SQL,

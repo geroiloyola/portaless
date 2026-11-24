@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { isEmailAddress } from "../packages/email-transport/src/config.ts";
-import { createEmailSender } from "../packages/auth/src/email-sender.ts";
+import { isEmailAddress } from "@portaless/email-transport/config";
+import { createEmailSender } from "@portaless/auth/email-sender";
 
 const recipientArg = process.argv.slice(2).find((arg) => arg.startsWith("--to="));
 const recipient = recipientArg?.slice("--to=".length).trim();

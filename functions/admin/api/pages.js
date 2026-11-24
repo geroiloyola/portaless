@@ -19,7 +19,7 @@
 // endpoint HTTP que lo expusiera. Por eso HttpPageStore.list() en
 // src/pages/admin/editor.astro lanzaba un error explicito en vez de
 // fingir un contrato que el backend no tenia todavia.
-import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

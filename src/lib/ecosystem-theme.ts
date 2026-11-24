@@ -8,7 +8,7 @@ import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "../../packages/atomic-elements/src/themes/theme-pack";
+} from "@portaless/atomic-elements/themes";
 
 export const ECOSYSTEM_THEME = "portaless-nocturno";
 

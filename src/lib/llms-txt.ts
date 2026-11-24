@@ -12,7 +12,7 @@
 // (Content-Signal: ai-input=no en robots.txt), el llms.txt NO lista
 // contenido; solo el H1, el resumen, un aviso y el link a la politica. Un
 // indice para LLMs no deberia ofrecer lo que el sitio no autoriza a usar.
-import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 export interface LlmsTxtLink {
   title: string;

@@ -18,7 +18,7 @@
 // (secreto simetrico), honestamente documentado como tal. Ver
 // "Identidad y autenticacion de agentes" en mcp-agents.md.
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 export interface McpAgentTokenRecord {
   agentKeyId: string;

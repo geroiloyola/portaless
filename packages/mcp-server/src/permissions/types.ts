@@ -2,7 +2,7 @@
 // vocabulario ya definido en packages/permissions -- este paquete NO
 // declara un sistema de permisos paralelo, solo lo consume.
 
-import type { PermissionSubject } from "../../../permissions/src/types";
+import type { PermissionSubject } from "@portaless/permissions/types";
 
 /**
  * Identidad cruda de un agente tal como llega al mcp-server (por

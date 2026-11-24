@@ -10,7 +10,7 @@ import { randomBytes } from "node:crypto";
 import type { SessionRecord, Role } from "../types";
 import { hashOpaqueToken } from "../token-hash";
 import type { SessionStore } from "../session-store";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 

@@ -5,16 +5,16 @@
 // artefacto guardado, desactiva el registro y revoca los grants del plugin (la
 // direccion segura: no dejar permisos de codigo que ya no esta).
 
-import { createPluginArtifactStore } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
-import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
-import { createPermissionStore } from "../../../../packages/permissions/src/store-factory.ts";
-import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
-import { createRateLimitStore } from "../../../../packages/auth/src/store-factory.ts";
-import { allowActionRequest } from "../../../../packages/auth/src/action-rate-limit.ts";
-import { clientIpFromHeaders } from "../../../../packages/auth/src/password-reset-rate-limit.ts";
+import { createPluginArtifactStore } from "@portaless/plugin-sandbox/plugin-artifacts";
+import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
+import { createRateLimitStore } from "@portaless/auth/store-factory";
+import { allowActionRequest } from "@portaless/auth/rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../../_shared/read-body-limited.js";
-import { emitActivity } from "../../../../packages/dashboard/src/activity/activity-store.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });

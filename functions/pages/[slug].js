@@ -24,12 +24,12 @@
 //   - SEO minimo: title/description/canonical/JSON-LD WebPage basico
 //     (el SeoHead/JsonLd completos de Astro quedan para el build).
 
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
 import { publicOriginFromEnv } from "../_shared/public-origin.js";
-import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema.ts";
-import { renderPage } from "../../packages/atomic-elements/src/render.ts";
-import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history.ts";
-import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter.ts";
+import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
+import { renderPage } from "@portaless/atomic-elements/render";
+import { projectPublicRevisionHistory } from "@portaless/atomic-elements/public-revision-history";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import { SITE_LANG } from "../../src/lib/site-lang.ts";
 import { t } from "../../src/lib/i18n.ts";
 import { renderPublicHeaderHtml } from "../../src/lib/public-shell.ts";
@@ -42,7 +42,7 @@ import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "../../packages/atomic-elements/src/themes/theme-pack.ts";
+} from "@portaless/atomic-elements/themes";
 
 // M-11: Cloudflare Pages must be able to load this Function without a
 // top-level node:fs import. The filesystem is loaded lazily and every read

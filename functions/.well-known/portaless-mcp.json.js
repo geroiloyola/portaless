@@ -5,7 +5,7 @@
 // discover the endpoint path, bearer-token contract, tool inventory and the
 // HTTPS/tunnel requirement. It contains no tokens, API keys or private data.
 
-import { buildMcpConnectionProfile } from "../../packages/mcp-server/src/interop/mcp-profile.ts";
+import { buildMcpConnectionProfile } from "@portaless/mcp-server/interop";
 import { publicOriginFromEnv } from "../_shared/public-origin.js";
 
 export async function onRequestGet(context) {

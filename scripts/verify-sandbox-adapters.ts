@@ -24,8 +24,8 @@
 import {
   CloudflareWorkersForPlatformsAdapter,
   DenoDeployAdapter,
-} from "../packages/plugin-sandbox/src/index";
-import type { SandboxExecutionInput, GrantedCapabilities } from "../packages/plugin-sandbox/src/types";
+} from "@portaless/plugin-sandbox";
+import type { SandboxExecutionInput, GrantedCapabilities } from "@portaless/plugin-sandbox/types";
 
 const TEST_PLUGIN_CODE = `
 globalThis.__portalessPluginEntry = async (payload) => ({ pong: true, echo: payload ?? null });

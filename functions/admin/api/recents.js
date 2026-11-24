@@ -8,7 +8,7 @@
 // (ver activity-store.ts). Solo lectura: las filas se escriben con
 // emitActivity() en cada punto de escritura, nunca desde aca.
 
-import { createActivityStore } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { createActivityStore } from "@portaless/dashboard/activity";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;

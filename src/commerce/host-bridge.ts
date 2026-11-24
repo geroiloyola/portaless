@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
-import type { PluginManifest, GrantedCapabilities } from "../../packages/plugin-sandbox/src/types";
-import { createPermissionStore } from "../../packages/permissions/src/store-factory";
+import { NodeIsolatedVmAdapter } from "@portaless/plugin-sandbox/node-isolated-vm";
+import type { PluginManifest, GrantedCapabilities } from "@portaless/plugin-sandbox/types";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
 
 // Host bridge del nodo Portaless (L5) para commerce-plugin.
 // El paquete packages/commerce-plugin solo contiene el artefacto del plugin

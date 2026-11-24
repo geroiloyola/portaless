@@ -146,8 +146,13 @@ describe("repository baseline scan and CLI --report behavior", () => {
     const report = analyzeTree(repoRoot);
     expect(report.scannedFiles).toBeGreaterThan(100);
     expect(report.layerViolations.byType["contracts-to-portaless"] ?? 0).toBe(0);
-    expect(report.deepSrcImports.packages).toBeGreaterThan(0);
-    expect(report.deepSrcImports.l5).toBeGreaterThan(0);
+    expect(report.layerViolations.total).toBe(0);
+    expect(report.cycles).toEqual([]);
+    expect(report.deepSrcImports.packages).toBe(0);
+    expect(report.deepSrcImports.l5).toBe(0);
+    expect(report.deepSrcImports.byTargetOrg.verared).toBe(0);
+    expect(report.deepSrcImports.byTargetOrg.geroiloyola).toBe(0);
+    expect(report.exportReady.ready).toBe(true);
   });
 
   test("CLI --report exits 0 and writes GITHUB_STEP_SUMMARY when configured", () => {

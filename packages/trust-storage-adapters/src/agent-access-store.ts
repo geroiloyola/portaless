@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 storage adapters for agent access policy (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import type { ContentPolicyManifest } from "@portaless/trust-layer/policy";
 import {
   AGENT_ACCESS_POLICY_DDL,

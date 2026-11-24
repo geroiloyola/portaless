@@ -178,6 +178,6 @@ export async function migrationStatus(env: MigrationGateEnv): Promise<MigrationS
 
 /** Import perezoso del driver SQLite (no arrastra better-sqlite3 al bundle edge). */
 async function openSqliteLazy(path: string): Promise<any> {
-  const { openSqlite } = await import("../../sqlite-driver/src/open.ts");
+  const { openSqlite } = await import("@portaless/sqlite-driver");
   return openSqlite(path);
 }

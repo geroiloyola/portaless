@@ -9,8 +9,8 @@
 // Mismo patron D1 -> SQLite -> InMemory que el resto del repo. DDL en
 // schema-additions/plugin-email-quota.sql (schema.sql lo regenera).
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
-import { PLUGIN_EMAIL_QUOTA_DDL } from "../../../persistence-migrations/src/ddl";
+import { openSqlite } from "@portaless/sqlite-driver";
+import { PLUGIN_EMAIL_QUOTA_DDL } from "@portaless/persistence-migrations/ddl";
 
 /**
  * Limite diario por defecto (50/dia por plugin). Es un DEFAULT, no un tope

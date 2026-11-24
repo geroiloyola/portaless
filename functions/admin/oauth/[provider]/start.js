@@ -8,7 +8,7 @@
 // HTTP en una IP de red local el navegador descartaria una cookie Secure y el
 // callback nunca encontraria el state.
 
-import { loadOAuthProviderConfig, generatePkcePair, buildAuthorizationUrl } from "../../../../packages/auth/src/oauth.ts";
+import { loadOAuthProviderConfig, generatePkcePair, buildAuthorizationUrl } from "@portaless/auth/oauth";
 import { publicOriginFromEnv } from "../../../_shared/public-origin.js";
 import { oauthStateCookie } from "../../../_shared/request-security.js";
 import { randomBytes } from "node:crypto";
