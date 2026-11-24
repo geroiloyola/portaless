@@ -46,9 +46,7 @@ import {
   InMemoryWebBotAuthNonceStore,
   type NonceStoreFactoryEnv,
 } from "./nonce-store";
-import {
-  type SafeFetcher,
-} from "../../../apw-resolver/src/federation/safe-fetch";
+import type { SafeFetcher } from "@portaless/net";
 import { DirectoryResolver, normalizeDirectoryOrigin } from "./directory-fetch";
 import { ResolutionBudget, resolutionClientBuckets } from "../net/resolution-budget";
 export { DIRECTORY_FETCH_IN_FLIGHT_MAX, DIRECTORY_FETCH_COLD_MAX, DIRECTORY_NEGATIVE_CACHE_MAX } from "./directory-fetch";
