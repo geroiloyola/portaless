@@ -29,8 +29,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { glob } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateManifest } from "../packages/plugin-sandbox/src/manifest/manifest-schema";
-import type { PluginManifest } from "../packages/plugin-sandbox/src/types";
+import { validateManifest } from "@portaless/plugin-sandbox/manifest-schema";
+import type { PluginManifest } from "@portaless/plugin-sandbox/types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");

@@ -14,7 +14,7 @@ import type {
   PluginTrustVote,
 } from "../plugin-registry";
 import type { CapabilityRequest } from "../../types";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface PluginRow {
   plugin_id: string;

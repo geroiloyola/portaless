@@ -30,7 +30,7 @@ import {
   createSiteSettingsStore,
   getAnalyticsSettings,
   buildAnalyticsJs,
-} from "../../packages/dashboard/src/site-settings/site-settings-store.ts";
+} from "@portaless/dashboard/site-settings";
 
 export async function onRequestGet(context) {
   const { env, next } = context;

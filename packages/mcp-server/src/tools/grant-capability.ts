@@ -16,9 +16,9 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PermissionStore } from "../../../permissions/src/permission-store";
-import type { PermissionSubjectType } from "../../../permissions/src/types";
-import type { CapabilityId } from "../../../plugin-sandbox/src/types";
+import type { PermissionStore } from "@portaless/permissions/store";
+import type { PermissionSubjectType } from "@portaless/permissions/types";
+import type { CapabilityId } from "@portaless/plugin-sandbox/types";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";

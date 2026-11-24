@@ -9,7 +9,7 @@ import type { PasswordResetRequest } from "../types";
 import type { PasswordResetStore } from "../password-reset-store";
 import { randomBytes } from "node:crypto";
 import { hashOpaqueToken } from "../token-hash";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 

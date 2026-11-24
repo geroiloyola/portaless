@@ -9,14 +9,14 @@
 
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("../../packages/mcp-server/src/permissions/agent-token-store", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../packages/mcp-server/src/permissions/agent-token-store")>();
+vi.mock("@portaless/mcp-server/agent-tokens", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@portaless/mcp-server/agent-tokens")>();
   const store = new original.InMemoryMcpAgentTokenStore();
   return { ...original, createMcpAgentTokenStore: async () => store, __sharedStore: store };
 });
 
 import * as mcpAgents from "../../functions/admin/api/mcp-agents";
-import * as tokenStoreModule from "../../packages/mcp-server/src/permissions/agent-token-store";
+import * as tokenStoreModule from "@portaless/mcp-server/agent-tokens";
 
 function ctx(opts: { user?: { username: string; role: string } | null; body?: unknown } = {}) {
   const request = new Request("http://x.test/admin/api/mcp-agents", {

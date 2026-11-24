@@ -5,5 +5,32 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "main": "src/index.ts",
-  "dependencies": {}
+  "dependencies": {},
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./src/types.ts"
+    },
+    "./store": {
+      "types": "./src/permission-store.ts",
+      "import": "./src/permission-store.ts"
+    },
+    "./store-factory": {
+      "types": "./src/store-factory.ts",
+      "import": "./src/store-factory.ts"
+    },
+    "./reader-bypass": {
+      "types": "./src/reader-bypass.ts",
+      "import": "./src/reader-bypass.ts"
+    },
+    "./ui": {
+      "types": "./src/permission-center-ui.ts",
+      "import": "./src/permission-center-ui.ts"
+    },
+    "./ui.css": "./src/permission-center-ui.css"
+  }
 }

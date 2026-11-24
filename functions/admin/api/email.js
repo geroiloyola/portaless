@@ -18,13 +18,13 @@
 
 import {
   createSiteSettingsStore,
-} from "../../../packages/dashboard/src/site-settings/site-settings-store.ts";
+} from "@portaless/dashboard/site-settings";
 import {
   emailSettingsToValues,
   hasSameEmailProviderIdentity,
   parseEmailSettings,
   sanitizeEmailInput,
-} from "../../../packages/email-transport/src/config.ts";
+} from "@portaless/email-transport/config";
 import { isTrustedRequestOrigin } from "../../_shared/request-origin.js";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 

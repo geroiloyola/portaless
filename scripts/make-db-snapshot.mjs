@@ -53,7 +53,7 @@ async function main() {
     throw new Error(`Versión histórica inválida: ${targetVersion}`);
   }
 
-  const { createPageStore } = await import("../packages/atomic-elements/src/persistence/store-factory.ts");
+  const { createPageStore } = await import("@portaless/atomic-elements/store-factory");
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: out });
   await store.save({
     version: "0.1",
@@ -64,7 +64,7 @@ async function main() {
   });
 
   // Una fila de skin con un accent reconocible (debe sobrevivir intacta).
-  const { openSqlite } = await import("../packages/sqlite-driver/src/open.ts");
+  const { openSqlite } = await import("@portaless/sqlite-driver");
   const db = await openSqlite(out);
   db.prepare("INSERT OR REPLACE INTO site_skin (site_id, skin, tokens_json, updated_at) VALUES (?, ?, ?, ?)").run(
     "default",

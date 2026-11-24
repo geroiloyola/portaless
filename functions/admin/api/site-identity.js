@@ -18,9 +18,9 @@
 
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { generateApwDid } from "@portaless/apw-resolver/did-apw";
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
+import { AuthService } from "@portaless/auth/service";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
-import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 
 const SITE_ID = "default";
 const ROTATE_CONFIRMATION = "ROTAR";

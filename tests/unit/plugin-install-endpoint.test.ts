@@ -16,7 +16,7 @@ vi.mock("@portaless/apw-resolver/resolver", () => ({
     state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` },
 }));
 
-vi.mock("../../packages/auth/src/auth-service", () => ({
+vi.mock("@portaless/auth/service", () => ({
   AuthService: class {
     async verifyStepUp(_u: string, c: { password?: string }) {
       return c.password === state.password ? { ok: true } : { ok: false, reason: "invalid_password" };

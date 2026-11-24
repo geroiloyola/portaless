@@ -4,9 +4,9 @@
 //
 // Las cookies llevan Secure solo en HTTPS, igual que login.js y start.js.
 
-import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore, createMfaChallengeStore } from "../../../../packages/auth/src/store-factory.ts";
-import { loadOAuthProviderConfig, exchangeCodeForProfile } from "../../../../packages/auth/src/oauth.ts";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore, createMfaChallengeStore } from "@portaless/auth/store-factory";
+import { loadOAuthProviderConfig, exchangeCodeForProfile } from "@portaless/auth/oauth";
 import { publicOriginFromEnv } from "../../../_shared/public-origin.js";
 import { sessionCookie, clearOAuthStateCookie } from "../../../_shared/request-security.js";
 

@@ -3,7 +3,7 @@
 // (reset | change), IP, navegador y pais/ciudad aproximados. Nunca la
 // contrasena. Cada usuario ve solo su propio historial.
 
-import { createPasswordEventStore } from "../../../packages/auth/src/password-event-store.ts";
+import { createPasswordEventStore } from "@portaless/auth/password-events";
 
 export async function onRequestGet(context) {
   const { data, env } = context;

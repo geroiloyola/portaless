@@ -109,7 +109,7 @@ function missingColumns(schema, contract) {
 
 export async function migrateD1(options) {
   const { MIGRATIONS, REQUIRED_SCHEMA_COLUMNS, BASELINE_REQUIRED_COLUMNS, assertCompatible, schemaVersion } =
-    await import("../packages/persistence-migrations/src/index.ts");
+    await import("@portaless/persistence-migrations");
   const tables = rows(options, "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").map((row) => row.name);
   if (tables.length === 0) return { from: 0, to: 0, applied: [], backupPath: null, dryRun: Boolean(options.dryRun) };
 

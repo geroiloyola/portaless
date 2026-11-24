@@ -6,9 +6,9 @@
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPageStore } from "../packages/atomic-elements/src/persistence/store-factory.ts";
-import { createCanonicalBackup, restoreCanonicalBackup } from "../packages/portability/src/index.ts";
-import { evaluateResourceBudget, REFERENCE_RESOURCE_BUDGET } from "../packages/deploy-engine/src/resource-budget.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createCanonicalBackup, restoreCanonicalBackup } from "@portaless/portability";
+import { evaluateResourceBudget, REFERENCE_RESOURCE_BUDGET } from "@portaless/deploy-engine/resource-budget";
 import { applySchema } from "./setup.mjs";
 
 const PAGES = Number(process.env.PORTALESS_RESOURCE_PAGES || 200);

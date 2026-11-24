@@ -25,22 +25,22 @@
 // Centro de Permisos: no hay "solicitud" que el lector pueda iniciar. Un DID
 // mal formado o cualquier otra capacidad para un subject reader: 400.
 
-import { createPermissionStore } from "../../../packages/permissions/src/store-factory.ts";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
 import {
   READER_SUBJECT_TYPE,
   isReaderDid,
   validateReaderGrant,
-} from "../../../packages/permissions/src/reader-bypass.ts";
-import { createPluginRegistryStore } from "../../../packages/plugin-sandbox/src/registry/store-factory.ts";
+} from "@portaless/permissions/reader-bypass";
+import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
 import { listPayPerCrawlProviders } from "@portaless/trust-layer/billing";
 import {
   BILLING_CAPABILITY,
   SETTLEMENT_SUBJECT_TYPE,
   isSettlementGrant,
 } from "@portaless/trust-layer/billing";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 
 function canWrite(role) {
   return role === "admin";

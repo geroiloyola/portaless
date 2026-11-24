@@ -19,9 +19,9 @@
 // `source` ("core" | "pack") dice de donde viene cada entrada.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
-import { coreCatalog } from "../../../atomic-elements/src/elements/element-pack";
-import { elementRegistry, elementPalette } from "../../../atomic-elements/src/elements/registry";
+import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
+import { coreCatalog } from "@portaless/atomic-elements/element-pack";
+import { elementRegistry, elementPalette } from "@portaless/atomic-elements/registry";
 import { ELEMENT_TYPE_LIST } from "./element-node-schema";
 
 const TOOL_NAME = "list_page_components";

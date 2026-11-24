@@ -35,7 +35,7 @@ import {
   isDuplicateColumnError,
   isUniqueViolation,
 } from "@portaless/trust-layer/site-trust";
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface SelfRow {
   site_id: string;

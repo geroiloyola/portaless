@@ -3,7 +3,7 @@
 // better-sqlite3 via openSqlite(). Uso: await SqlitePermissionStore.open(path).
 import type { PermissionGrant, PermissionSubject } from "../types";
 import type { PermissionStore } from "../permission-store";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface GrantRow {
   subject_type: string; subject_id: string; subject_display_name: string;

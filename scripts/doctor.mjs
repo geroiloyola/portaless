@@ -20,8 +20,8 @@ async function main() {
     pathArg >= 0 ? args[pathArg + 1] : process.env.PORTALESS_SQLITE_PATH || "./portaless.db"
   );
 
-  const { schemaVersion } = await import("../packages/persistence-migrations/src/index.ts");
-  const { migrationStatus } = await import("../packages/persistence-migrations/src/gate.ts");
+  const { schemaVersion } = await import("@portaless/persistence-migrations");
+  const { migrationStatus } = await import("@portaless/persistence-migrations/gate");
 
   console.log("Portaless doctor");
   console.log(`  base: ${sqlitePath}`);
@@ -33,7 +33,7 @@ async function main() {
     return;
   }
 
-  const { openSqlite } = await import("../packages/sqlite-driver/src/open.ts");
+  const { openSqlite } = await import("@portaless/sqlite-driver");
   const { REQUIRED_TABLES } = await import("./setup.mjs");
 
   const db = await openSqlite(sqlitePath);

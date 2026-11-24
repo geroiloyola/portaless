@@ -26,11 +26,11 @@
 // tiempo de call. Este schema solo valida la FORMA.
 
 import { z } from "zod";
-import { elementRegistry } from "../../../atomic-elements/src/elements/registry";
-import { elementPalette } from "../../../atomic-elements/src/elements/registry";
-import { coreCatalog } from "../../../atomic-elements/src/elements/element-pack";
-import type { ResolvedCatalog } from "../../../atomic-elements/src/elements/element-pack";
-import type { ElementNode } from "../../../atomic-elements/src/types";
+import { elementRegistry } from "@portaless/atomic-elements/registry";
+import { elementPalette } from "@portaless/atomic-elements/registry";
+import { coreCatalog } from "@portaless/atomic-elements/element-pack";
+import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
+import type { ElementNode } from "@portaless/atomic-elements/types";
 
 /** Tipos core, leidos del registro. Nunca los liste a mano. */
 export const ELEMENT_TYPE_LIST: [string, ...string[]] = [

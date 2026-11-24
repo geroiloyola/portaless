@@ -5,7 +5,7 @@ import type { ElementPack } from "../../elements/element-pack";
 import { validateElementPack } from "../../elements/element-pack";
 import type { ElementPackStore } from "../element-pack-store";
 import { demoElementPack } from "../element-pack-store";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import { elementRegistry } from "../../elements/registry";
 
 interface PackRow {

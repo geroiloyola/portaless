@@ -1,6 +1,6 @@
-import { createPageStore } from "../../../packages/atomic-elements/src/persistence/store-factory.ts";
-import { diffPageLayouts } from "../../../packages/atomic-elements/src/persistence/revision-diff.ts";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { diffPageLayouts } from "@portaless/atomic-elements/revision-diff";
+import { emitActivity } from "@portaless/dashboard/activity";
 
 function respond(body, status = 200) {
   return new Response(JSON.stringify(body), {

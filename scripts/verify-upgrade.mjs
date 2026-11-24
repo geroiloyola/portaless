@@ -19,16 +19,16 @@ async function main() {
   const dbPath = resolve(process.argv[2] || "");
   if (!dbPath || !existsSync(dbPath)) fail(`no existe la base: ${dbPath || "(sin path)"}`);
 
-  const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
-  const { schemaVersion, assertCompatible } = await import("../packages/persistence-migrations/src/index.ts");
-  const { migrationStatus } = await import("../packages/persistence-migrations/src/gate.ts");
+  const { migrateSqlite } = await import("@portaless/persistence-migrations/runner");
+  const { schemaVersion, assertCompatible } = await import("@portaless/persistence-migrations");
+  const { migrationStatus } = await import("@portaless/persistence-migrations/gate");
 
   const result = await migrateSqlite(dbPath);
   console.log(`[upgrade] migrado: v${result.from} -> v${result.to} (${result.applied.join(", ") || "sin cambios"})`);
   if (result.backupPath) console.log(`[upgrade] backup: ${result.backupPath}`);
   if (result.from < schemaVersion() && !result.backupPath) fail("el upgrade no creó backup previo");
 
-  const { openSqlite } = await import("../packages/sqlite-driver/src/open.ts");
+  const { openSqlite } = await import("@portaless/sqlite-driver");
   const db = await openSqlite(dbPath);
   try {
     const row = db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get();
@@ -49,7 +49,7 @@ async function main() {
   }
 
   // El sitio arranca con los datos intactos: la pagina sembrada sigue ahi.
-  const { createPageStore } = await import("../packages/atomic-elements/src/persistence/store-factory.ts");
+  const { createPageStore } = await import("@portaless/atomic-elements/store-factory");
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: dbPath });
   const page = await store.load("upgrade-marker");
   if (!page) fail("la pagina sembrada 'upgrade-marker' desaparecio");

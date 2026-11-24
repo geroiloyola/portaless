@@ -17,7 +17,7 @@
 // emisor, defensa en profundidad): valores sin llaves, punto y coma,
 // comillas ni caracteres de markup, largo maximo 40.
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import type { DesignTokens, SkinManifest } from "../types";
 import { DEFAULT_DARK_TOKENS, TOKEN_TO_CSS_VAR } from "./tokens";
 import { resolveSkin, StaticSkinSource } from "./loader";

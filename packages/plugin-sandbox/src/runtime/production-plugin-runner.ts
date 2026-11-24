@@ -41,8 +41,8 @@ import type {
   GrantedCapabilities,
   CapabilityHostBridge,
 } from "../types";
-import { createPermissionStore } from "../../../permissions/src/store-factory";
-import type { PermissionStore } from "../../../permissions/src/permission-store";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
+import type { PermissionStore } from "@portaless/permissions/store";
 
 export interface ProductionPluginRunnerEnv {
   DB?: unknown;

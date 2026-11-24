@@ -16,14 +16,14 @@
 // archivo no distingue el transporte: solo propaga el resolver.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "../../atomic-elements/src/persistence/page-store";
-import type { ResolvedCatalog } from "../../atomic-elements/src/elements/element-pack";
-import type { ThemePack } from "../../atomic-elements/src/themes/theme-pack";
-import type { PermissionStore } from "../../permissions/src/permission-store";
-import type { PluginRegistryStore } from "../../plugin-sandbox/src/registry/plugin-registry";
+import type { PageStore } from "@portaless/atomic-elements/page-store";
+import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
+import type { ThemePack } from "@portaless/atomic-elements/themes";
+import type { PermissionStore } from "@portaless/permissions/store";
+import type { PluginRegistryStore } from "@portaless/plugin-sandbox/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
 import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
-import type { SiteSkinStore } from "../../dashboard/src/skin-engine/site-skin-store";
+import type { SiteSkinStore } from "@portaless/dashboard/skin-store";
 import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";
 import { registerUpdatePageTool } from "./tools/update-page";

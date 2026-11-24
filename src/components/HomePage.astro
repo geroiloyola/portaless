@@ -8,12 +8,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
 import SeoHead from "../components/SeoHead.astro";
 import { getCollection } from "astro:content";
-import { renderPage } from "../../packages/atomic-elements/src/render";
+import { renderPage } from "@portaless/atomic-elements/render";
 import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "../../packages/atomic-elements/src/themes/theme-pack";
+} from "@portaless/atomic-elements/themes";
 import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
 import { getSiteUrl } from "../lib/seo";
 import { joinSiteUrl, publishedPosts } from "../lib/llms-txt";
@@ -24,7 +24,7 @@ import {
   localePath,
   type Locale,
 } from "../lib/i18n";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "@portaless/atomic-elements/types";
 
 interface Props {
   layout: PageLayout;

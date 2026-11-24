@@ -13,7 +13,7 @@ import {
   InMemoryCapabilityTokenStore,
   type CapabilityTokenStore,
 } from "./capability-token-store";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 interface EnvLike {
   DB?: unknown;

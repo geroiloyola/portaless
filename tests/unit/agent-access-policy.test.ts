@@ -379,8 +379,8 @@ describe("el feed de actividad registra el cambio de politica (6a)", () => {
       const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
       return { ...original, createAgentAccessPolicyStore: async () => sharedStore };
     });
-    vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/dashboard/src/activity/activity-store")>();
+    vi.doMock("@portaless/dashboard/activity", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/dashboard/activity")>();
       return {
         ...original,
         emitActivity: async (_env: unknown, input: any) => {
@@ -488,8 +488,8 @@ describe("el feed de actividad registra el cambio de politica (6a)", () => {
     // reflejar el segundo, asi que se observa el store en el momento en que se
     // llama emitActivity, no el body de la peticion.
     let savedAtEmit: string | undefined;
-    vi.doMock("../../packages/dashboard/src/activity/activity-store", async (importOriginal) => {
-      const original = await importOriginal<typeof import("../../packages/dashboard/src/activity/activity-store")>();
+    vi.doMock("@portaless/dashboard/activity", async (importOriginal) => {
+      const original = await importOriginal<typeof import("@portaless/dashboard/activity")>();
       return {
         ...original,
         emitActivity: async (_env: unknown, input: any) => {

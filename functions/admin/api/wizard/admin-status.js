@@ -29,7 +29,7 @@
 //     error le decia al usuario "crea tu admin" aunque ya existiera.
 //   - adminExists cuenta solo usuarios con rol admin.
 
-import { createUsersStore } from "../../../../packages/auth/src/store-factory";
+import { createUsersStore } from "@portaless/auth/store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });

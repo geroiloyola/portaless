@@ -15,8 +15,8 @@
 // .defaultProps con el mismo tipo (tests/unit/wizard-intent.test.ts lo
 // verifica, porque validatePageLayout NO valida props).
 
-import type { PageLayout, ElementNode, ElementType } from "../../atomic-elements/src/types";
-import { SHOP_PATH } from "../../atomic-elements/src/seo/urls.ts";
+import type { PageLayout, ElementNode, ElementType } from "@portaless/atomic-elements/types";
+import { SHOP_PATH } from "@portaless/atomic-elements/seo-urls";
 
 export interface IntentInput {
   siteName: string;

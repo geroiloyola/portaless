@@ -63,12 +63,12 @@ function writeJsonAtomic(path, value) {
 }
 
 async function defaultUsersStoreFactory(sqlitePath) {
-  const { SqliteUsersStore } = await import("../packages/auth/src/stores/sqlite-users-store.ts");
+  const { SqliteUsersStore } = await import("@portaless/auth/sqlite-users-store");
   return SqliteUsersStore.open(sqlitePath);
 }
 
 async function defaultEnsureInitialAdmin(store, username, password) {
-  const { ensureInitialAdmin } = await import("../packages/auth/src/users-store.ts");
+  const { ensureInitialAdmin } = await import("@portaless/auth/users-store");
   return ensureInitialAdmin(store, username, password);
 }
 
@@ -81,7 +81,7 @@ async function defaultApplySchema(sqlitePath) {
 // schema.sql (que crea la forma completa) y registra/aplica los deltas. En una
 // base mas nueva que el codigo, migrateSqlite lanza (fail-closed).
 async function defaultMigrate(sqlitePath) {
-  const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
+  const { migrateSqlite } = await import("@portaless/persistence-migrations/runner");
   return migrateSqlite(sqlitePath);
 }
 

@@ -18,8 +18,8 @@ async function main() {
     pathArg >= 0 ? args[pathArg + 1] : process.env.PORTALESS_SQLITE_PATH || "./portaless.db"
   );
 
-  const { migrateSqlite } = await import("../packages/persistence-migrations/src/runner.ts");
-  const { schemaVersion } = await import("../packages/persistence-migrations/src/index.ts");
+  const { migrateSqlite } = await import("@portaless/persistence-migrations/runner");
+  const { schemaVersion } = await import("@portaless/persistence-migrations");
 
   console.log(`[migrate] base: ${sqlitePath}`);
   console.log(`[migrate] version que espera el codigo: ${schemaVersion()}${dryRun ? " (dry-run)" : ""}`);

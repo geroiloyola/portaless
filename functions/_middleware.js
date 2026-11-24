@@ -51,7 +51,7 @@ import { createAgentAccessPolicyStore } from "@portaless/trust-storage-adapters"
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
 import { publicOriginFromEnv } from "./_shared/public-origin.js";
 import { withSecurityHeaders } from "./_shared/security-headers.js";
-import { migrationStatus } from "../packages/persistence-migrations/src/gate.ts";
+import { migrationStatus } from "@portaless/persistence-migrations/gate";
 import { resolvePayPerCrawl } from "@portaless/trust-layer/billing";
 import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
 import { readerHostFromOperator } from "@portaless/apw-resolver/scoring";

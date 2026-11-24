@@ -4,6 +4,6 @@
 // Ver docs/design/home-redesign.md y docs/i18n-design.md.
 import HomePage from "../components/HomePage.astro";
 import home from "../content/home.json";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "@portaless/atomic-elements/types";
 ---
 <HomePage layout={home as unknown as PageLayout} locale="en" canonPath="/" />

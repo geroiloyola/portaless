@@ -9,9 +9,9 @@
 // via store-factory.ts, coherente con el endpoint de login
 // (functions/admin/login.js).
 
-import { AuthService } from "../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../packages/auth/src/store-factory.ts";
-import { isPublicAdminPath } from "../../packages/auth/src/public-admin-paths.ts";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
+import { isPublicAdminPath } from "@portaless/auth/public-admin-paths";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { assertBodySizeLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 

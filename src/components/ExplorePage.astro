@@ -9,12 +9,12 @@
 // canonico (isPubliclyPublishable de deploy-engine).
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
-import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import { ecosystemPageTheme } from "../lib/ecosystem-theme";
 import { contentPageHref } from "../lib/routes";
 import { publishedPosts } from "../lib/llms-txt";
 import type { Locale } from "../lib/i18n";
-import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
+import type { ElementNode, PageLayout } from "@portaless/atomic-elements/types";
 
 interface Props { locale: Locale; }
 const { locale } = Astro.props;

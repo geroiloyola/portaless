@@ -25,7 +25,7 @@ import { validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "@portale
 import { createAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
 import { resolveContentPolicy, CONTENT_POLICY_WELL_KNOWN_PATH } from "@portaless/trust-layer/policy";
 import { defaultContentPolicy } from "@portaless/trust-layer/policy";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
 import { readUnsignedBotRejections } from "@portaless/trust-storage-adapters";
 import { trustedIngressStatus } from "@portaless/trust-layer/net";
 

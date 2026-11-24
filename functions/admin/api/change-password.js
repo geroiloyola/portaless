@@ -6,10 +6,10 @@
 // historial (hora, IP, ubicacion aproximada).
 // Minimo de 12 caracteres, igual que el primer admin de /setup (ADR-002).
 
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore, createPasswordResetStore } from "../../../packages/auth/src/store-factory.ts";
-import { createPasswordEventStore, passwordEventContextFromRequest } from "../../../packages/auth/src/password-event-store.ts";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore, createPasswordResetStore } from "@portaless/auth/store-factory";
+import { createPasswordEventStore, passwordEventContextFromRequest } from "@portaless/auth/password-events";
+import { emitActivity } from "@portaless/dashboard/activity";
 
 const MIN_PASSWORD_LENGTH = 12;
 

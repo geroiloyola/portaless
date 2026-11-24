@@ -96,7 +96,7 @@ async function main() {
   }
 
   const password = process.env.PORTALESS_ADMIN_PASSWORD || randomBytes(18).toString("base64url");
-  const { hashPassword } = await import("../packages/auth/src/password.ts");
+  const { hashPassword } = await import("@portaless/auth/password");
   const hash = await hashPassword(password);
 
   const dir = mkdtempSync(join(tmpdir(), "portaless-setup-d1-"));

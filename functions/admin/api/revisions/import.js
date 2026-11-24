@@ -1,4 +1,4 @@
-import { createPageStore } from "../../../../packages/atomic-elements/src/persistence/store-factory.ts";
+import { createPageStore } from "@portaless/atomic-elements/store-factory";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../../_shared/read-body-limited.js";
 
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;

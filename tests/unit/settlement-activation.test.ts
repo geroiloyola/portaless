@@ -10,17 +10,17 @@ const state = vi.hoisted(() => ({
   identity: { domain: "site.example" } as { domain: string } | null,
 }));
 
-vi.mock("../../packages/permissions/src/store-factory.ts", () => ({ createPermissionStore: async () => state.permissions }));
+vi.mock("@portaless/permissions/store-factory", () => ({ createPermissionStore: async () => state.permissions }));
 vi.mock("@portaless/trust-storage-adapters", async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   createSettlementActivationStore: async () => state.activations,
   createSiteIdentityStore: async () => ({ get: async () => state.identity }),
 }));
-vi.mock("../../packages/plugin-sandbox/src/registry/store-factory.ts", () => ({
+vi.mock("@portaless/plugin-sandbox/store-factory", () => ({
   createPluginRegistryStore: async () => ({ list: async () => [] }),
 }));
-vi.mock("../../packages/auth/src/store-factory.ts", () => ({ createUsersStore: async () => ({}), createSessionStore: async () => ({}) }));
-vi.mock("../../packages/auth/src/auth-service.ts", () => ({
+vi.mock("@portaless/auth/store-factory", () => ({ createUsersStore: async () => ({}), createSessionStore: async () => ({}) }));
+vi.mock("@portaless/auth/service", () => ({
   AuthService: class {
     async verifyStepUp(_u: string, f: { password?: string }) {
       return f.password === "correcta" ? { ok: true } : { ok: false, reason: "invalid_password" };

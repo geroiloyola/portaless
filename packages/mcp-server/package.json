@@ -9,5 +9,19 @@
   "bin": {},
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./interop": {
+      "types": "./src/interop/mcp-profile.ts",
+      "import": "./src/interop/mcp-profile.ts"
+    },
+    "./agent-tokens": {
+      "types": "./src/permissions/agent-token-store.ts",
+      "import": "./src/permissions/agent-token-store.ts"
+    }
   }
 }

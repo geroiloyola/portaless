@@ -1,8 +1,8 @@
 import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT } from "@portaless/trust-layer/net";
 import { createResolutionBudgetConfigStore } from "@portaless/trust-storage-adapters";
-import { emitActivity } from "../../../packages/dashboard/src/activity/activity-store.ts";
-import { AuthService } from "../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../packages/auth/src/store-factory.ts";
+import { emitActivity } from "@portaless/dashboard/activity";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 storage adapters for resolution budget configuration (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   INVALID_RESOLUTION_BUDGET_CONFIG,
   RESOLUTION_BUDGET_CONFIG_CONFLICT,

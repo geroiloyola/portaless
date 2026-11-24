@@ -22,10 +22,10 @@
 // paquete atomic-elements no conoce /admin ni sesiones; la llamada a
 // /admin/api/product-preview con la sesion del admin vive aqui.
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import "../../../packages/atomic-elements/src/editor/editor-styles.css";
+import "@portaless/atomic-elements/editor-styles.css";
 // El canvas renderiza los elementos con el mismo registry: necesita el layout
 // de las grillas del core (ae-columns / ae-product-grid / ae-gallery).
-import "../../../packages/atomic-elements/src/styles/elements.css";
+import "@portaless/atomic-elements/elements.css";
 ---
 <BaseLayout title="Editor Visual — Portaless Admin">
   <div class="pc-page-header">
@@ -110,13 +110,13 @@ import "../../../packages/atomic-elements/src/styles/elements.css";
 </style>
 
 <script>
-  import { mountAtomicElementsEditor } from "../../../packages/atomic-elements/src/editor/editor-app";
-  import type { ProductPreviewQuery } from "../../../packages/atomic-elements/src/editor/product-preview-loader";
-  import type { PageStore } from "../../../packages/atomic-elements/src/persistence/page-store";
-  import type { PageLayout } from "../../../packages/atomic-elements/src/types";
-  import type { ResolvedCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
-  import { resolveCatalog } from "../../../packages/atomic-elements/src/elements/element-pack";
-  import { elementRegistry, elementPalette } from "../../../packages/atomic-elements/src/elements/registry";
+  import { mountAtomicElementsEditor } from "@portaless/atomic-elements/editor";
+  import type { ProductPreviewQuery } from "@portaless/atomic-elements/product-preview-loader";
+  import type { PageStore } from "@portaless/atomic-elements/page-store";
+  import type { PageLayout } from "@portaless/atomic-elements/types";
+  import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
+  import { resolveCatalog } from "@portaless/atomic-elements/element-pack";
+  import { elementRegistry, elementPalette } from "@portaless/atomic-elements/registry";
   import { ROUTES } from "../../lib/routes";
 
   const loadingEl = document.getElementById("editor-loading")!;

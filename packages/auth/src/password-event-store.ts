@@ -11,7 +11,7 @@
 // util para investigar un acceso indebido; si hace falta, se puede agregar
 // una purga por antiguedad sobre occurred_at.
 
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import { clientIpFromHeaders } from "./password-reset-rate-limit";
 
 export type PasswordEventKind = "reset" | "change";

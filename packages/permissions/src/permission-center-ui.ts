@@ -32,7 +32,7 @@ import {
   RISK_ORDER,
   type CapabilityDefinition,
   type CapabilityRisk,
-} from "../../plugin-sdk/src/index";
+} from "@portaless/plugin-sdk/source";
 import { READ_GOVERNANCE_BYPASS_CAPABILITY, isReaderDid, readerSubject } from "./reader-bypass";
 
 export interface PermissionCenterOptions {

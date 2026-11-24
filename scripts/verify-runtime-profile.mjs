@@ -2,7 +2,7 @@
 // C37/C38: verify the minimal runtime tree and private profile invariants.
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { MINIMAL_RUNTIME_PROFILE, validatePrivateNetworkProfile } from "../packages/deploy-engine/src/runtime-profile.ts";
+import { MINIMAL_RUNTIME_PROFILE, validatePrivateNetworkProfile } from "@portaless/deploy-engine/runtime-profile";
 
 const root = resolve(process.argv[2] || process.cwd());
 const errors = [];

@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 storage adapters for Cloud Images (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import { parseSidecar, type CloudImageSidecar, type DeclaredOrigin } from "@portaless/cloud-images";
 import {
   CLOUD_IMAGES_HASH_INDEX_DDL,

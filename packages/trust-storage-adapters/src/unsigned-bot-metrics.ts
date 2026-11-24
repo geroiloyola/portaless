@@ -1,5 +1,5 @@
 // Portaless node SQLite/D1 persistence for unsigned-bot rejection counters (Node-L0).
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   BOT_FAMILIES,
   unsignedBotFamily,

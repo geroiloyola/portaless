@@ -1,7 +1,7 @@
 // v0.0.9.27 -- Inicia el registro de la GitHub App de esta instancia via manifiesto.
-import { createDeploymentOAuthStore } from "../../../../../../packages/deploy-engine/src/oauth-store";
-import { createProviderConfigStore, GITHUB_APP_PROVIDER_ID } from "../../../../../../packages/deploy-engine/src/providers-config-store";
-import { beginGitHubManifest } from "../../../../../../packages/deploy-engine/src/github-manifest";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { createProviderConfigStore, GITHUB_APP_PROVIDER_ID } from "@portaless/deploy-engine/providers-config-store";
+import { beginGitHubManifest } from "@portaless/deploy-engine/github-manifest";
 import { publicOriginFromEnv } from "../../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {

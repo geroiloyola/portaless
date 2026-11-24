@@ -1,0 +1,16 @@
+{
+  "name": "@portaless/sqlite-driver",
+  "version": "0.1.0",
+  "description": "Shared SQLite driver opener for self-hosted Portaless stores (Node-L0).",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "main": "./src/open.ts",
+  "exports": {
+    ".": {
+      "types": "./src/open.ts",
+      "import": "./src/open.ts"
+    }
+  },
+  "dependencies": {}
+}

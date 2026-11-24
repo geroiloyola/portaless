@@ -1,4 +1,4 @@
-import { openSqlite } from "../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   InMemoryAuthorizedAgentsStore,
   type AuthorizedAgent,

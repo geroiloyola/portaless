@@ -41,8 +41,8 @@ import { evaluatePolicy, projectTrustView } from "@portaless/apw-resolver/scorin
 import { scoreSiteDimensions } from "@portaless/apw-resolver/scoring";
 import { buildSiteSvriDetail } from "@portaless/apw-resolver/scoring";
 import { resolveReaderState, defaultReaderResolvers } from "@portaless/apw-resolver/scoring";
-import { createPermissionStore } from "../../packages/permissions/src/store-factory.ts";
-import { hasReadGovernanceBypass } from "../../packages/permissions/src/reader-bypass.ts";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
+import { hasReadGovernanceBypass } from "@portaless/permissions/reader-bypass";
 
 const SITE_ID = "default";
 

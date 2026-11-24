@@ -19,8 +19,8 @@
 // esos se informan como already_emitted. Las entradas sin att_jws (anteriores
 // a E-9) no se pueden inspeccionar.
 
-import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
-import { createUsersStore, createSessionStore } from "../../../../packages/auth/src/store-factory.ts";
+import { AuthService } from "@portaless/auth/service";
+import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
 import { appendAttestation } from "@portaless/apw-resolver/did-apw";
 import { signSiteJws, ATTESTATION_TYP } from "@portaless/apw-resolver/did-apw";

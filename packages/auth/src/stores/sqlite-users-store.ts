@@ -21,7 +21,7 @@ import type { UserRecord, Role } from "../types";
 import type { UsersStore } from "../users-store";
 import { oauthFallbackPasswordHash } from "../users-store";
 import { hashPassword } from "../password";
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 
 const USERS_COLUMNS = [
   "username",

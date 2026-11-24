@@ -21,7 +21,7 @@ import type { APIRoute } from "astro";
 import {
   buildAnalyticsJs,
   parseAnalyticsSettings,
-} from "../../../packages/dashboard/src/site-settings/analytics-config";
+} from "@portaless/dashboard/analytics-config";
 
 export const GET: APIRoute = () => {
   const settings = parseAnalyticsSettings({

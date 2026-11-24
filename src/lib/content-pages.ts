@@ -12,11 +12,11 @@
 // traducciones bajo su prefijo de locale. Asi una pagina cuya primaria es
 // espanol expone su ingles en /en/... y viceversa -- el idioma "de casa" de
 // cada pagina es el de su archivo primario, no una constante global.
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "@portaless/atomic-elements/types";
 import { isLocale, type Locale } from "./i18n";
 import { contentPageHref as routeHref } from "./routes";
 import { SITE_LANG } from "./site-lang";
-import { isPubliclyPublishable } from "../../packages/deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 /** Idioma por defecto de una pagina de contenido sin declararlo (el del sitio). */
 export const CONTENT_PRIMARY_LOCALE: Locale = isLocale(SITE_LANG) ? SITE_LANG : DEFAULT_LOCALE;

@@ -10,7 +10,7 @@
 // vive en ./analytics-config.ts: es pura, sin imports de SQLite, para que
 // el build estatico de Astro pueda importarla sin arrastrar better-sqlite3.
 
-import { openSqlite } from "../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import {
   analyticsSettingsToValues,
   getAnalyticsSettings as readAnalyticsValues,

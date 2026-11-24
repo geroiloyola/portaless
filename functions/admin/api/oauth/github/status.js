@@ -1,6 +1,6 @@
-import { createDeploymentOAuthStore } from "../../../../../packages/deploy-engine/src/oauth-store";
-import { GITHUB_PROVIDER } from "../../../../../packages/deploy-engine/src/github-oauth";
-import { createProviderConfigStore, GITHUB_APP_PROVIDER_ID } from "../../../../../packages/deploy-engine/src/providers-config-store";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { GITHUB_PROVIDER } from "@portaless/deploy-engine/github-oauth";
+import { createProviderConfigStore, GITHUB_APP_PROVIDER_ID } from "@portaless/deploy-engine/providers-config-store";
 
 function requireAdmin(context) {
   // Mismo contrato que el resto de /admin: _middleware.js expone context.data.user.

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "../packages/atomic-elements/src/persistence/public-revision-history.ts";
-import { isPubliclyPublishable } from "../packages/deploy-engine/src/draft-filter.ts";
+import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "@portaless/atomic-elements/public-revision-history";
+import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 /** Generate history from approved store rows, never copy a pre-existing tree. */
 export async function writePublicRevisionHistories(stageRoot, layouts, pageStore) {

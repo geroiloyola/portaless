@@ -1,4 +1,4 @@
-import { sendEmail } from "../../packages/email-transport/src/send.ts";
+import { sendEmail } from "@portaless/email-transport/send";
 
 let lastError;
 for (let attempt = 0; attempt < 20; attempt++) {

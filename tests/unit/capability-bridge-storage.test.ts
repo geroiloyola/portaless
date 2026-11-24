@@ -13,7 +13,7 @@ const tmp = mkdtempSync(join(tmpdir(), "portaless-bridge-storage-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const sharedTokenStore = new InMemoryCapabilityTokenStore();
-vi.mock("../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory", () => ({
+vi.mock("@portaless/plugin-sandbox/capability-token-store-factory", () => ({
   createCapabilityTokenStore: vi.fn(async () => sharedTokenStore),
 }));
 

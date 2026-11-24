@@ -16,7 +16,7 @@ import {
   restoreCanonicalBackup,
   secretEnvironmentKeys,
   verifyCanonicalBackup,
-} from "../packages/portability/src/index.ts";
+} from "@portaless/portability";
 
 function arg(name, fallback = null) {
   const index = process.argv.indexOf(name);

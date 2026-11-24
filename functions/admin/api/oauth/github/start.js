@@ -1,5 +1,5 @@
-import { createDeploymentOAuthStore } from "../../../../../packages/deploy-engine/src/oauth-store";
-import { readGitHubOAuthConfig, beginGitHubOAuth } from "../../../../../packages/deploy-engine/src/github-oauth";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { readGitHubOAuthConfig, beginGitHubOAuth } from "@portaless/deploy-engine/github-oauth";
 import { publicOriginFromEnv } from "../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {

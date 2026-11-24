@@ -28,11 +28,11 @@ import { InMemoryCapabilityTokenStore } from "../../packages/plugin-sandbox/src/
 
 const sharedTokenStore = new InMemoryCapabilityTokenStore();
 
-vi.mock("../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory", () => ({
+vi.mock("@portaless/plugin-sandbox/capability-token-store-factory", () => ({
   createCapabilityTokenStore: vi.fn(async () => sharedTokenStore),
 }));
 
-vi.mock("../../packages/atomic-elements/src/persistence/store-factory", () => ({
+vi.mock("@portaless/atomic-elements/store-factory", () => ({
   createPageStore: vi.fn(async () => ({
     load: vi.fn(async (slug: string) =>
       slug === "existing-page" ? { slug: "existing-page", title: "Pagina existente" } : null

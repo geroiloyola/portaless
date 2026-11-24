@@ -12,7 +12,7 @@ import type { PageProposal, PageRevisionEvidence, PageRevisionMetadata, PageSave
 import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
-import { openSqlite } from "../../../../sqlite-driver/src/open";
+import { openSqlite } from "@portaless/sqlite-driver";
 import { isPubliclyPublishable } from "../draft-filter";
 
 interface PageRow {

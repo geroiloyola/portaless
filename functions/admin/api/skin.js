@@ -20,8 +20,8 @@ import {
   isSkinName,
   SKIN_NAMES,
   SITE_ID,
-} from "../../../packages/dashboard/src/skin-engine/site-skin-store.ts";
-import { DEFAULT_TOKENS } from "../../../packages/dashboard/src/skin-engine/tokens.ts";
+} from "@portaless/dashboard/skin-store";
+import { DEFAULT_TOKENS } from "@portaless/dashboard/skin-tokens";
 
 function canWrite(role) {
   return role === "admin";

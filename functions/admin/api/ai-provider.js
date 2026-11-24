@@ -5,7 +5,7 @@
 // This endpoint exists so an operator can verify which endpoint/model and
 // capabilities are active before an acceptance run.
 
-import { loadOpenAICompatibleConfig } from "../../../packages/ai-provider/src/index.ts";
+import { loadOpenAICompatibleConfig } from "@portaless/ai-provider";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

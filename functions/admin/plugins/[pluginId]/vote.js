@@ -14,7 +14,7 @@
 // SiteTrustScore de sitios completos (ese es un dominio distinto, ver
 // packages/trust-layer -- documentado por separado).
 
-import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
+import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
 
 function canVote(role) {
   return role === "admin";

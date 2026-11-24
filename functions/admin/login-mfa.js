@@ -14,12 +14,12 @@
 // login.js lo guardo. Los fallos se cuentan ahi (maximo MFA_MAX_ATTEMPTS),
 // asi que repartir intentos entre isolates no saltea el limite.
 
-import { AuthService } from "../../packages/auth/src/auth-service.ts";
+import { AuthService } from "@portaless/auth/service";
 import {
   createUsersStore,
   createSessionStore,
   createMfaChallengeStore,
-} from "../../packages/auth/src/store-factory.ts";
+} from "@portaless/auth/store-factory";
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { sessionCookie } from "../_shared/request-security.js";

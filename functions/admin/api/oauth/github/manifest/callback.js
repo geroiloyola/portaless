@@ -1,7 +1,7 @@
 // v0.0.9.27 -- GitHub redirige aca con ?code&state tras crear la App.
-import { createDeploymentOAuthStore } from "../../../../../../packages/deploy-engine/src/oauth-store";
-import { createProviderConfigStore } from "../../../../../../packages/deploy-engine/src/providers-config-store";
-import { completeGitHubManifest, escapeHtml } from "../../../../../../packages/deploy-engine/src/github-manifest";
+import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
+import { createProviderConfigStore } from "@portaless/deploy-engine/providers-config-store";
+import { completeGitHubManifest, escapeHtml } from "@portaless/deploy-engine/github-manifest";
 import { publicOriginFromEnv } from "../../../../../_shared/public-origin.js";
 
 function requireAdmin(context) {

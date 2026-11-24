@@ -4,9 +4,9 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
-import type { PluginManifest, GrantedCapabilities } from "../../packages/plugin-sandbox/src/types";
-import { createPermissionStore } from "../../packages/permissions/src/store-factory";
+import { NodeIsolatedVmAdapter } from "@portaless/plugin-sandbox/node-isolated-vm";
+import type { PluginManifest, GrantedCapabilities } from "@portaless/plugin-sandbox/types";
+import { createPermissionStore } from "@portaless/permissions/store-factory";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(__dirname, "../../packages/posse-syndicator-plugin");
