@@ -17,12 +17,12 @@ import {
   verifyWebBotAuthRequest,
   __resetDirectoryCacheForTests,
   __resetNonceStoreForTests,
-} from "../../packages/trust-layer/src/webbotauth/verify";
+} from "@verared/trust-layer";
 import {
   createWebBotAuthNonceStore,
   __resetNonceStoreFactoryForTests,
 } from "@portaless/trust-storage-adapters";
-import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
+import { buildSignatureBase, parseSignatureInput } from "@verared/trust-layer";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "test-key-1";

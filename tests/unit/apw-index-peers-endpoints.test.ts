@@ -3,8 +3,8 @@
 // (admin). El nucleo NO se mockea en el happy path: material real (claves,
 // statements, cadenas); solo la red y la resolucion son fixtures.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { InMemoryWitnessIndexStore } from "../../packages/apw-resolver/src/did-apw/witness-index-store";
-import { buildIndexDocument } from "../../packages/apw-resolver/src/did-apw/witness-index";
+import { InMemoryWitnessIndexStore } from "@verared/apw/did-apw";
+import { buildIndexDocument } from "@verared/apw/did-apw";
 import {
   appendIndexChain,
   indexHistoryOf,
@@ -29,8 +29,8 @@ vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identityRow }),
 }));
 
-vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+vi.mock("@verared/apw/did-apw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/did-apw")>();
   return {
     ...actual,
     resolveApwHistory: async (domain: string) =>
@@ -105,7 +105,7 @@ async function seedPeerDoc() {
   state.docs["t1.example"] = await witnessDocOf(w1);
 
   const peerStore = new InMemoryWitnessIndexStore();
-  const { syncWitnessIndex } = await import("../../packages/apw-resolver/src/did-apw/witness-index");
+  const { syncWitnessIndex } = await import("@verared/apw/did-apw");
   const deps = {
     fetchText: async (url: string) => {
       const m = url.match(/^https:\/\/([^/]+)\/\.well-known\/apw-witnesses\.json/);

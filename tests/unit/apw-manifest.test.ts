@@ -8,8 +8,8 @@ import {
   serializeApwManifest,
   parseApwManifest,
   APW_MANIFEST_VERSION,
-} from "../../packages/apw-resolver/src/manifest";
-import { resolveApwManifest } from "../../packages/apw-resolver/src/index";
+} from "@verared/apw/resolver";
+import { resolveApwManifest } from "@verared/apw/resolver";
 
 describe("buildApwManifest / serializeApwManifest", () => {
   it("construye un manifiesto valido con trustUrl derivado del siteId", () => {

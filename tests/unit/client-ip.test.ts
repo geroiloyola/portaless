@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSelfHostServer, parseTrustedProxies, resolveClientIp } from "../../server/node-runtime.mjs";
-import { getClientIp, NODE_CLIENT_IP_HEADER } from "../../packages/trust-layer/src/net/client-ip";
+import { getClientIp, NODE_CLIENT_IP_HEADER } from "@verared/trust-layer/net";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => {

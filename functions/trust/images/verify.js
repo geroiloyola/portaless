@@ -18,10 +18,10 @@
 //
 // Publico: CORS *, no-store (depende del body).
 
-import { parseSidecar } from "@portaless/cloud-images";
-import { verifySidecarRemote } from "@portaless/cloud-images";
-import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
-import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
+import { parseSidecar } from "@verared/cloud-images";
+import { verifySidecarRemote } from "@verared/cloud-images";
+import { resolveApwHistory } from "@verared/apw/did-apw";
+import { resolveApwIdentity } from "@verared/apw/resolver";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 

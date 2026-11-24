@@ -15,14 +15,14 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identity, listKeys: async () => state.identityKeys }),
   createAttestationLogStore: async () => ({ list: async (_siteId: string, from: number, limit: number) => state.logEntries.filter((entry: any) => entry.seq >= from).slice(0, limit) }),
 }));
-vi.mock("@portaless/apw-resolver/resolver", () => ({ resolveApwIdentity: async () => ({ verified: false }) }));
+vi.mock("@verared/apw/resolver", () => ({ resolveApwIdentity: async () => ({ verified: false }) }));
 
 import { onRequestGet } from "../../functions/admin/api/svri.js";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { signSelfAttestation } from "../../packages/apw-resolver/src/did-apw/site-jws";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { appendAttestation } from "@verared/apw/did-apw";
+import { generateApwDid } from "@verared/apw/did-apw";
+import { signSelfAttestation } from "@verared/apw/did-apw";
 
 function context(user: { role: string; username?: string } | null, siteId = "default") {
   return {

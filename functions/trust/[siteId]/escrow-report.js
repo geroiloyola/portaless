@@ -27,16 +27,16 @@
 // Rutas de import: este archivo esta a tres niveles de la raiz del repo
 // (functions/trust/[siteId]/), asi que el prefijo es ../../../packages/.
 
-import { hashApiKey } from "@portaless/trust-layer/site-trust";
+import { hashApiKey } from "@verared/trust-layer/site-trust";
 import {
   createAttestationLogStore,
   createAuthorizedEscrowProvidersStore,
   createSiteIdentityStore,
   createSiteTrustScoreStore,
 } from "@portaless/trust-storage-adapters";
-import { DUPLICATE_ATTESTATION_JTI } from "@portaless/trust-layer/site-trust";
-import { verifyAttestation } from "@portaless/trust-layer/site-trust";
-import { recordInSiteHistoryWithStores } from "@portaless/apw-resolver/did-apw";
+import { DUPLICATE_ATTESTATION_JTI } from "@verared/trust-layer/site-trust";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
+import { recordInSiteHistoryWithStores } from "@verared/apw/did-apw";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress } from "../../_shared/public-egress.js";
 

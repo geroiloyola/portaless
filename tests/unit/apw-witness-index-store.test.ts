@@ -9,7 +9,7 @@ import {
   MAX_WITNESS_WEIGHT,
   type WitnessIndexStore,
   type WitnessObservationRecord,
-} from "../../packages/apw-resolver/src/did-apw/witness-index-store";
+} from "@verared/apw/did-apw";
 
 const SITE = "default";
 const SUBJECT = "did:apw:sujeto.example";

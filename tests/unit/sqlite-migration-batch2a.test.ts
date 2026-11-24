@@ -3,9 +3,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { InMemoryAuthorizedAgentsStore } from "../../packages/trust-layer/src/site-trust/authorized-agents";
+import { InMemoryAuthorizedAgentsStore } from "@verared/trust-layer/site-trust";
 import { createAuthorizedAgentsStore, SqliteAuthorizedAgentsStore } from "@portaless/trust-storage-adapters";
-import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey } from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey } from "@verared/trust-layer/site-trust";
 import { createAuthorizedEscrowProvidersStore, SqliteAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 
 const tmpPath = () => join(mkdtempSync(join(tmpdir(), "portaless-b2a-")), "db.sqlite");

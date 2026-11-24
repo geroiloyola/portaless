@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { handleEmit } from "../../functions/admin/api/reader-conduct/emit.js";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { InMemoryReaderConductJtiStore } from "../../packages/apw-resolver/src/scoring/reader-conduct-jti-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
-import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { InMemoryReaderConductJtiStore } from "@verared/apw/scoring";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
 
 const SITE = "did:apw:site.example";
 const READER = "did:apw:reader.example";

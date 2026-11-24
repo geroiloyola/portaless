@@ -17,7 +17,7 @@
 // Ruta publica: /.well-known/* pasa por isPublicBotRoute().
 
 import { createSiteIdentityStore, createWitnessIndexStore } from "@portaless/trust-storage-adapters";
-import { buildIndexDocument, parseSubjectEntry } from "@portaless/apw-resolver/did-apw";
+import { buildIndexDocument, parseSubjectEntry } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 

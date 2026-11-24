@@ -16,8 +16,8 @@
 // isPublicBotRoute(). Sin identidad responde 404, como did.json.
 
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { buildSiteManifest } from "@portaless/apw-resolver/did-apw";
-import { signSiteManifest } from "@portaless/apw-resolver/did-apw";
+import { buildSiteManifest } from "@verared/apw/did-apw";
+import { signSiteManifest } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 

@@ -21,8 +21,8 @@ import {
   createSiteIdentityStore,
   createSiteTrustScoreStore,
 } from "@portaless/trust-storage-adapters";
-import { signSelfAttestation } from "@portaless/apw-resolver/did-apw";
-import { recordInSiteHistoryWithStores } from "@portaless/apw-resolver/did-apw";
+import { signSelfAttestation } from "@verared/apw/did-apw";
+import { recordInSiteHistoryWithStores } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 

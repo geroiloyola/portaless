@@ -4,7 +4,7 @@ import {
   InMemoryWebBotAuthNonceStore,
   NONCES_DDL,
   type WebBotAuthNonceStore,
-} from "@portaless/trust-layer";
+} from "@verared/trust-layer";
 
 interface D1Like {
   prepare(sql: string): {

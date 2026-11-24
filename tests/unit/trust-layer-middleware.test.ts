@@ -20,8 +20,8 @@ import {
   __resetNonceStoreForTests,
   __fetchOperatorKeyDirectoryForTests,
   DIRECTORY_FETCH_COLD_MAX,
-} from "../../packages/trust-layer/src/webbotauth/verify";
-import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
+} from "@verared/trust-layer";
+import { buildSignatureBase, parseSignatureInput } from "@verared/trust-layer";
 import { __resetNonceStoreFactoryForTests } from "@portaless/trust-storage-adapters";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import { readUnsignedBotRejections, __flushUnsignedBotMetricsForTests } from "@portaless/trust-storage-adapters";

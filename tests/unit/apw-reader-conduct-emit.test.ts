@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
-import { InMemoryUsageLedgerStore, recordAgentAccess } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore, recordAgentAccess } from "@verared/trust-layer/ledger";
 import { SqliteUsageLedgerStore } from "@portaless/trust-storage-adapters";
-import type { UsageLogPeriod } from "../../packages/trust-layer/src/ledger/log-schema";
-import { emitReaderConduct } from "../../packages/apw-resolver/src/scoring/reader-conduct-emitter";
-import { signSiteJws, ATTESTATION_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
+import type { UsageLogPeriod } from "@verared/trust-layer/ledger";
+import { emitReaderConduct } from "@verared/apw/scoring";
+import { signSiteJws, ATTESTATION_TYP } from "@verared/apw/did-apw";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
 
 const SITE = "did:apw:site.example";
 const READER = "did:apw:reader.example";

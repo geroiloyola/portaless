@@ -6,8 +6,8 @@
 //    contadores del periodo actual, nunca reemplazando el periodo entero,
 //    para no pisar datos ya escritos por otras fuentes (ej. Web Bot Auth).
 
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
-import type { AgentUsageEntry, UsageLogPeriod } from "@portaless/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
+import type { AgentUsageEntry, UsageLogPeriod } from "@verared/trust-layer/ledger";
 import type { AuditLogEntry, AuditLogStore } from "./types";
 import { CapabilityDeniedError } from "../permissions/require-capability";
 

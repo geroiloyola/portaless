@@ -39,16 +39,16 @@ import {
   verifyWebBotAuthRequest,
   resolveAgentDirectoryKey,
   parseSignatureAgent,
-} from "@portaless/trust-layer/site-trust";
+} from "@verared/trust-layer/site-trust";
 import {
   createAttestationLogStore,
   createAuthorizedAgentsStore,
   createSiteIdentityStore,
   createSiteTrustScoreStore,
 } from "@portaless/trust-storage-adapters";
-import { DUPLICATE_ATTESTATION_JTI } from "@portaless/trust-layer/site-trust";
-import { verifyAttestation } from "@portaless/trust-layer/site-trust";
-import { recordInSiteHistoryWithStores } from "@portaless/apw-resolver/did-apw";
+import { DUPLICATE_ATTESTATION_JTI } from "@verared/trust-layer/site-trust";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
+import { recordInSiteHistoryWithStores } from "@verared/apw/did-apw";
 import { readJsonBodyLimited } from "../../_shared/public-body.js";
 import { allowPublicEgress } from "../../_shared/public-egress.js";
 

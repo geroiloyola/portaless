@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/verared/vera-trust-spec",
+  "package": "@verared/spec",
+  "version": "0.1.0-draft.1",
+  "tag": "v0.1.0-draft.1",
+  "commit": "7787966a38fb08ceb509df295ee814ba93af4dec",
+  "tarball": {
+    "filename": "verared-spec-0.1.0-draft.1.tgz",
+    "sha256": "a7f1580d3690a4cfe1b33b5267c8a98cc199dbd183579ab6b42c0f4418a18ef5",
+    "releaseUrl": "https://github.com/verared/vera-trust-spec/releases/download/v0.1.0-draft.1/verared-spec-0.1.0-draft.1.tgz"
+  },
+  "stack": {
+    "repository": "https://github.com/verared/vera-trust-stack",
+    "version": "0.1.0-alpha.1",
+    "tag": "v0.1.0-alpha.1",
+    "commit": "d2e1d4ad1f74f807b232c428df8c7fb571ff5e6d"
+  },
+  "digests": {
+    "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",
+    "originalCorpusDigest": "fbc9_xl0gKJlfH7JCslUsoOgHoQNrFuVRGdyPKEme0U",
+    "previousCorpusDigest": "wpevxHbAUDyL5OVybTC2ANQ8ISby1hkCefwUgfSNeVg",
+    "corpusDigest": "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA",
+    "numericExtensionDigest": "RLmrcBc3SjFN1Mephzw6y7h3N5_mzKN9oLxLRkTZH1g"
+  }
+}

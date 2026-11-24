@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
 import { SqliteSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
-import { InMemorySiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/site-trust-score.ts";
+import { InMemorySiteTrustScoreStore } from "@verared/trust-layer/site-trust";
 
 const base = {
   siteId: "default",

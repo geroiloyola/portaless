@@ -239,11 +239,11 @@ Wave 2 **must not start** until every item below is verified true in CI on
 - [x] **Full verification green on Node 24:** Vitest, Astro build, manifest validation, Playwright browser suite, and `docs/protocol-apw` standalone test/audit suite all pass with zero added skips.
 - [x] **License metadata aligned:** `licensing-boundaries.md` and the 7 `verared`-bound packages reflect `CC BY 4.0` (spec) and `Apache-2.0` (stack).
 
-### Wave 2 — Export to `github.com/verared/*` (after connecting the `verared` account)
+### Wave 2 — Export to `github.com/verared/*`
 
-1. Create `github.com/verared/vera-trust-spec` (`CC BY 4.0`) from `docs/protocol-apw/` per [`LTP-EXTRACTION-PLAN.md`](./docs/protocol-apw/LTP-EXTRACTION-PLAN.md) (respecting S4/S6 or explicit `0.x-draft` release authorization) and publish immutable release archives + digest manifest.
-2. Create `github.com/verared/vera-trust-stack` (`Apache-2.0`) containing `@verared/{net,apw,local-trust,reputation,trust-layer,cloud-images,identity-atproto,cli}` plus `SPEC-PIN.json` pinned to exact `vera-trust-spec` release digests, and publish `@verared/*`.
-3. Update `geroiloyola/portaless` to consume exact pinned versions of `@verared/*` (and pinned spec digests in CI), delete the migrated local copies, and verify that all four Portaless checks pass identically.
+1. ✅ **W2.1:** Created `github.com/verared/vera-trust-spec` (`CC BY 4.0`, `@verared/spec` `v0.1.0-draft.1`, commit `7787966`) from `docs/protocol-apw/` with immutable release tarball + `SHA256SUMS` and Node 24 cryptographic CI (`18/18` SHA-256 + `5/5` JCS digests).
+2. ✅ **W2.2:** Created `github.com/verared/vera-trust-stack` (`Apache-2.0`, `v0.1.0-alpha.1`, commit `d2e1d4a`) containing `@verared/{net,apw,local-trust,reputation,trust-layer,cloud-images,identity-atproto}` compiled to `dist/` (`ESM .js` + `.d.ts`), pinned via `SPEC-PIN.json` and distributed as immutable GitHub Release tarballs.
+3. ✅ **W2.3 *(this PR)*:** Updated `geroiloyola/portaless` to consume the exact pinned `@verared/*` `v0.1.0-alpha.1` tarballs (via `dependencies` + `overrides` + `.npmrc` `allow-remote=root`) and `SPEC-PIN.json`, deleted the 7 migrated local `packages/*` copies, and kept `docs/protocol-apw/` intact for W2.3b.
 4. Independently (on its own D11 track after PR-B2), extract `geroiloyola/portaless-templates`.
 
 ---

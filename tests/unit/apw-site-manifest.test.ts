@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildSiteManifest } from "../../packages/apw-resolver/src/did-apw/site-manifest.ts";
-import { signSiteManifest, verifySiteJws, MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws.ts";
-import { serializeApwManifest, parseApwManifest } from "../../packages/apw-resolver/src/manifest.ts";
+import { buildSiteManifest } from "@verared/apw/did-apw";
+import { signSiteManifest, verifySiteJws, MANIFEST_TYP } from "@verared/apw/did-apw";
+import { serializeApwManifest, parseApwManifest } from "@verared/apw/resolver";
 
 const DOMAIN = "ejemplo.com";
 const DID = `did:apw:${DOMAIN}`;

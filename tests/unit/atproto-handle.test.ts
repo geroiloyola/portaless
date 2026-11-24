@@ -15,7 +15,7 @@ import {
   apwCandidateDomains,
   MAX_HANDLE_LENGTH,
   RESERVED_TLDS,
-} from "../../packages/identity-atproto/src/handle";
+} from "@verared/identity-atproto";
 
 describe("parseHandle -- ejemplos VALIDOS del spec", () => {
   const valid = [

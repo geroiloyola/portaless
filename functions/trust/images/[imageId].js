@@ -18,10 +18,10 @@
 
 import { createCloudImageStore } from "@portaless/trust-storage-adapters";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { sha256Hash } from "@portaless/cloud-images";
-import { verifyCloudImageSidecar } from "@portaless/cloud-images";
-import { isPng, extractPng, stripPng } from "@portaless/cloud-images";
-import { IMAGE_SITE_ID } from "@portaless/cloud-images";
+import { sha256Hash } from "@verared/cloud-images";
+import { verifyCloudImageSidecar } from "@verared/cloud-images";
+import { isPng, extractPng, stripPng } from "@verared/cloud-images";
+import { IMAGE_SITE_ID } from "@verared/cloud-images";
 
 const SITE_ID = IMAGE_SITE_ID;
 

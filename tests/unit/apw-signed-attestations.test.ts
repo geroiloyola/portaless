@@ -20,7 +20,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   createSiteIdentityStore: async () => state.identity,
   createAttestationLogStore: async () => state.log,
 }));
-vi.mock("@portaless/trust-layer/site-trust", async (importOriginal) => {
+vi.mock("@verared/trust-layer/site-trust", async (importOriginal) => {
   const actual: any = await importOriginal();
   return {
     ...actual,
@@ -29,15 +29,15 @@ vi.mock("@portaless/trust-layer/site-trust", async (importOriginal) => {
   };
 });
 
-import { ATTESTATION_TYP, verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
-import { InMemorySiteTrustScoreStore, DUPLICATE_ATTESTATION_JTI } from "../../packages/trust-layer/src/site-trust/site-trust-score";
+import { ATTESTATION_TYP, verifyAttestation } from "@verared/trust-layer/site-trust";
+import { InMemorySiteTrustScoreStore, DUPLICATE_ATTESTATION_JTI } from "@verared/trust-layer/site-trust";
 import {
   InMemoryAuthorizedEscrowProvidersStore,
   normalizeProviderPublicKey,
-} from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
+} from "@verared/trust-layer/site-trust";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
 
 const SITE = "ejemplo.com";
 const SUB = `did:apw:${SITE}`;

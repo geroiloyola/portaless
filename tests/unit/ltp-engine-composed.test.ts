@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import canonicalize from "canonicalize";
-import { runComposed } from "../../packages/ltp-engine/src/composed";
-import { ResourceBudget, LtpFailure } from "../../packages/ltp-engine/src/budget";
-import { canonicalBytes, digestBytes, digestJcs, isCanonicalPayload } from "../../packages/ltp-engine/src/canonical";
-import { jwkThumbprint, jwsDigest, parseCompactJws, verifyEd25519 } from "../../packages/ltp-engine/src/jws";
-import { verifyHandoff } from "../../packages/ltp-engine/src/verification";
-import type { ProofPackage } from "../../packages/ltp-engine/src/types";
+import { runComposed } from "@verared/local-trust";
+import { ResourceBudget, LtpFailure } from "@verared/local-trust";
+import { canonicalBytes, digestBytes, digestJcs, isCanonicalPayload } from "@verared/local-trust";
+import { jwkThumbprint, jwsDigest, parseCompactJws, verifyEd25519 } from "@verared/local-trust";
+import { verifyHandoff } from "@verared/local-trust";
+import type { ProofPackage } from "@verared/local-trust";
 import { FakeClock, ReplayTransport, loadCase, scriptedClock } from "../fixtures/ltp-v03";
 
 const ids = ["AB-STATIC-01", "AB-STATIC-02", "AB-STATIC-03", "AB-STATIC-04", "AB-STATIC-05", "AB-STATIC-06", "AB-STATIC-07"];

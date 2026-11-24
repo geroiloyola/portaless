@@ -4,13 +4,13 @@
 // el store). D1 comparte el mismo SQL de UPDATE que SQLite.
 import { describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { generateApwDid } from "@verared/apw/did-apw";
 import {
   InMemorySiteIdentityStore,
   SqliteSiteIdentityStore,
   SITE_IDENTITY_NOT_FOUND,
   type SiteIdentityStore,
-} from "../../packages/apw-resolver/src/did-apw/site-identity-store";
+} from "@verared/apw/did-apw";
 
 const env = { PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: btoa(String.fromCharCode(...new Uint8Array(32).fill(7))) };
 

@@ -4,8 +4,8 @@
 // D1/SQLite) pero con cifrado AES-GCM real via WebCrypto.
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { generateApwDid } from "@verared/apw/did-apw";
 
 function randomEncryptionKeyBase64() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));

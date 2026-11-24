@@ -6,7 +6,7 @@
 // los fallos: no-png, truncado, sin IEND, CRC corrupto.
 
 import { describe, it, expect } from "vitest";
-import { isPng, embedPng, extractPng, stripPng, crc32, PNG_SIGNATURE, APW_CHUNK_TYPE } from "../../packages/cloud-images/src/png";
+import { isPng, embedPng, extractPng, stripPng, crc32, PNG_SIGNATURE, APW_CHUNK_TYPE } from "@verared/cloud-images";
 
 function chunk(type: string, data: Uint8Array): Uint8Array {
   const out = new Uint8Array(12 + data.length);

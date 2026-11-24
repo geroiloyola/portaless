@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { applySchema } from "../../scripts/setup.mjs";
-import { D1SiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/stores/d1-site-trust-store";
+import { D1SiteTrustScoreStore } from "@verared/trust-layer/site-trust";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-d1-trust-"));
 const dbPath = join(tmp, "trust.db");

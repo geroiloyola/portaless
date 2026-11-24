@@ -52,6 +52,6 @@ Full normative rules: [`APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md). Fi
 
 - OpenAI-compatible provider connection guide: [`docs/openai-compatible-provider.md`](../openai-compatible-provider.md)
 - Protocol spec (normative): [`docs/protocol-apw/APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md)
-- Reference implementation: [`packages/apw-resolver/`](../../packages/apw-resolver/)
+- Reference implementation: [`packages/apw-resolver/`](https://github.com/verared/vera-trust-stack/tree/main/packages/apw-resolver)
 - Current status of every module: [`ROADMAP.md`](../../ROADMAP.md)
 - Documentation index: [`docs/README.md`](../README.md)

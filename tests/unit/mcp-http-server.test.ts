@@ -18,7 +18,7 @@ import {
   __resetMcpAgentTokenStoreFactoryForTests,
 } from "../../packages/mcp-server/src/permissions/agent-token-store";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { InMemoryAuditLogStore } from "../../packages/mcp-server/src/audit/in-memory-audit-log-store";
 
 interface McpJsonRpcResult {

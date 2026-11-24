@@ -8,8 +8,8 @@ import {
   signPluginManifest,
   verifyPluginManifest,
   isPluginManifestDocument,
-} from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
-import { signSiteJws, MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";
+} from "@verared/apw/did-apw";
+import { signSiteJws, MANIFEST_TYP } from "@verared/apw/did-apw";
 
 const PUBLISHER = "did:apw:pub.example";
 const KID = "did:apw:pub.example#key-1";

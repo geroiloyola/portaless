@@ -3,17 +3,17 @@
 // compatibilidad con el kid legado (huella RFC 7638). Los mismos casos corren
 // contra InMemory y contra SQLite real (better-sqlite3 en memoria) si abre.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { InMemorySiteIdentityStore, SqliteSiteIdentityStore, type SiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
+import { InMemorySiteIdentityStore, SqliteSiteIdentityStore, type SiteIdentityStore } from "@verared/apw/did-apw";
 import {
   InMemoryAttestationLogStore,
   SqliteAttestationLogStore,
   type AttestationLogStore,
-} from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation, verifyChain, sha256B64Url, type ChainKey } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { didKeyId, isDidKeyId, parseDidKeyId } from "../../packages/apw-resolver/src/did-apw/key-id";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
-import type { ApwKeyPair } from "../../packages/apw-resolver/src/did-apw/types";
+} from "@verared/apw/did-apw";
+import { appendAttestation, verifyChain, sha256B64Url, type ChainKey } from "@verared/apw/did-apw";
+import { didKeyId, isDidKeyId, parseDidKeyId } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
+import type { ApwKeyPair } from "@verared/apw/did-apw";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
 

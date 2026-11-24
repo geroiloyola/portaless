@@ -20,7 +20,7 @@
 // publica: /.well-known/* pasa por isPublicBotRoute().
 
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { WITNESS_TYP } from "@portaless/apw-resolver/did-apw";
+import { WITNESS_TYP } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 const DEFAULT_LIMIT = 100;

@@ -10,11 +10,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { applySchema } from "../../scripts/setup.mjs";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { generateApwDid } from "@verared/apw/did-apw";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { verifyCloudImageSidecar } from "../../packages/cloud-images/src/sign";
-import { extractPng, stripPng, crc32, PNG_SIGNATURE } from "../../packages/cloud-images/src/png";
-import { sha256Hash, encodeBase64, decodeBase64, MAX_IMAGE_BYTES } from "../../packages/cloud-images/src/payload";
+import { verifyCloudImageSidecar } from "@verared/cloud-images";
+import { extractPng, stripPng, crc32, PNG_SIGNATURE } from "@verared/cloud-images";
+import { sha256Hash, encodeBase64, decodeBase64, MAX_IMAGE_BYTES } from "@verared/cloud-images";
 import * as images from "../../functions/admin/api/cloud-images";
 
 const SITE_ID = "default";

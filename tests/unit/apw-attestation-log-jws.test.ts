@@ -6,8 +6,8 @@ import {
   SqliteAttestationLogStore,
   InMemoryAttestationLogStore,
   type AttestationLogEntry,
-} from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { sha256B64Url } from "../../packages/apw-resolver/src/did-apw/history-log";
+} from "@verared/apw/did-apw";
+import { sha256B64Url } from "@verared/apw/did-apw";
 
 async function entry(seq: number, attJws: string | null): Promise<AttestationLogEntry> {
   return {

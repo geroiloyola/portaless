@@ -12,9 +12,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { applySchema } from "../../scripts/setup.mjs";
-import { InMemorySiteAtprotoLinksStore, LINKS_TABLE_DDL, type SiteAtprotoLinksStore } from "../../packages/apw-resolver/src/did-apw/atproto-links-store";
+import { InMemorySiteAtprotoLinksStore, LINKS_TABLE_DDL, type SiteAtprotoLinksStore } from "@verared/apw/did-apw";
 import { D1SiteAtprotoLinksStore, SqliteSiteAtprotoLinksStore, createSiteAtprotoLinksStore } from "@portaless/trust-storage-adapters";
-import { buildDidDocument, parseApwDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
+import { buildDidDocument, parseApwDidDocument } from "@verared/apw/did-apw";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-atproto-links-"));
 

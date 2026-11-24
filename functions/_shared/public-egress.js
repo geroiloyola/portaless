@@ -1,7 +1,7 @@
 import { createRateLimitStore } from "@portaless/auth/store-factory";
 import { allowActionRequest } from "@portaless/auth/rate-limit";
 import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
-import { createSafeFetcher } from "@portaless/apw-resolver/federation";
+import { createSafeFetcher } from "@verared/apw/federation";
 
 export const PUBLIC_TRUST_WINDOW_MS = 60 * 60 * 1000;
 

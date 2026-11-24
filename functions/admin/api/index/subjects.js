@@ -10,7 +10,7 @@
 // documento plano de /.well-known/apw-index.json.
 
 import { createWitnessIndexStore } from "@portaless/trust-storage-adapters";
-import { parseSubjectEntry } from "@portaless/apw-resolver/did-apw";
+import { parseSubjectEntry } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 

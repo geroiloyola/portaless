@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { digestBytes } from "../../packages/ltp-engine/src/canonical";
+import { digestBytes } from "@verared/local-trust";
 import type {
   AcquisitionConfig,
   ApwTxtManifest,
@@ -8,8 +8,8 @@ import type {
   LtpLimits,
   PrefixState,
   TrustPolicy,
-} from "../../packages/ltp-engine/src/types";
-import type { LtpTransport, TransportRequest, TransportResponse } from "../../packages/ltp-engine/src/transport";
+} from "@verared/local-trust";
+import type { LtpTransport, TransportRequest, TransportResponse } from "@verared/local-trust";
 
 const ROOT = new URL("../../docs/protocol-apw/vectors/ltp/v0.3/", import.meta.url);
 const readJson = (path: string) => JSON.parse(readFileSync(new URL(path, ROOT), "utf8"));

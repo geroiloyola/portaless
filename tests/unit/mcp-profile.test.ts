@@ -6,7 +6,7 @@ import { MCP_TOOL_NAMES, SERVER_NAME } from "../../packages/mcp-server/src/metad
 import { createPortalessMcpServer } from "../../packages/mcp-server/src/server";
 import { createEnvAgentIdentityResolver } from "../../packages/mcp-server/src/permissions/agent-identity";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { InMemoryAuditLogStore } from "../../packages/mcp-server/src/audit/in-memory-audit-log-store";
 import { onRequestGet } from "../../functions/.well-known/portaless-mcp.json.js";
 

@@ -1,13 +1,13 @@
 import { createCommunityAttestationsStore } from "@portaless/trust-storage-adapters";
 import { createAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
-import { verifyAttestation } from "@portaless/trust-layer/site-trust";
-import { resolveAgentDirectoryKey } from "@portaless/trust-layer/site-trust";
-import { assertSafeUrl } from "@portaless/apw-resolver/federation";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
+import { resolveAgentDirectoryKey } from "@verared/trust-layer/site-trust";
+import { assertSafeUrl } from "@verared/apw/federation";
 import { createSiteIdentityStore, createAttestationLogStore } from "@portaless/trust-storage-adapters";
-import { resolveApwIdentity } from "@portaless/apw-resolver/resolver";
-import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
-import { jwkThumbprint } from "@portaless/apw-resolver/did-apw";
-import { reconstructSvriHistory } from "@portaless/apw-resolver/scoring";
+import { resolveApwIdentity } from "@verared/apw/resolver";
+import { resolveApwHistory } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
+import { reconstructSvriHistory } from "@verared/apw/scoring";
 
 const LOG_PAGE_SIZE = 500;
 const MAX_LOG_ENTRIES = 20_000;

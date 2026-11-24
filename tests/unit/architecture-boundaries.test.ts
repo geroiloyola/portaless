@@ -179,6 +179,8 @@ describe("repository scan and CLI --report / --strict behavior", () => {
     expect(report.deepSrcImports.byTargetOrg.geroiloyola).toBe(0);
     expect(report.licenseViolations.total).toBe(0);
     expect(report.exportReady.zeroLicenseViolations).toBe(true);
+    expect(report.veraredPinViolations.total).toBe(0);
+    expect(report.exportReady.zeroVeraredPinViolations).toBe(true);
     expect(report.exportReady.ready).toBe(true);
   });
 

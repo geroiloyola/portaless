@@ -19,7 +19,7 @@ import {
   buildAtprotoReputation,
   __clearAtprotoReputationCacheForTests,
   type AtprotoReputationDeps,
-} from "../../packages/identity-atproto/src/reputation";
+} from "@verared/identity-atproto";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-atproto-reputation-"));
 
@@ -35,7 +35,7 @@ beforeAll(async () => {
     PORTALESS_SQLITE_PATH: file,
     PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.from(randomBytes(32)).toString("base64"),
   };
-  const { generateApwDid } = await import("../../packages/apw-resolver/src/did-apw/generate");
+  const { generateApwDid } = await import("@verared/apw/did-apw");
   const { createSiteIdentityStore } = await import("@portaless/trust-storage-adapters");
   const keyPair = await generateApwDid(SITE);
   expect(keyPair.did).toBe(SITE_DID);

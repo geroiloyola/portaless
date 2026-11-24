@@ -1,4 +1,4 @@
-import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT } from "@portaless/trust-layer/net";
+import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT } from "@verared/trust-layer/net";
 import { createResolutionBudgetConfigStore } from "@portaless/trust-storage-adapters";
 import { emitActivity } from "@portaless/dashboard/activity";
 import { AuthService } from "@portaless/auth/service";

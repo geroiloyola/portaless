@@ -2,18 +2,18 @@
 // Los mismos casos corren contra InMemory y contra SQLite real
 // (better-sqlite3 en memoria) si el driver abre.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { InMemorySiteIdentityStore, SqliteSiteIdentityStore, type SiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
+import { InMemorySiteIdentityStore, SqliteSiteIdentityStore, type SiteIdentityStore } from "@verared/apw/did-apw";
 import {
   InMemoryAttestationLogStore,
   SqliteAttestationLogStore,
   type AttestationLogStore,
-} from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation, verifyChain, sha256B64Url, type ChainKey } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { resolveApwHistory } from "../../packages/apw-resolver/src/did-apw/history-resolver";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
-import { buildApwManifest, serializeApwManifest } from "../../packages/apw-resolver/src/manifest";
-import type { ApwKeyPair } from "../../packages/apw-resolver/src/did-apw/types";
+} from "@verared/apw/did-apw";
+import { appendAttestation, verifyChain, sha256B64Url, type ChainKey } from "@verared/apw/did-apw";
+import { resolveApwHistory } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
+import { buildApwManifest, serializeApwManifest } from "@verared/apw/resolver";
+import type { ApwKeyPair } from "@verared/apw/did-apw";
 
 const state = vi.hoisted(() => ({ identity: null as any, log: null as any }));
 vi.mock("@portaless/trust-storage-adapters", () => ({

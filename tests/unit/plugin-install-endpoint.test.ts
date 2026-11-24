@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   password: "correct",
 }));
 
-vi.mock("@portaless/apw-resolver/resolver", () => ({
+vi.mock("@verared/apw/resolver", () => ({
   resolveApwIdentity: async (domain: string) =>
     state.identity[domain] ?? { verified: false, reason: "manifest_without_key", domain, did: `did:apw:${domain}` },
 }));
@@ -24,7 +24,7 @@ vi.mock("@portaless/auth/service", () => ({
   },
 }));
 
-import { signPluginManifest } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
+import { signPluginManifest } from "@verared/apw/did-apw";
 import { reconcileGrants } from "../../packages/plugin-sandbox/src/install/reconcile";
 import { createPluginArtifactStore } from "../../packages/plugin-sandbox/src/registry/plugin-artifacts";
 import { createPluginRegistryStore } from "../../packages/plugin-sandbox/src/registry/store-factory";

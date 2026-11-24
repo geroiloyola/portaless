@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation, verifyChain, type ChainKey } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { reconstructSvriHistory } from "../../packages/apw-resolver/src/scoring/svri-history";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { appendAttestation, verifyChain, type ChainKey } from "@verared/apw/did-apw";
+import { generateApwDid } from "@verared/apw/did-apw";
+import { reconstructSvriHistory } from "@verared/apw/scoring";
 
 const encryptionKey = btoa(String.fromCharCode(...new Uint8Array(32).fill(19)));
 const b64 = (value: string) => Buffer.from(value).toString("base64url");

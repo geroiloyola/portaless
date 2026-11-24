@@ -180,7 +180,7 @@ export async function createDisposableStaging({
       await users.close?.();
 
       const { createSiteIdentityStore } = await import("@portaless/trust-storage-adapters");
-      const { generateApwDid } = await import(join(root, "packages/apw-resolver/src/did-apw/generate.ts"));
+      const { generateApwDid } = await import("@verared/apw/did-apw");
       const identityStore = await createSiteIdentityStore(env);
       const identityDomain = publicUrl ? new URL(publicUrl).hostname : `staging-${id}.example.invalid`;
       await identityStore.create("default", await generateApwDid(identityDomain), STAGING_ADMIN_USER);

@@ -385,6 +385,77 @@ export function checkLicenses(root) {
   return violations;
 }
 
+const VERARED_MIGRATED_DIRS = [
+  "net",
+  "apw-resolver",
+  "ltp-engine",
+  "ltp-reputation",
+  "trust-layer",
+  "cloud-images",
+  "identity-atproto",
+];
+
+const VERARED_REQUIRED_PACKAGES = [
+  "@verared/net",
+  "@verared/apw",
+  "@verared/local-trust",
+  "@verared/reputation",
+  "@verared/trust-layer",
+  "@verared/cloud-images",
+  "@verared/identity-atproto",
+];
+
+export function checkVeraredPin(root) {
+  const violations = [];
+  const pinPath = resolve(root, "SPEC-PIN.json");
+  if (!existsSync(pinPath)) return violations;
+
+  let pin;
+  try {
+    pin = JSON.parse(readFileSync(pinPath, "utf8"));
+  } catch {
+    violations.push({ file: "SPEC-PIN.json", reason: "invalid-spec-pin-json" });
+    return violations;
+  }
+
+  if (!/^[a-f0-9]{40}$/.test(pin.commit || "")) {
+    violations.push({ file: "SPEC-PIN.json", reason: "invalid-spec-commit" });
+  }
+  if (pin.digests?.corpusDigest !== "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA") {
+    violations.push({ file: "SPEC-PIN.json", reason: "corpus-digest-mismatch" });
+  }
+  if (!pin.stack?.version) {
+    violations.push({ file: "SPEC-PIN.json", reason: "missing-stack-version" });
+  }
+
+  for (const dir of VERARED_MIGRATED_DIRS) {
+    if (existsSync(resolve(root, "packages", dir))) {
+      violations.push({ file: `packages/${dir}`, reason: "duplicated-verared-package" });
+    }
+  }
+
+  const lockPath = resolve(root, "package-lock.json");
+  if (existsSync(lockPath)) {
+    try {
+      const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+      const pkgs = lock.packages || {};
+      for (const name of VERARED_REQUIRED_PACKAGES) {
+        const entry = pkgs[`node_modules/${name}`];
+        const resolved = String(entry?.resolved || "");
+        if (!entry) {
+          violations.push({ file: "package-lock.json", reason: `missing-verared-lock-entry:${name}` });
+        } else if (resolved.includes("registry.npmjs.org") || !resolved.startsWith("https://github.com/verared/vera-trust-stack/releases/download/")) {
+          violations.push({ file: "package-lock.json", reason: `invalid-verared-tarball-source:${name}` });
+        }
+      }
+    } catch {
+      violations.push({ file: "package-lock.json", reason: "invalid-package-lock-json" });
+    }
+  }
+
+  return violations;
+}
+
 export function analyzeTree(root) {
   const files = [];
   walkFiles(resolve(root, "packages"), root, files);
@@ -463,6 +534,7 @@ export function analyzeTree(root) {
   const deepSrcVerared = deepSrcAll.filter((e) => e.toOrg === "verared").length;
   const deepSrcGeroiloyola = deepSrcAll.filter((e) => e.toOrg === "geroiloyola").length;
   const licenseViolationItems = checkLicenses(root);
+  const veraredPinViolationItems = checkVeraredPin(root);
 
   const exportReady = {
     zeroVeraredReverseImports: veraredReverseImports.length === 0,
@@ -470,12 +542,14 @@ export function analyzeTree(root) {
     zeroDeepSrcImports: deepSrcPackages.length + deepSrcL5.length === 0,
     zeroLayerViolations: layerViolations.length === 0,
     zeroLicenseViolations: licenseViolationItems.length === 0,
+    zeroVeraredPinViolations: veraredPinViolationItems.length === 0,
     ready:
       veraredReverseImports.length === 0 &&
       cycles.length === 0 &&
       deepSrcPackages.length + deepSrcL5.length === 0 &&
       layerViolations.length === 0 &&
-      licenseViolationItems.length === 0,
+      licenseViolationItems.length === 0 &&
+      veraredPinViolationItems.length === 0,
   };
 
   return {
@@ -501,12 +575,17 @@ export function analyzeTree(root) {
       total: licenseViolationItems.length,
       items: licenseViolationItems,
     },
+    veraredPinViolations: {
+      total: veraredPinViolationItems.length,
+      items: veraredPinViolationItems,
+    },
     exportReady,
     details: {
       layerViolations,
       deepSrcPackages,
       deepSrcL5,
       licenseViolations: licenseViolationItems,
+      veraredPinViolations: veraredPinViolationItems,
     },
   };
 }
@@ -532,6 +611,7 @@ export function formatMarkdownSummary(report) {
     `| Layer / org violations (total) | ${report.layerViolations.total} | ${ok(report.exportReady.zeroLayerViolations)} |`,
     `| \`verared\` -> \`geroiloyola\` / L1->L2 / spec->code | ${report.layerViolations.veraredReverseCount} | ${ok(report.exportReady.zeroVeraredReverseImports)} |`,
     `| License boundary violations | ${report.licenseViolations.total} | ${ok(report.exportReady.zeroLicenseViolations)} |`,
+    `| \`@verared/*\` pin & tarball boundary violations | ${report.veraredPinViolations.total} | ${ok(report.exportReady.zeroVeraredPinViolations)} |`,
     `| **Export-Ready (Wave 1 -> Wave 2)** | — | **${report.exportReady.ready ? "READY" : "NOT READY"}** |`,
     "",
   ];
@@ -561,6 +641,10 @@ export function formatTextReport(report) {
   lines.push(`  license violations: ${report.licenseViolations.total}`);
   for (const lv of report.licenseViolations.items) {
     lines.push(`    - ${lv.file}: ${lv.reason} (expected ${lv.expected}, got ${lv.actual})`);
+  }
+  lines.push(`  verared pin violations: ${report.veraredPinViolations.total}`);
+  for (const pv of report.veraredPinViolations.items) {
+    lines.push(`    - ${pv.file}: ${pv.reason}`);
   }
   lines.push(
     `  export-ready (Wave 1 -> Wave 2): ${report.exportReady.ready ? "READY" : "NOT READY"}`,

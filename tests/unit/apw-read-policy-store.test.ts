@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { applyColumnMigrations } from "../../packages/persistence-migrations/src/runner";
 
-import { SqliteAdapter } from "../../packages/apw-resolver/src/did-apw/sql-adapter";
-import { InMemoryReadPolicyStore, READ_POLICY_DEFAULTS, INVALID_READ_POLICY, toReadPolicy } from "../../packages/apw-resolver/src/scoring/read-policy-store";
+import { SqliteAdapter } from "@verared/apw/did-apw";
+import { InMemoryReadPolicyStore, READ_POLICY_DEFAULTS, INVALID_READ_POLICY, toReadPolicy } from "@verared/apw/scoring";
 import { SqlReadPolicyStore } from "@portaless/trust-storage-adapters";
-import { DEFAULT_GOVERNED_POLICY } from "../../packages/apw-resolver/src/scoring/policy";
+import { DEFAULT_GOVERNED_POLICY } from "@verared/apw/scoring";
 
 const base = { siteId: "default", enabled: true, ...READ_POLICY_DEFAULTS, updatedBy: "admin" };
 

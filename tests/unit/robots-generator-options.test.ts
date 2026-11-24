@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateRobotsTxt } from "../../packages/trust-layer/src/policy/robots-generator.ts";
-import { defaultContentPolicy } from "../../packages/trust-layer/src/policy/manifest-schema.ts";
+import { generateRobotsTxt } from "@verared/trust-layer/policy";
+import { defaultContentPolicy } from "@verared/trust-layer/policy";
 import { isCompleteManifest } from "../../src/lib/content-policy.ts";
 
 describe("generateRobotsTxt con opciones (PR F)", () => {
