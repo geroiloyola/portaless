@@ -40,10 +40,8 @@
 // pueda mentir su propia identidad).
 
 import { createCapabilityTokenStore } from "../../../packages/plugin-sandbox/src/registry/stores/capability-token-store-factory";
-import {
-  createCapabilityHostBridge,
-  dispatchCapability,
-} from "../../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { dispatchCapability } from "../../../packages/plugin-sandbox/src/capabilities/capability-backends";
+import { createPortalessCapabilityHostBridge } from "../../../server/plugins/capability-host-bridge";
 
 // Frontera de seguridad: por el bridge solo pueden pedirse las capacidades
 // NO-red de plugins (network:fetch lo maneja cada adaptador, y billing/trust
@@ -124,7 +122,7 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const bridge = createCapabilityHostBridge(env);
+    const bridge = createPortalessCapabilityHostBridge(env);
     const result = await dispatchCapability(capability, args, bridge, validation.pluginName);
     return new Response(JSON.stringify({ result }), {
       status: 200,

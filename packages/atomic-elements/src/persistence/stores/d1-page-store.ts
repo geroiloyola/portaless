@@ -11,7 +11,7 @@ import type { PageProposal, PageRevisionEvidence, PageRevisionMetadata, PageSave
 import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, pageContentHash, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
-import { isPubliclyPublishable } from "../../../../deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "../draft-filter";
 
 interface PageRow {
   slug: string;

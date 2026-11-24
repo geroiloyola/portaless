@@ -5,16 +5,20 @@
 // src/commerce/medusa-client -- se mockea ahi (no en el import del sujeto:
 // el import es dinamico adentro de la funcion).
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { PageLayout, ElementNode } from "../../packages/atomic-elements/src/types";
+import { registerCommerceCatalogProvider } from "../../packages/atomic-elements/src/commerce-provider";
+import { buildJsonLd, buildProductJsonLd } from "../../packages/atomic-elements/src/seo/json-ld";
 
-const medusa = vi.hoisted(() => ({
+const medusa = {
   isCommerceEnabled: vi.fn(),
   fetchProducts: vi.fn(),
-}));
-vi.mock("../../src/commerce/medusa-client", () => medusa);
+  formatPrice: vi.fn(() => "$0.00"),
+};
 
-import { buildJsonLd, buildProductJsonLd } from "../../packages/atomic-elements/src/seo/json-ld";
+beforeEach(() => {
+  registerCommerceCatalogProvider(medusa);
+});
 
 const site = {
   url: "https://mi-sitio.example",
@@ -191,12 +195,6 @@ describe("buildJsonLd", () => {
     medusa.fetchProducts.mockResolvedValue([
       { title: "A", handle: "a", variants: [{ prices: [{ currency_code: "usd", amount: 100 }] }] },
     ]);
-    // Nota de testing: el import dinamico de medusa-client lleva
-    /* @vite-ignore */ // y vitest solo intercepta la PRIMERA resolucion por
-    // modulo de sujeto; la segunda grilla resuelve el modulo real (sin
-    // config → productos vacios → se omite su ItemList). Con eso alcanza
-    // para cubrir la rama de numeracion: la grilla 0 publica
-    // #productlist-1 (sufijo presente EXACTAMENTE cuando hay >1 grilla).
     const graph = graphOf(
       await buildJsonLd(
         layout({
@@ -208,8 +206,9 @@ describe("buildJsonLd", () => {
         site
       )
     );
-    expect(graph).toHaveLength(3);
+    expect(graph).toHaveLength(4);
     expect(graph[2]["@id"]).toBe("https://mi-sitio.example/pages/inicio#productlist-1");
+    expect(graph[3]["@id"]).toBe("https://mi-sitio.example/pages/inicio#productlist-2");
   });
 
   it("busca ProductGrid tambien dentro de children y columnSlots (nodos anidados)", async () => {

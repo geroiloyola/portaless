@@ -13,7 +13,7 @@ import { validatePageLayout } from "../page-schema";
 import { buildPageRevision, newRevisionIdentity, validateRevisionEvidence } from "../revision-history";
 import { validatePortablePublicRevisionHistory } from "../public-revision-history";
 import { openSqlite } from "../../../../sqlite-driver/src/open";
-import { isPubliclyPublishable } from "../../../../deploy-engine/src/draft-filter";
+import { isPubliclyPublishable } from "../draft-filter";
 
 interface PageRow {
   slug: string;

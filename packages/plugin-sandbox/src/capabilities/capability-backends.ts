@@ -22,15 +22,44 @@
 // adaptador.
 
 import type { CapabilityId, CapabilityHostBridge } from "../types";
-import { createPageStore } from "../../../atomic-elements/src/persistence/store-factory";
 import { createPluginStorageStore } from "../registry/plugin-storage";
 import { createPluginEmailQuotaStore, DEFAULT_DAILY_EMAIL_LIMIT, utcDay } from "../registry/plugin-email-quota";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
-import { createSiteSettingsStore } from "../../../dashboard/src/site-settings/site-settings-store";
 import { isEmailAddress, isEmailTemplateId, parseEmailSettings, renderEmailTemplate } from "../../../email-transport/src/config";
 import { EmailSendError, sendEmail } from "../../../email-transport/src/send";
-import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
-import { emitActivity } from "../../../dashboard/src/activity/activity-store";
+
+export interface CapabilityPageRecord {
+  slug: string;
+  status?: string;
+  draft?: boolean;
+  visibility?: string;
+  revisionId?: string;
+  [key: string]: unknown;
+}
+
+export interface CapabilityPageStorePort {
+  load(slug: string): Promise<CapabilityPageRecord | null>;
+  save(layout: never, options?: { expectedRevisionId?: string | null }): Promise<unknown>;
+}
+
+export interface CapabilitySiteSettingsStorePort {
+  get(key: string): Promise<string | null>;
+  getMany?(keys: readonly string[]): Promise<Record<string, string | null>>;
+}
+
+export interface CapabilityActivityInput {
+  kind: string;
+  actor: string;
+  subject: string;
+  detail?: string;
+}
+
+export interface CapabilityBackendDeps {
+  createPageStore?: (env: CapabilityBackendEnv) => Promise<CapabilityPageStorePort>;
+  isPubliclyPublishable?: (page: CapabilityPageRecord) => boolean;
+  createSiteSettingsStore?: (env: CapabilityBackendEnv) => Promise<CapabilitySiteSettingsStorePort>;
+  emitActivity?: (env: CapabilityBackendEnv, input: CapabilityActivityInput) => Promise<unknown>;
+}
 
 export interface CapabilityError extends Error {
   code: string;
@@ -64,6 +93,8 @@ function periodForOffsetUtc(offset: number): string {
 export interface CapabilityBackendEnv {
   DB?: any;
   PORTALESS_SQLITE_PATH?: string;
+  PORTALESS_PLUGIN_EMAIL_DAILY_LIMIT?: string | number;
+  __PORTALESS_RUNTIME?: string;
 }
 
 /**
@@ -71,20 +102,29 @@ export interface CapabilityBackendEnv {
  * handler (no al construir el bridge): una capacidad que no se usa nunca abre
  * una conexion, y el handler de storage no toca PageStore ni al reves.
  */
-export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): CapabilityHostBridge {
+export function createCapabilityHostBridge(
+  env: CapabilityBackendEnv = {},
+  deps: CapabilityBackendDeps = {}
+): CapabilityHostBridge {
   return {
     contentRead: async (payload) => {
       const slug = (payload as { slug?: unknown })?.slug;
       if (typeof slug !== "string") throw notConfigured("content:read requiere { slug: string }");
-      const pageStore = await createPageStore(env);
+      if (!deps.createPageStore || !deps.isPubliclyPublishable) {
+        throw notConfigured("content:read requiere createPageStore e isPubliclyPublishable inyectados desde el host.");
+      }
+      const pageStore = await deps.createPageStore(env);
       const layout = await pageStore.load(slug);
-      if (!layout || !isPubliclyPublishable(layout)) throw capabilityError("PAGE_NOT_FOUND", `Pagina '${slug}' no encontrada.`);
+      if (!layout || !deps.isPubliclyPublishable(layout)) throw capabilityError("PAGE_NOT_FOUND", `Pagina '${slug}' no encontrada.`);
       return layout;
     },
     contentWrite: async (payload) => {
       const slug = (payload as { slug?: unknown })?.slug;
       if (typeof slug !== "string") throw notConfigured("content:write requiere un PageLayout completo con slug.");
-      const pageStore = await createPageStore(env);
+      if (!deps.createPageStore || !deps.isPubliclyPublishable) {
+        throw notConfigured("content:write requiere createPageStore e isPubliclyPublishable inyectados desde el host.");
+      }
+      const pageStore = await deps.createPageStore(env);
       const layout = payload as { status?: unknown; [key: string]: unknown };
       if (layout.status !== "draft") {
         throw capabilityError("PUBLICATION_REQUIRES_ADMIN_APPROVAL", "content:write de plugin solo guarda draft; un admin publica desde el panel.");
@@ -93,7 +133,7 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
       if (existing?.status === "private") {
         throw capabilityError("PRIVATE_CONTENT_ACCESS_DENIED", "Los plugins no pueden leer o modificar paginas privadas.");
       }
-      if (existing && isPubliclyPublishable(existing)) {
+      if (existing && deps.isPubliclyPublishable(existing)) {
         throw capabilityError("PUBLICATION_REQUIRES_ADMIN_APPROVAL", "Un plugin no puede reemplazar contenido publicado; crea una propuesta no publica para revision.");
       }
       // The bridge read is the precondition for this invocation. A concurrent
@@ -210,8 +250,11 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
         throw capabilityError("INVALID_ARGS", "email:send: 'data' debe ser un objeto.");
       }
 
-      const settingsStore = await createSiteSettingsStore(env);
-      const settings = await parseEmailSettings(settingsStore);
+      if (!deps.createSiteSettingsStore) {
+        throw notConfigured("email:send requiere createSiteSettingsStore inyectado desde el host.");
+      }
+      const settingsStore = await deps.createSiteSettingsStore(env);
+      const settings = await parseEmailSettings(settingsStore as never);
       if (settings.provider.kind === "none") {
         throw capabilityError(
           "EMAIL_BACKEND_NOT_CONFIGURED",
@@ -261,12 +304,14 @@ export function createCapabilityHostBridge(env: CapabilityBackendEnv = {}): Capa
         const outcomeUnknown = err instanceof EmailSendError && err.deliveryOutcome === "unknown";
         if (outcomeUnknown) {
           const deliveryAttemptId = globalThis.crypto.randomUUID();
-          await emitActivity(env, {
-            kind: "email.delivery.reconciliation_pending",
-            actor: "plugin",
-            subject: deliveryAttemptId,
-            detail: `plugin=${pluginName}; provider=${settings.provider.kind}; quota=${day}:reserved`,
-          });
+          if (deps.emitActivity) {
+            await deps.emitActivity(env, {
+              kind: "email.delivery.reconciliation_pending",
+              actor: "plugin",
+              subject: deliveryAttemptId,
+              detail: `plugin=${pluginName}; provider=${settings.provider.kind}; quota=${day}:reserved`,
+            });
+          }
           const error = capabilityError(
             "EMAIL_DELIVERY_UNKNOWN",
             `El proveedor no confirmó si aceptó el correo. No reintentes a ciegas; reconcilia el intento ${deliveryAttemptId} con el proveedor.`,

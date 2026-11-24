@@ -1,4 +1,5 @@
-import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "../../packages/commerce-plugin/src/host-bridge";
+import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "../../server/plugins/commerce-host-bridge";
+import { registerCommerceCatalogProvider } from "../../packages/atomic-elements/src/commerce-provider";
 import type { Product } from "./types";
 
 let cachedConfig: CommerceConfig | null | undefined;
@@ -39,3 +40,5 @@ export function formatPrice(product: Product, currency = "usd"): string {
   const amount = priceEntry.amount / 100;
   return new Intl.NumberFormat("es", { style: "currency", currency: currency.toUpperCase() }).format(amount);
 }
+
+registerCommerceCatalogProvider({ isCommerceEnabled, fetchProducts, formatPrice });

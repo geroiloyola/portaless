@@ -41,6 +41,7 @@
 //     registry cae a isolated-vm, igual que el resto del sistema.
 
 import { runPluginInProduction } from "../../../../packages/plugin-sandbox/src/runtime/production-plugin-runner.ts";
+import { createPortalessCapabilityHostBridge } from "../../../../server/plugins/capability-host-bridge.ts";
 import { createPluginRegistryStore } from "../../../../packages/plugin-sandbox/src/registry/store-factory.ts";
 import { createPluginArtifactStore, sha256Hex } from "../../../../packages/plugin-sandbox/src/registry/plugin-artifacts.ts";
 import { validateManifest } from "../../../../packages/plugin-sandbox/src/manifest/manifest-schema.ts";
@@ -243,7 +244,7 @@ export async function onRequestPost(context, deps = {}) {
       payload: body?.payload ?? null,
       bridgeUrl,
     },
-    deps
+    { hostBridge: createPortalessCapabilityHostBridge(env), ...deps }
   );
 
   return json(result, 200);

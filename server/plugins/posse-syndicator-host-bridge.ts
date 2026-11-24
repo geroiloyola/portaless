@@ -1,15 +1,15 @@
-// packages/posse-syndicator-plugin/src/host-bridge.ts
-// Puente del host para ejecutar posse-syndicator-plugin en el sandbox.
+// server/plugins/posse-syndicator-host-bridge.ts
+// Puente del host (L5) para ejecutar posse-syndicator-plugin en el sandbox.
 // La fuente de verdad canónica reside en /posts/ (src/content/posts/*.md).
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NodeIsolatedVmAdapter } from "../../plugin-sandbox/src/adapters/node-isolated-vm";
-import type { PluginManifest, GrantedCapabilities } from "../../plugin-sandbox/src/types";
-import { createPermissionStore } from "../../permissions/src/store-factory";
+import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
+import type { PluginManifest, GrantedCapabilities } from "../../packages/plugin-sandbox/src/types";
+import { createPermissionStore } from "../../packages/permissions/src/store-factory";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PLUGIN_ROOT = join(__dirname, "..");
+const PLUGIN_ROOT = join(__dirname, "../../packages/posse-syndicator-plugin");
 
 export interface CanonicalPost {
   title: string;

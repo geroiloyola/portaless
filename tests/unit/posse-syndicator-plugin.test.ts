@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import {
   loadPosseManifest,
   loadPosseCode,
-} from "../../packages/posse-syndicator-plugin/src/host-bridge";
+} from "../../server/plugins/posse-syndicator-host-bridge";
 import { validateManifest } from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
 import { NodeIsolatedVmAdapter } from "../../packages/plugin-sandbox/src/adapters/node-isolated-vm";
 

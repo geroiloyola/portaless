@@ -12,7 +12,7 @@ import type { UsageLedgerStore } from "../../../trust-layer/src/ledger/log-write
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
-import { DOC_ENTRIES } from "../../../../src/lib/docs-nav.mjs";
+import { DOC_ENTRIES } from "../../../dashboard/src/docs-nav.mjs";
 import { isPubliclyPublishable } from "../../../deploy-engine/src/draft-filter";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
