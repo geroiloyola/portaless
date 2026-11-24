@@ -1,3 +1,4 @@
+import { lookup } from "node:dns/promises";
 import {
   BLOCKED_IPV4_RANGE_COUNT,
   BLOCKED_IPV6_RANGE_COUNT,
@@ -12,6 +13,9 @@ import { LtpFailure } from "./budget";
 
 export { BLOCKED_IPV4_RANGE_COUNT, BLOCKED_IPV6_RANGE_COUNT };
 export type { ResolveHook, ResolvedAddress };
+
+const defaultNodeLookup: ResolveHook = async (host) =>
+  (await lookup(host, { all: true, verbatim: true })) as ResolvedAddress[];
 
 export function isBlockedIp(address: string): boolean {
   return netIsBlockedIp(address);
@@ -48,7 +52,7 @@ export async function resolvePinnedAddress(
   signal?: AbortSignal,
 ): Promise<ResolvedAddress> {
   try {
-    return await netResolvePinnedAddress(hostname, resolver, signal);
+    return await netResolvePinnedAddress(hostname, resolver ?? defaultNodeLookup, signal);
   } catch (error) {
     if (error instanceof PinningError) {
       throw new LtpFailure(error.code, error.message);

@@ -252,13 +252,11 @@ export async function resolvePinnedAddress(
   if (parseIpv6Bytes(host)) return { address: host, family: 6 };
 
   let answers: ResolvedAddress[];
+  if (!resolver) {
+    throw new PinningError("service_unavailable", "dns_resolver_required");
+  }
   try {
-    if (resolver) {
-      answers = await resolver(host);
-    } else {
-      const { lookup } = await import("node:dns/promises");
-      answers = (await lookup(host, { all: true, verbatim: true })) as ResolvedAddress[];
-    }
+    answers = await resolver(host);
   } catch {
     if (signal?.aborted) throw new PinningError("deadline_exceeded", "dns resolution aborted");
     throw new PinningError("service_unavailable", "dns_resolution_failed");

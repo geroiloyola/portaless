@@ -96,12 +96,12 @@ describe("standalone: grafo de imports sin dependencias del monorepo", () => {
     }
   });
 
-  it("los archivos del grafo no importan better-sqlite3 ni @portaless/*", () => {
+  it("los archivos del grafo no importan better-sqlite3 ni paquetes del CMS (@portaless/* salvo @portaless/net)", () => {
     const files = collectImports(join(root, "standalone.ts"));
     for (const file of files) {
       const source = readFileSync(file, "utf8");
       expect(source, file).not.toMatch(/from\s+["']better-sqlite3["']/);
-      expect(source, file).not.toMatch(/from\s+["']@portaless\//);
+      expect(source, file).not.toMatch(/from\s+["']@portaless\/(?!net["'])/);
     }
   });
 });
