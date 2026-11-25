@@ -32,8 +32,13 @@ process.on("exit", () => {
 
 export async function startBrowserTestServer() {
   if (!existsSync(join(rootDir, "dist", "index.html"))) {
-    console.log("[browser-test-server] dist/ ausente -- corriendo npm run build...");
-    execFileSync("npm", ["run", "build"], { cwd: rootDir, stdio: "inherit" });
+    const profile = process.env.PORTALESS_SITE_PROFILE || "demo";
+    console.log(`[browser-test-server] dist/ ausente -- corriendo PORTALESS_SITE_PROFILE=${profile} npm run build...`);
+    execFileSync("npm", ["run", "build"], {
+      cwd: rootDir,
+      stdio: "inherit",
+      env: { ...process.env, PORTALESS_SITE_PROFILE: profile },
+    });
   }
 
   let fixture;

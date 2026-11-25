@@ -1,15 +1,10 @@
-// Páginas de ejemplo: sin enlaces muertos ni de relleno (Fase 12, §3).
-// Un visitante que hace clic y llega a la nada concluye que el producto está
-// roto. Este test recorre los JSON de ejemplo, extrae cada `url` y `imageUrl`,
-// y falla ante example.com, portaless.com, una raíz pelada de una plataforma
-// (instagram.com/, youtube.com/, open.spotify.com/, music.apple.com/,
-// bandcamp.com/, tiktok.com/@) o un http:// sin TLS. Es puro, sin red, y corre
-// en CI: impide que un enlace de relleno vuelva a entrar sin que nada lo note.
+// Páginas de ejemplo del perfil demo: sin enlaces muertos, cuentas personales
+// ni medios externos sin licencia verificable (PR-B1 §3 / W3.3).
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const dir = join(__dirname, "..", "..", "src", "content", "pages");
+const dir = join(__dirname, "..", "..", "site-profiles", "demo", "pages");
 const files = readdirSync(dir).filter((f) => f.endsWith(".json")).sort();
 
 function collectLinks(node: unknown, out: string[]): void {
@@ -19,8 +14,15 @@ function collectLinks(node: unknown, out: string[]): void {
   }
   if (node && typeof node === "object") {
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-      if ((k === "url" || k === "imageUrl") && typeof v === "string") out.push(v);
-      else collectLinks(v, out);
+      if ((k === "url" || k === "imageUrl" || k === "avatarUrl" || k === "action") && typeof v === "string" && v.trim()) {
+        out.push(v);
+      } else if (k === "images" && typeof v === "string") {
+        for (const line of v.split(/\r?\n/)) {
+          if (line.trim()) out.push(line.trim());
+        }
+      } else {
+        collectLinks(v, out);
+      }
     }
   }
 }
@@ -34,11 +36,27 @@ const BARE_ROOT_HOSTS = new Set([
   "tiktok.com", "www.tiktok.com",
 ]);
 
-describe("páginas de ejemplo: sin enlaces muertos", () => {
+const FORBIDDEN_DEMO_HOSTS = new Set([
+  "images.unsplash.com",
+  "unsplash.com",
+  "placehold.co",
+  "www.youtube.com",
+  "youtube.com",
+  "youtu.be",
+  "formspree.io",
+  "www.amazon.com",
+  "amazon.com",
+]);
+
+describe("páginas de ejemplo (perfil demo): sin enlaces muertos ni activos externos sin licencia", () => {
   for (const file of files) {
-    it(`${file} no tiene enlaces muertos ni de relleno`, () => {
+    it(`${file} no tiene enlaces muertos, datos personales ni medios externos sin licencia`, () => {
+      const rawText = readFileSync(join(dir, file), "utf8");
+      expect(rawText.toLowerCase()).not.toContain("jerry-bantz");
+      expect(rawText.toLowerCase()).not.toContain("jerrybantz");
+
       const links: string[] = [];
-      collectLinks(JSON.parse(readFileSync(join(dir, file), "utf8")), links);
+      collectLinks(JSON.parse(rawText), links);
 
       const problems: string[] = [];
       for (const raw of links) {
@@ -58,6 +76,7 @@ describe("páginas de ejemplo: sin enlaces muertos", () => {
         if (u.protocol !== "https:") problems.push(`sin TLS: ${v}`);
         if (u.hostname === "example.com" || u.hostname.endsWith(".example.com")) problems.push(`example.com: ${v}`);
         if (u.hostname === "portaless.com" || u.hostname.endsWith(".portaless.com")) problems.push(`portaless.com: ${v}`);
+        if (FORBIDDEN_DEMO_HOSTS.has(u.hostname)) problems.push(`host externo no permitido en demo: ${v}`);
         if (BARE_ROOT_HOSTS.has(u.hostname) && (u.pathname === "" || u.pathname === "/" || u.pathname === "/@")) {
           problems.push(`raíz pelada (sin destino concreto): ${v}`);
         }

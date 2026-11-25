@@ -1,0 +1,36 @@
+{
+  "version": "0.1",
+  "slug": "home",
+  "title": "Welcome to your Portaless site",
+  "description": "A clean static site built with Portaless and Atomic Elements.",
+  "theme": "portaless-nocturno",
+  "root": [
+    {
+      "id": "starter-hero",
+      "type": "Hero",
+      "props": {
+        "variant": "spotlight",
+        "size": "lg",
+        "title": "Welcome to your Portaless site",
+        "subtitle": "Edit this page in site-profiles/starter/home.json or publish posts in Markdown. When you run a self-hosted node, you can also edit and approve pages visually or via MCP.",
+        "ctaLabel": "Read the blog",
+        "ctaHref": "/blog/"
+      }
+    },
+    {
+      "id": "starter-intro",
+      "type": "Paragraph",
+      "props": {
+        "text": "This starter profile keeps your public site minimal and clean: one home page, one sample post, and your active discovery hubs (/blog/, /explore/, /rss.xml, /sitemap.xml, and /llms.txt)."
+      }
+    },
+    {
+      "id": "starter-posts",
+      "type": "PostList",
+      "props": {
+        "title": "Latest posts",
+        "limit": 5
+      }
+    }
+  ]
+}

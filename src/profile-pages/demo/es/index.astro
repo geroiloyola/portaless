@@ -1,0 +1,8 @@
+---
+// Home en español: la PROYECCION de locale del canon ingles (docs/i18n-design.md).
+// Solo emitido en perfil demo (PORTALESS_SITE_PROFILE=demo).
+import HomePage from "../../../components/HomePage.astro";
+import { loadHomeLayout } from "../../../lib/content-pages";
+const home = loadHomeLayout("demo", "es");
+---
+<HomePage layout={home} locale="es" canonPath="/" />

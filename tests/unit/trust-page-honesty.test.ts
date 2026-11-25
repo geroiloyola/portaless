@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 const root = join(__dirname, "..", "..");
 const trustPage = readFileSync(join(root, "src", "pages", "trust", "index.astro"), "utf8");
-const jerryBantz = readFileSync(join(root, "src", "content", "pages", "jerry-bantz.json"), "utf8");
+const creatorDemo = readFileSync(join(root, "site-profiles", "demo", "pages", "creator-demo.json"), "utf8");
 
 describe("página pública de TrustScore: sin valores fabricados", () => {
   it("no contiene ninguno de los literales inventados", () => {
@@ -40,7 +40,7 @@ describe("página pública de TrustScore: sin valores fabricados", () => {
   });
 
   it("la bio de ejemplo no anuncia un conteo fabricado de Veraciers", () => {
-    expect(jerryBantz).not.toContain("92 Veraciers");
-    expect(jerryBantz).not.toContain("Perfil Verificado");
+    expect(creatorDemo).not.toContain("92 Veraciers");
+    expect(creatorDemo).not.toContain("Perfil Verificado");
   });
 });

@@ -24,10 +24,11 @@ afterEach(() => {
 });
 
 describe("public build stage", () => {
-  it("forwards public build settings but drops arbitrary credentials/secrets", () => {
+  it("forwards public build settings including PORTALESS_SITE_PROFILE but drops credentials/secrets", () => {
     expect(createPublicBuildEnv({
       PATH: "/usr/bin",
       PORTALESS_BASE_PATH: "/site/",
+      PORTALESS_SITE_PROFILE: "starter",
       PUBLIC_ANALYTICS_ID: "public-id",
       PORTALESS_SQLITE_PATH: "/private/node.db",
       PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY: "secret-key",
@@ -36,6 +37,7 @@ describe("public build stage", () => {
     }, "/tmp/dist")).toEqual({
       PATH: "/usr/bin",
       PORTALESS_BASE_PATH: "/site/",
+      PORTALESS_SITE_PROFILE: "starter",
       PUBLIC_ANALYTICS_ID: "public-id",
       PORTALESS_OUT_DIR: "/tmp/dist",
     });
@@ -52,6 +54,8 @@ describe("public build stage", () => {
       "workspace/.ssh/id_ed25519",
       "credentials.json",
       "src/content/pages/old-page.json",
+      "site-profiles/starter/pages/private.json",
+      "site-profiles/demo/posts/draft.md",
       "src/content/revision-history/unapproved.json",
       "public/revisions/unapproved/index.json",
       "packages/example/private.key",
@@ -60,13 +64,15 @@ describe("public build stage", () => {
     }
     expect(isExcludedFromPublicBuild("src/pages/index.astro")).toBe(false);
     expect(isExcludedFromPublicBuild("src/pages/docs/[...slug].astro")).toBe(false);
+    expect(isExcludedFromPublicBuild("src/profile-pages/demo/docs/index.astro")).toBe(false);
   });
 
   it("copies a clean project subset and replaces page fixtures with approved layouts", () => {
     const project = tempDir();
     const stage = path.join(tempDir(), "stage");
     fs.mkdirSync(path.join(project, ".airchive"), { recursive: true });
-    fs.mkdirSync(path.join(project, "src/content/pages"), { recursive: true });
+    fs.mkdirSync(path.join(project, "site-profiles/starter/pages"), { recursive: true });
+    fs.mkdirSync(path.join(project, "site-profiles/demo/pages"), { recursive: true });
     fs.mkdirSync(path.join(project, "src/pages"), { recursive: true });
     fs.mkdirSync(path.join(project, "packages"), { recursive: true });
     for (const file of ["package.json", "package-lock.json", "astro.config.mjs"]) {
@@ -76,15 +82,19 @@ describe("public build stage", () => {
     fs.mkdirSync(path.join(project, "functions"), { recursive: true });
     fs.writeFileSync(path.join(project, "functions/private.js"), "private function source");
     fs.writeFileSync(path.join(project, ".airchive/marker.txt"), "private-marker");
-    fs.writeFileSync(path.join(project, "src/content/pages/stale.json"), "stale-private-page");
+    fs.writeFileSync(path.join(project, "site-profiles/starter/home.json"), "{}\n");
+    fs.writeFileSync(path.join(project, "site-profiles/starter/pages/stale.json"), "stale-private-page");
+    fs.writeFileSync(path.join(project, "site-profiles/demo/home.json"), "{}\n");
     fs.writeFileSync(path.join(project, "src/pages/index.astro"), "public source");
 
-    copyPublicBuildInputs(project, stage);
-    writePublicPageLayouts(stage, [{ slug: "approved", status: "published" }]);
+    copyPublicBuildInputs(project, stage, { profile: "starter" });
+    writePublicPageLayouts(stage, [{ slug: "approved", status: "published" }], { profile: "starter" });
 
     expect(fs.existsSync(path.join(stage, ".airchive/marker.txt"))).toBe(false);
-    expect(fs.existsSync(path.join(stage, "src/content/pages/stale.json"))).toBe(false);
-    expect(JSON.parse(fs.readFileSync(path.join(stage, "src/content/pages/approved.json"), "utf8"))).toEqual({
+    expect(fs.existsSync(path.join(stage, "site-profiles/starter/pages/stale.json"))).toBe(false);
+    expect(fs.existsSync(path.join(stage, "site-profiles/demo/home.json"))).toBe(false);
+    expect(fs.existsSync(path.join(stage, "site-profiles/starter/home.json"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(stage, "site-profiles/starter/pages/approved.json"), "utf8"))).toEqual({
       slug: "approved",
       status: "published",
     });
@@ -96,9 +106,9 @@ describe("public build stage", () => {
   it("keeps published source pages/translations but drops private or DB-shadowed slugs", () => {
     const project = tempDir();
     const stage = tempDir();
-    const sourcePages = path.join(project, "src/content/pages");
+    const sourcePages = path.join(project, "site-profiles/starter/pages");
     fs.mkdirSync(sourcePages, { recursive: true });
-    fs.mkdirSync(path.join(stage, "src/content/pages"), { recursive: true });
+    fs.mkdirSync(path.join(stage, "site-profiles/starter/pages"), { recursive: true });
     const write = (name: string, value: unknown) => fs.writeFileSync(path.join(sourcePages, name), JSON.stringify(value));
     write("public.json", { slug: "public", status: "published" });
     write("public.es.json", { slug: "public", status: "published", locale: "es" });
@@ -106,10 +116,10 @@ describe("public build stage", () => {
     write("private.en.json", { slug: "private", status: "published", locale: "en" });
     write("db-owned.json", { slug: "db-owned", status: "published", title: "old source" });
 
-    copyPublicSourcePages(project, stage, new Set(["db-owned"]), (layout) => layout.status === "published");
-    writePublicPageLayouts(stage, [{ slug: "db-owned", status: "published", title: "PageStore" }], { clear: false });
+    copyPublicSourcePages(project, stage, new Set(["db-owned"]), (layout) => layout.status === "published", { profile: "starter" });
+    writePublicPageLayouts(stage, [{ slug: "db-owned", status: "published", title: "PageStore" }], { clear: false, profile: "starter" });
 
-    const target = path.join(stage, "src/content/pages");
+    const target = path.join(stage, "site-profiles/starter/pages");
     expect(fs.readdirSync(target).sort()).toEqual(["db-owned.json", "public.es.json", "public.json"]);
     expect(JSON.parse(fs.readFileSync(path.join(target, "db-owned.json"), "utf8")).title).toBe("PageStore");
   });
@@ -117,7 +127,7 @@ describe("public build stage", () => {
   it("copies only publishable Markdown posts and docs explicitly listed in docs-nav", () => {
     const project = tempDir();
     const stage = tempDir();
-    const posts = path.join(project, "src/content/posts");
+    const posts = path.join(project, "site-profiles/starter/posts");
     fs.mkdirSync(posts, { recursive: true });
     fs.mkdirSync(path.join(project, "docs/internal"), { recursive: true });
     fs.writeFileSync(path.join(posts, "public.md"), "---\ntitle: Public\npubDate: 2026-01-01\n---\nPUBLIC_MARKER");
@@ -126,10 +136,10 @@ describe("public build stage", () => {
     fs.writeFileSync(path.join(project, "docs/public.md"), "PUBLIC_DOC");
     fs.writeFileSync(path.join(project, "docs/internal/secret.md"), "PRIVATE_DOC_MARKER");
 
-    copyPublicSourcePosts(project, stage, (page) => !page.draft && page.visibility !== "private");
+    copyPublicSourcePosts(project, stage, (page) => !page.draft && page.visibility !== "private", { profile: "starter" });
     copyPublicDocs(project, stage, [{ file: "docs/public.md" }]);
 
-    const stagedPosts = path.join(stage, "src/content/posts");
+    const stagedPosts = path.join(stage, "site-profiles/starter/posts");
     expect(fs.readdirSync(stagedPosts)).toEqual(["public.md"]);
     expect(fs.readFileSync(path.join(stagedPosts, "public.md"), "utf8")).toContain("PUBLIC_MARKER");
     expect(fs.existsSync(path.join(stage, "docs/public.md"))).toBe(true);
@@ -138,7 +148,7 @@ describe("public build stage", () => {
 
   it("rejects page slugs that escape the staged content directory", () => {
     const stage = tempDir();
-    expect(() => writePublicPageLayouts(stage, [{ slug: "../private" }])).toThrow(/fuera del directorio/);
+    expect(() => writePublicPageLayouts(stage, [{ slug: "../private" }], { profile: "starter" })).toThrow(/fuera del directorio/);
   });
 
 });

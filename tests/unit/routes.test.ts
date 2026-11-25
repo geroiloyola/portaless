@@ -56,7 +56,7 @@ describe("contentPagePath / contentPageHref -- contenido del usuario", () => {
 
 describe("resolveLegacyRedirect -- tabla fija, sin open redirect", () => {
   it("cada fila conocida mapea preservando el idioma", () => {
-    expect(resolveLegacyRedirect("/paginas/jerry-bantz/")).toBe("/pages/jerry-bantz/");
+    expect(resolveLegacyRedirect("/paginas/creator-demo/")).toBe("/pages/creator-demo/");
     expect(resolveLegacyRedirect("/es/paginas/bio/")).toBe("/es/pages/bio/");
     expect(resolveLegacyRedirect("/en/paginas/bio/")).toBe("/pages/bio/");
     expect(resolveLegacyRedirect("/pages/bio/")).toBeNull(); // ya es ruta nueva

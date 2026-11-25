@@ -21,8 +21,8 @@ const baseLayoutSrc = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "
 const shellSrc = readFileSync(join(root, "functions/pages/[slug].js"), "utf8");
 
 const profileHtml = elementRegistry.ProfileHeader.renderHTML({
-  avatarUrl: "/avatars/jerry-bantz.svg",
-  name: "Jerry Bantz",
+  avatarUrl: "/avatars/creator-demo.svg",
+  name: "Nora Vega",
   bio: "Música nueva todas las semanas.",
   bgColor: "#261C15",
 });

@@ -2,7 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BUILD_ONLY_PATHS = [".astro", "docs", "src/content/pages", "src/content/posts"];
+const BUILD_ONLY_PATHS = [
+  ".astro",
+  "docs",
+  "src/content/pages",
+  "src/content/posts",
+  "site-profiles/starter/pages",
+  "site-profiles/starter/posts",
+  "site-profiles/demo/pages",
+  "site-profiles/demo/posts",
+];
 
 export function pruneBuildInputs(rootDir) {
   const root = path.resolve(rootDir);

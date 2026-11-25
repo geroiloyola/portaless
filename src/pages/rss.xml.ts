@@ -14,18 +14,20 @@ import { getCollection } from "astro:content";
 import { getSiteUrl } from "../lib/seo";
 import { buildRssXml } from "../lib/rss";
 import { joinSiteUrl, publishedPosts } from "../lib/llms-txt";
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
 
 export const GET: APIRoute = async ({ site }) => {
+  const profile = getSiteProfileConfig(process.env);
   const siteUrl = getSiteUrl(site);
   const url = (path: string) => joinSiteUrl(siteUrl, import.meta.env.BASE_URL, path);
 
   const posts = publishedPosts(await getCollection("posts"));
 
   const body = buildRssXml({
-    siteName: process.env.PORTALESS_SITE_NAME || "Portaless",
+    siteName: process.env.PORTALESS_SITE_NAME || profile.defaultSiteName,
     siteUrl: url("/"),
     feedUrl: url("/rss.xml"),
-    description: process.env.PORTALESS_SITE_DESCRIPTION || "Sitio construido con Portaless",
+    description: process.env.PORTALESS_SITE_DESCRIPTION || profile.defaultSiteDescription,
     items: posts.map((post) => ({
       title: post.data.title,
       url: url(`/blog/${post.id}/`),

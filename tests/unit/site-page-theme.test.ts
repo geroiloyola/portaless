@@ -76,8 +76,8 @@ describe("shell runtime functions/pages/[slug].js emite el tema", () => {
 });
 
 describe("el contenido real resuelve contra los builtins", () => {
-  it("jerry-bantz aplica 2pac-dark y su declaracion sale completa", () => {
-    const layout = JSON.parse(readFileSync(join(root, "src/content/pages/jerry-bantz.json"), "utf8"));
+  it("creator-demo aplica 2pac-dark y su declaracion sale completa", () => {
+    const layout = JSON.parse(readFileSync(join(root, "site-profiles/demo/pages/creator-demo.json"), "utf8"));
     expect(layout.theme).toBe("2pac-dark");
     const resolved = resolveThemePack(BUILTIN_THEMES, layout.theme);
     expect(resolved).not.toBeNull();
@@ -88,7 +88,7 @@ describe("el contenido real resuelve contra los builtins", () => {
   });
 
   it("TODA pagina JSON con theme resuelve (nadie puede declarar un tema roto y publicarlo)", () => {
-    const dir = join(root, "src/content/pages");
+    const dir = join(root, "site-profiles/demo/pages");
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
       const layout = JSON.parse(readFileSync(join(dir, file), "utf8")) as PageLayout;
       if (layout.theme === undefined) continue;

@@ -33,7 +33,7 @@ function canon(overrides: Partial<Canon> = {}): Canon {
   return {
     kind: "post",
     id: "bienvenida",
-    source: "src/content/posts/bienvenida.md",
+    source: "site-profiles/demo/posts/bienvenida.md",
     title: "Bienvenido a tu sitio",
     description: "El primer articulo.",
     pubDate: new Date("2026-09-12T00:00:00Z"),
@@ -132,8 +132,8 @@ describe("URLs del canon", () => {
 
 describe("la demo esta enlazada y sin links rotos", () => {
   it("existen las dos versiones (/projections/ y /es/projections/)", () => {
-    expect(existsSync(join(root, "src/pages/projections.astro"))).toBe(true);
-    expect(existsSync(join(root, "src/pages/es/projections.astro"))).toBe(true);
+    expect(existsSync(join(root, "src/profile-pages/demo/projections.astro"))).toBe(true);
+    expect(existsSync(join(root, "src/profile-pages/demo/es/projections.astro"))).toBe(true);
   });
 
   it("Explore y el post enlazan a la demo", () => {

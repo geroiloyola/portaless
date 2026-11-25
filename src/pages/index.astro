@@ -1,9 +1,12 @@
 ---
-// Home en inglés (locale por defecto, en la raiz "/"). El contenido es el canon
-// (src/content/home.json) y la vista compartida vive en components/HomePage.
-// Ver docs/design/home-redesign.md y docs/i18n-design.md.
+// Home en inglés (locale por defecto, en la raiz "/"). El contenido sale del
+// perfil activo (site-profiles/<starter|demo>/home.json) y la vista compartida
+// vive en components/HomePage.astro.
 import HomePage from "../components/HomePage.astro";
-import home from "../content/home.json";
-import type { PageLayout } from "@portaless/atomic-elements/types";
+import { loadHomeLayout } from "../lib/content-pages";
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
+
+const profile = getSiteProfileConfig(process.env);
+const home = loadHomeLayout(profile.id, "en");
 ---
-<HomePage layout={home as unknown as PageLayout} locale="en" canonPath="/" />
+<HomePage layout={home} locale="en" canonPath={profile.features.esRoutes ? "/" : undefined} />

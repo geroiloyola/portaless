@@ -10,7 +10,7 @@ Portaless está diseñado para desacoplar la creación de sitios de la tiranía 
 
 | Caso de Uso | Ruta de Referencia | Componentes Clave | Propósito y Reto Técnico Resuelto |
 |---|---|---|---|
-| **1. Creador de Contenido / Influencer** | `/pages/jerry-bantz/`, `/pages/link-in-bio/` | `ProfileHeader`, `LinkList`, `SocialIcons`, `ProductCard` (afiliado) | Despliegue estático ultrarrápido, alternativa soberana a Beacons/Linktree. Cero costo de hosting y propiedad de la audiencia vía AT Protocol. |
+| **1. Creador de Contenido / Influencer** | `/pages/creator-demo/`, `/pages/link-in-bio/` | `ProfileHeader`, `LinkList`, `SocialIcons`, `ProductCard` (ficticio) | Despliegue estático ultrarrápido, alternativa soberana a Beacons/Linktree. Ejemplo ficticio de exhibición (`PORTALESS_SITE_PROFILE=demo`). |
 | **2. Músico & Venta de Merchandise** | `/pages/musica-merch/` | `Hero`, `Video` (YouTube/Vimeo), `LinkList` (Spotify/Apple Music), `Columns`, `ProductCard` (físico/vinilo) | Fusión de reproductor multimedia con ecommerce ligero de inventario reducido. Soporta picos masivos de tráfico en lanzamientos sin saturar el servidor. |
 | **3. Discoteca o Eventos (Ticketing)** | `/pages/club-evento/` | `Hero`, `Columns`, `ProductCard` (entradas por niveles), `Map` (OpenStreetMap), `FAQ` | Venta de entradas con entrega digital de código QR, aforo estricto, botón interactivo «Cómo llegar» hacia OSRM/Google Maps y checkout optimizado para móviles. |
 | **4. Tienda Boutique de Productos Físicos** | `/pages/boutique/`, `/shop/` | `Hero`, `Columns`, `ProductCard`, `Testimonial`, `Form` | Alternativa sin suscripción a Shopify para marcas de diseño, moda y artesanía. Fichas de producto con soporte para enlaces locales (Medusa) o afiliados externos. |

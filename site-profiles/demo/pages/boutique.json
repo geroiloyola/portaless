@@ -1,0 +1,111 @@
+{
+  "version": "0.1",
+  "slug": "boutique",
+  "title": "Maison Atelier — Tienda Boutique Independiente (Demo)",
+  "description": "Demo content, fictional: moda consciente, marroquinería y objetos de diseño artesanal ficticios.",
+  "status": "published",
+  "root": [
+    {
+      "id": "hero-boutique",
+      "type": "Hero",
+      "props": {
+        "title": "Maison Atelier — Objetos & Moda Consciente",
+        "subtitle": "Demo content, fictional — Colección cápsula ficticia para exhibir tarjetas de producto, testimonios y formulario de muestra.",
+        "bgColor": "#221e1a"
+      }
+    },
+    {
+      "id": "heading-catalogo",
+      "type": "Heading",
+      "props": {
+        "text": "Catálogo de Temporada",
+        "level": "h2",
+        "align": "center"
+      }
+    },
+    {
+      "id": "columnas-productos",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "children": [
+        {
+          "id": "producto-chaqueta",
+          "type": "ProductCard",
+          "props": {
+            "title": "Chaqueta de Lana Merino",
+            "description": "Corte desestructurado, lana merino 100% hilada a mano y botones de asta natural. Ejemplo ficticio.",
+            "price": "$180.00 USD",
+            "imageUrl": "/demo-assets/boutique-jacket.svg",
+            "url": "/es/shop/",
+            "buttonLabel": "Ver en Tienda Demo",
+            "badge": "Demo content, fictional"
+          }
+        },
+        {
+          "id": "producto-tote",
+          "type": "ProductCard",
+          "props": {
+            "title": "Bolso Tote Canvas Orgánico",
+            "description": "Algodón orgánico encerado de 18 oz con asas de curtición vegetal y costuras reforzadas. Ejemplo ficticio.",
+            "price": "$45.00 USD",
+            "imageUrl": "/demo-assets/boutique-tote.svg",
+            "url": "/es/shop/",
+            "buttonLabel": "Ver en Tienda Demo",
+            "badge": "Bestseller demo"
+          }
+        },
+        {
+          "id": "producto-lampara",
+          "type": "ProductCard",
+          "props": {
+            "title": "Lámpara Cerámica Escultural",
+            "description": "Pieza única torneada en gres chamotado con pantalla de lino crudo y casquillo de latón. Ejemplo ficticio.",
+            "price": "$95.00 USD",
+            "imageUrl": "/demo-assets/boutique-lamp.svg",
+            "url": "/es/shop/",
+            "buttonLabel": "Ver en Tienda Demo",
+            "badge": "Pieza demo"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spacer-testimonio",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "testimonio-cliente",
+      "type": "Testimonial",
+      "props": {
+        "quote": "La calidad de los materiales y el empaque sin plásticos demuestran un compromiso real con el oficio y la durabilidad. (Testimonio ficticio de exhibición.)",
+        "author": "Camila Valenzuela",
+        "role": "Diseñadora de Interiores (Ficticio)",
+        "avatarUrl": "/demo-assets/avatar-geometric-1.svg"
+      }
+    },
+    {
+      "id": "spacer-contacto",
+      "type": "Spacer",
+      "props": { "height": 32 }
+    },
+    {
+      "id": "heading-contacto",
+      "type": "Heading",
+      "props": {
+        "text": "Consultas & Encargos a Medida (Formulario de demostración)",
+        "level": "h2",
+        "align": "left"
+      }
+    },
+    {
+      "id": "formulario-boutique",
+      "type": "Form",
+      "props": {
+        "action": "",
+        "submitLabel": "Enviar mensaje (demo sin envío externo)",
+        "anchorId": "contacto-boutique"
+      }
+    }
+  ]
+}

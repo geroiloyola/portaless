@@ -9,7 +9,10 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { isCommerceEnabled, fetchProducts, fetchProductByHandle, formatPrice } from "../../commerce/medusa-client";
 
+import { isDemoProfile } from "../../lib/site-profile.mjs";
+
 export async function getStaticPaths() {
+  if (!isDemoProfile()) return [];
   const enabled = (await import("../../commerce/medusa-client")).isCommerceEnabled;
   if (!(await enabled())) return [];
   try {

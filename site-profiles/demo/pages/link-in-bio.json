@@ -1,0 +1,52 @@
+{
+  "version": "0.1",
+  "slug": "link-in-bio",
+  "title": "Ana Ruiz — Creadora digital (Demo)",
+  "description": "Demo content, fictional: página de ejemplo de link-in-bio construida con Atomic Elements.",
+  "root": [
+    {
+      "id": "perfil",
+      "type": "ProfileHeader",
+      "props": {
+        "avatarUrl": "/demo-assets/avatar-ar.svg",
+        "name": "Ana Ruiz",
+        "bio": "Demo content, fictional — Creadora digital ficticia. Diseño, no-code y herramientas para independent makers.",
+        "bgColor": "#261C15"
+      }
+    },
+    {
+      "id": "heading-enlaces",
+      "type": "Heading",
+      "props": { "text": "Mis enlaces (Demo)", "level": "h2", "align": "center" }
+    },
+    {
+      "id": "enlaces",
+      "type": "LinkList",
+      "props": {
+        "title": "Encuéntrame en",
+        "buttonStyle": "solid",
+        "links": [
+          { "label": "Mi blog", "url": "/blog/", "icon": "blog", "enabled": true },
+          { "label": "Portafolio de proyectos", "url": "/pages/portafolio/", "icon": "store", "enabled": true },
+          { "label": "Explorar todos los ejemplos", "url": "/explore/", "icon": "sparkles", "enabled": true }
+        ]
+      }
+    },
+    {
+      "id": "redes",
+      "type": "SocialIcons",
+      "props": {
+        "align": "center",
+        "links": [
+          { "platform": "globe", "url": "/explore/" },
+          { "platform": "rss", "url": "/rss.xml" }
+        ]
+      }
+    },
+    {
+      "id": "tienda",
+      "type": "StoreBlock",
+      "props": { "columns": 2, "limit": 4 }
+    }
+  ]
+}

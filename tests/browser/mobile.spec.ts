@@ -17,7 +17,7 @@ const TEMPLATES = [
   "/pages/boutique/",
   "/pages/club-evento/",
   "/pages/ejemplo-atomic-elements/",
-  "/pages/jerry-bantz/",
+  "/pages/creator-demo/",
   "/pages/lanzamiento/",
   "/pages/link-in-bio/",
   "/pages/musica-merch/",

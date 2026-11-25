@@ -1,0 +1,57 @@
+{
+  "version": "0.1",
+  "slug": "servicios",
+  "title": "Consultoría — María Paz Contreras (Demo)",
+  "description": "Demo content, fictional: sitio de servicios de exhibición con propuesta de valor, FAQ, testimonio y formulario de muestra.",
+  "root": [
+    {
+      "id": "s1",
+      "type": "Hero",
+      "props": {
+        "title": "Consultoría para equipos de producto",
+        "subtitle": "Demo content, fictional — Página de exhibición para consultoría independiente y equipos de producto.",
+        "bgColor": "#261C15"
+      }
+    },
+    { "id": "s2", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "s3",
+      "type": "Paragraph",
+      "props": { "text": "Demo content, fictional — Ejemplo de propuesta de valor para servicios profesionales: diagnóstico inicial, workshops y playbook operativo." }
+    },
+    { "id": "s4", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s5",
+      "type": "FAQ",
+      "props": {
+        "title": "Cómo trabajamos",
+        "items": "¿Cómo es el proceso? :: Una diagnosis inicial, 2 workshops con tu equipo y un playbook final (ejemplo ficticio).\n¿Trabajas remoto? :: Sí, modalidad de exhibición remota para equipos distribuidos.\n¿Cuánto cuesta? :: Depende del alcance. Este es un caso de demostración sin reservas reales."
+      }
+    },
+    { "id": "s6", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s7",
+      "type": "Testimonial",
+      "props": {
+        "quote": "María Paz ordenó en un mes lo que veníamos arrastrando medio año. El playbook sigue vivo en el equipo. (Testimonio ficticio.)",
+        "author": "Rodrigo Alarcón",
+        "role": "CTO, Fintech Andina (Ficticio)",
+        "avatarUrl": "/demo-assets/avatar-geometric-4.svg",
+        "align": "left"
+      }
+    },
+    { "id": "s8", "type": "Spacer", "props": { "height": 24 } },
+    {
+      "id": "s9",
+      "type": "Paragraph",
+      "props": { "text": "Demo content, fictional — Formulario de contacto de muestra sin envío externo." }
+    },
+    { "id": "s10", "type": "Button", "props": { "label": "Agendar llamada", "href": "#contacto", "variant": "solid" } },
+    { "id": "s11", "type": "Spacer", "props": { "height": 16 } },
+    {
+      "id": "s12",
+      "type": "Form",
+      "props": { "action": "", "submitLabel": "Enviar mensaje (demo)", "anchorId": "contacto" }
+    }
+  ]
+}

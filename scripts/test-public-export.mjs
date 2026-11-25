@@ -20,8 +20,6 @@ import {
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "portaless-public-export-check-"));
-const fixtureRoot = path.join(tempRoot, "private-node");
-const stageRoot = path.join(tempRoot, "public-stage");
 const marker = `PORTALESS_PRIVATE_FIXTURE_${process.pid}_${Date.now()}`;
 
 function writeJson(root, relative, value) {
@@ -38,41 +36,49 @@ function collectFiles(directory) {
   });
 }
 
-try {
-  copyPublicBuildInputs(ROOT, fixtureRoot);
+async function runProfileExportCheck(profile) {
+  const fixtureRoot = path.join(tempRoot, `private-node-${profile}`);
+  const stageRoot = path.join(tempRoot, `public-stage-${profile}`);
+
+  copyPublicBuildInputs(ROOT, fixtureRoot, { profile });
   fs.mkdirSync(path.join(fixtureRoot, ".airchive"), { recursive: true });
   fs.writeFileSync(path.join(fixtureRoot, ".airchive/private.md"), marker);
   fs.mkdirSync(path.join(fixtureRoot, "data"), { recursive: true });
   fs.writeFileSync(path.join(fixtureRoot, "data/portaless.db"), marker);
 
   const layout = (slug, status, title) => ({ version: "0.1", slug, title, status, root: [] });
-  writeJson(fixtureRoot, "src/content/pages/public-source.json", layout("public-source", "published", "Public source"));
-  writeJson(fixtureRoot, "src/content/pages/private-source.json", layout("private-source", "private", marker));
-  writeJson(fixtureRoot, "src/content/pages/private-source.en.json", { ...layout("private-source", "published", marker), locale: "en" });
-  writeJson(fixtureRoot, "src/content/pages/draft-source.json", layout("draft-source", "draft", marker));
-  writeJson(fixtureRoot, "src/content/pages/db-shadow.json", layout("db-shadow", "published", marker));
+  const pagesRel = `site-profiles/${profile}/pages`;
+  const postsRel = `site-profiles/${profile}/posts`;
+  writeJson(fixtureRoot, `${pagesRel}/public-source.json`, layout("public-source", "published", "Public source"));
+  writeJson(fixtureRoot, `${pagesRel}/private-source.json`, layout("private-source", "private", marker));
+  writeJson(fixtureRoot, `${pagesRel}/private-source.en.json`, { ...layout("private-source", "published", marker), locale: "en" });
+  writeJson(fixtureRoot, `${pagesRel}/draft-source.json`, layout("draft-source", "draft", marker));
+  writeJson(fixtureRoot, `${pagesRel}/db-shadow.json`, layout("db-shadow", "published", marker));
   writeJson(fixtureRoot, "src/content/revision-history/private.json", { title: marker });
   writeJson(fixtureRoot, "public/revisions/private/index.json", { title: marker });
 
-  const postsDir = path.join(fixtureRoot, "src/content/posts");
+  const postsDir = path.join(fixtureRoot, postsRel);
   fs.mkdirSync(postsDir, { recursive: true });
   fs.writeFileSync(path.join(postsDir, "public.md"), "---\ntitle: Public post\ndescription: public\npubDate: 2026-01-01\n---\nPublic body");
   fs.writeFileSync(path.join(postsDir, "private-draft.md"), `---\ntitle: Private\ndescription: private\npubDate: 2026-01-01\ndraft: true\n---\n${marker}`);
   fs.writeFileSync(path.join(postsDir, "private-post.md"), `---\ntitle: Private\ndescription: private\npubDate: 2026-01-01\nprivate: true\n---\n${marker}`);
 
-  copyPublicBuildInputs(fixtureRoot, stageRoot);
+  copyPublicBuildInputs(fixtureRoot, stageRoot, { profile });
   fs.symlinkSync(path.join(ROOT, "node_modules"), path.join(stageRoot, "node_modules"), "dir");
-  copyPublicDocs(ROOT, stageRoot, DOC_ENTRIES);
-  copyPublicSourcePages(fixtureRoot, stageRoot, new Set(["db-shadow"]), isPubliclyPublishable);
-  copyPublicSourcePosts(fixtureRoot, stageRoot, isPubliclyPublishable);
-  const store = await SqlitePageStore.open(path.join(tempRoot, "canonical.sqlite"));
+  if (profile === "demo") {
+    copyPublicDocs(ROOT, stageRoot, DOC_ENTRIES);
+  }
+  copyPublicSourcePages(fixtureRoot, stageRoot, new Set(["db-shadow"]), isPubliclyPublishable, { profile });
+  copyPublicSourcePosts(fixtureRoot, stageRoot, isPubliclyPublishable, { profile });
+
+  const store = await SqlitePageStore.open(path.join(tempRoot, `canonical-${profile}.sqlite`));
   let approved;
   try {
     await store.save(layout("page-store-approved", "draft", marker));
     const draft = await store.load("page-store-approved");
     await store.save({ ...draft, status: "published", title: "Approved PageStore" });
     approved = await store.load("page-store-approved");
-    writePublicPageLayouts(stageRoot, [approved], { clear: false });
+    writePublicPageLayouts(stageRoot, [approved], { clear: false, profile });
     await writePublicRevisionHistories(stageRoot, [approved], store);
   } finally {
     store.close();
@@ -82,12 +88,22 @@ try {
   execFileSync("npm", ["run", "build"], {
     cwd: stageRoot,
     stdio: "inherit",
-    env: createPublicBuildEnv({ ...process.env, PRIVATE_TEST_SENTINEL: marker, PORTALESS_BASE_PATH: "/" }, dist),
+    env: createPublicBuildEnv(
+      { ...process.env, PRIVATE_TEST_SENTINEL: marker, PORTALESS_BASE_PATH: "/", PORTALESS_SITE_PROFILE: profile },
+      dist,
+    ),
   });
 
   assert.ok(fs.existsSync(path.join(dist, "pages/page-store-approved/index.html")));
   assert.ok(fs.existsSync(path.join(dist, "pages/public-source/index.html")));
-  assert.ok(fs.existsSync(path.join(dist, "docs/first-steps/index.html")), "the clean projection must retain the public Docs routes");
+  if (profile === "demo") {
+    assert.ok(fs.existsSync(path.join(dist, "docs/first-steps/index.html")), "demo projection must retain public Docs routes");
+  } else {
+    assert.equal(fs.existsSync(path.join(dist, "docs")), false, "starter projection must not emit docs/");
+    assert.equal(fs.existsSync(path.join(dist, "es")), false, "starter projection must not emit es/");
+    assert.equal(fs.existsSync(path.join(dist, "beta")), false, "starter projection must not emit beta/");
+  }
+
   const history = JSON.parse(fs.readFileSync(path.join(dist, "revisions", approved.publicationId, "index.json"), "utf8"));
   assert.equal(history.revisions.length, 1);
   assert.equal(history.revisions[0].revisionId, approved.revisionId);
@@ -99,7 +115,12 @@ try {
     cwd: ROOT,
     stdio: "inherit",
   });
-  console.log("Public export regression passed: synthetic private page/post/archive/DB/env markers are absent from every dist artifact.");
+}
+
+try {
+  await runProfileExportCheck("starter");
+  await runProfileExportCheck("demo");
+  console.log("Public export regression passed for both starter and demo profiles: synthetic private markers are absent from every dist artifact.");
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 }

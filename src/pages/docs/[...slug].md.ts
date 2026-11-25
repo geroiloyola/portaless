@@ -9,7 +9,10 @@ import { join } from "node:path";
 import { DOC_ENTRIES } from "../../lib/docs-nav.mjs";
 import { rewriteMarkdownLinks } from "../../lib/docs-links.mjs";
 
+import { isDemoProfile } from "../../lib/site-profile.mjs";
+
 export const getStaticPaths: GetStaticPaths = async () => {
+  if (!isDemoProfile()) return [];
   const docs = await getCollection("docs");
   return docs.map((entry) => ({ params: { slug: entry.id }, props: { id: entry.id } }));
 };

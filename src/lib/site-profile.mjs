@@ -1,0 +1,75 @@
+// Single source of truth for site profile resolution (W3.3 / PR-B2, D8/D11).
+//
+// Contract (docs/decisions/starter-and-demo-split.md §2):
+//   - PORTALESS_SITE_PROFILE=starter|demo
+//   - Unset or empty => "starter"
+//   - Unknown value => throws (aborts build; never silently falls back to demo)
+//
+// Plain ESM (.mjs) so Astro config, Astro pages/components, Vitest, and Node
+// build/staging scripts share the exact same resolver.
+
+export const VALID_SITE_PROFILES = Object.freeze(["starter", "demo"]);
+export const DEFAULT_SITE_PROFILE = "starter";
+
+/**
+ * Resolve and validate PORTALESS_SITE_PROFILE from an environment object.
+ * Throws on any non-empty value other than "starter" or "demo".
+ */
+export function resolveSiteProfile(env = process.env) {
+  const raw = env?.PORTALESS_SITE_PROFILE;
+  if (raw === undefined || raw === null || String(raw).trim() === "") {
+    return DEFAULT_SITE_PROFILE;
+  }
+  const normalized = String(raw).trim();
+  if (normalized === "starter" || normalized === "demo") {
+    return normalized;
+  }
+  throw new Error(
+    `Invalid PORTALESS_SITE_PROFILE="${normalized}". Expected "starter" or "demo".`,
+  );
+}
+
+export function isDemoProfile(env = process.env) {
+  return resolveSiteProfile(env) === "demo";
+}
+
+export function isStarterProfile(env = process.env) {
+  return resolveSiteProfile(env) === "starter";
+}
+
+/**
+ * Return paths and route feature flags for the resolved site profile.
+ */
+export function getSiteProfileConfig(profileOrEnv = process.env) {
+  const id =
+    typeof profileOrEnv === "string"
+      ? resolveSiteProfile({ PORTALESS_SITE_PROFILE: profileOrEnv })
+      : resolveSiteProfile(profileOrEnv);
+  const isDemo = id === "demo";
+  const profileDir = `site-profiles/${id}`;
+
+  return {
+    id,
+    isDemo,
+    isStarter: !isDemo,
+    profileDir,
+    homeFile: `${profileDir}/home.json`,
+    homeEsFile: isDemo ? `${profileDir}/home.es.json` : null,
+    pagesDir: `${profileDir}/pages`,
+    postsDir: `${profileDir}/posts`,
+    publicDir: `${profileDir}/public`,
+    features: {
+      esRoutes: isDemo,
+      beta: isDemo,
+      docs: isDemo,
+      projections: isDemo,
+      shop: isDemo,
+      legacyDemoRedirects: isDemo,
+      demoAuxiliaryStatic: isDemo,
+    },
+    defaultSiteName: "Portaless",
+    defaultSiteDescription: isDemo
+      ? "Sitio construido con Portaless"
+      : "A site built with Portaless",
+  };
+}

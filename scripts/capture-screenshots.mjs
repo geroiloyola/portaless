@@ -57,8 +57,11 @@ try {
   // Sembrar /pages/link-in-bio en la DB via el mismo PUT del editor
   // (ademas del build estatico) -- el demo y las capturas sirven la
   // pagina desde la base, como en self-host con Phase 0.5.
+  if (process.env.PORTALESS_SITE_PROFILE !== "demo") {
+    throw new Error("scripts/capture-screenshots.mjs requiere PORTALESS_SITE_PROFILE=demo");
+  }
   await login(page, base);
-  const linkInBio = JSON.parse(readFileSync(join(root, "src/content/pages/link-in-bio.json"), "utf8"));
+  const linkInBio = JSON.parse(readFileSync(join(root, "site-profiles/demo/pages/link-in-bio.json"), "utf8"));
   const putStatus = await page.evaluate(async (json) => {
     const r = await fetch(`/admin/pages/${encodeURIComponent(json.slug)}`, {
       method: "PUT",

@@ -102,14 +102,17 @@ const COPY = {
   },
 } as const;
 
+import { loadContentPages, loadHomeLayout } from "../lib/content-pages";
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
+
+const profile = getSiteProfileConfig(process.env);
 const c = COPY[locale];
 const base = import.meta.env.BASE_URL;
 const pageTheme = ecosystemPageTheme();
+const homeLayout = loadHomeLayout(profile.id, locale === "es" && profile.features.esRoutes ? "es" : "en");
 
-const pageModules = import.meta.glob<{ default: PageLayout }>("../content/pages/*.json", { eager: true });
-const pages = Object.values(pageModules)
-  .map((mod) => mod.default)
-  .filter(isPubliclyPublishable)
+const pages = loadContentPages(profile.id)
+  .map((entry) => entry.primary.layout)
   .sort((a, b) => a.slug.localeCompare(b.slug));
 
 const posts = publishedPosts(await getCollection("posts"));
@@ -150,7 +153,7 @@ const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"
 const notesJson = JSON.stringify(c.status);
 ---
 
-<BaseLayout title={c.title} description={c.description} pageTheme={pageTheme} lang={locale} alternatePath="/explore/">
+<BaseLayout title={c.title} description={c.description} pageTheme={pageTheme} lang={locale} alternatePath={profile.features.esRoutes ? "/explore/" : undefined}>
   <h1>{c.heading}</h1>
   <p class="explore-intro">{c.intro}</p>
 
@@ -169,24 +172,39 @@ const notesJson = JSON.stringify(c.status);
   <script type="application/json" id="explore-order-notes" set:html={notesJson} />
 
   <nav class="explore-chips" aria-label="Categories">
-    <a href="#documentation" class="explore-chip">{c.chips.documentation}</a>
+    {!profile.isDemo && <a href="#site-home" class="explore-chip">Home</a>}
+    {profile.features.docs && <a href="#documentation" class="explore-chip">{c.chips.documentation}</a>}
     {demoPages.length > 0 && <a href="#demo-pages" class="explore-chip">{c.chips.demoPages}</a>}
     {demoShops.length > 0 && <a href="#demo-shops" class="explore-chip">{c.chips.demoShops}</a>}
     {demoProfiles.length > 0 && <a href="#demo-profiles" class="explore-chip">{c.chips.demoProfiles}</a>}
     {posts.length > 0 && <a href="#publications" class="explore-chip">{c.chips.publications}</a>}
   </nav>
 
-  <section id="documentation">
-    <h2>{c.docsHeading}</h2>
-    <div class="explore-grid">
-      {c.docs.map((doc) => (
-        <a class="explore-card" href={DOC_HREF[doc.title]}>
-          <h3>{doc.title}</h3>
-          <p>{doc.note}</p>
+  {!profile.isDemo && (
+    <section id="site-home">
+      <h2>Home</h2>
+      <div class="explore-grid">
+        <a class="explore-card" href={base}>
+          <h3>{homeLayout.title || "Home"}</h3>
+          {homeLayout.description && <p>{homeLayout.description}</p>}
         </a>
-      ))}
-    </div>
-  </section>
+      </div>
+    </section>
+  )}
+
+  {profile.features.docs && (
+    <section id="documentation">
+      <h2>{c.docsHeading}</h2>
+      <div class="explore-grid">
+        {c.docs.map((doc) => (
+          <a class="explore-card" href={DOC_HREF[doc.title]}>
+            <h3>{doc.title}</h3>
+            <p>{doc.note}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
 
   {demoPages.length > 0 && (
     <section id="demo-pages">
@@ -245,15 +263,17 @@ const notesJson = JSON.stringify(c.status);
     </section>
   )}
 
-  <section id="how">
-    <h2>{c.howHeading}</h2>
-    <div class="explore-grid">
-      <a class="explore-card" href={`${base}projections/`}>
-        <h3>{c.howTitle}</h3>
-        <p>{c.howNote}</p>
-      </a>
-    </div>
-  </section>
+  {profile.features.projections && (
+    <section id="how">
+      <h2>{c.howHeading}</h2>
+      <div class="explore-grid">
+        <a class="explore-card" href={`${base}projections/`}>
+          <h3>{c.howTitle}</h3>
+          <p>{c.howNote}</p>
+        </a>
+      </div>
+    </section>
+  )}
 
   <section id="network">
     <h2>{c.networkHeading}</h2>
