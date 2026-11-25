@@ -61,7 +61,7 @@ describe("publication policy", () => {
       ["src/pages/paginas/[slug].astro", "isPubliclyPublishable"],
       ["src/pages/[locale]/paginas/[slug].astro", "isPubliclyPublishable"],
       ["src/pages/sitemap.xml.ts", "loadContentPages"],
-      ["src/pages/llms.txt.ts", "isPubliclyPublishable"],
+      ["src/pages/llms.txt.ts", "loadContentPages"],
       ["src/pages/rss.xml.ts", "publishedPosts"],
       ["src/pages/blog/index.astro", "publishedPosts"],
       ["src/pages/blog/[...slug].astro", "isPubliclyPublishable"],
