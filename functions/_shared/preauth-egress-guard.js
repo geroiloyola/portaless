@@ -295,6 +295,7 @@ export function createPreAuthEgressGuard(options = {}) {
       limits,
       positiveTtlMs = defaultPositiveTtlMs,
       negativeTtlMs = defaultNegativeTtlMs,
+      budgetAlreadyCharged = false,
       isPositive = (val) => Boolean(val && val.ok !== false && val.verified !== false),
     } = {}
   ) {
@@ -321,15 +322,17 @@ export function createPreAuthEgressGuard(options = {}) {
       };
     }
 
-    const budget = consumeBudget({ ipHash, origin, env, now, limits });
-    if (!budget.allowed) {
-      return {
-        allowed: false,
-        cached: false,
-        coalesced: false,
-        scope: budget.scope,
-        retryAfterSeconds: budget.retryAfterSeconds,
-      };
+    if (!budgetAlreadyCharged) {
+      const budget = consumeBudget({ ipHash, origin, env, now, limits });
+      if (!budget.allowed) {
+        return {
+          allowed: false,
+          cached: false,
+          coalesced: false,
+          scope: budget.scope,
+          retryAfterSeconds: budget.retryAfterSeconds,
+        };
+      }
     }
 
     const task = (async () => {
