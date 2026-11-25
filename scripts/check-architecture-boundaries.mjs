@@ -436,6 +436,9 @@ export function checkVeraredPin(root) {
       violations.push({ file: `packages/${dir}`, reason: "duplicated-verared-package" });
     }
   }
+  if (existsSync(resolve(root, "packages", "plugin-sdk"))) {
+    violations.push({ file: "packages/plugin-sdk", reason: "duplicated-plugin-sdk-package" });
+  }
 
   const localSpecDir = resolve(root, "docs/protocol-apw");
   if (existsSync(localSpecDir)) {
@@ -465,6 +468,13 @@ export function checkVeraredPin(root) {
         violations.push({ file: "package-lock.json", reason: "missing-verared-lock-entry:@verared/spec" });
       } else if (specResolved.includes("registry.npmjs.org") || !specResolved.startsWith("https://github.com/verared/vera-trust-spec/releases/download/")) {
         violations.push({ file: "package-lock.json", reason: "invalid-verared-tarball-source:@verared/spec" });
+      }
+      const sdkEntry = pkgs["node_modules/@portaless/plugin-sdk"];
+      const sdkResolved = String(sdkEntry?.resolved || "");
+      if (!sdkEntry) {
+        violations.push({ file: "package-lock.json", reason: "missing-plugin-sdk-lock-entry:@portaless/plugin-sdk" });
+      } else if (sdkResolved.includes("registry.npmjs.org") || !sdkResolved.startsWith("https://github.com/geroiloyola/portaless-plugin-sdk/releases/download/")) {
+        violations.push({ file: "package-lock.json", reason: "invalid-plugin-sdk-tarball-source:@portaless/plugin-sdk" });
       }
     } catch {
       violations.push({ file: "package-lock.json", reason: "invalid-package-lock-json" });

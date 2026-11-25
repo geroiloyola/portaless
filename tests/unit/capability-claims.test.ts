@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CAPABILITY_BACKENDS } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
-import { PLUGIN_CAPABILITY_IDS } from "../../packages/plugin-sdk/src/index";
+import { PLUGIN_CAPABILITY_IDS } from "@portaless/plugin-sdk";
 
 const root = join(__dirname, "../..");
 

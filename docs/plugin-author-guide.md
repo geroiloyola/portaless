@@ -5,7 +5,7 @@ module that runs inside the sandbox and can only touch what an administrator
 grants it, one capability at a time. This guide is honest about what is real
 today and what is not; where it and the code disagree, the code governs.
 
-- The public, MIT-licensed contract you import: [`@portaless/plugin-sdk`](../packages/plugin-sdk/README.md).
+- The public, MIT-licensed contract you import: [`@portaless/plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk#readme).
 - The sandbox internals (how the isolate works): [`PLUGIN_SANDBOXING.md`](../packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md).
 - The permission model: [`PERMISSIONS_CENTER.md`](../packages/permissions/docs/PERMISSIONS_CENTER.md).
 
@@ -51,7 +51,7 @@ const { valid, errors } = validateManifest(manifest);
 Rules the validator enforces, in short: non-empty `name`/`version`/`entry`;
 `requestedCapabilities` present; every capability id is in the catalog; every
 request carries a `reason`; `network:fetch` must declare `allowedHosts`. A
-capability that is not in [`PLUGIN_CAPABILITY_IDS`](../packages/plugin-sdk/src/index.ts)
+capability that is not in [`PLUGIN_CAPABILITY_IDS`](https://github.com/geroiloyola/portaless-plugin-sdk/blob/v0.1.0/src/index.ts)
 (for example `billing:pay-per-crawl` or `trust:read-governance-bypass`) is not a
 plugin capability and is rejected.
 
