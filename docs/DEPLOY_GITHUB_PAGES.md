@@ -8,9 +8,7 @@
    - `PORTALESS_SITE_URL`: la URL final de tu sitio, ej. `https://tu-usuario.github.io`.
    - `PORTALESS_BASE_PATH`: `/nombre-del-repo/` si el repo no es `tu-usuario.github.io`.
    - `ENABLE_COMMERCE`: `true` si quieres activar la tienda (ver `COMMERCE_SETUP.md`).
-4. Haz `git push` a la rama `main`. El workflow en
-   `.github/workflows/deploy-pages.yml` construye el sitio y lo publica
-   automáticamente.
+4. Crea un workflow de GitHub Actions en tu repositorio que ejecute `npm ci && npm run build` (con las variables de arriba) y suba `dist/` usando `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4`. Por defecto (`PORTALESS_SITE_PROFILE=starter`), el build genera tu sitio limpio sin contenido de demostración. *(El demo oficial de Portaless se despliega aparte desde [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) en [geroiloyola.github.io/portaless-templates](https://geroiloyola.github.io/portaless-templates/).)*
 5. Tu sitio queda disponible en la URL que configuraste, con HTTPS
    automático provisto por GitHub.
 
@@ -39,6 +37,6 @@ Run workflow**) abre un PR *"Update to vX"* desde el tag publicado más reciente
 del upstream. Revisás el PR, corre el CI como filtro, y mergeás.
 
 Si el contenido y el código viven en el mismo repo, el merge puede tocar tus
-archivos: mantené tu contenido en `src/content/**` y `public/**` y protegelos en
+archivos: mantené tu contenido en `site-profiles/starter/**` y `public/**` y protegelos en
 tu `.gitattributes` con `merge=ours` para que una actualización no los pise.
 

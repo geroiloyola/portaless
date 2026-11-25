@@ -53,7 +53,6 @@ con tu usuario y contraseña.
 
 ## Paso 3 — El asistente de 3 pasos (3 minutos)
 
-![Panel de administración](screenshots/admin-dashboard.png)
 
 En el panel vas a ver el asistente. Contale al asistente **qué es tu
 sitio** (nombre, dominio si tenés, y si es un portafolio, una tienda, un
@@ -73,7 +72,6 @@ intermediaria: es Protocol APW, un protocolo abierto.
 
 ## Paso 4 — Armá y publicá una página (2 minutos)
 
-![Editor visual](screenshots/editor-atomic-elements.png)
 
 1. Andá a **Editor Visual** desde el panel.
 2. Arrastrá elementos desde la paleta izquierda: títulos, botones,
@@ -83,11 +81,10 @@ intermediaria: es Protocol APW, un protocolo abierto.
 3. Cuando esté como querés, tocá **Publicar**. Aparece un link
    “Ver página pública ↗”: tocálo y tu página está viva.
 
-![Ciclo editar → publicar](screenshots/editor-publish.gif)
 
 **Lo que ves en la demo pública es real**: este mismo motor de elementos
 es el que usa el sitio de ejemplo
-([https://geroiloyola.github.io/portaless/](https://geroiloyola.github.io/portaless/)).
+([https://geroiloyola.github.io/portaless-templates/](https://geroiloyola.github.io/portaless-templates/)).
 
 ## Paso 5 — Elegí los colores (1 minuto)
 

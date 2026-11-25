@@ -289,5 +289,23 @@ describe("repository scan and CLI --report / --strict behavior", () => {
     expect(res.status).toBe(1);
     expect(res.stdout).toContain("duplicated-demo-templates");
   });
+
+  test("CLI --strict exits 1 when docs/screenshots is reintroduced alongside SPEC-PIN.json", () => {
+    const root = makeTempRepo({
+      "SPEC-PIN.json": JSON.stringify({
+        commit: "7787966a38fb08ceb509df295ee814ba93af4dec",
+        tag: "v0.1.0-draft.1",
+        stack: { version: "0.1.0-alpha.1", tag: "v0.1.0-alpha.1" },
+        digests: { corpusDigest: "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA" },
+      }),
+      "docs/screenshots/demo.png": "fake-png",
+    });
+    const res = spawnSync(process.execPath, [scriptPath, "--strict", "--root", root], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("forbidden-docs-screenshots");
+  });
 });
 

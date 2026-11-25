@@ -89,12 +89,7 @@ familias comparten `font-family` fallback del sistema.
     (`rel="sponsored noopener noreferrer" target="_blank"` para enlaces
     externos como Amazon) o para tiendas internas de Portaless/Medusa.
 - **TrustScore & Veraciers** (`/trust/[siteId]`):
-  - Ficha de Identidad & Alcance Verificado: País de origen (Chile), Fecha
-    histórica de creación (14 Oct 2026), 92 Veraciers (comentarios y
-    atestaciones activas en la red), confiabilidad por ámbito (técnica 98%,
-    políticas 95%, comunidad 4.9/5, transacciones 100%) y alcance de audiencia
-    verificado en Spotify, YouTube (32K+ visitas @jerrybantz), Apple Music,
-    Instagram y Facebook.
+  - Superficie pública cualitativa basada en el snapshot real (`self`, `agent`, `community`, `escrow_report`), sin métricas fabricadas ni datos personales; detalle numérico y HSVR restringidos a `/admin/`.
 - **Footer** (`src/components/Footer.astro`), dos filas con trabajos
   distintos: fila ecosistema `TrustScore · Explore · Powered by Portaless`
   (links reales: `/trust/default`, `/explore/`, repo) y, **debajo**, la
@@ -112,9 +107,7 @@ familias comparten `font-family` fallback del sistema.
   listener delegado vive en `BaseLayout` y en el shell runtime
   (Web Share API → clipboard + toast), compatible con una CSP
   futura. Prueba real en navegador: `tests/browser/public-ecosystem-footer.spec.ts`
-  (clic real + aserción de un solo share en la página);
-  evidencia visual: `docs/screenshots/header-share-button.png` y
-  `docs/screenshots/header-actions-{video,shop}.png`.
+  (clic real + aserción de un solo share en la página).
 
 ## 5. Sistema de theming (tres capas)
 
@@ -164,7 +157,7 @@ precedencia exactas:
 - **Aplicación**: tool MCP `apply_theme` (escribe `PageLayout.theme`,
   `null` lo borra; `content:read` + `content:write` + auditoría, membership
   accionable) y `list_themes` (catálogo con `source: builtin|installed` y
-  vars ya resueltas). Ejemplo real: `jerry-bantz` con `2pac-dark`.
+  vars ya resueltas). Ejemplo ficticio en `@portaless/templates`: `creator-demo` con `2pac-dark`.
 - **`2pac-dark`** (builtin de ejemplo): paleta oficial oscura desplazada a
   tinta profunda (`#14100C`) con **naranja como acento** y lima como acent-2.
   Todos sus pares de texto pasan AA por matemática WCAG en

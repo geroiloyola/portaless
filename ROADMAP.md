@@ -8,6 +8,12 @@
 
 Categories are by **who** must resolve the piece, not by priority.
 
+> **Ecosystem roadmap split (Waves 1–3 complete):** this file tracks the **Portaless CMS node (`geroiloyola/portaless`)** only. Work owned by the four extracted repositories is tracked in their respective repos:
+> - **Normative spec, S4/S6 graduation & G5 offline DNSSEC:** [`verared/vera-trust-spec`](https://github.com/verared/vera-trust-spec)
+> - **Neutral `@verared/*` libraries, Workers/Deno adapters & `@verared/cli`:** [`verared/vera-trust-stack`](https://github.com/verared/vera-trust-stack)
+> - **Third-party plugin SDK (`@portaless/plugin-sdk` → `v1.0`):** [`geroiloyola/portaless-plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk#roadmap-portaless-plugin-sdk)
+> - **Official live demo, fictional templates & visual gallery:** [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates#roadmap-portaless-templates) ([live demo](https://geroiloyola.github.io/portaless-templates/))
+
 ---
 
 ## Where the project stands, in one screen
@@ -146,8 +152,8 @@ E-03 and E-04; N-03 is partial.
 | E-03 | Structural | Identity domain is not validated against the public host | `[x]` fixed | `POST /admin/api/site-identity` rejects `domain_mismatch` when `domain` differs from the host of `PORTALESS_PUBLIC_URL` (when configured). Test: `admin-security-endpoints.test.ts`. |
 | E-04 | Structural | P1/P2 protocol says unanchored witness statements are skipped; code accepts them | `[x]` fixed | Protocol now states the actual code behavior and keeps anchoring as a stricter evidence requirement; `statement_not_anchored` is documented only for a missing `seq`. |
 | E-05 | Structural | Static/Cloudflare/Node parity is implicit | `[ ]` open | Publish and test a feature × runtime matrix. |
-| E-06 | Structural | Client-IP rules duplicated between auth and trust-layer | `[x]` fixed | Unified in neutral `@portaless/net` (`packages/net`, PR #118) alongside SSRF/DNS-rebinding guards and egress budgets; both auth and trust-layer consume the public entry point. |
-| E-07 | Structural | Package trust boundaries overlap and are not enforced | `[x]` fixed | `ARCHITECTURE.md` defines the two-org layer graph; `scripts/check-architecture-boundaries.mjs --strict` runs blocking in CI and `scripts/verify-release.mjs` with 0 deep `src/` imports, 0 cycles, 0 layer/org violations, and 0 license violations (PRs #116–#124 + W1.8). Test: `architecture-boundaries.test.ts`. |
+| E-06 | Structural | Client-IP rules duplicated between auth and trust-layer | `[x]` fixed | Unified in neutral `@verared/net` (PR #118, extracted to `verared/vera-trust-stack` in W2.2) alongside SSRF/DNS-rebinding guards and egress budgets; both auth and trust-layer consume the public entry point. |
+| E-07 | Structural | Package trust boundaries overlap and are not enforced | `[x]` fixed | `ARCHITECTURE.md` defines the two-org layer graph; `scripts/check-architecture-boundaries.mjs --strict` runs blocking in CI and `scripts/verify-release.mjs` with 0 deep `src/` imports, 0 cycles, 0 layer/org violations, 0 license violations, and zero local duplication of `@verared/*`, `@portaless/plugin-sdk`, `@portaless/templates`, or `docs/screenshots/` (Waves 1–3). Test: `architecture-boundaries.test.ts`. |
 | E-08 | Structural | Composite flows lacked contract tests (the A-06 bug was one) | `[~]` partial | Added start→callback and OAuth MFA/link coverage; still missing login→MFA→cookie and witness→sync→index end-to-end contracts. |
 | E-09 | Structural | Documentation volume outruns verified claims | `[ ]` open | Add `npm run verify:claims` for countable README claims. |
 | E-10 | Structural | Bus factor 1 | `[ ]` open | Governance item: second maintainer with merge capacity; the Beta remains invite-only. |
