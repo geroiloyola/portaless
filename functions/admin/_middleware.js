@@ -14,6 +14,7 @@ import { createUsersStore, createSessionStore } from "@portaless/auth/store-fact
 import { isPublicAdminPath } from "@portaless/auth/public-admin-paths";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { assertBodySizeLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
+import { getCookie } from "../_shared/request-security.js";
 
 const MAX_ADMIN_MUTATION_BODY_BYTES = 8 * 1024 * 1024;
 
@@ -22,12 +23,6 @@ function jsonError(error, status) {
     status,
     headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
-}
-
-function getCookie(request, name) {
-  const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(new RegExp(`${name}=([^;]+)`));
-  return match ? match[1] : null;
 }
 
 export async function onRequest(context) {
@@ -60,7 +55,13 @@ export async function onRequest(context) {
   const session = await authService.validateSession(token);
 
   if (!session) {
-    return Response.redirect(new URL("/admin/login?error=1", url.origin), 302);
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: new URL("/admin/login?error=1", url.origin).toString(),
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
   // Expuesto como `user` (no solo `session`) porque los endpoints de

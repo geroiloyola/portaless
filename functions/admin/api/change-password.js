@@ -7,14 +7,29 @@
 // Minimo de 12 caracteres, igual que el primer admin de /setup (ADR-002).
 
 import { AuthService } from "@portaless/auth/service";
-import { createUsersStore, createSessionStore, createPasswordResetStore } from "@portaless/auth/store-factory";
+import {
+  createUsersStore,
+  createSessionStore,
+  createPasswordResetStore,
+  createEmailStepUpStore,
+} from "@portaless/auth/store-factory";
 import { createPasswordEventStore, passwordEventContextFromRequest } from "@portaless/auth/password-events";
 import { emitActivity } from "@portaless/dashboard/activity";
+import {
+  InvalidContentLengthError,
+  InvalidJsonBodyError,
+  readJsonBodyLimited,
+  RequestBodyTooLargeError,
+} from "../../_shared/read-body-limited.js";
 
 const MIN_PASSWORD_LENGTH = 12;
+const MAX_BODY_BYTES = 16 * 1024;
 
 function json(body, status) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
 }
 
 export async function onRequestPost(context) {
@@ -24,12 +39,18 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyLimited(request, MAX_BODY_BYTES, { requireObject: true });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ success: false, error: "request_too_large" }, 413);
+    }
+    if (error instanceof InvalidContentLengthError || error instanceof InvalidJsonBodyError) {
+      return json({ success: false, error: "invalid_json_body" }, 400);
+    }
     return json({ success: false, error: "invalid_json_body" }, 400);
   }
 
-  const { currentPassword, newPassword, totpCode } = body ?? {};
+  const { currentPassword, newPassword, totpCode, emailToken, emailCode } = body ?? {};
   if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
     return json({ success: false, error: "Se requieren currentPassword y newPassword." }, 400);
   }
@@ -37,18 +58,28 @@ export async function onRequestPost(context) {
     return json({ success: false, error: `La contrasena nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` }, 400);
   }
 
+  const emailStepUpStore = await createEmailStepUpStore(env);
   const auth = new AuthService(
     await createUsersStore(env),
     await createSessionStore(env),
     await createPasswordResetStore(env),
-    await createPasswordEventStore(env)
+    await createPasswordEventStore(env),
+    undefined,
+    emailStepUpStore
   );
+  const hasEmailStepUp = emailToken !== undefined || emailCode !== undefined;
   const result = await auth.changePassword(
     user.username,
     currentPassword,
     newPassword,
     typeof totpCode === "string" ? totpCode : undefined,
-    passwordEventContextFromRequest(request, env)
+    passwordEventContextFromRequest(request, env),
+    hasEmailStepUp
+      ? {
+          emailToken: typeof emailToken === "string" ? emailToken : undefined,
+          emailCode: typeof emailCode === "string" ? emailCode : undefined,
+        }
+      : undefined
   );
 
   // Fase 10: feed de actividad. Se registra el cambio, nunca la contrasena.

@@ -103,3 +103,104 @@ export async function clearLoginFailures(
 ): Promise<void> {
   await Promise.all(buckets.map((bucket) => store.clear?.(bucket, windowStart)));
 }
+
+// --- N-03: Presupuesto dedicado por IP para emision y verificacion de desafios MFA ---
+
+export const MFA_CHALLENGE_ISSUE_LIMIT_PER_IP = 10;
+export const MFA_VERIFY_LIMIT_PER_IP = 30;
+
+export function mfaChallengeIssueLimit(env: Record<string, unknown> = {}): number {
+  const raw = Number(env?.PORTALESS_MFA_ISSUANCE_PER_IP);
+  if (!Number.isInteger(raw) || raw < 1 || raw > 10_000) return MFA_CHALLENGE_ISSUE_LIMIT_PER_IP;
+  return raw;
+}
+
+export function mfaChallengeIssueBucket(ip: string): string {
+  return `mfa:issue:ip:${hash(ip)}`;
+}
+
+export async function recordMfaChallengeIssuance(
+  store: RateLimitStore,
+  ip: string,
+  now = Date.now(),
+  limit = MFA_CHALLENGE_ISSUE_LIMIT_PER_IP,
+): Promise<LoginAttemptState> {
+  const bucket = mfaChallengeIssueBucket(ip);
+  const windowStart = Math.floor(now / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
+  const attempts = await store.hit(bucket, windowStart);
+  return { bucket, windowStart, attempts, overLimit: attempts > limit };
+}
+
+export function mfaVerifyLimit(env: Record<string, unknown> = {}): number {
+  const raw = Number(env?.PORTALESS_MFA_ATTEMPTS_PER_IP);
+  if (!Number.isInteger(raw) || raw < 1 || raw > 10_000) return MFA_VERIFY_LIMIT_PER_IP;
+  return raw;
+}
+
+export function mfaVerifyBucket(ip: string): string {
+  return `mfa:verify:ip:${hash(ip)}`;
+}
+
+export async function recordMfaVerifyAttempt(
+  store: RateLimitStore,
+  ip: string,
+  now = Date.now(),
+  limit = MFA_VERIFY_LIMIT_PER_IP,
+): Promise<LoginAttemptState> {
+  const bucket = mfaVerifyBucket(ip);
+  const windowStart = Math.floor(now / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS;
+  const attempts = await store.hit(bucket, windowStart);
+  return { bucket, windowStart, attempts, overLimit: attempts > limit };
+}
+
+// --- Step-up por email: presupuesto por IP y por usuario (anti email-bombing) ---
+
+export const EMAIL_STEPUP_LIMIT_PER_IP = 10;
+export const EMAIL_STEPUP_LIMIT_PER_USER = 5;
+export const EMAIL_STEPUP_WINDOW_MS = 15 * 60 * 1000;
+
+export function emailStepUpLimits(env: Record<string, unknown> = {}): { perIp: number; perUser: number } {
+  const rawIp = Number(env?.PORTALESS_EMAIL_STEPUP_PER_IP);
+  const rawUser = Number(env?.PORTALESS_EMAIL_STEPUP_PER_USER);
+  return {
+    perIp: Number.isInteger(rawIp) && rawIp >= 1 && rawIp <= 1_000 ? rawIp : EMAIL_STEPUP_LIMIT_PER_IP,
+    perUser: Number.isInteger(rawUser) && rawUser >= 1 && rawUser <= 1_000 ? rawUser : EMAIL_STEPUP_LIMIT_PER_USER,
+  };
+}
+
+export function emailStepUpBuckets(ip: string, username: string) {
+  return [
+    `stepup:email:ip:${hash(ip)}`,
+    `stepup:email:user:${hash(username.trim().toLowerCase())}`,
+  ] as const;
+}
+
+export interface EmailStepUpRateLimitState {
+  buckets: readonly [string, string];
+  windowStart: number;
+  ipCount: number;
+  userCount: number;
+  overLimit: boolean;
+}
+
+export async function recordEmailStepUpRequest(
+  store: RateLimitStore,
+  ip: string,
+  username: string,
+  now = Date.now(),
+  limits: { perIp?: number; perUser?: number } = {},
+): Promise<EmailStepUpRateLimitState> {
+  const buckets = emailStepUpBuckets(ip, username);
+  const windowStart = Math.floor(now / EMAIL_STEPUP_WINDOW_MS) * EMAIL_STEPUP_WINDOW_MS;
+  const perIp = limits.perIp ?? EMAIL_STEPUP_LIMIT_PER_IP;
+  const perUser = limits.perUser ?? EMAIL_STEPUP_LIMIT_PER_USER;
+  const ipCount = await store.hit(buckets[0], windowStart);
+  const userCount = await store.hit(buckets[1], windowStart);
+  return {
+    buckets,
+    windowStart,
+    ipCount,
+    userCount,
+    overLimit: ipCount > perIp || userCount > perUser,
+  };
+}

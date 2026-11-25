@@ -20,10 +20,21 @@ import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { generateApwDid } from "@verared/apw/did-apw";
 import { AuthService } from "@portaless/auth/service";
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
-import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
+import {
+  createUsersStore,
+  createSessionStore,
+  createEmailStepUpStore,
+} from "@portaless/auth/store-factory";
+import {
+  InvalidContentLengthError,
+  InvalidJsonBodyError,
+  readJsonBodyLimited,
+  RequestBodyTooLargeError,
+} from "../../_shared/read-body-limited.js";
 
 const SITE_ID = "default";
 const ROTATE_CONFIRMATION = "ROTAR";
+const MAX_BODY_BYTES = 32 * 1024;
 
 const STEP_UP_MESSAGES = {
   password_required: "Ingresa tu contrasena actual para rotar la identidad.",
@@ -32,10 +43,17 @@ const STEP_UP_MESSAGES = {
   invalid_totp: "El codigo de 2FA no es correcto o expiro.",
   no_step_up_factor: "Tu cuenta no tiene contrasena ni 2FA. Activa 2FA antes de rotar la identidad.",
   user_not_found: "No se encontro tu usuario.",
+  invalid_email_code: "El codigo de verificacion por email no es correcto.",
+  email_code_expired: "El codigo de verificacion por email expiro o ya fue usado.",
+  email_code_max_attempts: "Se agotaron los intentos para el codigo por email. Solicita uno nuevo.",
+  email_stepup_unavailable: "El step-up por email no esta disponible en este entorno.",
 };
 
 function json(body, status) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
 }
 
 function canWrite(role) {
@@ -78,12 +96,18 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyLimited(request, MAX_BODY_BYTES, { requireObject: true });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    if (error instanceof InvalidContentLengthError || error instanceof InvalidJsonBodyError) {
+      return json({ error: "invalid_json_body" }, 400);
+    }
     return json({ error: "invalid_json_body" }, 400);
   }
 
-  const { domain, rotate, confirm, password, totpCode } = body ?? {};
+  const { domain, rotate, confirm, password, totpCode, emailToken, emailCode } = body ?? {};
   if (domain !== undefined && (typeof domain !== "string" || !domain.trim())) {
     return json({ error: "invalid_body", message: "domain debe ser un string no vacio." }, 400);
   }
@@ -111,10 +135,20 @@ export async function onRequestPost(context) {
       );
     }
 
-    const auth = new AuthService(await createUsersStore(env), await createSessionStore(env));
+    const emailStepUpStore = await createEmailStepUpStore(env);
+    const auth = new AuthService(
+      await createUsersStore(env),
+      await createSessionStore(env),
+      undefined,
+      undefined,
+      undefined,
+      emailStepUpStore
+    );
     const check = await auth.verifyStepUp(user.username, {
       password: typeof password === "string" ? password : undefined,
       totpCode: typeof totpCode === "string" ? totpCode : undefined,
+      emailToken: typeof emailToken === "string" ? emailToken : undefined,
+      emailCode: typeof emailCode === "string" ? emailCode : undefined,
     });
     if (!check.ok) {
       return json({ error: "step_up_failed", reason: check.reason, message: STEP_UP_MESSAGES[check.reason] ?? "Verificacion fallida." }, 401);

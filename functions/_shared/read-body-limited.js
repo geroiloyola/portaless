@@ -5,10 +5,34 @@ export class RequestBodyTooLargeError extends Error {
   }
 }
 
+export class InvalidContentLengthError extends Error {
+  constructor() {
+    super("invalid content-length header");
+    this.name = "InvalidContentLengthError";
+  }
+}
+
+export class InvalidJsonBodyError extends Error {
+  constructor(message = "invalid json body") {
+    super(message);
+    this.name = "InvalidJsonBodyError";
+  }
+}
+
+function checkDeclaredContentLength(request, maxBytes) {
+  const raw = request.headers.get("content-length");
+  if (raw === null || raw === "") return;
+  if (!/^\d+$/.test(raw.trim())) throw new InvalidContentLengthError();
+  const declaredLength = Number(raw.trim());
+  if (!Number.isSafeInteger(declaredLength) || declaredLength < 0) {
+    throw new InvalidContentLengthError();
+  }
+  if (declaredLength > maxBytes) throw new RequestBodyTooLargeError();
+}
+
 /** Reads a request body with a hard byte ceiling, including chunked requests. */
 export async function readBodyLimited(request, maxBytes) {
-  const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new RequestBodyTooLargeError();
+  checkDeclaredContentLength(request, maxBytes);
   if (!request.body) return "";
 
   const reader = request.body.getReader();
@@ -40,10 +64,40 @@ export async function readBodyLimited(request, maxBytes) {
   return new TextDecoder().decode(bytes);
 }
 
+/** B-03/B-06: Enforce byte limit BEFORE JSON.parse, optionally requiring a plain JSON object. */
+export async function readJsonBodyLimited(request, maxBytes, { requireObject = false } = {}) {
+  checkDeclaredContentLength(request, maxBytes);
+  let parsed;
+  if (!request.body && !(request instanceof Request) && typeof request.json === "function") {
+    // Compatibility for lightweight unit-test stubs `{ headers, json() }` that do not
+    // construct a real Fetch Request stream. All real Request objects always stream via
+    // readBodyLimited() below before JSON.parse.
+    try {
+      parsed = await request.json();
+    } catch {
+      throw new InvalidJsonBodyError();
+    }
+    const serialized = JSON.stringify(parsed ?? null);
+    if (new TextEncoder().encode(serialized).byteLength > maxBytes) {
+      throw new RequestBodyTooLargeError();
+    }
+  } else {
+    const raw = await readBodyLimited(request, maxBytes);
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new InvalidJsonBodyError();
+    }
+  }
+  if (requireObject && (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))) {
+    throw new InvalidJsonBodyError("json body must be an object");
+  }
+  return parsed;
+}
+
 /** Drains a cloned request stream without retaining its contents. */
 export async function assertBodySizeLimited(request, maxBytes) {
-  const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new RequestBodyTooLargeError();
+  checkDeclaredContentLength(request, maxBytes);
   if (!request.body) return;
 
   const reader = request.body.getReader();

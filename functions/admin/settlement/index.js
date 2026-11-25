@@ -14,7 +14,11 @@
 import { createPermissionStore } from "@portaless/permissions/store-factory";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
 import { AuthService } from "@portaless/auth/service";
-import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
+import {
+  createUsersStore,
+  createSessionStore,
+  createEmailStepUpStore,
+} from "@portaless/auth/store-factory";
 import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
 import { listPayPerCrawlProviders } from "@verared/trust-layer/billing";
 import { encryptToken } from "@portaless/deploy-engine/token-crypto";
@@ -23,11 +27,21 @@ import {
   deactivateProvider,
   hostFromApwDomain,
 } from "@verared/trust-layer/billing";
+import {
+  InvalidContentLengthError,
+  InvalidJsonBodyError,
+  readJsonBodyLimited,
+  RequestBodyTooLargeError,
+} from "../../_shared/read-body-limited.js";
 
 const SITE_ID = "default";
+const MAX_BODY_BYTES = 32 * 1024;
 
 function json(body, status) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
 }
 
 export async function onRequestGet(context) {
@@ -62,8 +76,14 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyLimited(request, MAX_BODY_BYTES, { requireObject: true });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    if (error instanceof InvalidContentLengthError || error instanceof InvalidJsonBodyError) {
+      return json({ error: "invalid_json_body" }, 400);
+    }
     return json({ error: "invalid_json_body" }, 400);
   }
   const { action, providerId } = body ?? {};
@@ -79,7 +99,7 @@ export async function onRequestPost(context) {
 
   if (action !== "activate") return json({ error: "invalid_action" }, 400);
 
-  const { credentials, confirmOriginLocked, password, totpCode } = body;
+  const { credentials, confirmOriginLocked, password, totpCode, emailToken, emailCode } = body;
   if (!credentials || typeof credentials !== "object" || Object.values(credentials).some((v) => typeof v !== "string")) {
     return json({ error: "invalid_body", message: "credentials debe ser un objeto de strings." }, 400);
   }
@@ -90,10 +110,20 @@ export async function onRequestPost(context) {
     }, 400);
   }
 
-  const auth = new AuthService(await createUsersStore(env), await createSessionStore(env));
+  const emailStepUpStore = await createEmailStepUpStore(env);
+  const auth = new AuthService(
+    await createUsersStore(env),
+    await createSessionStore(env),
+    undefined,
+    undefined,
+    undefined,
+    emailStepUpStore
+  );
   const stepUp = await auth.verifyStepUp(user.username, {
     password: typeof password === "string" ? password : undefined,
     totpCode: typeof totpCode === "string" ? totpCode : undefined,
+    emailToken: typeof emailToken === "string" ? emailToken : undefined,
+    emailCode: typeof emailCode === "string" ? emailCode : undefined,
   });
   if (!stepUp.ok) return json({ error: "step_up_failed", reason: stepUp.reason }, 401);
 

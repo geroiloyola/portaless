@@ -8,6 +8,14 @@
 // D1 sigue usando exclusivamente `npm run setup:d1`.
 
 import { publicOriginFromEnv } from "../../_shared/public-origin.js";
+import {
+  InvalidContentLengthError,
+  InvalidJsonBodyError,
+  readJsonBodyLimited,
+  RequestBodyTooLargeError,
+} from "../../_shared/read-body-limited.js";
+
+const MAX_SETUP_BODY_BYTES = 8 * 1024;
 
 function json(body, status) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -26,8 +34,14 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyLimited(request, MAX_SETUP_BODY_BYTES, { requireObject: true });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ success: false, error: "request_too_large" }, 413);
+    }
+    if (error instanceof InvalidContentLengthError || error instanceof InvalidJsonBodyError) {
+      return json({ success: false, error: "invalid_json_body" }, 400);
+    }
     return json({ success: false, error: "invalid_json_body" }, 400);
   }
   const result = await firstRun.complete({ code: body?.code, username: body?.username, password: body?.password });

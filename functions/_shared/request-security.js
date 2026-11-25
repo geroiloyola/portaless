@@ -19,10 +19,41 @@ export function isSecureRequest(request, env = {}) {
   return false;
 }
 
+const INVALID_COOKIE_VALUE_RE = /[\r\n;]/;
+
+/**
+ * B-01: Parser exacto de cookies por nombre sin regex ni coincidencias parciales
+ * (p. ej. `evil_portaless_session` nunca coincide con `portaless_session`).
+ */
+export function getCookie(request, name, { decode = false } = {}) {
+  if (typeof name !== "string" || !name) return null;
+  const cookieHeader = request?.headers?.get?.("Cookie") || "";
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    if (key === name) {
+      const raw = part.slice(idx + 1).trim();
+      if (!decode) return raw;
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 /** Cookie de sesion unica: HttpOnly, SameSite=Strict y Secure detras de TLS. */
 export function sessionCookie(token, request, env, { maxAge = 24 * 60 * 60 } = {}) {
+  const safeToken = String(token ?? "");
+  if (INVALID_COOKIE_VALUE_RE.test(safeToken)) {
+    throw new Error("Invalid session cookie token.");
+  }
   const flags = [
-    `portaless_session=${token}`,
+    `portaless_session=${safeToken}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Strict",
@@ -30,6 +61,11 @@ export function sessionCookie(token, request, env, { maxAge = 24 * 60 * 60 } = {
   ];
   if (isSecureRequest(request, env)) flags.push("Secure");
   return flags.join("; ");
+}
+
+/** B-05: Limpieza consistente de la cookie de sesion con los mismos atributos. */
+export function clearSessionCookie(request, env) {
+  return sessionCookie("", request, env, { maxAge: 0 });
 }
 
 import { normalizeOAuthProvider, oauthStateCookieName } from "@portaless/auth/oauth";

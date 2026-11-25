@@ -26,6 +26,8 @@ import {
   clearLoginFailures,
   loginRateLimitBuckets,
   LOGIN_WINDOW_MS,
+  mfaChallengeIssueLimit,
+  recordMfaChallengeIssuance,
 } from "@portaless/auth/login-rate-limit";
 import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
@@ -63,6 +65,16 @@ function serverBusyResponse() {
   });
 }
 
+function noStoreRedirect(location) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: location,
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
@@ -81,7 +93,7 @@ export async function onRequestPost(context) {
     rawBody = await readBodyLimited(request, 16 * 1024);
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
-      return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
+      return noStoreRedirect(new URL("/admin/login?error=1", request.url).toString());
     }
     throw error;
   }
@@ -90,7 +102,7 @@ export async function onRequestPost(context) {
   const password = String(formData.get("password") || "");
 
   if (!username || !password || username.length > 254 || password.length > 1024) {
-    return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
+    return noStoreRedirect(new URL("/admin/login?error=1", request.url).toString());
   }
 
   const rateLimitStore = await createRateLimitStore(env);
@@ -115,11 +127,22 @@ export async function onRequestPost(context) {
   }
 
   if (result.mfaRequired && result.mfaChallengeToken) {
+    // N-03: presupuesto dedicado por IP para emision de desafios MFA.
+    const mfaIssue = await recordMfaChallengeIssuance(
+      rateLimitStore,
+      clientIp,
+      Date.now(),
+      mfaChallengeIssueLimit(env)
+    );
+    if (mfaIssue.overLimit) {
+      await mfaChallengeStore.delete(result.mfaChallengeToken);
+      return rateLimitedResponse(mfaIssue.windowStart);
+    }
     const buckets = loginRateLimitBuckets(clientIp, username);
     await clearLoginFailures(rateLimitStore, buckets, Math.floor(Date.now() / LOGIN_WINDOW_MS) * LOGIN_WINDOW_MS);
     const redirectUrl = new URL("/admin/login-mfa", request.url);
     redirectUrl.searchParams.set("challenge", result.mfaChallengeToken);
-    return Response.redirect(redirectUrl.toString(), 302);
+    return noStoreRedirect(redirectUrl.toString());
   }
 
   if (!result.success || !result.session) {
@@ -127,7 +150,7 @@ export async function onRequestPost(context) {
     // Solo la IP rechaza. El bucket de usuario se registra para auditoría,
     // pero nunca bloquea: bloquear por usuario es el DoS original de A-01.
     if (state.ipOverLimit) return rateLimitedResponse(state.windowStart);
-    return Response.redirect(new URL("/admin/login?error=1", request.url).toString(), 302);
+    return noStoreRedirect(new URL("/admin/login?error=1", request.url).toString());
   }
 
   const buckets = loginRateLimitBuckets(clientIp, username);
@@ -137,6 +160,7 @@ export async function onRequestPost(context) {
     status: 302,
     headers: {
       "Set-Cookie": sessionCookie(result.session.token, request, env),
+      "Cache-Control": "no-store",
       Location: new URL("/admin/", request.url).toString(),
     },
   });

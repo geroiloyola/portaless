@@ -33,10 +33,13 @@ vi.mock("@portaless/auth/store-factory", async () => {
     },
   };
   const resets = { invalidateAllForUser: async () => {}, consume: async () => null, create: async () => ({ token: "x" }) };
+  const { InMemoryEmailStepUpStore } = await import("../../packages/auth/src/email-stepup-store");
+  const emailStepUp = new InMemoryEmailStepUpStore();
   return {
     createUsersStore: async () => usersStore,
     createSessionStore: async () => sessions,
     createPasswordResetStore: async () => resets,
+    createEmailStepUpStore: async () => emailStepUp,
   };
 });
 vi.mock("@portaless/trust-storage-adapters", async () => {

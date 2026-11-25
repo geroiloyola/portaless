@@ -5,7 +5,18 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { AuthService } from "@portaless/auth/service";
-import { createUsersStore, createSessionStore, createMfaChallengeStore } from "@portaless/auth/store-factory";
+import {
+  createUsersStore,
+  createSessionStore,
+  createMfaChallengeStore,
+  createRateLimitStore,
+} from "@portaless/auth/store-factory";
+import {
+  LOGIN_WINDOW_MS,
+  mfaChallengeIssueLimit,
+  recordMfaChallengeIssuance,
+} from "@portaless/auth/login-rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import {
   loadOAuthProviderConfig,
   exchangeCodeForProfile,
@@ -14,25 +25,7 @@ import {
   decodeOAuthStateCookieValue,
 } from "@portaless/auth/oauth";
 import { publicOriginFromEnv } from "../../../_shared/public-origin.js";
-import { sessionCookie, clearOAuthStateCookie } from "../../../_shared/request-security.js";
-
-function getCookie(request, name) {
-  const cookieHeader = request.headers.get("Cookie") || "";
-  for (const part of cookieHeader.split(";")) {
-    const idx = part.indexOf("=");
-    if (idx === -1) continue;
-    const key = part.slice(0, idx).trim();
-    if (key === name) {
-      const raw = part.slice(idx + 1).trim();
-      try {
-        return decodeURIComponent(raw);
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
-}
+import { getCookie, sessionCookie, clearOAuthStateCookie } from "../../../_shared/request-security.js";
 
 function safeStateEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -43,7 +36,10 @@ function safeStateEqual(a, b) {
 }
 
 function redirectLoginError(origin, provider, request, env) {
-  const headers = new Headers({ Location: new URL("/admin/login?error=1", origin).toString() });
+  const headers = new Headers({
+    Location: new URL("/admin/login?error=1", origin).toString(),
+    "Cache-Control": "no-store",
+  });
   headers.append("Set-Cookie", clearOAuthStateCookie(provider, request, env));
   return new Response(null, { status: 302, headers });
 }
@@ -52,7 +48,10 @@ export async function onRequestGet(context) {
   const { params, request, env } = context;
   const provider = normalizeOAuthProvider(params.provider);
   if (!provider) {
-    return new Response("Proveedor OAuth inválido.", { status: 400 });
+    return new Response("Proveedor OAuth inválido.", {
+      status: 400,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const url = new URL(request.url);
@@ -60,7 +59,10 @@ export async function onRequestGet(context) {
   const returnedState = url.searchParams.get("state");
   const origin = publicOriginFromEnv(env);
   if (!origin) {
-    return new Response("PORTALESS_PUBLIC_URL no configurada: no se puede completar OAuth sin un origen publico confiable.", { status: 503 });
+    return new Response("PORTALESS_PUBLIC_URL no configurada: no se puede completar OAuth sin un origen publico confiable.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
   const redirectUri = `${origin}/admin/oauth/${provider}/callback`;
 
@@ -68,7 +70,7 @@ export async function onRequestGet(context) {
     return redirectLoginError(origin, provider, request, env);
   }
 
-  const stateCookie = getCookie(request, oauthStateCookieName(provider));
+  const stateCookie = getCookie(request, oauthStateCookieName(provider), { decode: true });
   if (!stateCookie) {
     return redirectLoginError(origin, provider, request, env);
   }
@@ -82,7 +84,10 @@ export async function onRequestGet(context) {
   if (!config) {
     return new Response(`El proveedor OAuth "${provider}" no está configurado en este despliegue.`, {
       status: 404,
-      headers: { "Set-Cookie": clearOAuthStateCookie(provider, request, env) },
+      headers: {
+        "Set-Cookie": clearOAuthStateCookie(provider, request, env),
+        "Cache-Control": "no-store",
+      },
     });
   }
 
@@ -101,7 +106,26 @@ export async function onRequestGet(context) {
 
   const result = await authService.loginWithOAuth(profile);
   if (result.mfaRequired && result.mfaChallengeToken) {
-    const headers = new Headers();
+    const rateLimitStore = await createRateLimitStore(env);
+    const clientIp = clientIpFromHeaders(request.headers, env);
+    const mfaIssue = await recordMfaChallengeIssuance(
+      rateLimitStore,
+      clientIp,
+      Date.now(),
+      mfaChallengeIssueLimit(env)
+    );
+    if (mfaIssue.overLimit) {
+      await mfaChallengeStore.delete(result.mfaChallengeToken);
+      const retryAfter = Math.max(1, Math.ceil((mfaIssue.windowStart + LOGIN_WINDOW_MS - Date.now()) / 1000));
+      const headers = new Headers({
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "Retry-After": String(retryAfter),
+      });
+      headers.append("Set-Cookie", clearOAuthStateCookie(provider, request, env));
+      return new Response(JSON.stringify({ success: false, error: "rate_limited" }), { status: 429, headers });
+    }
+    const headers = new Headers({ "Cache-Control": "no-store" });
     const redirectUrl = new URL("/admin/login-mfa", origin);
     redirectUrl.searchParams.set("challenge", result.mfaChallengeToken);
     headers.set("Location", redirectUrl.toString());
@@ -112,7 +136,10 @@ export async function onRequestGet(context) {
     return redirectLoginError(origin, provider, request, env);
   }
 
-  const headers = new Headers({ Location: new URL("/admin", origin).toString() });
+  const headers = new Headers({
+    Location: new URL("/admin", origin).toString(),
+    "Cache-Control": "no-store",
+  });
   headers.append("Set-Cookie", sessionCookie(result.session.token, request, env));
   headers.append("Set-Cookie", clearOAuthStateCookie(provider, request, env));
 
