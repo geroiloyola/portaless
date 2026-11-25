@@ -50,10 +50,10 @@ describe("site-profile resolver (W3.3 / PR-B2)", () => {
     });
 
     const demo = getSiteProfileConfig("demo");
-    expect(demo.homeFile).toBe("site-profiles/demo/home.json");
-    expect(demo.homeEsFile).toBe("site-profiles/demo/home.es.json");
-    expect(demo.pagesDir).toBe("site-profiles/demo/pages");
-    expect(demo.postsDir).toBe("site-profiles/demo/posts");
+    expect(demo.homeFile).toBe("node_modules/@portaless/templates/demo/home.json");
+    expect(demo.homeEsFile).toBe("node_modules/@portaless/templates/demo/home.es.json");
+    expect(demo.pagesDir).toBe("node_modules/@portaless/templates/demo/pages");
+    expect(demo.postsDir).toBe("node_modules/@portaless/templates/demo/posts");
     expect(demo.features).toEqual({
       esRoutes: true,
       beta: true,

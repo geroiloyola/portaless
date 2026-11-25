@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 const root = join(__dirname, "..", "..");
 const trustPage = readFileSync(join(root, "src", "pages", "trust", "index.astro"), "utf8");
-const creatorDemo = readFileSync(join(root, "site-profiles", "demo", "pages", "creator-demo.json"), "utf8");
+const creatorDemo = readFileSync(join(root, "node_modules", "@portaless", "templates", "demo", "pages", "creator-demo.json"), "utf8");
 
 describe("página pública de TrustScore: sin valores fabricados", () => {
   it("no contiene ninguno de los literales inventados", () => {

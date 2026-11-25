@@ -15,12 +15,12 @@ describe("B2: search/ai_train son señales cooperativas, no reglas por petición
 
   it("README y home EN dicen que no se aplican por request", () => {
     expect(read("README.md")).toContain("not enforced per request");
-    expect(read("site-profiles/demo/home.json")).toContain("not enforced per request");
+    expect(read("node_modules/@portaless/templates/demo/home.json")).toContain("not enforced per request");
     expect(read("src/components/BetaPage.astro")).toContain("not enforced per request");
   });
 
   it("home ES y /beta ES dicen que no se aplican por petición", () => {
-    expect(read("site-profiles/demo/home.es.json")).toContain("no se aplican por petición");
+    expect(read("node_modules/@portaless/templates/demo/home.es.json")).toContain("no se aplican por petición");
     expect(read("src/components/BetaPage.astro")).toContain("no se aplican por petición");
   });
 });

@@ -1,5 +1,5 @@
 // TAREA 3. Dos contratos:
-//   1. Los JSON de demo (site-profiles/demo/pages) usan SOLO rutas nuevas
+//   1. Los JSON de demo (node_modules/@portaless/templates/demo/pages) usan SOLO rutas nuevas
 //      (/pages/, /shop/, /projections/) -- nunca las legadas.
 //   2. /shop/<handle> cae a un estado vacio elegante (con vuelta a la tienda)
 //      cuando el comercio esta deshabilitado o el handle no existe; el modulo
@@ -9,7 +9,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(__dirname, "../..");
-const pagesDir = join(root, "site-profiles/demo/pages");
+const pagesDir = join(root, "node_modules/@portaless/templates/demo/pages");
 const handleSrc = readFileSync(join(root, "src/pages/shop/[handle].astro"), "utf8");
 
 describe("JSON de demo: solo rutas nuevas", () => {

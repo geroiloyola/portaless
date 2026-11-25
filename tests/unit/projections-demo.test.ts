@@ -33,7 +33,7 @@ function canon(overrides: Partial<Canon> = {}): Canon {
   return {
     kind: "post",
     id: "bienvenida",
-    source: "site-profiles/demo/posts/bienvenida.md",
+    source: "node_modules/@portaless/templates/demo/posts/bienvenida.md",
     title: "Bienvenido a tu sitio",
     description: "El primer articulo.",
     pubDate: new Date("2026-09-12T00:00:00Z"),

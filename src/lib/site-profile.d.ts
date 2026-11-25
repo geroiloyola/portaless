@@ -27,6 +27,7 @@ export interface SiteProfileConfig {
 
 export declare const VALID_SITE_PROFILES: readonly SiteProfileId[];
 export declare const DEFAULT_SITE_PROFILE: SiteProfileId;
+export declare const DEMO_TEMPLATES_DIR: string;
 
 export declare function resolveSiteProfile(
   env?: Record<string, string | undefined>,

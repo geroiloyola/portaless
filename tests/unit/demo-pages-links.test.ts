@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const dir = join(__dirname, "..", "..", "site-profiles", "demo", "pages");
+const dir = join(__dirname, "..", "..", "node_modules", "@portaless", "templates", "demo", "pages");
 const files = readdirSync(dir).filter((f) => f.endsWith(".json")).sort();
 
 function collectLinks(node: unknown, out: string[]): void {

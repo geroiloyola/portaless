@@ -47,8 +47,9 @@ async function runProfileExportCheck(profile) {
   fs.writeFileSync(path.join(fixtureRoot, "data/portaless.db"), marker);
 
   const layout = (slug, status, title) => ({ version: "0.1", slug, title, status, root: [] });
-  const pagesRel = `site-profiles/${profile}/pages`;
-  const postsRel = `site-profiles/${profile}/posts`;
+  const stageProfileRel = profile === "demo" ? ".portaless-stage/demo" : "site-profiles/starter";
+  const pagesRel = `${stageProfileRel}/pages`;
+  const postsRel = `${stageProfileRel}/posts`;
   writeJson(fixtureRoot, `${pagesRel}/public-source.json`, layout("public-source", "published", "Public source"));
   writeJson(fixtureRoot, `${pagesRel}/private-source.json`, layout("private-source", "private", marker));
   writeJson(fixtureRoot, `${pagesRel}/private-source.en.json`, { ...layout("private-source", "published", marker), locale: "en" });
@@ -89,7 +90,13 @@ async function runProfileExportCheck(profile) {
     cwd: stageRoot,
     stdio: "inherit",
     env: createPublicBuildEnv(
-      { ...process.env, PRIVATE_TEST_SENTINEL: marker, PORTALESS_BASE_PATH: "/", PORTALESS_SITE_PROFILE: profile },
+      {
+        ...process.env,
+        PRIVATE_TEST_SENTINEL: marker,
+        PORTALESS_BASE_PATH: "/",
+        PORTALESS_SITE_PROFILE: profile,
+        ...(profile === "demo" ? { PORTALESS_STAGE_PROFILE_DIR: stageProfileRel } : {}),
+      },
       dist,
     ),
   });

@@ -246,12 +246,20 @@ Wave 2 **must not start** until every item below is verified true in CI on
 3. ✅ **W2.3 *(PR #126)*:** Updated `geroiloyola/portaless` to consume the exact pinned `@verared/*` `v0.1.0-alpha.1` tarballs (via `dependencies` + `overrides` + `.npmrc` `allow-remote=root`) and `SPEC-PIN.json`, and deleted the 7 migrated local `packages/*` copies.
 4. ✅ **W2.3b *(PR #127)*:** Retired the duplicated local `docs/protocol-apw/` specification tree (leaving only the minimal redirect [`docs/protocol-apw/README.md`](./docs/protocol-apw/README.md)), pinned `@verared/spec` `v0.1.0-draft.1` tarball in `devDependencies` for Astro reference docs and vector tests, and enforced zero local spec duplication in `scripts/check-architecture-boundaries.mjs --strict`.
 
-### Wave 3 — Decoupling within `github.com/geroiloyola/*`
+### Wave 3 — Decoupling within `github.com/geroiloyola/*` (**100% completed**)
 
 1. ✅ **W3.1:** Created standalone MIT repository `github.com/geroiloyola/portaless-plugin-sdk` (`@portaless/plugin-sdk` `v0.1.0`, commit `4b074fd`), compiled to `dist/` (`ESM .js` + `.d.ts`) with strict `.` export, Node 24 CI (`ci.yml` + automated `release.yml`), and published immutable GitHub Release tarball `portaless-plugin-sdk-0.1.0.tgz` + `SHA256SUMS`.
 2. ✅ **W3.2 *(PR #128)*:** Updated `geroiloyola/portaless` to consume `@portaless/plugin-sdk` `v0.1.0` via GitHub Release tarball (`dependencies` + `overrides`), migrated `permission-center-ui.ts` and contract tests off `./source`, removed local `packages/plugin-sdk/` and `.github/workflows/plugin-sdk-conformance.yml`, and enforced zero local SDK duplication in `scripts/check-architecture-boundaries.mjs --strict`.
-3. ✅ **W3.3 *(this PR, PR-B2)*:** Split site content into autonomous physical profiles under `site-profiles/starter/` (clean EN default) and `site-profiles/demo/` (full EN/ES showcase + docs + 8 fictional D8 cases), unified `PORTALESS_SITE_PROFILE=starter|demo` in `src/lib/site-profile.mjs`, gated demo-only Astro routes before generation via `injectRoute`, sanitized Class D personal data (`creator-demo.json` + `/avatars/creator-demo.svg`) and replaced all unverified external images/embeds/forms with 21 original local SVGs documented in `site-profiles/demo/ASSETS-LICENSES.md`, and validated both profiles in CI (`static-sweep.test.ts`, `test-public-export.mjs`, `ci.yml`, `deploy-pages.yml`). `site-profiles/demo/` is now ready for extraction to `geroiloyola/portaless-templates`.
-4. **W3.4–W3.5 (pending):** Extract `site-profiles/demo/` to `github.com/geroiloyola/portaless-templates` (D11) and switch `portaless` to consume it as an external release tarball when `PORTALESS_SITE_PROFILE=demo`.
+3. ✅ **W3.3 *(PR #129, PR-B2)*:** Split site content into autonomous physical profiles (`starter` default vs `demo`), unified `PORTALESS_SITE_PROFILE=starter|demo` in `src/lib/site-profile.mjs`, gated demo-only Astro routes before generation via `injectRoute`, sanitized Class D personal data (`creator-demo.json` + `/avatars/creator-demo.svg`), replaced all unverified external images/embeds/forms with 21 original local SVGs documented in `ASSETS-LICENSES.md`, and validated both profiles in CI.
+4. ✅ **W3.4:** Created standalone `CC0-1.0` repository `github.com/geroiloyola/portaless-templates` (`@portaless/templates` `v0.1.0`, commit `5eb6d6a`) with Node 24 CI (`verify-templates.mjs` + `smoke-tarball.mjs`) and automated `release.yml`, publishing immutable `portaless-templates-0.1.0.tgz` + `SHA256SUMS`.
+5. ✅ **W3.5 *(this PR)*:** Retired local `site-profiles/demo/` from `geroiloyola/portaless` (leaving `site-profiles/starter/` as the sole local canonical profile), pinned `@portaless/templates` `v0.1.0` via GitHub Release tarball (`devDependencies` + `overrides`), switched `PORTALESS_SITE_PROFILE=demo` to resolve from `node_modules/@portaless/templates/demo/`, and enforced zero local demo duplication in `scripts/check-architecture-boundaries.mjs --strict`.
+
+#### Final 5-repository ecosystem (Waves 1–3 complete)
+- `github.com/verared/vera-trust-spec` (`@verared/spec` `v0.1.0-draft.1`, **CC BY 4.0**)
+- `github.com/verared/vera-trust-stack` (`@verared/*` `v0.1.0-alpha.1`, **Apache-2.0**)
+- `github.com/geroiloyola/portaless-plugin-sdk` (`@portaless/plugin-sdk` `v0.1.0`, **MIT**)
+- `github.com/geroiloyola/portaless-templates` (`@portaless/templates` `v0.1.0`, **CC0-1.0**, per-asset verified)
+- `github.com/geroiloyola/portaless` (**AGPL-3.0-or-later**, clean `starter` default, consumes all four external gears via immutable GitHub Release tarballs with zero tokens)
 
 ---
 

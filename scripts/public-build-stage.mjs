@@ -11,7 +11,8 @@ const PACKAGE_BUILD_DIRS = ["src", "astro-integration"];
 const BUILD_ENV_KEYS = [
   "PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "CI",
   "PORTALESS_BASE_PATH", "PORTALESS_SITE_URL", "PORTALESS_SITE_NAME",
-  "PORTALESS_SITE_DESCRIPTION", "PORTALESS_SITE_PROFILE", "SITE_LANG", "ENABLE_COMMERCE",
+  "PORTALESS_SITE_DESCRIPTION", "PORTALESS_SITE_PROFILE", "PORTALESS_STAGE_PROFILE_DIR",
+  "SITE_LANG", "ENABLE_COMMERCE",
 ];
 const EXCLUDED_COMPONENTS = new Set([
   ".git", ".airchive", ".kilo", ".astro", ".playwright", "node_modules", "dist",
@@ -149,14 +150,18 @@ function pageFileIdentity(filename) {
   return match ? { slug: match[1], locale: match[2] } : { slug: base, locale: null };
 }
 
-function resolveProfileDir(root, kind, profile) {
+function resolveProfileDir(root, kind, profile, stageDir) {
+  if (stageDir) return path.join(root, stageDir, kind);
   const activeProfile = resolveSiteProfile(profile ? { PORTALESS_SITE_PROFILE: profile } : process.env);
+  if (activeProfile === "demo") {
+    return path.join(root, ".portaless-stage", "demo", kind);
+  }
   return path.join(root, "site-profiles", activeProfile, kind);
 }
 
 /** Copy published source pages/translations, excluding DB-owned private slugs. */
-export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPubliclyPublishable, { profile } = {}) {
-  const sourceDir = resolveProfileDir(projectRoot, "pages", profile);
+export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPubliclyPublishable, { profile, stageDir } = {}) {
+  const sourceDir = resolveProfileDir(projectRoot, "pages", profile, stageDir);
   if (!fs.existsSync(sourceDir)) return;
   if (fs.lstatSync(sourceDir).isSymbolicLink()) throw new Error("El directorio de páginas no puede ser un symlink en la exportación pública.");
   const groups = new Map();
@@ -172,7 +177,7 @@ export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPu
     groups.set(identity.slug, group);
   }
 
-  const targetDir = resolveProfileDir(stageRoot, "pages", profile);
+  const targetDir = resolveProfileDir(stageRoot, "pages", profile, stageDir);
   fs.mkdirSync(targetDir, { recursive: true });
   for (const [slug, group] of groups) {
     if (
@@ -206,12 +211,12 @@ function postIsPublic(source, relativePath, isPubliclyPublishable) {
 }
 
 /** Copy only public Markdown posts; draft/private files never enter staging. */
-export function copyPublicSourcePosts(projectRoot, stageRoot, isPubliclyPublishable, { profile } = {}) {
+export function copyPublicSourcePosts(projectRoot, stageRoot, isPubliclyPublishable, { profile, stageDir } = {}) {
   const activeProfile = resolveSiteProfile(profile ? { PORTALESS_SITE_PROFILE: profile } : process.env);
-  const sourceRoot = path.join(projectRoot, "site-profiles", activeProfile, "posts");
+  const sourceRoot = resolveProfileDir(projectRoot, "posts", activeProfile, stageDir);
   if (!fs.existsSync(sourceRoot)) return;
   if (fs.lstatSync(sourceRoot).isSymbolicLink()) throw new Error("El directorio de posts no puede ser un symlink en la exportación pública.");
-  const targetRoot = path.join(stageRoot, "site-profiles", activeProfile, "posts");
+  const targetRoot = resolveProfileDir(stageRoot, "posts", activeProfile, stageDir);
   function walk(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (entry.isSymbolicLink()) continue;
