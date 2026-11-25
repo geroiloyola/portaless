@@ -32,11 +32,19 @@ export function sessionCookie(token, request, env, { maxAge = 24 * 60 * 60 } = {
   return flags.join("; ");
 }
 
-/** Cookie efimera de state OAuth. Lax es necesario para el redirect del proveedor; no es la cookie de sesion. */
+import { normalizeOAuthProvider, oauthStateCookieName } from "@portaless/auth/oauth";
+
+/** Cookie efimera de state OAuth ligada al proveedor (M-07). Lax es necesario para el redirect del proveedor; no es la cookie de sesion. */
 export function oauthStateCookie(value, provider, request, env, { maxAge = 600 } = {}) {
+  const normalized = normalizeOAuthProvider(provider);
+  if (!normalized) {
+    throw new Error(`Invalid OAuth provider identifier: "${String(provider)}"`);
+  }
+  const cookieName = oauthStateCookieName(normalized);
+  const encodedValue = value ? encodeURIComponent(value) : "";
   const flags = [
-    `portaless_oauth_state=${value}`,
-    `Path=/admin/oauth/${provider}/callback`,
+    `${cookieName}=${encodedValue}`,
+    `Path=/admin/oauth/${normalized}/callback`,
     "HttpOnly",
     "SameSite=Lax",
     `Max-Age=${maxAge}`,

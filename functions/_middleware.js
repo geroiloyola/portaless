@@ -194,6 +194,10 @@ export async function onRequest(context) {
 
 async function handleRequest(context) {
   const { request, env, next } = context;
+  const url = new URL(request.url);
+  // Liveness exacto (starter-and-demo-split.md §6): exento antes de DB/Trust Layer;
+  // nunca por prefijo (/healthz-extra y /healthz/foo siguen sujetos al middleware).
+  if (url.pathname === "/healthz") return next();
   // GATE de migraciones (fail-closed): si la base esta detras del codigo (o
   // adelante), 503 en vez de dejar que una columna ausente rompa una query a
   // mitad de camino. Cachea el estado 10s, no una Response/body consumible.
@@ -203,7 +207,6 @@ async function handleRequest(context) {
   // El mapa es FIJO (src/lib/routes.ts, LEGACY_ROUTES) y no tiene open redirect:
   // matching por tabla, slug validado, query preservado. En GitHub Pages (sin
   // functions/) el build static emite las paginas meta-refresh equivalentes.
-  const url = new URL(request.url);
   const basePath = (env.PORTALESS_BASE_PATH || "/").replace(/\/+$/, "");
   const baseMatch = basePath === "/" || url.pathname === basePath || url.pathname.startsWith(`${basePath}/`);
   const sitePath = baseMatch ? url.pathname.slice(basePath.length) || "/" : url.pathname;

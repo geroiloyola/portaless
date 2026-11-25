@@ -1,21 +1,26 @@
 // Cloudflare Pages Function -- GET /admin/oauth/:provider/start
 // Redirige al usuario al proveedor OAuth configurado (ej. /admin/oauth/google/start).
-// El state + PKCE verifier se guardan en una cookie de corta duracion --
-// no se persiste en ningun store porque su vida util es de segundos (ida
-// y vuelta del redirect), a diferencia de las sesiones reales.
-//
-// La cookie lleva Secure solo en HTTPS, igual que login.js: en self-hosted por
-// HTTP en una IP de red local el navegador descartaria una cookie Secure y el
-// callback nunca encontraria el state.
+// El state + PKCE verifier se guardan ligados al proveedor en una cookie de
+// corta duracion (`portaless_oauth_state_<provider>`, M-07).
 
-import { loadOAuthProviderConfig, generatePkcePair, buildAuthorizationUrl } from "@portaless/auth/oauth";
+import {
+  loadOAuthProviderConfig,
+  generatePkcePair,
+  buildAuthorizationUrl,
+  normalizeOAuthProvider,
+  encodeOAuthStateCookieValue,
+} from "@portaless/auth/oauth";
 import { publicOriginFromEnv } from "../../../_shared/public-origin.js";
 import { oauthStateCookie } from "../../../_shared/request-security.js";
 import { randomBytes } from "node:crypto";
 
 export async function onRequestGet(context) {
   const { params, request, env } = context;
-  const provider = params.provider;
+  const provider = normalizeOAuthProvider(params.provider);
+  if (!provider) {
+    return new Response("Proveedor OAuth inválido.", { status: 400 });
+  }
+
   const origin = publicOriginFromEnv(env);
   if (!origin) {
     return new Response("PORTALESS_PUBLIC_URL no configurada: no se puede iniciar OAuth sin un origen publico confiable.", { status: 503 });
@@ -33,7 +38,8 @@ export async function onRequestGet(context) {
   const authUrl = buildAuthorizationUrl(config, state, challenge);
 
   const headers = new Headers({ Location: authUrl });
-  headers.append("Set-Cookie", oauthStateCookie(`${state}:${verifier}`, provider, request, env));
+  const cookieValue = encodeOAuthStateCookieValue(provider, state, verifier);
+  headers.append("Set-Cookie", oauthStateCookie(cookieValue, provider, request, env));
 
   return new Response(null, { status: 302, headers });
 }
