@@ -258,19 +258,31 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("B3: un Googlebot sin firma recibe 403 aunque ai_input=allow", async () => {
-    const request = new Request("https://mysite.example/pages/foo", {
+  it("B3: Googlebot sin firma pasa anonimo en ruta publica ai_input=allow y recibe 403 + metrica en ruta gobernada", async () => {
+    const publicReq = new Request("https://mysite.example/pages/foo", {
       headers: {
         "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
       },
     });
-    const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
-    const { context, next } = makeContext(request, envWithPolicy);
-    const res = await onRequest(context);
+    const envAllow = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
+    const pub = makeContext(publicReq, envAllow);
+    const pubRes = await onRequest(pub.context);
 
-    expect(res!.status).toBe(403);
-    expect((await res!.json()).error).toBe("unsigned_automated_request");
-    expect(next).not.toHaveBeenCalled();
+    expect(pubRes!.status).toBe(200);
+    expect(pub.next).toHaveBeenCalledTimes(1);
+    expect(pub.data.webBotAuth).toEqual({ verified: false, anonymous: true });
+
+    const governedReq = new Request("https://mysite.example/api/governed/feed", {
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    });
+    const gov = makeContext(governedReq, { ...envAllow, PORTALESS_GOVERNED_PATHS: "/api/governed" });
+    const govRes = await onRequest(gov.context);
+
+    expect(govRes!.status).toBe(403);
+    expect((await govRes!.json()).error).toBe("unsigned_automated_request");
+    expect(gov.next).not.toHaveBeenCalled();
     await __flushUnsignedBotMetricsForTests(env);
     expect((await readUnsignedBotRejections(env)).periods[0]).toMatchObject({ googlebot: 1, bingbot: 0, other: 0, unknown: 0 });
   });
