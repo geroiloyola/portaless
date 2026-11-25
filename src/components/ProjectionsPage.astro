@@ -82,6 +82,9 @@ const siteId = (() => {
   }
 })();
 
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
+
+const profile = getSiteProfileConfig(process.env);
 const canonPost = publishedPosts(await getCollection("posts"))[0];
 
 const ctx: ProjectionContext = { siteUrl, base, siteName, summary, siteId };
@@ -89,7 +92,7 @@ const canon: Canon | null = canonPost
   ? {
       kind: "post",
       id: canonPost.id,
-      source: `src/content/posts/${canonPost.id}.md`,
+      source: `${profile.postsDir}/${canonPost.id}.md`,
       title: canonPost.data.title,
       description: canonPost.data.description ?? "",
       pubDate: canonPost.data.pubDate,

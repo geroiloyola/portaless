@@ -538,6 +538,9 @@ const Video: ElementDefinition<VideoProps> = {
     if (vimeo) {
       return `<figure class="ae-video" style="margin:0;position:relative;border-radius:${radius};overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><iframe src="https://player.vimeo.com/video/${esc(vimeo[1])}" title="${esc(p.title)}" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></figure>`;
     }
+    if (url.startsWith("/") && !url.startsWith("//") && /\.(?:svg|png|webp|jpe?g)$/i.test(url)) {
+      return `<figure class="ae-video" style="margin:0;position:relative;border-radius:${radius};overflow:hidden;aspect-ratio:16/9;background:var(--panel-border, #E4E6C3);"><img src="${esc(url)}" alt="${esc(p.title)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></figure>`;
+    }
     return `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radius};padding:${space(6)};text-align:center;color:var(--muted, #6E6653);">URL no reconocida - pega un enlace de YouTube (youtube.com/watch, youtu.be o shorts) o Vimeo (vimeo.com).</div>`;
   },
 };

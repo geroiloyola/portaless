@@ -63,7 +63,17 @@ function normalizePropsWithBase(
   const result: Record<string, unknown> = { ...props };
   if (base && base !== "/") {
     for (const [key, val] of Object.entries(result)) {
-      if (typeof val === "string" && val.startsWith("/") && !val.startsWith("//")) {
+      if (key === "images" && typeof val === "string") {
+        result[key] = val
+          .split(/\r?\n/)
+          .map((line) => {
+            const trimmed = line.trim();
+            return trimmed.startsWith("/") && !trimmed.startsWith("//")
+              ? resolveInternalUrl(trimmed, base)
+              : line;
+          })
+          .join("\n");
+      } else if (typeof val === "string" && val.startsWith("/") && !val.startsWith("//")) {
         result[key] = resolveInternalUrl(val, base);
       } else if (Array.isArray(val)) {
         result[key] = val.map((item) => {

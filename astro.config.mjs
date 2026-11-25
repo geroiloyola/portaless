@@ -1,4 +1,61 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
+import { getSiteProfileConfig } from "./src/lib/site-profile.mjs";
+
+const siteProfile = getSiteProfileConfig(process.env);
+
+const DEMO_ONLY_ROUTES = [
+  { pattern: "/beta", entrypoint: "./src/profile-pages/demo/beta.astro" },
+  { pattern: "/docs", entrypoint: "./src/profile-pages/demo/docs/index.astro" },
+  { pattern: "/projections", entrypoint: "./src/profile-pages/demo/projections.astro" },
+  { pattern: "/shop", entrypoint: "./src/profile-pages/demo/shop/index.astro" },
+  { pattern: "/es", entrypoint: "./src/profile-pages/demo/es/index.astro" },
+  { pattern: "/es/beta", entrypoint: "./src/profile-pages/demo/es/beta.astro" },
+  { pattern: "/es/explore", entrypoint: "./src/profile-pages/demo/es/explore.astro" },
+  { pattern: "/es/projections", entrypoint: "./src/profile-pages/demo/es/projections.astro" },
+  { pattern: "/es/shop", entrypoint: "./src/profile-pages/demo/es/shop/index.astro" },
+];
+
+function copyDirRecursive(srcDir, dstDir) {
+  if (!fs.existsSync(srcDir)) return;
+  fs.mkdirSync(dstDir, { recursive: true });
+  for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
+    if (entry.isSymbolicLink()) continue;
+    const from = path.join(srcDir, entry.name);
+    const to = path.join(dstDir, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(from, to);
+    } else if (entry.isFile()) {
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.copyFileSync(from, to);
+    }
+  }
+}
+
+function siteProfileIntegration(profile) {
+  return {
+    name: `portaless-site-profile-${profile.id}`,
+    hooks: {
+      "astro:config:setup"({ injectRoute }) {
+        if (!profile.isDemo) return;
+        for (const route of DEMO_ONLY_ROUTES) {
+          injectRoute({
+            pattern: route.pattern,
+            entrypoint: route.entrypoint,
+            prerender: true,
+          });
+        }
+      },
+      "astro:build:done"({ dir }) {
+        const profilePublicDir = path.resolve(process.cwd(), profile.publicDir);
+        const outDir = fileURLToPath(dir);
+        copyDirRecursive(profilePublicDir, outDir);
+      },
+    },
+  };
+}
 
 // Portaless se compila 100% a sitio estático (output: "static") para poder
 // desplegarse en GitHub Pages o Cloudflare Pages sin necesidad de un runtime
@@ -9,20 +66,10 @@ import { defineConfig } from "astro/config";
 // (ver package.json) altere silenciosamente el espaciado del HTML generado
 // en paginas ya publicadas.
 //
-// Los docs NO usan plugins del procesador de Markdown (Astro 7 ya no trae
-// remark): src/lib/docs-loader.mjs reescribe los enlaces relativos ANTES de
-// guardar el body (docs/i18n-design.md).
-//
-// REDIRECTS de las URLs legadas (Fase 3). El mapa unico vive en
-// src/lib/routes.ts (LEGACY_ROUTES); la misma tabla cubre:
-//   1. este build estatico: las redirecciones EMITIDAS son paginas meta-refresh
-//      con canonical (lo unico posible en GitHub Pages). Las rutas estaticas de
-//      contenido estan en src/pages/paginas/[slug].astro y
-//      [locale]/paginas/[slug].astro; las raices del sistema son archivos dans
-//      public/ con URL relativa (funcionan bajo cualquier base).
-//   2. 301 reales en functions/_middleware.js (Cloudflare Pages),
-//   3. el runtime Node de server/ (ejecuta el mismo middleware).
-// /beta/ conserva su URL pero ahora es ingles (DEFAULT_LOCALE): aceptado.
+// PORTALESS_SITE_PROFILE=starter|demo (default: starter; docs/decisions/starter-and-demo-split.md).
+// En starter, las rutas demo-only (/es/*, /beta, /docs, /projections, /shop)
+// no se registran en Astro y los assets de site-profiles/demo/public/ no se
+// copian a dist/.
 export default defineConfig({
   output: "static",
   site: process.env.PORTALESS_SITE_URL || "https://tu-usuario.github.io",
@@ -31,4 +78,5 @@ export default defineConfig({
   // con la base de produccion sin pisar el dist/ que usa Playwright).
   outDir: process.env.PORTALESS_OUT_DIR || "./dist",
   compressHTML: true,
+  integrations: [siteProfileIntegration(siteProfile)],
 });

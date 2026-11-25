@@ -10,7 +10,10 @@ import { ecosystemPageTheme } from "../../lib/ecosystem-theme";
 import { DOC_ENTRIES } from "../../lib/docs-nav.mjs";
 import type { Locale } from "../../lib/i18n";
 
+import { isDemoProfile } from "../../lib/site-profile.mjs";
+
 export async function getStaticPaths() {
+  if (!isDemoProfile()) return [];
   const docs = await getCollection("docs");
   return docs.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
 }

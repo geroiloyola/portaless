@@ -19,6 +19,7 @@ on:
     # cambios puros de functions/ o tests no justifican un redeploy.
     paths:
       - "src/**"
+      - "site-profiles/**"
       - "packages/**"
       - "public/**"
       - "astro.config.mjs"
@@ -52,6 +53,7 @@ jobs:
         env:
           PORTALESS_SITE_URL: https://geroiloyola.github.io
           PORTALESS_BASE_PATH: /portaless/
+          PORTALESS_SITE_PROFILE: demo
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

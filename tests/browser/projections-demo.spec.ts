@@ -15,7 +15,7 @@ test("la demo muestra el canon y sus cinco proyecciones", async ({ page }) => {
   // El canon es la fuente de verdad, no una tarjeta mas.
   const canon = page.locator("section.canon");
   await expect(canon).toContainText("El canon (fuente de verdad)");
-  await expect(canon).toContainText("src/content/posts/bienvenida.md");
+  await expect(canon).toContainText("site-profiles/demo/posts/bienvenida.md");
 
   for (const name of ["Página", "Feed", "Manifiesto", "Índice", "Otra plataforma"]) {
     await expect(page.getByRole("heading", { level: 3, name, exact: true })).toBeVisible();

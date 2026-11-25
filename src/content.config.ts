@@ -1,9 +1,12 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 import { docsLoader } from "./lib/docs-loader.mjs";
+import { getSiteProfileConfig } from "./lib/site-profile.mjs";
+
+const siteProfile = getSiteProfileConfig(process.env);
 
 const posts = defineCollection({
-  loader: glob({ pattern: "**/[^_]*.{md,mdx}", base: "./src/content/posts" }),
+  loader: glob({ pattern: "**/[^_]*.{md,mdx}", base: `./${siteProfile.postsDir}` }),
   schema: z.object({
     title: z.string(),
     description: z.string().optional(),
@@ -13,13 +16,13 @@ const posts = defineCollection({
   }),
 });
 
-// Docs: el Markdown que YA vive en docs/ es la fuente unica (VISION: un canon,
-// muchas proyecciones). El loader propio lee solo los archivos de la
-// configuracion explicita (docs-nav.mjs), reescribe los enlaces relativos y
-// guarda el body resuelto; el id es el slug de la config. El resto del arbol de
-// docs/ no se publica.
+// Docs: solo se cargan y publican en el perfil demo (D8/PR-B2). En starter,
+// la coleccion queda vacia para no publicar documentacion de producto en un
+// sitio limpio.
 const docs = defineCollection({
-  loader: docsLoader({ base: process.env.PORTALESS_BASE_PATH || "/" }),
+  loader: siteProfile.features.docs
+    ? docsLoader({ base: process.env.PORTALESS_BASE_PATH || "/" })
+    : { name: "portaless-docs-disabled", load: async () => {} },
   schema: z.object({ title: z.string().optional(), description: z.string().optional() }),
 });
 

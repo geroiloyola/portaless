@@ -100,10 +100,38 @@ export function versionHref(version: PageVersion, base = "/"): string {
   return routeHref(version.slug, version.primary ? undefined : version.locale, base);
 }
 
-/** Carga todas las paginas de contenido del build. */
-export function loadContentPages(): ContentPage[] {
-  const modules = import.meta.glob<{ default: PageLayout }>("../content/pages/*.json", {
-    eager: true,
-  });
+import { resolveSiteProfile, type SiteProfileId } from "./site-profile.mjs";
+
+const STARTER_PAGE_MODULES = import.meta.glob<{ default: PageLayout }>(
+  "../../site-profiles/starter/pages/*.json",
+  { eager: true },
+);
+const DEMO_PAGE_MODULES = import.meta.glob<{ default: PageLayout }>(
+  "../../site-profiles/demo/pages/*.json",
+  { eager: true },
+);
+const HOME_MODULES = import.meta.glob<{ default: PageLayout }>(
+  "../../site-profiles/*/home*.json",
+  { eager: true },
+);
+
+/** Carga el layout de home del perfil activo (en o es solo en demo). */
+export function loadHomeLayout(
+  profile: SiteProfileId = resolveSiteProfile(),
+  locale: "en" | "es" = "en",
+): PageLayout {
+  const filename = locale === "es" ? "home.es.json" : "home.json";
+  const suffix = `/site-profiles/${profile}/${filename}`;
+  for (const [key, mod] of Object.entries(HOME_MODULES)) {
+    if (key.endsWith(suffix)) return mod.default;
+  }
+  throw new Error(`Missing home layout for profile="${profile}" locale="${locale}" (${suffix}).`);
+}
+
+/** Carga todas las paginas de contenido del perfil activo. */
+export function loadContentPages(
+  profile: SiteProfileId = resolveSiteProfile(),
+): ContentPage[] {
+  const modules = profile === "demo" ? DEMO_PAGE_MODULES : STARTER_PAGE_MODULES;
   return filterPublicContentPages(groupContentPages(modules));
 }

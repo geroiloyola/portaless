@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveSiteProfile } from "../src/lib/site-profile.mjs";
 
 // The build context is an allowlist: code and public assets needed by Astro,
 // plus filtered content copied by dedicated functions below. It is not a clone
@@ -10,7 +11,7 @@ const PACKAGE_BUILD_DIRS = ["src", "astro-integration"];
 const BUILD_ENV_KEYS = [
   "PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "CI",
   "PORTALESS_BASE_PATH", "PORTALESS_SITE_URL", "PORTALESS_SITE_NAME",
-  "PORTALESS_SITE_DESCRIPTION", "SITE_LANG", "ENABLE_COMMERCE",
+  "PORTALESS_SITE_DESCRIPTION", "PORTALESS_SITE_PROFILE", "SITE_LANG", "ENABLE_COMMERCE",
 ];
 const EXCLUDED_COMPONENTS = new Set([
   ".git", ".airchive", ".kilo", ".astro", ".playwright", "node_modules", "dist",
@@ -39,7 +40,10 @@ function hasPrivatePathComponent(relativePath) {
   const value = normalized(relativePath);
   const components = value.split("/").filter(Boolean);
   if (components.some((component) => EXCLUDED_COMPONENTS.has(component) &&
-    !(component === "docs" && (value === "src/pages/docs" || value.startsWith("src/pages/docs/"))))) return true;
+    !(component === "docs" && (
+      value === "src/pages/docs" || value.startsWith("src/pages/docs/") ||
+      value === "src/profile-pages/demo/docs" || value.startsWith("src/profile-pages/demo/docs/")
+    )))) return true;
   if (components.some((component) => PRIVATE_FILE_PATTERNS.some((pattern) => pattern.test(component)))) return true;
   return false;
 }
@@ -48,6 +52,7 @@ function hasPrivatePathComponent(relativePath) {
 export function isExcludedFromPublicBuild(relativePath) {
   const value = normalized(relativePath);
   if (hasPrivatePathComponent(value)) return true;
+  if (/^site-profiles\/[^/]+\/(?:pages|posts)(?:\/|$)/.test(value)) return true;
   return value === "src/content/pages" || value.startsWith("src/content/pages/") ||
     value === "src/content/posts" || value.startsWith("src/content/posts/") ||
     value === "src/content/revision-history" || value.startsWith("src/content/revision-history/") ||
@@ -79,7 +84,8 @@ function copyTree(sourceRoot, destinationRoot, relativeRoot, { children, allowFi
 }
 
 /** Create a minimal Astro build tree from explicit code roots only. */
-export function copyPublicBuildInputs(projectRoot, stageRoot) {
+export function copyPublicBuildInputs(projectRoot, stageRoot, { profile } = {}) {
+  const activeProfile = resolveSiteProfile(profile ? { PORTALESS_SITE_PROFILE: profile } : process.env);
   fs.mkdirSync(stageRoot, { recursive: true });
   for (const filename of ROOT_BUILD_FILES) {
     const source = path.join(projectRoot, filename);
@@ -89,6 +95,11 @@ export function copyPublicBuildInputs(projectRoot, stageRoot) {
   }
 
   for (const root of ROOT_BUILD_DIRS) copyTree(projectRoot, stageRoot, root);
+
+  const profileRelative = path.posix.join("site-profiles", activeProfile);
+  if (fs.existsSync(path.join(projectRoot, profileRelative))) {
+    copyTree(projectRoot, stageRoot, profileRelative);
+  }
 
   const packagesRoot = path.join(projectRoot, "packages");
   if (!fs.existsSync(packagesRoot)) throw new Error("Falta packages/ para el build Astro.");
@@ -138,11 +149,16 @@ function pageFileIdentity(filename) {
   return match ? { slug: match[1], locale: match[2] } : { slug: base, locale: null };
 }
 
+function resolveProfileDir(root, kind, profile) {
+  const activeProfile = resolveSiteProfile(profile ? { PORTALESS_SITE_PROFILE: profile } : process.env);
+  return path.join(root, "site-profiles", activeProfile, kind);
+}
+
 /** Copy published source pages/translations, excluding DB-owned private slugs. */
-export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPubliclyPublishable) {
-  const sourceDir = path.join(projectRoot, "src", "content", "pages");
+export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPubliclyPublishable, { profile } = {}) {
+  const sourceDir = resolveProfileDir(projectRoot, "pages", profile);
   if (!fs.existsSync(sourceDir)) return;
-  if (fs.lstatSync(sourceDir).isSymbolicLink()) throw new Error("src/content/pages no puede ser un symlink en la exportación pública.");
+  if (fs.lstatSync(sourceDir).isSymbolicLink()) throw new Error("El directorio de páginas no puede ser un symlink en la exportación pública.");
   const groups = new Map();
 
   for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
@@ -156,7 +172,7 @@ export function copyPublicSourcePages(projectRoot, stageRoot, blockedSlugs, isPu
     groups.set(identity.slug, group);
   }
 
-  const targetDir = path.join(stageRoot, "src", "content", "pages");
+  const targetDir = resolveProfileDir(stageRoot, "pages", profile);
   fs.mkdirSync(targetDir, { recursive: true });
   for (const [slug, group] of groups) {
     if (
@@ -190,17 +206,18 @@ function postIsPublic(source, relativePath, isPubliclyPublishable) {
 }
 
 /** Copy only public Markdown posts; draft/private files never enter staging. */
-export function copyPublicSourcePosts(projectRoot, stageRoot, isPubliclyPublishable) {
-  const sourceRoot = path.join(projectRoot, "src", "content", "posts");
+export function copyPublicSourcePosts(projectRoot, stageRoot, isPubliclyPublishable, { profile } = {}) {
+  const activeProfile = resolveSiteProfile(profile ? { PORTALESS_SITE_PROFILE: profile } : process.env);
+  const sourceRoot = path.join(projectRoot, "site-profiles", activeProfile, "posts");
   if (!fs.existsSync(sourceRoot)) return;
-  if (fs.lstatSync(sourceRoot).isSymbolicLink()) throw new Error("src/content/posts no puede ser un symlink en la exportación pública.");
-  const targetRoot = path.join(stageRoot, "src", "content", "posts");
+  if (fs.lstatSync(sourceRoot).isSymbolicLink()) throw new Error("El directorio de posts no puede ser un symlink en la exportación pública.");
+  const targetRoot = path.join(stageRoot, "site-profiles", activeProfile, "posts");
   function walk(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (entry.isSymbolicLink()) continue;
       const source = path.join(directory, entry.name);
       const relative = path.relative(sourceRoot, source);
-      const combined = path.posix.join("src/content/posts", normalized(relative));
+      const combined = path.posix.join("site-profiles", activeProfile, "posts", normalized(relative));
       if (hasPrivatePathComponent(combined)) continue;
       if (entry.isDirectory()) walk(source);
       else if (entry.isFile() && /\.(?:md|mdx)$/i.test(entry.name)) {
@@ -241,8 +258,8 @@ export function copyPublicDocs(projectRoot, stageRoot, docEntries) {
 }
 
 /** Replace staged pages with PageStore layouts approved for publication. */
-export function writePublicPageLayouts(stageRoot, layouts, { clear = true } = {}) {
-  const pagesDir = path.join(stageRoot, "src", "content", "pages");
+export function writePublicPageLayouts(stageRoot, layouts, { clear = true, profile } = {}) {
+  const pagesDir = resolveProfileDir(stageRoot, "pages", profile);
   if (clear) fs.rmSync(pagesDir, { recursive: true, force: true });
   fs.mkdirSync(pagesDir, { recursive: true });
 

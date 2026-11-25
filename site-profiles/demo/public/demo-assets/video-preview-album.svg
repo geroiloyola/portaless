@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Album Preview (Demo)">
+  <rect width="960" height="540" fill="#1C1612"/>
+  <rect x="36" y="36" width="888" height="468" rx="24" fill="none" stroke="#C5D86D" stroke-width="2" opacity="0.4"/>
+  <circle cx="480" cy="235" r="56" fill="#C5D86D" opacity="0.22"/>
+  <circle cx="480" cy="235" r="42" fill="#C5D86D"/>
+  <polygon points="468,216 468,254 502,235" fill="#1C1612"/>
+  <text x="480" y="346" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="30" font-weight="700" fill="#F4F6EC">Ecos del Manana — Preview</text>
+  <text x="480" y="384" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#C5D86D">Reemplazo local sin embed externo de YouTube</text>
+  <text x="480" y="458" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="15" fill="#B8C0A8">Demo content, fictional · Local self-contained video preview</text>
+</svg>

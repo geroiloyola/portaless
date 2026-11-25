@@ -1,17 +1,6 @@
 // GET /llms.txt -- indice del contenido publico para LLMs (https://llmstxt.org).
-// Se genera en build (output: "static"). Respeta el base de Astro: en GitHub
-// Pages bajo /repo/ queda en /repo/llms.txt, que la especificacion v2 acepta
-// (un llms.txt describe lo que esta bajo su path).
-//
-// Fuentes:
-//   - Posts: coleccion "posts" sin borradores, enlazados a su version .md.
-//   - Paginas: src/content/pages/*.json (Atomic Elements), enlazadas a su
-//     HTML porque no son markdown. El contenido editado en la tabla pages de
-//     D1/SQLite no existe en build y queda afuera.
-//   - Politica: si public/.well-known/portaless-content-policy.json bloquea
-//     ai_input, no se lista contenido (ver src/lib/llms-txt.ts).
-//
-// Nombre y resumen: PORTALESS_SITE_NAME y PORTALESS_SITE_DESCRIPTION.
+// Se genera en build (output: "static") a partir del perfil activo
+// (PORTALESS_SITE_PROFILE=starter|demo).
 
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
@@ -20,19 +9,11 @@ import { buildLlmsTxt, joinSiteUrl, publishedPosts } from "../lib/llms-txt";
 import { CONTENT_POLICY_PATH, readContentPolicy } from "../lib/content-policy";
 import { DOC_ENTRIES } from "../lib/docs-nav.mjs";
 import { ROUTES } from "../lib/routes";
-import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
-
-interface PageJson {
-  slug?: string;
-  title?: string;
-  description?: string;
-  status?: string;
-  private?: boolean;
-}
-
-const pageModules = import.meta.glob<{ default: PageJson }>("../content/pages/*.json", { eager: true });
+import { loadContentPages } from "../lib/content-pages";
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
 
 export const GET: APIRoute = async ({ site }) => {
+  const profile = getSiteProfileConfig(process.env);
   const siteUrl = getSiteUrl(site);
   const url = (path: string) => joinSiteUrl(siteUrl, import.meta.env.BASE_URL, path);
 
@@ -43,46 +24,40 @@ export const GET: APIRoute = async ({ site }) => {
     note: post.data.description,
   }));
 
-  const pageLinks = Object.values(pageModules)
-    .map((mod) => mod.default)
-    .filter((page): page is PageJson & { slug: string } =>
-      typeof page?.slug === "string" && isPubliclyPublishable({
-        slug: page.slug,
-        status: page.status,
-        visibility: page.private ? "private" : "public",
-      })
-    )
-    .map((page) => ({
-      title: page.title ?? page.slug,
-      url: url(`${ROUTES.PAGES}/${page.slug}`),
-      note: page.description,
-    }));
+  const pageLinks = loadContentPages(profile.id).map((page) => ({
+    title: page.primary.layout.title ?? page.slug,
+    url: url(`${ROUTES.PAGES}/${page.slug}`),
+    note: page.primary.layout.description,
+  }));
 
   const policy = readContentPolicy();
 
-  // Docs: enlazados a su version .md (texto plano), igual que los posts. Es el
-  // Markdown de docs/ (fuente unica), con los enlaces ya resueltos.
-  const docLinks = DOC_ENTRIES.map((doc) => ({
-    title: doc.title,
-    url: url(`/docs/${doc.slug}.md`),
-    note: doc.lang === "es" ? "Documentación (español)" : "Documentation (English)",
-  }));
+  const docLinks = profile.features.docs
+    ? DOC_ENTRIES.map((doc) => ({
+        title: doc.title,
+        url: url(`/docs/${doc.slug}.md`),
+        note: doc.lang === "es" ? "Documentación (español)" : "Documentation (English)",
+      }))
+    : [];
 
   const body = buildLlmsTxt({
-    siteName: process.env.PORTALESS_SITE_NAME || "Portaless",
-    summary: process.env.PORTALESS_SITE_DESCRIPTION || "Sitio construido con Portaless",
+    siteName: process.env.PORTALESS_SITE_NAME || profile.defaultSiteName,
+    summary: process.env.PORTALESS_SITE_DESCRIPTION || profile.defaultSiteDescription,
     sections: [
-      { heading: "Documentation", links: docLinks },
+      ...(docLinks.length > 0 ? [{ heading: "Documentation", links: docLinks }] : []),
       { heading: "Posts", links: postLinks },
-      { heading: "Páginas", links: pageLinks },
+      { heading: profile.isDemo ? "Páginas" : "Pages", links: pageLinks },
     ],
     aiInputAllowed: policy ? policy.aiInputAllowed : true,
     policyUrl: policy ? url(CONTENT_POLICY_PATH) : undefined,
     optional: [
-      // Phase 6: el feed es la manera de enterarse de posts nuevos sin
-      // volver a rastrear /blog. Va en Optional porque un agente que ya
-      // tiene el llms.txt no lo necesita para leer el contenido actual.
-      { title: "Feed RSS del blog", url: url("/rss.xml"), note: "Posts publicados, mismo filtro que /blog" },
+      {
+        title: profile.isDemo ? "Feed RSS del blog" : "Blog RSS feed",
+        url: url("/rss.xml"),
+        note: profile.isDemo
+          ? "Posts publicados, mismo filtro que /blog"
+          : "Published posts, same filter as /blog",
+      },
     ],
   });
 

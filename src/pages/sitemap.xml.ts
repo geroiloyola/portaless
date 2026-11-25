@@ -37,12 +37,15 @@ async function collectCommerceEntries(): Promise<SitemapEntry[]> {
   }
 }
 
+import { getSiteProfileConfig } from "../lib/site-profile.mjs";
+
 export const GET: APIRoute = async ({ site }) => {
+  const profile = getSiteProfileConfig(process.env);
   const posts = publishedPosts(await getCollection("posts"));
   const latest = posts[0]?.data.pubDate;
 
-  // Una entrada por VERSION de cada pagina de contenido (primaria + traducciones).
-  const contentPageEntries = loadContentPages().flatMap((page) =>
+  // Una entrada por VERSION de cada pagina de contenido del perfil activo.
+  const contentPageEntries = loadContentPages(profile.id).flatMap((page) =>
     page.versions.map((version) => ({
       path: versionHref(version, "/"),
       changefreq: "monthly" as const,
@@ -52,22 +55,42 @@ export const GET: APIRoute = async ({ site }) => {
 
   const entries: SitemapEntry[] = [
     { path: "/", lastmod: latest, changefreq: "weekly", priority: 1.0 },
-    { path: "/es/", lastmod: latest, changefreq: "weekly", priority: 0.9 },
-    { path: "/beta/", lastmod: latest, changefreq: "monthly", priority: 0.9 },
-    { path: "/es/beta/", lastmod: latest, changefreq: "monthly", priority: 0.9 },
-    { path: "/shop/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
-    { path: "/es/shop/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
+    ...(profile.features.esRoutes
+      ? [{ path: "/es/", lastmod: latest, changefreq: "weekly" as const, priority: 0.9 }]
+      : []),
+    ...(profile.features.beta
+      ? [
+          { path: "/beta/", lastmod: latest, changefreq: "monthly" as const, priority: 0.9 },
+          { path: "/es/beta/", lastmod: latest, changefreq: "monthly" as const, priority: 0.9 },
+        ]
+      : []),
+    ...(profile.features.shop
+      ? [
+          { path: "/shop/", lastmod: latest, changefreq: "weekly" as const, priority: 0.7 },
+          { path: "/es/shop/", lastmod: latest, changefreq: "weekly" as const, priority: 0.7 },
+        ]
+      : []),
     { path: "/blog/", lastmod: latest, changefreq: "weekly", priority: 0.6 },
     { path: "/explore/", lastmod: latest, changefreq: "weekly", priority: 0.8 },
-    { path: "/es/explore/", lastmod: latest, changefreq: "weekly", priority: 0.7 },
-    { path: "/projections/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
-    { path: "/es/projections/", lastmod: latest, changefreq: "monthly", priority: 0.6 },
-    { path: "/docs/", changefreq: "monthly", priority: 0.8 },
-    ...DOC_ENTRIES.map((doc) => ({
-      path: `/docs/${doc.slug}/`,
-      changefreq: "monthly" as const,
-      priority: 0.6,
-    })),
+    ...(profile.features.esRoutes
+      ? [{ path: "/es/explore/", lastmod: latest, changefreq: "weekly" as const, priority: 0.7 }]
+      : []),
+    ...(profile.features.projections
+      ? [
+          { path: "/projections/", lastmod: latest, changefreq: "monthly" as const, priority: 0.6 },
+          { path: "/es/projections/", lastmod: latest, changefreq: "monthly" as const, priority: 0.6 },
+        ]
+      : []),
+    ...(profile.features.docs
+      ? [
+          { path: "/docs/", changefreq: "monthly" as const, priority: 0.8 },
+          ...DOC_ENTRIES.map((doc) => ({
+            path: `/docs/${doc.slug}/`,
+            changefreq: "monthly" as const,
+            priority: 0.6,
+          })),
+        ]
+      : []),
     ...posts.map((post) => ({
       path: `/blog/${post.id}/`,
       lastmod: post.data.pubDate,
@@ -75,7 +98,7 @@ export const GET: APIRoute = async ({ site }) => {
       priority: 0.7,
     })),
     ...contentPageEntries,
-    ...(await collectCommerceEntries()),
+    ...(profile.features.shop ? await collectCommerceEntries() : []),
   ];
 
   const body = buildSitemapXml(getSiteUrl(site), import.meta.env.BASE_URL, entries);

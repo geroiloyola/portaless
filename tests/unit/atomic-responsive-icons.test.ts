@@ -344,8 +344,8 @@ describe("rincon del header -- wiring estatico y runtime", () => {
 describe("share iOS + control de volumen", () => {
   it("el ProfileHeader NO trae boton share: el share es solo del rincon del header", () => {
     const profileHtml = elementRegistry.ProfileHeader.renderHTML({
-      avatarUrl: "/avatars/jerry-bantz.svg",
-      name: "Jerry Bantz",
+      avatarUrl: "/avatars/creator-demo.svg",
+      name: "Nora Vega",
       bio: "Musica nueva todas las semanas.",
       bgColor: "#261C15",
     });

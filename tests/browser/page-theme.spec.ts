@@ -7,7 +7,7 @@
 // @media tiene misma especificidad) -- el atributo inline gana igual.
 import { test, expect } from "@playwright/test";
 
-const BIO_URL = "/pages/jerry-bantz/";
+const BIO_URL = "/pages/creator-demo/";
 
 test("la bio demo trae data-theme-pack y el look 2pac-dark calculado (incluso en SO oscuro)", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });

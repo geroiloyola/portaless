@@ -9,8 +9,8 @@ const CURRENT_STATUS_FILES = [
   "README.md",
   "SECURITY.md",
   "src/components/BetaPage.astro",
-  "src/content/home.json",
-  "src/content/home.es.json",
+  "site-profiles/demo/home.json",
+  "site-profiles/demo/home.es.json",
 ];
 
 const FORBIDDEN_STATUS = [
@@ -39,8 +39,8 @@ describe("A2: el estado vivo es Beta, invite-only", () => {
     expect(read("SECURITY.md")).toContain("Beta, invite-only");
     expect(read("src/components/BetaPage.astro")).toContain("Beta, invite-only");
     expect(read("src/components/BetaPage.astro")).toContain("Beta, solo por invitación");
-    expect(read("src/content/home.json")).toContain("Beta, invite-only");
-    expect(read("src/content/home.es.json")).toContain("Beta, solo por invitación");
+    expect(read("site-profiles/demo/home.json")).toContain("Beta, invite-only");
+    expect(read("site-profiles/demo/home.es.json")).toContain("Beta, solo por invitación");
   });
 
   it("el encabezado actual del CHANGELOG no usa el estado viejo", () => {

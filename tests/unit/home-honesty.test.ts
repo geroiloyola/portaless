@@ -1,4 +1,4 @@
-// El home (src/content/home.json + src/pages/index.astro) es la primera
+// El home (site-profiles/demo/home.json + src/pages/index.astro) es la primera
 // superficie publica del producto, asi que hereda las reglas de honestidad de
 // la VISION: nada de metricas, testimonios ni logos fabricados, y la frase
 // §12.4 (quien puede leer tu sitio, por escrito) presente. Tambien fija que el
@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(__dirname, "../..");
-const homeJson = readFileSync(join(root, "src/content/home.json"), "utf8");
+const homeJson = readFileSync(join(root, "site-profiles/demo/home.json"), "utf8");
 const indexSrc = readFileSync(join(root, "src/pages/index.astro"), "utf8");
 const homeView = readFileSync(join(root, "src/components/HomePage.astro"), "utf8");
 
@@ -62,7 +62,7 @@ describe("home: 100% motor", () => {
 });
 
 describe("home: el acceso a docs es interno (las paginas /docs/, no GitHub)", () => {
-  const esJson = readFileSync(join(root, "src/content/home.es.json"), "utf8");
+  const esJson = readFileSync(join(root, "site-profiles/demo/home.es.json"), "utf8");
 
   it("el boton Docs del home apunta a la pagina /docs/, no a GitHub", () => {
     expect(homeJson).toContain('"href": "/docs/"');
@@ -81,10 +81,10 @@ describe("home: el acceso a docs es interno (las paginas /docs/, no GitHub)", ()
 });
 
 describe("home es: la proyeccion de locale (i18n)", () => {
-  const esJson = readFileSync(join(root, "src/content/home.es.json"), "utf8");
+  const esJson = readFileSync(join(root, "site-profiles/demo/home.es.json"), "utf8");
 
   it("existe la ruta /es/ y usa la vista compartida", () => {
-    const esPage = readFileSync(join(root, "src/pages/es/index.astro"), "utf8");
+    const esPage = readFileSync(join(root, "src/profile-pages/demo/es/index.astro"), "utf8");
     expect(esPage).toContain("HomePage");
     expect(esPage).toContain('locale="es"');
   });

@@ -21,13 +21,26 @@ jobs:
         run: npm test
       - name: Verificar exportación pública con marcadores privados sintéticos
         run: node --import tsx scripts/test-public-export.mjs
-      - name: Build del sitio
+      - name: Build del sitio (perfil starter por defecto)
+        run: |
+          PORTALESS_OUT_DIR=dist-starter npm run build
+          test ! -e dist-starter/docs
+          test ! -e dist-starter/es
+          test ! -e dist-starter/beta
+          test ! -e dist-starter/projections
+          test ! -e dist-starter/shop
+          rm -rf dist-starter
+      - name: Build del sitio (perfil demo para regresiones de navegador)
+        env:
+          PORTALESS_SITE_PROFILE: demo
         run: npm run build
       - name: Validar manifiestos de plugins
         run: node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts
       - name: Instalar Chromium para las regresiones del navegador
         run: npx playwright install --with-deps chromium
       - name: Verificar flujos reales y layout público
+        env:
+          PORTALESS_SITE_PROFILE: demo
         run: npx playwright test
       - name: Verificar frontera del paquete fuente contra .airchive sintético
         run: node scripts/verify-npm-source-boundary.mjs

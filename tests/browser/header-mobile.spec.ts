@@ -2,7 +2,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const HOME_URL = "/";
-const RUNTIME_URL = "/pages/jerry-bantz/";
+const RUNTIME_URL = "/pages/creator-demo/";
 
 async function navTxtHidden(page: Page, href: string): Promise<boolean> {
   return page.evaluate((h) => {

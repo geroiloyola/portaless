@@ -65,7 +65,7 @@ async function boot() {
 // Cada fila del mapa: runtime 301 con query preservado.
 // ---------------------------------------------------------------------------
 const REDIRECT_CASES: Array<{ from: string; to: string }> = [
-  { from: "/paginas/jerry-bantz/", to: "/pages/jerry-bantz/" },
+  { from: "/paginas/creator-demo/", to: "/pages/creator-demo/" },
   { from: "/es/paginas/bio/", to: "/es/pages/bio/" },
   { from: "/en/paginas/bio/", to: "/pages/bio/" },
   { from: "/tienda/", to: "/es/shop/" },
@@ -111,13 +111,13 @@ describe("redirects runtime self-host (una fila por cada regla del mapa)", () =>
 // slug de contenido del build.
 // ---------------------------------------------------------------------------
 describe("redirects estaticos (dist/): meta-refresh con canonical", () => {
-  it("las raices del sistema son archivos con URL RELATIVA (fuente en public/, copiada a dist/)", () => {
+  it("las raices del sistema demo son archivos con URL RELATIVA (fuente en site-profiles/demo/public/)", () => {
     for (const case_ of [
-      { dir: join(repo, "public", "tienda"), dest: "../es/shop/" },
-      { dir: join(repo, "public", "en", "tienda"), dest: "../../shop/" },
-      { dir: join(repo, "public", "en", "beta"), dest: "../../beta/" },
-      { dir: join(repo, "public", "proyecciones"), dest: "../es/projections/" },
-      { dir: join(repo, "public", "en", "proyecciones"), dest: "../../projections/" },
+      { dir: join(repo, "site-profiles", "demo", "public", "tienda"), dest: "../es/shop/" },
+      { dir: join(repo, "site-profiles", "demo", "public", "en", "tienda"), dest: "../../shop/" },
+      { dir: join(repo, "site-profiles", "demo", "public", "en", "beta"), dest: "../../beta/" },
+      { dir: join(repo, "site-profiles", "demo", "public", "proyecciones"), dest: "../es/projections/" },
+      { dir: join(repo, "site-profiles", "demo", "public", "en", "proyecciones"), dest: "../../projections/" },
     ]) {
       const src = readFileSync(join(case_.dir, "index.html"), "utf8");
       expect(src.toLowerCase()).toContain("http-equiv=\"refresh\"");
@@ -125,8 +125,8 @@ describe("redirects estaticos (dist/): meta-refresh con canonical", () => {
     }
   });
 
-  it.skipIf(!existsSync(join(repo, "dist")))("cada slug de contenido tiene su redireccion emitida tras el build", () => {
-    for (const page of loadContentPages()) {
+  it.skipIf(!existsSync(join(repo, "dist", "paginas")))("cada slug de contenido tiene su redireccion emitida tras el build", () => {
+    for (const page of loadContentPages("demo")) {
       const dir = join(repo, "dist", "paginas", page.slug);
       expect(resolveLegacyRedirect(`/paginas/${page.slug}/`)).toBe(`/pages/${page.slug}/`);
       const src = readFileSync(join(dir, "index.html"), "utf8");

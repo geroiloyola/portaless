@@ -5,7 +5,7 @@
 // footer TrustScore · Explore · Powered by Portaless.
 import { test, expect } from "@playwright/test";
 
-const BIO_URL = "/pages/jerry-bantz/";
+const BIO_URL = "/pages/creator-demo/";
 
 test("el boton compartir copia la URL al portapapeles y avisa", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -22,7 +22,7 @@ test("el boton compartir copia la URL al portapapeles y avisa", async ({ page, c
 
   await expect(page.getByRole("status")).toHaveText("Enlace copiado");
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain("/pages/jerry-bantz/");
+  expect(copied).toContain("/pages/creator-demo/");
 });
 
 test("header dice Publicaciones (nunca Blog) y trae el indice si hay posts", async ({ page }) => {
@@ -184,7 +184,7 @@ test("Explore existe y lista paginas publicadas (sin links rotos)", async ({ pag
   await page.goto("/explore/");
 
   await expect(page.getByRole("heading", { level: 1, name: "Explore" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Jerry Bantz/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Nora Vega/ })).toBeVisible();
   // Explore esta localizado (/explore/ en, /es/explore/ es): el label del
   // TrustScore cambia con el locale, asi que el test no fija uno solo.
   await expect(

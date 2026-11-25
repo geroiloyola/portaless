@@ -82,7 +82,7 @@ describe("docs-links: ningun enlace relativo queda roto", () => {
 
 describe("docs: shell, sidebar y dark mode", () => {
   const detail = readFileSync(join(root, "src/pages/docs/[...slug].astro"), "utf8");
-  const landing = readFileSync(join(root, "src/pages/docs/index.astro"), "utf8");
+  const landing = readFileSync(join(root, "src/profile-pages/demo/docs/index.astro"), "utf8");
   const sidebar = readFileSync(join(root, "src/components/DocsSidebar.astro"), "utf8");
   const mdRoute = readFileSync(join(root, "src/pages/docs/[...slug].md.ts"), "utf8");
 

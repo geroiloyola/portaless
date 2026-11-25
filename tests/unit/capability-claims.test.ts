@@ -18,8 +18,8 @@ const docs = [
   "docs/plugin-author-guide.md",
   "docs/architecture/ecosystem-boundaries.md",
   "packages/plugin-sandbox/docs/PLUGIN_SANDBOXING.md",
-  "src/content/home.json",
-  "src/content/home.es.json",
+  "site-profiles/demo/home.json",
+  "site-profiles/demo/home.es.json",
 ];
 
 /**
@@ -66,8 +66,8 @@ describe("plugin capability backends: published claims", () => {
   });
 
   it("publishes that five capabilities answer 501, with network:fetch as a real path", () => {
-    expect(readFileSync(join(root, "src/content/home.json"), "utf8")).toContain("five of twelve plugin capabilities");
-    expect(readFileSync(join(root, "src/content/home.es.json"), "utf8")).toContain("cinco de doce capacidades");
+    expect(readFileSync(join(root, "site-profiles/demo/home.json"), "utf8")).toContain("five of twelve plugin capabilities");
+    expect(readFileSync(join(root, "site-profiles/demo/home.es.json"), "utf8")).toContain("cinco de doce capacidades");
     expect(readFileSync(join(root, "README.md"), "utf8")).toContain("five plugin capabilities");
     expect(readFileSync(join(root, "docs/plugin-author-guide.md"), "utf8")).toContain("5 of 12 capabilities");
     expect(readFileSync(join(root, "docs/architecture/ecosystem-boundaries.md"), "utf8")).toContain("7 de las 12");
