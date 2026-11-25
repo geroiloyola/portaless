@@ -1,11 +1,10 @@
-// A-07: one policy for Node and Cloudflare. Inline scripts/styles are still
-// used by the Astro shell and the editor, so script-src keeps 'unsafe-inline'
-// for now; external analytics scripts are operator-configured, hence https:.
-// Nonce/hash-based script-src and a per-site analytics allowlist remain P2.
+// A-07: one policy for Node and Cloudflare (mirrored in public/_headers).
+// All public/admin scripts are served from 'self' (bundled /_astro/*.js or
+// static public/*.js); external analytics scripts are operator-configured over https:.
 export const SECURITY_HEADERS = Object.freeze({
   "content-security-policy": [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https:",
+    "script-src 'self' https:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",

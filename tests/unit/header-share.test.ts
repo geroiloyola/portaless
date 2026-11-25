@@ -53,16 +53,13 @@ describe("share del sitio -- un solo dueño: el rincon del header", () => {
     expect(html).not.toContain("<script");
   });
 
-  it("BaseLayout trae el listener delegado que lo atiende", () => {
-    expect(baseLayoutSrc).toContain("[data-portaless-share]");
-    expect(baseLayoutSrc).toContain("navigator.share");
-    expect(baseLayoutSrc).toContain("navigator.clipboard.writeText");
-  });
-
-  it("el shell runtime (paginas servidas desde la base) trae el mismo listener", () => {
-    expect(shellSrc).toContain("[data-portaless-share]");
-    expect(shellSrc).toContain("navigator.share");
-    expect(shellSrc).toContain("navigator.clipboard.writeText");
+  it("BaseLayout y el shell runtime cargan el listener delegado externo (/portaless-shell.js)", () => {
+    const publicShellJs = readFileSync(join(root, "public/portaless-shell.js"), "utf8");
+    expect(publicShellJs).toContain("[data-portaless-share]");
+    expect(publicShellJs).toContain("navigator.share");
+    expect(publicShellJs).toContain("navigator.clipboard.writeText");
+    expect(baseLayoutSrc).toContain("portaless-shell.js");
+    expect(shellSrc).toContain("portaless-shell.js");
     expect(shellSrc).not.toContain("onclick");
   });
 });

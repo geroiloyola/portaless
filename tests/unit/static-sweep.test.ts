@@ -66,6 +66,38 @@ function loadPages(distDir: string): Page[] {
     .map((file) => ({ file, urlPath: urlPathOf(distDir, file), html: readFileSync(file, "utf8") }));
 }
 
+function assertNoInlineScriptsOrHandlers(pages: Page[]): void {
+  const inlineScriptOffenders: string[] = [];
+  const inlineHandlerOffenders: string[] = [];
+  const scriptTagRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  const inlineHandlerRe = /\s+on(click|change|submit|load|error|input|keydown|keyup|focus|blur)\s*=/i;
+
+  for (const page of pages) {
+    let m: RegExpExecArray | null;
+    scriptTagRe.lastIndex = 0;
+    while ((m = scriptTagRe.exec(page.html)) !== null) {
+      const attrs = m[1] || "";
+      const body = (m[2] || "").trim();
+      const hasSrc = /\bsrc\s*=/i.test(attrs);
+      const isDataJson = /\btype\s*=\s*["']application\/(ld\+)?json["']/i.test(attrs);
+      if (!hasSrc && !isDataJson && body.length > 0) {
+        inlineScriptOffenders.push(`${page.urlPath}: ${body.slice(0, 80)}`);
+      }
+    }
+    // Strip JSON/JSON-LD script bodies before checking HTML attributes for inline handlers
+    const htmlWithoutDataScripts = page.html.replace(
+      /<script\b[^>]*type\s*=\s*["']application\/(ld\+)?json["'][^>]*>[\s\S]*?<\/script>/gi,
+      ""
+    );
+    if (inlineHandlerRe.test(htmlWithoutDataScripts)) {
+      inlineHandlerOffenders.push(page.urlPath);
+    }
+  }
+
+  expect(inlineScriptOffenders, `scripts inline ejecutables encontrados:\n${inlineScriptOffenders.slice(0, 20).join("\n")}`).toEqual([]);
+  expect(inlineHandlerOffenders, `handlers inline on*= encontrados:\n${inlineHandlerOffenders.slice(0, 20).join("\n")}`).toEqual([]);
+}
+
 function assertCleanLinks(distDir: string, pages: Page[]): void {
   const legacyOffenders: string[] = [];
   const broken: string[] = [];
@@ -94,6 +126,7 @@ function assertCleanLinks(distDir: string, pages: Page[]): void {
   expect(legacyOffenders, `rutas legadas servidas:\n${legacyOffenders.slice(0, 20).join("\n")}`).toEqual([]);
   expect([...new Set(broken)], `enlaces internos rotos:\n${broken.slice(0, 20).join("\n")}`).toEqual([]);
   expect(metaOffenders, `meta-refresh relativo mal resuelto:\n${metaOffenders.join("\n")}`).toEqual([]);
+  assertNoInlineScriptsOrHandlers(pages);
 }
 
 let demoPages: Page[] = [];

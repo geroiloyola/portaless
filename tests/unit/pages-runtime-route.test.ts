@@ -103,7 +103,8 @@ describe("GET /pages/:slug (runtime dinamico)", () => {
     expect(html).toContain(">Explorar<"); // footer i18n: SITE_LANG=es
     expect(html).toContain("Powered by Portaless");
     expect(html).not.toContain("Hecho con");
-    expect(html).toContain("[data-portaless-share]");
+    expect(html).toContain('/portaless-shell.js');
+    expect(html).toContain('/portaless-theme-init.js');
     expect(html).toContain('lang="es"');
     // pagina sin theme: el tag <html> nunca lleva el atributo del tema por
     // pagina. (El string "data-theme-pack" SI aparece en el documento: el shell

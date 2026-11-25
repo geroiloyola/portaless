@@ -316,11 +316,10 @@ describe("rincon del header -- wiring estatico y runtime", () => {
     expect(slugPageSrc).toContain("headerContext={headerContext}");
   });
 
-  it("BaseLayout recibe el contexto, lo pasa al Header y trae el listener de volumen", () => {
+  it("BaseLayout recibe el contexto, lo pasa al Header y carga el script externo del shell", () => {
     expect(baseLayoutSrc).toContain("headerContext?: import(\"../lib/atomic-responsive-icons\").HeaderContext");
     expect(baseLayoutSrc).toContain("<Header context={headerContext} locale=");
-    expect(baseLayoutSrc).toContain("VOLUME_LISTENER_SCRIPT");
-    expect(baseLayoutSrc).toContain("set:html={VOLUME_LISTENER_SCRIPT}");
+    expect(baseLayoutSrc).toContain("portaless-shell.js");
   });
 
   it("el shell runtime deriva con la MISMA funcion y emite el mismo rincon", () => {
@@ -328,7 +327,7 @@ describe("rincon del header -- wiring estatico y runtime", () => {
     expect(shellSrc).toContain("context: null");
     expect(shellSrc).toContain("contextActionsHtml(deriveHeaderContext(layout.root))");
     expect(publicShellSrc).toContain("headerActionsHtml(null, base)");
-    expect(shellSrc).toContain("VOLUME_LISTENER_SCRIPT");
+    expect(shellSrc).toContain("portaless-shell.js");
   });
 
   it("el CSS de ambos emisores pinta el rincon (margin-left:auto + botones redondos)", () => {
@@ -412,17 +411,14 @@ describe("share iOS + control de volumen", () => {
   });
 
   it("el listener de volumen habla con YouTube y Vimeo via postMessage, sin handlers inline", () => {
-    // El cuerpo del listener vive en UNA sola fuente (el modulo
-    // compartido); los dos emisores solo lo cablean via
-    // VOLUME_LISTENER_SCRIPT. Asi no hay dos scripts que driftar.
-    const libSrc = readFileSync(join(root, "src/lib/atomic-responsive-icons.ts"), "utf8");
-    expect(libSrc).toContain("[data-portaless-volume]");
-    expect(libSrc).toContain("postMessage");
-    expect(libSrc).toContain('event: "command"');
-    expect(libSrc).toContain('method: "setVolume"');
-    expect(libSrc).toContain(".ae-video iframe");
-    expect(baseLayoutSrc).toContain("VOLUME_LISTENER_SCRIPT");
-    expect(shellSrc).toContain("VOLUME_LISTENER_SCRIPT");
+    const publicShellJs = readFileSync(join(root, "public/portaless-shell.js"), "utf8");
+    expect(publicShellJs).toContain("[data-portaless-volume]");
+    expect(publicShellJs).toContain("postMessage");
+    expect(publicShellJs).toContain('event: "command"');
+    expect(publicShellJs).toContain('method: "setVolume"');
+    expect(publicShellJs).toContain(".ae-video iframe");
+    expect(baseLayoutSrc).toContain("portaless-shell.js");
+    expect(shellSrc).toContain("portaless-shell.js");
     expect(baseLayoutSrc).not.toContain("onclick");
     expect(shellSrc).not.toContain("onclick");
   });

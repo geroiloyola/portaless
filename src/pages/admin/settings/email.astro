@@ -124,7 +124,10 @@ const PROVIDER_HINTS: Record<string, string> = {
   </style>
 </BaseLayout>
 
-<script define:vars={{ PROVIDER_HINTS }}>
+<script type="application/json" id="em-provider-hints" set:html={JSON.stringify(PROVIDER_HINTS)} />
+<script>
+  const hintsEl = document.getElementById("em-provider-hints");
+  const PROVIDER_HINTS = hintsEl ? JSON.parse(hintsEl.textContent || "{}") : {};
   const $ = (id) => document.getElementById(id);
   const loading = $("em-loading");
   const loadError = $("em-load-error");

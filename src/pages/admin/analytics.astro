@@ -115,7 +115,10 @@ const PROVIDER_HINTS: Record<string, string> = {
   </style>
 </BaseLayout>
 
-<script define:vars={{ PROVIDER_HINTS }}>
+<script type="application/json" id="an-provider-hints" set:html={JSON.stringify(PROVIDER_HINTS)} />
+<script>
+  const hintsEl = document.getElementById("an-provider-hints");
+  const PROVIDER_HINTS = hintsEl ? JSON.parse(hintsEl.textContent || "{}") : {};
   const loading = document.getElementById("an-loading");
   const loadError = document.getElementById("an-load-error");
   const root = document.getElementById("an-root");

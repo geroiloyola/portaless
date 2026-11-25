@@ -34,6 +34,29 @@ function copyDirRecursive(srcDir, dstDir) {
   }
 }
 
+function externalizeCopiedDemoScripts(outDir) {
+  for (const subdir of ["permissions", "editor"]) {
+    const htmlPath = path.join(outDir, subdir, "index.html");
+    if (!fs.existsSync(htmlPath)) continue;
+    const html = fs.readFileSync(htmlPath, "utf8");
+    const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+    let index = 0;
+    let changed = false;
+    const rewritten = html.replace(scriptRe, (match, attrs, body) => {
+      const trimmed = String(body || "").trim();
+      if (/\bsrc\s*=/i.test(attrs) || /\btype\s*=\s*["']application\/(ld\+)?json["']/i.test(attrs) || !trimmed) {
+        return match;
+      }
+      index += 1;
+      const filename = `${subdir}-demo-${index}.js`;
+      fs.writeFileSync(path.join(outDir, subdir, filename), `${trimmed}\n`, "utf8");
+      changed = true;
+      return `<script src="./${filename}" defer></script>`;
+    });
+    if (changed) fs.writeFileSync(htmlPath, rewritten, "utf8");
+  }
+}
+
 function siteProfileIntegration(profile) {
   return {
     name: `portaless-site-profile-${profile.id}`,
@@ -52,6 +75,7 @@ function siteProfileIntegration(profile) {
         const profilePublicDir = path.resolve(process.cwd(), profile.publicDir);
         const outDir = fileURLToPath(dir);
         copyDirRecursive(profilePublicDir, outDir);
+        if (profile.isDemo) externalizeCopiedDemoScripts(outDir);
       },
     },
   };
@@ -78,5 +102,11 @@ export default defineConfig({
   // con la base de produccion sin pisar el dist/ que usa Playwright).
   outDir: process.env.PORTALESS_OUT_DIR || "./dist",
   compressHTML: true,
+  vite: {
+    build: {
+      // A-07: nunca inlinear scripts <4 KiB en HTML para cumplir script-src 'self' sin 'unsafe-inline'.
+      assetsInlineLimit: 0,
+    },
+  },
   integrations: [siteProfileIntegration(siteProfile)],
 });

@@ -36,7 +36,6 @@ import { renderPublicHeaderHtml } from "../../src/lib/public-shell.ts";
 import {
   deriveHeaderContext,
   contextActionsHtml,
-  VOLUME_LISTENER_SCRIPT,
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
   BUILTIN_THEMES,
@@ -243,9 +242,8 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
 ${description ? `<meta name="description" content="${description}" />` : ""}
 ${discoveryMeta}
 <link rel="stylesheet" href="/api/site-skin" />
-<script>try{var t=localStorage.getItem("portaless-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
-<script>${SHARE_LISTENER_SCRIPT}</script>
-<script>${VOLUME_LISTENER_SCRIPT}</script>
+<script src="/portaless-theme-init.js"></script>
+<script src="/portaless-shell.js" defer></script>
 ${jsonLdScript}
 <style>${globalCss()}
 ${elementsCss()}</style>
