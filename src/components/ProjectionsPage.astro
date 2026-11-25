@@ -184,7 +184,7 @@ const whyBody = c.whyBody
     color: var(--accent-text, #5a6b24);
   }
   .canon h2 { margin: var(--space-2, 8px) 0; }
-  .canon-source { margin: 0 0 var(--space-3, 12px); color: var(--muted, #6e6653); }
+  .canon-source { margin: 0 0 var(--space-3, 12px); color: var(--muted, #6e6653); overflow-wrap: anywhere; }
   .canon-meta { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1, 4px) var(--space-3, 12px); margin: 0; }
   .canon-meta dt { font-weight: 600; }
   .canon-meta dd { margin: 0; overflow-wrap: anywhere; }
@@ -230,5 +230,6 @@ const whyBody = c.whyBody
     border-top: 1px solid var(--panel-border, #e4e6c3);
     margin-top: var(--space-6, 32px);
     padding-top: var(--space-4, 16px);
+    overflow-wrap: anywhere;
   }
 </style>
