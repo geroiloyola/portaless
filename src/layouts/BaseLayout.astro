@@ -103,8 +103,8 @@ import Footer from "../components/Footer.astro";
          functions se genera desde la tabla site_settings en runtime,
          igual que /paginas/[slug]: GitHub Pages se queda con el build. -->
     <script src={analyticsUrl} defer></script>
-    <script src={`${base}/portaless-theme-init.js`}></script>
-    <script src={`${base}/portaless-shell.js`} defer></script>
+    <script is:inline src={`${base}/portaless-theme-init.js`}></script>
+    <script is:inline src={`${base}/portaless-shell.js`} defer></script>
     <slot name="head">
       <meta name="description" content={description} />
       <title>{title}</title>
