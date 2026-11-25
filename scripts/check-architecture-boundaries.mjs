@@ -439,6 +439,9 @@ export function checkVeraredPin(root) {
   if (existsSync(resolve(root, "packages", "plugin-sdk"))) {
     violations.push({ file: "packages/plugin-sdk", reason: "duplicated-plugin-sdk-package" });
   }
+  if (existsSync(resolve(root, "site-profiles", "demo"))) {
+    violations.push({ file: "site-profiles/demo", reason: "duplicated-demo-templates" });
+  }
 
   const localSpecDir = resolve(root, "docs/protocol-apw");
   if (existsSync(localSpecDir)) {
@@ -475,6 +478,13 @@ export function checkVeraredPin(root) {
         violations.push({ file: "package-lock.json", reason: "missing-plugin-sdk-lock-entry:@portaless/plugin-sdk" });
       } else if (sdkResolved.includes("registry.npmjs.org") || !sdkResolved.startsWith("https://github.com/geroiloyola/portaless-plugin-sdk/releases/download/")) {
         violations.push({ file: "package-lock.json", reason: "invalid-plugin-sdk-tarball-source:@portaless/plugin-sdk" });
+      }
+      const templatesEntry = pkgs["node_modules/@portaless/templates"];
+      const templatesResolved = String(templatesEntry?.resolved || "");
+      if (!templatesEntry) {
+        violations.push({ file: "package-lock.json", reason: "missing-templates-lock-entry:@portaless/templates" });
+      } else if (templatesResolved.includes("registry.npmjs.org") || !templatesResolved.startsWith("https://github.com/geroiloyola/portaless-templates/releases/download/")) {
+        violations.push({ file: "package-lock.json", reason: "invalid-templates-tarball-source:@portaless/templates" });
       }
     } catch {
       violations.push({ file: "package-lock.json", reason: "invalid-package-lock-json" });

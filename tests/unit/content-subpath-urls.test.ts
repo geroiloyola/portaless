@@ -3,7 +3,7 @@
 //
 // Verifica que:
 // 1. resolveInternalUrl anteponga correctamente el prefijo de base sin alterar URLs externas ni duplicar prefijos.
-// 2. TODAS las paginas de site-profiles/demo/pages/*.json renderizadas con un subpath (ej. /portaless/)
+// 2. TODAS las paginas de node_modules/@portaless/templates/demo/pages/*.json renderizadas con un subpath (ej. /portaless/)
 //    emitan sus enlaces y medios internos con el prefijo /portaless/ (cero 404 bajo subpaths).
 // 3. /explore/ este registrado en las fuentes canónicas de src/pages/sitemap.xml.ts.
 // 4. Las peticiones fetch de src/pages/trust/index.astro respeten BASE_URL.
@@ -14,7 +14,7 @@ import { renderPage, resolveInternalUrl } from "../../packages/atomic-elements/s
 import type { PageLayout } from "../../packages/atomic-elements/src/types";
 
 const root = join(__dirname, "../..");
-const pagesDir = join(root, "site-profiles/demo/pages");
+const pagesDir = join(root, "node_modules/@portaless/templates/demo/pages");
 
 describe("resolveInternalUrl", () => {
   it("antepone el subpath a URLs internas relativas a la raiz", () => {
@@ -44,7 +44,7 @@ describe("resolveInternalUrl", () => {
   });
 });
 
-describe("paginas de site-profiles/demo/pages/*.json bajo subpath (/portaless/)", () => {
+describe("paginas de node_modules/@portaless/templates/demo/pages/*.json bajo subpath (/portaless/)", () => {
   const jsonFiles = readdirSync(pagesDir).filter((f) => f.endsWith(".json"));
 
   for (const filename of jsonFiles) {

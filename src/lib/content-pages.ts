@@ -100,38 +100,36 @@ export function versionHref(version: PageVersion, base = "/"): string {
   return routeHref(version.slug, version.primary ? undefined : version.locale, base);
 }
 
-import { resolveSiteProfile, type SiteProfileId } from "./site-profile.mjs";
-
-const STARTER_PAGE_MODULES = import.meta.glob<{ default: PageLayout }>(
-  "../../site-profiles/starter/pages/*.json",
-  { eager: true },
-);
-const DEMO_PAGE_MODULES = import.meta.glob<{ default: PageLayout }>(
-  "../../site-profiles/demo/pages/*.json",
-  { eager: true },
-);
-const HOME_MODULES = import.meta.glob<{ default: PageLayout }>(
-  "../../site-profiles/*/home*.json",
-  { eager: true },
-);
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { getSiteProfileConfig, resolveSiteProfile, type SiteProfileId } from "./site-profile.mjs";
 
 /** Carga el layout de home del perfil activo (en o es solo en demo). */
 export function loadHomeLayout(
   profile: SiteProfileId = resolveSiteProfile(),
   locale: "en" | "es" = "en",
 ): PageLayout {
-  const filename = locale === "es" ? "home.es.json" : "home.json";
-  const suffix = `/site-profiles/${profile}/${filename}`;
-  for (const [key, mod] of Object.entries(HOME_MODULES)) {
-    if (key.endsWith(suffix)) return mod.default;
+  const config = getSiteProfileConfig(profile);
+  const relPath = locale === "es" ? config.homeEsFile : config.homeFile;
+  if (!relPath) {
+    throw new Error(`Missing home layout for profile="${profile}" locale="${locale}".`);
   }
-  throw new Error(`Missing home layout for profile="${profile}" locale="${locale}" (${suffix}).`);
+  const absPath = resolve(process.cwd(), relPath);
+  return JSON.parse(readFileSync(absPath, "utf8")) as PageLayout;
 }
 
 /** Carga todas las paginas de contenido del perfil activo. */
 export function loadContentPages(
   profile: SiteProfileId = resolveSiteProfile(),
 ): ContentPage[] {
-  const modules = profile === "demo" ? DEMO_PAGE_MODULES : STARTER_PAGE_MODULES;
+  const config = getSiteProfileConfig(profile);
+  const pagesRoot = resolve(process.cwd(), config.pagesDir);
+  if (!existsSync(pagesRoot)) return [];
+  const modules: Record<string, { default: PageLayout }> = {};
+  for (const entry of readdirSync(pagesRoot, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    const layout = JSON.parse(readFileSync(join(pagesRoot, entry.name), "utf8")) as PageLayout;
+    modules[`/${config.pagesDir}/${entry.name}`] = { default: layout };
+  }
   return filterPublicContentPages(groupContentPages(modules));
 }

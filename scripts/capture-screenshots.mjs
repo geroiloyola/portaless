@@ -61,7 +61,7 @@ try {
     throw new Error("scripts/capture-screenshots.mjs requiere PORTALESS_SITE_PROFILE=demo");
   }
   await login(page, base);
-  const linkInBio = JSON.parse(readFileSync(join(root, "site-profiles/demo/pages/link-in-bio.json"), "utf8"));
+  const linkInBio = JSON.parse(readFileSync(join(root, "node_modules/@portaless/templates/demo/pages/link-in-bio.json"), "utf8"));
   const putStatus = await page.evaluate(async (json) => {
     const r = await fetch(`/admin/pages/${encodeURIComponent(json.slug)}`, {
       method: "PUT",
