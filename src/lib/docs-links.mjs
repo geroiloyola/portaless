@@ -16,6 +16,9 @@ import { DOC_ENTRIES } from "./docs-nav.mjs";
 const REPO = "https://github.com/geroiloyola/portaless";
 const BLOB = `${REPO}/blob/main`;
 const TREE = `${REPO}/tree/main`;
+const SPEC_PREFIX = "node_modules/@verared/spec/";
+const SPEC_REPO = "https://github.com/verared/vera-trust-spec";
+const SPEC_REF = "v0.1.0-draft.1";
 const BY_FILE = new Map(DOC_ENTRIES.map((d) => [d.file, d]));
 
 /**
@@ -43,6 +46,10 @@ export function rewriteHref(href, repoRel, base) {
   if (doc) return `${base.replace(/\/$/, "")}/docs/${doc.slug}/${anchor}`;
 
   const isDir = !/\.[a-z0-9]+$/i.test(resolved);
+  if (resolved.startsWith(SPEC_PREFIX)) {
+    const specRel = resolved.slice(SPEC_PREFIX.length);
+    return `${SPEC_REPO}/${isDir ? "tree" : "blob"}/${SPEC_REF}/${specRel}${lineAnchor || anchor}`;
+  }
   return `${isDir ? TREE : BLOB}/${resolved}${lineAnchor || anchor}`;
 }
 

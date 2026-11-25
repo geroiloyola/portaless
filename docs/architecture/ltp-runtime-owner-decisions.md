@@ -152,7 +152,7 @@ separation; `SVRI-v1.0.md:93-105`.
 ## Decisions explicitly outside this list
 
 - G4 reputation/SVRI math: `PENDING_AUTHORIZATION`; see the
-  [G4 pre-review](../protocol-apw/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md).
+  [G4 pre-review](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md).
 - G5 offline DNSSEC: `PENDING_AUTHORIZATION`.
 - Workers adapter: not covered by the Node connector; would need its own
   pinned-connect/egress design and tests.

@@ -39,9 +39,9 @@ export const DOC_GROUPS = [
     id: "reference",
     title: { en: "Reference", es: "Referencia" },
     docs: [
-      { slug: "protocol-apw", title: "Protocol APW (spec v1.3)", file: "docs/protocol-apw/APW-SPEC-v1.3.md", lang: "en" },
-      { slug: "apw-vectors", title: "APW test vectors", file: "docs/protocol-apw/APW-VECTORS-v1.3.md", lang: "en" },
-      { slug: "apw-starter-kit", title: "APW starter kit", file: "docs/protocol-apw/STARTER-KIT.md", lang: "en" },
+      { slug: "protocol-apw", title: "Protocol APW (spec v1.3)", file: "node_modules/@verared/spec/spec/APW-SPEC-v1.3.md", lang: "en" },
+      { slug: "apw-vectors", title: "APW test vectors", file: "node_modules/@verared/spec/spec/APW-VECTORS-v1.3.md", lang: "en" },
+      { slug: "apw-starter-kit", title: "APW starter kit", file: "node_modules/@verared/spec/spec/STARTER-KIT.md", lang: "en" },
       { slug: "well-known-endpoints", title: "Well-known endpoints", file: "docs/api/well-known.md", lang: "en" },
     ],
   },

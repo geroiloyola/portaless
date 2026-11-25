@@ -170,5 +170,5 @@ are connected; Cloudflare Pages cannot run the build (explicit `503`).
 | Write a third-party plugin | [`plugin-author-guide.md`](./plugin-author-guide.md) |
 | Understand where the project is going | [`VISION.md`](./VISION.md) |
 | Know what is real today, per module | [`../ROADMAP.md`](../ROADMAP.md) |
-| Read the Protocol APW specification | [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) |
+| Read the Protocol APW specification | [`protocol-apw/APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) |
 | Browse every document | [`README.md`](./README.md) |

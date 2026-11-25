@@ -26,11 +26,11 @@
 
 Protocol contracts (CC BY 4.0), separate from their reference implementation
 (`packages/apw-resolver/`, `packages/ltp-engine/`, `packages/ltp-reputation/`, Apache-2.0). The
-[G4 pre-authorization review](./protocol-apw/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md)
+[G4 pre-authorization review](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-G4-REPUTATION-PREAUTHORIZATION-REVIEW.md)
 and the [runtime integration proposal](./architecture/ltp-runtime-integration-proposal.md)
 record pending decisions without enabling them. See the
-[G2/G3 implementation scope](./protocol-apw/LTP-G2-G3-IMPLEMENTATION-SCOPE.md) and
-[Vera Trust Stack architecture](./protocol-apw/LTP-STACK-ARCHITECTURE.md) for identity,
+[G2/G3 implementation scope](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-G2-G3-IMPLEMENTATION-SCOPE.md) and
+[Vera Trust Stack architecture](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md) for identity,
 trust/traceability and output/history responsibilities; paths retain their
 historical names until a separately approved repository migration.
 
@@ -41,11 +41,11 @@ evidence. **Vera Trust Stack** denotes APW + Local Trust Protocol + SVRI + HSVR.
 | Document | Language | Status |
 |---|---|---|
 | [`protocol-apw/README.md`](./protocol-apw/README.md) | English | Protocol overview, Verared vision, license/governance, real status |
-| [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, Local Trust Protocol witness/evidence evaluation and scoring, SVRI/HSVR contracts; current Witness Index directory representation |
-| [`protocol-apw/APW-VECTORS-v1.3.md`](./protocol-apw/APW-VECTORS-v1.3.md) | English (canonical) | **Test vectors** V-01..V-13 for independent implementations |
-| [`protocol-apw/APW-SPEC-v1.3_es.md`](./protocol-apw/APW-SPEC-v1.3_es.md) · [`APW-VECTORS-v1.3_es.md`](./protocol-apw/APW-VECTORS-v1.3_es.md) | Spanish archives | Full-context Spanish copies of the current normative set |
-| [`protocol-apw/ERRATA.md`](./protocol-apw/ERRATA.md) | Spanish (historical) | Errata E-1..E-10; integrated into v1.3 |
-| [`protocol-apw/APW-SPEC-v1.2.md`](./protocol-apw/APW-SPEC-v1.2.md) · [`APW-SPEC-v1.0.md`](./protocol-apw/APW-SPEC-v1.0.md) · [`apw-spec.md`](./protocol-apw/apw-spec.md) | Spanish (historical) | Superseded versions / citable prior art / conceptual summary |
+| [`protocol-apw/APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) | English (canonical) | **Published consolidated specification** — APW identity/state structure, Local Trust Protocol witness/evidence evaluation and scoring, SVRI/HSVR contracts; current Witness Index directory representation |
+| [`protocol-apw/APW-VECTORS-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-VECTORS-v1.3.md) | English (canonical) | **Test vectors** V-01..V-13 for independent implementations |
+| [`protocol-apw/APW-SPEC-v1.3_es.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3_es.md) · [`APW-VECTORS-v1.3_es.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-VECTORS-v1.3_es.md) | Spanish archives | Full-context Spanish copies of the current normative set |
+| [`protocol-apw/ERRATA.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/ERRATA.md) | Spanish (historical) | Errata E-1..E-10; integrated into v1.3 |
+| [`protocol-apw/APW-SPEC-v1.2.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.2.md) · [`APW-SPEC-v1.0.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.0.md) · [`apw-spec.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/apw-spec.md) | Spanish (historical) | Superseded versions / citable prior art / conceptual summary |
 
 ## Integrator guide — [`api/`](./api/)
 

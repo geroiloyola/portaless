@@ -6,17 +6,17 @@ UI; a reader should not have to infer them from context.
 
 | Term | Meaning |
 |---|---|
-| **Vera Trust Stack** | The trust-centered stack under `verared`: APW identity/state structure → Local Trust Protocol evidence/traceability evaluation → SVRI output → HSVR historical output. See [`LTP-STACK-ARCHITECTURE.md`](./protocol-apw/LTP-STACK-ARCHITECTURE.md). |
-| **APW** | Identity and structural layer: `did:apw`, domain/key binding, signed artifacts and state-transition/log structure used for peer exchange. The currently published [`APW v1.3`](./protocol-apw/APW-SPEC-v1.3.md) document also contains the existing Local Trust Protocol contracts; file organization does not make identity alone a trust result. |
+| **Vera Trust Stack** | The trust-centered stack under `verared`: APW identity/state structure → Local Trust Protocol evidence/traceability evaluation → SVRI output → HSVR historical output. See [`LTP-STACK-ARCHITECTURE.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md). |
+| **APW** | Identity and structural layer: `did:apw`, domain/key binding, signed artifacts and state-transition/log structure used for peer exchange. The currently published [`APW v1.3`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) document also contains the existing Local Trust Protocol contracts; file organization does not make identity alone a trust result. |
 | **LTP** | **Local Trust Protocol**: each node applies its own local policy to verified evidence. Its deterministic core audits history, signatures, evidence and witnesses; versioned profiles can derive W dimensions for sites or R dimensions for readers. It is not a global authority or an automatic resource grant. In live prose, spell out **Local Trust Protocol** (avoid standalone `LTP` to prevent collision with Linux Test Project and RFC 5326). |
-| **Witness Index** | A neutral trust-proof discovery/distribution role, not an identity or reputation authority. The [Draft 0.1 contract](./protocol-apw/LTP-INDEX-DRAFT-v0.1.md) is not yet implemented; the current witness directory retains its historical `apw-index` format. Portaless product documentation refers to its node implementation as **Portaless Index**. |
-| **Proof Package** | The proposed neutral [container of APW identity/state proofs and Local Trust Protocol evidence](./protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md) for independent verification. Index signatures alone do not verify its contents. |
+| **Witness Index** | A neutral trust-proof discovery/distribution role, not an identity or reputation authority. The [Draft 0.1 contract](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-INDEX-DRAFT-v0.1.md) is not yet implemented; the current witness directory retains its historical `apw-index` format. Portaless product documentation refers to its node implementation as **Portaless Index**. |
+| **Proof Package** | The proposed neutral [container of APW identity/state proofs and Local Trust Protocol evidence](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-PROOF-PACKAGE-DRAFT-v0.1.md) for independent verification. Index signatures alone do not verify its contents. |
 | **Verared** | The neutral foundation/network direction where independent APW sites and witness indexes can verify each other without a central authority. It is a direction, not a shipped network. (Unifies live mentions of the earlier name; *"Veranet Universal Scoring System"* is preserved only in Annex A as historical attribution.) |
 | **`community attester`** | Normative role for a domain/operator that signs community attestations with its own `did:apw`. Portaless product UX and routes (`/trust/veracier/*`) call this role **Veracier**; the UI for becoming one is not built. |
 | **Cloudum** | An external hosting/operations provider for private Portaless nodes. It is not part of this repository and its operator controls are not verified here. |
 | **`did:apw`** | The site's decentralized identifier, bound to a domain and a published Ed25519 key history. |
 | **`did.json`** | The public DID document at `/.well-known/did.json`; it publishes the active key and optional AT Protocol links. |
-| **SVRI** | The versioned consumable output vector of Local Trust Protocol: score where applicable, qualitative level, provenance and incomplete/inference flags. Public/admin fields follow [SVRI v1.0](./protocol-apw/SVRI-v1.0.md); missing evidence stays pending. |
+| **SVRI** | The versioned consumable output vector of Local Trust Protocol: score where applicable, qualitative level, provenance and incomplete/inference flags. Public/admin fields follow [SVRI v1.0](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/SVRI-v1.0.md); missing evidence stays pending. |
 | **HSVR** | The verifiable historical record of SVRI outputs, retained with snapshot/time/rules/proof references or reconstructed from verifiable APW evidence. The current contract exposes authorized administrative reconstruction, not an assertion that all outputs already have persistent snapshots. |
 | **T1–T5** | Local Trust Protocol evidence-provenance tiers expressed by SVRI over signed APW observations: T1 escrow report, T2 signed self-attestation, T3 signed community attestation, T4 reader-conduct activity, T5 signed agent automation. |
 | **W / R dimensions** | Local Trust Protocol dimensions for a site (W-01…W-10) and a reader (R-01…R-05). Public projections expose only the dimensions the policy allows. |
@@ -36,6 +36,6 @@ Protocol**, and **Vera Trust Stack** denotes APW + Local Trust Protocol + SVRI +
 ## Related documents
 
 - [`VISION.md`](./VISION.md) — direction and the evidence-first principle.
-- [`protocol-apw/APW-SPEC-v1.3.md`](./protocol-apw/APW-SPEC-v1.3.md) — normative protocol.
-- [`protocol-apw/SVRI-v1.0.md`](./protocol-apw/SVRI-v1.0.md) — SVRI/HSVR profile.
+- [`protocol-apw/APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) — normative protocol.
+- [`protocol-apw/SVRI-v1.0.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/SVRI-v1.0.md) — SVRI/HSVR profile.
 - [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) — product acceptance contract.

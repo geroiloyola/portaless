@@ -421,16 +421,27 @@ export function checkVeraredPin(root) {
   if (!/^[a-f0-9]{40}$/.test(pin.commit || "")) {
     violations.push({ file: "SPEC-PIN.json", reason: "invalid-spec-commit" });
   }
+  if (!pin.tag) {
+    violations.push({ file: "SPEC-PIN.json", reason: "missing-spec-tag" });
+  }
   if (pin.digests?.corpusDigest !== "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA") {
     violations.push({ file: "SPEC-PIN.json", reason: "corpus-digest-mismatch" });
   }
-  if (!pin.stack?.version) {
+  if (!pin.stack?.version || !pin.stack?.tag) {
     violations.push({ file: "SPEC-PIN.json", reason: "missing-stack-version" });
   }
 
   for (const dir of VERARED_MIGRATED_DIRS) {
     if (existsSync(resolve(root, "packages", dir))) {
       violations.push({ file: `packages/${dir}`, reason: "duplicated-verared-package" });
+    }
+  }
+
+  const localSpecDir = resolve(root, "docs/protocol-apw");
+  if (existsSync(localSpecDir)) {
+    for (const entry of readdirSync(localSpecDir, { withFileTypes: true })) {
+      if (entry.name === "README.md" && entry.isFile()) continue;
+      violations.push({ file: `docs/protocol-apw/${entry.name}`, reason: "duplicated-verared-spec" });
     }
   }
 
@@ -447,6 +458,13 @@ export function checkVeraredPin(root) {
         } else if (resolved.includes("registry.npmjs.org") || !resolved.startsWith("https://github.com/verared/vera-trust-stack/releases/download/")) {
           violations.push({ file: "package-lock.json", reason: `invalid-verared-tarball-source:${name}` });
         }
+      }
+      const specEntry = pkgs["node_modules/@verared/spec"];
+      const specResolved = String(specEntry?.resolved || "");
+      if (!specEntry) {
+        violations.push({ file: "package-lock.json", reason: "missing-verared-lock-entry:@verared/spec" });
+      } else if (specResolved.includes("registry.npmjs.org") || !specResolved.startsWith("https://github.com/verared/vera-trust-spec/releases/download/")) {
+        violations.push({ file: "package-lock.json", reason: "invalid-verared-tarball-source:@verared/spec" });
       }
     } catch {
       violations.push({ file: "package-lock.json", reason: "invalid-package-lock-json" });

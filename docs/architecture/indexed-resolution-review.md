@@ -3,7 +3,7 @@
 **Estado: dirección y contratos neutrales Draft 0.1 aprobados formalmente por el
 dueño (2026-10-23); publicación final y conformidad Edge pendientes.**
 La programación de esa ruta queda bloqueada hasta fusionar el commit documental;
-el [registro de cierre](../protocol-apw/LTP-STANDARDIZATION-STATUS.md) distingue ese
+el [registro de cierre](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md) distingue ese
 gate de fusión de los requisitos de activación. No crea un Index global obligatorio, cambia DNSSEC,
 publica evidencia privada ni implementa un relay.
 
@@ -18,16 +18,16 @@ las mismas reglas sin importar módulos o código de Portaless.
 El concepto principal es confianza y trazabilidad: **APW** identifica y estructura
 el intercambio P2P; **LTP** audita historiales, evidencias y testigos; **SVRI**
 expresa la salida; **HSVR** conserva su histórico verificable. Véase
-[Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+[Vera Trust Stack](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md).
 
 Contratos de estándar redactados bajo CC BY 4.0, separados de este análisis de
 implementación:
 
-- [LTP Index Draft 0.1](../protocol-apw/LTP-INDEX-DRAFT-v0.1.md):
+- [LTP Index Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-INDEX-DRAFT-v0.1.md):
   endpoint configurado, mensajes, errores, límites, progreso y rol no autoritativo.
-- [LTP Proof Package Draft 0.1](../protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md):
+- [LTP Proof Package Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-PROOF-PACKAGE-DRAFT-v0.1.md):
   bytes/digests, identidades, cadenas, LTP Attestations y recomputación de SVRI Projection.
-- [APW Identity Bootstrap Draft 0.1](../protocol-apw/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md):
+- [APW Identity Bootstrap Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md):
   DoH/AD independiente o DNSSEC local, con supuestos y frescura diferenciados.
 
 Son borradores con requisitos MUST, no una errata adoptada ni una API activada.

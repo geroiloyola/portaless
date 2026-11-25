@@ -143,7 +143,7 @@ bytes** are strictly separated:
   legacy section-6 anchor `#6-reputation-based-read-governance--loyal-trust-protocol-v12--e-8-e-9`.
 - **Out of scope for Wave 1:** existing tables in `schema.sql`, the active
   PR-B1 (#115) / PR-B2 (`portaless-templates`) queue, and runtime activation of
-  G4/G5 (still governed by [`LTP-GATES-AND-AUTHORIZATIONS.md`](./docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md)).
+  G4/G5 (still governed by [`LTP-GATES-AND-AUTHORIZATIONS.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-GATES-AND-AUTHORIZATIONS.md)).
 
 ---
 
@@ -239,12 +239,13 @@ Wave 2 **must not start** until every item below is verified true in CI on
 - [x] **Full verification green on Node 24:** Vitest, Astro build, manifest validation, Playwright browser suite, and `docs/protocol-apw` standalone test/audit suite all pass with zero added skips.
 - [x] **License metadata aligned:** `licensing-boundaries.md` and the 7 `verared`-bound packages reflect `CC BY 4.0` (spec) and `Apache-2.0` (stack).
 
-### Wave 2 — Export to `github.com/verared/*`
+### Wave 2 — Export to `github.com/verared/*` (**100% completed**)
 
 1. ✅ **W2.1:** Created `github.com/verared/vera-trust-spec` (`CC BY 4.0`, `@verared/spec` `v0.1.0-draft.1`, commit `7787966`) from `docs/protocol-apw/` with immutable release tarball + `SHA256SUMS` and Node 24 cryptographic CI (`18/18` SHA-256 + `5/5` JCS digests).
 2. ✅ **W2.2:** Created `github.com/verared/vera-trust-stack` (`Apache-2.0`, `v0.1.0-alpha.1`, commit `d2e1d4a`) containing `@verared/{net,apw,local-trust,reputation,trust-layer,cloud-images,identity-atproto}` compiled to `dist/` (`ESM .js` + `.d.ts`), pinned via `SPEC-PIN.json` and distributed as immutable GitHub Release tarballs.
-3. ✅ **W2.3 *(this PR)*:** Updated `geroiloyola/portaless` to consume the exact pinned `@verared/*` `v0.1.0-alpha.1` tarballs (via `dependencies` + `overrides` + `.npmrc` `allow-remote=root`) and `SPEC-PIN.json`, deleted the 7 migrated local `packages/*` copies, and kept `docs/protocol-apw/` intact for W2.3b.
-4. Independently (on its own D11 track after PR-B2), extract `geroiloyola/portaless-templates`.
+3. ✅ **W2.3 *(PR #126)*:** Updated `geroiloyola/portaless` to consume the exact pinned `@verared/*` `v0.1.0-alpha.1` tarballs (via `dependencies` + `overrides` + `.npmrc` `allow-remote=root`) and `SPEC-PIN.json`, and deleted the 7 migrated local `packages/*` copies.
+4. ✅ **W2.3b *(this PR)*:** Retired the duplicated local `docs/protocol-apw/` specification tree (leaving only the minimal redirect [`docs/protocol-apw/README.md`](./docs/protocol-apw/README.md)), pinned `@verared/spec` `v0.1.0-draft.1` tarball in `devDependencies` for Astro reference docs and vector tests, and enforced zero local spec duplication in `scripts/check-architecture-boundaries.mjs --strict`.
+5. Independently (on its own D11 track after PR-B2), extract `geroiloyola/portaless-templates`.
 
 ---
 

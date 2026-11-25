@@ -5,8 +5,8 @@ import { classifyLevel, orderEntries, projectSvri as projectG4Svri, withinTolera
 import { runReputationCase } from "@verared/reputation";
 import type { ReputationCase } from "@verared/reputation";
 
-const ROOT = new URL("../../docs/protocol-apw/vectors/ltp/reputation/v0.1/", import.meta.url);
-const SVRI_MATH = new URL("../../docs/protocol-apw/vectors/ltp/v0.1/svri-math.json", import.meta.url);
+const ROOT = new URL("../../node_modules/@verared/spec/spec/vectors/ltp/reputation/v0.1/", import.meta.url);
+const SVRI_MATH = new URL("../../node_modules/@verared/spec/spec/vectors/ltp/v0.1/svri-math.json", import.meta.url);
 const FILES = [
   "rep-01-issuer.json", "rep-02-attestation.json", "rep-03-uniqueness.json",
   "rep-04-eligibility.json", "rep-05-reader-conduct.json", "rep-06-negatives.json",

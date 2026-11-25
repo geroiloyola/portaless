@@ -12,18 +12,21 @@ import { rewriteHref, rewriteMarkdownLinks } from "../../src/lib/docs-links.mjs"
 const root = join(__dirname, "../..");
 
 describe("docs-links: rewriteHref", () => {
+  const SPEC_FILE = "node_modules/@verared/spec/spec/APW-SPEC-v1.3.md";
+  const VECTORS_FILE = "node_modules/@verared/spec/spec/APW-VECTORS-v1.3.md";
+
   it("un doc incluido se traduce a su ruta del sitio", () => {
-    expect(rewriteHref("./APW-VECTORS-v1.3.md", "docs/protocol-apw/APW-SPEC-v1.3.md", "/")).toBe("/docs/apw-vectors/");
+    expect(rewriteHref("./APW-VECTORS-v1.3.md", SPEC_FILE, "/")).toBe("/docs/apw-vectors/");
     expect(rewriteHref("../self-hosting.md", "docs/architecture/ecosystem-boundaries.md", "/")).toBe("/docs/self-hosting/");
   });
 
   it("conserva el ancla al reescribir", () => {
-    expect(rewriteHref("./APW-VECTORS-v1.3.md#casos", "docs/protocol-apw/APW-SPEC-v1.3.md", "/")).toBe("/docs/apw-vectors/#casos");
+    expect(rewriteHref("./APW-VECTORS-v1.3.md#casos", SPEC_FILE, "/")).toBe("/docs/apw-vectors/#casos");
   });
 
   it("un archivo que no es doc va a GitHub (blob), no a una ruta del sitio", () => {
-    const out = rewriteHref("../ERRATA.md", "docs/protocol-apw/APW-SPEC-v1.3.md", "/");
-    expect(out).toBe("https://github.com/geroiloyola/portaless/blob/main/docs/ERRATA.md");
+    const out = rewriteHref("./ERRATA.md", SPEC_FILE, "/");
+    expect(out).toBe("https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/ERRATA.md");
   });
 
   it("un directorio va a GitHub (tree)", () => {
@@ -45,7 +48,7 @@ describe("docs-links: rewriteHref", () => {
   });
 
   it("respeta el base de Astro en las rutas del sitio", () => {
-    expect(rewriteHref("./APW-VECTORS-v1.3.md", "docs/protocol-apw/APW-SPEC-v1.3.md", "/portaless/")).toBe(
+    expect(rewriteHref("./APW-VECTORS-v1.3.md", SPEC_FILE, "/portaless/")).toBe(
       "/portaless/docs/apw-vectors/",
     );
   });
@@ -71,7 +74,7 @@ describe("docs-links: ningun enlace relativo queda roto", () => {
 
   it("rewriteMarkdownLinks solo toca enlaces relativos", () => {
     const md = "Ver [spec](./APW-SPEC-v1.3.md) y [web](https://x.com) y `code`.";
-    const out = rewriteMarkdownLinks(md, "docs/protocol-apw/APW-VECTORS-v1.3.md", "/");
+    const out = rewriteMarkdownLinks(md, "node_modules/@verared/spec/spec/APW-VECTORS-v1.3.md", "/");
     expect(out).toContain("(/docs/protocol-apw/)");
     expect(out).toContain("(https://x.com)");
   });
