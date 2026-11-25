@@ -36,11 +36,16 @@ const error = Astro.url.searchParams.get("error");
     </form>
   </div>
 
-  <script define:vars={{ challengeToken }}>
-    document.getElementById("mfa-form").addEventListener("submit", async (evt) => {
+  <script>
+    const form = document.getElementById("mfa-form") as HTMLFormElement | null;
+    form?.addEventListener("submit", async (evt) => {
       evt.preventDefault();
-      const code = evt.target.code.value;
-      const res = await fetch("/admin/login/mfa", {
+      const target = evt.currentTarget as HTMLFormElement;
+      const hidden = target.elements.namedItem("challengeToken") as HTMLInputElement | null;
+      const codeInput = target.elements.namedItem("code") as HTMLInputElement | null;
+      const challengeToken = new URLSearchParams(window.location.search).get("challenge") || hidden?.value || "";
+      const code = codeInput?.value || "";
+      const res = await fetch("/admin/login-mfa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ challengeToken, code }),

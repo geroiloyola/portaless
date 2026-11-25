@@ -57,9 +57,26 @@ describe("A-07 security headers", () => {
     expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
   });
 
-  it("Cloudflare _headers carries the same policy", () => {
+  it("Cloudflare _headers carries the exact same CSP policy with no unsafe-inline or unsafe-eval in script-src", () => {
     const headers = readFileSync(join(process.cwd(), "public", "_headers"), "utf8");
-    expect(headers).toContain("Content-Security-Policy:");
+    const cspMatch = headers.match(/^\s*Content-Security-Policy:\s*(.+)$/m);
+    expect(cspMatch).toBeTruthy();
+    const staticCsp = cspMatch![1].trim();
+    const runtimeCsp = SECURITY_HEADERS["content-security-policy"];
+    expect(staticCsp).toBe(runtimeCsp);
+
+    const scriptSrcMatch = runtimeCsp.match(/script-src\s+([^;]+)/);
+    expect(scriptSrcMatch).toBeTruthy();
+    const scriptSrc = scriptSrcMatch![1];
+    expect(scriptSrc).not.toContain("'unsafe-inline'");
+    expect(scriptSrc).not.toContain("'unsafe-eval'");
+    expect(scriptSrc).toContain("'self'");
+
+    const nodeRuntimeSrc = readFileSync(join(process.cwd(), "server", "node-runtime.mjs"), "utf8");
+    expect(nodeRuntimeSrc).toContain("withSecurityHeaders");
+    expect(nodeRuntimeSrc).not.toContain("'unsafe-inline'");
+    expect(nodeRuntimeSrc).not.toContain("'unsafe-eval'");
+
     expect(headers).toContain("Strict-Transport-Security:");
     expect(headers).toContain("X-Frame-Options: DENY");
   });
