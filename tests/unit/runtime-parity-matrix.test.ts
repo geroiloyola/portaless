@@ -48,6 +48,8 @@ describe("E-05: runtime parity matrix", () => {
       "functions/.well-known/apw-index.json.js",
       "functions/admin/api/witness/record.js",
       "functions/admin/api/index/sync.js",
+      "functions/_shared/preauth-egress-guard.js",
+      "functions/_shared/gatekeeper-runtime.js",
       "wrangler.toml",
     ];
     for (const rel of anchors) {
@@ -71,5 +73,9 @@ describe("E-05: runtime parity matrix", () => {
     const nodeRuntimeSrc = readFileSync(join(root, "server/node-runtime.mjs"), "utf8");
     expect(nodeRuntimeSrc).toContain("/healthz");
     expect(nodeRuntimeSrc).toContain("withSecurityHeaders");
+
+    const gatekeeperSrc = readFileSync(join(root, "functions/_shared/gatekeeper-runtime.js"), "utf8");
+    expect(gatekeeperSrc).toContain("PORTALESS_GATEKEEPER_MODE");
+    expect(gatekeeperSrc).toContain("createVeraTrustHostAdapter");
   });
 });
