@@ -37,6 +37,7 @@
     "test:resources": "node node_modules/tsx/dist/cli.mjs scripts/resource-budget.mjs",
     "test:release": "node scripts/verify-release.mjs",
     "verify:runtime": "node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-profile.mjs",
+    "verify:claims": "node scripts/verify-claims.mjs",
     "check:boundaries": "node scripts/check-architecture-boundaries.mjs --strict",
     "check:boundaries:report": "node scripts/check-architecture-boundaries.mjs --report"
   },
