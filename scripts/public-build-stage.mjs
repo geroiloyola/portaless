@@ -218,7 +218,9 @@ export function copyPublicSourcePosts(projectRoot, stageRoot, isPubliclyPublisha
 /** Copy only docs listed in the public docs navigation. */
 export function copyPublicDocs(projectRoot, stageRoot, docEntries) {
   for (const entry of docEntries) {
-    if (typeof entry?.file !== "string" || !entry.file.startsWith("docs/") || entry.file.split("/").includes("..")) {
+    const isLocalDoc = typeof entry?.file === "string" && entry.file.startsWith("docs/");
+    const isPinnedSpecDoc = typeof entry?.file === "string" && entry.file.startsWith("node_modules/@verared/spec/spec/");
+    if ((!isLocalDoc && !isPinnedSpecDoc) || entry.file.split("/").includes("..")) {
       throw new Error("Entrada de documentación fuera de allowlist.");
     }
     const source = path.join(projectRoot, entry.file);
@@ -228,10 +230,11 @@ export function copyPublicDocs(projectRoot, stageRoot, docEntries) {
       cursor = path.join(cursor, component);
       if (fs.lstatSync(cursor).isSymbolicLink()) throw new Error(`Symlink no permitido en doc público: ${entry.file}`);
     }
-    const destination = path.join(stageRoot, entry.file);
     if (!fs.existsSync(source) || !fs.lstatSync(source).isFile() || fs.lstatSync(source).isSymbolicLink()) {
       throw new Error(`Falta documento público declarado en docs-nav: ${entry.file}`);
     }
+    const destination = path.join(stageRoot, entry.file);
+    if (isPinnedSpecDoc && fs.existsSync(destination)) continue;
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     fs.copyFileSync(source, destination, fs.constants.COPYFILE_EXCL);
   }
