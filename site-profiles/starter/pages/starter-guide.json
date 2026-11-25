@@ -1,0 +1,155 @@
+{
+  "version": "0.1",
+  "slug": "starter-guide",
+  "title": "Starter Guide — Atomic Elements Reference",
+  "description": "A clean, self-contained reference page showing how Atomic Elements blocks compose in JSON and how to replace this file with your own page.",
+  "theme": "portaless-nocturno",
+  "root": [
+    {
+      "id": "guide-hero",
+      "type": "Hero",
+      "props": {
+        "variant": "spotlight",
+        "size": "lg",
+        "title": "How Portaless pages are built",
+        "subtitle": "This is the single reference page included in the starter profile. Every section below is rendered from JSON using Atomic Elements — with zero external images and zero fictional data.",
+        "ctaLabel": "Back to home",
+        "ctaHref": "/"
+      }
+    },
+    {
+      "id": "guide-structure-h",
+      "type": "Heading",
+      "props": {
+        "text": "Page structure in JSON",
+        "level": "h2",
+        "variant": "eyebrow",
+        "eyebrow": "Anatomy",
+        "align": "left",
+        "size": "lg"
+      }
+    },
+    {
+      "id": "guide-structure-p",
+      "type": "Paragraph",
+      "props": {
+        "text": "Each file under site-profiles/starter/pages/ declares a version, slug, title, description, theme, and a root array of typed blocks. Portaless compiles each JSON file into a static route at /pages/<slug>/ and registers it in /explore/ and /sitemap.xml."
+      }
+    },
+    {
+      "id": "guide-columns-h",
+      "type": "Heading",
+      "props": {
+        "text": "Columns and action buttons",
+        "level": "h2",
+        "variant": "eyebrow",
+        "eyebrow": "Layout",
+        "align": "left"
+      }
+    },
+    {
+      "id": "guide-columns",
+      "type": "Columns",
+      "props": { "count": 2, "gap": 16 },
+      "columnSlots": [
+        [
+          {
+            "id": "guide-col-1-p",
+            "type": "Paragraph",
+            "props": {
+              "text": "Use Columns with columnSlots to place blocks side by side on desktop and stack them cleanly on mobile screens."
+            }
+          },
+          {
+            "id": "guide-col-1-btn",
+            "type": "Button",
+            "props": {
+              "label": "Browse Explore hub",
+              "href": "/explore/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ],
+        [
+          {
+            "id": "guide-col-2-p",
+            "type": "Paragraph",
+            "props": {
+              "text": "Button blocks link to internal routes (such as /blog/ or /) or external documentation without hand-written HTML."
+            }
+          },
+          {
+            "id": "guide-col-2-btn",
+            "type": "Button",
+            "props": {
+              "label": "Read sample post",
+              "href": "/blog/welcome/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "id": "guide-blocks-h",
+      "type": "Heading",
+      "props": {
+        "text": "Blocks demonstrated on this page",
+        "level": "h2",
+        "variant": "eyebrow",
+        "eyebrow": "Catalog",
+        "align": "left"
+      }
+    },
+    {
+      "id": "guide-blocks-grid",
+      "type": "FeatureGrid",
+      "props": {
+        "title": "",
+        "items": "server :: Hero & Heading :: Introduce a route with a spotlight hero and divide sections with accessible heading levels and optional eyebrows.\npackage :: Paragraph & Columns :: Combine readable prose with responsive multi-column slots that adapt down to narrow mobile viewports.\nshield :: FeatureGrid & FAQ :: Summarize workflows in structured cards and answer common operational questions in expandable disclosures.\nbot :: Button & PostList :: Connect pages, blog posts, and external links while keeping the page schema portable for both visual editing and MCP agents."
+      }
+    },
+    {
+      "id": "guide-faq",
+      "type": "FAQ",
+      "props": {
+        "title": "Replacing or duplicating this page",
+        "variant": "bordered",
+        "items": "How do I create my own page? :: Copy starter-guide.json inside site-profiles/starter/pages/, give it a new filename and matching slug, edit the blocks, and run npm run build.\nCan I delete this starter guide? :: Yes. Remove starter-guide.json once you have added your own pages or if you only need the home page and blog.\nWhere can I see more layout examples? :: The official showcase with fictional demos lives in the external portaless-templates repository and live demo site."
+      }
+    },
+    {
+      "id": "guide-footer-actions",
+      "type": "Columns",
+      "props": { "count": 2, "gap": 16 },
+      "columnSlots": [
+        [
+          {
+            "id": "guide-back-home",
+            "type": "Button",
+            "props": {
+              "label": "Return to home",
+              "href": "/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ],
+        [
+          {
+            "id": "guide-external-demo",
+            "type": "Button",
+            "props": {
+              "label": "View external demo",
+              "href": "https://geroiloyola.github.io/portaless-templates/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ]
+      ]
+    }
+  ]
+}

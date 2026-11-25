@@ -1,8 +1,8 @@
 {
   "version": "0.1",
   "slug": "home",
-  "title": "Welcome to your Portaless site",
-  "description": "A clean static site built with Portaless and Atomic Elements.",
+  "title": "Portaless Starter — Implementation Guide",
+  "description": "A clean Portaless starter site with a practical 3-step setup guide, one reference page, and one sample Markdown post.",
   "theme": "portaless-nocturno",
   "root": [
     {
@@ -11,17 +11,91 @@
       "props": {
         "variant": "spotlight",
         "size": "lg",
-        "title": "Welcome to your Portaless site",
-        "subtitle": "Edit this page in site-profiles/starter/home.json or publish posts in Markdown. When you run a self-hosted node, you can also edit and approve pages visually or via MCP.",
-        "ctaLabel": "Read the blog",
-        "ctaHref": "/blog/"
+        "title": "Your Portaless site is ready",
+        "subtitle": "This clean starter profile is your starting point after cloning or forking Portaless. Follow the three steps below to replace this guide with your own site.",
+        "ctaLabel": "Open the starter guide",
+        "ctaHref": "/pages/starter-guide/"
       }
     },
     {
-      "id": "starter-intro",
+      "id": "starter-links",
+      "type": "Columns",
+      "props": { "count": 3, "gap": 16 },
+      "columnSlots": [
+        [
+          {
+            "id": "starter-link-guide",
+            "type": "Button",
+            "props": {
+              "label": "Starter guide page",
+              "href": "/pages/starter-guide/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ],
+        [
+          {
+            "id": "starter-link-blog",
+            "type": "Button",
+            "props": {
+              "label": "Sample blog post",
+              "href": "/blog/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ],
+        [
+          {
+            "id": "starter-link-demo",
+            "type": "Button",
+            "props": {
+              "label": "External live demo",
+              "href": "https://geroiloyola.github.io/portaless-templates/",
+              "variant": "outline",
+              "size": "sm"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "id": "starter-steps-h",
+      "type": "Heading",
+      "props": {
+        "text": "Three steps to launch your site",
+        "level": "h2",
+        "variant": "eyebrow",
+        "eyebrow": "Quick start",
+        "align": "left",
+        "size": "lg"
+      }
+    },
+    {
+      "id": "starter-steps",
+      "type": "FeatureGrid",
+      "props": {
+        "title": "",
+        "items": "server :: 1. Edit your home page :: Open site-profiles/starter/home.json to change the title, theme, and Atomic Elements blocks shown on the root route.\npackage :: 2. Add posts and pages :: Write Markdown posts under site-profiles/starter/posts/ and JSON pages under site-profiles/starter/pages/ using starter-guide.json as a template.\nshield :: 3. Configure and deploy :: Set PORTALESS_SITE_URL (or PORTALESS_PUBLIC_URL on self-host), complete /setup if self-hosting, enable MCP or Trust Layer when ready, and publish."
+      }
+    },
+    {
+      "id": "starter-modes-h",
+      "type": "Heading",
+      "props": {
+        "text": "Static hosting or self-hosted node",
+        "level": "h2",
+        "variant": "eyebrow",
+        "eyebrow": "Deployment",
+        "align": "left"
+      }
+    },
+    {
+      "id": "starter-modes-p",
       "type": "Paragraph",
       "props": {
-        "text": "This starter profile keeps your public site minimal and clean: one home page, one sample post, and your active discovery hubs (/blog/, /explore/, /rss.xml, /sitemap.xml, and /llms.txt)."
+        "text": "Deploy the compiled HTML to GitHub Pages or Cloudflare Pages for a zero-runtime static site edited in Git. When you want the visual editor, /setup onboarding, MCP agent editing, approved-snapshot publishing, or the Trust Layer, run the Node or Docker self-hosted runtime."
       }
     },
     {

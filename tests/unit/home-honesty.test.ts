@@ -102,3 +102,22 @@ describe("home es: la proyeccion de locale (i18n)", () => {
     expect(esJson).toContain("por escrito");
   });
 });
+
+describe("starter profile: guia practica limpia sin metricas inventadas ni imagenes externas", () => {
+  const starterHome = readFileSync(join(root, "site-profiles/starter/home.json"), "utf8");
+  const starterGuide = readFileSync(join(root, "site-profiles/starter/pages/starter-guide.json"), "utf8");
+
+  it("starter home.json y starter-guide.json no contienen metricas inventadas ni imagenes externas", () => {
+    for (const content of [starterHome, starterGuide]) {
+      for (const re of [/\b92\b/, /32K\+/, /trusted by/i, /\b\d{2,}\s*%/]) {
+        expect(content).not.toMatch(re);
+      }
+      expect(content).not.toMatch(/"src"\s*:\s*"https?:\/\//i);
+      expect(content).toContain('"theme": "portaless-nocturno"');
+    }
+    expect(starterHome).toContain('"/pages/starter-guide/"');
+    expect(starterHome).toContain('"/blog/"');
+    expect(starterHome).toContain('"https://geroiloyola.github.io/portaless-templates/"');
+    expect(starterHome).toContain('"type": "PostList"');
+  });
+});

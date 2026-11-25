@@ -34,7 +34,9 @@ const COPY = {
       confidence: "Witness consensus over the declared seq needs a node with functions/; showing the local order instead.",
       history: "Order by amount of evidence per subject needs attestations from a node with functions/; showing the local order instead.",
     },
-    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", publications: "Publications" },
+    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", pages: "Pages", shops: "Shops", profiles: "Profiles", publications: "Publications" },
+    starterDescription: "Browse the pages and posts published by this Portaless site.",
+    starterIntro: "Everything this site publishes, grouped automatically by content type.",
     docsHeading: "Documentation",
     docs: [
       { title: "Install in 10 minutes", note: "Docker + browser, a guide for people who do not write code." },
@@ -74,7 +76,9 @@ const COPY = {
       confidence: "El consenso de testigos sobre el seq declarado necesita un nodo con functions/; se muestra el orden local.",
       history: "El orden por cantidad de evidencia por sujeto necesita atestaciones de un nodo con functions/; se muestra el orden local.",
     },
-    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", publications: "Publications" },
+    chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", pages: "Páginas", shops: "Tiendas", profiles: "Perfiles", publications: "Publications" },
+    starterDescription: "Explorá las páginas y publicaciones de este sitio Portaless.",
+    starterIntro: "Todo lo que este sitio publica, agrupado automáticamente por tipo de contenido.",
     docsHeading: "Documentation",
     docs: [
       { title: "Install in 10 minutes", note: "Docker + navegador, guía para quien no escribe código." },
@@ -151,11 +155,16 @@ const buildAsOf = new Date().toISOString();
 const windowDays = 30;
 const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"] as const;
 const notesJson = JSON.stringify(c.status);
+const exploreDescription = profile.isDemo ? c.description : c.starterDescription;
+const exploreIntro = profile.isDemo ? c.intro : c.starterIntro;
+const pagesLabel = profile.isDemo ? c.chips.demoPages : c.chips.pages;
+const shopsLabel = profile.isDemo ? c.chips.demoShops : c.chips.shops;
+const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
 ---
 
-<BaseLayout title={c.title} description={c.description} pageTheme={pageTheme} lang={locale} alternatePath={profile.features.esRoutes ? "/explore/" : undefined}>
+<BaseLayout title={c.title} description={exploreDescription} pageTheme={pageTheme} lang={locale} alternatePath={profile.features.esRoutes ? "/explore/" : undefined}>
   <h1>{c.heading}</h1>
-  <p class="explore-intro">{c.intro}</p>
+  <p class="explore-intro">{exploreIntro}</p>
 
   <div class="explore-order">
     <span class="explore-order-label">{c.orderBy}</span>
@@ -174,9 +183,9 @@ const notesJson = JSON.stringify(c.status);
   <nav class="explore-chips" aria-label="Categories">
     {!profile.isDemo && <a href="#site-home" class="explore-chip">Home</a>}
     {profile.features.docs && <a href="#documentation" class="explore-chip">{c.chips.documentation}</a>}
-    {demoPages.length > 0 && <a href="#demo-pages" class="explore-chip">{c.chips.demoPages}</a>}
-    {demoShops.length > 0 && <a href="#demo-shops" class="explore-chip">{c.chips.demoShops}</a>}
-    {demoProfiles.length > 0 && <a href="#demo-profiles" class="explore-chip">{c.chips.demoProfiles}</a>}
+    {demoPages.length > 0 && <a href={profile.isDemo ? "#demo-pages" : "#pages"} class="explore-chip">{pagesLabel}</a>}
+    {demoShops.length > 0 && <a href={profile.isDemo ? "#demo-shops" : "#shops"} class="explore-chip">{shopsLabel}</a>}
+    {demoProfiles.length > 0 && <a href={profile.isDemo ? "#demo-profiles" : "#profiles"} class="explore-chip">{profilesLabel}</a>}
     {posts.length > 0 && <a href="#publications" class="explore-chip">{c.chips.publications}</a>}
   </nav>
 
@@ -207,8 +216,8 @@ const notesJson = JSON.stringify(c.status);
   )}
 
   {demoPages.length > 0 && (
-    <section id="demo-pages">
-      <h2>{c.chips.demoPages}</h2>
+    <section id={profile.isDemo ? "demo-pages" : "pages"}>
+      <h2>{pagesLabel}</h2>
       <div class="explore-grid">
         {demoPages.map((page) => (
           <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
@@ -221,8 +230,8 @@ const notesJson = JSON.stringify(c.status);
   )}
 
   {demoShops.length > 0 && (
-    <section id="demo-shops">
-      <h2>{c.chips.demoShops}</h2>
+    <section id={profile.isDemo ? "demo-shops" : "shops"}>
+      <h2>{shopsLabel}</h2>
       <div class="explore-grid">
         {demoShops.map((page) => (
           <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
@@ -235,8 +244,8 @@ const notesJson = JSON.stringify(c.status);
   )}
 
   {demoProfiles.length > 0 && (
-    <section id="demo-profiles">
-      <h2>{c.chips.demoProfiles}</h2>
+    <section id={profile.isDemo ? "demo-profiles" : "profiles"}>
+      <h2>{profilesLabel}</h2>
       <div class="explore-grid">
         {demoProfiles.map((page) => (
           <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
