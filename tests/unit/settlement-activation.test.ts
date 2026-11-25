@@ -19,7 +19,11 @@ vi.mock("@portaless/trust-storage-adapters", async (orig) => ({
 vi.mock("@portaless/plugin-sandbox/store-factory", () => ({
   createPluginRegistryStore: async () => ({ list: async () => [] }),
 }));
-vi.mock("@portaless/auth/store-factory", () => ({ createUsersStore: async () => ({}), createSessionStore: async () => ({}) }));
+vi.mock("@portaless/auth/store-factory", () => ({
+  createUsersStore: async () => ({}),
+  createSessionStore: async () => ({}),
+  createEmailStepUpStore: async () => ({}),
+}));
 vi.mock("@portaless/auth/service", () => ({
   AuthService: class {
     async verifyStepUp(_u: string, f: { password?: string }) {

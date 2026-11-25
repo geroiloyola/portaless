@@ -75,11 +75,26 @@ const MFA_EXPIRED_ERROR = "El código de verificación expiró. Inicia sesión d
 export interface StepUpCredentials {
   password?: string;
   totpCode?: string;
+  emailToken?: string;
+  emailCode?: string;
 }
 
 export type StepUpResult =
   | { ok: true }
-  | { ok: false; reason: "user_not_found" | "password_required" | "invalid_password" | "totp_required" | "invalid_totp" | "no_step_up_factor" };
+  | {
+      ok: false;
+      reason:
+        | "user_not_found"
+        | "password_required"
+        | "invalid_password"
+        | "totp_required"
+        | "invalid_totp"
+        | "no_step_up_factor"
+        | "invalid_email_code"
+        | "email_code_expired"
+        | "email_code_max_attempts"
+        | "email_stepup_unavailable";
+    };
 
 export type EmailStepUpIssueResult =
   | { sent: true; token: string; expiresAt: number }
@@ -118,7 +133,8 @@ export class AuthService {
     private sessions: SessionStore,
     private passwordResets?: PasswordResetStore,
     private passwordEvents?: PasswordEventStore,
-    private mfaChallenges: MfaChallengeStore = sharedInMemoryMfaChallengeStore
+    private mfaChallenges: MfaChallengeStore = sharedInMemoryMfaChallengeStore,
+    private emailStepUpStore?: EmailStepUpStore
   ) {}
 
   async login(username: string, plainPassword: string): Promise<LoginResult> {
@@ -209,6 +225,41 @@ export class AuthService {
 
     const hasPassword = Boolean(user.passwordHash);
     const hasTotp = Boolean(user.totpSecret);
+
+    // Step-up por email: si se suministra emailCode o emailToken, se valida el
+    // OTP de un solo uso ligado al usuario. Si ademas el caller paso password
+    // (p.ej. changePassword), se valida password ANTES de consumir el OTP.
+    if (creds.emailCode !== undefined || creds.emailToken !== undefined) {
+      if (!this.emailStepUpStore) return { ok: false, reason: "email_stepup_unavailable" };
+      if (
+        typeof creds.emailToken !== "string" ||
+        !creds.emailToken.trim() ||
+        typeof creds.emailCode !== "string" ||
+        !creds.emailCode.trim()
+      ) {
+        return { ok: false, reason: "invalid_email_code" };
+      }
+      if (hasPassword && creds.password !== undefined) {
+        if (!creds.password) return { ok: false, reason: "password_required" };
+        if (!(await verifyPassword(creds.password, user.passwordHash))) {
+          return { ok: false, reason: "invalid_password" };
+        }
+      }
+      const emailCheck = await this.verifyEmailStepUpCode(
+        creds.emailToken.trim(),
+        creds.emailCode.trim(),
+        this.emailStepUpStore,
+        Date.now(),
+        username
+      );
+      if (!emailCheck.ok) {
+        if (emailCheck.reason === "invalid_code") return { ok: false, reason: "invalid_email_code" };
+        if (emailCheck.reason === "max_attempts_exhausted") return { ok: false, reason: "email_code_max_attempts" };
+        return { ok: false, reason: "email_code_expired" };
+      }
+      return { ok: true };
+    }
+
     if (!hasPassword && !hasTotp) return { ok: false, reason: "no_step_up_factor" };
 
     if (hasPassword) {
@@ -262,10 +313,14 @@ export class AuthService {
     token: string,
     code: string,
     store: EmailStepUpStore,
-    now: number = Date.now()
+    now: number = Date.now(),
+    expectedUsername?: string
   ): Promise<EmailStepUpVerifyResult> {
     const challenge = await store.get(token, now);
     if (!challenge) return { ok: false, reason: "invalid_or_expired" };
+    if (expectedUsername && challenge.username !== expectedUsername) {
+      return { ok: false, reason: "invalid_or_expired" };
+    }
 
     if (!codeHashMatches(challenge.codeHash, code)) {
       const failures = await store.recordFailure(token, now);
@@ -286,9 +341,15 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
     totpCode?: string,
-    context: PasswordEventContext = {}
+    context: PasswordEventContext = {},
+    emailStepUp?: { emailToken?: string; emailCode?: string }
   ): Promise<{ success: boolean; error?: string }> {
-    const check = await this.verifyStepUp(username, { password: currentPassword, totpCode });
+    const check = await this.verifyStepUp(username, {
+      password: currentPassword,
+      totpCode,
+      emailToken: emailStepUp?.emailToken,
+      emailCode: emailStepUp?.emailCode,
+    });
     if (!check.ok) return { success: false, error: check.reason };
     await this.users.setPasswordByUsername(username, newPassword);
     if (this.passwordResets) await this.passwordResets.invalidateAllForUser(username);

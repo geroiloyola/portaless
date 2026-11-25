@@ -18,18 +18,27 @@ export async function onRequestGet(context) {
   const { params, request, env } = context;
   const provider = normalizeOAuthProvider(params.provider);
   if (!provider) {
-    return new Response("Proveedor OAuth inválido.", { status: 400 });
+    return new Response("Proveedor OAuth inválido.", {
+      status: 400,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const origin = publicOriginFromEnv(env);
   if (!origin) {
-    return new Response("PORTALESS_PUBLIC_URL no configurada: no se puede iniciar OAuth sin un origen publico confiable.", { status: 503 });
+    return new Response("PORTALESS_PUBLIC_URL no configurada: no se puede iniciar OAuth sin un origen publico confiable.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
   const redirectUri = `${origin}/admin/oauth/${provider}/callback`;
 
   const config = loadOAuthProviderConfig(provider, env, redirectUri);
   if (!config) {
-    return new Response(`El proveedor OAuth "${provider}" no está configurado en este despliegue.`, { status: 404 });
+    return new Response(`El proveedor OAuth "${provider}" no está configurado en este despliegue.`, {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const state = randomBytes(16).toString("hex");
@@ -37,7 +46,10 @@ export async function onRequestGet(context) {
 
   const authUrl = buildAuthorizationUrl(config, state, challenge);
 
-  const headers = new Headers({ Location: authUrl });
+  const headers = new Headers({
+    Location: authUrl,
+    "Cache-Control": "no-store",
+  });
   const cookieValue = encodeOAuthStateCookieValue(provider, state, verifier);
   headers.append("Set-Cookie", oauthStateCookie(cookieValue, provider, request, env));
 

@@ -42,6 +42,7 @@
 import { createCapabilityTokenStore } from "@portaless/plugin-sandbox/capability-token-store-factory";
 import { dispatchCapability } from "@portaless/plugin-sandbox/capability-backends";
 import { createPortalessCapabilityHostBridge } from "../../../server/plugins/capability-host-bridge";
+import { readJsonBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
 
 // Frontera de seguridad: por el bridge solo pueden pedirse las capacidades
 // NO-red de plugins (network:fetch lo maneja cada adaptador, y billing/trust
@@ -92,11 +93,17 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
-  } catch {
+    body = await readJsonBodyLimited(request, 256 * 1024, { requireObject: true });
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return new Response(JSON.stringify({ error: "request_too_large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Cuerpo de la solicitud invalido." }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
 

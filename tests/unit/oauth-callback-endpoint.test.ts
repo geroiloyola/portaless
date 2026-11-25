@@ -7,13 +7,15 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("@portaless/auth/store-factory", async () => {
   const { InMemoryUsersStore } = await import("../../packages/auth/src/users-store");
   const { InMemorySessionStore } = await import("../../packages/auth/src/session-store");
-  const { sharedInMemoryMfaChallengeStore } = await import("../../packages/auth/src/ephemeral-auth-store");
+  const { sharedInMemoryMfaChallengeStore, InMemoryRateLimitStore } = await import("../../packages/auth/src/ephemeral-auth-store");
   const users = new InMemoryUsersStore();
   const sessions = new InMemorySessionStore();
+  const rateLimits = new InMemoryRateLimitStore();
   return {
     createUsersStore: async () => users,
     createSessionStore: async () => sessions,
     createMfaChallengeStore: async () => sharedInMemoryMfaChallengeStore,
+    createRateLimitStore: async () => rateLimits,
     createPasswordResetStore: async () => ({ invalidateAllForUser: async () => {} }),
   };
 });

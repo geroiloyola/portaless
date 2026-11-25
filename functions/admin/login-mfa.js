@@ -19,42 +19,72 @@ import {
   createUsersStore,
   createSessionStore,
   createMfaChallengeStore,
+  createRateLimitStore,
 } from "@portaless/auth/store-factory";
-import { readBodyLimited, RequestBodyTooLargeError } from "../_shared/read-body-limited.js";
+import {
+  LOGIN_WINDOW_MS,
+  mfaVerifyLimit,
+  recordMfaVerifyAttempt,
+} from "@portaless/auth/login-rate-limit";
+import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
+import {
+  InvalidContentLengthError,
+  InvalidJsonBodyError,
+  readJsonBodyLimited,
+  RequestBodyTooLargeError,
+} from "../_shared/read-body-limited.js";
 import { isTrustedRequestOrigin } from "../_shared/request-origin.js";
 import { sessionCookie } from "../_shared/request-security.js";
+
+function json(body, status, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      ...extraHeaders,
+    },
+  });
+}
+
+function retryAfterSeconds(windowStart) {
+  return Math.max(1, Math.ceil((windowStart + LOGIN_WINDOW_MS - Date.now()) / 1000));
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context;
   if (!isTrustedRequestOrigin(request, env, { requireOrigin: true })) {
-    return new Response(JSON.stringify({ success: false, error: "Origen de solicitud inválido." }), {
-      status: 403,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    });
+    return json({ success: false, error: "Origen de solicitud inválido." }, 403);
   }
 
   let body;
   try {
-    body = JSON.parse(await readBodyLimited(request, 8 * 1024));
+    body = await readJsonBodyLimited(request, 8 * 1024, { requireObject: true });
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
-      return new Response(JSON.stringify({ success: false, error: "La solicitud supera el tamaño permitido." }), {
-        status: 413,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ success: false, error: "La solicitud supera el tamaño permitido." }, 413);
     }
-    return new Response(JSON.stringify({ success: false, error: "Cuerpo de la solicitud inválido." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    if (error instanceof InvalidContentLengthError || error instanceof InvalidJsonBodyError) {
+      return json({ success: false, error: "Cuerpo de la solicitud inválido." }, 400);
+    }
+    return json({ success: false, error: "Cuerpo de la solicitud inválido." }, 400);
   }
 
   const { challengeToken, code } = body || {};
   if (typeof challengeToken !== "string" || !challengeToken || typeof code !== "string" || !code) {
-    return new Response(JSON.stringify({ success: false, error: "Faltan challengeToken o code." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: false, error: "Faltan challengeToken o code." }, 400);
+  }
+
+  // N-03: presupuesto dedicado por IP para verificacion de codigos MFA.
+  const rateLimitStore = await createRateLimitStore(env);
+  const clientIp = clientIpFromHeaders(request.headers, env);
+  const mfaAttempt = await recordMfaVerifyAttempt(rateLimitStore, clientIp, Date.now(), mfaVerifyLimit(env));
+  if (mfaAttempt.overLimit) {
+    return json(
+      { success: false, error: "rate_limited" },
+      429,
+      { "Retry-After": String(retryAfterSeconds(mfaAttempt.windowStart)) }
+    );
   }
 
   const usersStore = await createUsersStore(env);
@@ -65,13 +95,13 @@ export async function onRequestPost(context) {
   const result = await authService.completeMfaLogin(challengeToken, code);
 
   if (!result.success || !result.session) {
-    return new Response(JSON.stringify({ success: false, error: result.error }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ success: false, error: result.error }, 401);
   }
 
-  const headers = new Headers({ "Content-Type": "application/json" });
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+  });
   headers.append("Set-Cookie", sessionCookie(result.session.token, request, env));
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers });
