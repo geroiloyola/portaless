@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@noble/post-quantum": "^0.5.0",
+    "@portaless/plugin-sdk": "https://github.com/geroiloyola/portaless-plugin-sdk/releases/download/v0.1.0/portaless-plugin-sdk-0.1.0.tgz",
     "@verared/apw": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-apw-0.1.0-alpha.1.tgz",
     "@verared/cloud-images": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-cloud-images-0.1.0-alpha.1.tgz",
     "@verared/identity-atproto": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-identity-atproto-0.1.0-alpha.1.tgz",
@@ -56,6 +57,7 @@
     "web-bot-auth": "^0.1.0"
   },
   "overrides": {
+    "@portaless/plugin-sdk": "$@portaless/plugin-sdk",
     "@verared/apw": "$@verared/apw",
     "@verared/cloud-images": "$@verared/cloud-images",
     "@verared/identity-atproto": "$@verared/identity-atproto",

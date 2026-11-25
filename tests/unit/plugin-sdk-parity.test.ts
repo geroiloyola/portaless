@@ -3,7 +3,7 @@
 // del lado AGPL y garantiza que la copia no diverja: compara DATOS (deep-equal)
 // y comportamiento, no solo la forma del tipo.
 import { describe, it, expect } from "vitest";
-import * as sdk from "../../packages/plugin-sdk/src/index";
+import * as sdk from "@portaless/plugin-sdk";
 import {
   capabilityRegistry as coreRegistry,
   listCapabilitiesByCategory as coreList,

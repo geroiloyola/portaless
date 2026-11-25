@@ -252,5 +252,24 @@ describe("repository scan and CLI --report / --strict behavior", () => {
     expect(res.stdout).toContain("license violations: 2");
     expect(res.stdout).toContain("export-ready (Wave 1 -> Wave 2): NOT READY");
   });
+
+  test("CLI --strict exits 1 when packages/plugin-sdk is duplicated locally alongside SPEC-PIN.json", () => {
+    const root = makeTempRepo({
+      "SPEC-PIN.json": JSON.stringify({
+        commit: "7787966a38fb08ceb509df295ee814ba93af4dec",
+        tag: "v0.1.0-draft.1",
+        stack: { version: "0.1.0-alpha.1", tag: "v0.1.0-alpha.1" },
+        digests: { corpusDigest: "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA" },
+      }),
+      "packages/plugin-sdk/package.json": JSON.stringify({ name: "@portaless/plugin-sdk", license: "MIT" }),
+      "packages/plugin-sdk/src/index.ts": `export const ok = true;\n`,
+    });
+    const res = spawnSync(process.execPath, [scriptPath, "--strict", "--root", root], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stdout).toContain("duplicated-plugin-sdk-package");
+  });
 });
 

@@ -244,8 +244,13 @@ Wave 2 **must not start** until every item below is verified true in CI on
 1. ✅ **W2.1:** Created `github.com/verared/vera-trust-spec` (`CC BY 4.0`, `@verared/spec` `v0.1.0-draft.1`, commit `7787966`) from `docs/protocol-apw/` with immutable release tarball + `SHA256SUMS` and Node 24 cryptographic CI (`18/18` SHA-256 + `5/5` JCS digests).
 2. ✅ **W2.2:** Created `github.com/verared/vera-trust-stack` (`Apache-2.0`, `v0.1.0-alpha.1`, commit `d2e1d4a`) containing `@verared/{net,apw,local-trust,reputation,trust-layer,cloud-images,identity-atproto}` compiled to `dist/` (`ESM .js` + `.d.ts`), pinned via `SPEC-PIN.json` and distributed as immutable GitHub Release tarballs.
 3. ✅ **W2.3 *(PR #126)*:** Updated `geroiloyola/portaless` to consume the exact pinned `@verared/*` `v0.1.0-alpha.1` tarballs (via `dependencies` + `overrides` + `.npmrc` `allow-remote=root`) and `SPEC-PIN.json`, and deleted the 7 migrated local `packages/*` copies.
-4. ✅ **W2.3b *(this PR)*:** Retired the duplicated local `docs/protocol-apw/` specification tree (leaving only the minimal redirect [`docs/protocol-apw/README.md`](./docs/protocol-apw/README.md)), pinned `@verared/spec` `v0.1.0-draft.1` tarball in `devDependencies` for Astro reference docs and vector tests, and enforced zero local spec duplication in `scripts/check-architecture-boundaries.mjs --strict`.
-5. Independently (on its own D11 track after PR-B2), extract `geroiloyola/portaless-templates`.
+4. ✅ **W2.3b *(PR #127)*:** Retired the duplicated local `docs/protocol-apw/` specification tree (leaving only the minimal redirect [`docs/protocol-apw/README.md`](./docs/protocol-apw/README.md)), pinned `@verared/spec` `v0.1.0-draft.1` tarball in `devDependencies` for Astro reference docs and vector tests, and enforced zero local spec duplication in `scripts/check-architecture-boundaries.mjs --strict`.
+
+### Wave 3 — Decoupling within `github.com/geroiloyola/*`
+
+1. ✅ **W3.1:** Created standalone MIT repository `github.com/geroiloyola/portaless-plugin-sdk` (`@portaless/plugin-sdk` `v0.1.0`, commit `4b074fd`), compiled to `dist/` (`ESM .js` + `.d.ts`) with strict `.` export, Node 24 CI (`ci.yml` + automated `release.yml`), and published immutable GitHub Release tarball `portaless-plugin-sdk-0.1.0.tgz` + `SHA256SUMS`.
+2. ✅ **W3.2 *(this PR)*:** Updated `geroiloyola/portaless` to consume `@portaless/plugin-sdk` `v0.1.0` via GitHub Release tarball (`dependencies` + `overrides`), migrated `permission-center-ui.ts` and contract tests off `./source`, removed local `packages/plugin-sdk/` and `.github/workflows/plugin-sdk-conformance.yml`, and enforced zero local SDK duplication in `scripts/check-architecture-boundaries.mjs --strict`.
+3. **W3.3–W3.5 (pending):** Execute `PR-B2` (`PORTALESS_SITE_PROFILE=starter|demo`) and extract `geroiloyola/portaless-templates` (D11).
 
 ---
 
