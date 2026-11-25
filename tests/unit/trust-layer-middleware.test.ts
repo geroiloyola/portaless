@@ -459,10 +459,14 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     expect(res!.status).toBe(402);
   });
 
-  // B3: matriz del comportamiento ACTUAL. El rechazo de bot sin firma ocurre
-  // ANTES de cargar la politica, por eso el access de ai_input no lo cambia.
-  for (const access of ["allow", "block", "charge"] as const) {
-    it(`B3 actual: sin firma + bot-like + ai_input=${access} => 403 antes de la politica`, async () => {
+  // B3 (ADR 0003): matriz completa del comportamiento formal.
+  // - Ruta publica + ai_input=allow + firma ausente => lectura anonima (200,
+  //   verified:false, sin ledger/reader_conduct ni cobro).
+  // - Ruta publica + ai_input=block|charge + firma ausente => 403 fail-closed.
+  // - Ruta gobernada + firma ausente => 403 fail-closed incluso con ai_input=allow.
+  // - Firma invalida => 401 siempre, incluso en ruta publica con ai_input=allow.
+  for (const access of ["block", "charge"] as const) {
+    it(`B3: sin firma + bot-like + ruta publica + ai_input=${access} => 403 fail-closed`, async () => {
       const request = new Request("https://mysite.example/pages/foo", {
         headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
       });
@@ -478,22 +482,42 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     });
   }
 
-  // Propuesta pendiente del dueno: mover la carga de politica ANTES del
-  // rechazo de bots sin firma haria que ai_input=allow los dejara pasar.
-  // No implementar hasta confirmacion.
-  it.skip("B3 propuesta: sin firma + bot-like + ai_input=allow => next", async () => {
+  it("B3: sin firma + bot-like + ruta publica + ai_input=allow => 200 anonimo (sin ledger ni cobro)", async () => {
     const request = new Request("https://mysite.example/pages/foo", {
       headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
     });
     const envWithPolicy = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
-    const { context, next } = makeContext(request, envWithPolicy);
+    const { context, next, data } = makeContext(request, envWithPolicy);
     const res = await onRequest(context);
+    expect(res!.status).toBe(200);
     expect(await res!.text()).toBe("PASO-AL-SIGUIENTE");
     expect(next).toHaveBeenCalled();
+    expect((data.webBotAuth as any)?.verified).toBe(false);
+    expect((data.webBotAuth as any)?.anonymous).toBe(true);
+    // Sin atribucion de identidad ni impacto en ledger/reader_conduct
+    const ledger = await createUsageLedgerStore(env as any);
+    const period = new Date().toISOString().slice(0, 7);
+    expect(await ledger.get(period)).toBeFalsy();
+  });
+
+  it("B3: sin firma + ruta gobernada + ai_input=allow => 403 fail-closed (nunca acceso anonimo)", async () => {
+    const request = new Request("https://mysite.example/governed/report", {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+    });
+    const envWithPolicy = {
+      ...env,
+      PORTALESS_GOVERNED_PATHS: "/governed",
+      ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })),
+    };
+    const { context, next } = makeContext(request, envWithPolicy);
+    const res = await onRequest(context);
+    expect(res!.status).toBe(403);
+    expect((await res!.json()).error).toBe("unsigned_automated_request");
+    expect(next).not.toHaveBeenCalled();
   });
 
   for (const access of ["allow", "block", "charge"] as const) {
-    it(`B3 actual: firma valida + ai_input=${access} => ${access === "allow" ? "200" : access === "block" ? "403" : "402"}`, async () => {
+    it(`B3: firma valida + ai_input=${access} => ${access === "allow" ? "200" : access === "block" ? "403" : "402"}`, async () => {
       const { privateKey, publicKeyX } = await generateKeyPair();
       mockDirectory(publicKeyX);
       const request = await buildSignedRequest(privateKey, { nonce: `matrix-${access}` });
@@ -517,7 +541,7 @@ describe("functions/_middleware.js (Trust Layer)", () => {
     });
   }
 
-  it("B3 actual: firma invalida => 401 y ledger 'unverified'", async () => {
+  it("B3: firma invalida => 401 siempre, incluso en ruta publica con ai_input=allow", async () => {
     const request = new Request("https://mysite.example/pages/foo", {
       headers: {
         "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
@@ -526,7 +550,8 @@ describe("functions/_middleware.js (Trust Layer)", () => {
         Signature: "sig1=:bm90LXVuLXNpZ25hdHVyZQ==:",
       },
     });
-    const { context, next } = makeContext(request, env);
+    const envWithAllow = { ...env, ASSETS: assetsServing(policyManifest({ access: "allow", price_usd: 0 })) };
+    const { context, next } = makeContext(request, envWithAllow);
     const res = await onRequest(context);
     expect(res!.status).toBe(401);
     expect((await res!.json()).error).toBe("verification_failed");

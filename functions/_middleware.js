@@ -219,27 +219,61 @@ async function handleRequest(context) {
       headers: { location: `${basePath}${legacyDestination}${url.search}` },
     });
   }
-  if (env.ENABLE_TRUST_LAYER !== "true") return next();
-  if (isPublicBotRoute(new URL(request.url).pathname)) return next();
+function isGovernedRoute(pathname, env = {}) {
+  const raw = env?.PORTALESS_GOVERNED_PATHS;
+  if (typeof raw !== "string" || !raw.trim()) return false;
+  for (const part of raw.split(",")) {
+    const prefix = part.trim().replace(/\/+$/, "");
+    if (!prefix) continue;
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
+  }
+  return false;
+}
 
-  const ledgerStore = await createUsageLedgerStore(env);
+function unsignedBotResponse(env) {
+  return new Response(JSON.stringify({
+    error: "unsigned_automated_request",
+    message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
+    policy_url: publicOriginFromEnv(env)
+      ? `${publicOriginFromEnv(env)}/.well-known/portaless-content-policy.json`
+      : "/.well-known/portaless-content-policy.json",
+  }), {
+    status: 403,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
+}
+
+  if (env.ENABLE_TRUST_LAYER !== "true") return next();
+  if (isPublicBotRoute(url.pathname)) return next();
+
+  const publicOrigin = publicOriginFromEnv(env);
+  const origin = publicOrigin || url.origin;
+  const governed = isGovernedRoute(url.pathname, env);
   const hasSignature = request.headers.get("Signature-Agent") !== null;
   const automatedLooking = looksLikeAutomatedAgent(request);
 
-  if (!hasSignature && !automatedLooking) return next();
+  if (!hasSignature && !automatedLooking && !governed) return next();
 
-  if (!hasSignature && automatedLooking) {
+  if (!hasSignature) {
+    // Regla B3 (ADR 0003):
+    // - Ruta publica + ai_input=allow + firma ausente => lectura anonima
+    //   (verified: false, sin atribucion, sin impacto en reader_conduct ni cobro).
+    // - Ruta gobernada o ai_input=block/charge + firma ausente => fail-closed 403.
+    const policyStore = await createAgentAccessPolicyStore(env);
+    const policy = await loadContentPolicy(origin, env.ASSETS, policyStore);
+    const rule = policy.policies.ai_input;
+    if (!governed && rule.access === "allow") {
+      if (context.data && typeof context.data === "object") {
+        context.data.webBotAuth = { verified: false, anonymous: true };
+      }
+      return next();
+    }
     try { await recordUnsignedBotRejection(env, request.headers.get("user-agent"), new Date(), context.waitUntil?.bind(context)); }
     catch { console.warn("[trust-layer] unsigned-bot aggregate unavailable"); }
-    return new Response(JSON.stringify({
-      error: "unsigned_automated_request",
-      message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
-      policy_url: publicOriginFromEnv(env)
-        ? `${publicOriginFromEnv(env)}/.well-known/portaless-content-policy.json`
-        : "/.well-known/portaless-content-policy.json",
-    }), { status: 403, headers: { "content-type": "application/json" } });
+    return unsignedBotResponse(env);
   }
 
+  const ledgerStore = await createUsageLedgerStore(env);
   const result = await verifyWebBotAuthRequest(request, {
     env,
     createNonceStore: createWebBotAuthNonceStore,
@@ -270,8 +304,6 @@ async function handleRequest(context) {
     await recordAgentAccess(ledgerStore, { operatorKeyId: "unverified", charged: false, amountUsd: 0, policyViolation: true });
     return Response.json({ error: "verification_failed", reason: result.reason }, { status: 401, headers: { "cache-control": "no-store" } });
   }
-  const publicOrigin = publicOriginFromEnv(env);
-  const origin = publicOrigin || new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
   // override que el dueno escribio desde /admin/agents; si no hay override se
   // lee el asset de siempre.
