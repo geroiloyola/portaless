@@ -1,6 +1,6 @@
 # Site Trust Score — Diseño (actualizado octubre 2026)
 
-> **Actualizacion (octubre 2026):** se corrigieron datos desactualizados de la version v0.0.9.24 de este documento. Las 4 fuentes tienen tipos, persistencia real (D1/SQLite), endpoint HTTP y UI de administracion; `apw-resolver` esta implementado; `schema.sql` ya tiene `key_algorithm`. La evolucion del modelo (atestaciones firmadas, historial encadenado, puntuacion por dimensiones y gobernanza de lectura) esta definida en [`docs/protocol-apw/APW-SPEC-v1.2.md`](../protocol-apw/APW-SPEC-v1.2.md).
+> **Actualizacion (octubre 2026):** se corrigieron datos desactualizados de la version v0.0.9.24 de este documento. Las 4 fuentes tienen tipos, persistencia real (D1/SQLite), endpoint HTTP y UI de administracion; `apw-resolver` esta implementado; `schema.sql` ya tiene `key_algorithm`. La evolucion del modelo (atestaciones firmadas, historial encadenado, puntuacion por dimensiones y gobernanza de lectura) esta definida en [`docs/protocol-apw/APW-SPEC-v1.2.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.2.md).
 
 **Estado real de implementación: las 4 fuentes tienen tipos, persistencia
 real (D1/SQLite), endpoint HTTP conectado y forma de administrarse.**

@@ -7,10 +7,10 @@ defaults, política DNSSEC, protocolo ni grants mediante este documento.
 
 La aprobación queda registrada en el
 [ADR 0003](../decisions/0003-public-and-governed-resource-contract.md) y en el
-[cierre contractual](../protocol-apw/LTP-STANDARDIZATION-STATUS.md). La baseline
+[cierre contractual](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md). La baseline
 documental ya fue fusionada en #103; no concede permiso de programación. Las
 definiciones y estados de autorización viven únicamente en el
-[registro canónico G1–G5](../protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md).
+[registro canónico G1–G5](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-GATES-AND-AUTHORIZATIONS.md).
 Aceptar datos o fusionar documentación no inicia motor, red ni presupuestos.
 Un PR contra `main` a la vez: geroiloyola abre, linstarkcorp revisa y el dueño
 fusiona. A/B/C conservan su significado de entregas del roadmap, no de permisos.
@@ -26,16 +26,16 @@ código fuente ni APIs privadas para cumplir el contrato.
 El concepto principal es **LTP: confianza y trazabilidad**. APW define identidad
 y estructura del intercambio P2P; LTP evalúa esa estructura, JWS y testigos;
 SVRI es el vector de salida y HSVR su histórico verificable. La separación y
-compatibilidad están en [Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+compatibilidad están en [Vera Trust Stack](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md).
 
 La definición de mensajes, pruebas y validación vive separada de este plan:
 
-1. [LTP Index Draft 0.1](../protocol-apw/LTP-INDEX-DRAFT-v0.1.md).
-2. [LTP Proof Package Draft 0.1](../protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md).
-3. [APW Identity Bootstrap Draft 0.1](../protocol-apw/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md).
+1. [LTP Index Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-INDEX-DRAFT-v0.1.md).
+2. [LTP Proof Package Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-PROOF-PACKAGE-DRAFT-v0.1.md).
+3. [APW Identity Bootstrap Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md).
 
 Los contratos aprobados como baseline conservan Draft 0.1 hasta cerrar los
-[gates de publicación](../protocol-apw/LTP-STANDARDIZATION-STATUS.md#2-remaining-gates-for-final-standard-publication).
+[gates de publicación](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md#2-remaining-gates-for-final-standard-publication).
 No cambian APW v1.3/E-16, no renombran mensajes históricos ni activan
 Edge. Su publicación final exige revisión y vectores interoperables independientes; publicar
 Markdown junto al runtime no demuestra que ese runtime los implemente.
@@ -494,7 +494,7 @@ del dueño; ni tres adapters aislados ni tests del kernel sustituyen esa evidenc
 
 **Cierre de fase documental:** D1–D9 y los contratos quedan aprobados como baseline,
 con raíz independiente y presupuesto restrictivo expresos. El registro está en el
-ADR y los [gates restantes de estandarización](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
+ADR y los [gates restantes de estandarización](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md).
 La fusión del commit documental habilita iniciar exclusivamente el trabajo del motor;
 no habilita la ruta Edge, PR3 ni certifica interoperabilidad. Los vectores,
 verificadores independientes y aceptación de runtime siguen pendientes antes

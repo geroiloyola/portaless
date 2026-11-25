@@ -4,7 +4,7 @@ This directory documents HTTP surfaces for **APW identity/state**, **LTP trust
 and Index services**, **SVRI/HSVR outputs**, and the **Portaless reference runtime**.
 Existing routes and wire identifiers retain their published names; the proposed
 LTP Index proof-package service is separately specified and not yet implemented.
-See [Vera Trust Stack](../protocol-apw/LTP-STACK-ARCHITECTURE.md). All docs in English;
+See [Vera Trust Stack](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md). All docs in English;
 the Spanish archive of longer-form documentation lives in `*_es.md` files at the root.
 
 > **Status**: alpha. HTTP endpoints listed below are implemented and covered by tests in this repository, but have not yet been exercised against large-scale third-party production traffic. The new proof-package contracts linked above remain unimplemented. Report issues via GitHub issues.
@@ -41,7 +41,7 @@ Every endpoint is served by a Portaless deployment at its own domain. In example
 5. Optionally fetch `https://<witness>/.well-known/apw-witnesses.json` for each witness you trust, and re-run the §5.7 evaluation against the subject's chain (vectors V-13).
 6. Optionally fetch `https://<index>/.well-known/apw-index.json` for a pre-computed directory — then **re-verify** any entry that matters against the raw chains (the index document is plain and deliberately re-verifiable; it carries no signature of its own).
 
-Full normative rules: [`APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md). Fixed test vectors for your implementation: [`APW-VECTORS-v1.3.md`](../protocol-apw/APW-VECTORS-v1.3.md).
+Full normative rules: [`APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md). Fixed test vectors for your implementation: [`APW-VECTORS-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-VECTORS-v1.3.md).
 
 ## Files in this directory
 
@@ -51,7 +51,7 @@ Full normative rules: [`APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md). Fi
 ## Related documentation
 
 - OpenAI-compatible provider connection guide: [`docs/openai-compatible-provider.md`](../openai-compatible-provider.md)
-- Protocol spec (normative): [`docs/protocol-apw/APW-SPEC-v1.3.md`](../protocol-apw/APW-SPEC-v1.3.md)
+- Protocol spec (normative): [`docs/protocol-apw/APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md)
 - Reference implementation: [`packages/apw-resolver/`](https://github.com/verared/vera-trust-stack/tree/main/packages/apw-resolver)
 - Current status of every module: [`ROADMAP.md`](../../ROADMAP.md)
 - Documentation index: [`docs/README.md`](../README.md)

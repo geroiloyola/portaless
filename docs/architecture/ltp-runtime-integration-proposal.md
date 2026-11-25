@@ -2,7 +2,7 @@
 
 **Status: proposal only. No code, migration or activation is included. G4/G5
 remain pending; B3 remains unchanged until an explicit owner decision.** See the
-[canonical G1–G5 register](../protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md).
+[canonical G1–G5 register](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-GATES-AND-AUTHORIZATIONS.md).
 This document responds to the gap: `packages/ltp-engine` verifies identity, but
 the owner cannot yet use it to control bots through Portaless configuration,
 categories, grants, diagnostics and enforcement.

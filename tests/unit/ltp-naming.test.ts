@@ -47,7 +47,7 @@ test('the unique glossary expansion and unrelated RFC collision preserve authors
   expect(glossary).toContain('| **Witness Index** |');
   expect(glossary).toContain('| **`community attester`** |');
   expect(glossary).toContain('RFC 5326');
-  const spec = read('docs/protocol-apw/APW-SPEC-v1.3.md');
+  const spec = read('node_modules/@verared/spec/spec/APW-SPEC-v1.3.md');
   expect(spec).toContain('**Author**: Gerardo Loyola');
   expect(spec).toContain('Annex A adapts the Veranet Universal Scoring System, by the same author');
   expect(spec).toContain('id="6-reputation-based-read-governance--loyal-trust-protocol-v12--e-8-e-9"');

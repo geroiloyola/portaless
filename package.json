@@ -62,10 +62,12 @@
     "@verared/local-trust": "$@verared/local-trust",
     "@verared/net": "$@verared/net",
     "@verared/reputation": "$@verared/reputation",
+    "@verared/spec": "$@verared/spec",
     "@verared/trust-layer": "$@verared/trust-layer"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
+    "@verared/spec": "https://github.com/verared/vera-trust-spec/releases/download/v0.1.0-draft.1/verared-spec-0.1.0-draft.1.tgz",
     "@vitest/coverage-v8": "^5.0.5",
     "typescript": "~5.6.3",
     "vitest": "^5.0.5"

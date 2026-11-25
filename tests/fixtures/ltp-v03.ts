@@ -11,7 +11,7 @@ import type {
 } from "@verared/local-trust";
 import type { LtpTransport, TransportRequest, TransportResponse } from "@verared/local-trust";
 
-const ROOT = new URL("../../docs/protocol-apw/vectors/ltp/v0.3/", import.meta.url);
+const ROOT = new URL("../../node_modules/@verared/spec/spec/vectors/ltp/v0.3/", import.meta.url);
 const readJson = (path: string) => JSON.parse(readFileSync(new URL(path, ROOT), "utf8"));
 
 interface MaterialRecord {

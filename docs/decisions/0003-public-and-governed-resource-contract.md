@@ -6,7 +6,7 @@
   Cloudflare Pages Functions and the self-host Node runtime.
 - **Resolution phase approval:** 2026-10-23; D1–D9, independent identity root and
   restrictive budget approved. Final protocol publication/conformance pending
-  the [standardization gates](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
+  the [standardization gates](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md).
 - **Inspected resolution baseline:** `main` after merged PR #102 (`bc3b243`),
   including the follow-up review fixes of PR #98.
 - **Implementation gate:** Do not advertise or enable governed content until
@@ -307,15 +307,15 @@ the same contract and produce the same mathematical result for the same proofs,
 rules and explicit trust-policy inputs. The principal concept is the LTP trust
 and traceability stack: APW supplies identity/state structure, LTP evaluates
 chains/evidence/witnesses, SVRI is the consumable output vector and HSVR its
-retained/verifiable history. See [LTP Stack architecture](../protocol-apw/LTP-STACK-ARCHITECTURE.md).
+retained/verifiable history. See [LTP Stack architecture](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STACK-ARCHITECTURE.md).
 
 Protocol contracts, under the APW specification's CC BY 4.0 boundary:
 
-- [LTP Index Draft 0.1](../protocol-apw/LTP-INDEX-DRAFT-v0.1.md):
+- [LTP Index Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-INDEX-DRAFT-v0.1.md):
   request/result schema, configured endpoints, limits, resumable acquisition and errors.
-- [LTP Proof Package Draft 0.1](../protocol-apw/LTP-PROOF-PACKAGE-DRAFT-v0.1.md):
+- [LTP Proof Package Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-PROOF-PACKAGE-DRAFT-v0.1.md):
   original proofs, canonical digests, identity/history/source chains and SVRI recomputation.
-- [APW Identity Bootstrap Draft 0.1](../protocol-apw/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md):
+- [APW Identity Bootstrap Draft 0.1](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-IDENTITY-BOOTSTRAP-DRAFT-v0.1.md):
   independently obtained DoH/AD or locally validated DNSSEC, without Index-issued roots.
 
 - **Node:** use the local validated-address connector. Keep Host/SNI bound to
@@ -401,10 +401,10 @@ remaining policy choices for later enforcement phases are not invented by this a
 
 **Authorization boundary:** the baseline documentation was merged in PR #103;
 that historical prerequisite is not a programming permission. Current scopes
-and states are defined solely by the [canonical G1–G5 register](../protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md).
+and states are defined solely by the [canonical G1–G5 register](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-GATES-AND-AUTHORIZATIONS.md).
 Neither merge nor corpus acceptance authorizes engine, network or budget work.
 Standardization/runtime acceptance also retain the requirements in the
-[closure checklist](../protocol-apw/LTP-STANDARDIZATION-STATUS.md).
+[closure checklist](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md).
 
 ### External-search identity and freshness
 
