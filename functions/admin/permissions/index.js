@@ -32,12 +32,12 @@ import {
   validateReaderGrant,
 } from "@portaless/permissions/reader-bypass";
 import { createPluginRegistryStore } from "@portaless/plugin-sandbox/store-factory";
-import { listPayPerCrawlProviders } from "@portaless/trust-layer/billing";
+import { listPayPerCrawlProviders } from "@verared/trust-layer/billing";
 import {
   BILLING_CAPABILITY,
   SETTLEMENT_SUBJECT_TYPE,
   isSettlementGrant,
-} from "@portaless/trust-layer/billing";
+} from "@verared/trust-layer/billing";
 import { emitActivity } from "@portaless/dashboard/activity";
 import { AuthService } from "@portaless/auth/service";
 import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";

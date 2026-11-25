@@ -11,14 +11,14 @@ import {
   RETIRED_READER_KEY_GRACE_MS,
   type ReaderResolvers,
   type WebBotAuthLike,
-} from "../../packages/apw-resolver/src/scoring/reader-identity";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation, type ChainKey } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { jwkThumbprint, publicJwkMembers } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
-import { buildApwManifest, serializeApwManifest } from "../../packages/apw-resolver/src/manifest";
-import type { ApwKeyPair } from "../../packages/apw-resolver/src/did-apw/types";
+} from "@verared/apw/scoring";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { appendAttestation, type ChainKey } from "@verared/apw/did-apw";
+import { jwkThumbprint, publicJwkMembers } from "@verared/apw/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
+import { buildApwManifest, serializeApwManifest } from "@verared/apw/resolver";
+import type { ApwKeyPair } from "@verared/apw/did-apw";
 
 const state = vi.hoisted(() => ({ identity: null as any, log: null as any }));
 vi.mock("@portaless/trust-storage-adapters", () => ({

@@ -28,7 +28,7 @@ const rootDir = join(__dirname, "..");
 const SOURCES = [
   { label: "@portaless/auth -- usuarios y sesiones", path: "packages/auth/src/stores/schema.sql" },
   { label: "@portaless/permissions -- Centro de Permisos", path: "packages/permissions/src/stores/schema.sql" },
-  { label: "@portaless/trust-layer -- ledger de uso por agentes", path: "packages/trust-layer/src/ledger/schema.sql" },
+  { label: "@portaless/trust-layer -- ledger de uso por agentes", path: "packages/trust-storage-adapters/schema/trust-layer-ledger.sql" },
   { label: "@portaless/atomic-elements -- paginas persistidas", path: "packages/atomic-elements/src/persistence/stores/schema.sql" },
   { path: "schema-additions/password-reset.sql", selfBanner: true },
   { path: "schema-additions/password-change-events.sql", selfBanner: true },
@@ -37,7 +37,7 @@ const SOURCES = [
   { path: "schema-additions/site-trust-read-policies.sql", selfBanner: true },
   { path: "schema-additions/authorized-agents.sql", selfBanner: true },
   { path: "schema-additions/authorized-escrow-providers.sql", selfBanner: true },
-  { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/apw-resolver/schema.sql" },
+  { label: "@portaless/apw-resolver -- identidad did:apw e historial encadenado", path: "packages/trust-storage-adapters/schema/apw-resolver.sql" },
   { path: "schema-additions/capability-tokens.sql", selfBanner: true },
   { path: "schema-additions/webbotauth-nonces.sql", selfBanner: true },
   { path: "schema-additions/mcp-agent-tokens.sql", selfBanner: true },

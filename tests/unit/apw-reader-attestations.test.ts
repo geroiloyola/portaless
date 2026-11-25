@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { loadReaderConduct, type IssuerKey } from "../../packages/apw-resolver/src/scoring/reader-attestations";
-import { signSiteJws, ATTESTATION_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { sha256B64Url } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
+import { loadReaderConduct, type IssuerKey } from "@verared/apw/scoring";
+import { signSiteJws, ATTESTATION_TYP } from "@verared/apw/did-apw";
+import { sha256B64Url } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
 
 const READER = "reader.example";
 const RDID = `did:apw:${READER}`;

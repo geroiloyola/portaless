@@ -20,8 +20,7 @@ import {
   __resetNonceStoreForTests,
   __fetchOperatorKeyDirectoryForTests,
   DIRECTORY_FETCH_COLD_MAX,
-} from "../../packages/trust-layer/src/webbotauth/verify";
-import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
+} from "@verared/trust-layer";
 import { __resetNonceStoreFactoryForTests } from "@portaless/trust-storage-adapters";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import { readUnsignedBotRejections, __flushUnsignedBotMetricsForTests } from "@portaless/trust-storage-adapters";
@@ -62,14 +61,8 @@ async function buildSignedRequest(
     `;keyid="${KEY_ID}";alg="ed25519"` +
     `;nonce="${opts.nonce}"` +
     `;tag="web-bot-auth"`;
-  const unsigned = new Request(url, {
-    method: "GET",
-    headers: { "Signature-Agent": agentHeader, "Signature-Input": `sig1=${paramsLine}` },
-  });
-  const parsed = parseSignatureInput(`sig1=${paramsLine}`);
-  if (!parsed) throw new Error("test helper: Signature-Input no parseo");
-  const signatureBase = buildSignatureBase(unsigned, parsed);
-  if (!signatureBase) throw new Error("test helper: falta header firmado");
+  const u = new URL(url);
+  const signatureBase = `"@method": GET\n"@authority": ${u.host}\n"@path": ${u.pathname}\n"signature-agent": ${agentHeader}\n"@signature-params": ${paramsLine}`;
   const signatureBytes = new Uint8Array(
     await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(signatureBase))
   );

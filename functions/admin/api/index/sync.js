@@ -22,9 +22,9 @@
 // en witnessesSkipped; jamas guarda observaciones que no verifiquen.
 
 import { createWitnessIndexStore } from "@portaless/trust-storage-adapters";
-import { resolveApwHistory } from "@portaless/apw-resolver/did-apw";
+import { resolveApwHistory } from "@verared/apw/did-apw";
 import { createBoundedPublicFetch } from "../../../_shared/public-egress.js";
-import { syncWitnessIndex } from "@portaless/apw-resolver/did-apw";
+import { syncWitnessIndex } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;

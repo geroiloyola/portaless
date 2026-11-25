@@ -1,10 +1,10 @@
 // APW v1.2 (B1 y B2): huella RFC 7638, manifiesto v2, did.json publico y
 // verificacion cruzada TXT + did.json.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { jwkThumbprint, publicJwkMembers } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { buildApwManifest, parseApwManifest, serializeApwManifest } from "../../packages/apw-resolver/src/manifest";
-import { resolveApwIdentity } from "../../packages/apw-resolver/src/index";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
+import { jwkThumbprint, publicJwkMembers } from "@verared/apw/did-apw";
+import { buildApwManifest, parseApwManifest, serializeApwManifest } from "@verared/apw/resolver";
+import { resolveApwIdentity } from "@verared/apw/resolver";
+import { buildDidDocument } from "@verared/apw/did-apw";
 
 const state = vi.hoisted(() => ({
   identity: null as unknown,

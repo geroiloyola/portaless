@@ -5,7 +5,7 @@ import {
   SETTLEMENT_ACTIVATIONS_DDL,
   type SettlementActivation,
   type SettlementActivationStore,
-} from "@portaless/trust-layer/billing";
+} from "@verared/trust-layer/billing";
 
 const UPSERT = `INSERT INTO settlement_provider_activations (provider_id, credential_enc, metadata_json, verified_at, activated_by)
   VALUES (?, ?, ?, ?, ?)

@@ -31,8 +31,8 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("@portaless/apw-resolver/scoring", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/scoring")>();
+vi.mock("@verared/apw/scoring", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/scoring")>();
   return {
     ...actual,
     toReadPolicy: (record: any) =>

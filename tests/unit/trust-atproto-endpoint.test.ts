@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const build = vi.hoisted(() => vi.fn());
-vi.mock("@portaless/identity-atproto", () => ({
+vi.mock("@verared/identity-atproto", () => ({
   buildAtprotoReputation: build,
 }));
 

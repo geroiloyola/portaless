@@ -9,12 +9,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const shared = vi.hoisted(() => ({
-  store: undefined as import("../../packages/apw-resolver/src/did-apw/atproto-links-store").SiteAtprotoLinksStore | undefined,
+  store: undefined as import("@verared/apw/did-apw").SiteAtprotoLinksStore | undefined,
 }));
 
 vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
-  const { InMemorySiteAtprotoLinksStore } = await import("../../packages/apw-resolver/src/did-apw/atproto-links-store");
+  const { InMemorySiteAtprotoLinksStore } = await import("@verared/apw/did-apw");
   shared.store ??= new InMemorySiteAtprotoLinksStore();
   return {
     ...original,

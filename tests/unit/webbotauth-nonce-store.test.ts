@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { InMemoryWebBotAuthNonceStore } from "../../packages/trust-layer/src/webbotauth/nonce-store";
+import { InMemoryWebBotAuthNonceStore } from "@verared/trust-layer";
 import { SqliteWebBotAuthNonceStore, D1WebBotAuthNonceStore, createWebBotAuthNonceStore, __resetNonceStoreFactoryForTests } from "@portaless/trust-storage-adapters";
 import { openSqlite } from "../../packages/sqlite-driver/src/open";
 

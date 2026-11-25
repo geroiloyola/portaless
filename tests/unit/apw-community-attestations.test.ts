@@ -15,8 +15,8 @@ const state = vi.hoisted(() => ({
   lastFetch: null as any,
 }));
 
-vi.mock("@portaless/apw-resolver/resolver", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/resolver")>();
+vi.mock("@verared/apw/resolver", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/resolver")>();
   return {
     ...actual,
     resolveApwIdentity: async (domain: string, fetchImpl: any) => {
@@ -26,8 +26,8 @@ vi.mock("@portaless/apw-resolver/resolver", async (importOriginal) => {
   };
 });
 
-vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+vi.mock("@verared/apw/did-apw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/did-apw")>();
   return {
     ...actual,
     resolveApwHistory: async (domain: string, fetchImpl: any) => {
@@ -37,11 +37,11 @@ vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
   };
 });
 
-import { ATTESTATION_TYP } from "../../packages/trust-layer/src/site-trust/attestation";
+import { ATTESTATION_TYP } from "@verared/trust-layer/site-trust";
 import {
   InMemoryCommunityAttestationsStore,
   DUPLICATE_COMMUNITY_JTI,
-} from "../../packages/trust-layer/src/site-trust/community-attestations";
+} from "@verared/trust-layer/site-trust";
 import * as endpoint from "../../functions/trust/[siteId]/community-attestation";
 
 const SITE = "ejemplo.com";

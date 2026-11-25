@@ -5,8 +5,8 @@
 // El nucleo NO se mockea en el happy path: el material es real (claves,
 // statements firmados, cadenas); solo la red y la resolucion son fixtures.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { InMemoryWitnessIndexStore } from "../../packages/apw-resolver/src/did-apw/witness-index-store";
-import { INDEX_DOC_TYP } from "../../packages/apw-resolver/src/did-apw/witness-index";
+import { InMemoryWitnessIndexStore } from "@verared/apw/did-apw";
+import { INDEX_DOC_TYP } from "@verared/apw/did-apw";
 import {
   appendIndexChain,
   indexHistoryOf,
@@ -31,8 +31,8 @@ vi.mock("@portaless/trust-storage-adapters", () => ({
   createSiteIdentityStore: async () => ({ get: async () => state.identityRow }),
 }));
 
-vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+vi.mock("@verared/apw/did-apw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/did-apw")>();
   return {
     ...actual,
     resolveApwHistory: async (domain: string) =>

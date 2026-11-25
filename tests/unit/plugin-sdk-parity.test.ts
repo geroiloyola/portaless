@@ -18,7 +18,7 @@ import {
 } from "../../packages/plugin-sandbox/src/manifest/manifest-schema";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_MANIFEST_TYP as CORE_PLUGIN_MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/plugin-manifest";
+import { PLUGIN_MANIFEST_TYP as CORE_PLUGIN_MANIFEST_TYP } from "@verared/apw/did-apw";
 import type { PluginManifest } from "../../packages/plugin-sandbox/src/types";
 
 const manifests: PluginManifest[] = [

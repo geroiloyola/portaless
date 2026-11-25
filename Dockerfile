@@ -16,7 +16,7 @@ RUN apt-get update \
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages ./packages
-RUN npm ci
+RUN npm_config_allow_remote=root npm ci
 COPY . .
 RUN npm run build \
   && node scripts/prune-build-inputs.mjs /app \

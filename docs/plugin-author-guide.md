@@ -159,7 +159,7 @@ that is **off by default**:
 1. **Sign the manifest.** The publisher (the holder of a `did:apw` identity)
    signs `{ publisher, iat, manifest }` under `typ apw-plugin-manifest+jws` with
    their Ed25519 key. The reference signer is `signPluginManifest()` in
-   [`@portaless/apw-resolver`](../packages/apw-resolver/src/did-apw/plugin-manifest.ts).
+   [`@portaless/apw-resolver`](https://github.com/verared/vera-trust-stack/blob/main/packages/apw-resolver/src/did-apw/plugin-manifest.ts).
    **Honest gap**: there is no one-command packaging/signing CLI today — you call
    the signer (or any JCS + Ed25519 implementation) yourself.
 2. **Install.** `POST /admin/api/plugins/install` with `{ manifest: <the JWS>, code }`

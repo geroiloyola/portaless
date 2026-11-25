@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { RESOLUTION_BUDGET_CONFIG_DDL } from "../../packages/persistence-migrations/src/ddl";
-import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT, validateResolutionBudgetConfiguration, type ResolutionBudgetConfiguration } from "../../packages/trust-layer/src/net/resolution-budget-config";
+import { INVALID_RESOLUTION_BUDGET_CONFIG, RESOLUTION_BUDGET_CONFIG_CONFLICT, validateResolutionBudgetConfiguration, type ResolutionBudgetConfiguration } from "@verared/trust-layer/net";
 import { SqliteResolutionBudgetConfigStore, D1ResolutionBudgetConfigStore } from "@portaless/trust-storage-adapters";
 
 const dirs: string[] = [];

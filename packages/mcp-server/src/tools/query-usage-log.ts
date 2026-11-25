@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { AuditLogStore } from "../audit/types";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

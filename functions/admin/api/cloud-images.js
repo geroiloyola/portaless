@@ -28,16 +28,16 @@ import {
   createSiteIdentityStore,
   createSiteTrustScoreStore,
 } from "@portaless/trust-storage-adapters";
-import { captureSiteTrust, IMAGE_SITE_ID } from "@portaless/cloud-images";
+import { captureSiteTrust, IMAGE_SITE_ID } from "@verared/cloud-images";
 import {
   buildCloudImagePayload,
   decodeBase64,
   sha256Hash,
   isDeclaredOrigin,
   MAX_IMAGE_BYTES,
-} from "@portaless/cloud-images";
-import { signCloudImage } from "@portaless/cloud-images";
-import { embedPng, isPng } from "@portaless/cloud-images";
+} from "@verared/cloud-images";
+import { signCloudImage } from "@verared/cloud-images";
+import { embedPng, isPng } from "@verared/cloud-images";
 import { createRateLimitStore } from "@portaless/auth/store-factory";
 import { allowActionRequest } from "@portaless/auth/rate-limit";
 import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";

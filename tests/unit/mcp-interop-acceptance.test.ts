@@ -16,7 +16,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
 import { InMemoryAuditLogStore } from "../../packages/mcp-server/src/audit/in-memory-audit-log-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { createEnvAgentIdentityResolver } from "../../packages/mcp-server/src/permissions/agent-identity";
 import { createPortalessMcpServer } from "../../packages/mcp-server/src/server";
 

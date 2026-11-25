@@ -40,7 +40,7 @@ vi.mock("@portaless/auth/store-factory", async () => {
   };
 });
 vi.mock("@portaless/trust-storage-adapters", async () => {
-  const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
+  const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
   const key = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
   const store = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: key });
   return { createSiteIdentityStore: async () => store };

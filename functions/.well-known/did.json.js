@@ -22,8 +22,8 @@
 // Ruta publica: /.well-known/* ya pasa sin firma por isPublicBotRoute().
 
 import { createSiteIdentityStore, createSiteAtprotoLinksStore } from "@portaless/trust-storage-adapters";
-import { buildDidDocument } from "@portaless/apw-resolver/did-apw";
-import { publicJwkMembers } from "@portaless/apw-resolver/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
+import { publicJwkMembers } from "@verared/apw/did-apw";
 
 const SITE_ID = "default";
 

@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema";
 import { registerUpdatePageTool } from "../../packages/mcp-server/src/tools/update-page";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { PageLayout } from "../../packages/atomic-elements/src/types";
 import type { AuditLogStore } from "../../packages/mcp-server/src/audit/types";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSafeFetcher, isPrivateIp } from "../../packages/apw-resolver/src/federation/safe-fetch";
+import { createSafeFetcher, isPrivateIp } from "@verared/apw/federation";
 
 const blocked = [
   "0.0.0.0", "0.255.255.255", "10.0.0.1", "100.64.0.0", "100.127.255.255", "127.0.0.1",

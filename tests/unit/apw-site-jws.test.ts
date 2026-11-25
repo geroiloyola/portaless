@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   jcs, signSiteJws, verifySiteJws, signSelfAttestation, signSiteManifest, ATTESTATION_TYP, MANIFEST_TYP,
-} from "../../packages/apw-resolver/src/did-apw/site-jws.ts";
-import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation.ts";
-import { buildApwManifest } from "../../packages/apw-resolver/src/manifest.ts";
+} from "@verared/apw/did-apw";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
+import { buildApwManifest } from "@verared/apw/resolver";
 
 const DID = "did:apw:ejemplo.com";
 const KID = `${DID}#key-1`;

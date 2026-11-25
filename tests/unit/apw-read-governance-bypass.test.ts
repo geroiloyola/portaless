@@ -7,7 +7,7 @@ import {
   validatePolicy,
   DEFAULT_GOVERNED_POLICY,
   type ReaderState,
-} from "../../packages/apw-resolver/src/scoring/policy";
+} from "@verared/apw/scoring";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
 import {
   READ_GOVERNANCE_BYPASS_CAPABILITY,

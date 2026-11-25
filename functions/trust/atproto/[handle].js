@@ -18,7 +18,7 @@
 // Limite documentado: la resolucion sale de esta funcion hacia terceros
 // (DNS, plc.directory, el propio handle) -- ver identity-atproto.md.
 
-import { buildAtprotoReputation } from "@portaless/identity-atproto";
+import { buildAtprotoReputation } from "@verared/identity-atproto";
 import { createSiteIdentityStore, createSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
 import { allowPublicEgress, createBoundedPublicFetch } from "../../_shared/public-egress.js";
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ResolutionBudget, RESOLUTION_STAGES, resolutionClientBucket, resolutionClientBuckets, __resetResolutionHmacDayForTests, type ResolutionContext } from "../../packages/trust-layer/src/net/resolution-budget";
+import { ResolutionBudget, RESOLUTION_STAGES, resolutionClientBucket, resolutionClientBuckets, __resetResolutionHmacDayForTests, type ResolutionContext } from "@verared/trust-layer/net";
 
 const base: ResolutionContext = { clientBucket: "a".repeat(64), directoryOrigin: "https://reader.example", stage: "directory" };
 const small = { windowMs: 60_000, client: { attempts: 3, bytes: 100 }, origin: { attempts: 2, bytes: 100 }, maxBuckets: 12,

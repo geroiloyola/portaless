@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadContentPolicy } from "../../packages/trust-layer/src/policy/load-policy.ts";
-import { defaultContentPolicy } from "../../packages/trust-layer/src/policy/manifest-schema.ts";
+import { loadContentPolicy } from "@verared/trust-layer/policy";
+import { defaultContentPolicy } from "@verared/trust-layer/policy";
 
 const ORIGIN = "https://a.com";
 

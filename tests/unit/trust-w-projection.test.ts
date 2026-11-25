@@ -4,7 +4,7 @@
 // cantidad y la suma de pesos de TODAS las dimensiones del sitio. Al permitir,
 // las dimensiones gobernadas tambien entran (`governed: "granted"`).
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PUBLIC_DIMENSIONS } from "../../packages/apw-resolver/src/scoring/policy";
+import { PUBLIC_DIMENSIONS } from "@verared/apw/scoring";
 
 const state = vi.hoisted(() => ({
   snapshot: null as any,
@@ -27,8 +27,8 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("@portaless/apw-resolver/scoring", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@portaless/apw-resolver/scoring")>();
+vi.mock("@verared/apw/scoring", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@verared/apw/scoring")>();
   return {
     ...actual,
     toReadPolicy: (record: any) =>

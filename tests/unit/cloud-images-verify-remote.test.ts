@@ -5,13 +5,13 @@
 // de la SiteTrustScore publica contemporanea dentro del payload firmado.
 
 import { describe, it, expect } from "vitest";
-import { verifySidecarRemote, type RemoteVerifyDeps } from "../../packages/cloud-images/src/verify-remote";
-import { captureSiteTrust, IMAGE_SITE_ID, type SiteTrustSnapshotLike } from "../../packages/cloud-images/src/trust";
-import { buildCloudImagePayload, sha256Hash, encodeBase64, type CloudImageSidecar } from "../../packages/cloud-images/src/payload";
-import { signCloudImage } from "../../packages/cloud-images/src/sign";
-import { embedPng, PNG_SIGNATURE, crc32 } from "../../packages/cloud-images/src/png";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
+import { verifySidecarRemote, type RemoteVerifyDeps } from "@verared/cloud-images";
+import { captureSiteTrust, IMAGE_SITE_ID, type SiteTrustSnapshotLike } from "@verared/cloud-images";
+import { buildCloudImagePayload, sha256Hash, encodeBase64, type CloudImageSidecar } from "@verared/cloud-images";
+import { signCloudImage } from "@verared/cloud-images";
+import { embedPng, PNG_SIGNATURE, crc32 } from "@verared/cloud-images";
+import { generateApwDid } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
 
 const SITE_DID = "did:apw:ejemplo.com";
 const IMAGE = new TextEncoder().encode("contenido-de-la-imagen");

@@ -12,7 +12,7 @@ import {
 } from "../../packages/mcp-server/src/permissions/agent-identity";
 import { InMemoryMcpAgentTokenStore } from "../../packages/mcp-server/src/permissions/agent-token-store";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { CapabilityDeniedError } from "../../packages/mcp-server/src/permissions/require-capability";
 import { registerGrantCapabilityTool } from "../../packages/mcp-server/src/tools/grant-capability";
 import { registerCreatePageTool } from "../../packages/mcp-server/src/tools/create-page";

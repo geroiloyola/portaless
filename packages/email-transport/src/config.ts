@@ -71,7 +71,7 @@ export function isEmailTemplateId(value: unknown): value is string {
   return typeof value === "string" && TEMPLATE_ID_RE.test(value);
 }
 
-import { isPrivateHost } from "@portaless/net";
+import { isPrivateHost } from "@verared/net";
 
 /** Canonicaliza host names before identity comparison or transport use. */
 export function normalizeEmailHost(value: unknown): string | null {

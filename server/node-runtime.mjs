@@ -9,7 +9,7 @@ import { createReadStream, existsSync, readdirSync } from "node:fs";
 import { stat as fsStat } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { createSafeFetcher } from "@portaless/apw-resolver/federation";
+import { createSafeFetcher } from "@verared/apw/federation";
 import { withSecurityHeaders } from "../functions/_shared/security-headers.js";
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8" };

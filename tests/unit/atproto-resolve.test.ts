@@ -17,7 +17,7 @@ import {
   base58btcDecode,
   decodeMultibaseKey,
   parseDohTxtData,
-} from "../../packages/identity-atproto/src/resolve";
+} from "@verared/identity-atproto";
 
 type RouteHandler = string | { status?: number; body?: string; headers?: Record<string, string> } | Error;
 

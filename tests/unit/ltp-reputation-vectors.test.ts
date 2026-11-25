@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
-import { projectSvri } from "../../packages/apw-resolver/src/scoring/svri";
-import { classifyLevel, orderEntries, projectSvri as projectG4Svri, withinTolerance } from "../../packages/ltp-reputation/src/projection";
-import { runReputationCase } from "../../packages/ltp-reputation/src/run-vector";
-import type { ReputationCase } from "../../packages/ltp-reputation/src/types";
+import { projectSvri } from "@verared/apw/scoring";
+import { classifyLevel, orderEntries, projectSvri as projectG4Svri, withinTolerance } from "@verared/reputation";
+import { runReputationCase } from "@verared/reputation";
+import type { ReputationCase } from "@verared/reputation";
 
 const ROOT = new URL("../../docs/protocol-apw/vectors/ltp/reputation/v0.1/", import.meta.url);
 const SVRI_MATH = new URL("../../docs/protocol-apw/vectors/ltp/v0.1/svri-math.json", import.meta.url);

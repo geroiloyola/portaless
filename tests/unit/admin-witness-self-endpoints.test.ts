@@ -10,15 +10,15 @@
 import { describe, it, expect, vi } from "vitest";
 
 const history = vi.hoisted(() => ({ resolveApwHistory: vi.fn() }));
-vi.mock("@portaless/apw-resolver/did-apw", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@portaless/apw-resolver/did-apw")>();
+vi.mock("@verared/apw/did-apw", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@verared/apw/did-apw")>();
   return { ...original, resolveApwHistory: history.resolveApwHistory };
 });
 
 vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
-  const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
-  const { InMemoryAttestationLogStore } = await import("../../packages/apw-resolver/src/did-apw/attestation-log-store");
+  const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
+  const { InMemoryAttestationLogStore } = await import("@verared/apw/did-apw");
   const identity = new InMemorySiteIdentityStore({
     PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: btoa(String.fromCharCode(...new Uint8Array(32).fill(9))),
   });
@@ -34,7 +34,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
 
 import * as self from "../../functions/admin/site-trust/[siteId]/self";
 import * as witness from "../../functions/admin/api/witness/record";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { generateApwDid } from "@verared/apw/did-apw";
 import * as apwStoreFactory from "@portaless/trust-storage-adapters";
 
 const admin = { username: "admin", role: "admin" };

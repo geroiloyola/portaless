@@ -20,7 +20,7 @@ import type { PermissionStore } from "@portaless/permissions/store";
 import type { PermissionSubjectType } from "@portaless/permissions/types";
 import type { CapabilityId } from "@portaless/plugin-sandbox/types";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

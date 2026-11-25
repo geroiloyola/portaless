@@ -1,18 +1,26 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
-import { maybeAutoEmitReaderConduct } from "../../packages/apw-resolver/src/scoring/reader-conduct-auto";
-import { conductJti, periodKey } from "../../packages/apw-resolver/src/scoring/reader-conduct-config";
+import { maybeAutoEmitReaderConduct } from "@verared/apw/scoring";
 import {
   InMemoryReaderConductJtiStore,
   SqliteReaderConductJtiStore,
   collectEmittedJtis,
-} from "../../packages/apw-resolver/src/scoring/reader-conduct-jti-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { signSiteJws, ATTESTATION_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
-import { verifyAttestation } from "../../packages/trust-layer/src/site-trust/attestation";
-import type { AgentUsageEntry } from "../../packages/trust-layer/src/ledger/log-schema";
+} from "@verared/apw/scoring";
+
+function periodKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+async function conductJti(issuerDid: string, readerDid: string, period: string, cat: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${issuerDid}|${readerDid}|${period}|${cat}`));
+  return `rc-${Buffer.from(digest).toString("base64url")}`;
+}
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { appendAttestation } from "@verared/apw/did-apw";
+import { signSiteJws, ATTESTATION_TYP } from "@verared/apw/did-apw";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
+import { verifyAttestation } from "@verared/trust-layer/site-trust";
+import type { AgentUsageEntry } from "@verared/trust-layer/ledger";
 
 const SITE = "did:apw:site.example";
 const READER = "did:apw:reader.example";

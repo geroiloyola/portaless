@@ -17,12 +17,11 @@ import {
   verifyWebBotAuthRequest,
   __resetDirectoryCacheForTests,
   __resetNonceStoreForTests,
-} from "../../packages/trust-layer/src/webbotauth/verify";
+} from "@verared/trust-layer";
 import {
   createWebBotAuthNonceStore,
   __resetNonceStoreFactoryForTests,
 } from "@portaless/trust-storage-adapters";
-import { buildSignatureBase, parseSignatureInput } from "../../packages/trust-layer/src/webbotauth/rfc9421";
 
 const OPERATOR_ORIGIN = "https://agent-operator.example.com";
 const KEY_ID = "test-key-1";
@@ -62,14 +61,8 @@ async function buildSignedRequest(
     `;nonce="${opts.nonce}"` +
     `;tag="web-bot-auth"`;
 
-  const unsigned = new Request(url, {
-    method: "GET",
-    headers: { "Signature-Agent": agentHeader, "Signature-Input": `sig1=${paramsLine}` },
-  });
-  const parsed = parseSignatureInput(`sig1=${paramsLine}`);
-  if (!parsed) throw new Error("test helper: Signature-Input construido no parseo");
-  const signatureBase = buildSignatureBase(unsigned, parsed);
-  if (!signatureBase) throw new Error("test helper: falta un header firmado");
+  const u = new URL(url);
+  const signatureBase = `"@method": GET\n"@authority": ${u.host}\n"@path": ${u.pathname}\n"signature-agent": ${agentHeader}\n"@signature-params": ${paramsLine}`;
 
   const signatureBytes = new Uint8Array(
     await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(signatureBase))

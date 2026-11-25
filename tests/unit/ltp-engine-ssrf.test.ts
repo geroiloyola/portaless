@@ -6,14 +6,14 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
-import { ResourceBudget, LtpFailure } from "../../packages/ltp-engine/src/budget";
-import { acquireIdentity } from "../../packages/ltp-engine/src/acquisition";
-import { runComposed } from "../../packages/ltp-engine/src/composed";
-import { verifyHandoff } from "../../packages/ltp-engine/src/verification";
+import { ResourceBudget, LtpFailure } from "@verared/local-trust";
+import { acquireIdentity } from "@verared/local-trust";
+import { runComposed } from "@verared/local-trust";
+import { verifyHandoff } from "@verared/local-trust";
 import {
   assertSafeEndpointUrl, isBlockedHostname, isBlockedIp, resolvePinnedAddress,
-} from "../../packages/ltp-engine/src/ssrf";
-import { FetchTransport, defaultOpen, type LtpTransport, type TransportRequest, type TransportResponse } from "../../packages/ltp-engine/src/transport";
+} from "@verared/local-trust";
+import { FetchTransport, defaultOpen, type LtpTransport, type TransportRequest, type TransportResponse } from "@verared/local-trust";
 import { FakeClock, ReplayTransport, loadCase, scriptedClock } from "../fixtures/ltp-v03";
 
 const blockedIps = [

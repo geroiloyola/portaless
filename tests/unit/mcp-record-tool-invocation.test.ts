@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { recordToolInvocation } from "../../packages/mcp-server/src/audit/record-tool-invocation";
 import { CapabilityDeniedError } from "../../packages/mcp-server/src/permissions/require-capability";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { AuditLogEntry, AuditLogStore } from "../../packages/mcp-server/src/audit/types";
 
 function fakeAuditLog() {

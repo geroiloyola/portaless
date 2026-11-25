@@ -8,7 +8,7 @@ import {
   witnessJti,
   type ChainViewEntry,
   type WitnessObservation,
-} from "../../packages/apw-resolver/src/did-apw/witness";
+} from "@verared/apw/did-apw";
 
 const WITNESS = "did:apw:testigo.example";
 const SUBJECT = "did:apw:sujeto.example";
@@ -86,7 +86,7 @@ describe("witness statements (E-10)", () => {
       { keyId: kid, privateKeyJwk: priv }
     );
     // Re-sign manual con jti falsificado (JCS del payload con jti malo)
-    const { signSiteJws } = await import("../../packages/apw-resolver/src/did-apw/site-jws");
+    const { signSiteJws } = await import("@verared/apw/did-apw");
     const forged = await signSiteJws(
       { typ: WITNESS_TYP, iss: WITNESS, sub: SUBJECT, seq: 0, head: null, ts: "2026-10-09T12:00:00.000Z", jti: "wt-forged" },
       { keyId: kid, privateKeyJwk: priv },

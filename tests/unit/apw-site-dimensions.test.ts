@@ -8,8 +8,8 @@ import {
   scoreSiteDimensions,
   siteSubject,
   snapshotToAttestations,
-} from "../../packages/apw-resolver/src/scoring/site-dimensions";
-import { PUBLIC_DIMENSIONS, projectTrustView } from "../../packages/apw-resolver/src/scoring/policy";
+} from "@verared/apw/scoring";
+import { PUBLIC_DIMENSIONS, projectTrustView } from "@verared/apw/scoring";
 
 const SITE = "ejemplo.com";
 const SUBJECT = `did:apw:${SITE}`;

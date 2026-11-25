@@ -16,7 +16,7 @@ import {
   createMlDsaVerifier,
   isMlDsaJwk,
   jwkKeyAlgorithm,
-} from "../../packages/trust-layer/src/site-trust/web-bot-auth";
+} from "@verared/trust-layer/site-trust";
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let bin = "";

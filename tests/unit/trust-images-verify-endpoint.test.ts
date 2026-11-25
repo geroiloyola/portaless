@@ -15,15 +15,15 @@ const mocked = vi.hoisted(() => ({
   }))
 }));
 
-vi.mock("@portaless/cloud-images", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@portaless/cloud-images")>();
+vi.mock("@verared/cloud-images", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@verared/cloud-images")>();
   return { ...original, verifySidecarRemote: mocked.verifySidecarRemote };
 });
 
 import * as verify from "../../functions/trust/images/verify";
-import { buildCloudImagePayload, sha256Hash } from "../../packages/cloud-images/src/payload";
-import { signCloudImage } from "../../packages/cloud-images/src/sign";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { buildCloudImagePayload, sha256Hash } from "@verared/cloud-images";
+import { signCloudImage } from "@verared/cloud-images";
+import { generateApwDid } from "@verared/apw/did-apw";
 
 function ctx(body: unknown) {
   const request = new Request("http://x.test/trust/images/verify", {

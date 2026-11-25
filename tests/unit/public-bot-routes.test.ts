@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isPublicBotRoute } from "../../packages/trust-layer/src/policy/public-bot-routes.ts";
+import { isPublicBotRoute } from "@verared/trust-layer/policy";
 
 const pathOf = (url: string) => new URL(url, "https://a.com").pathname;
 const contract = readFileSync(join(__dirname, "../../docs/decisions/0003-public-and-governed-resource-contract.md"), "utf8");

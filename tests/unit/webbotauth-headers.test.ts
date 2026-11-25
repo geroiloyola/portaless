@@ -5,8 +5,8 @@ import {
   parseSignatureAgent,
   parseWebBotAuthSignatureInput,
   verifyWebBotAuthRequest,
-} from "../../packages/trust-layer/src/site-trust/web-bot-auth";
-import { verifyWebBotAuthRequest as verifyMiddleware } from "../../packages/trust-layer/src/webbotauth/verify";
+} from "@verared/trust-layer/site-trust";
+import { verifyWebBotAuthRequest as verifyMiddleware } from "@verared/trust-layer";
 
 const GOOD_INPUT =
   'sig1=("@authority" "signature-agent");created=1735689600;expires=1735693200;keyid="poqkLGiymh_W0uP6PZFw-dvez3QJT5SolqXBCW38r0U";alg="ed25519";tag="web-bot-auth"';

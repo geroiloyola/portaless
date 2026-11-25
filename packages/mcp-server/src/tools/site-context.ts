@@ -8,7 +8,7 @@ import type { PermissionStore } from "@portaless/permissions/store";
 import type { SiteSkinStore } from "@portaless/dashboard/skin-store";
 import { resolveThemePack, type ThemePack } from "@portaless/atomic-elements/themes";
 import type { AuditLogStore } from "../audit/types";
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";

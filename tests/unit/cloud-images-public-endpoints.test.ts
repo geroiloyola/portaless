@@ -12,10 +12,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { applySchema } from "../../scripts/setup.mjs";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+import { generateApwDid } from "@verared/apw/did-apw";
 import { createSiteIdentityStore } from "@portaless/trust-storage-adapters";
-import { crc32, PNG_SIGNATURE } from "../../packages/cloud-images/src/png";
-import { encodeBase64 } from "../../packages/cloud-images/src/payload";
+import { crc32, PNG_SIGNATURE } from "@verared/cloud-images";
+import { encodeBase64 } from "@verared/cloud-images";
 import * as adminImages from "../../functions/admin/api/cloud-images";
 import * as serveImages from "../../functions/images/[imageId]";
 import * as trustImages from "../../functions/trust/images/[imageId]";
@@ -107,7 +107,7 @@ describe("GET /images/:imageId", () => {
 
     const bytes = new Uint8Array(await res.arrayBuffer());
     expect(bytes.length).toBeGreaterThan(PNG.length);
-    const { extractPng } = await import("../../packages/cloud-images/src/png");
+    const { extractPng } = await import("@verared/cloud-images");
     const embedded = JSON.parse(extractPng(bytes) ?? "null");
     expect(embedded?.payload?.imageId).toBe(imageId);
 

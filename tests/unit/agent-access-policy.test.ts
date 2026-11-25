@@ -17,10 +17,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Database from "better-sqlite3";
 
-import { InMemoryAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "../../packages/trust-layer/src/policy/agent-access-store";
+import { InMemoryAgentAccessPolicyStore, validateAgentAccessPolicy, INVALID_AGENT_ACCESS_POLICY } from "@verared/trust-layer/policy";
 import { SqlAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
-import { resolveContentPolicy, loadContentPolicy } from "../../packages/trust-layer/src/policy/load-policy";
-import { defaultContentPolicy, type ContentPolicyManifest } from "../../packages/trust-layer/src/policy/manifest-schema";
+import { resolveContentPolicy, loadContentPolicy } from "@verared/trust-layer/policy";
+import { defaultContentPolicy, type ContentPolicyManifest } from "@verared/trust-layer/policy";
 
 const SITE = "https://sitio.test";
 

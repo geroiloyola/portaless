@@ -2,7 +2,7 @@
 // permiso ni el proveedor, y el PUT generico no puede activarlo.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemorySettlementActivationStore } from "../../packages/trust-layer/src/billing/pay-per-crawl/activation-store";
+import { InMemorySettlementActivationStore } from "@verared/trust-layer/billing";
 
 const state = vi.hoisted(() => ({
   permissions: null as unknown,

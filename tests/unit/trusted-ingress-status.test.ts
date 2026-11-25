@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { trustedIngressStatus } from "../../packages/trust-layer/src/net/trusted-ingress-status";
+import { trustedIngressStatus } from "@verared/trust-layer/net";
 
 it("reports server-configured ingress without asserting verified edge/WAF protection", () => {
   expect(trustedIngressStatus()).toEqual({ configured: false, source: "unconfigured", edgeRulesVerified: false });

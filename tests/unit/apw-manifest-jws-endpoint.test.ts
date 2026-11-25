@@ -8,8 +8,8 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const original = await importOriginal<typeof import("@portaless/trust-storage-adapters")>();
-  const { InMemorySiteIdentityStore } = await import("../../packages/apw-resolver/src/did-apw/site-identity-store");
-  const { InMemoryAttestationLogStore } = await import("../../packages/apw-resolver/src/did-apw/attestation-log-store");
+  const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
+  const { InMemoryAttestationLogStore } = await import("@verared/apw/did-apw");
   const identity = new InMemorySiteIdentityStore({
     PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: btoa(String.fromCharCode(...new Uint8Array(32).fill(13))),
   });
@@ -24,11 +24,11 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
 });
 
 import * as manifestJws from "../../functions/.well-known/apw-manifest.jws";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
-import { signSelfAttestation } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { appendAttestation } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { verifySiteJws, MANIFEST_TYP } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
+import { generateApwDid } from "@verared/apw/did-apw";
+import { signSelfAttestation } from "@verared/apw/did-apw";
+import { appendAttestation } from "@verared/apw/did-apw";
+import { verifySiteJws, MANIFEST_TYP } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
 import * as apwStoreFactory from "@portaless/trust-storage-adapters";
 
 function get() {

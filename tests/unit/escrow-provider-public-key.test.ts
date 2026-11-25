@@ -9,7 +9,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   return { ...actual, createAuthorizedEscrowProvidersStore: async () => state.store };
 });
 
-import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey, type AuthorizedEscrowProvidersStore } from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { InMemoryAuthorizedEscrowProvidersStore, hashApiKey, type AuthorizedEscrowProvidersStore } from "@verared/trust-layer/site-trust";
 import { SqliteAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 
 const PROVIDER = "escrow-acme";

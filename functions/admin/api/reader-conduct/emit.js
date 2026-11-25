@@ -22,11 +22,11 @@
 import { AuthService } from "@portaless/auth/service";
 import { createUsersStore, createSessionStore } from "@portaless/auth/store-factory";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
-import { appendAttestation } from "@portaless/apw-resolver/did-apw";
-import { signSiteJws, ATTESTATION_TYP } from "@portaless/apw-resolver/did-apw";
-import { resolveApwManifest } from "@portaless/apw-resolver/resolver";
-import { emitReaderConduct } from "@portaless/apw-resolver/scoring";
-import { collectEmittedJtis } from "@portaless/apw-resolver/scoring";
+import { appendAttestation } from "@verared/apw/did-apw";
+import { signSiteJws, ATTESTATION_TYP } from "@verared/apw/did-apw";
+import { resolveApwManifest } from "@verared/apw/resolver";
+import { emitReaderConduct } from "@verared/apw/scoring";
+import { collectEmittedJtis } from "@verared/apw/scoring";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 
 const SITE_ID = "default";

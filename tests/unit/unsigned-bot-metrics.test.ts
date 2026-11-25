@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { unsignedBotFamily } from "../../packages/trust-layer/src/ledger/unsigned-bot-metrics";
+import { unsignedBotFamily } from "@verared/trust-layer/ledger";
 import { recordUnsignedBotRejection, readUnsignedBotRejections, __flushUnsignedBotMetricsForTests, BOT_METRICS_FLUSH_MS } from "@portaless/trust-storage-adapters";
 import { onRequestGet } from "../../functions/admin/api/agents.js";
 

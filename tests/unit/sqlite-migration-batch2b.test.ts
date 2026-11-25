@@ -7,13 +7,13 @@ import { createPluginRegistryStore } from "../../packages/plugin-sandbox/src/reg
 import { InMemoryPluginRegistryStore } from "../../packages/plugin-sandbox/src/registry/plugin-registry";
 import { SqlitePluginRegistryStore } from "../../packages/plugin-sandbox/src/registry/stores/sqlite-plugin-registry-store";
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { SqliteUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import { createSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
-import { InMemorySiteTrustScoreStore } from "../../packages/trust-layer/src/site-trust/site-trust-score";
+import { InMemorySiteTrustScoreStore } from "@verared/trust-layer/site-trust";
 import { SqliteSiteTrustScoreStore } from "@portaless/trust-storage-adapters";
 import { createAuthorizedAgentsStore } from "@portaless/trust-storage-adapters";
-import { hashApiKey } from "../../packages/trust-layer/src/site-trust/authorized-escrow-providers";
+import { hashApiKey } from "@verared/trust-layer/site-trust";
 import { createAuthorizedEscrowProvidersStore } from "@portaless/trust-storage-adapters";
 import { runOnboardAgent } from "../../scripts/onboard-agent.mjs";
 import { runOnboardEscrowProvider } from "../../scripts/onboard-escrow-provider.mjs";

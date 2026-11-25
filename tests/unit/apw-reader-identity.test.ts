@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
+import { jwkThumbprint } from "@verared/apw/did-apw";
 import {
   resolveReaderState,
   readerHostFromOperator,
   ReaderStateCache,
   READER_CACHE_FAIL_MS,
   type ReaderResolvers,
-} from "../../packages/apw-resolver/src/scoring/reader-identity";
-import { evaluatePolicy, DEFAULT_GOVERNED_POLICY } from "../../packages/apw-resolver/src/scoring/policy";
+} from "@verared/apw/scoring";
+import { evaluatePolicy, DEFAULT_GOVERNED_POLICY } from "@verared/apw/scoring";
 
 const X = "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo";
 const wba = {

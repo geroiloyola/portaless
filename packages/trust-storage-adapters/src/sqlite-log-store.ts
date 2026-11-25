@@ -6,8 +6,8 @@
 // abrir (ALTER TABLE ADD COLUMN si falta); sus filas quedan con null. Un
 // reader_did ya guardado no se pisa (COALESCE). reader_did va AL FINAL de
 // los parametros: el orden de las 10 columnas originales no cambia.
-import type { UsageLogPeriod, AgentUsageEntry } from "@portaless/trust-layer/ledger";
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import type { UsageLogPeriod, AgentUsageEntry } from "@verared/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import { openSqlite } from "@portaless/sqlite-driver";
 
 interface RowType {

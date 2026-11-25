@@ -15,17 +15,17 @@ import {
   encodeBase64,
   MAX_IMAGE_BYTES,
   type CloudImagePayload,
-} from "../../packages/cloud-images/src/payload";
+} from "@verared/cloud-images";
 import {
   signCloudImage,
   verifyCloudImageSidecar,
   decodeJwsHeader,
   imageKidBelongsToDid,
   IMAGE_TYP,
-} from "../../packages/cloud-images/src/sign";
-import { signSiteJws, jcs } from "../../packages/apw-resolver/src/did-apw/site-jws";
-import { jwkThumbprint } from "../../packages/apw-resolver/src/did-apw/fingerprint";
-import { generateApwDid } from "../../packages/apw-resolver/src/did-apw/generate";
+} from "@verared/cloud-images";
+import { signSiteJws, jcs } from "@verared/apw/did-apw";
+import { jwkThumbprint } from "@verared/apw/did-apw";
+import { generateApwDid } from "@verared/apw/did-apw";
 
 const SITE_DID = "did:apw:ejemplo.com";
 

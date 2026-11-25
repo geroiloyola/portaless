@@ -1,16 +1,16 @@
 // Pure unit tests for all InMemory* store implementations in L1/L2 (no SQLite, no DB).
 import { describe, expect, test } from "vitest";
-import { InMemorySiteAtprotoLinksStore } from "../../packages/apw-resolver/src/did-apw/atproto-links-store";
-import { InMemoryReadPolicyStore } from "../../packages/apw-resolver/src/scoring/read-policy-store";
-import { InMemoryCloudImageStore } from "../../packages/cloud-images/src/store";
-import { InMemorySettlementActivationStore } from "../../packages/trust-layer/src/billing/pay-per-crawl/activation-store";
+import { InMemorySiteAtprotoLinksStore } from "@verared/apw/did-apw";
+import { InMemoryReadPolicyStore } from "@verared/apw/scoring";
+import { InMemoryCloudImageStore } from "@verared/cloud-images";
+import { InMemorySettlementActivationStore } from "@verared/trust-layer/billing";
 import {
   INVALID_RESOLUTION_BUDGET_CONFIG,
   InMemoryResolutionBudgetConfigStore,
   RESOLUTION_BUDGET_CONFIG_CONFLICT,
-} from "../../packages/trust-layer/src/net/resolution-budget-config";
-import { InMemoryAgentAccessPolicyStore, defaultAgentAccessPolicy } from "../../packages/trust-layer/src/policy/agent-access-store";
-import { InMemoryWebBotAuthNonceStore } from "../../packages/trust-layer/src/webbotauth/nonce-store";
+} from "@verared/trust-layer/net";
+import { InMemoryAgentAccessPolicyStore, defaultAgentAccessPolicy } from "@verared/trust-layer/policy";
+import { InMemoryWebBotAuthNonceStore } from "@verared/trust-layer";
 
 describe("L1/L2 pure InMemory storage ports (zero SQLite)", () => {
   test("InMemorySiteAtprotoLinksStore: idempotent add, list, remove", async () => {

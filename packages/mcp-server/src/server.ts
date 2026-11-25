@@ -22,7 +22,7 @@ import type { ThemePack } from "@portaless/atomic-elements/themes";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { PluginRegistryStore } from "@portaless/plugin-sandbox/plugin-registry";
 import type { AuditLogStore } from "./audit/types";
-import type { UsageLedgerStore } from "@portaless/trust-layer/ledger";
+import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { SiteSkinStore } from "@portaless/dashboard/skin-store";
 import type { AgentIdentityResolver } from "./permissions/agent-identity";
 import { registerCreatePageTool } from "./tools/create-page";

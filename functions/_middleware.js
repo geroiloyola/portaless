@@ -42,22 +42,22 @@
 import {
   verifyWebBotAuthRequest,
   recordAgentAccess,
-} from "@portaless/trust-layer";
+} from "@verared/trust-layer";
 import { createUsageLedgerStore, createWebBotAuthNonceStore } from "@portaless/trust-storage-adapters";
 import { recordUnsignedBotRejection } from "@portaless/trust-storage-adapters";
-import { isPublicBotRoute } from "@portaless/trust-layer/policy";
-import { loadContentPolicy } from "@portaless/trust-layer/policy";
+import { isPublicBotRoute } from "@verared/trust-layer/policy";
+import { loadContentPolicy } from "@verared/trust-layer/policy";
 import { createAgentAccessPolicyStore } from "@portaless/trust-storage-adapters";
 import { resolveLegacyRedirect } from "../src/lib/routes.ts";
 import { publicOriginFromEnv } from "./_shared/public-origin.js";
 import { withSecurityHeaders } from "./_shared/security-headers.js";
 import { migrationStatus } from "@portaless/persistence-migrations/gate";
-import { resolvePayPerCrawl } from "@portaless/trust-layer/billing";
+import { resolvePayPerCrawl } from "@verared/trust-layer/billing";
 import { createSettlementActivationStore } from "@portaless/trust-storage-adapters";
-import { readerHostFromOperator } from "@portaless/apw-resolver/scoring";
-import { resolveApwManifest } from "@portaless/apw-resolver/resolver";
+import { readerHostFromOperator } from "@verared/apw/scoring";
+import { resolveApwManifest } from "@verared/apw/resolver";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
-import { maybeAutoEmitReaderConduct } from "@portaless/apw-resolver/scoring";
+import { maybeAutoEmitReaderConduct } from "@verared/apw/scoring";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";

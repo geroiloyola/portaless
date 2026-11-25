@@ -13,7 +13,7 @@ import {
 } from "../../packages/mcp-server/src/permissions/agent-identity";
 import { InMemoryMcpAgentTokenStore } from "../../packages/mcp-server/src/permissions/agent-token-store";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
-import { InMemoryUsageLedgerStore } from "../../packages/trust-layer/src/ledger/log-writer";
+import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { CapabilityDeniedError } from "../../packages/mcp-server/src/permissions/require-capability";
 import { registerInsertBlockTool } from "../../packages/mcp-server/src/tools/insert-block";
 import { registerUpdateBlockTool } from "../../packages/mcp-server/src/tools/update-block";

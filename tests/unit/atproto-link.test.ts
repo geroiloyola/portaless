@@ -9,7 +9,7 @@ import {
   apwClaimedHandles,
   candidateDomainsForHandle,
   apwAtUri,
-} from "../../packages/identity-atproto/src/link";
+} from "@verared/identity-atproto";
 
 describe("linkConfidence", () => {
   it("self: el handle ES el dominio del sitio APW", () => {

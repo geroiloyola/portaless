@@ -24,7 +24,7 @@ import { signerFromJWK } from "web-bot-auth/crypto";
 import {
   parseWebBotAuthSignatureInput,
   verifyWebBotAuthRequest,
-} from "../../packages/trust-layer/src/site-trust/web-bot-auth";
+} from "@verared/trust-layer/site-trust";
 
 const RFC_9421_ED25519_TEST_KEY = {
   kty: "OKP",

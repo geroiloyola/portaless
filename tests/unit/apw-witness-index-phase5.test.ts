@@ -3,21 +3,21 @@
 // Material REAL (claves Ed25519, statements firmados, cadenas): solo la
 // red y la resolucion de cadenas son fixtures.
 import { beforeEach, describe, expect, it } from "vitest";
-import { InMemorySiteIdentityStore } from "../../packages/apw-resolver/src/did-apw/site-identity-store";
-import { InMemoryAttestationLogStore } from "../../packages/apw-resolver/src/did-apw/attestation-log-store";
-import { appendAttestation } from "../../packages/apw-resolver/src/did-apw/history-log";
-import { buildDidDocument } from "../../packages/apw-resolver/src/did-apw/document";
-import { signWitnessStatement } from "../../packages/apw-resolver/src/did-apw/witness";
+import { InMemorySiteIdentityStore } from "@verared/apw/did-apw";
+import { InMemoryAttestationLogStore } from "@verared/apw/did-apw";
+import { appendAttestation } from "@verared/apw/did-apw";
+import { buildDidDocument } from "@verared/apw/did-apw";
+import { signWitnessStatement } from "@verared/apw/did-apw";
 import {
   buildIndexDocument,
   syncWitnessIndex,
   syncIndexPeers,
   witnessCalibrationFactor,
   MAX_PEER_SUBJECTS,
-} from "../../packages/apw-resolver/src/did-apw/witness-index";
-import { InMemoryWitnessIndexStore } from "../../packages/apw-resolver/src/did-apw/witness-index-store";
-import type { ApwKeyPair } from "../../packages/apw-resolver/src/did-apw/types";
-import type { ApwHistoryResult } from "../../packages/apw-resolver/src/did-apw/history-resolver";
+} from "@verared/apw/did-apw";
+import { InMemoryWitnessIndexStore } from "@verared/apw/did-apw";
+import type { ApwKeyPair } from "@verared/apw/did-apw";
+import type { ApwHistoryResult } from "@verared/apw/did-apw";
 
 const ENV = { PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: btoa(String.fromCharCode(...new Uint8Array(32).fill(7))) };
 const SITE_ID = "default";
