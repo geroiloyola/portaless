@@ -4,16 +4,16 @@
 
 **Less Portals, More Simplicity**
 
-A lightweight, open source, modular CMS — built to be published without paid hosting, without plugins that break your site, and with real control over which AI agents can access your content.
+A lightweight, open source, modular CMS node — built on Astro to compile to static HTML without paid hosting, with sandboxed plugins and cryptographic control over AI readers.
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-5A6B24?style=flat&labelColor=261C15)](./LICENSE)
 [![Status: Beta, invite-only](https://img.shields.io/badge/status-beta%20%2F%20invite--only-5A6B24?style=flat&labelColor=261C15)](./ROADMAP.md)
 [![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
 [![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md)
 
-[Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless/) · [Protocol APW](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Whitepaper](./docs/whitepaper/portaless-whitepaper.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless-templates/) · [Architecture](./ARCHITECTURE.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
-> **New here?** Start with [`docs/START_HERE.md`](./docs/START_HERE.md) — the three-free-accounts path (GitHub + an AI with MCP + Cloudflare) from zero to a verifiable site you edit with an agent. Then [`VISION.md`](./docs/VISION.md) is where the project says what it must become — and what it refuses to become. It carries no status, versions or dates, so it does not go stale. What exists **today** is this README and [`ROADMAP.md`](./ROADMAP.md).
+> **New here?** Start with [`docs/START_HERE.md`](./docs/START_HERE.md) — the three-free-accounts path (GitHub + an AI with MCP + Cloudflare). For the official live showcase and fictional templates, visit [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) ([live demo](https://geroiloyola.github.io/portaless-templates/)).
 
 </div>
 
@@ -21,409 +21,102 @@ A lightweight, open source, modular CMS — built to be published without paid h
 
 ## What is Portaless?
 
-**Vera Trust Stack** is APW + Local Trust Protocol + SVRI + HSVR. **Local Trust Protocol** means each node applies its own policy to verified evidence. See the
-[glossary](./docs/glossary.md) for layer responsibilities and acronym context.
+**Vera Trust Stack** is APW + Local Trust Protocol + SVRI + HSVR. **Local Trust Protocol** means each node applies its own policy to verified evidence. See the [glossary](./docs/glossary.md) and [`ARCHITECTURE.md`](./ARCHITECTURE.md) for layer boundaries.
 
-Portaless is a CMS built on [Astro](https://astro.build) that solves, by architectural design, the most persistent structural problems of WordPress:
+This repository is the **sovereign reference CMS node** (`starter` profile by default):
 
-- **No exposed database, no server to manage** — the site compiles to static HTML and is served from free infrastructure (GitHub Pages, Cloudflare Pages).
-- **Sandboxed plugins with atomic permissions**, instead of unrestricted access to the core (the documented root cause of the overwhelming majority of WordPress's historical vulnerabilities).
-- **Granular control over AI agents**: cryptographic bot identification, pay-per-crawl policies, and a public traceability ledger. You decide, from the panel, the terms for search engines, AI assistants and model training. The site publishes them in writing and enforces the AI-input rule on signed agent requests; search and training remain cooperative signals (not enforced per request).
-- **A native visual editor (Atomic Elements)**, designed to be radically lighter than Elementor.
-- **A modular dashboard with swappable "skins"**, no CSS or PHP required.
-- **Real account protection**: two-factor authentication, password recovery, and login via external providers (Google, GitHub, etc.).
-- **Cross-site trust and discovery** via Protocol APW and a public `SiteTrustScore`, so independent Portaless instances can verify each other without any central authority.
+- **Clean starter site out of the box** (`site-profiles/starter/`): `npm run build` emits a minimal English static site (35 pages, zero demo/marketing pages) ready for GitHub Pages, Cloudflare Pages, or self-hosted Node/Docker.
+- **Native visual editor (Atomic Elements)** + modular dashboard with swappable skins (17 elements, 6 skins).
+- **Sandboxed plugins with atomic permissions** (`isolated-vm` + edge adapters): 7 of 12 plugin capabilities have a real execution path; five plugin capabilities still answer an explicit `501` by decision. Third-party plugins import [`@portaless/plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk) (MIT) only.
+- **Granular control over AI agents**: cryptographic bot identification (Web Bot Auth), pay-per-crawl policies, and a public traceability ledger via [`@verared/*`](https://github.com/verared/vera-trust-stack). You decide, from the panel, the terms for search engines, AI assistants and model training. The site publishes them in writing and enforces the AI-input rule on signed agent requests; search and training remain cooperative signals (not enforced per request).
+- **Native MCP server** (19 tools, stdio + HTTP per-invocation bearer tokens) and an optional server-side OpenAI-compatible provider subset ([connection guide](./docs/openai-compatible-provider.md)).
+- **Account security**: `admin`/`viewer` roles, persistent TOTP 2FA, password recovery, OAuth/SSO, and step-up verification.
 
-> **Current status: Beta, invite-only.** Not everything described in the whitepaper is implemented yet. Before using this in production, read the [Real status by module](#real-status-by-module) section and [`ROADMAP.md`](./ROADMAP.md). The ROADMAP gates the next milestone on exit criteria that are still open.
+> **Current status: Beta, invite-only.** Single maintainer ([`SECURITY.md`](./SECURITY.md#bus-factor-single-maintainer-risk)); plugin installer is behind a flag (`PORTALESS_PLUGIN_INSTALLER`) off by default pending external sandbox review; local release evidence is recorded in [`docs/testing/release-acceptance.md`](./docs/testing/release-acceptance.md) (ChatGPT, external OpenAI-compatible endpoints, Cloudum equivalence, and independent review remain open).
 
 ---
 
-## See Portaless in action
+## Ecosystem (5 connected gears)
 
-**Live demo (no install needed): [geroiloyola.github.io/portaless](https://geroiloyola.github.io/portaless/)** — the public site deployed from this repo on every push to `main`. GitHub Pages runs no `functions/`, so the demo shows the static site only (home, blog, example pages); admin, login, and the dynamic `/trust/:siteId` need [self-host or Cloudflare Pages](#deployment).
+Portaless is assembled from five independent repositories with strict unidirectional boundaries and zero registry tokens required (`npm ci` and Docker consume pinned GitHub Release tarballs):
 
-Real screenshots of the running product — captured from the live app, not mockups. Regenerate them anytime with `npm run build && node node_modules/tsx/dist/cli.mjs scripts/capture-screenshots.mjs` (output in [`docs/screenshots/`](./docs/screenshots)).
-
-| The public site: a link-in-bio page built by dragging Atomic Elements | The visual editor: palette, live canvas, properties |
-|---|---|
-| [![Link-in-bio page built with Atomic Elements](docs/screenshots/public-link-in-bio.png)](docs/screenshots/public-link-in-bio.png) | [![Visual editor with the page loaded](docs/screenshots/editor-atomic-elements.png)](docs/screenshots/editor-atomic-elements.png) |
-
-| The admin dashboard | SiteTrustScore — public, per site, 4 sources |
-|---|---|
-| [![Admin dashboard with the APW identity panel](docs/screenshots/admin-dashboard.png)](docs/screenshots/admin-dashboard.png) | [![SiteTrustScore page for the site](docs/screenshots/trust-score.png)](docs/screenshots/trust-score.png) |
-
-**The whole edit → publish cycle in one take**: drag an element into the canvas, click *Publicar*, open the public URL — no terminal, no rebuild (self-host / Cloudflare Pages):
-
-![Dragging a button in the editor, publishing, and seeing it on the public page](docs/screenshots/editor-publish.gif)
+| Repository | Role | License |
+|---|---|---|
+| [`verared/vera-trust-spec`](https://github.com/verared/vera-trust-spec) | Normative specification, JSON schemas & conformance vectors (`@verared/spec`) | **CC BY 4.0** |
+| [`verared/vera-trust-stack`](https://github.com/verared/vera-trust-stack) | Neutral reference implementation (`@verared/*`, L0-net/L1/L2) | **Apache-2.0** |
+| [`geroiloyola/portaless-plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk) | Third-party plugin types, manifest validator & capability catalog (`@portaless/plugin-sdk`) | **MIT** |
+| [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) | Official fictional demo profile, templates, 21 original SVGs & live demo (`@portaless/templates`) | **CC0-1.0** |
+| **`geroiloyola/portaless`** *(this repo)* | Sovereign reference CMS node (`starter` default) | **AGPL-3.0-or-later** |
 
 ---
 
-## Beta (invite-only)
+## Live Demo & Site Profiles (`starter` vs `demo`)
 
-Portaless is in its **Beta**, invite-only. What that means honestly:
-
-- **Ready today**: the full edit→publish cycle from the browser (17-element catalog, 6 skins), integrated publication with explicit approval snapshots, publish/retry/unpublish, checksummed canonical backups and single-writer restore, minimal/private node profiles with a measured 2 GiB / 20 GiB reference budget, `did:apw` cryptographic identity with key rotation, SiteTrustScore (4 sources), external witnesses, the Portaless Index aggregator with calibrated weights and inter-node sync, plugin sandboxing, an MIT-licensed [plugin SDK](https://github.com/geroiloyola/portaless-plugin-sdk) (with a [plugin-author guide](./docs/plugin-author-guide.md)), signed community attestations, a recomputable ranking defined in the spec (V-16), and the open [Protocol APW](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) with independently checkable [test vectors](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-VECTORS-v1.3.md) that run as an **executable conformance suite** (110/110 cases over 11 vectors) plus a [starter kit](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/STARTER-KIT.md) for implementers who never saw this code.
-- **Not ready yet**: the integrated publisher builds only on self-hosted Node (Cloudflare Pages answers `503 build_runtime_unavailable`) and still needs GitHub credentials connected; Cloudflare Pages OAuth in the wizard is “coming soon”; the plugin installer exists but is **behind a flag, off by default**, and five plugin capabilities still answer an explicit `501` (`content:*`, `storage:*`, `agent:identify`, `email:send` and `network:fetch` are real); discovery across nodes has a shipped mechanism but **no public endpoint, because there are no peers to federate with**; this Beta has a **single maintainer**, so it is **invite-only** — no public sign-up until a second maintainer with real merge permissions exists ([the recorded decision](./SECURITY.md#bus-factor-single-maintainer-risk)); and the roadmap's exit criterion — a person outside the project installing Portaless unaided, with their site appearing in an Index node that is not the author's — has **not been met yet**. “Beta” is the honest name for that stage, not a marketing number.
-- **Where it is going**: [`docs/VISION.md`](./docs/VISION.md), which carries no status and no dates on purpose. What is missing today, item by item, is [`ROADMAP.md`](./ROADMAP.md) — organized by *who* has to resolve each piece: Portaless, or a third party.
-- **The core does not sell hosting or assisted install.** That is the providers' business (Cloudum, or any Portaless provider that appears). What the core gives you is that your site belongs to you and that a third party can verify it. A free install is roughly 30 minutes following tutorials; a 5-minute assisted install is bought from a provider. The honest prerequisite list — GitHub, Cloudflare, an MCP client — is in [`docs/first-steps.md`](./docs/first-steps.md).
-- **Install in 10 minutes** (Docker + browser, non-technical guide with screenshots): [`docs/first-steps.md`](./docs/first-steps.md). Announcement page on the demo: [geroiloyola.github.io/portaless/beta](https://geroiloyola.github.io/portaless/beta). The transparency standard for first-time visitors is the same one this repo uses for readers of the code: see [`ROADMAP.md`](./ROADMAP.md) (“Real status by module”).
-- **Release evidence (C40–C41):** local installation, upgrade/restore, private-export, publication/unpublication, Node/D1 and mobile checks are recorded in [`docs/testing/release-acceptance.md`](./docs/testing/release-acceptance.md). ChatGPT custom MCP, external OpenAI-compatible endpoints, Cloudum equivalence and independent human review remain open; they are not implied by the local pass.
-
----
-
-## Table of contents
-
-- [What is Portaless?](#what-is-portaless)
-- [See Portaless in action](#see-portaless-in-action)
-- [Beta (invite-only)](#beta-invite-only)
-- [Features](#features)
-- [Recent updates](#recent-updates)
-- [Real status by module](#real-status-by-module)
-- [Installation](#installation)
-  - [macOS](#macos)
-  - [Linux](#linux)
-  - [Windows](#windows)
-- [Getting started](#getting-started)
-- [Configuration](#configuration)
-- [Project structure](#project-structure)
-- [Deployment](#deployment)
-- [Authentication](#authentication)
-- [Licensing](#licensing)
-- [Roadmap](#roadmap)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
+- **Live official demo (no install needed):** [geroiloyola.github.io/portaless-templates](https://geroiloyola.github.io/portaless-templates/) — built and deployed from [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates). GitHub Pages serves static HTML only; admin, login, and dynamic `/trust/:siteId` require self-hosting or Cloudflare Pages.
+- **Default local build (`starter`):**
+  ```bash
+  npm ci
+  npm run build          # builds site-profiles/starter/ (35 pages, clean EN site)
+  ```
+- **Optional showcase build (`demo`):**
+  ```bash
+  PORTALESS_SITE_PROFILE=demo npm run build   # builds @portaless/templates demo (79 pages)
+  ```
+- Any unknown `PORTALESS_SITE_PROFILE` value aborts the build immediately and never falls back to `demo`.
 
 ---
 
-## Features
+## Quick Start (Node 24+)
 
-| Module | What it does |
-|---|---|
-| **Content engine** | Astro + Markdown, 100% static site, no mandatory server runtime |
-| **Atomic Elements** | Drag-and-drop visual page editor, without Elementor's DOM depth or page weight — 17 elements (Hero, columns, media, Video, FAQ, Testimonial, contact Form, Gallery…) including 4 for sovereign link-in-bio pages (`ProfileHeader`, `LinkList`, `SocialIcons`, `StoreBlock`) |
-| **Dashboard + Skin System** | Modular admin panel: each "skin" rearranges the same components via a JSON file, no code required |
-| **Commerce (Medusa/Mercur)** | Optional module that consumes an external store's catalog — never reimplements checkout or payments |
-| **Trust Layer** | AI agent identification (Web Bot Auth, RFC 9421/Ed25519, same draft-03 header rules as Cloudflare), access policies (`allow`/`charge`/`block`), a publicly queryable traceability ledger, and pay-per-crawl through pluggable settlement providers (`cloudflare-pay-per-crawl` today) — Portaless never touches the money |
-| **AI discovery** | `/llms.txt` (llmstxt.org v2), a markdown version of every post (`/blog/<id>.md`), a single `robots.txt` generated by the Trust Layer with Content Signals, and a complete `sitemap.xml` — drafts are never published |
-| **SiteTrustScore** | Public, multi-source trust score per site (`self`, `agent`, `community`, `escrow_report`), with admin UI to grant/revoke authorized agents and escrow providers without touching a terminal |
-| **Protocol APW** | Cross-site discovery via DNS TXT record (`_apw.yourdomain.com`), resolved over DNS-over-HTTPS, with a manifest (`siteId`, `trustUrl`, `contentKinds`) and a CLI to publish it |
-| **MCP server** | Native Model Context Protocol server — an AI agent can create/update pages, query the usage ledger, list installed plugins, and manage permissions directly |
-| **OpenAI-compatible provider** | Server-side, explicit subset for `POST /chat/completions`, SSE text streaming and non-streaming tool calls; configurable HTTPS endpoint/model and a key that never reaches browser code or MCP. External providers remain unverified. See the [connection guide](./docs/openai-compatible-provider.md) |
-| **Plugin Sandbox** | Multi-provider plugin isolation (Cloudflare, Deno Deploy, Fastly, or self-hosted via `isolated-vm`); 7 of 12 plugin capabilities have a real execution path and the other five answer an explicit `501` by decision |
-| **Permissions Center** | Atomic per-plugin/per-agent capability control, like the iOS/Android Privacy screen — connected to real persistence, with a community-driven `trustScore` badge per plugin. Pay-per-crawl providers appear here too, but can only be activated from `/admin/settlement` with verified credentials |
-| **Authentication** | Username/password login with roles (`admin`/`viewer`), two-factor authentication, password recovery, and login via external providers (OAuth/SSO) |
-| **Self-hosting** | Node runtime that runs the same `functions/` as Cloudflare Pages, Docker image, Docker Compose, Railway and Render configs, and a first-run `/setup` screen to create the admin without a terminal |
-
-## Recent updates
-
-The "what shipped in each release" narrative deliberately does not live in this README anymore. It is split, like the roadmap:
-
-- [`CHANGELOG.md`](./CHANGELOG.md) — what was added, fixed or pending in each version.
-- [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) — the immutable roadmap log (PRs #1–#75, refactor registers, closed entries with their full session context).
-
-For what is true **today**, read [Real status by module](#real-status-by-module) below and [`ROADMAP.md`](./ROADMAP.md) — both describe only the current state.
-
-## Real status by module
-
-This project explicitly documents what's implemented versus what's a pending skeleton. Don't assume functionality from a folder name — check [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) for the live detail, and [`VISION.md`](./docs/VISION.md) for where it is all going (which is a different question, and deliberately a different file). Summary:
-
-| Module | Status |
-|---|---|
-| Content engine, commerce (read), Atomic Elements, Dashboard | ✅ Functional |
-| Authentication (login + D1/SQLite persistence + 2FA + password recovery + OAuth/SSO) | ✅ Functional: persistent MFA, rate-limited login/reset, reset email via configured webhook/SMTP — a real relay check is operator-specific; see [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) |
-| Permissions Center | ✅ UI connected to real persistence (D1/SQLite) via `functions/admin/permissions/index.js`, with server-side guard `canWrite(role)` — plugin catalog now backed by a real dynamic registry with community `trustScore`, see [`PERMISSIONS_CENTER.md`](./packages/permissions/docs/PERMISSIONS_CENTER.md). Billing grants (`billing:*`) are rejected by the generic endpoint and only written by `/admin/settlement` |
-| Trust Layer (policies + ledger) | ✅ Write path connected since v0.0.6, public read path connected in v0.0.9.3 via `GET /.well-known/portaless-usage-log.json` — see [`TRUST_LAYER_SETUP.md`](https://github.com/verared/vera-trust-stack/blob/main/packages/trust-layer/docs/TRUST_LAYER_SETUP.md). The middleware applies the effective policy (panel override > your published file > Portaless default) on Cloudflare Pages and self-hosted Node, and lets discovery routes (`robots.txt`, `llms.txt`, `sitemap.xml`, `/.well-known/*`, `/blog/*.md`) through without a signature |
-| Pay-per-crawl (`cloudflare-pay-per-crawl`) | 🟡 Implemented: in-band `crawler-price` behind Cloudflare, activation only with a verified Cloudflare API token (Zone Read) + admin password/2FA + APW site identity. Pending: test against a live Cloudflare zone with Pay Per Crawl enabled (today only mocked tests) and confirm the minimum price (assumed USD 0.01). The `settlement_provider_activations` table is in the master `schema.sql` and `REQUIRED_TABLES` since v0.0.9.10 (stores still create it on the fly for pre-existing databases). Without an active provider, `charge` responds `402` with `settlement: "not_available"` and nothing is charged |
-| AI discovery (`llms.txt`, markdown per post, `robots.txt`, sitemap) | ✅ Generated at build time from your content and AI policy. Limitation: pages stored only in D1/SQLite are not included in `llms.txt` |
-| SiteTrustScore (4 sources: self, agent, community, escrow_report) | ✅ All 4 sources have a connected HTTP endpoint; `agent` and `escrow_report` have a full admin lifecycle (grant/revoke UI, no manual API calls needed). Pending: both allowlists are empty by default, and there's no automated onboarding flow for a second escrow provider yet |
-| SVRI / HSVR | ✅ SVRI v1.0 projects LTP results, evidence tiers and prior contribution. Visitors see a qualitative level; admins can inspect numeric provenance and a reconstructed, verification-aware history of SVRI outputs. HSVR is not the APW log. |
-| Vera Trust Stack: APW identity/state + Local Trust Protocol trust/traceability | ✅ The reference runtime implements the published consolidated [`APW v1.3`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md) and supplements: DNS-over-HTTPS, `did:apw` key rotation, signed artifacts and DNS-anchored state history (APW), witness/evidence evaluation, scoring and read governance (Local Trust Protocol), with SVRI/HSVR output contracts. Its local Witness Index directory retains the historical `typ: apw-index` and existing routes. Published APW vectors run executably in CI (**110/110 cases**); external implementers start at [`STARTER-KIT.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/STARTER-KIT.md). The new Witness Index / Proof Package / APW Identity Bootstrap Draft 0.1 contracts are owner-approved baselines, **not implemented or final normative releases**; see [standardization gates](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md). Manual DNS publication, the `did:web` Path A mapping erratum and a second real implementer remain pending. |
-| MCP server | ✅ 19 tools, including bounded public/private context reads and exact-revision proposal/list/approve flow. The admin page manager reviews proposal diffs and approves the exact revision. Private reads and publication require separate grants. HTTP authenticates each request; audit events persist append-only in D1/SQLite. See [`docs/architecture/mcp-agents.md`](./docs/architecture/mcp-agents.md). |
-| OpenAI-compatible provider | ✅ **Explicit subset, not universal compatibility.** Server-side key, configurable endpoint/model, chat completions, SSE text streaming, non-streaming tool calls, bounded timeout/cancellation and sanitized errors. The local contract suite and a loopback mock pass; **external endpoints are `not_run`** until a real key, endpoint and model are recorded. `GET /admin/api/ai-provider` reports the active profile without the key. See the [connection guide](./docs/openai-compatible-provider.md). |
-| Plugin SDK (MIT) | ✅ `packages/plugin-sdk` 0.1.0 — the typed surface for third-party authors: capability catalog, `validateManifest` and the sandbox contract, re-declared with **no AGPL code imported**; equivalence with the core is pinned by an AGPL-side parity test, and its tarball is checked in CI (pack → install into an empty project → type-check a consumer + runtime import). **Honest scope**: the capability surface is provisional until the capability backends close — [the SDK README](https://github.com/geroiloyola/portaless-plugin-sdk#readme) says so |
-| Plugin installer (HTTP) | 🟡 Mechanism + runtime execution shipped **behind a flag that is off by default** (`PORTALESS_PLUGIN_INSTALLER`; the endpoint answers 404 without it and is not announced). It requires step-up, verifies a publisher-signed manifest against the resolved `did:apw` identity (ERRATA **E-15**, signature covers `requestedCapabilities`), stores code chunked in BLOB with a hard cap **together with its verified manifest**, and **grants nothing** — installing registers, and the grant stays `granted ∩ manifest` in the Permissions Center. `POST /admin/api/plugins/run` loads from `PluginArtifactStore` first (verifying `sha256Hex(code) === codeHash`) and falls back to disk only when no artifact is stored, closing the workerd `503 plugin_source_backend_unavailable` for installed plugins. Pending: the external sandbox review (which keeps the flag off by default), and the five plugin capabilities that remain `501` by decision (`storage:read/write` shipped in Phase 14 §14.2, `agent:identify` right after, `email:send` in the review round) |
-| Community reputation (signed) | ✅ A community evaluation is a JWS signed by a `did:apw` (ERRATA **E-13**): `POST /trust/:siteId/community-attestation` verifies it against the emitter's resolved identity, the anonymous route answers `410`, and `min_weight` (2.0 per subject and category), distinct-emitter counting and the 7-day history floor are implemented and fixture-checked (vectors **V-14**, **V-15**). Pending: **portable** reputation (the emitter's own chain is not fetched yet) and, above all, real emitters — today there is one |
-| Federated query + ranking | 🟡 **Ranking shipped (Phase 9a)**: normative filter semantics in spec §7.1, executable as vector **V-16** (total order with a full tie-break tuple; an empty subject is never filled with the neutral prior), with the filters exposed in the `/explore` UI and an **honest degraded state** — the page is static, so it declares its local source, build instant and window instead of faking a ranking. **Federation mechanism shipped (Phase 9b)**: signed `/.well-known/apw-pages.jws` (ERRATA **E-14**) plus a hardened peer reader (per-hop redirect validation, streaming byte cap, private-range blocking, sanitized render, mandatory cache + single-flight + stale-while-error), verified against fixtures. Pending: the public endpoint is deliberately not opened — it would fan out to peers that do not exist yet |
-| Dashboard activity feed | ✅ The seven mock panels were deleted (they were dead code) and replaced by a real, **admin-only** feed: append-only `activity_events` (D1 → SQLite → InMemory), a single writer `emitActivity()` with **no triggers and no backfill**, `GET /admin/api/recents` and `/admin/recents`. It records pages saved/deleted, community attestations, permission changes, witness statements and password changes/resets — and **not** orders, revenue or human traffic, which have no data source. It stores no IPs |
-| Plugin sandboxing (4 adapters) | 🟡 `isolated-vm` (self-hosted) runs real code with an isolate pool. The bridge is still 12/12; **6/12 non-network backends** have real host handlers (`billing:pay-per-crawl` is an admin-only capability for settlement providers, not a plugin capability, and has no sandbox bridge by design). The non-network capability backends are wired **one at a time** (Phase 14): `content:read/write`, `storage:read/write` (per-plugin namespace + quotas), `agent:identify` (the Trust Layer usage ledger) and `email:send` (blind delegation: the plugin sends `{ template, to, data }`, the core injects the site `from` and enforces a per-plugin daily quota) are real and served from one place (`capability-backends.ts`), so they work the same through the HTTP bridge (edge adapters) and in-process (self-host). `network:fetch` is handled by each sandbox adapter, not by host-bridge dispatch, so **7/12 plugin capabilities have a real execution path**; the other five (`media:*`, `commerce:*`, `site:admin`) answer an explicit `501 NOT_CONFIGURED`. Cloudflare Workers for Platforms and Deno Deploy make real calls to their APIs (not yet verified against a real account, only tested with mocked `fetch`); Fastly remains contract + detailed TODOs only, no real API call yet |
-| Web Bot Auth cryptographic verification | ✅ Validates Ed25519 signatures (RFC 9421) with key-directory caching and nonce-uniqueness checks. Both verifiers share draft-03 header rules (quoted `Signature-Agent`, signed `signature-agent`, `tag="web-bot-auth"`), with an end-to-end test and an interoperability test against the official `web-bot-auth` library. Since v0.0.9.31 nonces are stored in D1/SQLite (`webbotauth_nonces`, TTL 300 s) when a backend is configured, so replay protection is shared across instances (in-memory fallback for single-process dev). ML-DSA-44/65/87 is supported in both the middleware verifier and the `SiteTrustScore` verifier (shared implementation, `@noble/post-quantum`, still awaiting an independent audit) |
-| Installation / setup | ✅ Single command (`npm run setup`) for self-hosted SQLite, or first run from `/setup` with a one-time code in the Node runtime — Cloudflare D1 still uses `wrangler d1 execute` (or `npm run setup:d1`) separately |
-| Self-hosting (Node runtime, Docker, Railway, Render) | 🟡 Node runtime with Pages-compatible routing, middleware and `env.ASSETS`; Docker image built and exercised in CI (`docker-smoke`). Pending: real deployments on Railway and Render (checklist in `docs/self-hosting-verification.md`) |
-| Native AT Protocol identity | ✅ Optional symbiotic bridge with APW since v0.0.9.10: spec handle<->DID resolution, the three link confidences, `buildAtprotoReputation()` behind public `GET /trust/atproto/:handle`, and admin-managed `alsoKnownAs` links in `/.well-known/did.json`. Limitation: resolution depends on third parties (DNS, plc.directory); the whitepaper's own PDS/Lexicons vision remains unimplemented — `docs/architecture/identity-atproto.md` |
-| Portaless Cloud Images (APW-signed image hosting) | 🟡 Cryptographic base implemented in v0.0.9.10: Cloud Image v1 payload + server-side Ed25519 sidecar (`typ: apw-image+jws`), PNG `pAPW` chunk embedding, upload with automatic signing, immutable serve, local verification and standalone verification against the APW registry (C2PA without a central authority). Pending: R2 storage for large images, moderation of declared origin, sidecar transport for non-PNG formats, management UI — `docs/architecture/cloud-images.md` |
-| Portaless Index | ✅ Local aggregator shipped (v0.0.9.10): `POST /admin/api/index/sync` verifies witness statements end-to-end fail-closed, caches per-subject directory entries with **A.4.4-style calibrated weights** (a witness gains weight by agreeing with the consensus), publishes the plain re-verifiable document at `GET /.well-known/apw-index.json`, and syncs with other Index nodes via peer discovery (`POST /admin/api/index/sync-peers` — peers are hints, everything is re-verified locally). Operator UI at `/admin/witness-index`. Pending for "a real network": more than one real operator/instance (Phase 4 dependency) and manifest/SiteTrustScore discovery across instances (spec §7) |
-
----
-
-## Installation
-
-> **Non-technical?** The step-by-step guide with screenshots (Docker + browser only, ~10 minutes) is [`docs/first-steps.md`](./docs/first-steps.md) (Spanish). The sections below are the developer-grade version.
+> **Non-technical?** Follow [`docs/first-steps.md`](./docs/first-steps.md) (Spanish, Docker + browser, ~10 minutes).
 
 ### Prerequisites
-
-- **Node.js ≥ 24** (required by `isolated-vm@7`, used for self-hosted plugin sandboxing — installing on Node 20-23 will let `npm install` succeed with only a warning, then fail silently at runtime when the sandbox loads). Self-hosted SQLite persistence uses `better-sqlite3` (a compiled native dependency, not `node:sqlite`) — no extra Node version requirement beyond the 24 minimum above.
-- **Git**.
-- A **GitHub** or **Cloudflare** account if you plan to deploy (both have free tiers that are sufficient).
-
-### macOS
+- **Node.js ≥ 24** (required by `isolated-vm@7` and `better-sqlite3`) and **Git**.
 
 ```bash
-# Install Node.js (via Homebrew)
-brew install node@24
-
-# Clone the repository
 git clone https://github.com/geroiloyola/portaless.git
 cd portaless
+npm ci
 
-# Install dependencies (uses npm workspaces for packages/*)
-npm install
-```
-
-### Linux
-
-```bash
-# Debian/Ubuntu — install Node.js 24.x via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs git
-
-# Fedora/RHEL
-sudo dnf install nodejs git
-
-# Clone and install
-git clone https://github.com/geroiloyola/portaless.git
-cd portaless
-npm install
-```
-
-### Windows
-
-**Recommended: WSL2** (Windows Subsystem for Linux), to avoid path and permission issues with Astro and native compiled dependencies like `better-sqlite3`:
-
-```powershell
-wsl --install
-```
-
-Then, inside the WSL terminal (Ubuntu), follow the **Linux** steps above.
-
-**Alternative without WSL** (PowerShell):
-
-```powershell
-# Install Node.js from https://nodejs.org (choose version 24 LTS)
-# or via winget:
-winget install OpenJS.NodeJS.LTS
-
-git clone https://github.com/geroiloyola/portaless.git
-cd portaless
-npm install
-```
-
-> If you regenerate `package-lock.json` on Windows, use a recent npm (`npx npm@11 install --package-lock-only`). Older npm versions can omit optional dependencies that Linux CI needs, and `npm ci` will fail.
-
----
-
-## Getting started
-
-```bash
-# Start the dev server
+# Static dev server (starter profile)
 npm run dev
+
+# Full self-hosted runtime (admin panel, SQLite, login, /trust/:siteId)
+npm run setup          # creates SQLite schema + first admin user
+npm run self-host:dev  # http://localhost:3000
 ```
-
-Open [http://localhost:4321](http://localhost:4321) — you should see the example site with the starter blog.
-
-```bash
-# Build for production (generates ./dist)
-npm run build
-
-# Preview the production build locally
-npm run preview
-```
-
-If you're going to use the admin panel (`/admin`) on a self-hosted SQLite deployment, also run:
-
-```bash
-# Creates the necessary tables and the first admin user, in one step
-npm run setup
-```
-
-Or start the self-hosted runtime and create the admin from the browser:
-
-```bash
-npm run build
-PORTALESS_SQLITE_PATH=./portaless.db PORTALESS_PUBLIC_URL=http://localhost:3000 npm start
-# Open http://localhost:3000/setup and enter the setup code printed in the logs
-```
-
-See the [Authentication](#authentication) section for the full detail, including the equivalent flow for Cloudflare D1.
-
----
-
-## Configuration
-
-All environment variables are optional for the static site. The self-hosted runtime has two functional exceptions: `PORTALESS_PUBLIC_URL` is **required** (CSRF, `.well-known` and OAuth use it as the only trusted origin; it is never derived from `Host`), and `IP_HASH_SALT` is required for community votes — without it `POST /trust/:siteId/vote` fails closed with `500 server_misconfigured` instead of using a public development salt, because a public salt makes an IPv4 hash reversible by brute force.
-
-| Variable | Module | Description |
-|---|---|---|
-| `ENABLE_COMMERCE` | Commerce | `true` to enable `/shop` (requires `src/commerce/config.ts`, see [`docs/COMMERCE_SETUP.md`](./docs/COMMERCE_SETUP.md)) |
-| `ENABLE_TRUST_LAYER` | Trust Layer | `true` to enable AI agent verification in `functions/_middleware.js` (Cloudflare Pages and self-hosted Node) |
-| `IP_HASH_SALT` | SiteTrustScore (community votes) | **Required for community voting.** Salt used to hash the voter's IP before it is stored. Without it, `POST /trust/:siteId/vote` responds `500 server_misconfigured` and the vote is disabled — there is deliberately no fallback salt |
-| `PORTALESS_OPENAI_API_KEY` / `_BASE_URL` / `_MODEL` / `_TIMEOUT_MS` | OpenAI-compatible provider | Server-side key, HTTPS endpoint, model and optional timeout (1000–120000 ms). The key is never returned to browser code or MCP. External endpoints remain unverified. See the [connection guide](./docs/openai-compatible-provider.md) |
-| `PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY` | Deployment OAuth, pay-per-crawl | Secret of at least 32 characters used to encrypt infrastructure credentials at rest (deployment tokens and the settlement provider's API token). Required to activate a pay-per-crawl provider |
-| `PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY` | Protocol APW (`did:apw`) | Base64 key that encrypts the site's private identity key at rest. In the Node runtime, if it's missing, one is generated inside the data volume and `/setup` warns you to move it to a platform secret |
-| `PORTALESS_SITE_NAME` / `PORTALESS_SITE_DESCRIPTION` | AI discovery | Name and summary shown at the top of `/llms.txt` |
-| `PORTALESS_SETUP_CODE` | Self-hosting (first run) | Optional setup code set by your platform; if omitted, one is generated and printed in the logs (valid 60 minutes, 5 attempts, single use) |
-| `PORTALESS_PUBLIC_URL` | Self-hosting, CSRF, OAuth, `.well-known` | **Required to start the Node runtime.** Public origin (`https://your-domain.example` behind TLS). Docker Compose has no default and fails explicitly if it is missing; Railway/Render must set it too. It is the only trusted origin for CSRF checks, public documents and OAuth redirects |
-| `PORTALESS_TRUSTED_PROXIES` | Self-hosting, rate limits, Secure cookies | Exact proxy IPs (comma-separated, no CIDR). Required in practice behind a tunnel/proxy: without it, `X-Forwarded-For`/`X-Forwarded-Proto` are ignored and every client shares the proxy IP for rate limits. For a local Cloudflare Tunnel, `127.0.0.1,::1`; add the Docker bridge gateway if it rewrites the source |
-| `PORTALESS_DATA_DIR` / `PORT` / `HOST` | Self-hosting | Data directory for secrets (default: the SQLite file's folder, `/data` in Docker), and the listening port/host (default `3000` / `0.0.0.0`) |
-| `PORTALESS_ADMIN_USERNAME` / `PORTALESS_ADMIN_PASSWORD` | Authentication | Credentials for the first admin user, used by `npm run setup` |
-| `PORTALESS_SQLITE_PATH` | Authentication | Path to a SQLite file for self-hosted persistence, via `better-sqlite3` — no special Node version requirement beyond the project minimum (Node ≥ 24, see Prerequisites). Required by `npm start`, together with `PORTALESS_PUBLIC_URL` |
-| `PORTALESS_LOGIN_ATTEMPTS_PER_IP` | Authentication | Cheap pre-hash login attempt budget per IP (default `60` per 15-minute window). Over budget returns `429 rate_limited` with `Retry-After` before scrypt runs. It never rejects by username, so it does not reintroduce the A-01 lockout |
-| `PORTALESS_LOGIN_CONCURRENCY` | Authentication | Maximum simultaneous **async** scrypt verifications (default `4`, clamped 1–64). Each `N=2^17` hash uses ~128 MiB, so this bounds login memory/CPU amplification. The wait queue is capped at 32 entries/2 s (`PORTALESS_LOGIN_QUEUE_MAX`, `PORTALESS_LOGIN_QUEUE_TIMEOUT_MS`); a full or timed-out queue returns `503 server_busy` |
-| `PORTALESS_OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` / `_AUTH_URL` / `_TOKEN_URL` / `_USERINFO_URL` | Authentication (OAuth/SSO) | Configuration for each external login provider (e.g. `PORTALESS_OAUTH_GOOGLE_CLIENT_ID`) — without this, login via that provider simply won't appear as an option |
-| `PORTALESS_DEV_MODE` | Authentication (password recovery) | `1` so the recovery endpoint returns the token in the response, useful only for local development without a configured mail server |
-| `DB` (binding, not a traditional env var) | Authentication, Permissions, Trust Layer, Pages | Cloudflare D1 binding, configured in `wrangler.toml` |
-
-Copy `src/commerce/config.example.ts` to `config.ts` if you're enabling commerce.
-
-### Pay-per-crawl (optional)
-
-To charge AI crawlers through Cloudflare Pay Per Crawl:
-
-1. Serve the site through Cloudflare with Pay Per Crawl and dynamic pricing enabled for the domain. Make sure the origin only accepts traffic that comes through Cloudflare (e.g. Cloudflare Tunnel or Authenticated Origin Pulls) — otherwise the `cf-pay-per-crawl` header could be spoofed.
-2. Generate the site's APW identity in the onboarding wizard (it defines the site domain).
-3. Set the `charge` rule with a `price_usd` of at least `0.01`, and `"settlement_provider": "cloudflare-pay-per-crawl"`. The three rules (`search`, `ai_input`, `ai_train`) can be saved from the panel in [`/admin/agents`](#beta-invite-only), which takes precedence over the file; the settlement provider lives only in `portaless-content-policy.json`, so edit that file for it.
-4. In `/admin/settlement`, enter a Cloudflare API token with **Zone Read** only (never the Global API Key) and the Zone ID, plus your password (and 2FA code, if enabled). Portaless verifies the token against the zone before activating anything.
-
-Portaless never processes the payment: Cloudflare charges the crawler. The ledger records the access with `charged: false` because the origin cannot know whether the crawler paid.
-
----
-
-## Project structure
-
-```
-portaless/
-├── src/                    # Astro site (pages, content, layouts, commerce, llms.txt/robots.txt/sitemap)
-├── packages/
-│   ├── atomic-elements/    # Visual page editor (element registry, drag-and-drop, page model, theme packs)
-│   ├── dashboard/          # Admin panel + Skin System + the real activity feed (emitActivity)
-│   ├── permissions/        # Permissions Center (grants per plugin and per agent)
-│   ├── plugin-sandbox/     # Multi-provider sandboxing, capability bridge, plugin registry + installer
-│   ├── plugin-sdk/         # MIT-licensed typed surface for third-party plugin authors (0.1.0, self-contained)
-│   ├── trust-layer/        # AI agent identification + SiteTrustScore + pay-per-crawl providers
-│   ├── apw-resolver/       # Protocol APW reference implementation: resolver, did:apw, witnesses, scoring, ranking, federation, the `apw-conformance` runner
-│   ├── mcp-server/         # Native MCP server (19 tools; per-invocation agent identity on HTTP)
-│   ├── ai-provider/        # OpenAI-compatible provider profile (explicit subset; contract-tested locally)
-│   ├── auth/               # Authentication (login, roles, 2FA, recovery, OAuth, step-up, persistence)
-│   ├── deploy-engine/      # Publish path: draft filter, manifests, GitHub Pages / Cloudflare deployment
-│   ├── onboarding/         # Wizard intent→layout templates
-│   ├── commerce-plugin/    # Reference manifest for the commerce module (real logic in src/commerce/)
-│   ├── posse-syndicator-plugin/ # POSSE syndication to Bluesky and Mastodon, inside the sandbox
-│   ├── identity-atproto/   # AT Protocol identity + optional APW bridge
-│   ├── cloud-images/       # Cloud Images: APW-signed image sidecars (C2PA without a central authority)
-│   └── sqlite-driver/      # Shared better-sqlite3 wrapper used by every SQLite store
-├── functions/              # Cloudflare Pages Functions (middlewares, login, OAuth, recovery, trust endpoints, settlement, plugin run/install, admin APIs, first-run setup)
-├── server/                 # Self-hosted Node runtime and first-run service (runs functions/ with Pages-compatible bindings)
-├── scripts/                # Setup (schema.sql + initial admin in one command), schema generation, manifest validation, Docker entrypoint
-├── infra/                  # Deployable infrastructure that is not the app (e.g. the Cloudflare dispatcher Worker)
-├── schema.sql              # Master schema, generated from 30 sources (regenerate with scripts/generate-schema.mjs)
-├── docs/                   # Vision, whitepaper, architecture, Protocol APW spec/errata/vectors, deployment guides
-├── examples/               # Reference configurations (blog, landing page, store)
-├── tests/                  # Unit, browser (Playwright) and e2e tests
-├── Dockerfile              # Multi-stage image (node:24-bookworm-slim); also docker-compose.yml, railway.json, render.yaml
-└── ROADMAP.md              # Current state of the project (history in docs/roadmap/)
-```
-
-See [`docs/architecture/REPO_STRUCTURE_MAP.md`](./docs/architecture/REPO_STRUCTURE_MAP.md) if you're looking for something and it's not where you'd expect.
 
 ---
 
 ## Deployment
 
-### GitHub Pages (free)
-
-Full guide: [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md). Pushes to `main` build the site in CI (`.github/workflows/ci.yml`) and, when the repo has **Settings → Pages → Source: GitHub Actions** enabled, `.github/workflows/deploy-pages.yml` also publishes the static demo to `https://<owner>.github.io/portaless/`. GitHub Pages runs no `functions/`, so the demo shows the public site only (home, blog, example pages); admin, login, and dynamic `/trust/:siteId` need Cloudflare Pages or self-hosting.
-
-### Cloudflare Pages (free, recommended if using Trust Layer or D1 authentication)
-
-Full guide: [`docs/DEPLOY_CLOUDFLARE_PAGES.md`](./docs/DEPLOY_CLOUDFLARE_PAGES.md). Required if you want to use `functions/` (middlewares, sandboxing, login, OAuth, password recovery, trust endpoints) on a static host — GitHub Pages doesn't support edge functions.
-
-### Self-hosted (Node, Docker, Railway, Render)
-
-`npm start` runs the self-hosted Node runtime (`server/node-runtime.mjs`), which executes the same `functions/` as Cloudflare Pages — including the Trust Layer middleware — with SQLite persistence and an `env.ASSETS` binding equivalent to Pages. It requires `PORTALESS_SQLITE_PATH` and `PORTALESS_PUBLIC_URL` and exposes `GET /healthz`.
-
-For containers, the repo includes a multi-stage `Dockerfile` (`node:24-bookworm-slim`), `docker-compose.yml`, `railway.json`, and `render.yaml`, all with a persistent volume at `/data`. On first boot, open `/setup` and enter the one-time setup code printed in the logs (also saved to `/data/SETUP_CODE.txt`) to create the first admin. Full guide: [`docs/self-hosting.md`](./docs/self-hosting.md). Railway and Render have not been verified with real deployments yet — see [`docs/self-hosting-verification.md`](./docs/self-hosting-verification.md).
+- **GitHub Pages (static `starter`):** [`docs/DEPLOY_GITHUB_PAGES.md`](./docs/DEPLOY_GITHUB_PAGES.md)
+- **Cloudflare Pages + D1 (static + Functions / Trust Layer):** [`docs/DEPLOY_CLOUDFLARE_PAGES.md`](./docs/DEPLOY_CLOUDFLARE_PAGES.md)
+- **Self-hosting (Node, Docker, Compose, Railway, Render):** [`docs/self-hosting.md`](./docs/self-hosting.md)
 
 ---
 
-## Authentication
+## Verification
 
 ```bash
-# Self-hosted with SQLite -- applies the database schema AND creates the
-# first admin user, in a single command
-PORTALESS_ADMIN_USERNAME=admin \
-PORTALESS_ADMIN_PASSWORD=a-password-with-at-least-12-characters \
-PORTALESS_SQLITE_PATH=./portaless.db \
-npm run setup
+npm run check:boundaries                                   # --strict architecture & license gate
+npm test                                                   # Vitest unit + e2e suite
+npm run build                                              # starter profile build (35 pages)
+PORTALESS_SITE_PROFILE=demo npm run build                  # demo profile build (79 pages)
+node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts
+PORTALESS_SITE_PROFILE=demo npx playwright test            # 75 browser regressions
 ```
 
-Then visit `/admin/login`. From there you can also:
-
-- Enable **two-factor authentication** (2FA) for your account.
-- Recover your password if you forgot it, via `/admin/password-reset` (rate-limited per IP and per user).
-- Log in with a configured external provider (`/admin/oauth/<provider>/start`), if you added its environment variables.
-
-In the self-hosted Node runtime you can skip `npm run setup` entirely: on first boot, `/setup` creates the first admin with a one-time setup code (valid 60 minutes, 5 attempts). It is disabled as soon as any user exists, and it doesn't exist on Cloudflare Pages.
-
-For Cloudflare D1, apply the schema with `wrangler d1 execute <DB_NAME> --file=schema.sql` (or `npm run setup:d1`) — the first admin user is created automatically the first time the system detects that none exists.
-
-See [`docs/architecture/authentication.md`](./docs/architecture/authentication.md) for the full detail, including the honest limitations that remain (see [`ROADMAP.md`](./ROADMAP.md) for the exact status of each piece).
-
 ---
 
-## Licensing
+## Documentation & Governance
 
-Portaless (the core: CMS, dashboard, authentication, Trust Layer, Permissions Center, sandbox engine) is distributed under **AGPL-3.0**. In plain terms: you can install it, use it, and modify it freely, even inside your own business — the only obligation kicks in if you take a modified version of the core and offer it as an online service to third parties, in which case you must share those changes back.
-
-**The Protocol APW specification** (spec, errata, and test vectors under `docs/protocol-apw/`) is published under **CC BY 4.0** — reimplement it, translate it, and use it commercially with attribution to the author; no registration or certification from Portaless is required. The spec's license and the code's license do not contaminate each other. See [License and governance](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md#license-and-governance).
-
-**Third-party plugins** (paid, free, or closed-source) carry no such obligation, as long as they run inside the isolated sandbox and only use the documented public API — this is the same principle that allows selling closed-source WordPress plugins. See [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md) for the full explanation, including FAQs for anyone building or selling plugins.
-
----
-
-## Roadmap
-
-[`ROADMAP.md`](./ROADMAP.md) is the source of truth for **what is true today**, organized into three categories by who owns each piece:
-
-- **Features in production** — already built, merged to `main`, and functional today.
-- **Internal features in development** — still pending, but exclusively Portaless's responsibility, with no third-party dependency.
-- **External features** — depend on a third party (payment companies, cloud providers, other open source projects) to be completed.
-
-History is deliberately kept elsewhere, so the roadmap stays readable: [`docs/roadmap/ROADMAP-ARCHIVE.md`](./docs/roadmap/ROADMAP-ARCHIVE.md) preserves the full log (PRs #1–#75, refactor registers, closed entries with their session context) and [`CHANGELOG.md`](./CHANGELOG.md) records what shipped per version.
-
-The largest item still awaiting **external reality** (not code) is **Portaless Index as a real network**: the local aggregator, weight calibration and inter-node sync are implemented, but a network needs more than one operator — that depends on Phase 4 (a second real APW implementer) and on people installing Portaless without the author's help (Phase 5's exit criterion). **Portaless Cloud Images** had its cryptographic base implemented in v0.0.9.10 (signed sidecars, PNG embedding, upload/serve/verification endpoints — `docs/architecture/cloud-images.md`); what remains external is large-image storage (R2) and moderation.
-
----
-
-## Security
-
-See [`SECURITY.md`](./SECURITY.md) for known and active vulnerabilities in this MVP, including the handling of the real `isolated-vm` CVE (GHSA-864f-rcv7-6rh4) and the current limitations of the Trust Layer's cryptographic verification. To report a vulnerability, do not open a public Issue — see the current private-reporting status in [`SECURITY.md`](./SECURITY.md#reporting-a-vulnerability).
-
----
-
-## Contributing
-
-Read [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`AGENT.md`](./AGENT.md) (the latter especially if you're using an AI agent to contribute — it contains the real status map of every module). Every change goes through a branch and Pull Request, never a direct commit to `main`.
-
----
+- **Current module state & open work:** [`ROADMAP.md`](./ROADMAP.md) · [`AGENT.md`](./AGENT.md) · [`CHANGELOG.md`](./CHANGELOG.md)
+- **Product direction:** [`docs/VISION.md`](./docs/VISION.md)
+- **Architecture & boundaries:** [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md)
+- **Plugin authoring:** [`docs/plugin-author-guide.md`](./docs/plugin-author-guide.md) · [`@portaless/plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk)
+- **Security & disclosure:** [`SECURITY.md`](./SECURITY.md)
 
 ## License
 
-[AGPL-3.0](./LICENSE) for the project's core — install it, modify it, and use it freely; if you offer a modified version as a service to third parties, share those changes back. Third-party plugins, including closed-source ones, are governed by [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md), not by this license. The Protocol APW specification is under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-
----
-
-<div align="center">
-
-**Portaless** — fewer isolated portals, more real ease to build the ones worth building.
-
-</div>
+Core node and CMS are licensed under **AGPL-3.0-or-later** ([`LICENSE`](./LICENSE)). External gears carry their own compatible licenses as listed in the ecosystem table above; see [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md).

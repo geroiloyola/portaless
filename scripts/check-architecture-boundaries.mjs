@@ -442,6 +442,9 @@ export function checkVeraredPin(root) {
   if (existsSync(resolve(root, "site-profiles", "demo"))) {
     violations.push({ file: "site-profiles/demo", reason: "duplicated-demo-templates" });
   }
+  if (existsSync(resolve(root, "docs", "screenshots"))) {
+    violations.push({ file: "docs/screenshots", reason: "forbidden-docs-screenshots" });
+  }
 
   const localSpecDir = resolve(root, "docs/protocol-apw");
   if (existsSync(localSpecDir)) {
