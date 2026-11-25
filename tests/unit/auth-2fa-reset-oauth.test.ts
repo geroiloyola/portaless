@@ -239,9 +239,38 @@ describe("OAuth/SSO", () => {
     expect((await users.findByUsername("victim@example.com"))?.oauthSubject).toBe("legit-sub");
   });
 
-  it("loadOAuthProviderConfig devuelve null si el proveedor no esta configurado", () => {
-    const config = oauth.loadOAuthProviderConfig("google", {}, "https://example.com/callback");
-    expect(config).toBeNull();
+  it("loadOAuthProviderConfig devuelve null si el proveedor no esta configurado o es invalido", () => {
+    expect(oauth.loadOAuthProviderConfig("google", {}, "https://example.com/callback")).toBeNull();
+    expect(oauth.loadOAuthProviderConfig("bad;provider", {}, "https://example.com/callback")).toBeNull();
+  });
+
+  it("M-07: loadOAuthProviderConfig soporta scope configurable y helpers ligan proveedor a la cookie", () => {
+    const config = oauth.loadOAuthProviderConfig(
+      "github",
+      {
+        PORTALESS_OAUTH_GITHUB_CLIENT_ID: "id",
+        PORTALESS_OAUTH_GITHUB_CLIENT_SECRET: "secret",
+        PORTALESS_OAUTH_GITHUB_AUTH_URL: "https://github.com/login/oauth/authorize",
+        PORTALESS_OAUTH_GITHUB_TOKEN_URL: "https://github.com/login/oauth/access_token",
+        PORTALESS_OAUTH_GITHUB_USERINFO_URL: "https://api.github.com/user",
+        PORTALESS_OAUTH_GITHUB_SCOPE: "read:user user:email",
+      },
+      "https://example.com/admin/oauth/github/callback"
+    );
+    expect(config?.scope).toBe("read:user user:email");
+    const authUrl = new URL(oauth.buildAuthorizationUrl(config!, "st-99", "ch-99"));
+    expect(authUrl.searchParams.get("scope")).toBe("read:user user:email");
+
+    expect(oauth.oauthStateCookieName("GitHub")).toBe("portaless_oauth_state_github");
+    expect(() => oauth.oauthStateCookieName("bad;name")).toThrow(/Invalid OAuth provider/);
+
+    const encoded = oauth.encodeOAuthStateCookieValue("github", "st-99", "ver-99");
+    expect(oauth.decodeOAuthStateCookieValue(encoded)).toEqual({
+      provider: "github",
+      state: "st-99",
+      pkceVerifier: "ver-99",
+    });
+    expect(oauth.decodeOAuthStateCookieValue("malformed")).toBeNull();
   });
 
   it("exchangeCodeForProfile usa fetchImpl inyectado, sin llamada de red real", async () => {

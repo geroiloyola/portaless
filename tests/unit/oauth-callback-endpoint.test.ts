@@ -1,8 +1,6 @@
-// functions/admin/oauth/[provider]/callback.js: valida state+PKCE,
-// intercambia el codigo y crea la sesion. A 0% de cobertura. Se usa el
-// AuthService REAL con stores compartidos en memoria y
-// loadOAuthProviderConfig REAL (con env de prueba); solo se mockea
-// exchangeCodeForProfile (red al proveedor).
+// functions/admin/oauth/[provider]/{start,callback}.js: valida provider,
+// scope por proveedor, state+PKCE ligado a portaless_oauth_state_<provider>
+// (M-07), intercambia el codigo y crea la sesion.
 
 import { describe, it, expect, vi } from "vitest";
 
@@ -26,6 +24,7 @@ vi.mock("@portaless/auth/oauth", async (importOriginal) => {
   return { ...original, exchangeCodeForProfile: oauth.exchangeCodeForProfile };
 });
 
+import * as start from "../../functions/admin/oauth/[provider]/start";
 import * as callback from "../../functions/admin/oauth/[provider]/callback";
 
 const env = {
@@ -36,17 +35,27 @@ const env = {
   PORTALESS_OAUTH_GITHUB_USERINFO_URL: "https://api.github.com/user",
 };
 
-function get(opts: { origin?: string; query?: string; stateCookie?: string | null; provider?: string } = {}) {
+function get(opts: {
+  origin?: string;
+  query?: string;
+  stateCookie?: string | null;
+  cookieName?: string;
+  provider?: string;
+  extraEnv?: Record<string, string>;
+} = {}) {
   const origin = opts.origin ?? "http://x.test";
+  const provider = opts.provider ?? "github";
   const query = opts.query ?? "code=abc&state=st-1";
   const headers: Record<string, string> = {};
   if (opts.stateCookie !== null) {
-    headers["Cookie"] = `portaless_oauth_state=${encodeURIComponent(opts.stateCookie ?? "st-1:verifier-1")}`;
+    const cookieName = opts.cookieName ?? `portaless_oauth_state_${provider}`;
+    const value = opts.stateCookie ?? `${provider}:st-1:verifier-1`;
+    headers["Cookie"] = `${cookieName}=${encodeURIComponent(value)}`;
   }
   const context = {
-    request: new Request(`${origin}/admin/oauth/${opts.provider ?? "github"}/callback?${query}`, { headers }),
-    env: { ...env, PORTALESS_PUBLIC_URL: origin },
-    params: { provider: opts.provider ?? "github" },
+    request: new Request(`${origin}/admin/oauth/${provider}/callback?${query}`, { headers }),
+    env: { ...env, PORTALESS_PUBLIC_URL: origin, ...(opts.extraEnv ?? {}) },
+    params: { provider },
     data: {},
     next: async () => new Response("static"),
   } as any;
@@ -57,12 +66,70 @@ function location(res: Response): string {
   return res.headers.get("location")!;
 }
 
-describe("functions/admin/oauth/[provider]/callback.js", () => {
-  it("sin code/state, sin cookie o con state que no coincide: redirect a error", async () => {
+describe("functions/admin/oauth/[provider]/{start,callback}.js (M-07)", () => {
+  it("M-07: start emite scope configurable por proveedor y cookie portaless_oauth_state_<provider>", async () => {
+    const res = await start.onRequestGet({
+      request: new Request("https://x.test/admin/oauth/github/start"),
+      env: { ...env, PORTALESS_PUBLIC_URL: "https://x.test", PORTALESS_OAUTH_GITHUB_SCOPE: "read:user user:email" },
+      params: { provider: "github" },
+    } as any);
+    expect(res.status).toBe(302);
+    const authUrl = new URL(location(res));
+    expect(authUrl.searchParams.get("scope")).toBe("read:user user:email");
+    expect(authUrl.searchParams.get("state")).toBeTruthy();
+
+    const cookies = res.headers.getSetCookie();
+    const stateCookie = cookies.find((c) => c.startsWith("portaless_oauth_state_github="))!;
+    expect(stateCookie).toBeTruthy();
+    expect(stateCookie).toContain("Path=/admin/oauth/github/callback");
+    expect(stateCookie).toContain("HttpOnly");
+    expect(stateCookie).toContain("SameSite=Lax");
+    expect(stateCookie).toContain("Secure");
+  });
+
+  it("M-07: rechaza nombres de proveedor invalidos o inyectados con 400 antes de tocar cookies", async () => {
+    for (const bad of ["github; Path=/", "../evil", "bad$provider", ""]) {
+      const startRes = await start.onRequestGet({
+        request: new Request("https://x.test/admin/oauth/bad/start"),
+        env: { ...env, PORTALESS_PUBLIC_URL: "https://x.test" },
+        params: { provider: bad },
+      } as any);
+      expect(startRes.status, `start ${bad}`).toBe(400);
+
+      const cbRes = await get({ provider: bad, stateCookie: null });
+      expect(cbRes.status, `callback ${bad}`).toBe(400);
+    }
+  });
+
+  it("M-07: rechaza mismatch de proveedor contra state y limpia la cookie (Max-Age=0)", async () => {
+    // Caso 1: cookie de otro proveedor (portaless_oauth_state_google) enviada al callback de github
+    const wrongCookieName = await get({
+      provider: "github",
+      cookieName: "portaless_oauth_state_google",
+      stateCookie: "google:st-1:verifier-1",
+    });
+    expect(wrongCookieName.status).toBe(302);
+    expect(location(wrongCookieName)).toBe("http://x.test/admin/login?error=1");
+    expect(wrongCookieName.headers.getSetCookie().find((c) => c.startsWith("portaless_oauth_state_github="))).toContain("Max-Age=0");
+
+    // Caso 2: valor interno ligado a google dentro de la cookie portaless_oauth_state_github
+    const wrongInnerProvider = await get({
+      provider: "github",
+      cookieName: "portaless_oauth_state_github",
+      stateCookie: "google:st-1:verifier-1",
+    });
+    expect(wrongInnerProvider.status).toBe(302);
+    expect(location(wrongInnerProvider)).toBe("http://x.test/admin/login?error=1");
+    expect(wrongInnerProvider.headers.getSetCookie().find((c) => c.startsWith("portaless_oauth_state_github="))).toContain("Max-Age=0");
+  });
+
+  it("sin code/state, sin cookie o con state que no coincide: redirect a error y limpia cookie", async () => {
     expect(location(await get({ query: "" }))).toBe("http://x.test/admin/login?error=1");
     expect(location(await get({ query: "code=abc" }))).toBe("http://x.test/admin/login?error=1");
     expect(location(await get({ stateCookie: null }))).toBe("http://x.test/admin/login?error=1");
-    expect(location(await get({ stateCookie: "otro:verifier" }))).toBe("http://x.test/admin/login?error=1");
+    const mismatch = await get({ stateCookie: "github:otro:verifier" });
+    expect(location(mismatch)).toBe("http://x.test/admin/login?error=1");
+    expect(mismatch.headers.getSetCookie().find((c) => c.startsWith("portaless_oauth_state_github="))).toContain("Max-Age=0");
   });
 
   it("proveedor no configurado en el despliegue: 404 explicito", async () => {
@@ -71,14 +138,15 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     expect(await res.text()).toContain("gitlab");
   });
 
-  it("fallo el intercambio con el proveedor: redirect a error", async () => {
+  it("fallo el intercambio con el proveedor: redirect a error y limpia state cookie", async () => {
     oauth.exchangeCodeForProfile.mockRejectedValueOnce(new Error("token invalido"));
     const res = await get();
     expect(res.status).toBe(302);
     expect(location(res)).toBe("http://x.test/admin/login?error=1");
+    expect(res.headers.getSetCookie().find((c) => c.startsWith("portaless_oauth_state_github="))).toContain("Max-Age=0");
   });
 
-  it("exito sobre http: 302 a /admin, sesion y limpieza del state cookie (sin Secure)", async () => {
+  it("exito sobre http: 302 a /admin, sesion y limpieza de portaless_oauth_state_github (sin Secure)", async () => {
     oauth.exchangeCodeForProfile.mockResolvedValueOnce({
       provider: "github",
       subject: "gh-123",
@@ -95,7 +163,7 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     expect(session).toContain("SameSite=Strict");
     expect(session).toContain("Max-Age=86400");
     expect(session).not.toContain("Secure");
-    const cleared = cookies.find((c) => c.startsWith("portaless_oauth_state="))!;
+    const cleared = cookies.find((c) => c.startsWith("portaless_oauth_state_github="))!;
     expect(cleared).toContain("Max-Age=0");
     expect(cleared).toContain("Path=/admin/oauth/github/callback");
   });
@@ -120,12 +188,12 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     expect(redirect.searchParams.get("challenge")).toBeTruthy();
     const cookies = res.headers.getSetCookie();
     expect(cookies.some((c) => c.startsWith("portaless_session="))).toBe(false);
-    expect(cookies.find((c) => c.startsWith("portaless_oauth_state="))).toContain("Max-Age=0");
+    expect(cookies.find((c) => c.startsWith("portaless_oauth_state_github="))).toContain("Max-Age=0");
   });
 
   it("sin PORTALESS_PUBLIC_URL falla cerrado en vez de usar Host", async () => {
     const request = new Request("http://evil.attacker.example/admin/oauth/github/callback?code=abc&state=st-1", {
-      headers: { Cookie: "portaless_oauth_state=st-1:verifier-1" },
+      headers: { Cookie: "portaless_oauth_state_github=github%3Ast-1%3Averifier-1" },
     });
     const res = await callback.onRequestGet({
       request,
@@ -148,10 +216,9 @@ describe("functions/admin/oauth/[provider]/callback.js", () => {
     for (const cookie of res.headers.getSetCookie()) {
       expect(cookie).toContain("Secure");
     }
-    const users = await (await import("@portaless/auth/store-factory")).createUsersStore({});
-    const created = await users.findByUsername("nuevo@example.com");
-    expect(created?.provider).toBe("oauth"); // metodo de auth
-    expect(created?.oauthProvider).toBe("github"); // proveedor real
-    expect(created?.oauthSubject).toBe("gh-999");
+    const factory = await import("@portaless/auth/store-factory");
+    const users = await factory.createUsersStore({});
+    const user = await users.findByOAuthSubject("github", "gh-999");
+    expect(user?.email).toBe("nuevo@example.com");
   });
 });
