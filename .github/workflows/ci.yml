@@ -36,6 +36,8 @@ jobs:
         run: npm run build
       - name: Validar manifiestos de plugins
         run: node node_modules/tsx/dist/cli.mjs scripts/validate-manifests.ts
+      - name: Verificar claims, paridad y fronteras (E-09)
+        run: npm run verify:claims
       - name: Instalar Chromium para las regresiones del navegador
         run: npx playwright install --with-deps chromium
       - name: Verificar flujos reales y layout público

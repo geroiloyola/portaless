@@ -63,6 +63,7 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 
 - [`architecture/canonical-node-and-public-projections.md`](./architecture/canonical-node-and-public-projections.md) (English) — target contract for the private canonical node, approved public projections, local/Cloudum handover, and public revision evidence. Explicitly distinguishes target behavior from current implementation.
 - [`architecture/public-revision-history.md`](./architecture/public-revision-history.md) (English) — implemented PageStore revision IDs, approved history/export/import and the unsigned/APW no-data limits.
+- [`architecture/runtime-parity-matrix.md`](./architecture/runtime-parity-matrix.md) (English) — explicit feature × runtime parity matrix across Static, Cloudflare Pages, and Node self-host (`E-05`), guarded by `npm run verify:claims`.
 - [`architecture/ltp-next-phase-options.md`](./architecture/ltp-next-phase-options.md) (English) — post-G4 owner proposal: Beta-first external adoption, optional minimal LTP runtime verification, frozen G5 offline DNSSEC, and Nuvid proof-package contract readiness. No implementation or activation is included.
 - [`decisions/`](./decisions/README.md) (English) — accepted architecture decisions and their known risks/conditions for reconsideration.
 

@@ -100,6 +100,7 @@ npm run self-host:dev  # http://localhost:3000
 
 ```bash
 npm run check:boundaries                                   # --strict architecture & license gate
+npm run verify:claims                                      # boundaries + claims, honesty, links & runtime parity
 npm test                                                   # Vitest unit + e2e suite
 npm run build                                              # starter profile build (35 pages)
 PORTALESS_SITE_PROFILE=demo npm run build                  # demo profile build (79 pages)
