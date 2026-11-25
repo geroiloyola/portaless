@@ -172,16 +172,41 @@ describe("barrido del estatico con base /portaless/ (perfil demo)", () => {
 });
 
 describe("barrido del estatico con base /portaless/ (perfil starter por defecto)", () => {
-  it("el build starter no emite demo, docs, ES, beta, shop ni projections y no tiene enlaces rotos", () => {
+  it("el build starter emite /, exactamente 1 pagina (/pages/starter-guide/), 1 post (/blog/welcome/), 0 rutas demo y 0 assets externos", () => {
     expect(starterPages.length).toBeGreaterThan(20);
     assertCleanLinks(distStarter, starterPages);
 
-    for (const forbidden of ["docs", "es", "beta", "projections", "shop", "pages", "tienda", "proyecciones", "en", "avatars", "demo-assets"]) {
+    for (const forbidden of ["docs", "es", "beta", "projections", "shop", "tienda", "proyecciones", "en", "avatars", "demo-assets"]) {
       expect(existsSync(join(distStarter, forbidden)), `starter no debe emitir ${forbidden}`).toBe(false);
     }
 
+    // Exactamente 1 pagina bajo /pages/ => /portaless/pages/starter-guide/
+    const starterContentPages = starterPages.filter((p) => p.urlPath.startsWith("/portaless/pages/"));
+    expect(starterContentPages.map((p) => p.urlPath)).toEqual(["/portaless/pages/starter-guide/"]);
+
+    // Exactamente 1 post bajo /blog/ (ademas del indice /blog/)
+    const starterBlogPosts = starterPages.filter(
+      (p) => p.urlPath.startsWith("/portaless/blog/") && p.urlPath !== "/portaless/blog/"
+    );
+    expect(starterBlogPosts.map((p) => p.urlPath)).toEqual(["/portaless/blog/welcome/"]);
+
+    // Home y starter-guide sin imagenes/scripts externos
+    for (const urlPath of ["/portaless/", "/portaless/pages/starter-guide/"]) {
+      const page = starterPages.find((p) => p.urlPath === urlPath);
+      expect(page, urlPath).toBeTruthy();
+      expect(page!.html).not.toMatch(/<img[^>]+src="https?:\/\//i);
+      expect(page!.html).not.toMatch(/<script[^>]+src="https?:\/\//i);
+    }
+
+    // /explore/ en starter usa "Pages" (no "Demo Pages") y enlaza a /portaless/pages/starter-guide/
+    const explore = starterPages.find((p) => p.urlPath === "/portaless/explore/");
+    expect(explore).toBeTruthy();
+    expect(explore!.html).toContain("/portaless/pages/starter-guide/");
+    expect(explore!.html).not.toContain("Demo Pages");
+
     const sitemap = readFileSync(join(distStarter, "sitemap.xml"), "utf8");
     expect(sitemap).toContain("/portaless/blog/welcome/");
+    expect(sitemap).toContain("/portaless/pages/starter-guide/");
     expect(sitemap).not.toContain("/docs/");
     expect(sitemap).not.toContain("/es/");
     expect(sitemap).not.toContain("/beta/");
