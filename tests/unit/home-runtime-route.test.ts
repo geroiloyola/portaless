@@ -82,7 +82,8 @@ describe("GET/HEAD / (functions/index.js + Node self-host)", () => {
 
   it("with home published, GET / and HEAD / serve rendered home with canonical /, strict shell scripts, and Node self-host CSP", async () => {
     const store = await createPageStore(env);
-    await store.save({
+    const existing = await store.load("home");
+    const publishedMeta = await store.save({
       version: "0.1",
       slug: "home",
       title: "Mi Portada Viva",
@@ -92,7 +93,7 @@ describe("GET/HEAD / (functions/index.js + Node self-host)", () => {
         { id: "hero", type: "Hero", props: { title: "Hola Portada Dinámica", subtitle: "Editable sin terminal", bgColor: "#111827" } },
         { id: "p1", type: "Paragraph", props: { text: "Texto publicado en vivo en la raíz." } },
       ],
-    } as unknown as PageLayout);
+    } as unknown as PageLayout, { expectedRevisionId: existing?.revisionId });
 
     const { context, nextCalls } = makeCtx(env);
     const res = await onRequestGet(context);
@@ -139,7 +140,7 @@ describe("GET/HEAD / (functions/index.js + Node self-host)", () => {
         title: "Mi Portada Viva",
         status: "draft",
         root: [{ id: "p1", type: "Paragraph", props: { text: "NO-DEBE-APARECER" } }],
-      } as unknown as PageLayout);
+      } as unknown as PageLayout, { expectedRevisionId: publishedMeta.revisionId });
 
       const fallbackRes = await fetch(`http://127.0.0.1:${port}/`);
       expect(fallbackRes.status).toBe(200);
