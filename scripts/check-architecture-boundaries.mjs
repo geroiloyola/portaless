@@ -454,6 +454,31 @@ export function checkVeraredPin(root) {
     }
   }
 
+  const EXACT_SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+  const SHA512_INTEGRITY_RE = /^sha512-[A-Za-z0-9+/]+=*$/;
+
+  const rootPkgPath = resolve(root, "package.json");
+  if (existsSync(rootPkgPath)) {
+    try {
+      const rootPkg = JSON.parse(readFileSync(rootPkgPath, "utf8"));
+      const allDeps = {
+        ...(rootPkg.dependencies || {}),
+        ...(rootPkg.devDependencies || {}),
+      };
+      for (const name of VERARED_REQUIRED_PACKAGES) {
+        const spec = allDeps[name];
+        if (spec === undefined) continue;
+        if (typeof spec !== "string" || !EXACT_SEMVER_RE.test(spec)) {
+          violations.push({ file: "package.json", reason: `unpinned-verared-version:${name}` });
+        } else if (pin.stack?.version && spec !== pin.stack.version) {
+          violations.push({ file: "package.json", reason: `verared-stack-version-mismatch:${name}` });
+        }
+      }
+    } catch {
+      violations.push({ file: "package.json", reason: "invalid-root-package-json" });
+    }
+  }
+
   const lockPath = resolve(root, "package-lock.json");
   if (existsSync(lockPath)) {
     try {
@@ -462,10 +487,20 @@ export function checkVeraredPin(root) {
       for (const name of VERARED_REQUIRED_PACKAGES) {
         const entry = pkgs[`node_modules/${name}`];
         const resolved = String(entry?.resolved || "");
+        const integrity = String(entry?.integrity || "");
+        const version = String(entry?.version || "");
         if (!entry) {
           violations.push({ file: "package-lock.json", reason: `missing-verared-lock-entry:${name}` });
-        } else if (resolved.includes("registry.npmjs.org") || !resolved.startsWith("https://github.com/verared/vera-trust-stack/releases/download/")) {
-          violations.push({ file: "package-lock.json", reason: `invalid-verared-tarball-source:${name}` });
+        } else {
+          if (!resolved.startsWith(`https://registry.npmjs.org/${name}/-/`)) {
+            violations.push({ file: "package-lock.json", reason: `invalid-verared-registry-source:${name}` });
+          }
+          if (!EXACT_SEMVER_RE.test(version) || (pin.stack?.version && version !== pin.stack.version)) {
+            violations.push({ file: "package-lock.json", reason: `invalid-verared-lock-version:${name}` });
+          }
+          if (!SHA512_INTEGRITY_RE.test(integrity)) {
+            violations.push({ file: "package-lock.json", reason: `missing-verared-integrity:${name}` });
+          }
         }
       }
       const specEntry = pkgs["node_modules/@verared/spec"];

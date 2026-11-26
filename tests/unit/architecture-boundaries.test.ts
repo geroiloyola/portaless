@@ -307,5 +307,92 @@ describe("repository scan and CLI --report / --strict behavior", () => {
     expect(res.status).toBe(1);
     expect(res.stdout).toContain("forbidden-docs-screenshots");
   });
+
+  test("CLI --strict accepts @verared/*@0.1.0-rc.1 from registry.npmjs.org with exact version + sha512 and tarballs for spec/sdk/templates", () => {
+    const stackPkgs = [
+      "@verared/net",
+      "@verared/apw",
+      "@verared/local-trust",
+      "@verared/reputation",
+      "@verared/trust-layer",
+      "@verared/cloud-images",
+      "@verared/identity-atproto",
+    ];
+    const dependencies: Record<string, string> = {};
+    const lockPackages: Record<string, Record<string, string>> = {};
+    for (const name of stackPkgs) {
+      const short = name.split("/")[1];
+      dependencies[name] = "0.1.0-rc.1";
+      lockPackages[`node_modules/${name}`] = {
+        version: "0.1.0-rc.1",
+        resolved: `https://registry.npmjs.org/${name}/-/${short}-0.1.0-rc.1.tgz`,
+        integrity: "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      };
+    }
+    lockPackages["node_modules/@verared/spec"] = {
+      version: "0.1.0-draft.1",
+      resolved: "https://github.com/verared/vera-trust-spec/releases/download/v0.1.0-draft.1/verared-spec-0.1.0-draft.1.tgz",
+    };
+    lockPackages["node_modules/@portaless/plugin-sdk"] = {
+      version: "0.1.0",
+      resolved: "https://github.com/geroiloyola/portaless-plugin-sdk/releases/download/v0.1.0/portaless-plugin-sdk-0.1.0.tgz",
+    };
+    lockPackages["node_modules/@portaless/templates"] = {
+      version: "0.1.0",
+      resolved: "https://github.com/geroiloyola/portaless-templates/releases/download/v0.1.0/portaless-templates-0.1.0.tgz",
+    };
+
+    const specPin = JSON.stringify({
+      commit: "7787966a38fb08ceb509df295ee814ba93af4dec",
+      tag: "v0.1.0-draft.1",
+      stack: { version: "0.1.0-rc.1", tag: "v0.1.0-rc.1" },
+      digests: { corpusDigest: "wNQ9gG2BPs8JO1wPsiPgoz265juDT-TCjuGMbTzSYXA" },
+    });
+
+    // 1. Valid exact pin + sha512 passes
+    const validRoot = makeTempRepo({
+      "SPEC-PIN.json": specPin,
+      "package.json": JSON.stringify({ name: "portaless", license: "AGPL-3.0-or-later", dependencies }),
+      "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: lockPackages }),
+    });
+    const okRes = spawnSync(process.execPath, [scriptPath, "--strict", "--root", validRoot], { cwd: repoRoot, encoding: "utf8" });
+    expect(okRes.status, okRes.stdout).toBe(0);
+
+    // 2. Missing sha512 integrity fails
+    const noIntegrityPackages = structuredClone(lockPackages);
+    delete noIntegrityPackages["node_modules/@verared/net"].integrity;
+    const noIntRoot = makeTempRepo({
+      "SPEC-PIN.json": specPin,
+      "package.json": JSON.stringify({ name: "portaless", license: "AGPL-3.0-or-later", dependencies }),
+      "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: noIntegrityPackages }),
+    });
+    const noIntRes = spawnSync(process.execPath, [scriptPath, "--strict", "--root", noIntRoot], { cwd: repoRoot, encoding: "utf8" });
+    expect(noIntRes.status).toBe(1);
+    expect(noIntRes.stdout).toContain("missing-verared-integrity:@verared/net");
+
+    // 3. Floating range (^ / ~) in package.json fails
+    const floatingDeps = { ...dependencies, "@verared/apw": "^0.1.0-rc.1" };
+    const floatRoot = makeTempRepo({
+      "SPEC-PIN.json": specPin,
+      "package.json": JSON.stringify({ name: "portaless", license: "AGPL-3.0-or-later", dependencies: floatingDeps }),
+      "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: lockPackages }),
+    });
+    const floatRes = spawnSync(process.execPath, [scriptPath, "--strict", "--root", floatRoot], { cwd: repoRoot, encoding: "utf8" });
+    expect(floatRes.status).toBe(1);
+    expect(floatRes.stdout).toContain("unpinned-verared-version:@verared/apw");
+
+    // 4. @verared/spec from registry.npmjs.org still fails (tarball required)
+    const badSpecPackages = structuredClone(lockPackages);
+    badSpecPackages["node_modules/@verared/spec"].resolved = "https://registry.npmjs.org/@verared/spec/-/spec-0.1.0-draft.1.tgz";
+    const badSpecRoot = makeTempRepo({
+      "SPEC-PIN.json": specPin,
+      "package.json": JSON.stringify({ name: "portaless", license: "AGPL-3.0-or-later", dependencies }),
+      "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: badSpecPackages }),
+    });
+    const badSpecRes = spawnSync(process.execPath, [scriptPath, "--strict", "--root", badSpecRoot], { cwd: repoRoot, encoding: "utf8" });
+    expect(badSpecRes.status).toBe(1);
+    expect(badSpecRes.stdout).toContain("invalid-verared-tarball-source:@verared/spec");
+  });
 });
+
 
