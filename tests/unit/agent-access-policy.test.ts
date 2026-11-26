@@ -249,7 +249,7 @@ describe("/admin/api/agents", () => {
     expect(body.source).toBe("default");
     expect(body.policy.policies.ai_train.access).toBe("block");
     expect(body.writable).toBe(false);
-    expect(body.policyPath).toBe("/.well-known/portaless-content-policy.json");
+    expect(body.policyPath).toBe("/.well-known/vera-content-policy.json");
   });
 
   it("GET informa si el Trust Layer aplica la politica (B1)", async () => {

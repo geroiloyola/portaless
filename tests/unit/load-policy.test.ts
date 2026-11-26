@@ -35,7 +35,7 @@ describe("loadContentPolicy", () => {
     const policy = await loadContentPolicy(ORIGIN, assets);
     expect(policy.policies.ai_input.access).toBe("block");
     const req = assets.fetch.mock.calls[0][0] as Request;
-    expect(req.url).toBe("https://a.com/.well-known/portaless-content-policy.json");
+    expect(req.url).toBe("https://a.com/.well-known/vera-content-policy.json");
   });
 
   it("vuelve a la politica por defecto si el archivo no existe", async () => {
