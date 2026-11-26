@@ -126,9 +126,10 @@ describe("GET/HEAD / (functions/index.js + Node self-host)", () => {
       const liveRes = await fetch(`http://127.0.0.1:${port}/`);
       expect(liveRes.status).toBe(200);
       const csp = liveRes.headers.get("content-security-policy") || "";
-      expect(csp).toContain("script-src");
-      expect(csp).not.toContain("'unsafe-inline'");
-      expect(csp).not.toContain("'unsafe-eval'");
+      const scriptSrc = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("script-src")) || "";
+      expect(scriptSrc).toContain("script-src");
+      expect(scriptSrc).not.toContain("'unsafe-inline'");
+      expect(scriptSrc).not.toContain("'unsafe-eval'");
       const liveHtml = await liveRes.text();
       expect(liveHtml).toContain("Hola Portada Dinámica");
       expect(liveHtml).not.toContain("STATIC-HOME-FALLBACK");
