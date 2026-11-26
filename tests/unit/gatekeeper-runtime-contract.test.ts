@@ -413,6 +413,7 @@ describe("Gatekeeper runtime contract (off | shadow | enforce)", () => {
     try {
       const healthRes = await fetch(`${base}/healthz`, { headers: { "user-agent": "UptimeRobot/2.0" } });
       expect(healthRes.status).toBe(200);
+      expect(healthRes.headers.get("cache-control")).toBe("no-store");
       expect(await healthRes.json()).toMatchObject({ ok: true, runtime: "portaless-node" });
 
       const govRes = await fetch(`${base}/api/governed/secret`);
