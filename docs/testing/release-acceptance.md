@@ -90,6 +90,18 @@ validation is **247 files / 2,147 tests / 2 skipped, 72 Playwright, 79 pages**.
 The `v0.0.11` evidence above remains the tagged snapshot (241 / 2,105); it is
 not retroactively rewritten.
 
+## `v0.1.0-rc.1` candidate update (2026-11-26)
+
+Verified on `main` (`b82eb1e`, Node 24 CI 9/9 checks + local staging):
+
+| Evidence | Result |
+|---|---|
+| `npm run verify:claims` (`check:boundaries --strict` + 11 suites) | **PASS** — 0 boundary/license/pin violations, 7 `@verared/*@0.1.0-rc.1` packages verified with `sha512` on `registry.npmjs.org`, `@verared/spec` / `@portaless/plugin-sdk` / `@portaless/templates` on immutable GitHub Release tarballs |
+| Unit + e2e (Node 24 CI) | **PASS** — 252 files, 2,248+ tests, 1 skipped |
+| Playwright E2E (Node 24 CI, incl. `csp-no-violations.spec.ts`) | **PASS** — 76 tests, 0 CSP violations (`script-src 'self' https:`) |
+| Dual Astro builds | **PASS** — `starter` 37 pages (`/`, `/pages/starter-guide/`), `demo` 79 pages (`deploy-demo-pages.yml` green) |
+| Live staging (`shadow` → fail-closed `enforce` → configured `enforce`) | **PASS** — compiled `starter` artifact on `server/node-runtime.mjs` + migrated SQLite: strict CSP, `/healthz` `200 no-store`, real admin login/logout revocation, `/admin/api/gatekeeper-status` (0 secret leak), `503 email_backend_unavailable`, B3 public `200` vs governed `403`, invalid signature `401`, fail-closed `503 gatekeeper_misconfigured` without HMAC secret |
+
 Main branch protection is a GitHub setting, verified separately from this
 repository evidence.
 

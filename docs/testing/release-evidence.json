@@ -1,14 +1,15 @@
 {
   "format": "portaless-release-evidence-v1",
   "version": "1.0",
-  "generatedAt": "2026-10-21",
-  "candidateBaseCommit": "0529435",
+  "generatedAt": "2026-11-26",
+  "candidateBaseCommit": "b82eb1e",
   "candidateIncludes": [
     "C40",
     "C41"
   ],
   "commands": {
     "release": "npm run test:release",
+    "verifyClaims": "npm run verify:claims",
     "unitAndE2e": "node node_modules/vitest/vitest.mjs run",
     "privateExport": "node --import tsx scripts/test-public-export.mjs",
     "sourceBoundary": "node scripts/verify-npm-source-boundary.mjs",
@@ -18,12 +19,21 @@
     "browser": "npx playwright test"
   },
   "summary": {
-    "unitFiles": 241,
-    "unitTests": 2105,
+    "unitFiles": 252,
+    "unitTests": 2248,
     "unitSkipped": 1,
-    "playwrightTests": 72,
+    "playwrightTests": 76,
     "buildPages": 79,
+    "starterBuildPages": 37,
     "baseBuild": "/portaless/",
+    "stagingGatekeeper": {
+      "modesVerified": [
+        "shadow",
+        "enforce_fail_closed",
+        "enforce"
+      ],
+      "result": "pass"
+    },
     "resourceFixture": {
       "pages": 200,
       "revisions": 1000,
@@ -254,5 +264,5 @@
     "A public revision fetched by a third party cannot be guaranteed erased after unpublish.",
     "Tailscale/Docker isolation does not prove that a host operator cannot read the mounted volume."
   ],
-  "candidateVersion": "0.0.11"
+  "candidateVersion": "0.1.0-rc.1"
 }
