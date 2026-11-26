@@ -85,7 +85,18 @@ export async function onRequestGet(context) {
       updatedBy: resolved.updatedBy ?? null,
       writable: canWrite(user.role),
       enforced: env?.ENABLE_TRUST_LAYER === "true",
-      trustedIngress: trustedIngressStatus(createHostTrustedIngress(env)),
+      trustedIngress: (() => {
+        const base = trustedIngressStatus(createHostTrustedIngress(env));
+        if (!base.configured) return base;
+        const source =
+          env?.__PORTALESS_RUNTIME === "node"
+            ? "node-runtime"
+            : env?.PORTALESS_TRUSTED_CLOUDFLARE_INGRESS === "true" ||
+                String(env?.PORTALESS_TRUSTED_PROXY || "").trim().toLowerCase() === "cloudflare"
+              ? "operator-declared-cloudflare"
+              : base.source;
+        return { ...base, source };
+      })(),
       unsignedBotRejections,
       policyPath: CONTENT_POLICY_WELL_KNOWN_PATH,
     }),
