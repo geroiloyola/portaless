@@ -195,10 +195,11 @@ function esc(value) {
   );
 }
 
-export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null, publicOrigin = null } = {}) {
+export function renderShell(layout, bodyHtml, request, { preview = false, revisionHistory = null, publicOrigin = null, canonicalPath = null } = {}) {
   const title = esc(layout.title || layout.slug);
   const description = esc(layout.description || "");
-  const canonical = publicOrigin ? `${publicOrigin}/pages/${encodeURIComponent(layout.slug)}` : null;
+  const resolvedPath = canonicalPath ?? `/pages/${encodeURIComponent(layout.slug)}`;
+  const canonical = publicOrigin ? `${publicOrigin}${resolvedPath}` : null;
   // Tema por pagina (paridad con BaseLayout.astro). Solo los builtins: la
   // pagina servida desde la base tampoco consulta la tabla theme_packs
   // aqui (el catalogo efectivo se arma en el MCP); un nombre que no
@@ -275,9 +276,11 @@ ${historyHtml}
 `;
 }
 
-export async function onRequestGet(context) {
-  const { params, env, request, next } = context;
-  const slug = params?.slug;
+export async function renderDynamicPageResponse(
+  context,
+  { slug, canonicalPath = null, fallbackOnNonPublic = false } = {}
+) {
+  const { env = {}, request, next } = context;
 
   if (!slug || slug.includes("/") || slug.includes("..")) {
     return next();
@@ -302,10 +305,12 @@ export async function onRequestGet(context) {
 
   if (!layout) return next();
 
-  // Fail-closed: una fila draft/private de la DB tiene precedencia sobre
-  // cualquier HTML estatico antiguo. No caer a next(), que podria servir una
-  // proyeccion anterior y filtrar el contenido.
+  // Fail-closed para /pages/:slug: una fila draft/private de la DB tiene
+  // precedencia sobre cualquier HTML estatico antiguo. Para la portada "/"
+  // (slug "home"), si esta en borrador o privada se delega limpiamente al
+  // dist/index.html estatico sin filtrar nunca el contenido del borrador.
   if (!isPubliclyPublishable(layout)) {
+    if (fallbackOnNonPublic) return next();
     return new Response("Not Found", {
       status: 404,
       headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
@@ -337,7 +342,20 @@ export async function onRequestGet(context) {
     : [];
   const revisionHistory = projectPublicRevisionHistory(revisions ?? []);
   await loadNodeFileSystem();
-  return new Response(renderShell(layout, bodyHtml, request, { revisionHistory, publicOrigin: publicOriginFromEnv(env) }), {
+  const isHead = String(request?.method || "GET").toUpperCase() === "HEAD";
+  const html = isHead
+    ? null
+    : renderShell(layout, bodyHtml, request, {
+        revisionHistory,
+        publicOrigin: publicOriginFromEnv(env),
+        canonicalPath,
+      });
+  return new Response(html, {
+    status: 200,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+export async function onRequestGet(context) {
+  return renderDynamicPageResponse(context, { slug: context.params?.slug });
 }

@@ -59,4 +59,14 @@ describe("PR A — /admin UX hierarchy, wizard rescue & publish clarity", () => 
     expect(publish).toContain("GitHub Pages");
     expect(publish).toContain('href="/admin/editor"');
   });
+
+  it("admin/index.astro, admin/pages.astro and admin/editor.astro expose the editable home (/) flow", () => {
+    expect(read("src/pages/admin/index.astro")).toContain('href="/admin/editor?slug=home"');
+    const pages = read("src/pages/admin/pages.astro");
+    expect(pages).toContain('href="/admin/editor?slug=home"');
+    expect(pages).toContain('page.slug === "home"');
+    const editor = read("src/pages/admin/editor.astro");
+    expect(editor).toContain("defaultHomeLayout");
+    expect(editor).toContain('slug === "home"');
+  });
 });

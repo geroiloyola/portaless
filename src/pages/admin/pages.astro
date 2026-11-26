@@ -32,6 +32,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   <form id="pm-open-form" class="pm-open-form">
     <input type="text" id="pm-open-slug" placeholder="slug-de-pagina" autocomplete="off" required />
     <button type="submit" class="pm-primary-btn">Abrir en el editor</button>
+    <a class="pm-secondary-btn" href="/admin/editor?slug=home">Editar portada (/)</a>
     <a class="pm-secondary-btn" href="/admin/editor">+ Nueva página</a>
   </form>
 
@@ -196,13 +197,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       ? page.status!
       : page.status === undefined ? "published" : "private";
 
+    const isHome = page.slug === "home";
     const tdTitle = document.createElement("td");
-    tdTitle.textContent = page.title;
+    tdTitle.textContent = isHome ? `${page.title} · Portada (/)` : page.title;
     tr.appendChild(tdTitle);
 
     const tdSlug = document.createElement("td");
     const code = document.createElement("code");
-    code.textContent = page.slug;
+    code.textContent = isHome ? "home (/)" : page.slug;
     tdSlug.appendChild(code);
     tr.appendChild(tdSlug);
 
@@ -221,7 +223,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     preview.rel = "noopener noreferrer";
     preview.textContent = "Vista previa";
     const view = document.createElement("a");
-    view.href = `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
+    view.href = isHome ? "/" : `${ROUTES.PAGES}/${encodeURIComponent(page.slug)}`;
     view.target = "_blank";
     view.rel = "noopener";
     view.textContent = "Ver ↗";
