@@ -256,7 +256,7 @@ Wave 2 **must not start** until every item below is verified true in CI on
 
 #### Final 5-repository ecosystem (Waves 1–3 complete)
 - `github.com/verared/vera-trust-spec` (`@verared/spec` `v0.1.0-draft.1`, **CC BY 4.0**)
-- `github.com/verared/vera-trust-stack` (`@verared/*` `0.1.0-rc.1` on `registry.npmjs.org`, **Apache-2.0**)
+- `github.com/verared/vera-trust-stack` (`@verared/*` `0.1.0` on `registry.npmjs.org`, **Apache-2.0**)
 - `github.com/geroiloyola/portaless-plugin-sdk` (`@portaless/plugin-sdk` `v0.1.0`, **MIT**)
 - `github.com/geroiloyola/portaless-templates` (`@portaless/templates` `v0.1.0`, **CC0-1.0**, per-asset verified)
 - `github.com/geroiloyola/portaless` (**AGPL-3.0-or-later**, clean `starter` default, consumes all four external gears via immutable GitHub Release tarballs with zero tokens)
