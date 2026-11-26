@@ -59,7 +59,7 @@ describe("admin SVRI endpoint", () => {
 
   it("reverifies the source JWS and its site-chain inclusion before counting T2", async () => {
     const env = { PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.from(new Uint8Array(32).fill(23)).toString("base64") };
-    const identityStore = new InMemorySiteIdentityStore(env);
+    const identityStore = new InMemorySiteIdentityStore({ encryptionKey: env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
     const keyPair = await generateApwDid("example.org");
     await identityStore.create("default", keyPair, "admin");
     const key = await identityStore.getActiveSigningKey("default");

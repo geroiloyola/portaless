@@ -16,7 +16,7 @@ describe("SVRI historical reconstruction", () => {
   it("replays only source JWS linked to a verified site-chain entry", async () => {
     const domain = "svri-history.example";
     const did = `did:apw:${domain}`;
-    const identity = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: encryptionKey });
+    const identity = new InMemorySiteIdentityStore({ encryptionKey: encryptionKey });
     const keyPair = await generateApwDid(domain);
     await identity.create("default", keyPair, "admin");
     const log = new InMemoryAttestationLogStore();
@@ -52,7 +52,7 @@ describe("SVRI historical reconstruction", () => {
   it("preserves entries inside a rotated key window and rejects an entry outside it", async () => {
     const domain = "svri-rotation.example";
     const did = `did:apw:${domain}`;
-    const identity = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: encryptionKey });
+    const identity = new InMemorySiteIdentityStore({ encryptionKey: encryptionKey });
     await identity.create("default", await generateApwDid(domain), "admin");
     const log = new InMemoryAttestationLogStore();
     const first = fakeSourceAttestation({
@@ -94,7 +94,7 @@ describe("SVRI historical reconstruction", () => {
   it("marks a missing/mismatched source JWS as partial instead of inventing a historical score", async () => {
     const domain = "svri-history-partial.example";
     const did = `did:apw:${domain}`;
-    const identity = new InMemorySiteIdentityStore({ PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: encryptionKey });
+    const identity = new InMemorySiteIdentityStore({ encryptionKey: encryptionKey });
     await identity.create("default", await generateApwDid(domain), "admin");
     const log = new InMemoryAttestationLogStore();
     const sourceJws = fakeSourceAttestation({ iss: did, sub: did, src: "self", cat: "privacy_policy", val: true, iat: 1, jti: "legacy" });

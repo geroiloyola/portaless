@@ -352,7 +352,12 @@ describe("default fetchSiteTrust (no inyectado)", () => {
     const { createSiteIdentityStore, createSiteTrustScoreStore } = await import("@portaless/trust-storage-adapters");
     const result = await buildAtprotoReputation(
       HANDLE,
-      deps({ ...linkDeps(), env: localEnv, fetchImpl, createSiteIdentityStore, createSiteTrustScoreStore }),
+      deps({
+        ...linkDeps(),
+        fetchImpl,
+        createSiteIdentityStore: () => createSiteIdentityStore(localEnv),
+        createSiteTrustScoreStore: () => createSiteTrustScoreStore(localEnv),
+      }),
     );
 
     expect(fetchImpl).not.toHaveBeenCalled();

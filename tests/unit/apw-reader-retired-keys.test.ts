@@ -202,7 +202,7 @@ describe("rotacion real del lector -> request firmada con la clave vieja", () =>
   }
 
   async function seedRotated() {
-    const identity = new InMemorySiteIdentityStore(ENV);
+    const identity = new InMemorySiteIdentityStore({ encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
     const log = new InMemoryAttestationLogStore();
     state.identity = identity;
     state.log = log;

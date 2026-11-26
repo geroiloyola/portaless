@@ -67,7 +67,7 @@ async function newSqlite(): Promise<Backend | null> {
     const mod: any = await import("../../packages/sqlite-driver/src/open");
     const db = await mod.openSqlite(":memory:");
     db.exec(BASE_DDL);
-    return { identity: new SqliteSiteIdentityStore(db, ENV), log: new SqliteAttestationLogStore(db), db };
+    return { identity: new SqliteSiteIdentityStore(db, { encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY }), log: new SqliteAttestationLogStore(db), db };
   } catch {
     return null;
   }
@@ -76,7 +76,7 @@ async function newSqlite(): Promise<Backend | null> {
 const sqliteAvailable = (await newSqlite()) !== null;
 
 const backends: Array<{ name: string; make: () => Promise<Backend> }> = [
-  { name: "InMemory", make: async () => ({ identity: new InMemorySiteIdentityStore(ENV), log: new InMemoryAttestationLogStore() }) },
+  { name: "InMemory", make: async () => ({ identity: new InMemorySiteIdentityStore({ encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY }), log: new InMemoryAttestationLogStore() }) },
   ...(sqliteAvailable ? [{ name: "SQLite", make: async () => (await newSqlite()) as Backend }] : []),
 ];
 
@@ -283,7 +283,7 @@ if (sqliteAvailable) {
 
 describe("GET /.well-known/apw-log.json publica keyId y fingerprint", () => {
   it("cada clave trae keyId, keySequence, fingerprint y el alias kid, solo con miembros publicos", async () => {
-    const identity = new InMemorySiteIdentityStore(ENV);
+    const identity = new InMemorySiteIdentityStore({ encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
     const log = new InMemoryAttestationLogStore();
     state.identity = identity;
     state.log = log;
