@@ -3,8 +3,8 @@
 **Status: historical proposal; host-side Gatekeeper foundation shipped (`off` by default).**
 Host-side B3 alignment (`ADR 0003`), the Pre-Auth Egress Guard (`functions/_shared/preauth-egress-guard.js`),
 and the `PORTALESS_GATEKEEPER_MODE=off|shadow|enforce` runtime orchestrator (`functions/_shared/gatekeeper-runtime.js`,
-isolating `@verared/local-trust` and `@verared/reputation` behind `createVeraTrustHostAdapter` for the future
-`v0.1.0-rc.1` repin) are now wired into `functions/_middleware.js` (default `off`, fail-closed on unknown mode).
+isolating `@verared/local-trust` and `@verared/reputation` behind `createVeraTrustHostAdapter` and consuming the 7
+`@verared/*` stack packages from `registry.npmjs.org` at exact `0.1.0-rc.1`) are now wired into `functions/_middleware.js` (default `off`, fail-closed on unknown mode).
 Versioned DB policy UI (`identity_access_config`), per-category Permissions Center grants, G5 offline DNSSEC,
 and live `shadow → enforce` activation remain pending. See the
 [canonical G1–G5 register](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-GATES-AND-AUTHORIZATIONS.md).
