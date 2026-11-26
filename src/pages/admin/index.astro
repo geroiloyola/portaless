@@ -44,6 +44,7 @@
 // "Sitio Verificado" y nunca pedia actualizarse. Sin identidad, el banner
 // se comporta igual que antes.
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import AdminLogoutButton from "../../components/AdminLogoutButton.astro";
 import {
   capabilityRegistry,
   listCapabilitiesByRisk,
@@ -63,8 +64,11 @@ const riskIdMapJson = JSON.stringify(riskById);
 ---
 <BaseLayout title="Panel de administración — Portaless">
   <div class="ai-page-header">
-    <h1 class="ai-page-title">Panel de administración</h1>
-    <p class="ai-page-subtitle">Accesos directos a las herramientas de administración del sitio.</p>
+    <div>
+      <h1 class="ai-page-title">Panel de administración</h1>
+      <p class="ai-page-subtitle">Accesos directos a las herramientas de administración del sitio.</p>
+    </div>
+    <AdminLogoutButton />
   </div>
 
   <section class="ai-apw-checklist" id="ai-apw-checklist">
@@ -467,7 +471,14 @@ const riskIdMapJson = JSON.stringify(riskById);
 </script>
 
 <style>
-  .ai-page-header { margin-bottom: 28px; }
+  .ai-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
   .ai-page-title { margin: 0 0 6px; font-size: 1.4rem; }
   .ai-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
 

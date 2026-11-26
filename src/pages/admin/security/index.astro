@@ -8,15 +8,38 @@
 // Cambiar la contraseña cierra todas las sesiones, asi que despues se
 // redirige al login.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminLogoutButton from "../../../components/AdminLogoutButton.astro";
 ---
 <BaseLayout title="Seguridad — Portaless">
   <div class="sec-header">
-    <h1 class="sec-title">Seguridad de tu cuenta</h1>
-    <p class="sec-subtitle">
-      Revisa cuando y desde donde se cambio tu contraseña. Si ves un cambio que no hiciste,
-      cambiala ahora y activa el 2FA.
-    </p>
+    <div>
+      <h1 class="sec-title">Seguridad de tu cuenta</h1>
+      <p class="sec-subtitle">
+        Revisa cuando y desde donde se cambio tu contraseña. Si ves un cambio que no hiciste,
+        cambiala ahora y activa el 2FA.
+      </p>
+    </div>
+    <AdminLogoutButton />
   </div>
+
+  <section class="sec-panel" id="sec-gatekeeper-panel">
+    <h2 class="sec-h2">Estado de Gatekeeper y proxy confiable</h2>
+    <p id="sec-gk-loading" class="sec-muted">Cargando estado del runtime…</p>
+    <p id="sec-gk-error" class="sec-error" style="display:none;"></p>
+    <dl id="sec-gk-details" class="sec-dl" style="display:none;">
+      <dt>Modo Gatekeeper (<code>PORTALESS_GATEKEEPER_MODE</code>)</dt>
+      <dd><span id="sec-gk-mode" class="sec-badge">off</span></dd>
+      <dt>Proxy confiable (<code>PORTALESS_TRUSTED_PROXY</code>)</dt>
+      <dd><code id="sec-gk-proxy">none</code></dd>
+      <dt>Secreto HMAC de IP (<code>PORTALESS_IP_HMAC_SECRET</code>)</dt>
+      <dd id="sec-gk-hmac">no configurado</dd>
+      <dt>Rutas gobernadas configuradas</dt>
+      <dd id="sec-gk-governed">0</dd>
+      <dt>Presupuesto de egresos pre-auth (IP / origen / global)</dt>
+      <dd id="sec-gk-budgets">—</dd>
+    </dl>
+    <p id="sec-gk-config-warn" class="sec-error" style="display:none;"></p>
+  </section>
 
   <section class="sec-panel">
     <h2 class="sec-h2">Cambiar contraseña</h2>
@@ -33,6 +56,17 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       <label class="sec-label">Codigo 2FA (si lo tienes activo)
         <input class="sec-input" type="text" name="totpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
       </label>
+
+      <div class="sec-stepup-box">
+        <p class="sec-muted">Verificacion opcional por correo (step-up por email):</p>
+        <button class="sec-btn-secondary" type="button" id="sec-email-req-btn">Enviar codigo a mi correo</button>
+        <p id="sec-email-req-msg" class="sec-msg" style="display:none;"></p>
+        <input type="hidden" name="emailToken" id="sec-email-token" />
+        <label class="sec-label">Codigo recibido por correo (opcional)
+          <input class="sec-input" type="text" name="emailCode" id="sec-email-code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" />
+        </label>
+      </div>
+
       <button class="sec-btn" type="submit" id="sec-change-btn">Cambiar contraseña</button>
       <p id="sec-change-msg" class="sec-msg" style="display:none;"></p>
     </form>
@@ -54,6 +88,8 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  import { EMAIL_STEPUP_ERRORS, requestEmailStepUpCode } from "../../../lib/admin-email-stepup";
+
   interface PasswordEvent {
     kind: "reset" | "change";
     occurredAt: string;
@@ -63,12 +99,61 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     city: string | null;
   }
 
+  interface GatekeeperStatus {
+    ok: boolean;
+    mode: string;
+    trustedProxy: string;
+    ipHmacSecretConfigured: boolean;
+    governedPathsCount: number;
+    egressBudgets?: { perIp: number; perOrigin: number; global: number; windowMs: number };
+    configError: string | null;
+  }
+
   const KIND_LABEL: Record<string, string> = { reset: "Recuperacion por enlace", change: "Cambio estando logueado" };
 
   function cell(text: string): HTMLTableCellElement {
     const td = document.createElement("td");
     td.textContent = text;
     return td;
+  }
+
+  async function loadGatekeeperStatus(): Promise<void> {
+    const loading = document.getElementById("sec-gk-loading")!;
+    const error = document.getElementById("sec-gk-error")!;
+    const details = document.getElementById("sec-gk-details")!;
+    const warn = document.getElementById("sec-gk-config-warn")!;
+    try {
+      const res = await fetch("/admin/api/gatekeeper-status", { credentials: "same-origin" });
+      if (res.status === 401) {
+        window.location.href = "/admin/login?error=1";
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const status = (await res.json()) as GatekeeperStatus;
+      loading.style.display = "none";
+      const modeEl = document.getElementById("sec-gk-mode")!;
+      modeEl.textContent = status.mode;
+      modeEl.className = `sec-badge sec-badge-${status.mode}`;
+      document.getElementById("sec-gk-proxy")!.textContent = status.trustedProxy;
+      document.getElementById("sec-gk-hmac")!.textContent = status.ipHmacSecretConfigured
+        ? "configurado (>= 16 chars)"
+        : "no configurado";
+      document.getElementById("sec-gk-governed")!.textContent = String(status.governedPathsCount ?? 0);
+      if (status.egressBudgets) {
+        const b = status.egressBudgets;
+        document.getElementById("sec-gk-budgets")!.textContent =
+          `${b.perIp} / ${b.perOrigin} / ${b.global} (ventana ${Math.round(b.windowMs / 1000)}s)`;
+      }
+      details.style.display = "";
+      if (status.configError) {
+        warn.textContent = `Advertencia de configuracion: ${status.configError}`;
+        warn.style.display = "";
+      }
+    } catch (err) {
+      loading.style.display = "none";
+      error.textContent = `No se pudo cargar el estado de Gatekeeper: ${(err as Error).message}`;
+      error.style.display = "";
+    }
   }
 
   async function loadHistory(): Promise<void> {
@@ -114,17 +199,34 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     invalid_totp: "El codigo de 2FA no es correcto o expiro.",
     no_step_up_factor: "Tu cuenta no tiene contraseña ni 2FA.",
     user_not_found: "No se encontro tu usuario.",
+    ...EMAIL_STEPUP_ERRORS,
   };
 
   const form = document.getElementById("sec-change-form") as HTMLFormElement;
   const msg = document.getElementById("sec-change-msg")!;
   const btn = document.getElementById("sec-change-btn") as HTMLButtonElement;
+  const emailReqBtn = document.getElementById("sec-email-req-btn") as HTMLButtonElement;
+  const emailReqMsg = document.getElementById("sec-email-req-msg")!;
+  const emailTokenInput = document.getElementById("sec-email-token") as HTMLInputElement;
 
   function showMsg(text: string, ok: boolean) {
     msg.textContent = text;
     msg.className = ok ? "sec-msg sec-ok" : "sec-msg sec-error";
     msg.style.display = "";
   }
+
+  emailReqBtn.addEventListener("click", async () => {
+    emailReqBtn.disabled = true;
+    emailReqMsg.style.display = "none";
+    const result = await requestEmailStepUpCode();
+    if (result.ok && result.token) {
+      emailTokenInput.value = result.token;
+    }
+    emailReqMsg.textContent = result.message;
+    emailReqMsg.className = result.ok ? "sec-msg sec-ok" : "sec-msg sec-error";
+    emailReqMsg.style.display = "";
+    emailReqBtn.disabled = false;
+  });
 
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -140,6 +242,12 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     };
     const totp = String(fd.get("totpCode") || "").trim();
     if (totp) body.totpCode = totp;
+    const emailCode = String(fd.get("emailCode") || "").trim();
+    const emailToken = String(fd.get("emailToken") || "").trim();
+    if (emailCode || emailToken) {
+      if (emailToken) body.emailToken = emailToken;
+      if (emailCode) body.emailCode = emailCode;
+    }
 
     btn.disabled = true;
     try {
@@ -151,6 +259,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(REASONS[data.error] ?? data.error ?? "No se pudo cambiar la contraseña.");
       form.reset();
+      emailTokenInput.value = "";
       showMsg("Contraseña cambiada. Se cerraron todas tus sesiones: vuelve a iniciar sesion.", true);
       setTimeout(() => { window.location.href = "/admin/login"; }, 2500);
     } catch (err) {
@@ -159,11 +268,20 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     }
   });
 
+  loadGatekeeperStatus();
   loadHistory();
 </script>
 
 <style>
-  .sec-header { margin-bottom: 24px; max-width: 720px; }
+  .sec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    max-width: 720px;
+  }
   .sec-title { margin: 0 0 6px; font-size: 1.4rem; }
   .sec-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; line-height: 1.5; }
   .sec-panel {
@@ -175,6 +293,26 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     background: var(--panel-bg);
   }
   .sec-h2 { margin: 0 0 12px; font-size: 1rem; }
+  .sec-dl {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 8px 16px;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .sec-dl dt { color: var(--portaless-muted); }
+  .sec-dl dd { margin: 0; font-weight: 600; text-align: right; }
+  .sec-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    border: 1px solid var(--portaless-border);
+  }
+  .sec-badge-enforce { border-color: var(--accent-text); color: var(--accent-text); }
+  .sec-badge-shadow { border-color: var(--warning-fg); color: var(--warning-fg); }
+  .sec-badge-invalid { border-color: var(--danger-fg); color: var(--danger-fg); }
   .sec-label { display: block; margin-bottom: 12px; font-size: 0.85rem; color: var(--portaless-fg); }
   .sec-input {
     display: block;
@@ -189,6 +327,12 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     font-size: 0.9rem;
     box-sizing: border-box;
   }
+  .sec-stepup-box {
+    margin: 14px 0 16px;
+    padding: 12px 14px;
+    border: 1px dashed var(--portaless-border);
+    border-radius: 8px;
+  }
   .sec-btn {
     border: 1px solid var(--accent-text);
     background: var(--portaless-accent);
@@ -199,7 +343,18 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
     font-weight: 600;
     cursor: pointer;
   }
-  .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sec-btn-secondary {
+    border: 1px solid var(--portaless-border);
+    background: var(--bg);
+    color: var(--portaless-fg);
+    border-radius: var(--radius-button, 8px);
+    padding: 7px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 4px 0 10px;
+  }
+  .sec-btn:disabled, .sec-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
   .sec-msg { margin: 10px 0 0; font-size: 0.85rem; }
   .sec-ok { color: var(--accent-text); }
   .sec-error { color: var(--danger-fg); font-size: 0.85rem; }

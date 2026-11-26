@@ -1,0 +1,55 @@
+---
+// Reusable CSP-strict logout button for /admin/* views.
+// Submits POST /admin/logout and redirects cleanly to /admin/login.
+interface Props {
+  label?: string;
+}
+const { label = "Cerrar sesión" } = Astro.props;
+---
+<button type="button" class="portaless-admin-logout-btn" data-admin-logout>{label}</button>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-admin-logout]");
+  for (const btn of buttons) {
+    if (btn.dataset.logoutBound === "1") continue;
+    btn.dataset.logoutBound = "1";
+    btn.addEventListener("click", async () => {
+      const original = btn.textContent || "Cerrar sesión";
+      btn.disabled = true;
+      btn.textContent = "Cerrando sesión…";
+      try {
+        await fetch("/admin/logout", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+      } catch {
+        // Redirect to login even on transient network errors so the user can re-auth.
+      } finally {
+        btn.textContent = original;
+        window.location.href = "/admin/login";
+      }
+    });
+  }
+</script>
+
+<style>
+  .portaless-admin-logout-btn {
+    border: 1px solid var(--portaless-border, var(--panel-border));
+    background: var(--panel-bg, transparent);
+    color: var(--portaless-fg, var(--text));
+    border-radius: var(--radius-button, 8px);
+    padding: 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .portaless-admin-logout-btn:hover:not(:disabled) {
+    border-color: var(--danger-fg);
+    color: var(--danger-fg);
+  }
+  .portaless-admin-logout-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+</style>
