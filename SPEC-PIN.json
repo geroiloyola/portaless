@@ -11,9 +11,9 @@
   },
   "stack": {
     "repository": "https://github.com/verared/vera-trust-stack",
-    "version": "0.1.0-alpha.1",
-    "tag": "v0.1.0-alpha.1",
-    "commit": "d2e1d4ad1f74f807b232c428df8c7fb571ff5e6d"
+    "version": "0.1.0-rc.1",
+    "tag": "v0.1.0-rc.1",
+    "commit": "502f0ec1d2845b01c9145dedcda25014c41bbd88"
   },
   "digests": {
     "schemaBundleDigest": "2-OWDPkYHe3A_DYyUbSsE5t1jFRyNxNM6DnVml-Tp7w",

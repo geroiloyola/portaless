@@ -44,13 +44,13 @@
   "dependencies": {
     "@noble/post-quantum": "^0.5.0",
     "@portaless/plugin-sdk": "https://github.com/geroiloyola/portaless-plugin-sdk/releases/download/v0.1.0/portaless-plugin-sdk-0.1.0.tgz",
-    "@verared/apw": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-apw-0.1.0-alpha.1.tgz",
-    "@verared/cloud-images": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-cloud-images-0.1.0-alpha.1.tgz",
-    "@verared/identity-atproto": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-identity-atproto-0.1.0-alpha.1.tgz",
-    "@verared/local-trust": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-local-trust-0.1.0-alpha.1.tgz",
-    "@verared/net": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-net-0.1.0-alpha.1.tgz",
-    "@verared/reputation": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-reputation-0.1.0-alpha.1.tgz",
-    "@verared/trust-layer": "https://github.com/verared/vera-trust-stack/releases/download/v0.1.0-alpha.1/verared-trust-layer-0.1.0-alpha.1.tgz",
+    "@verared/apw": "0.1.0-rc.1",
+    "@verared/cloud-images": "0.1.0-rc.1",
+    "@verared/identity-atproto": "0.1.0-rc.1",
+    "@verared/local-trust": "0.1.0-rc.1",
+    "@verared/net": "0.1.0-rc.1",
+    "@verared/reputation": "0.1.0-rc.1",
+    "@verared/trust-layer": "0.1.0-rc.1",
     "astro": "^7.3.3",
     "better-sqlite3": "^12.0.0",
     "canonicalize": "^2.0.0",
@@ -60,14 +60,7 @@
   "overrides": {
     "@portaless/plugin-sdk": "$@portaless/plugin-sdk",
     "@portaless/templates": "$@portaless/templates",
-    "@verared/apw": "$@verared/apw",
-    "@verared/cloud-images": "$@verared/cloud-images",
-    "@verared/identity-atproto": "$@verared/identity-atproto",
-    "@verared/local-trust": "$@verared/local-trust",
-    "@verared/net": "$@verared/net",
-    "@verared/reputation": "$@verared/reputation",
-    "@verared/spec": "$@verared/spec",
-    "@verared/trust-layer": "$@verared/trust-layer"
+    "@verared/spec": "$@verared/spec"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
