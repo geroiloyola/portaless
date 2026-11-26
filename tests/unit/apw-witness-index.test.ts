@@ -47,7 +47,7 @@ interface Site {
 }
 
 async function makeSite(domain: string): Promise<Site> {
-  const identity = new InMemorySiteIdentityStore(ENV);
+  const identity = new InMemorySiteIdentityStore({ encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
   const log = new InMemoryAttestationLogStore();
   await identity.create(SITE_ID, await makeKeyPair(domain), "admin");
   return { domain, did: `did:apw:${domain}`, identity, log, deps: { identity, log, siteId: SITE_ID } };

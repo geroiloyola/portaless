@@ -85,7 +85,6 @@ describe("GET /trust/atproto/:handle", () => {
     expect(res.headers.get("cache-control")).toBe("public, max-age=300");
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
     expect(build).toHaveBeenCalledWith("username.wikipedia.org", {
-      env: { some: "env" },
       fetchImpl: expect.any(Function),
       createSiteIdentityStore: expect.any(Function),
       createSiteTrustScoreStore: expect.any(Function),
@@ -96,7 +95,6 @@ describe("GET /trust/atproto/:handle", () => {
     build.mockResolvedValueOnce(unresolved("invalid_handle", ""));
     expect((await onRequestGet(context(undefined, {}))).status).toBe(400);
     expect(build).toHaveBeenCalledWith(undefined, {
-      env: {},
       fetchImpl: expect.any(Function),
       createSiteIdentityStore: expect.any(Function),
       createSiteTrustScoreStore: expect.any(Function),

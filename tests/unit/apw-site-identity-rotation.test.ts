@@ -20,11 +20,11 @@ function sqliteStore(): SiteIdentityStore {
     site_id TEXT PRIMARY KEY, did TEXT NOT NULL, domain TEXT NOT NULL, public_key_jwk TEXT NOT NULL,
     private_key_jwk_encrypted TEXT NOT NULL, private_key_encryption_iv TEXT NOT NULL,
     key_algorithm TEXT NOT NULL, created_at TEXT NOT NULL, created_by TEXT NOT NULL)`);
-  return new SqliteSiteIdentityStore(db, env);
+  return new SqliteSiteIdentityStore(db, { encryptionKey: env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
 }
 
 const backends: [string, () => SiteIdentityStore][] = [
-  ["InMemory", () => new InMemorySiteIdentityStore(env)],
+  ["InMemory", () => new InMemorySiteIdentityStore({ encryptionKey: env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY })],
   ["SQLite", sqliteStore],
 ];
 

@@ -63,10 +63,9 @@ export async function onRequestGet(context) {
 
   const fetchImpl = createBoundedPublicFetch(env, { maxRequests: 12, deadlineMs: 8000 });
   const result = await buildAtprotoReputation(params?.handle, {
-    env,
     fetchImpl,
-    createSiteIdentityStore,
-    createSiteTrustScoreStore,
+    createSiteIdentityStore: () => createSiteIdentityStore(env),
+    createSiteTrustScoreStore: () => createSiteTrustScoreStore(env),
   });
 
   if (!result.resolved) {

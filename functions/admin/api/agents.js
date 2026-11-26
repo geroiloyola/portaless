@@ -28,6 +28,7 @@ import { defaultContentPolicy } from "@verared/trust-layer/policy";
 import { emitActivity } from "@portaless/dashboard/activity";
 import { readUnsignedBotRejections } from "@portaless/trust-storage-adapters";
 import { trustedIngressStatus } from "@verared/trust-layer/net";
+import { createHostTrustedIngress } from "../../_shared/gatekeeper-runtime.js";
 
 function canWrite(role) {
   return role === "admin";
@@ -84,7 +85,7 @@ export async function onRequestGet(context) {
       updatedBy: resolved.updatedBy ?? null,
       writable: canWrite(user.role),
       enforced: env?.ENABLE_TRUST_LAYER === "true",
-      trustedIngress: trustedIngressStatus(env),
+      trustedIngress: trustedIngressStatus(createHostTrustedIngress(env)),
       unsignedBotRejections,
       policyPath: CONTENT_POLICY_WELL_KNOWN_PATH,
     }),

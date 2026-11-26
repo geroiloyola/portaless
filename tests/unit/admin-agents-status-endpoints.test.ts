@@ -25,7 +25,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const agentsStore = new InMemoryAuthorizedAgentsStore();
   const key = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
   const env = { PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: key };
-  const identity = new InMemorySiteIdentityStore(env);
+  const identity = new InMemorySiteIdentityStore({ encryptionKey: env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
   const log = { head: async () => null as any };
   return {
     ...original,

@@ -161,15 +161,23 @@ export class SqliteSiteAtprotoLinksStore implements SiteAtprotoLinksStore {
 }
 
 export async function createSiteIdentityStore(env: Record<string, any>): Promise<SiteIdentityStore> {
-  if (env.DB) return new D1SiteIdentityStore(env.DB, env);
+  const encryptionKey =
+    (typeof env?.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY === "string" && env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY.trim()) ||
+    (typeof env?.encryptionKey === "string" && env.encryptionKey.trim()) ||
+    (typeof process !== "undefined" && typeof process.env?.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY === "string"
+      ? process.env.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY.trim()
+      : "") ||
+    undefined;
+  const options = encryptionKey ? { encryptionKey } : {};
+  if (env.DB) return new D1SiteIdentityStore(env.DB, options);
   if (env.PORTALESS_SQLITE_PATH) {
     const db = await openSqlite(env.PORTALESS_SQLITE_PATH);
-    return new SqliteSiteIdentityStore(db, env);
+    return new SqliteSiteIdentityStore(db, options);
   }
   console.warn(
     "[site-identity-store] Sin env.DB ni PORTALESS_SQLITE_PATH configurados -- usando InMemorySiteIdentityStore. La identidad NO persistira entre reinicios.",
   );
-  return new InMemorySiteIdentityStore();
+  return new InMemorySiteIdentityStore(options);
 }
 
 export async function createWitnessIndexStore(env: Record<string, any>): Promise<WitnessIndexStore> {

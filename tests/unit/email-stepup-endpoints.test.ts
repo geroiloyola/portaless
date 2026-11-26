@@ -57,7 +57,7 @@ vi.mock("@portaless/trust-storage-adapters", async () => {
   const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
   const { InMemorySettlementActivationStore } = await import("@verared/trust-layer/billing");
   stores.siteIdentity = new InMemorySiteIdentityStore({
-    PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
+    encryptionKey: Buffer.alloc(32, 7).toString("base64"),
   });
   stores.settlementActivation = new InMemorySettlementActivationStore();
   return {
@@ -154,7 +154,7 @@ describe("Email step-up request & sensitive endpoint wiring", () => {
     stores.rateLimits = new InMemoryRateLimitStore();
     stores.emailStepUp = new InMemoryEmailStepUpStore();
     stores.siteIdentity = new InMemorySiteIdentityStore({
-      PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
+      encryptionKey: Buffer.alloc(32, 7).toString("base64"),
     });
     stores.settlementActivation = new InMemorySettlementActivationStore();
     stores.permissions = { grant: async () => {}, revoke: async () => {}, list: async () => [] };

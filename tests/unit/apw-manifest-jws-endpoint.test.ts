@@ -11,7 +11,7 @@ vi.mock("@portaless/trust-storage-adapters", async (importOriginal) => {
   const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
   const { InMemoryAttestationLogStore } = await import("@verared/apw/did-apw");
   const identity = new InMemorySiteIdentityStore({
-    PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: btoa(String.fromCharCode(...new Uint8Array(32).fill(13))),
+    encryptionKey: btoa(String.fromCharCode(...new Uint8Array(32).fill(13))),
   });
   const log = new InMemoryAttestationLogStore();
   return {

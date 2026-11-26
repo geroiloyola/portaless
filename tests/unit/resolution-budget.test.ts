@@ -233,11 +233,17 @@ describe("PR2 inactive pre-authentication budget kernel", () => {
 
 describe("trusted-ingress client bucket", () => {
   const secret = "synthetic-test-only-secret-for-hmac";
+  const nodeIngress = {
+    resolveClientIp: (req: Request) => req.headers.get("x-portaless-client-ip"),
+  };
+  const cfIngress = {
+    resolveClientIp: (req: Request) => req.headers.get("cf-connecting-ip"),
+  };
   it("a forward wall-clock day jump resets HMAC client allowance but not the origin quota", async () => {
     __resetResolutionHmacDayForTests();
     const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "192.0.2.10" } });
     const budget = new ResolutionBudget({ ...small, client: { attempts: 1, bytes: 100 }, origin: { attempts: 2, bytes: 100 } }, () => 0);
-    const bucket = (now: number) => resolutionClientBuckets(request, { runtime: "node", secret, now });
+    const bucket = (now: number) => resolutionClientBuckets(request, { ingress: nodeIngress, secret, now });
     const fetcher = async () => good();
     const first = await bucket(0);
     await budget.fetch({ ...base, clientBucket: first }, "https://t.example/", fetcher, { maxBytes: 10 });
@@ -253,17 +259,17 @@ describe("trusted-ingress client bucket", () => {
   it("uses only the Node-injected client IP and stores no raw IP", async () => {
     __resetResolutionHmacDayForTests();
     const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "127.0.0.1", "CF-Connecting-IP": "1.2.3.4" } });
-    const key = await resolutionClientBucket(request, { runtime: "node", secret, now: 0 });
+    const key = await resolutionClientBucket(request, { ingress: nodeIngress, secret, now: 0 });
     expect(key).toMatch(/^[a-f0-9]{64}$/);
     expect(key).not.toContain("127.0.0.1");
-    const next = await resolutionClientBucket(request, { runtime: "node", secret, now: 86_400_000 });
+    const next = await resolutionClientBucket(request, { ingress: nodeIngress, secret, now: 86_400_000 });
     expect(next).not.toBe(key);
   });
   it("preserves quota identity across an overlapping two-secret HMAC rotation", async () => {
     __resetResolutionHmacDayForTests();
     const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "192.0.2.44" } });
-    const oldOnly = await resolutionClientBuckets(request, { runtime: "node", secret: "o".repeat(32), now: 0 });
-    const duringRotation = await resolutionClientBuckets(request, { runtime: "node", secret: "n".repeat(32), previousSecret: "o".repeat(32), now: 0 });
+    const oldOnly = await resolutionClientBuckets(request, { ingress: nodeIngress, secret: "o".repeat(32), now: 0 });
+    const duringRotation = await resolutionClientBuckets(request, { ingress: nodeIngress, secret: "n".repeat(32), previousSecret: "o".repeat(32), now: 0 });
     expect(duringRotation).toHaveLength(2);
     expect(duringRotation).toContain(oldOnly[0]);
     const budget = new ResolutionBudget({ ...small, client: { attempts: 1, bytes: 100 } });
@@ -275,23 +281,23 @@ describe("trusted-ingress client bucket", () => {
   });
   it("requires trusted Cloudflare ingress and ignores the client-supplied Node header there", async () => {
     const request = new Request("https://site.example/", { headers: { "CF-Connecting-IP": "1.2.3.4", "x-portaless-client-ip": "5.6.7.8" } });
-    expect(await resolutionClientBucket(request, { runtime: "cloudflare", secret })).toBe("unknown");
-    expect(await resolutionClientBucket(request, { runtime: "cloudflare", trustedCloudflareIngress: true, secret })).toMatch(/^[a-f0-9]{64}$/);
+    expect(await resolutionClientBucket(request, { secret })).toBe("unknown");
+    expect(await resolutionClientBucket(request, { ingress: cfIngress, secret })).toMatch(/^[a-f0-9]{64}$/);
   });
   it("uses a shared unknown bucket for missing trusted IP or secret, never an unlimited exemption", async () => {
-    expect(await resolutionClientBucket(new Request("https://site.example/"), { runtime: "node", secret })).toBe("unknown");
-    expect(await resolutionClientBucket(new Request("https://site.example/", { headers: { "x-portaless-client-ip": "1.2.3.4" } }), { runtime: "node" })).toBe("unknown");
+    expect(await resolutionClientBucket(new Request("https://site.example/"), { ingress: nodeIngress, secret })).toBe("unknown");
+    expect(await resolutionClientBucket(new Request("https://site.example/", { headers: { "x-portaless-client-ip": "1.2.3.4" } }), { ingress: nodeIngress })).toBe("unknown");
   });
   it("does not reinterpret malformed IP headers as URL authority/path syntax", async () => {
     for (const ip of ["user@1.2.3.4", "1.2.3.4/path", "1.2.3.4?query", "not-an-ip", "[::1]"]) {
-      expect(await resolutionClientBucket(new Request("https://site.example/", { headers: { "x-portaless-client-ip": ip } }), { runtime: "node", secret })).toBe("unknown");
+      expect(await resolutionClientBucket(new Request("https://site.example/", { headers: { "x-portaless-client-ip": ip } }), { ingress: nodeIngress, secret })).toBe("unknown");
     }
   });
   it("does not roll the HMAC day backwards with a simulated wall clock", async () => {
     __resetResolutionHmacDayForTests();
     const request = new Request("https://site.example/", { headers: { "x-portaless-client-ip": "192.0.2.10" } });
-    const later = await resolutionClientBucket(request, { runtime: "node", secret, now: 86_400_000 });
-    const backwards = await resolutionClientBucket(request, { runtime: "node", secret, now: 0 });
+    const later = await resolutionClientBucket(request, { ingress: nodeIngress, secret, now: 86_400_000 });
+    const backwards = await resolutionClientBucket(request, { ingress: nodeIngress, secret, now: 0 });
     expect(backwards).toBe(later);
     __resetResolutionHmacDayForTests();
   });

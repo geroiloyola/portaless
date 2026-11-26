@@ -31,7 +31,7 @@ export interface IndexSite {
 }
 
 export async function makeIndexSite(domain: string): Promise<IndexSite> {
-  const identity = new InMemorySiteIdentityStore(INDEX_ENV);
+  const identity = new InMemorySiteIdentityStore({ encryptionKey: INDEX_ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
   const log = new InMemoryAttestationLogStore();
   await identity.create(SITE_ID, await makeKeyPair(domain), "admin");
   return { domain, did: `did:apw:${domain}`, identity, log, deps: { identity, log, siteId: SITE_ID } };

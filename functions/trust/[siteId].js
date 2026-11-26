@@ -36,6 +36,7 @@ import {
   createWebBotAuthNonceStore,
 } from "@portaless/trust-storage-adapters";
 import { verifyWebBotAuthRequest } from "@verared/trust-layer";
+import { buildWebBotAuthVerifyOptions } from "../_shared/gatekeeper-runtime.js";
 import { toReadPolicy } from "@verared/apw/scoring";
 import { evaluatePolicy, projectTrustView } from "@verared/apw/scoring";
 import { scoreSiteDimensions } from "@verared/apw/scoring";
@@ -231,10 +232,12 @@ export async function onRequestGet(context) {
   // El middleware ya verifico la firma (y consumio el nonce); si no corrio, se verifica aca.
   let wba = data?.webBotAuth ?? null;
   if (!wba && request.headers.get("Signature-Agent")) {
-    wba = await verifyWebBotAuthRequest(request, {
-      env,
-      createNonceStore: createWebBotAuthNonceStore,
-    });
+    wba = await verifyWebBotAuthRequest(
+      request,
+      buildWebBotAuthVerifyOptions(env, {
+        createNonceStore: createWebBotAuthNonceStore,
+      })
+    );
   }
 
   const reader = await resolveReaderState(wba, defaultReaderResolvers());

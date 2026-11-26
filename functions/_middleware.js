@@ -59,6 +59,7 @@ import { resolveApwManifest } from "@verared/apw/resolver";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
 import { maybeAutoEmitReaderConduct } from "@verared/apw/scoring";
 import {
+  buildWebBotAuthVerifyOptions,
   checkPreAuthEgressBudget,
   emitGatekeeperTelemetry,
   evaluateGatekeeper,
@@ -320,13 +321,15 @@ async function handleRequest(context) {
   if (!preAuth.allowed && preAuth.response) return preAuth.response;
 
   const ledgerStore = await createUsageLedgerStore(env);
-  const result = await verifyWebBotAuthRequest(request, {
-    env,
-    createNonceStore: createWebBotAuthNonceStore,
-    // Solo el runtime Node lo expone: resuelve y valida una IP y conecta a
-    // ella (DNS pinning). En edge no existe y el verificador usa su default.
-    directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,
-  });
+  const result = await verifyWebBotAuthRequest(
+    request,
+    buildWebBotAuthVerifyOptions(env, {
+      createNonceStore: createWebBotAuthNonceStore,
+      // Solo el runtime Node lo expone: resuelve y valida una IP y conecta a
+      // ella (DNS pinning). En edge no existe y el verificador usa su default.
+      directoryFetcher: env.__PORTALESS_DIRECTORY_FETCHER,
+    })
+  );
   if (context.data && typeof context.data === "object") context.data.webBotAuth = result;
   if (!result.verified) {
     if (result.failureType === "directory_redirect_disabled") {

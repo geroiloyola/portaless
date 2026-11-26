@@ -88,7 +88,7 @@ async function setupSiteIdentity() {
 beforeEach(async () => {
   state.trust = new InMemorySiteTrustScoreStore();
   state.escrow = new InMemoryAuthorizedEscrowProvidersStore();
-  state.identity = new InMemorySiteIdentityStore(ENV);
+  state.identity = new InMemorySiteIdentityStore({ encryptionKey: ENV.PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY });
   state.log = new InMemoryAttestationLogStore();
   await setupSiteIdentity();
 });

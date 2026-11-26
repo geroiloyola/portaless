@@ -24,6 +24,7 @@ import {
   projectSvri,
   runReputationCase,
 } from "@verared/reputation";
+import { ResolutionBudget } from "@verared/trust-layer/net";
 import {
   GatekeeperConfigError,
   extractTrustedClientIp,
@@ -35,6 +36,80 @@ import {
 } from "./preauth-egress-guard.js";
 
 export const VALID_GATEKEEPER_MODES = Object.freeze(["off", "shadow", "enforce"]);
+
+/** Instancia compartida de ResolutionBudget entre Gatekeeper y @verared/trust-layer. */
+export const sharedResolutionBudget = new ResolutionBudget();
+
+/**
+ * Construye el resolver `TrustedIngress` del host para `@verared/trust-layer@0.1.0-rc.1`.
+ * Devuelve `undefined` cuando no hay ingress confiable configurado (fail-closed:
+ * `trustedIngressStatus(undefined)` reporta `{ configured: false, source: "unconfigured" }`).
+ */
+export function createHostTrustedIngress(env = {}) {
+  const hasExplicitProxy =
+    typeof env?.PORTALESS_TRUSTED_PROXY === "string" &&
+    env.PORTALESS_TRUSTED_PROXY.trim() !== "" &&
+    env.PORTALESS_TRUSTED_PROXY.trim().toLowerCase() !== "none";
+  const isNodeRuntime = env?.__PORTALESS_RUNTIME === "node";
+  const isTrustedCloudflare = env?.PORTALESS_TRUSTED_CLOUDFLARE_INGRESS === "true";
+
+  if (!hasExplicitProxy && !isNodeRuntime && !isTrustedCloudflare) {
+    return undefined;
+  }
+
+  const effectiveEnv =
+    !hasExplicitProxy && isTrustedCloudflare
+      ? { ...env, PORTALESS_TRUSTED_PROXY: "cloudflare" }
+      : env;
+
+  return {
+    resolveClientIp(request) {
+      return extractTrustedClientIp(request, effectiveEnv);
+    },
+  };
+}
+
+/**
+ * Construye las opciones de `verifyWebBotAuthRequest` para `@verared/trust-layer@0.1.0-rc.1`:
+ * inyecta `createNonceStore` sin `env`, `reservedOrigins`, `TrustedIngress` del host
+ * y una instancia compartida de `ResolutionBudget`.
+ */
+export function buildWebBotAuthVerifyOptions(
+  env = {},
+  { createNonceStore, directoryFetcher, budget = sharedResolutionBudget } = {}
+) {
+  const reservedOrigins =
+    typeof env?.PORTALESS_WBA_RESERVED_ORIGINS === "string"
+      ? env.PORTALESS_WBA_RESERVED_ORIGINS.split(",").map((v) => v.trim()).filter(Boolean)
+      : undefined;
+
+  const budgetEnabled = env?.PORTALESS_RESOLUTION_BUDGET_ENABLED === "true";
+  const secret =
+    (typeof env?.PORTALESS_RESOLUTION_BUDGET_SECRET === "string" && env.PORTALESS_RESOLUTION_BUDGET_SECRET.trim()) ||
+    (budgetEnabled ? "" : (typeof env?.PORTALESS_IP_HMAC_SECRET === "string" ? env.PORTALESS_IP_HMAC_SECRET.trim() : ""));
+  const previousSecret =
+    typeof env?.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET === "string" &&
+    env.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET.trim()
+      ? env.PORTALESS_RESOLUTION_BUDGET_PREVIOUS_SECRET.trim()
+      : undefined;
+
+  const resolutionBudget =
+    (budgetEnabled && secret)
+      ? {
+          secret,
+          previousSecret,
+          ingress: createHostTrustedIngress(env),
+          budget: env?.__PORTALESS_RESOLUTION_BUDGET ?? budget,
+        }
+      : undefined;
+
+  return {
+    createNonceStore: typeof createNonceStore === "function" ? () => createNonceStore(env) : undefined,
+    reservedOrigins,
+    resolutionBudget,
+    directoryFetcher: directoryFetcher ?? env?.__PORTALESS_DIRECTORY_FETCHER,
+  };
+}
 
 /**
  * Resuelve PORTALESS_GATEKEEPER_MODE con default conservador "off" y fail-closed

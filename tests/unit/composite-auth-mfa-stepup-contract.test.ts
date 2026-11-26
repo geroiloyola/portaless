@@ -43,7 +43,7 @@ vi.mock("@portaless/auth/store-factory", async () => {
 vi.mock("@portaless/trust-storage-adapters", async () => {
   const { InMemorySiteIdentityStore } = await import("@verared/apw/did-apw");
   stores.siteIdentity = new InMemorySiteIdentityStore({
-    PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
+    encryptionKey: Buffer.alloc(32, 9).toString("base64"),
   });
   return {
     createSiteIdentityStore: async () => stores.siteIdentity,
@@ -125,7 +125,7 @@ describe("E-08 composite contract: login -> MFA -> cookie -> protected -> step-u
     stores.rateLimits = new InMemoryRateLimitStore();
     stores.emailStepUp = new InMemoryEmailStepUpStore();
     stores.siteIdentity = new InMemorySiteIdentityStore({
-      PORTALESS_SITE_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
+      encryptionKey: Buffer.alloc(32, 9).toString("base64"),
     });
 
     await stores.users.createUser("alice", "Alice-Strong-Pass-1!", "admin", "alice@site.example");
