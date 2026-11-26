@@ -226,7 +226,45 @@ import "@portaless/atomic-elements/elements.css";
     return body.html;
   }
 
+  function defaultHomeLayout(): PageLayout {
+    return {
+      version: "0.1",
+      slug: "home",
+      title: "Inicio",
+      description: "Portada principal del sitio.",
+      status: "draft",
+      root: [
+        {
+          id: "home-hero",
+          type: "Hero",
+          props: {
+            title: "Bienvenido a tu sitio",
+            subtitle: "Edita este titular, agrega tus bloques y publica para actualizar la portada principal (/).",
+            bgColor: "#111827",
+          },
+        },
+        {
+          id: "home-intro",
+          type: "Paragraph",
+          props: {
+            text: "Cuenta en pocas líneas quién eres, qué haces y qué encontrará quien visite tu página.",
+          },
+        },
+        {
+          id: "home-cta",
+          type: "Button",
+          props: {
+            label: "Conocer más",
+            href: "/explore/",
+            variant: "solid",
+          },
+        },
+      ],
+    };
+  }
+
   function emptyPageLayout(pageSlug: string): PageLayout {
+    if (pageSlug === "home") return defaultHomeLayout();
     return {
       version: "0.1",
       slug: pageSlug,
@@ -266,7 +304,10 @@ import "@portaless/atomic-elements/elements.css";
 
   async function init(): Promise<void> {
     const store = new HttpPageStore();
-    slugLabelEl.textContent = `Editando: ${slug}`;
+    const isHome = slug === "home";
+    slugLabelEl.textContent = isHome
+      ? "Editando portada principal (/) — publicar actualizará la raíz / en vivo"
+      : `Editando: ${slug}`;
 
     let initialPage: PageLayout;
     try {
@@ -286,7 +327,7 @@ import "@portaless/atomic-elements/elements.css";
       ? "Guardar privado"
       : initialPage.status === "draft"
         ? "Guardar borrador"
-        : "Guardar y publicar";
+        : isHome ? "Publicar portada (/)" : "Guardar y publicar";
 
     // v0.0.9.11: el catalogo (core ∪ packs) se resuelve ANTES de montar, para
     // que la paleta ya muestre los elementos de pack instalados.
@@ -319,16 +360,18 @@ import "@portaless/atomic-elements/elements.css";
         saveStatusEl.style.display = "";
         saveStatusEl.className = "editor-save-status ok";
         saveStatusEl.textContent = isPublic
-          ? "Página guardada y publicada. "
+          ? (isHome ? "Portada principal (/) guardada y publicada. " : "Página guardada y publicada. ")
           : savedLayout.status === "private" ? "Contenido privado guardado. " : "Borrador guardado. ";
         const viewLink = document.createElement("a");
         viewLink.id = isPublic ? "editor-view-public" : "editor-preview-private";
         viewLink.href = isPublic
-          ? `${ROUTES.PAGES}/${encodeURIComponent(slug)}`
+          ? (isHome ? "/" : `${ROUTES.PAGES}/${encodeURIComponent(slug)}`)
           : `/admin/preview/pages/${encodeURIComponent(slug)}`;
         viewLink.target = "_blank";
         viewLink.rel = "noopener noreferrer";
-        viewLink.textContent = isPublic ? "Ver página pública ↗" : "Vista previa privada ↗";
+        viewLink.textContent = isPublic
+          ? (isHome ? "Ver portada pública (/) ↗" : "Ver página pública ↗")
+          : "Vista previa privada ↗";
         saveStatusEl.appendChild(viewLink);
         window.setTimeout(() => {
           saveStatusEl.style.display = "none";

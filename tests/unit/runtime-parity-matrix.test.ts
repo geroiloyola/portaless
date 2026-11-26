@@ -25,6 +25,8 @@ describe("E-05: runtime parity matrix", () => {
     const anchors = [
       "astro.config.mjs",
       "src/lib/site-profile.mjs",
+      "functions/index.js",
+      "functions/pages/[slug].js",
       "functions/healthz.js",
       "functions/_middleware.js",
       "server/node-runtime.mjs",
