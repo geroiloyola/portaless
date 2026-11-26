@@ -71,169 +71,218 @@ const riskIdMapJson = JSON.stringify(riskById);
     <AdminLogoutButton />
   </div>
 
-  <section class="ai-apw-checklist" id="ai-apw-checklist">
-    <div class="ai-apw-checklist-row">
-      <div class="ai-apw-checklist-text">
-        <span class="ai-apw-checklist-title">Reclamar tu identidad verificada (Protocol APW)</span>
-        <p class="ai-apw-checklist-desc" id="ai-apw-desc">Comprobando si tu dominio ya tiene publicado el registro TXT de Protocol APW…</p>
-      </div>
-      <div class="ai-apw-checklist-actions">
-        <span class="ai-apw-badge" id="ai-apw-badge" hidden>✓ Sitio Verificado</span>
-        <span class="ai-apw-badge" id="ai-apw-identity-badge" hidden>✓ Identidad verificada</span>
-        <button type="button" class="ai-apw-verify-btn" id="ai-apw-verify-btn">Verificar ahora</button>
-      </div>
-    </div>
+  <section class="ai-section" aria-labelledby="ai-section-site">
+    <h2 class="ai-section-title" id="ai-section-site">Tu sitio</h2>
 
-    <div class="ai-apw-identity" id="ai-apw-identity" hidden>
-      <p class="ai-apw-identity-status" id="ai-apw-identity-status"></p>
-      <p class="ai-apw-txt-hint" id="ai-apw-anchor-status" hidden></p>
-      <div class="ai-apw-txt-field">
-        <span class="ai-apw-txt-label">Identidad (DID)</span>
-        <code class="ai-apw-txt-code" id="ai-apw-identity-did"></code>
-        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-did">Copiar</button>
+    <a class="ai-wizard-banner" href="/admin/wizard">
+      <div class="ai-wizard-banner-text">
+        <span class="ai-wizard-banner-title">Asistente inicial de configuración</span>
+        <span class="ai-wizard-banner-desc">
+          Configura tu sitio paso a paso: prepara tu primer borrador, conecta la publicación opcional a GitHub Pages y respalda tu clave de identidad.
+        </span>
       </div>
-      <div class="ai-apw-txt-field">
-        <span class="ai-apw-txt-label">Huella de la clave (k)</span>
-        <code class="ai-apw-txt-code" id="ai-apw-identity-k"></code>
-        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-k">Copiar</button>
-      </div>
-      <div class="ai-apw-txt-field" id="ai-apw-identity-h-row" hidden>
-        <span class="ai-apw-txt-label">Historial (h)</span>
-        <code class="ai-apw-txt-code" id="ai-apw-identity-h"></code>
-        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-h">Copiar</button>
-      </div>
-      <p class="ai-apw-txt-hint">
-        Estos datos son públicos. Cualquier agente puede comprobarlos en tu registro TXT y en <code>/.well-known/did.json</code>.
-      </p>
-    </div>
+      <span class="ai-wizard-banner-cta">Abrir asistente →</span>
+    </a>
 
-    <div class="ai-apw-txt" id="ai-apw-txt" hidden>
-      <p class="ai-apw-txt-warn" id="ai-apw-txt-stale" hidden></p>
-      <p class="ai-apw-txt-intro">
-        Entrá al panel de tu proveedor de dominio (donde compraste el dominio o donde administrás el DNS), creá un registro nuevo con estos datos y guardá:
-      </p>
-      <div class="ai-apw-txt-field">
-        <span class="ai-apw-txt-label">Tipo</span>
-        <code class="ai-apw-txt-code">TXT</code>
-      </div>
-      <div class="ai-apw-txt-field">
-        <span class="ai-apw-txt-label">Nombre / Host</span>
-        <code class="ai-apw-txt-code" id="ai-apw-txt-name"></code>
-        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-name">Copiar</button>
-      </div>
-      <div class="ai-apw-txt-field">
-        <span class="ai-apw-txt-label">Valor / Contenido</span>
-        <code class="ai-apw-txt-code ai-apw-txt-value" id="ai-apw-txt-value"></code>
-        <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-value">Copiar</button>
-      </div>
-      <p class="ai-apw-txt-hint">
-        Algunos proveedores completan el dominio solos: si tu panel ya muestra “<span id="ai-apw-txt-domain"></span>” al lado del campo Nombre, escribí solo <code>_apw</code>.
-        Después volvé acá y tocá “Verificar ahora”.
-      </p>
-      <p class="ai-apw-txt-warn" id="ai-apw-txt-warn" hidden></p>
-    </div>
+    <nav class="ai-nav-grid" aria-label="Herramientas principales del sitio">
+      <a class="ai-nav-card" href="/admin/editor">
+        <span class="ai-nav-card-title">Editor Visual</span>
+        <span class="ai-nav-card-desc">Crea y edita páginas con Atomic Elements. «Publicar» guarda y deja visible la página al instante en <code>/pages/&lt;slug&gt;</code> en este nodo.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/pages">
+        <span class="ai-nav-card-title">Páginas</span>
+        <span class="ai-nav-card-desc">Lista, abre en el editor, revisa propuestas y borra las páginas publicadas con Atomic Elements.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/appearance">
+        <span class="ai-nav-card-title">Apariencia</span>
+        <span class="ai-nav-card-desc">Elige el skin activo y la paleta del sitio: el cambio se refleja en el panel, el editor y las páginas publicadas.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/publish">
+        <span class="ai-nav-card-title">Publicar a GitHub Pages</span>
+        <span class="ai-nav-card-desc">Opcional (solo self-host con GitHub App): exporta y sube una copia estática aprobada a GitHub Pages.</span>
+      </a>
+    </nav>
   </section>
 
-  <section class="ai-risk-summary" id="ai-risk-summary" aria-label="Resumen de riesgo de permisos">
-    <div class="ai-risk-summary-row">
-      <div class="ai-risk-summary-text">
-        <span class="ai-risk-summary-title">Riesgo de permisos</span>
-        <p class="ai-risk-summary-desc" id="ai-risk-desc">Contando cuántas capacidades están concedidas…</p>
-      </div>
-      <a class="ai-risk-summary-link" href="/admin/permissions">Abrir el Centro de Permisos</a>
-    </div>
-    <div class="ai-risk-summary-grid">
-      {RISK_ORDER.map((risk) => (
-        <div class="ai-risk-cell" data-risk={risk}>
-          <span class="ai-risk-count" id={`ai-risk-${risk}`} data-total={capsByRisk[risk].length}>—</span>
-          <span class="ai-risk-label">{RISK_LABELS[risk]} · de {capsByRisk[risk].length}</span>
+  <section class="ai-section" aria-labelledby="ai-section-security">
+    <h2 class="ai-section-title" id="ai-section-security">Cuenta y seguridad</h2>
+
+    <nav class="ai-nav-grid" aria-label="Cuenta, seguridad y operación">
+      <a class="ai-nav-card" href="/admin/security">
+        <span class="ai-nav-card-title">Seguridad y Gatekeeper</span>
+        <span class="ai-nav-card-desc">Contraseña, 2FA (TOTP), verificación por correo y estado de solo lectura del Gatekeeper de Local Trust Protocol.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/agents">
+        <span class="ai-nav-card-title">Acceso de agentes</span>
+        <span class="ai-nav-card-desc">Quién puede leer este sitio, en español claro y con el valor efectivo a la vista: permite, cobra o bloquea por regla.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/backup">
+        <span class="ai-nav-card-title">Backups del nodo</span>
+        <span class="ai-nav-card-desc">Exportación verificada del canon (SQLite con checksum) y restauración controlada.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/settlement">
+        <span class="ai-nav-card-title">Liquidaciones (Settlement)</span>
+        <span class="ai-nav-card-desc">Revisión y operaciones de cobros/liquidaciones de acceso de agentes con verificación reforzada.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/settings/email">
+        <span class="ai-nav-card-title">Email</span>
+        <span class="ai-nav-card-desc">Proveedor transaccional (webhook o SMTP), remitente del sitio y plantillas aprobadas.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/analytics">
+        <span class="ai-nav-card-title">Analytics</span>
+        <span class="ai-nav-card-desc">Configura Plausible, Cloudflare, Umami o un script propio desde <code>/api/analytics</code>.</span>
+      </a>
+
+      <a class="ai-nav-card" href="/admin/recents">
+        <span class="ai-nav-card-title">Actividad</span>
+        <span class="ai-nav-card-desc">Lo que pasó en el sitio: páginas guardadas o borradas, atestaciones comunitarias y cambios de permisos.</span>
+      </a>
+    </nav>
+  </section>
+
+  <details class="ai-advanced" id="ai-advanced-section">
+    <summary class="ai-advanced-summary">
+      <span class="ai-advanced-summary-title">Protocolo y herramientas avanzadas</span>
+      <span class="ai-advanced-summary-desc">Identidad Protocol APW (DNS TXT / DID), riesgo de permisos, Portaless Index, SVRI, escrow y autoevaluación.</span>
+    </summary>
+
+    <div class="ai-advanced-body">
+      <section class="ai-apw-checklist" id="ai-apw-checklist">
+        <div class="ai-apw-checklist-row">
+          <div class="ai-apw-checklist-text">
+            <span class="ai-apw-checklist-title">Reclamar tu identidad verificada (Protocol APW)</span>
+            <p class="ai-apw-checklist-desc" id="ai-apw-desc">Comprobando si tu dominio ya tiene publicado el registro TXT de Protocol APW…</p>
+          </div>
+          <div class="ai-apw-checklist-actions">
+            <span class="ai-apw-badge" id="ai-apw-badge" hidden>✓ Sitio Verificado</span>
+            <span class="ai-apw-badge" id="ai-apw-identity-badge" hidden>✓ Identidad verificada</span>
+            <button type="button" class="ai-apw-verify-btn" id="ai-apw-verify-btn">Verificar ahora</button>
+          </div>
         </div>
-      ))}
+
+        <div class="ai-apw-identity" id="ai-apw-identity" hidden>
+          <p class="ai-apw-identity-status" id="ai-apw-identity-status"></p>
+          <p class="ai-apw-txt-hint" id="ai-apw-anchor-status" hidden></p>
+          <div class="ai-apw-txt-field">
+            <span class="ai-apw-txt-label">Identidad (DID)</span>
+            <code class="ai-apw-txt-code" id="ai-apw-identity-did"></code>
+            <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-did">Copiar</button>
+          </div>
+          <div class="ai-apw-txt-field">
+            <span class="ai-apw-txt-label">Huella de la clave (k)</span>
+            <code class="ai-apw-txt-code" id="ai-apw-identity-k"></code>
+            <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-k">Copiar</button>
+          </div>
+          <div class="ai-apw-txt-field" id="ai-apw-identity-h-row" hidden>
+            <span class="ai-apw-txt-label">Historial (h)</span>
+            <code class="ai-apw-txt-code" id="ai-apw-identity-h"></code>
+            <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-identity-h">Copiar</button>
+          </div>
+          <p class="ai-apw-txt-hint">
+            Estos datos son públicos. Cualquier agente puede comprobarlos en tu registro TXT y en <code>/.well-known/did.json</code>.
+          </p>
+        </div>
+
+        <div class="ai-apw-txt" id="ai-apw-txt" hidden>
+          <p class="ai-apw-txt-warn" id="ai-apw-txt-stale" hidden></p>
+          <p class="ai-apw-txt-intro">
+            Entrá al panel de tu proveedor de dominio (donde compraste el dominio o donde administrás el DNS), creá un registro nuevo con estos datos y guardá:
+          </p>
+          <div class="ai-apw-txt-field">
+            <span class="ai-apw-txt-label">Tipo</span>
+            <code class="ai-apw-txt-code">TXT</code>
+          </div>
+          <div class="ai-apw-txt-field">
+            <span class="ai-apw-txt-label">Nombre / Host</span>
+            <code class="ai-apw-txt-code" id="ai-apw-txt-name"></code>
+            <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-name">Copiar</button>
+          </div>
+          <div class="ai-apw-txt-field">
+            <span class="ai-apw-txt-label">Valor / Contenido</span>
+            <code class="ai-apw-txt-code ai-apw-txt-value" id="ai-apw-txt-value"></code>
+            <button type="button" class="ai-apw-copy-btn" data-copy-target="ai-apw-txt-value">Copiar</button>
+          </div>
+          <p class="ai-apw-txt-hint">
+            Algunos proveedores completan el dominio solos: si tu panel ya muestra “<span id="ai-apw-txt-domain"></span>” al lado del campo Nombre, escribí solo <code>_apw</code>.
+            Después volvé acá y tocá “Verificar ahora”.
+          </p>
+          <p class="ai-apw-txt-warn" id="ai-apw-txt-warn" hidden></p>
+        </div>
+      </section>
+
+      <section class="ai-risk-summary" id="ai-risk-summary" aria-label="Resumen de riesgo de permisos">
+        <div class="ai-risk-summary-row">
+          <div class="ai-risk-summary-text">
+            <span class="ai-risk-summary-title">Riesgo de permisos</span>
+            <p class="ai-risk-summary-desc" id="ai-risk-desc">Contando cuántas capacidades están concedidas…</p>
+          </div>
+          <a class="ai-risk-summary-link" href="/admin/permissions">Abrir el Centro de Permisos</a>
+        </div>
+        <div class="ai-risk-summary-grid">
+          {RISK_ORDER.map((risk) => (
+            <div class="ai-risk-cell" data-risk={risk}>
+              <span class="ai-risk-count" id={`ai-risk-${risk}`} data-total={capsByRisk[risk].length}>—</span>
+              <span class="ai-risk-label">{RISK_LABELS[risk]} · de {capsByRisk[risk].length}</span>
+            </div>
+          ))}
+        </div>
+        <script type="application/json" id="ai-risk-map" set:html={riskIdMapJson} />
+      </section>
+
+      <nav class="ai-nav-grid" aria-label="Herramientas avanzadas de protocolo">
+        <a class="ai-nav-card" href="/admin/permissions">
+          <span class="ai-nav-card-title">Centro de Permisos</span>
+          <span class="ai-nav-card-desc">Conceder o revocar capacidades a plugins y agentes instalados.</span>
+        </a>
+
+        <a class="ai-nav-card" href="/admin/witness-index">
+          <span class="ai-nav-card-title">Portaless Index</span>
+          <span class="ai-nav-card-desc">Agregador de testigos (APW §5.7): sincronizá sujetos contra testigos y pares nodo-indice; pesos calibrados automáticamente.</span>
+        </a>
+
+        <a class="ai-nav-card" href="/admin/authorized-agents">
+          <span class="ai-nav-card-title">Agentes autorizados (SiteTrustScore)</span>
+          <span class="ai-nav-card-desc">Allowlist de agentes de IA con permiso para reportar sobre la fuente "agent" del Site Trust Score.</span>
+        </a>
+
+        <a class="ai-nav-card" href="/admin/authorized-escrow-providers">
+          <span class="ai-nav-card-title">Proveedores de escrow (SiteTrustScore)</span>
+          <span class="ai-nav-card-desc">Allowlist de proveedores autorizados a reportar resultados reales de transaccion (fuente "escrow_report").</span>
+        </a>
+
+        <a class="ai-nav-card" href="/admin/trust-svri">
+          <span class="ai-nav-card-title">SVRI — evidencia y proyección</span>
+          <span class="ai-nav-card-desc">Consulta la puntuación interna, sus cinco tiers, el peso del prior matemático y la reconstrucción histórica HSVR. Solo administradores.</span>
+        </a>
+
+        <div class="ai-nav-card ai-nav-card-form">
+          <span class="ai-nav-card-title">Site Trust Score — autoevaluación</span>
+          <span class="ai-nav-card-desc">
+            Declará el cumplimiento de tu propio sitio (GDPR, política de privacidad, seguridad de pago, etc.).
+          </span>
+          <form id="ai-site-trust-form" class="ai-site-trust-form">
+            <input
+              type="text"
+              id="ai-site-id-input"
+              class="ai-site-id-input"
+              placeholder="tu-dominio.com"
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="ai-site-id-submit">Ir</button>
+          </form>
+        </div>
+      </nav>
     </div>
-    <script type="application/json" id="ai-risk-map" set:html={riskIdMapJson} />
-  </section>
-
-  <nav class="ai-nav-grid">
-    <a class="ai-nav-card" href="/admin/editor">
-      <span class="ai-nav-card-title">Editor Visual</span>
-      <span class="ai-nav-card-desc">Arma páginas con Atomic Elements: arrastra elementos, edita propiedades, guarda directo en la base de datos del sitio.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/appearance">
-      <span class="ai-nav-card-title">Apariencia</span>
-      <span class="ai-nav-card-desc">Elegí el skin activo y la paleta del sitio: el cambio se refleja en el panel, el editor y la página publicada desde un solo lugar.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/analytics">
-      <span class="ai-nav-card-title">Analytics</span>
-      <span class="ai-nav-card-desc">Configurá Plausible, Cloudflare, umami o un script propio: el sitio lo sirve desde /api/analytics y solo se guarda proveedor, id y origen https.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/settings/email">
-      <span class="ai-nav-card-title">Email</span>
-      <span class="ai-nav-card-desc">Proveedor transaccional (webhook o SMTP), remitente del sitio y plantillas aprobadas. Los plugins solo pueden pedir plantillas aprobadas; el remitente lo pone el sitio.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/pages">
-      <span class="ai-nav-card-title">Páginas</span>
-      <span class="ai-nav-card-desc">Listá, editá y borrá las páginas publicadas con Atomic Elements. Editar y publicar actualiza la página al instante en self-host.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/witness-index">
-      <span class="ai-nav-card-title">Portaless Index</span>
-      <span class="ai-nav-card-desc">Agregador de testigos (APW §5.7): sincronizá sujetos contra testigos y pares nodo-indice; pesos calibrados automáticamente.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/recents">
-      <span class="ai-nav-card-title">Actividad</span>
-      <span class="ai-nav-card-desc">Lo que pasó en el sitio: páginas guardadas o borradas, atestaciones comunitarias recibidas y cambios de permisos. Solo administradores.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/permissions">
-      <span class="ai-nav-card-title">Centro de Permisos</span>
-      <span class="ai-nav-card-desc">Conceder o revocar capacidades a plugins y agentes instalados.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/agents">
-      <span class="ai-nav-card-title">Acceso de agentes</span>
-      <span class="ai-nav-card-desc">Quién puede leer este sitio, en español claro y con el valor efectivo a la vista: permití, cobrá o bloqueá por regla y sabé de dónde sale.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/authorized-agents">
-      <span class="ai-nav-card-title">Agentes autorizados (SiteTrustScore)</span>
-      <span class="ai-nav-card-desc">Allowlist de agentes de IA con permiso para reportar sobre la fuente "agent" del Site Trust Score.</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/backup"><strong>Backups del nodo</strong><span>Exportación verificada del canon y restauración controlada.</span></a>
-    <a class="ai-nav-card" href="/admin/publish"><strong>Publicar sitio</strong><span>Revisión aprobada, build, despliegue, reintento y despublicación.</span></a>
-    <a class="ai-nav-card" href="/admin/authorized-escrow-providers">
-      <span class="ai-nav-card-title">Proveedores de escrow (SiteTrustScore)</span>
-      <span class="ai-nav-card-desc">Allowlist de proveedores autorizados a reportar resultados reales de transaccion (fuente "escrow_report").</span>
-    </a>
-
-    <a class="ai-nav-card" href="/admin/trust-svri">
-      <span class="ai-nav-card-title">SVRI — evidencia y proyección</span>
-      <span class="ai-nav-card-desc">Consulta la puntuación interna, sus cinco tiers, el peso del prior matemático y la reconstrucción histórica HSVR. Solo administradores.</span>
-    </a>
-
-    <div class="ai-nav-card ai-nav-card-form">
-      <span class="ai-nav-card-title">Site Trust Score — autoevaluación</span>
-      <span class="ai-nav-card-desc">
-        Declará el cumplimiento de tu propio sitio (GDPR, política de privacidad, seguridad de pago, etc.).
-      </span>
-      <form id="ai-site-trust-form" class="ai-site-trust-form">
-        <input
-          type="text"
-          id="ai-site-id-input"
-          class="ai-site-id-input"
-          placeholder="tu-dominio.com"
-          autocomplete="off"
-          required
-        />
-        <button type="submit" class="ai-site-id-submit">Ir</button>
-      </form>
-    </div>
-  </nav>
+  </details>
 </BaseLayout>
 
 <script>
@@ -624,4 +673,78 @@ const riskIdMapJson = JSON.stringify(riskById);
     cursor: pointer;
   }
   .ai-site-id-submit:hover { background: var(--portaless-accent); color: #261C15; }
+
+  .ai-section { max-width: 780px; margin-bottom: 28px; }
+  .ai-section-title {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--portaless-muted);
+  }
+
+  .ai-wizard-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    border: 1px solid var(--accent-text);
+    border-radius: 12px;
+    background: var(--panel-bg);
+    color: var(--portaless-fg);
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+  }
+  .ai-wizard-banner:hover { border-color: var(--portaless-accent); }
+  .ai-wizard-banner-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 4px; }
+  .ai-wizard-banner-title { font-weight: 700; font-size: 1rem; color: var(--portaless-fg); }
+  .ai-wizard-banner-desc { font-size: 0.84rem; color: var(--portaless-muted); line-height: 1.45; }
+  .ai-wizard-banner-cta {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: var(--radius-button, 8px);
+    background: var(--portaless-accent);
+    color: #261C15;
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .ai-advanced {
+    max-width: 780px;
+    margin-top: 8px;
+    border: 1px solid var(--portaless-border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+  .ai-advanced-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 20px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .ai-advanced-summary::-webkit-details-marker { display: none; }
+  .ai-advanced-summary::after {
+    content: "Mostrar herramientas avanzadas ▾";
+    margin-top: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-text);
+  }
+  .ai-advanced[open] > .ai-advanced-summary::after {
+    content: "Ocultar herramientas avanzadas ▴";
+  }
+  .ai-advanced-summary-title { font-weight: 700; font-size: 0.96rem; color: var(--portaless-fg); }
+  .ai-advanced-summary-desc { font-size: 0.82rem; color: var(--portaless-muted); line-height: 1.45; }
+  .ai-advanced-body {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--portaless-border);
+    padding-top: 18px;
+  }
 </style>

@@ -8,6 +8,11 @@ test("el dashboard muestra el resumen de riesgo de permisos", async ({ page }) =
   await login(page);
   await page.goto("/admin/");
 
+  const advanced = page.locator("#ai-advanced-section");
+  await expect(advanced).toBeVisible();
+  await expect(advanced).not.toHaveAttribute("open", "");
+  await advanced.locator("summary").click();
+
   const summary = page.locator("#ai-risk-summary");
   await expect(summary).toBeVisible();
   await expect(summary.locator(".ai-risk-cell")).toHaveCount(3);
