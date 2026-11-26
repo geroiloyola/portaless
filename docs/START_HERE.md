@@ -25,15 +25,11 @@ MCP** (ChatGPT, Claude, Mistral, Perplexity, Cursor, …) becomes your editor.
 
 ## What runs where (so nothing surprises you)
 
-- A **static** Portaless site (home, blog, content pages, `/docs/`) needs **only
-  GitHub Pages**. No server, no database, no cost.
-- The **dynamic** parts — admin panel, login, SiteTrustScore, the MCP HTTP
-  endpoint, pay-per-crawl — need somewhere to run `functions/`. Two free ways:
-  **Cloudflare Pages** (edge, recommended) or **self-host** (Node/Docker on your
-  machine or a small box).
-- The **MCP server** is a small Node process that talks to the same content
-  store. You run it locally (or on your self-host) and point your AI client at
-  it. It is the bridge between your AI and your site.
+See the full per-feature breakdown in [`architecture/runtime-parity-matrix.md`](./architecture/runtime-parity-matrix.md):
+
+- **Static hosting (GitHub Pages):** serves the compiled HTML/CSS/JS output from `npm run build` (`starter` profile by default). No `/admin`, no database, no login, and no server-side Trust Layer.
+- **Cloudflare Pages + D1:** runs `functions/` (login, `/admin`, Visual Editor saving live pages at `/` and `/pages/<slug>`, Trust Layer, Gatekeeper). Initial admin setup uses `npm run setup:d1 -- --db <DB> --remote` (`/setup` returns `404`), and `/admin/publish` (static export to GitHub Pages) is disabled because `workerd` cannot run `astro build`.
+- **Self-host (Docker or Node ≥ 24):** the full reference runtime — `/setup` without a terminal, live Visual Editor for both `/` and `/pages/<slug>`, integrated `/admin/publish` to GitHub Pages, checksummed SQLite backups, plugin sandbox, and the local MCP server.
 
 ## The path
 
@@ -44,25 +40,27 @@ MCP** (ChatGPT, Claude, Mistral, Perplexity, Cursor, …) becomes your editor.
 3. (Optional) Set the repo variables `PORTALESS_SITE_URL` and
    `PORTALESS_BASE_PATH` (e.g. `/portaless/` if the repo is not
    `you.github.io`).
-4. Push to `main`. GitHub Actions builds and deploys.
+4. Add `.github/workflows/deploy-pages.yml` using the copy-pasteable Node 24 YAML
+   recipe in [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md) (this repo does
+   not pre-install a Pages deploy workflow on forks), then push to `main`.
 
 Your site is live at `https://<you>.github.io/<repo>/`.
 Full guide: [`DEPLOY_GITHUB_PAGES.md`](./DEPLOY_GITHUB_PAGES.md).
 
 > Non-technical and prefer Docker + a browser? [`first-steps.md`](./first-steps.md)
-> walks the local install with screenshots (Spanish).
+> walks the local install step by step (Spanish).
 
 ### 2. Add Cloudflare Pages (dynamic layer + trust, ~5 minutes)
 
 1. In Cloudflare: **Workers & Pages → Create → Pages → Connect to Git** and pick
    your repo.
 2. Build command `npm run build`, output directory `dist`.
-3. Deploy. Cloudflare gives you `*.pages.dev` with SSL and runs `functions/`.
+3. Configure `PORTALESS_PUBLIC_URL`, bind a D1 database as `DB`, and initialize
+   the schema + first admin with `npm run setup:d1 -- --db <DB_NAME> --remote`.
+4. Deploy. Cloudflare gives you `*.pages.dev` with SSL and runs `functions/`.
 
-Now login, the admin panel, the SiteTrustScore pages and the MCP HTTP endpoint
-work. This is also where the **reputation** features live (AI-agent
-identification with cryptographic signatures, pay-per-crawl, the public
-trust score).
+Now login, the admin panel, the Visual Editor (live `/` and `/pages/<slug>` in D1),
+the SiteTrustScore pages, and the Trust Layer work.
 Full guide: [`DEPLOY_CLOUDFLARE_PAGES.md`](./DEPLOY_CLOUDFLARE_PAGES.md).
 
 ### 3. Connect your AI agent (MCP)
@@ -114,11 +112,15 @@ external acceptance checklist: [`openai-compatible-provider.md`](./openai-compat
 
 ### 4. Create your first page (the payoff)
 
-Open your admin panel (`/admin`), then ask your agent (via MCP) to create a
-page: *"create a landing page with a hero, three features and a contact form"*.
-The agent writes a draft; you approve and publish. On self-hosted Node the
-integrated publisher closes the loop without a terminal once GitHub credentials
-are connected; Cloudflare Pages cannot run the build (explicit `503`).
+Open your admin panel (`/admin`). On **self-hosted Node/Docker** (after `/setup`)
+and on **Cloudflare Pages + D1**, you can edit and publish both individual pages
+(`/pages/<slug>`) and your main home page (`/`, via **Editar portada (`/`)** →
+`/admin/editor?slug=home`) directly from the Visual Editor without touching a
+terminal — or ask your MCP agent to draft a page (*"create a landing page with a
+hero, three features and a contact form"*) and approve/publish it. On self-hosted
+Node, `/admin/publish` optionally exports and pushes an approved static copy to
+GitHub Pages once GitHub credentials are connected; Cloudflare Pages shows a
+preventive notice and cannot run static builds (`503 build_runtime_unavailable`).
 
 ## What you get out of it
 

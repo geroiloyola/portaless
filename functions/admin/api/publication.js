@@ -62,11 +62,16 @@ function mapPublisherFailure(stderr) {
   return "publish_failed";
 }
 
+export function isBuildRuntimeAvailable(env = {}) {
+  if (typeof env?.__PORTALESS_PUBLISH_RUNNER === "function") return true;
+  return typeof process !== "undefined" && Boolean(process.versions?.node);
+}
+
 async function runPublisher(env, snapshot, mode = "publish") {
   if (typeof env.__PORTALESS_PUBLISH_RUNNER === "function") {
     return env.__PORTALESS_PUBLISH_RUNNER({ snapshot, mode });
   }
-  if (typeof process === "undefined" || !process.versions?.node) {
+  if (!isBuildRuntimeAvailable(env)) {
     throw new PublicationError("build_runtime_unavailable", "This runtime cannot run a build; use self-hosted Node or run npm run publish.");
   }
   const { spawn } = await import("node:child_process");
@@ -116,7 +121,13 @@ export async function onRequestGet(context) {
       retire: async () => ({ commitSha: null, pagesUrl: null }),
     });
     const [status, snapshot] = await Promise.all([orchestrator.status(siteId), currentSnapshot(env ?? {}, siteId)]);
-    return json({ siteId, snapshot, latest: status.latest, published: status.published });
+    return json({
+      siteId,
+      buildRuntimeAvailable: isBuildRuntimeAvailable(env ?? {}),
+      snapshot,
+      latest: status.latest,
+      published: status.published,
+    });
   } catch (err) {
     return json({ error: "publication_status_unavailable", message: err?.message ?? String(err) }, 503);
   }

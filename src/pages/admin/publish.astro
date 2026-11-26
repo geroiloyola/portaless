@@ -15,6 +15,15 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </p>
     <p id="publish-status" role="status">Cargando estado…</p>
     <p id="publish-error" class="publish-error" role="alert" hidden></p>
+    <div id="publish-runtime-notice" class="publish-notice" role="status" hidden>
+      <strong>Publicación estática a GitHub Pages no disponible en este runtime.</strong>
+      <p>
+        Este entorno (por ejemplo Cloudflare Pages) no puede ejecutar builds estáticos hacia GitHub Pages.
+        Editar y publicar páginas individuales en <code>/</code> y <code>/pages/&lt;slug&gt;</code> desde el
+        <a href="/admin/editor">Editor Visual</a> <strong>sí funciona aquí</strong> (guardado en D1).
+        Para exportar una copia estática integrada a GitHub Pages, usa un nodo Node/Docker self-host.
+      </p>
+    </div>
 
     <section class="publish-card" aria-labelledby="snapshot-title">
       <h2 id="snapshot-title">Snapshot aprobado</h2>
@@ -42,6 +51,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .publish-card h2 { margin-block-start:0;font-size:1rem }
   .publish-mono, #snapshot-pages { font-family:var(--font-mono,monospace);font-size:.8rem;overflow-wrap:anywhere }
   .publish-error { padding:var(--space-3,12px);border-inline-start:4px solid var(--danger-fg);background:var(--danger-bg);color:var(--text) }
+  .publish-notice { margin-block:var(--space-4,16px);padding:var(--space-3,12px) var(--space-4,16px);border:1px solid var(--panel-border);border-inline-start:4px solid var(--warning-fg, #b8860b);border-radius:12px;background:var(--panel-bg);color:var(--text);font-size:.9rem;line-height:1.5 }
+  .publish-notice p { margin:.4rem 0 0;color:var(--muted) }
   .publish-actions { display:flex;flex-wrap:wrap;gap:var(--space-2,8px) }
   .publish-actions button { min-height:44px;padding-inline:var(--space-3,12px);border:1px solid var(--panel-border);border-radius:var(--radius-button,8px);background:var(--accent);color:var(--text);font-weight:700;cursor:pointer }
   .publish-actions button:disabled { opacity:.5;cursor:not-allowed }
@@ -51,6 +62,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <script>
   const status = document.getElementById("publish-status")!;
   const error = document.getElementById("publish-error")!;
+  const runtimeNotice = document.getElementById("publish-runtime-notice")!;
   const hashEl = document.getElementById("snapshot-hash")!;
   const pagesEl = document.getElementById("snapshot-pages")!;
   const detail = document.getElementById("run-detail")!;
@@ -59,6 +71,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   const unpublishBtn = document.getElementById("unpublish-site") as HTMLButtonElement;
   let latest: any = null;
   let siteId = "default";
+  let buildRuntimeAvailable = true;
 
   function setError(message = "") {
     error.textContent = message;
@@ -68,6 +81,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   function render(data: any) {
     siteId = data.siteId || "default";
     latest = data.latest || null;
+    buildRuntimeAvailable = data.buildRuntimeAvailable !== false;
+    runtimeNotice.hidden = buildRuntimeAvailable;
     hashEl.textContent = data.snapshot?.hash ?? "Sin snapshot";
     pagesEl.replaceChildren();
     for (const [slug, revisionId] of Object.entries(data.snapshot?.revisionIds ?? {})) {
@@ -100,8 +115,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     status.textContent = data.published
       ? `Publicado: ${data.published.pagesUrl ?? data.published.commitSha ?? "sin URL"}`
       : "Sin publicación activa.";
-    retryBtn.disabled = !latest || latest.status === "published";
-    unpublishBtn.disabled = !data.published;
+    publishBtn.disabled = !buildRuntimeAvailable;
+    retryBtn.disabled = !buildRuntimeAvailable || !latest || latest.status === "published";
+    unpublishBtn.disabled = !buildRuntimeAvailable || !data.published;
   }
 
   async function load() {
@@ -128,9 +144,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     await load();
   }
 
-  publishBtn.addEventListener("click", () => { publishBtn.disabled = true; void act("publish").catch((e) => setError((e as Error).message)).finally(() => { publishBtn.disabled = false; }); });
-  retryBtn.addEventListener("click", () => { retryBtn.disabled = true; void act("retry").catch((e) => setError((e as Error).message)).finally(() => { retryBtn.disabled = false; }); });
-  unpublishBtn.addEventListener("click", () => { if (window.confirm("¿Retirar la proyección pública? El canon privado no se modifica.")) { unpublishBtn.disabled = true; void act("unpublish").catch((e) => setError((e as Error).message)).finally(() => { unpublishBtn.disabled = false; }); } });
+  publishBtn.addEventListener("click", () => { publishBtn.disabled = true; void act("publish").catch((e) => setError((e as Error).message)).finally(() => { publishBtn.disabled = !buildRuntimeAvailable; }); });
+  retryBtn.addEventListener("click", () => { retryBtn.disabled = true; void act("retry").catch((e) => setError((e as Error).message)).finally(() => { retryBtn.disabled = !buildRuntimeAvailable || !latest || latest.status === "published"; }); });
+  unpublishBtn.addEventListener("click", () => { if (window.confirm("¿Retirar la proyección pública? El canon privado no se modifica.")) { unpublishBtn.disabled = true; void act("unpublish").catch((e) => setError((e as Error).message)).finally(() => { unpublishBtn.disabled = !buildRuntimeAvailable; }); } });
 
   void load().catch((e) => setError((e as Error).message));
 </script>

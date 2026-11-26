@@ -69,4 +69,11 @@ describe("PR A — /admin UX hierarchy, wizard rescue & publish clarity", () => 
     expect(editor).toContain("defaultHomeLayout");
     expect(editor).toContain('slug === "home"');
   });
+
+  it("admin/publish.astro handles buildRuntimeAvailable === false with a preventive notice", () => {
+    const publish = read("src/pages/admin/publish.astro");
+    expect(publish).toContain('id="publish-runtime-notice"');
+    expect(publish).toContain("buildRuntimeAvailable");
+    expect(publish).toContain("publishBtn.disabled = !buildRuntimeAvailable");
+  });
 });
