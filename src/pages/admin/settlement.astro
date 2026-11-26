@@ -20,6 +20,8 @@ import "../../styles/global.css";
       .check { font-weight: 400; display: flex; gap: .5rem; align-items: flex-start; }
       button { margin-top: 1rem; padding: .6rem 1.2rem; font-size: 1rem; border: 0; border-radius: var(--radius-button); cursor: pointer; background: var(--accent); color: #261C15; font-family: var(--font-sans); font-weight: 600; }
       button.danger { background: var(--danger-fg); color: var(--bg); }
+      button.secondary { background: var(--panel-bg); color: var(--text); border: 1px solid var(--panel-border); font-size: .9rem; }
+      .stepup-box { margin-top: 1rem; padding: .9rem 1rem; border: 1px dashed var(--panel-border); border-radius: var(--radius-button); }
       .error { color: var(--danger-fg); margin-top: .75rem; }
       .ok { color: var(--success-fg); margin-top: .75rem; }
       small { color: var(--muted); }
@@ -37,36 +39,40 @@ import "../../styles/global.css";
     <p class="error" id="load-error" hidden></p>
 
     <script>
-      const root = document.getElementById("providers");
-      const loadError = document.getElementById("load-error");
+      import { EMAIL_STEPUP_ERRORS, requestEmailStepUpCode } from "../../lib/admin-email-stepup";
 
-      const REASONS = {
+      const root = document.getElementById("providers")!;
+      const loadError = document.getElementById("load-error")!;
+
+      const REASONS: Record<string, string> = {
         token_rejected: "Cloudflare rechazo el token. Usa un API token con permiso Zone Read.",
         invalid_zone_id: "El Zone ID no tiene el formato esperado (32 caracteres hexadecimales).",
         zone_not_active: "La zona no esta activa en Cloudflare.",
         zone_does_not_match_site: "La zona no corresponde al dominio APW del sitio.",
         missing_api_token: "Falta el API token.",
         cloudflare_unreachable: "No se pudo contactar a Cloudflare.",
+        ...EMAIL_STEPUP_ERRORS,
       };
-      const ERRORS = {
+      const ERRORS: Record<string, string> = {
         site_identity_required: "Primero genera la identidad APW del sitio en el wizard: define el dominio.",
         encryption_key_missing: "Falta PORTALESS_OAUTH_TOKEN_ENCRYPTION_KEY (32+ caracteres) en el servidor.",
         origin_lock_not_confirmed: "Confirma que el origen solo acepta trafico del proveedor.",
-        step_up_failed: "Contrasena o codigo 2FA incorrectos.",
+        step_up_failed: "Contrasena, codigo 2FA o codigo por correo incorrectos.",
+        ...EMAIL_STEPUP_ERRORS,
       };
 
-      async function post(body) {
+      async function post(body: Record<string, unknown>) {
         const res = await fetch("/admin/settlement", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
         });
-        const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({} as Record<string, string>));
         if (!res.ok) throw new Error(REASONS[data.reason] || ERRORS[data.error] || data.message || data.error || `HTTP ${res.status}`);
         return data;
       }
 
-      function field(name, label, type, help) {
+      function field(name: string, label: string, type: string, help?: string) {
         const l = document.createElement("label");
         l.textContent = label;
         const i = document.createElement("input");
@@ -82,7 +88,7 @@ import "../../styles/global.css";
         return l;
       }
 
-      function render(provider) {
+      function render(provider: any) {
         const card = document.createElement("section");
         card.className = "card";
         card.id = provider.id;
@@ -96,13 +102,14 @@ import "../../styles/global.css";
           p.textContent = `Activo desde ${provider.verifiedAt} (por ${provider.activatedBy}). Zona: ${provider.metadata?.zone_name ?? "-"}.`;
           card.appendChild(p);
           const off = document.createElement("button");
+          off.type = "button";
           off.className = "danger";
           off.textContent = "Desactivar";
-          off.onclick = async () => {
+          off.addEventListener("click", async () => {
             off.disabled = true;
             try { await post({ action: "deactivate", providerId: provider.id }); location.reload(); }
-            catch (e) { msg.className = "error"; msg.textContent = e.message; off.disabled = false; }
-          };
+            catch (e) { msg.className = "error"; msg.textContent = (e as Error).message; off.disabled = false; }
+          });
           card.appendChild(off);
           card.appendChild(msg);
           return card;
@@ -116,25 +123,78 @@ import "../../styles/global.css";
         form.appendChild(lock);
         form.appendChild(field("password", "Tu contrasena actual", "password"));
         form.appendChild(field("totpCode", "Codigo 2FA (si lo tienes activo)", "text"));
+
+        // Optional email step-up block
+        const stepUpBox = document.createElement("div");
+        stepUpBox.className = "stepup-box";
+        const hint = document.createElement("small");
+        hint.textContent = "Verificacion opcional por correo (step-up por email):";
+        stepUpBox.appendChild(hint);
+
+        const emailReqBtn = document.createElement("button");
+        emailReqBtn.type = "button";
+        emailReqBtn.className = "secondary";
+        emailReqBtn.textContent = "Enviar codigo a mi correo";
+        emailReqBtn.style.display = "block";
+        stepUpBox.appendChild(emailReqBtn);
+
+        const emailReqMsg = document.createElement("p");
+        emailReqMsg.hidden = true;
+        stepUpBox.appendChild(emailReqMsg);
+
+        const emailTokenInput = document.createElement("input");
+        emailTokenInput.type = "hidden";
+        emailTokenInput.name = "emailToken";
+        stepUpBox.appendChild(emailTokenInput);
+
+        stepUpBox.appendChild(field("emailCode", "Codigo recibido por correo (opcional)", "text"));
+        form.appendChild(stepUpBox);
+
+        emailReqBtn.addEventListener("click", async () => {
+          emailReqBtn.disabled = true;
+          emailReqMsg.hidden = true;
+          const result = await requestEmailStepUpCode();
+          if (result.ok && result.token) {
+            emailTokenInput.value = result.token;
+          }
+          emailReqMsg.textContent = result.message;
+          emailReqMsg.className = result.ok ? "ok" : "error";
+          emailReqMsg.hidden = false;
+          emailReqBtn.disabled = false;
+        });
+
         const btn = document.createElement("button");
         btn.type = "submit";
         btn.textContent = "Verificar y activar";
         form.appendChild(btn);
         form.appendChild(msg);
-        form.onsubmit = async (e) => {
+        form.addEventListener("submit", async (e) => {
           e.preventDefault();
           btn.disabled = true;
           msg.className = "";
           msg.textContent = "Verificando con el proveedor…";
           const fd = new FormData(form);
-          const credentials = {};
+          const credentials: Record<string, string> = {};
           for (const c of provider.credentials) credentials[c.key] = String(fd.get(`cred:${c.key}`) || "").trim();
-          const body = { action: "activate", providerId: provider.id, credentials, confirmOriginLocked: fd.get("lock") === "on", password: String(fd.get("password") || "") };
+          const body: Record<string, unknown> = {
+            action: "activate",
+            providerId: provider.id,
+            credentials,
+            confirmOriginLocked: fd.get("lock") === "on",
+          };
+          const password = String(fd.get("password") || "");
+          if (password) body.password = password;
           const totp = String(fd.get("totpCode") || "").trim();
           if (totp) body.totpCode = totp;
-          try { await post(body); form.reset(); location.reload(); }
-          catch (err) { msg.className = "error"; msg.textContent = err.message; btn.disabled = false; }
-        };
+          const emailToken = String(fd.get("emailToken") || "").trim();
+          const emailCode = String(fd.get("emailCode") || "").trim();
+          if (emailToken || emailCode) {
+            if (emailToken) body.emailToken = emailToken;
+            if (emailCode) body.emailCode = emailCode;
+          }
+          try { await post(body); form.reset(); emailTokenInput.value = ""; location.reload(); }
+          catch (err) { msg.className = "error"; msg.textContent = (err as Error).message; btn.disabled = false; }
+        });
         card.appendChild(form);
         return card;
       }
@@ -142,7 +202,7 @@ import "../../styles/global.css";
       fetch("/admin/settlement")
         .then((r) => { if (r.status === 401) { location.href = "/admin/login?error=1"; throw new Error("401"); } return r.json(); })
         .then((data) => {
-          document.getElementById("site-host").textContent = data.siteHost || "sin identidad APW (genera una en el wizard)";
+          document.getElementById("site-host")!.textContent = data.siteHost || "sin identidad APW (genera una en el wizard)";
           for (const p of data.providers || []) root.appendChild(render(p));
         })
         .catch((e) => { if (e.message !== "401") { loadError.hidden = false; loadError.textContent = `No se pudo cargar: ${e.message}`; } });
