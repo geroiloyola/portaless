@@ -25,7 +25,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Conecta tu infraestructura — Portaless Wizard">
   <div class="wiz-page-header">
-    <p class="wiz-step-indicator">Paso 2 de 5</p>
+    <p class="wiz-step-indicator">Paso 2 de 4</p>
     <h1 class="wiz-page-title">¿Dónde vive tu sitio?</h1>
     <p class="wiz-page-subtitle">
       Autoriza a Portaless a desplegar tu sitio en un proveedor gratuito.
@@ -49,7 +49,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
       <a class="wiz-gh-action" id="gh-action" hidden></a>
       <div class="wiz-publish-note" id="gh-publish-note" hidden>
         <p class="wiz-publish-note-title">Cuando haya una revisión aprobada, publica desde el panel (self-host Node):</p>
-        <a class="wiz-publish-cmd" href="/admin/publish">Abrir Publicación integrada →</a>
+        <a class="wiz-publish-cmd" href="/admin/publish">Abrir Publicar a GitHub Pages →</a>
         <p class="wiz-publish-note-detail" id="gh-publish-detail"></p>
       </div>
     </div>
@@ -69,10 +69,16 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   <p class="wiz-not-ready-note">
     ¿Prefieres hacerlo a mano? Puedes desplegar tu sitio siguiendo la guía manual.
   </p>
-  <a href="/docs/DEPLOY_GITHUB_PAGES.md" class="wiz-manual-link">Ver guía de despliegue manual →</a>
+  <a
+    href="https://github.com/geroiloyola/portaless/blob/main/docs/DEPLOY_GITHUB_PAGES.md"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="wiz-manual-link"
+  >Ver guía de despliegue manual →</a>
 
   <div class="wiz-nav-row">
     <a href="/admin/wizard/step-1-intent" class="wiz-back-link">← Volver</a>
+    <a href="/admin/wizard/step-4-backup-key" class="wiz-back-link">Continuar sin conectar GitHub →</a>
   </div>
 </BaseLayout>
 
@@ -230,7 +236,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   .wiz-not-ready-note { max-width: 560px; font-size: 0.85rem; color: var(--portaless-muted); margin-bottom: 8px; }
   .wiz-manual-link { display: inline-block; font-size: 0.85rem; color: var(--accent-text); margin-bottom: 24px; }
 
-  .wiz-nav-row { margin-top: 12px; }
+  .wiz-nav-row { margin-top: 12px; max-width: 560px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .wiz-back-link { font-size: 0.85rem; color: var(--portaless-muted); text-decoration: none; }
   .wiz-back-link:hover { text-decoration: underline; }
 </style>

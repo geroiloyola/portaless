@@ -4,11 +4,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <BaseLayout title="Publicar sitio — Portaless Admin">
   <main class="container publish-page">
     <p><a href="/admin/pages">← Páginas</a> · <a href="/admin/wizard/step-2-infrastructure">Conexiones</a> · <a href="/admin/backup">Backups</a></p>
-    <h1>Publicación integrada</h1>
+    <h1>Publicar a GitHub Pages (copia estática)</h1>
     <p class="publish-lead">
-      Publica exactamente el conjunto de revisiones aprobadas que muestra esta pantalla.
-      Reintentar no republica una revisión desautorizada; despublicar retira la proyección
-      pública sin tocar el canon privado.
+      Opcional (solo en self-host Node con una GitHub App conectada). Exporta y
+      sube una copia estática del conjunto de revisiones aprobadas hacia GitHub
+      Pages. No necesitas esta pantalla para publicar una página individual en
+      este nodo: eso se hace al instante con «Publicar» en el
+      <a href="/admin/editor">Editor Visual</a>. Reintentar no republica una
+      revisión desautorizada y despublicar retira solo la proyección pública.
     </p>
     <p id="publish-status" role="status">Cargando estado…</p>
     <p id="publish-error" class="publish-error" role="alert" hidden></p>
