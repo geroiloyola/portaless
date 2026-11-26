@@ -90,6 +90,16 @@ validation is **247 files / 2,147 tests / 2 skipped, 72 Playwright, 79 pages**.
 The `v0.0.11` evidence above remains the tagged snapshot (241 / 2,105); it is
 not retroactively rewritten.
 
+## `v0.1.0-rc.2` candidate update (2026-11-26)
+
+Verified on `main` (`adff328`, Node 24 CI 9/9 checks + `Release acceptance` run `45867098883` green + live `starter` self-host smoke):
+
+- **Automated `Release acceptance` workflow (`45867098883`):** **PASS** on `main` after PR #141 (`lockfile-install`, full Vitest, private-export negative, source boundary, `verify:claims`, `starter` + `/portaless/` + `demo` builds, resource budget, full Playwright suite, `git diff --check`).
+- **UX & runtime additions (PRs #141–#144):** 3-tier `/admin` hierarchy with native collapsed `<details>` for advanced protocol tools, sequential 4-step `/admin/wizard`, editable home page (`/`) via Visual Editor (`functions/index.js` with non-destructive static fallback), preventive `buildRuntimeAvailable` notice in `/admin/publish`, and aligned onboarding guides (`START_HERE.md`, `DEPLOY_GITHUB_PAGES.md`, `first-steps.md`, `DEPLOY_CLOUDFLARE_PAGES.md`).
+- **Live `starter` self-host smoke (`server/node-runtime.mjs` + compiled `starter` `dist/` + temporary SQLite):** verified `GET /` static starter fallback (`200`, strict `script-src 'self' https:`), published `slug="home"` dynamic rendering at `/` (`200`, strict CSP), automatic fallback restoration on draft revert (zero draft leak), and authenticated `GET /admin/api/publication` reporting `buildRuntimeAvailable: true`.
+- **Unit & browser suites:** 254 unit files / 2,258+ tests / 1 skipped, 76 Playwright tests (0 CSP violations), dual builds (`starter` 37 pages + `demo` 79 pages), `npm run verify:claims` (`READY` + 11 suites / 57 tests).
+- **External gates:** All 5 external release-acceptance gates below remain open (`blocked_unverified` / `not_run` / `pending`).
+
 ## `v0.1.0-rc.1` candidate update (2026-11-26)
 
 Verified on `main` (`b82eb1e`, Node 24 CI 9/9 checks + local staging):
