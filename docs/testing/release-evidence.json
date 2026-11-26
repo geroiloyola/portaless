@@ -2,7 +2,7 @@
   "format": "portaless-release-evidence-v1",
   "version": "1.0",
   "generatedAt": "2026-11-26",
-  "candidateBaseCommit": "b82eb1e",
+  "candidateBaseCommit": "adff328",
   "candidateIncludes": [
     "C40",
     "C41"
@@ -19,13 +19,14 @@
     "browser": "npx playwright test"
   },
   "summary": {
-    "unitFiles": 252,
-    "unitTests": 2248,
+    "unitFiles": 254,
+    "unitTests": 2258,
     "unitSkipped": 1,
     "playwrightTests": 76,
     "buildPages": 79,
     "starterBuildPages": 37,
     "baseBuild": "/portaless/",
+    "releaseAcceptanceWorkflowRun": "45867098883",
     "stagingGatekeeper": {
       "modesVerified": [
         "shadow",
