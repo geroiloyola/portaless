@@ -76,10 +76,11 @@ cleanInstall();
 run("unit-and-e2e", process.execPath, [VITEST, "run"]);
 run("private-export-negative", process.execPath, ["--import", "tsx", "scripts/test-public-export.mjs"]);
 run("source-package-boundary", process.execPath, ["scripts/verify-npm-source-boundary.mjs"]);
-run("architecture-boundaries", process.execPath, ["scripts/check-architecture-boundaries.mjs", "--strict"]);
+run("verify-claims", "npm", ["run", "verify:claims"]);
 run("build-normal", "npm", ["run", "build"]);
 buildWithBase();
 run("resource-budget", "npm", ["run", "test:resources"]);
+run("build-demo", "npm", ["run", "build"], { env: { PORTALESS_SITE_PROFILE: "demo" } });
 run("playwright-mobile-and-flows", "npx", ["playwright", "test"]);
 run("diff-check", "git", ["diff", "--check"]);
 
