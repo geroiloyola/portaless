@@ -16,7 +16,7 @@ export interface ManifestValidationResult {
  * contra package.json (tests/unit/plugin-sdk-parity.test.ts) para que no
  * derive en silencio.
  */
-export const CORE_VERSION = "0.0.11";
+export const CORE_VERSION = "0.1.0-rc.1";
 
 /**
  * ¿La version del core satisface el rango de `engines.portaless`? Misma
