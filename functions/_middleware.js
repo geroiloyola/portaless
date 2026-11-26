@@ -58,10 +58,40 @@ import { readerHostFromOperator } from "@verared/apw/scoring";
 import { resolveApwManifest } from "@verared/apw/resolver";
 import { createSiteIdentityStore, createAttestationLogStore, createReaderConductJtiStore } from "@portaless/trust-storage-adapters";
 import { maybeAutoEmitReaderConduct } from "@verared/apw/scoring";
+import {
+  checkPreAuthEgressBudget,
+  emitGatekeeperTelemetry,
+  evaluateGatekeeper,
+  resolveGatekeeperRequestContext,
+} from "./_shared/gatekeeper-runtime.js";
 
 function looksLikeAutomatedAgent(request) {
   const ua = request.headers.get("user-agent") || "";
   return /bot|crawler|spider|gpt|claude|scrapy|python-requests/i.test(ua);
+}
+
+function isGovernedRoute(pathname, env = {}) {
+  const raw = env?.PORTALESS_GOVERNED_PATHS;
+  if (typeof raw !== "string" || !raw.trim()) return false;
+  for (const part of raw.split(",")) {
+    const prefix = part.trim().replace(/\/+$/, "");
+    if (!prefix) continue;
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
+  }
+  return false;
+}
+
+function unsignedBotResponse(env) {
+  return new Response(JSON.stringify({
+    error: "unsigned_automated_request",
+    message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
+    policy_url: publicOriginFromEnv(env)
+      ? `${publicOriginFromEnv(env)}/.well-known/portaless-content-policy.json`
+      : "/.well-known/portaless-content-policy.json",
+  }), {
+    status: 403,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
 }
 
 // Throttle en memoria por isolate: como maximo un intento de emision por
@@ -219,27 +249,77 @@ async function handleRequest(context) {
       headers: { location: `${basePath}${legacyDestination}${url.search}` },
     });
   }
-  if (env.ENABLE_TRUST_LAYER !== "true") return next();
-  if (isPublicBotRoute(new URL(request.url).pathname)) return next();
+  const gkCtx = resolveGatekeeperRequestContext(request, env);
+  if (!gkCtx.ok) return gkCtx.errorResponse;
 
-  const ledgerStore = await createUsageLedgerStore(env);
+  if (env.ENABLE_TRUST_LAYER !== "true" && gkCtx.mode === "off") return next();
+  if (isPublicBotRoute(url.pathname)) return next();
+
+  const publicOrigin = publicOriginFromEnv(env);
+  const origin = publicOrigin || url.origin;
+  const governed = isGovernedRoute(url.pathname, env);
   const hasSignature = request.headers.get("Signature-Agent") !== null;
   const automatedLooking = looksLikeAutomatedAgent(request);
 
-  if (!hasSignature && !automatedLooking) return next();
+  if (!hasSignature && !automatedLooking && !governed) return next();
 
-  if (!hasSignature && automatedLooking) {
+  if (!hasSignature) {
+    // Regla B3 (ADR 0003):
+    // - Ruta publica + ai_input=allow + firma ausente => lectura anonima
+    //   (verified: false, sin atribucion, sin impacto en reader_conduct ni cobro).
+    // - Ruta gobernada o ai_input=block/charge + firma ausente => fail-closed 403.
+    const policyStore = await createAgentAccessPolicyStore(env);
+    const policy = await loadContentPolicy(origin, env.ASSETS, policyStore);
+    const rule = policy.policies.ai_input;
+    if (!governed && rule.access === "allow") {
+      if (context.data && typeof context.data === "object") {
+        context.data.webBotAuth = { verified: false, anonymous: true };
+      }
+      if (gkCtx.mode !== "off") {
+        emitGatekeeperTelemetry(env, {
+          mode: gkCtx.mode,
+          phase: "b3_anonymous_allow",
+          pathname: url.pathname,
+          governed: false,
+          policyAccess: rule.access,
+          ipHash: gkCtx.ipHash,
+          wouldBlock: false,
+          enforcedAction: "allow",
+          reason: "public_unsigned_allow",
+        });
+      }
+      return next();
+    }
     try { await recordUnsignedBotRejection(env, request.headers.get("user-agent"), new Date(), context.waitUntil?.bind(context)); }
     catch { console.warn("[trust-layer] unsigned-bot aggregate unavailable"); }
-    return new Response(JSON.stringify({
-      error: "unsigned_automated_request",
-      message: "Este sitio usa Portaless Trust Layer. Firma tus peticiones segun Web Bot Auth o respeta las politicas en /.well-known/portaless-content-policy.json",
-      policy_url: publicOriginFromEnv(env)
-        ? `${publicOriginFromEnv(env)}/.well-known/portaless-content-policy.json`
-        : "/.well-known/portaless-content-policy.json",
-    }), { status: 403, headers: { "content-type": "application/json" } });
+    if (gkCtx.mode !== "off") {
+      emitGatekeeperTelemetry(env, {
+        mode: gkCtx.mode,
+        phase: "b3_unsigned_deny",
+        pathname: url.pathname,
+        governed,
+        policyAccess: rule.access,
+        ipHash: gkCtx.ipHash,
+        wouldBlock: true,
+        enforcedAction: "deny",
+        reason: governed ? "governed_route_unsigned" : "policy_requires_signature",
+      });
+    }
+    return unsignedBotResponse(env);
   }
 
+  // Pre-Auth Egress Guard ANTES de cualquier resolucion externa de directorio/identidad.
+  const preAuth = checkPreAuthEgressBudget({
+    request,
+    env,
+    mode: gkCtx.mode,
+    ipHash: gkCtx.ipHash,
+    pathname: url.pathname,
+    governed,
+  });
+  if (!preAuth.allowed && preAuth.response) return preAuth.response;
+
+  const ledgerStore = await createUsageLedgerStore(env);
   const result = await verifyWebBotAuthRequest(request, {
     env,
     createNonceStore: createWebBotAuthNonceStore,
@@ -270,8 +350,6 @@ async function handleRequest(context) {
     await recordAgentAccess(ledgerStore, { operatorKeyId: "unverified", charged: false, amountUsd: 0, policyViolation: true });
     return Response.json({ error: "verification_failed", reason: result.reason }, { status: 401, headers: { "cache-control": "no-store" } });
   }
-  const publicOrigin = publicOriginFromEnv(env);
-  const origin = publicOrigin || new URL(request.url).origin;
   // Precedencia store > asset > default (ROADMAP.md fase 12). El store es el
   // override que el dueno escribio desde /admin/agents; si no hay override se
   // lee el asset de siempre.
@@ -282,6 +360,30 @@ async function handleRequest(context) {
   const operatorKeyId = result.agentKeyId ?? result.keyRecord?.keyId ?? "unknown";
   const readerHost = readerHostFromOperator(result.keyRecord?.operator);
   const readerDid = readerHost ? `did:apw:${readerHost}` : undefined;
+
+  if (gkCtx.mode !== "off") {
+    const gk = await evaluateGatekeeper({
+      request,
+      env,
+      mode: gkCtx.mode,
+      ipHash: gkCtx.ipHash,
+      pathname: url.pathname,
+      governed,
+      policyAccess: rule.access,
+      webBotAuth: result,
+      operatorKeyId,
+      readerDid,
+      readerHost,
+      budgetAlreadyCharged: true,
+    });
+    if (context.data && typeof context.data === "object") context.data.gatekeeper = gk;
+    if (!gk.allow && gk.response) {
+      if (gk.decision === "deny") {
+        await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });
+      }
+      return gk.response;
+    }
+  }
 
   if (rule.access === "block") {
     await recordAgentAccess(ledgerStore, { operatorKeyId, readerDid, charged: false, amountUsd: 0 });

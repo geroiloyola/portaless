@@ -1,7 +1,7 @@
 # ADR 0003: Public and governed resource contract
 
-- **Status:** Owner-approved architecture and resolution-contract baseline; documentation only, no enforcement change
-- **Decision date:** 2026-10-22
+- **Status:** Owner-approved architecture baseline; host-side B3 rule aligned in `functions/_middleware.js` (`public + ai_input=allow + missing signature` → anonymous read with no attribution/billing; invalid signature → always `401`; governed/block/charge without signature → `403` fail-closed)
+- **Decision date:** 2026-10-22 (host B3 alignment: 2026-11-25)
 - **Scope:** Automated reads of Portaless content and projections across static,
   Cloudflare Pages Functions and the self-host Node runtime.
 - **Resolution phase approval:** 2026-10-23; D1–D9, independent identity root and
@@ -9,9 +9,8 @@
   the [standardization gates](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/LTP-STANDARDIZATION-STATUS.md).
 - **Inspected resolution baseline:** `main` after merged PR #102 (`bc3b243`),
   including the follow-up review fixes of PR #98.
-- **Implementation gate:** Do not advertise or enable governed content until
-  the resource classification, reader identity/reputation profile and dynamic
-  serving path in this contract have tests and an owner-approved policy.
+- **Implementation gate:** Governed routes remain opt-in via `PORTALESS_GOVERNED_PATHS`
+  and `PORTALESS_GATEKEEPER_MODE=off|shadow|enforce` (default `off`).
 
 ## Summary
 
