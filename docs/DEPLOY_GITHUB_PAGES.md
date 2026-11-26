@@ -8,9 +8,62 @@
    - `PORTALESS_SITE_URL`: la URL final de tu sitio, ej. `https://tu-usuario.github.io`.
    - `PORTALESS_BASE_PATH`: `/nombre-del-repo/` si el repo no es `tu-usuario.github.io`.
    - `ENABLE_COMMERCE`: `true` si quieres activar la tienda (ver `COMMERCE_SETUP.md`).
-4. Crea un workflow de GitHub Actions en tu repositorio que ejecute `npm ci && npm run build` (con las variables de arriba) y suba `dist/` usando `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4`. Por defecto (`PORTALESS_SITE_PROFILE=starter`), el build genera tu sitio limpio sin contenido de demostración. *(El demo oficial de Portaless se despliega aparte desde [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) en [geroiloyola.github.io/portaless-templates](https://geroiloyola.github.io/portaless-templates/).)*
+4. Crea `.github/workflows/deploy-pages.yml` en tu repositorio con este workflow mínimo listo para copiar y pegar (Node 24 + perfil limpio `starter` por defecto):
+
+```yaml
+name: Deploy Portaless to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build static starter site
+        env:
+          PORTALESS_SITE_PROFILE: starter
+          PORTALESS_SITE_URL: ${{ vars.PORTALESS_SITE_URL }}
+          PORTALESS_BASE_PATH: ${{ vars.PORTALESS_BASE_PATH }}
+          ENABLE_COMMERCE: ${{ vars.ENABLE_COMMERCE }}
+        run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+   *(El demo oficial de Portaless se despliega aparte desde [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) en [geroiloyola.github.io/portaless-templates](https://geroiloyola.github.io/portaless-templates/).)*
 5. Tu sitio queda disponible en la URL que configuraste, con HTTPS
-   automático provisto por GitHub.
+   automático provisto por GitHub. Ten en cuenta que GitHub Pages sirve solo el
+   sitio estático (sin `/admin`, sin base de datos y sin Trust Layer dinámico;
+   ver [`architecture/runtime-parity-matrix.md`](./architecture/runtime-parity-matrix.md)).
 
 ## Dominio propio
 

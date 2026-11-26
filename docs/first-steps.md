@@ -51,35 +51,40 @@ está corriendo en tu computadora.
 Listo: entrás a [http://localhost:3000/admin](http://localhost:3000/admin)
 con tu usuario y contraseña.
 
-## Paso 3 — El asistente de 3 pasos (3 minutos)
+## Paso 3 — El asistente de 4 pasos (3 minutos)
 
+Al entrar a `/admin` vas a ver el panel ordenado en tres bloques: **Tu sitio**,
+**Cuenta y seguridad**, y **Protocolo y herramientas avanzadas** (colapsado por
+defecto para que no te estorbe al empezar).
 
-En el panel vas a ver el asistente. Contale al asistente **qué es tu
-sitio** (nombre, dominio si tenés, y si es un portafolio, una tienda, un
-blog o una página para difundir algo). Con eso solo, Portaless te arma un
-borrador de página con elementos ya colocados.
+Arriba de todo, en **Tu sitio**, tocá **Asistente inicial de configuración**
+(`/admin/wizard`). En 4 pasos guiados:
 
-Después el asistente te lleva a **generar la identidad de tu sitio**: un
-par de claves criptográficas y un registro DNS (el `_apw`) que prueba que
-el dominio es tuyo. El panel te muestra **exactamente el texto y el valor
-que tenés que pegar** en el DNS de tu proveedor de dominio (Namecheap,
-Cloudflare, donde lo hayas comprado), con botones de copiar. Cuando lo
-pegues, volvé al panel y tocá **“Verificar ahora”**.
+1. **Contale de qué trata tu sitio** (nombre, dominio y una descripción breve):
+   Portaless te prepara un borrador de página con elementos ya colocados.
+2. **Conexión opcional de publicación**: podés conectar GitHub Pages o continuar
+   directo sin conectarlo todavía.
+3. **Respaldá tu clave de identidad (`did:apw`)**: tu sitio genera su par de
+   claves criptográficas; guardá la clave privada en un lugar seguro.
+4. **Confirmá tu cuenta y abrí tu borrador** o volvé al panel `/admin`.
 
-Esa identidad es lo que hace que tu sitio sea *verificable* por
-cualquiera (humanos o agentes de IA) sin depender de ninguna empresa
-intermediaria: es Protocol APW, un protocolo abierto.
+Cuando quieras verificar tu dominio con Protocol APW, desplegá **Protocolo y
+herramientas avanzadas** en `/admin`: el panel te muestra **exactamente el
+registro TXT (`_apw`)** con botones de copiar para pegarlo en tu proveedor de
+DNS y tocar **“Verificar ahora”**.
 
-## Paso 4 — Armá y publicá una página (2 minutos)
+## Paso 4 — Editá tu portada (`/`) y armá páginas (2 minutos)
 
-
-1. Andá a **Editor Visual** desde el panel.
-2. Arrastrá elementos desde la paleta izquierda: títulos, botones,
-   videos, preguntas frecuentes, formularios de contacto, galerías… son
-   17 elementos y todos se editan tocando el elemento y cambiando lo que
-   ves a la derecha.
-3. Cuando esté como querés, tocá **Publicar**. Aparece un link
-   “Ver página pública ↗”: tocálo y tu página está viva.
+1. Desde **Tu sitio** en `/admin`, tocá **Editar portada (`/`)**
+   (`/admin/editor?slug=home`) para personalizar la página principal (arranca
+   con un Hero, texto y botón ya listos para editar), o abrí **Editor Visual**
+   para crear una página nueva (`/pages/<slug>`).
+2. Arrastrá elementos desde la paleta izquierda: títulos, botones, videos,
+   preguntas frecuentes, formularios de contacto, galerías… son 17 elementos y
+   todos se editan tocando el elemento y cambiando sus propiedades a la derecha.
+3. Cuando esté como querés, tocá **Publicar**. Aparece un link directo
+   (“Ver portada pública (`/`) ↗” o “Ver página pública ↗”): tu cambio queda
+   vivo al instante en este nodo, sin rebuild ni terminal.
 
 
 **Lo que ves en la demo pública es real**: este mismo motor de elementos

@@ -23,20 +23,29 @@
 
 ## Qué corre en Cloudflare Pages
 
-Cloudflare Pages ejecuta las `functions/` de Portaless: login, admin, Trust
-Layer, endpoints MCP HTTP y APIs administrativas, con D1 como persistencia.
-Las Functions requieren `compatibility_flags = ["nodejs_compat"]`; el
-`wrangler.toml` del repo ya lo declara. La Function de páginas carga
-`node:fs`/`node:url` de forma dinámica y cae al shell inline si el runtime no
-expone filesystem.
-No ejecuta el build de publicación: el nodo canónico y `/admin/publish`
-necesitan Node self-hosted, porque `workerd` no tiene `child_process` ni
-build tools. En Cloudflare, `POST /admin/api/publication` responde
-`503 build_runtime_unavailable` en lugar de fingir una publicación.
+Cloudflare Pages ejecuta las `functions/` de Portaless: login, admin, Editor
+Visual (con páginas dinámicas en `/pages/<slug>` y portada editable `/` en
+`functions/index.js` guardadas en D1), Trust Layer, Gatekeeper y APIs
+administrativas. Las Functions requieren `compatibility_flags = ["nodejs_compat"]`;
+el `wrangler.toml` del repo ya lo declara.
 
-Para publicar desde la UI, mantené el nodo canónico en self-hosted Node y usá
-Cloudflare Pages solo como proyección pública/funciones, o ejecutá el publisher
-en ese nodo. La identidad del snapshot es independiente del proveedor.
+Dos diferencias concretas respecto a Node/Docker self-host (ver
+[`architecture/runtime-parity-matrix.md`](./architecture/runtime-parity-matrix.md)):
+
+1. **Alta inicial del primer administrador por CLI:** `/setup` responde `404`
+   en Cloudflare Pages; crea el esquema y el primer admin con
+   `npm run setup:d1 -- --db <DB_NAME> --remote`.
+2. **Edición y publicación en vivo vía Editor Visual (no `/admin/publish`):**
+   editar y publicar páginas individuales (`/pages/<slug>`) y la portada (`/`,
+   vía `/admin/editor?slug=home`) **sí funciona al instante** en Cloudflare Pages
+   + D1. En cambio, `/admin/publish` (exportar un build estático hacia GitHub
+   Pages) requiere `child_process` y `astro build`, que no existen en `workerd`:
+   la pantalla muestra un aviso preventivo con el botón deshabilitado y
+   `POST /admin/api/publication` responde `503 build_runtime_unavailable`.
+
+Para exportar copias estáticas a GitHub Pages desde la UI, mantené el nodo
+canónico en self-hosted Node y usá Cloudflare Pages como proyección pública o
+runtime dinámico con D1. La identidad del snapshot es independiente del proveedor.
 
 El servidor MCP HTTP y el sandbox de plugins son procesos/adaptadores aparte;
 no se levantan automáticamente por desplegar Pages. Ver

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
 import { __resetPublicationRunStoreForTests } from "../../packages/deploy-engine/src/publication-store";
-import { onRequestGet, onRequestPost, publicationChildEnv } from "../../functions/admin/api/publication.js";
+import { isBuildRuntimeAvailable, onRequestGet, onRequestPost, publicationChildEnv } from "../../functions/admin/api/publication.js";
 
 const dirs: string[] = [];
 afterEach(() => { __resetPublicationRunStoreForTests(); for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
@@ -80,8 +80,21 @@ describe("C34 admin publication endpoint", () => {
 
     const status = await onRequestGet(context({ role: "admin", username: "owner" }, env));
     const statusBody = await status.json();
+    expect(statusBody.buildRuntimeAvailable).toBe(true);
     expect(statusBody.snapshot.revisionIds.home).toBeTruthy();
     expect(statusBody.published.commitSha).toBe(firstBody.run.commitSha);
+  });
+
+  it("reports buildRuntimeAvailable accurately for Node vs edge runtimes without child_process", () => {
+    expect(isBuildRuntimeAvailable({})).toBe(true);
+    const originalProcess = globalThis.process;
+    vi.stubGlobal("process", { versions: {} });
+    try {
+      expect(isBuildRuntimeAvailable({})).toBe(false);
+      expect(isBuildRuntimeAvailable({ __PORTALESS_PUBLISH_RUNNER: async () => ({}) })).toBe(true);
+    } finally {
+      vi.stubGlobal("process", originalProcess);
+    }
   });
 
   it("unpublishes through the retire runner without changing the snapshot", async () => {
