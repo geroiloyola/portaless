@@ -16,9 +16,9 @@
 // archivo no distingue el transporte: solo propaga el resolver.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "@portaless/atomic-elements/page-store";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-import type { ThemePack } from "@portaless/atomic-elements/themes";
+import type { PageStore } from "@portaless/visual-elements/page-store";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+import type { ThemePack } from "@portaless/visual-elements/themes";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { PluginRegistryStore } from "@portaless/plugin-sandbox/plugin-registry";
 import type { AuditLogStore } from "./audit/types";

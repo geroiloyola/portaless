@@ -5,15 +5,15 @@
 // se resuelve el tema, se inyectan los datos de build y se emite el head
 // (SEO + hreflang).
 import BaseLayout from "../layouts/BaseLayout.astro";
-import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
+import JsonLd from "../../packages/visual-elements/astro-integration/JsonLd.astro";
 import SeoHead from "../components/SeoHead.astro";
 import { getCollection } from "astro:content";
-import { renderPage } from "@portaless/atomic-elements/render";
+import { renderPage } from "@portaless/visual-elements/render";
 import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "@portaless/atomic-elements/themes";
+} from "@portaless/visual-elements/themes";
 import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
 import { getSiteUrl } from "../lib/seo";
 import { joinSiteUrl, publishedPosts } from "../lib/llms-txt";
@@ -24,7 +24,7 @@ import {
   localePath,
   type Locale,
 } from "../lib/i18n";
-import type { PageLayout } from "@portaless/atomic-elements/types";
+import type { PageLayout } from "@portaless/visual-elements/types";
 
 interface Props {
   layout: PageLayout;

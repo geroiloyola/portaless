@@ -4,7 +4,7 @@ import {
   ProductPreviewLoader,
   clampPreviewQuery,
   productPreviewKey,
-} from "../../packages/atomic-elements/src/editor/product-preview-loader";
+} from "../../packages/visual-elements/src/editor/product-preview-loader";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

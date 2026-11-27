@@ -14,7 +14,7 @@ const { layout, site } = Astro.props;
 // ItemList vacio que no correspondia al catalogo real). El frontmatter
 // de Astro soporta await de forma nativa, asi que el unico cambio real
 // es agregar la palabra "await" -- ver docs/architecture/site-trust-score.md
-// y el commit que corrige esto en packages/atomic-elements/src/seo/json-ld.ts.
+// y el commit que corrige esto en packages/visual-elements/src/seo/json-ld.ts.
 const jsonLd = await buildJsonLd(layout, site);
 ---
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

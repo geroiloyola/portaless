@@ -1,11 +1,11 @@
 -- -----------------------------------------------------------------------------
 -- v0.0.9.11 -- catalogo extensible de elementos (element packs)
 -- -----------------------------------------------------------------------------
--- La capa ABIERTA del catalogo de Atomic Elements: un plugin puede contribuir
+-- La capa ABIERTA del catalogo de Visual Elements: un plugin puede contribuir
 -- sus propios elementos (schema + template, nunca una funcion de render) para
 -- que el editor y un agente MCP los vean y usen, sin que el nucleo cambie.
 -- El pack se guarda como JSON; la validacion pura vive en
--- packages/atomic-elements/src/elements/element-pack.ts y se aplica al
+-- packages/visual-elements/src/elements/element-pack.ts y se aplica al
 -- guardar y al cargar. Un pack invalido se ignora al cargar (no tira abajo el
 -- catalogo entero). Ver docs/architecture/element-catalog-plugins.md.
 --

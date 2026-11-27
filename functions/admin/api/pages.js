@@ -14,12 +14,12 @@
 // solo las escrituras (PUT/DELETE) exigen rol admin.
 //
 // PageStore.list() ya estaba implementado end-to-end en D1PageStore y
-// SqlitePageStore (packages/atomic-elements/src/persistence/stores/)
+// SqlitePageStore (packages/visual-elements/src/persistence/stores/)
 // desde v0.0.8 (SELECT slug FROM pages) -- lo unico que faltaba era este
 // endpoint HTTP que lo expusiera. Por eso HttpPageStore.list() en
 // src/pages/admin/editor.astro lanzaba un error explicito en vez de
 // fingir un contrato que el backend no tenia todavia.
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

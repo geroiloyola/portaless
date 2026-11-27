@@ -49,7 +49,7 @@ async function main() {
   }
 
   // El sitio arranca con los datos intactos: la pagina sembrada sigue ahi.
-  const { createPageStore } = await import("@portaless/atomic-elements/store-factory");
+  const { createPageStore } = await import("@portaless/visual-elements/store-factory");
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: dbPath });
   const page = await store.load("upgrade-marker");
   if (!page) fail("la pagina sembrada 'upgrade-marker' desaparecio");

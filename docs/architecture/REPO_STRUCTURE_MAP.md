@@ -31,7 +31,7 @@ Sixteen packages, each with its own `package.json`. The number of source files i
 |---|---|---|
 | `apw-resolver/` | Protocol APW reference implementation: DNS TXT resolution, `did:apw` + key history, JWS/JCS artifacts, witness index, scoring, ranking, federation, the conformance runner and the `apw-conformance` bin. Published standalone (`.` = client, `./full` = everything). | 46 |
 | `trust-layer/` | Web Bot Auth (RFC 9421, Ed25519 + experimental ML-DSA), SiteTrustScore with its 4 sources, access policies, the public usage ledger, cloud-image verification paths. | 33 |
-| `atomic-elements/` | The visual editor: element registry and palette, block rendering, drag-and-drop, page layout model and validation, persistence (`PageStore`), theme packs, element packs. | 29 |
+| `visual-elements/` | The visual editor: element registry and palette, block rendering, drag-and-drop, page layout model and validation, persistence (`PageStore`), theme packs, element packs. | 29 |
 | `auth/` | `AuthService`: login, roles, TOTP/2FA, password recovery, OAuth/SSO, step-up verification, email sender abstraction, and the D1/SQLite stores behind them. | 27 |
 | `mcp-server/` | The native MCP server: tools, transports (stdio and HTTP), per-invocation agent identity, capability checks, audit. | 27 |
 | `plugin-sandbox/` | Multi-provider plugin isolation (isolated-vm, Cloudflare Workers for Platforms, Deno Deploy, Fastly), the capability bridge and registry, capability-token stores, the plugin registry, the production runner, and the installer (signed manifests, chunked artifacts, grant reconciliation). | 24 |
@@ -62,7 +62,7 @@ The original proposal nested everything under `packages/core/`. Five paths took 
 
 ### Packages that did follow the proposed layout
 
-`mcp-server/`, `apw-resolver/`, `identity-atproto/`, `cloud-images/`, `plugin-sandbox/`, `dashboard/`, `permissions/`, `auth/`, `trust-layer/`, `plugin-sdk/`, `atomic-elements/`, `deploy-engine/`, `onboarding/`, `sqlite-driver/` — all exist as their own workspace package, which is what the proposal intended even when the folder is not literally under `core/`.
+`mcp-server/`, `apw-resolver/`, `identity-atproto/`, `cloud-images/`, `plugin-sandbox/`, `dashboard/`, `permissions/`, `auth/`, `trust-layer/`, `plugin-sdk/`, `visual-elements/`, `deploy-engine/`, `onboarding/`, `sqlite-driver/` — all exist as their own workspace package, which is what the proposal intended even when the folder is not literally under `core/`.
 
 ### Recommendation
 

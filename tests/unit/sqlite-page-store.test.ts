@@ -3,9 +3,9 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import { SqlitePageStore } from "../../packages/atomic-elements/src/persistence/stores/sqlite-page-store";
-import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
+import { SqlitePageStore } from "../../packages/visual-elements/src/persistence/stores/sqlite-page-store";
+import { projectPublicRevisionHistory } from "../../packages/visual-elements/src/persistence/public-revision-history";
 
 const tmpPath = () => join(mkdtempSync(join(tmpdir(), "portaless-pages-")), "pages.db");
 

@@ -1,5 +1,5 @@
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
-import { diffPageLayouts } from "@portaless/atomic-elements/revision-diff";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
+import { diffPageLayouts } from "@portaless/visual-elements/revision-diff";
 import { emitActivity } from "@portaless/dashboard/activity";
 
 function respond(body, status = 200) {

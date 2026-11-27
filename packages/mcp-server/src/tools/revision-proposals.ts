@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "@portaless/atomic-elements/page-store";
-import type { ElementNode, PageLayout } from "@portaless/atomic-elements/types";
+import type { PageStore } from "@portaless/visual-elements/page-store";
+import type { ElementNode, PageLayout } from "@portaless/visual-elements/types";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
@@ -10,8 +10,8 @@ import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-import { diffPageLayouts } from "@portaless/atomic-elements/revision-diff";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+import { diffPageLayouts } from "@portaless/visual-elements/revision-diff";
 
 const WRITE = "content:write" as const;
 const PUBLISH = "content:publish" as const;

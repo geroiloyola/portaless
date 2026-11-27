@@ -12,7 +12,7 @@
 // traducciones bajo su prefijo de locale. Asi una pagina cuya primaria es
 // espanol expone su ingles en /en/... y viceversa -- el idioma "de casa" de
 // cada pagina es el de su archivo primario, no una constante global.
-import type { PageLayout } from "@portaless/atomic-elements/types";
+import type { PageLayout } from "@portaless/visual-elements/types";
 import { isLocale, type Locale } from "./i18n";
 import { contentPageHref as routeHref } from "./routes";
 import { SITE_LANG } from "./site-lang";

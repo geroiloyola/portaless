@@ -4,8 +4,8 @@
 // texto"), columnas, y la lista de publicaciones (datos inyectados en build,
 // limite, estado vacio honesto, y escape de XSS en todos).
 import { describe, it, expect } from "vitest";
-import { elementRegistry, elementPalette } from "../../packages/atomic-elements/src/elements/registry";
-import { CONTENT_ICON_NAMES } from "../../packages/atomic-elements/src/elements/icons";
+import { elementRegistry, elementPalette } from "../../packages/visual-elements/src/elements/registry";
+import { CONTENT_ICON_NAMES } from "../../packages/visual-elements/src/elements/icons";
 
 describe("Icon", () => {
   it("renderiza el SVG del nombre pedido, con currentColor y caja de 24px", () => {

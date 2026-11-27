@@ -19,9 +19,9 @@
 // `source` ("core" | "pack") dice de donde viene cada entrada.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-import { coreCatalog } from "@portaless/atomic-elements/element-pack";
-import { elementRegistry, elementPalette } from "@portaless/atomic-elements/registry";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+import { coreCatalog } from "@portaless/visual-elements/element-pack";
+import { elementRegistry, elementPalette } from "@portaless/visual-elements/registry";
 import { ELEMENT_TYPE_LIST } from "./element-node-schema";
 
 const TOOL_NAME = "list_page_components";
@@ -43,7 +43,7 @@ export function registerListPageComponentsTool(
   server.registerTool(
     TOOL_NAME,
     {
-      title: "Listar componentes disponibles de Atomic Elements",
+      title: "Listar componentes disponibles de Visual Elements",
       description:
         "Devuelve los bloques soportados hoy para componer una pagina, con su metadata " +
         "(displayName, icon, defaultProps, editableProps) y su `source` ('core' o 'pack'). " +

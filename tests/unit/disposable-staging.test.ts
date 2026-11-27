@@ -14,7 +14,7 @@ import {
   STAGING_SECRET_MARKER,
 } from "../../scripts/staging/disposable-staging.mjs";
 import { createUsersStore } from "../../packages/auth/src/store-factory";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import { createSiteSettingsStore } from "../../packages/dashboard/src/site-settings/site-settings-store";
 import { parseEmailSettings } from "../../packages/email-transport/src/config";
 import { sendEmail, sendViaWebhook } from "../../packages/email-transport/src/send";

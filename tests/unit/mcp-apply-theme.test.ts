@@ -17,10 +17,10 @@ import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { CapabilityDeniedError } from "../../packages/mcp-server/src/permissions/require-capability";
 import { registerApplyThemeTool } from "../../packages/mcp-server/src/tools/apply-theme";
 import { registerListThemesTool } from "../../packages/mcp-server/src/tools/list-themes";
-import { BUILTIN_THEMES, availableThemes } from "../../packages/atomic-elements/src/themes/theme-pack";
-import type { ThemePack } from "../../packages/atomic-elements/src/themes/theme-pack";
+import { BUILTIN_THEMES, availableThemes } from "../../packages/visual-elements/src/themes/theme-pack";
+import type { ThemePack } from "../../packages/visual-elements/src/themes/theme-pack";
 import type { AuditLogEntry, AuditLogStore } from "../../packages/mcp-server/src/audit/types";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 type ToolHandler = (
   args: Record<string, unknown>,

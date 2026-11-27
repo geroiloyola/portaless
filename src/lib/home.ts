@@ -4,7 +4,7 @@
 // (mismo filtro canonico publishedPosts()) en los nodos PostList, y quita el
 // bloque de tienda cuando el comercio esta apagado (una landing no muestra un
 // placeholder de catalogo vacio).
-import type { ElementNode, PageLayout } from "@portaless/atomic-elements/types";
+import type { ElementNode, PageLayout } from "@portaless/visual-elements/types";
 
 export interface HomePostItem {
   title: string;

@@ -1,4 +1,4 @@
-# Atomic Elements — Editor Visual de Portaless (v0.0.4)
+# Visual Elements — Editor Visual de Portaless (v0.0.4)
 
 Editor de arrastrar-y-soltar para construir páginas, portales y catálogos
 de tienda, sin escribir código. Ver `Portaless_Skin_System.md` para el
@@ -9,12 +9,12 @@ páginas de contenido).
 
 Abre `public/editor/index.html` directamente en tu navegador. Es una
 versión standalone en JavaScript plano, funcionalmente equivalente al
-paquete TypeScript real (`packages/atomic-elements/`), pensada para poder
+paquete TypeScript real (`packages/visual-elements/`), pensada para poder
 probar el editor de inmediato sin paso de build.
 
 ## Por qué es más rápido que Elementor (comparación concreta)
 
-| | Elementor | Atomic Elements |
+| | Elementor | Visual Elements |
 |---|---|---|
 | CSS/JS cargado por página | 200–600 KB, incluye widgets no usados | Solo el HTML/CSS inline de los elementos efectivamente usados |
 | Profundidad de DOM por elemento | 8–20 `<div>` anidados | 1 nodo raíz por elemento (ver `renderHTML` en `elements/registry.ts`) |

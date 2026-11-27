@@ -1,5 +1,5 @@
 // Endpoint de vista previa de productos para el ProductGrid del editor
-// visual de Atomic Elements (src/pages/admin/editor.astro). Mismo patron de
+// visual de Visual Elements (src/pages/admin/editor.astro). Mismo patron de
 // seguridad que functions/admin/permissions/index.js: requiere sesion valida
 // (context.data.user, expuesta por functions/admin/_middleware.js).
 // Solo lectura (GET) -- no requiere canWrite(role), solo sesion activa.
@@ -17,7 +17,7 @@
 // 100000 productos a Medusa en cada vista previa del editor.
 
 import "../../../src/commerce/medusa-client.ts";
-import { elementRegistry } from "@portaless/atomic-elements/registry";
+import { elementRegistry } from "@portaless/visual-elements/registry";
 
 export const MAX_COLUMNS = 6;
 export const MAX_LIMIT = 24;

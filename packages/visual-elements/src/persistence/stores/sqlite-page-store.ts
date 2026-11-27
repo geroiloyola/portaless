@@ -1,6 +1,6 @@
 // Persistencia real de paginas para self-hosted, server-side.
 // Implementa la MISMA interfaz PageStore ya definida en
-// packages/atomic-elements/src/persistence/page-store.ts (load/save/list).
+// packages/visual-elements/src/persistence/page-store.ts (load/save/list).
 //
 // v0.0.9.27: migrado de node:sqlite (require en ESM, Node 22.5+) a
 // better-sqlite3 via openSqlite(), mismo cambio que los stores de auth.

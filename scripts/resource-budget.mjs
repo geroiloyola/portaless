@@ -6,7 +6,7 @@
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
 import { createCanonicalBackup, restoreCanonicalBackup } from "@portaless/portability";
 import { evaluateResourceBudget, REFERENCE_RESOURCE_BUDGET } from "@portaless/deploy-engine/resource-budget";
 import { applySchema } from "./setup.mjs";

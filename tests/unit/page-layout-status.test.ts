@@ -6,11 +6,11 @@
 // valor invalido; (2) MCP solo edita drafts y no puede publicar ni acceder a private.
 
 import { describe, it, expect } from "vitest";
-import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema";
+import { validatePageLayout } from "../../packages/visual-elements/src/persistence/page-schema";
 import { registerUpdatePageTool } from "../../packages/mcp-server/src/tools/update-page";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
 import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 import type { AuditLogStore } from "../../packages/mcp-server/src/audit/types";
 
 function base(overrides: Partial<PageLayout> = {}): PageLayout {

@@ -2,8 +2,8 @@
 
 ## Que se agrego
 
-- packages/atomic-elements/src/seo/json-ld.ts: buildJsonLd y buildProductJsonLd.
-- packages/atomic-elements/astro-integration/JsonLd.astro: inyecta el script ld+json.
+- packages/visual-elements/src/seo/json-ld.ts: buildJsonLd y buildProductJsonLd.
+- packages/visual-elements/astro-integration/JsonLd.astro: inyecta el script ld+json.
 - src/components/SeoHead.astro: meta tags basicos.
 - src/lib/seo.ts: helpers.
 - src/pages/sitemap.xml.ts y robots.txt.ts.

@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "@portaless/atomic-elements/page-store";
+import type { PageStore } from "@portaless/visual-elements/page-store";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
@@ -20,8 +20,8 @@ import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
 import { insertNode } from "./node-ops";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-import type { ElementNode } from "@portaless/atomic-elements/types";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+import type { ElementNode } from "@portaless/visual-elements/types";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 const TOOL_NAME = "insert_block";

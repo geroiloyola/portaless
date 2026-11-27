@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Database from "better-sqlite3";
 import { readFileSync } from "node:fs";
-import { D1PageStore } from "../../packages/atomic-elements/src/persistence/stores/d1-page-store";
-import { SqlitePageStore } from "../../packages/atomic-elements/src/persistence/stores/sqlite-page-store";
-import { pageContentHash } from "../../packages/atomic-elements/src/persistence/revision-history";
-import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history";
+import { D1PageStore } from "../../packages/visual-elements/src/persistence/stores/d1-page-store";
+import { SqlitePageStore } from "../../packages/visual-elements/src/persistence/stores/sqlite-page-store";
+import { pageContentHash } from "../../packages/visual-elements/src/persistence/revision-history";
+import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "../../packages/visual-elements/src/persistence/public-revision-history";
 import { migrationSql } from "../../scripts/migrate-d1.mjs";
 import { MIGRATIONS } from "../../packages/persistence-migrations/src/index";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
-import { AtomicElementsEditor } from "../../packages/atomic-elements/src/editor/editor-app";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
+import { AtomicElementsEditor } from "../../packages/visual-elements/src/editor/editor-app";
 import { onRequestGet as publicHistory } from "../../functions/revisions/[publicationId]/index.json.js";
 import { onRequestPost as importHistory } from "../../functions/admin/api/revisions/import.js";
 
@@ -19,7 +19,7 @@ const layout = (slug = "audit"): PageLayout => ({ version: "0.1", slug, title: "
 function stores() {
   const db = new Database(":memory:");
   connections.push(db);
-  db.exec(readFileSync(new URL("../../packages/atomic-elements/src/persistence/stores/schema.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../../packages/visual-elements/src/persistence/stores/schema.sql", import.meta.url), "utf8"));
   // Actual SQL semantics, including rollback and D1 meta.changes. Not a fake
   // that ignores queries: race/constraint tests exercise both real stores.
   const binding = {

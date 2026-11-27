@@ -1,5 +1,5 @@
 import { sandboxedIsCommerceEnabled, sandboxedFetchProducts, sandboxedFetchProductByHandle, type CommerceConfig } from "./host-bridge";
-import { registerCommerceCatalogProvider } from "@portaless/atomic-elements/commerce-provider";
+import { registerCommerceCatalogProvider } from "@portaless/visual-elements/commerce-provider";
 import type { Product } from "./types";
 
 let cachedConfig: CommerceConfig | null | undefined;

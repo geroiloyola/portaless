@@ -24,8 +24,8 @@
 //   - tope de 200 paginas listadas: un sitio con miles de filas no debe
 //     pagar N queries en cada GET de un archivo de descubrimiento.
 
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
-import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
+import { validatePageLayout } from "@portaless/visual-elements/page-schema";
 import {
   joinSiteUrl,
   mergeDbPagesIntoLlmsTxt,

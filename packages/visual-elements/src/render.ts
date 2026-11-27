@@ -1,4 +1,4 @@
-// Motor de render de Atomic Elements.
+// Motor de render de Visual Elements.
 //
 // v0.0.9.11: gana un catalogo resuelto (core ∪ element packs) y dos modos de
 // render. Firmas retro-compatibles: renderNode(node) y renderPage(layout)

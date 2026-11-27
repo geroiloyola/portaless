@@ -10,10 +10,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applySchema } from "../../scripts/setup.mjs";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import { onRequestDelete } from "../../functions/admin/pages/[slug].js";
 import { onRequestGet as listPages } from "../../functions/admin/api/pages.js";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-pages-delete-"));
 const DB = join(tmp, "portaless.db");

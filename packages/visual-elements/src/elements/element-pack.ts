@@ -1,4 +1,4 @@
-// Element packs: la capa abierta del catalogo de Atomic Elements.
+// Element packs: la capa abierta del catalogo de Visual Elements.
 //
 // El catalogo CORE sigue cerrado (elementRegistry + la union ElementType).
 // Un ElementPack es una contribucion DECLARATIVA y DATA-ONLY de un plugin:

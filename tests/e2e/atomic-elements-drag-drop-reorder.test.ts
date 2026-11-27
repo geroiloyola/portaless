@@ -4,11 +4,11 @@
 // la logica de arbol se extrajo a tree-ops.ts precisamente para poder
 // probarla aqui directamente contra un PageLayout en memoria, sin pasar
 // por eventos reales de drag/drop del navegador (esos se ejercitan
-// manualmente en el editor real; ver README de atomic-elements).
+// manualmente en el editor real; ver README de visual-elements).
 
 import { describe, it, expect } from "vitest";
-import { moveNodeInTree, resolveContainer } from "../../packages/atomic-elements/src/editor/tree-ops";
-import type { ElementNode, PageLayout } from "../../packages/atomic-elements/src/types";
+import { moveNodeInTree, resolveContainer } from "../../packages/visual-elements/src/editor/tree-ops";
+import type { ElementNode, PageLayout } from "../../packages/visual-elements/src/types";
 
 function node(id: string, columnSlots?: ElementNode[][]): ElementNode {
   return { id, type: "Paragraph", props: {}, columnSlots };

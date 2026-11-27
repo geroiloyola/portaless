@@ -7,7 +7,7 @@ import { onRequestPut, onRequestGet } from "../../functions/admin/pages/[slug].j
 // node:sqlite y escribiria un archivo real en disco (./data/pages.sqlite)
 // como efecto secundario del test si env.DB fuera undefined. (v0.0.9.3:
 // el binding se llama `DB`, no `PORTALESS_DB` -- ver el fix de nombre en
-// packages/atomic-elements/src/persistence/store-factory.ts.)
+// packages/visual-elements/src/persistence/store-factory.ts.)
 function makeFakeD1() {
   const rows = new Map<string, { slug: string; layout_json: string; updated_at: string; updated_by: string | null; publication_id?: string; revision_id?: string; revision_no?: number; content_hash?: string }>();
   const revisions = new Map<string, unknown>();

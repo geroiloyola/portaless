@@ -18,7 +18,7 @@ Este documento reemplaza la version anterior (que describia el paquete como "uni
 
 ## Por qué se implementó en este orden (razón original, confirmada en la práctica)
 
-El roadmap del proyecto priorizó primero Atomic Elements (editor visual) y el sandboxing de plugins, porque un agente de IA necesita un esquema de salida validable antes de poder generar contenido de forma segura. Esa secuencia se cumplió: `create_page`/`update_page` (commit 5/6) se apoyan directamente en `createPageStore` (interfaz `PageStore` con `load`/`save`/`list`, compartida con el editor cliente y con `src/pages/admin/editor.astro`), sin ninguna vía de persistencia paralela.
+El roadmap del proyecto priorizó primero Visual Elements (editor visual) y el sandboxing de plugins, porque un agente de IA necesita un esquema de salida validable antes de poder generar contenido de forma segura. Esa secuencia se cumplió: `create_page`/`update_page` (commit 5/6) se apoyan directamente en `createPageStore` (interfaz `PageStore` con `load`/`save`/`list`, compartida con el editor cliente y con `src/pages/admin/editor.astro`), sin ninguna vía de persistencia paralela.
 
 ## Qué es y qué no es
 

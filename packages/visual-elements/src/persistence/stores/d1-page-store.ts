@@ -1,6 +1,6 @@
 // Persistencia real de paginas para Cloudflare D1 (server-side).
 // Implementa la MISMA interfaz PageStore ya definida en
-// packages/atomic-elements/src/persistence/page-store.ts (load/save/list),
+// packages/visual-elements/src/persistence/page-store.ts (load/save/list),
 // para que endpoints como functions/admin/pages/[slug].js puedan usar esta
 // implementacion o LocalStoragePageStore de forma intercambiable.
 // Mismo patron que packages/permissions/src/stores/d1-permission-store.ts.

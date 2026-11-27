@@ -17,8 +17,8 @@ import { __resetPluginStorageStoreForTests } from "../../packages/plugin-sandbox
 import { createUsageLedgerStore } from "@portaless/trust-storage-adapters";
 import type { CapabilityError } from "../../packages/plugin-sandbox/src/capabilities/capability-backends";
 import { applySchema } from "../../scripts/setup.mjs";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-cap-backends-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));

@@ -1,4 +1,4 @@
-// packages/atomic-elements/src/themes/theme-pack.ts — contrato de temas por
+// packages/visual-elements/src/themes/theme-pack.ts — contrato de temas por
 // pagina. Cubre: paridad de la allowlist con TOKEN_TO_CSS_VAR (mismo
 // patron que mcp-element-schema-parity: si dashboard agrega un token y
 // este archivo no, el test falla), paridad de la mascara de valores con
@@ -19,11 +19,11 @@ import {
   availableThemes,
   BUILTIN_THEMES,
   type ThemePack,
-} from "../../packages/atomic-elements/src/themes/theme-pack";
+} from "../../packages/visual-elements/src/themes/theme-pack";
 import { TOKEN_TO_CSS_VAR } from "../../packages/dashboard/src/skin-engine/tokens";
 import { isSafeTokenValue } from "../../packages/dashboard/src/skin-engine/site-skin-store";
-import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { validatePageLayout } from "../../packages/visual-elements/src/persistence/page-schema";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 // --- helpers ---------------------------------------------------------------
 

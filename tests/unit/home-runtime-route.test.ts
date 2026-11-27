@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import { applySchema } from "../../scripts/setup.mjs";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import { onRequestGet, onRequestHead } from "../../functions/index.js";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const STATIC_HTML = "<!doctype html><html><head><title>Static Starter Home</title></head><body><h1>STATIC-HOME-FALLBACK</h1></body></html>";
 

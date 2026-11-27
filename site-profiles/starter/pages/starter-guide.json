@@ -1,8 +1,8 @@
 {
   "version": "0.1",
   "slug": "starter-guide",
-  "title": "Starter Guide — Atomic Elements Reference",
-  "description": "A clean, self-contained reference page showing how Atomic Elements blocks compose in JSON and how to replace this file with your own page.",
+  "title": "Starter Guide — Visual Elements Reference",
+  "description": "A clean, self-contained reference page showing how Visual Elements blocks compose in JSON and how to replace this file with your own page.",
   "theme": "portaless-nocturno",
   "root": [
     {
@@ -12,7 +12,7 @@
         "variant": "spotlight",
         "size": "lg",
         "title": "How Portaless pages are built",
-        "subtitle": "This is the single reference page included in the starter profile. Every section below is rendered from JSON using Atomic Elements — with zero external images and zero fictional data.",
+        "subtitle": "This is the single reference page included in the starter profile. Every section below is rendered from JSON using Visual Elements — with zero external images and zero fictional data.",
         "ctaLabel": "Back to home",
         "ctaHref": "/"
       }

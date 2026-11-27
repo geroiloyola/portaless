@@ -16,10 +16,10 @@
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
+import { elementRegistry } from "../../packages/visual-elements/src/elements/registry";
 import { DENSITY_TO_SPACE_UNIT, spaceUnitForDensity, TOKEN_TO_CSS_VAR } from "../../packages/dashboard/src/skin-engine/tokens";
 
-const REGISTRY_SRC = readFileSync("packages/atomic-elements/src/elements/registry.ts", "utf-8");
+const REGISTRY_SRC = readFileSync("packages/visual-elements/src/elements/registry.ts", "utf-8");
 
 // --- 1. Los defaults, byte a byte -------------------------------------------
 
@@ -308,7 +308,7 @@ describe("el panel de propiedades usa optionLabels", () => {
   it("el <select> se arma con optionLabels y cae al valor crudo si falta la clave", () => {
     // jsdom no esta en el stack de vitest de este repo, asi que se verifica el
     // cableado en la fuente: una linea, y el fallback tiene que seguir ahi.
-    const src = readFileSync("packages/atomic-elements/src/editor/property-panel.ts", "utf-8");
+    const src = readFileSync("packages/visual-elements/src/editor/property-panel.ts", "utf-8");
     expect(src).toContain("optionEl.textContent = field.optionLabels?.[opt] ?? opt;");
   });
 });
@@ -335,7 +335,7 @@ describe("grillas responsivas por hoja, no inline", () => {
 
   it("los grids declaran --cols y la hoja del core trae el layout intrinseco", () => {
     expect(REGISTRY_SRC).toContain("--cols:");
-    const css = readFileSync("packages/atomic-elements/src/styles/elements.css", "utf-8");
+    const css = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
     for (const cls of [".ae-columns", ".ae-product-grid", ".ae-gallery"]) {
       expect(css, cls).toContain(cls);
     }
@@ -345,8 +345,8 @@ describe("grillas responsivas por hoja, no inline", () => {
   });
 
   it("la hoja la cargan build, editor y shell runtime (paridad de las 3 superficies)", () => {
-    expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("@portaless/atomic-elements/elements.css");
-    expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("@portaless/atomic-elements/elements.css");
+    expect(readFileSync("src/layouts/BaseLayout.astro", "utf-8")).toContain("@portaless/visual-elements/elements.css");
+    expect(readFileSync("src/pages/admin/editor.astro", "utf-8")).toContain("@portaless/visual-elements/elements.css");
     expect(readFileSync("functions/pages/[slug].js", "utf-8")).toContain("elementsCssPath");
   });
 
@@ -360,7 +360,7 @@ describe("grillas responsivas por hoja, no inline", () => {
 // --- 5. Objetivos tactiles (WCAG 2.5.5) --------------------------------------
 describe("objetivos tactiles de 44px con puntero grueso", () => {
   it("la hoja define min-height:44px para los CTA en @media (pointer: coarse)", () => {
-    const css = readFileSync("packages/atomic-elements/src/styles/elements.css", "utf-8");
+    const css = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
     const block = css.match(/@media\s*\(pointer:\s*coarse\)\s*\{([\s\S]*?)\n\}/);
     expect(block, "@media (pointer: coarse)").toBeTruthy();
     expect(block![1]).toContain("min-height: 44px");

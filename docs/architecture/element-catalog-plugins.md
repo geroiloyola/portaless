@@ -2,13 +2,13 @@
 
 ## Estado real
 
-**IMPLEMENTADO (v0.0.9.11).** Este documento define la arquitectura que permite que un plugin (ej. `portaless-plugin-paywall`) contribuya sus **propios elementos** al catálogo de Atomic Elements — para que el editor visual y un agente MCP los vean y los usen — **sin que el núcleo cambie y sin romper el AST determinista.** El *slice delgado* de esta arquitectura ya está en el repo (ver "Slice delgado" más abajo); lo que queda explícitamente pendiente es la *segunda pasada* (edge-eval end-to-end con sandbox, `secretProps` con guard de build, y UI de instalación de packs).
+**IMPLEMENTADO (v0.0.9.11).** Este documento define la arquitectura que permite que un plugin (ej. `portaless-plugin-paywall`) contribuya sus **propios elementos** al catálogo de Visual Elements — para que el editor visual y un agente MCP los vean y los usen — **sin que el núcleo cambie y sin romper el AST determinista.** El *slice delgado* de esta arquitectura ya está en el repo (ver "Slice delgado" más abajo); lo que queda explícitamente pendiente es la *segunda pasada* (edge-eval end-to-end con sandbox, `secretProps` con guard de build, y UI de instalación de packs).
 
 Hoy el catálogo está **cerrado** por tres anclas simultáneas, no por una sola:
 
-- `elementRegistry` (`packages/atomic-elements/src/elements/registry.ts:364`) es un objeto literal plano y **no congelado** — técnicamente `elementRegistry["Foo"] = def` funcionaría en JS — pero…
-- `ElementType` (`packages/atomic-elements/src/types.ts:1-4`) es una **unión cerrada** de string literals; TypeScript rechaza una clave nueva.
-- `validateNode` (`packages/atomic-elements/src/persistence/page-schema.ts:14-16`) rechaza cualquier `node.type` que no esté en el registro, tanto al guardar como al renderizar.
+- `elementRegistry` (`packages/visual-elements/src/elements/registry.ts:364`) es un objeto literal plano y **no congelado** — técnicamente `elementRegistry["Foo"] = def` funcionaría en JS — pero…
+- `ElementType` (`packages/visual-elements/src/types.ts:1-4`) es una **unión cerrada** de string literals; TypeScript rechaza una clave nueva.
+- `validateNode` (`packages/visual-elements/src/persistence/page-schema.ts:14-16`) rechaza cualquier `node.type` que no esté en el registro, tanto al guardar como al renderizar.
 - Y el test `tests/unit/mcp-element-schema-parity.test.ts` exige `registry == palette == schema enum`.
 
 Es decir: el objeto es mutable, pero **el sistema está cerrado a su alrededor**. Abrir el catálogo no es hacer `Object.freeze` al revés; es añadir una capa que conviva con el core cerrado.
@@ -107,7 +107,7 @@ La paleta del editor se construye iterando el **catálogo resuelto** (`editor-ap
 
 ## Variantes, tamaño y ritmo (fase 13)
 
-El core define en `elementRegistry` (`packages/atomic-elements/src/elements/registry.ts`) dos campos ortogonales y una escala:
+El core define en `elementRegistry` (`packages/visual-elements/src/elements/registry.ts`) dos campos ortogonales y una escala:
 
 - **`variant`** — la FORMA del elemento (`Hero`: `centered`/`split`/`minimal`, `Button`: `solid`/`outline`/`ghost`, `FAQ`: `list`/`bordered`/`numbered`, y así). Una variante es una forma, no un adorno: si dos valores solo cambian color o padding, eso lo hacen los tokens del tema. Valor desconocido → default (`variantOf()`), el mismo criterio fail-safe que un pack que no resuelve.
 - **`size`** — la escala visual, campo propio y no parte de la variante (3+3 opciones en vez de 3×3), solo en `Hero`, `Heading` y `Button`. **`Heading.size` es visual y `Heading.level` es semántico, y no se tocan**: un `h2` con `size: lg` sigue siendo un `h2`.
@@ -139,11 +139,11 @@ La primera pasada valida el circuito de punta a punta **sin secretos ni billing*
 
 ## Archivos clave
 
-- `packages/atomic-elements/src/elements/registry.ts:364-374` — el core cerrado.
-- `packages/atomic-elements/src/types.ts:1-4, 30-43` — `ElementType` (unión cerrada) y `ElementDefinition`.
-- `packages/atomic-elements/src/render.ts` — el lookup directo que gana modo/static.
-- `packages/atomic-elements/src/persistence/page-schema.ts:13-22` — la validación que gana catálogo opcional.
-- `packages/atomic-elements/src/persistence/page-store.ts` y `store-factory.ts` — el patrón de store multi-proveedor que replica `ElementPackStore`.
+- `packages/visual-elements/src/elements/registry.ts:364-374` — el core cerrado.
+- `packages/visual-elements/src/types.ts:1-4, 30-43` — `ElementType` (unión cerrada) y `ElementDefinition`.
+- `packages/visual-elements/src/render.ts` — el lookup directo que gana modo/static.
+- `packages/visual-elements/src/persistence/page-schema.ts:13-22` — la validación que gana catálogo opcional.
+- `packages/visual-elements/src/persistence/page-store.ts` y `store-factory.ts` — el patrón de store multi-proveedor que replica `ElementPackStore`.
 - `packages/plugin-sandbox/src/manifest/manifest-schema.ts` — el validador puro de manifest que replica `validateElementPack`.
 - `packages/plugin-sandbox/src/registry/store-factory.ts:35-87` — el patrón de store en DB con seed-if-empty.
 - `packages/commerce-plugin/src/host-bridge.ts` — el precedente host-holds-render / plugin-supplies-data.

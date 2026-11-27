@@ -53,7 +53,7 @@ flowchart TB
       mcp["mcp-server"]
     end
     subgraph KER["L3 · CMS kernel"]
-      ae["atomic-elements · deploy-engine · auth · dashboard"]
+      ae["visual-elements · deploy-engine · auth · dashboard"]
       ext["permissions · plugin-sandbox · portability · onboarding · ai-provider"]
     end
     subgraph NL0["Node L0 · Persistence & host services"]
@@ -158,7 +158,7 @@ bytes** are strictly separated:
 | **L1 Stack core** | `verared` | `apw-resolver` (pure core → `@verared/apw`), `ltp-engine` (`@verared/local-trust`), `ltp-reputation` (`@verared/reputation`), future `@verared/cli` | L0-net, Contracts (vectors in tests) | Import `sqlite-driver`, `trust-layer`, or any CMS package |
 | **L2 Neutral Trust Layer** | `verared` | Pure core + ports + `InMemory*` stores of `trust-layer` (`@verared/trust-layer`), `cloud-images` (`@verared/cloud-images`), `identity-atproto` (`@verared/identity-atproto`) | L1, L0-net | Import `sqlite-driver`, `dashboard`, `permissions`, `deploy-engine` or `x-portaless-*` headers |
 | **Node L0** | `geroiloyola` | `sqlite-driver`, `persistence-migrations`, `email-transport`, `token-crypto`, and the SQLite/D1 port adapters for L1/L2 | L2, L1, L0-net | Leak back into `verared` |
-| **L3 CMS kernel** | `geroiloyola` | `atomic-elements`, `deploy-engine`, `auth`, `dashboard`, `permissions`, `plugin-sandbox`, `portability`, `onboarding`, `ai-provider` | L2, L1, L0-net, Node L0, `plugin-sdk` | Form cycles; sandbox must receive CMS stores via ports |
+| **L3 CMS kernel** | `geroiloyola` | `visual-elements`, `deploy-engine`, `auth`, `dashboard`, `permissions`, `plugin-sandbox`, `portability`, `onboarding`, `ai-provider` | L2, L1, L0-net, Node L0, `plugin-sdk` | Form cycles; sandbox must receive CMS stores via ports |
 | **L4 Surfaces** | `geroiloyola` | `mcp-server` | L3, L2, Node L0 | Reach into `src/` internals |
 | **L5 Composition roots** | `geroiloyola` | `src/`, `functions/`, `server/`, `scripts/`, `activation-service.ts`, `unsigned-bot-metrics.ts`, plugin host bridges | Public entry points only | Hold reusable protocol/trust math |
 | **Extensions** | `geroiloyola` / third parties | `commerce-plugin`, `posse-syndicator-plugin`, third-party plugins | `plugin-sdk` only | Import any other `packages/*` |
@@ -182,7 +182,7 @@ bytes** are strictly separated:
 |---|---|---|
 | L1/L2 → `sqlite-driver/src/open` | **14 imports**: `apw-resolver` (3: `did-apw/atproto-links-store.ts`, `did-apw/store-factory.ts`, `scoring/read-policy-store.ts`), `trust-layer` (10: `billing/pay-per-crawl/activation-store.ts`, `ledger/sqlite-log-store.ts`, `ledger/unsigned-bot-metrics.ts`, `net/resolution-budget-config.ts`, `policy/agent-access-store.ts`, `site-trust/{authorized-agents,authorized-escrow-providers,community-attestations,stores/sqlite-site-trust-store}.ts`, `webbotauth/nonce-store.ts`), `cloud-images` (1: `store.ts`) | Define pure storage ports + `InMemory*` stores inside the `verared`-bound packages; move all `Sqlite*` and `D1*` implementations to Portaless Node L0. |
 | L2 → L3 (`trust-layer` → CMS) | **3 imports**: `billing/pay-per-crawl/activation-service.ts:9-10` → `deploy-engine/src/token-crypto` & `permissions/src/permission-store`; `ledger/unsigned-bot-metrics.ts:1` → `dashboard/src/site-settings/site-settings-store` | Move `activation-service.ts` and `unsigned-bot-metrics.ts` to Portaless L5/Node L0 (they are Portaless node wiring, not neutral Trust Layer). |
-| L3 sideways & sandbox coupling | `atomic-elements` → `deploy-engine/src/draft-filter` (4); `plugin-sandbox/src/capabilities/capability-backends.ts:25-33` → `atomic-elements`, `dashboard`, `trust-layer`, `deploy-engine`, `email-transport` | Move `draft-filter` into `atomic-elements`; inject sandbox capability backends via ports from L5. |
+| L3 sideways & sandbox coupling | `visual-elements` → `deploy-engine/src/draft-filter` (4); `plugin-sandbox/src/capabilities/capability-backends.ts:25-33` → `visual-elements`, `dashboard`, `trust-layer`, `deploy-engine`, `email-transport` | Move `draft-filter` into `visual-elements`; inject sandbox capability backends via ports from L5. |
 | Extension → core internals | `commerce-plugin/src/host-bridge.ts`, `posse-syndicator-plugin/src/host-bridge.ts` → `permissions`, `plugin-sandbox` | Move host bridges to L5 so plugin packages import `plugin-sdk` only. |
 | L4 & L2 deep `src/` imports | `mcp-server` (94), `cloud-images` (8 to `apw-resolver`, 1 to `trust-layer`), `identity-atproto` (6 to `apw-resolver`, 1 to `trust-layer`) | Add `exports` maps to every package and migrate all 181 deep imports to public entry points. |
 
@@ -221,7 +221,7 @@ green (Vitest, Astro build, manifest validation, Playwright) with zero new
 | **W1.2** *(PR #118)* | Create `packages/net` (future `@verared/net`): unify `safe-fetch`, `ltp-engine/src/ssrf.ts`, egress budgets and neutral client-IP trust helper; re-export from `apw-resolver` for compatibility | ✅ Closes **E-06**; breaks L2 → L1 half of cycle 1 |
 | **W1.3** *(PR #119)* | Break cycles: move attestation verification to L1, move runtime `reader_conduct` ledger glue to L2 (cycle 1 closed); unify capability vocabulary between `permissions` and `plugin-sandbox` (cycle 2 closed) | ✅ **0 cycles** across the monorepo |
 | **W1.4** *(PR #120)* | Extract L1/L2 storage ports + `InMemory*` stores; move all 14 `Sqlite*`/`D1*` stores plus `activation-service.ts` and `unsigned-bot-metrics.ts` into Portaless Node L0/L5 | ✅ **0 imports** from `verared`-bound packages to `sqlite-driver` or L3 |
-| **W1.5** *(PR #121)* | CMS internal hygiene: move `draft-filter` to `atomic-elements`, inject `plugin-sandbox` capability backends via ports, move plugin `host-bridge.ts` files to L5 | ✅ **0 layer/org violations** across the monorepo |
+| **W1.5** *(PR #121)* | CMS internal hygiene: move `draft-filter` to `visual-elements`, inject `plugin-sandbox` capability backends via ports, move plugin `host-bridge.ts` files to L5 | ✅ **0 layer/org violations** across the monorepo |
 | **W1.6a / W1.6b** *(PR #122, PR #123)* | Add strict `exports` maps to all `verared` and `geroiloyola` packages and migrate all deep `src/` imports to public package entry points | ✅ **0 deep `src/` imports** across `packages/*` and L5 |
 | **W1.7** *(PR #124)* | Live nomenclature & spec sanitization (`Local Trust Protocol`, `Vera Trust Stack`, `Witness Index`, `Verared`, `community attester`) + `Apache-2.0` license alignment on the 7 `verared` packages without touching Level A bytes, `vectors/` or `LTP-APPROVAL-RECORD.md` hashes | ✅ Neutral `verared` prose & `Apache-2.0` licensing ready |
 | **W1.8** *(this PR)* | Switch CI import-boundary checker to **blocking (`--strict`) mode** with org-license lock in CI and `verify-release.mjs` | ✅ Closes **E-07**; satisfies **Export-Ready (Wave 1 → Wave 2)** gate |
@@ -231,7 +231,7 @@ green (Vitest, Astro build, manifest validation, Playwright) with zero new
 Wave 2 **must not start** until every item below is verified true in CI on
 `geroiloyola/portaless`:
 
-- [x] **Zero reverse imports:** `packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}` have **0** imports to `sqlite-driver`, `persistence-migrations`, `email-transport`, `dashboard`, `permissions`, `deploy-engine`, `atomic-elements`, `auth`, `plugin-sandbox`, `src/`, `functions/` or `server/`.
+- [x] **Zero reverse imports:** `packages/{net,apw-resolver,ltp-engine,ltp-reputation,trust-layer,cloud-images,identity-atproto}` have **0** imports to `sqlite-driver`, `persistence-migrations`, `email-transport`, `dashboard`, `permissions`, `deploy-engine`, `visual-elements`, `auth`, `plugin-sandbox`, `src/`, `functions/` or `server/`.
 - [x] **Zero cycles:** the entire workspace dependency graph is a DAG.
 - [x] **Zero deep `src/` imports:** all cross-package and L5 `../.../src/...` imports are replaced by declared `exports` entry points.
 - [x] **CI boundary enforcement active:** `scripts/check-architecture-boundaries.mjs --strict` runs in **blocking mode** in CI and `scripts/verify-release.mjs`, including automatic per-org license verification (`E-07` closed — W1.8).
@@ -312,7 +312,7 @@ portaless/
 ├── site-profiles/         # starter (demo moves to portaless-templates after PR-B2)
 ├── packages/
 │   ├── sqlite-driver/ · persistence-migrations/ · email-transport/ · trust-storage-adapters/
-│   ├── atomic-elements/ · deploy-engine/ · auth/ · dashboard/ · permissions/ · plugin-sandbox/
+│   ├── visual-elements/ · deploy-engine/ · auth/ · dashboard/ · permissions/ · plugin-sandbox/
 │   ├── portability/ · onboarding/ · ai-provider/ · mcp-server/
 │   └── plugin-sdk/        # MIT (optional extraction → geroiloyola/portaless-plugin-sdk)
 ├── plugins/               # first-party plugins (commerce, posse; SDK-only imports)

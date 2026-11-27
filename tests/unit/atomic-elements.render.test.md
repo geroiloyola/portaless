@@ -4,7 +4,7 @@ Este archivo documenta el test pendiente de implementar (no es un test
 ejecutable todavía — ver nota abajo).
 
 **Objetivo**: verificar que `renderPage()` de
-`packages/atomic-elements/src/render.ts` produce el mismo HTML para un
+`packages/visual-elements/src/render.ts` produce el mismo HTML para un
 `PageLayout` de ejemplo, sin importar si se ejecuta en el navegador o en
 Node (Astro build) — la garantía central del módulo.
 

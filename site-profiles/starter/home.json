@@ -77,7 +77,7 @@
       "type": "FeatureGrid",
       "props": {
         "title": "",
-        "items": "server :: 1. Edit your home page :: Open site-profiles/starter/home.json to change the title, theme, and Atomic Elements blocks shown on the root route.\npackage :: 2. Add posts and pages :: Write Markdown posts under site-profiles/starter/posts/ and JSON pages under site-profiles/starter/pages/ using starter-guide.json as a template.\nshield :: 3. Configure and deploy :: Set PORTALESS_SITE_URL (or PORTALESS_PUBLIC_URL on self-host), complete /setup if self-hosting, enable MCP or Trust Layer when ready, and publish."
+        "items": "server :: 1. Edit your home page :: Open site-profiles/starter/home.json to change the title, theme, and Visual Elements blocks shown on the root route.\npackage :: 2. Add posts and pages :: Write Markdown posts under site-profiles/starter/posts/ and JSON pages under site-profiles/starter/pages/ using starter-guide.json as a template.\nshield :: 3. Configure and deploy :: Set PORTALESS_SITE_URL (or PORTALESS_PUBLIC_URL on self-host), complete /setup if self-hosting, enable MCP or Trust Layer when ready, and publish."
       }
     },
     {

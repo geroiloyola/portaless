@@ -1,5 +1,5 @@
 // Endpoint de referencia: PUT /admin/pages/:slug guarda un PageLayout de
-// Atomic Elements. Es el primer endpoint de escritura del dashboard que
+// Visual Elements. Es el primer endpoint de escritura del dashboard que
 // valida canWrite(role) del lado del SERVIDOR -- no solo en la UI.
 //
 // CONTEXTO: el guard DOM-level agregado en packages/dashboard/src/security/
@@ -26,7 +26,7 @@
 // (self-hosted, env.PORTALESS_SQLITE_PATH) -- mismo patron que
 // packages/permissions y packages/trust-layer/src/ledger. Ambas
 // implementaciones cumplen la interfaz PageStore ya existente en
-// packages/atomic-elements/src/persistence/page-store.ts (load/save/list),
+// packages/visual-elements/src/persistence/page-store.ts (load/save/list),
 // la misma que usa LocalStoragePageStore en el editor cliente. Antes, GET
 // devolvia siempre 501 "not_implemented" y PUT solo validaba sin persistir.
 //
@@ -35,8 +35,8 @@
 // documenta wrangler.toml), ahora usa env.DB como las demas factories. Ver
 // el comentario extenso en persistence/store-factory.ts.
 
-import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { validatePageLayout } from "@portaless/visual-elements/page-schema";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
 import { emitActivity } from "@portaless/dashboard/activity";
 
 function canWrite(role) {

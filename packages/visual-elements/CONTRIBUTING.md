@@ -1,4 +1,4 @@
-# Contribuir a @portaless/atomic-elements
+# Contribuir a @portaless/visual-elements
 
 ## Regla de diseño: data verificable vs. presentación
 
@@ -16,10 +16,10 @@ Este paquete separa dos capas que no deben mezclarse nunca:
 > site-trust-score.md` en la raíz del repo) verifique o pueda verificar en
 > el futuro — en particular la fuente `agent`, categoría
 > `structured_data_quality` — debe generarse en una función del core
-> (`packages/atomic-elements/src/`), nunca en un plugin de presentación
+> (`packages/visual-elements/src/`), nunca en un plugin de presentación
 > ni en el registro de elementos (`elements/registry.ts`).**
 
-Si un elemento nuevo de Atomic Elements expone datos verificables (por
+Si un elemento nuevo de Visual Elements expone datos verificables (por
 ejemplo, un futuro `TestimonialGrid` con `AggregateRating`, o un
 `FAQSection` con `FAQPage` de Schema.org), la función que genera *ese
 dato estructurado* vive junto a `buildJsonLd`/`buildProductJsonLd` en

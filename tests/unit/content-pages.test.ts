@@ -11,7 +11,7 @@ import {
   CONTENT_PRIMARY_LOCALE,
   type PageVersion,
 } from "../../src/lib/content-pages";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 function layout(slug: string, locale?: string): PageLayout {
   return { version: "0.1", slug, title: slug, locale, root: [] };

@@ -186,7 +186,7 @@ export async function createDisposableStaging({
       await identityStore.create("default", await generateApwDid(identityDomain), STAGING_ADMIN_USER);
       await identityStore.close?.();
 
-      const { createPageStore } = await import(join(root, "packages/atomic-elements/src/persistence/store-factory.ts"));
+      const { createPageStore } = await import(join(root, "packages/visual-elements/src/persistence/store-factory.ts"));
       const pages = await createPageStore(env);
       await pages.save({
         version: "0.1", slug: "staging-public", title: "Synthetic public staging page",

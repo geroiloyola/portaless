@@ -9,7 +9,7 @@
 // elementPalette), los schemas de create_page/update_page quedaron en 12 tipos
 // y un agente que compusiera un FAQ valido recibia un error de Zod, aunque
 // elementRegistry y PageStore ya lo soportaban. Derivar el enum aqui mata esa
-// clase de bug de raiz: agregar un ElementType a atomic-elements hace que todas
+// clase de bug de raiz: agregar un ElementType a visual-elements hace que todas
 // lo acepten, sin tocar el MCP server.
 //
 // SEGURIDAD DE IMPORT: elementRegistry es puro (constantes de string y
@@ -26,11 +26,11 @@
 // tiempo de call. Este schema solo valida la FORMA.
 
 import { z } from "zod";
-import { elementRegistry } from "@portaless/atomic-elements/registry";
-import { elementPalette } from "@portaless/atomic-elements/registry";
-import { coreCatalog } from "@portaless/atomic-elements/element-pack";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-import type { ElementNode } from "@portaless/atomic-elements/types";
+import { elementRegistry } from "@portaless/visual-elements/registry";
+import { elementPalette } from "@portaless/visual-elements/registry";
+import { coreCatalog } from "@portaless/visual-elements/element-pack";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+import type { ElementNode } from "@portaless/visual-elements/types";
 
 /** Tipos core, leidos del registro. Nunca los liste a mano. */
 export const ELEMENT_TYPE_LIST: [string, ...string[]] = [

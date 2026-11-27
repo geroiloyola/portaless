@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOC_ENTRIES } from "../src/lib/docs-nav.mjs";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
-import { SqlitePageStore } from "@portaless/atomic-elements/sqlite-page-store";
+import { SqlitePageStore } from "@portaless/visual-elements/sqlite-page-store";
 import { writePublicRevisionHistories } from "./public-revision-export.mjs";
 import {
   copyPublicBuildInputs,

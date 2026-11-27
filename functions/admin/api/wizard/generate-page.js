@@ -3,8 +3,8 @@
 // un PageLayout con TemplateIntentToLayout y lo guarda como BORRADOR
 // (slug-draft) via el PageStore real. Idempotente: si el borrador ya existe
 // NO lo sobrescribe (el usuario pudo haberlo editado) y responde existed:true.
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
-import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
+import { validatePageLayout } from "@portaless/visual-elements/page-schema";
 import { TemplateIntentToLayout } from "@portaless/onboarding";
 
 function json(body, status = 200) {

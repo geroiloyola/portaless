@@ -21,8 +21,8 @@ import {
   resolveThemePack,
   themeStyleDecl,
   validateThemePack,
-} from "../../packages/atomic-elements/src/themes/theme-pack";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+} from "../../packages/visual-elements/src/themes/theme-pack";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const root = join(__dirname, "../..");
 const baseLayout = readFileSync(join(root, "src/layouts/BaseLayout.astro"), "utf8");
@@ -61,7 +61,7 @@ describe("pagina estatica [slug].astro resuelve el tema", () => {
 
 describe("shell runtime functions/pages/[slug].js emite el tema", () => {
   it("importa los mismos helpers puros desde theme-pack", () => {
-    expect(runtimeFn).toMatch(/from "@portaless\/atomic-elements\/themes"/);
+    expect(runtimeFn).toMatch(/from "@portaless\/visual-elements\/themes"/);
     expect(runtimeFn).toContain("BUILTIN_THEMES");
     expect(runtimeFn).toContain("resolveThemePack(BUILTIN_THEMES, layout.theme)");
     expect(runtimeFn).toContain("themeStyleDecl(pageTheme)");

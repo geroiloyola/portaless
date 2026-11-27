@@ -19,7 +19,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SqlitePageStore } from "@portaless/atomic-elements/sqlite-page-store";
+import { SqlitePageStore } from "@portaless/visual-elements/sqlite-page-store";
 import { createDeploymentOAuthStore } from "@portaless/deploy-engine/oauth-store";
 import { readGitHubOAuthConfig, getGitHubAccessToken, GITHUB_PROVIDER } from "@portaless/deploy-engine/github-oauth";
 import { publishStaticSite, retireStaticSite } from "@portaless/deploy-engine/github-static-publish";

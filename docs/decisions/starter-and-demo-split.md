@@ -93,7 +93,7 @@ No se renombra ninguno; el panel español actual no se traduce incidentalmente.
 
 Capturas presentes (B; reauditar texto/personas/metadatos, no asumir inocuas):
 `docs/screenshots/admin-dashboard.png`, `admin-permissions.png`,
-`editor-atomic-elements.png`, `editor-publish.gif`, `trust-score.png`,
+`editor-visual-elements.png`, `editor-publish.gif`, `trust-score.png`,
 `public-home.png`, `public-home-es.png`, `public-home-mobile.png`,
 `public-blog.png`, `public-docs.png`, `public-docs-detail.png`,
 `public-explore.png`, `public-explore-es.png`, `public-projections.png`,
@@ -162,7 +162,7 @@ autenticados permanecen; no convertir un perfil en bypass de autorización.
 
 ### 2.2 Contrato starter
 
-- Home EN con el motor Atomic Elements: título editable, párrafo breve, enlace al blog
+- Home EN con el motor Visual Elements: título editable, párrafo breve, enlace al blog
   y últimos posts del catálogo activo. Un solo canon de home en `/`; no duplicarlo
   como otra página de ejemplo bajo `/pages/`.
 - Post `Welcome to your Portaless site` en inglés: editar Markdown o editor/MCP cuando
