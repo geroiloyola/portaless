@@ -9,7 +9,7 @@ Reference: [`astro.build`](https://astro.build/) as a **friend project** — we
 take its *patterns* (dark canvas, oversized gradient headline, glow, glass
 cards, generous spacing, a monumental closing CTA), never its assets, copy or
 branding. Portaless's own palette and voice are the source of truth
-([`design-guide.md`](./design-guide.md)).
+([`design-guide.md`](../design/design-guide.md)).
 
 ## Audience and language
 

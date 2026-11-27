@@ -6,7 +6,7 @@ Guion para tres perfiles. No incluir datos personales en el repo. Usar identific
 
 1. **No técnico sin ayuda**: instala siguiendo solo la documentación, sin asistencia del mantenedor.
 2. **Técnico con Docker**: instala con Docker Compose y expone con túnel o directo.
-3. **Revisor de seguridad**: revisa superficies, archivos y comandos según `security-review-candidate.md`.
+3. **Revisor de seguridad**: revisa superficies, archivos y comandos según `docs/archive/testing/security-review-candidate.md`.
 
 ## Qué registrar
 

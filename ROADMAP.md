@@ -525,7 +525,7 @@ and [`docs/testing/release-evidence.json`](./docs/testing/release-evidence.json)
 
 First field trial registered: an operator assisted by the maintainer, on Windows 10 with Cloudflare Tunnel, domain of the first P1 test site, Trust Layer active. It does **not** meet Phase 4/5 exit criteria. Record: `docs/testing/field-trials/2026-10-30-first-field-trial-p1.md` (A2); reconciliation and code verification in `2026-10-30-first-field-trial-p1-reconciliation.md` (A0) and `2026-10-30-first-field-trial-p1-verification.md` (A1).
 
-Owner decisions (2026-10-31) are recorded in [`docs/decisions/owner-decisions-2026-10-31.md`](./docs/decisions/owner-decisions-2026-10-31.md). Open decisions for the owner (not taken by this document):
+Owner decisions (2026-10-31) are recorded in [`docs/archive/owner-decisions-2026-10-31.md`](./docs/archive/owner-decisions-2026-10-31.md). Open decisions for the owner (not taken by this document):
 
 - B3: whether to implement network verification for search engines and whether to load policy before rejecting unsigned bots.
 - Where the node lives: see the four profiles and function matrix in [`docs/self-hosting-where-to-keep-the-node.md`](./docs/self-hosting-where-to-keep-the-node.md).
@@ -545,4 +545,4 @@ Pending entries (no criteria marked):
 - Starter/demo split (PR-B1/B2): design only, pending owner approval.
 - Claims audit (A8): redactions proposed, not applied (PR-C).
 - Human trial pack and security review guide: published, not executed.
-- `.gitignore` hardening for `data/` and cloudflared artifacts: applied; tunnel credential JSON names remain a manual rule (`docs/testing/gitignore-review.md`).
+- `.gitignore` hardening for `data/` and cloudflared artifacts: applied; tunnel credential JSON names remain a manual rule (`docs/archive/testing/gitignore-review.md`).
