@@ -6,7 +6,7 @@ labels: bug
 ---
 
 **Versión de Portaless:** (ej. v0.0.5)
-**Módulo afectado:** (ej. packages/plugin-sandbox, Atomic Elements, Trust Layer...)
+**Módulo afectado:** (ej. packages/plugin-sandbox, Visual Elements, Trust Layer...)
 
 **Descripción del problema**
 

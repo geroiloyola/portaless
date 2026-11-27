@@ -13,15 +13,15 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "@portaless/atomic-elements/page-store";
+import type { PageStore } from "@portaless/visual-elements/page-store";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
 import type { AgentIdentityResolver, AgentInvocationContext } from "../permissions/agent-identity";
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
-import type { ThemePack } from "@portaless/atomic-elements/themes";
-import { BUILTIN_THEMES, resolveThemePack } from "@portaless/atomic-elements/themes";
+import type { ThemePack } from "@portaless/visual-elements/themes";
+import { BUILTIN_THEMES, resolveThemePack } from "@portaless/visual-elements/themes";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 const TOOL_NAME = "apply_theme";

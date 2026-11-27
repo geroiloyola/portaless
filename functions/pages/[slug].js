@@ -24,11 +24,11 @@
 //   - SEO minimo: title/description/canonical/JSON-LD WebPage basico
 //     (el SeoHead/JsonLd completos de Astro quedan para el build).
 
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
 import { publicOriginFromEnv } from "../_shared/public-origin.js";
-import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
-import { renderPage } from "@portaless/atomic-elements/render";
-import { projectPublicRevisionHistory } from "@portaless/atomic-elements/public-revision-history";
+import { validatePageLayout } from "@portaless/visual-elements/page-schema";
+import { renderPage } from "@portaless/visual-elements/render";
+import { projectPublicRevisionHistory } from "@portaless/visual-elements/public-revision-history";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import { SITE_LANG } from "../../src/lib/site-lang.ts";
 import { t } from "../../src/lib/i18n.ts";
@@ -41,7 +41,7 @@ import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "@portaless/atomic-elements/themes";
+} from "@portaless/visual-elements/themes";
 
 // M-11: Cloudflare Pages must be able to load this Function without a
 // top-level node:fs import. The filesystem is loaded lazily and every read
@@ -57,7 +57,7 @@ async function loadNodeFileSystem() {
     nodeFileSystem = {
       fs,
       globalCssPath: fileURLToPath(new URL("../../src/styles/global.css", import.meta.url)),
-      elementsCssPath: fileURLToPath(new URL("../../packages/atomic-elements/src/styles/elements.css", import.meta.url)),
+      elementsCssPath: fileURLToPath(new URL("../../packages/visual-elements/src/styles/elements.css", import.meta.url)),
       postsDir: fileURLToPath(new URL("../../src/content/posts", import.meta.url)),
     };
   } catch {

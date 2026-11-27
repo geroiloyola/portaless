@@ -1,4 +1,4 @@
--- Esquema de persistencia real de paginas (Atomic Elements), server-side.
+-- Esquema de persistencia real de paginas (Visual Elements), server-side.
 -- Espejo del patron usado en packages/permissions/src/stores/schema.sql y
 -- packages/trust-layer/src/ledger/schema.sql.
 

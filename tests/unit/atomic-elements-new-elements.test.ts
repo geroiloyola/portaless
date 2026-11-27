@@ -8,7 +8,7 @@
 // y el ancla #contacto que los templates del wizard usan.
 
 import { describe, it, expect } from "vitest";
-import { elementRegistry, elementPalette } from "../../packages/atomic-elements/src/elements/registry";
+import { elementRegistry, elementPalette } from "../../packages/visual-elements/src/elements/registry";
 
 describe("Video (embed)", () => {
   it("convierte watch, youtu.be y shorts a youtube-nocookie embed", () => {

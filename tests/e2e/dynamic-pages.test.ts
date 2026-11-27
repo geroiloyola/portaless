@@ -21,8 +21,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createSelfHostServer } from "../../server/node-runtime.mjs";
 import { applySchema } from "../../scripts/setup.mjs";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const repo = resolve(__dirname, "../..");
 const cleanup: Array<() => void> = [];

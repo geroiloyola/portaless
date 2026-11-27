@@ -13,17 +13,17 @@ import {
   validateElementPack,
   resolveCatalog,
   coreCatalog,
-} from "../../packages/atomic-elements/src/elements/element-pack";
-import type { ElementPack } from "../../packages/atomic-elements/src/elements/element-pack";
+} from "../../packages/visual-elements/src/elements/element-pack";
+import type { ElementPack } from "../../packages/visual-elements/src/elements/element-pack";
 import {
   demoElementPack,
   catalogFromStore,
   InMemoryElementPackStore,
-} from "../../packages/atomic-elements/src/persistence/element-pack-store";
-import { elementRegistry, elementPalette } from "../../packages/atomic-elements/src/elements/registry";
-import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema";
-import { renderNode, renderPage } from "../../packages/atomic-elements/src/render";
-import type { PageLayout, ElementNode } from "../../packages/atomic-elements/src/types";
+} from "../../packages/visual-elements/src/persistence/element-pack-store";
+import { elementRegistry, elementPalette } from "../../packages/visual-elements/src/elements/registry";
+import { validatePageLayout } from "../../packages/visual-elements/src/persistence/page-schema";
+import { renderNode, renderPage } from "../../packages/visual-elements/src/render";
+import type { PageLayout, ElementNode } from "../../packages/visual-elements/src/types";
 
 import { checkNodeTypes, findUnknownTypes } from "../../packages/mcp-server/src/tools/element-node-schema";
 import { createPortalessMcpServer } from "../../packages/mcp-server/src/server";

@@ -1,18 +1,18 @@
-// Paridad del espejo de rutas dentro de packages/atomic-elements.
+// Paridad del espejo de rutas dentro de packages/visual-elements.
 // El paquete no puede importar el core (AGPL), igual que packages/plugin-sdk:
 // declara su copia de los segmentos de URL y ESTE test falla si el espejo y
 // src/lib/routes.ts se desincronizan.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PAGE_URL_SEGMENT, SHOP_URL_SEGMENT, pageUrlPath, productUrlPath, SHOP_PATH } from "../../packages/atomic-elements/src/seo/urls";
+import { PAGE_URL_SEGMENT, SHOP_URL_SEGMENT, pageUrlPath, productUrlPath, SHOP_PATH } from "../../packages/visual-elements/src/seo/urls";
 import { ROUTES, contentPagePath } from "../../src/lib/routes";
 
 const root = join(__dirname, "../..");
 
 const segmentOf = (route: string) => route.replace(/^\//, "");
 
-describe("paridad del espejo de rutas (atomic-elements <-> src/lib/routes)", () => {
+describe("paridad del espejo de rutas (visual-elements <-> src/lib/routes)", () => {
   it("los segmentos son los mismos que ROUTES", () => {
     expect(PAGE_URL_SEGMENT).toBe(segmentOf(ROUTES.PAGES));
     expect(SHOP_URL_SEGMENT).toBe(segmentOf(ROUTES.SHOP));
@@ -31,7 +31,7 @@ describe("paridad del espejo de rutas (atomic-elements <-> src/lib/routes)", () 
   });
 
   it("el core no fue importado por el paquete (frontera de licencias)", () => {
-    const urlsSrc = readFileSync(join(root, "packages/atomic-elements/src/seo/urls.ts"), "utf8");
+    const urlsSrc = readFileSync(join(root, "packages/visual-elements/src/seo/urls.ts"), "utf8");
     expect(urlsSrc).not.toMatch(/from\s+"\.\.\/(\.\.\/)*src\//);
   });
 });

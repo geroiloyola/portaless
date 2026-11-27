@@ -133,7 +133,7 @@ precedencia exactas:
 
 ### Capa 3 — Tema por página (theme packs)
 
-- Contrato: `packages/atomic-elements/src/themes/theme-pack.ts`.
+- Contrato: `packages/visual-elements/src/themes/theme-pack.ts`.
 - `PageLayout.theme?: string` nombra un pack; el catálogo es
   `BUILTIN_THEMES` (en el repo, presente hasta en build estático) ∪ la tabla
   `theme_packs` (instalados, `availableThemes()` impide que un instalado
@@ -199,8 +199,8 @@ precedencia exactas:
 | Paleta por defecto de la hoja pública | `src/styles/global.css` |
 | Fuente de verdad de vocabulario/lang | `src/lib/site-lang.ts` |
 | Chrome público | `src/components/{Header,Footer}.astro`, `src/pages/explore.astro` |
-| Contrato de temas por página | `packages/atomic-elements/src/themes/theme-pack.ts` |
-| Store de temas instalados | `packages/atomic-elements/src/persistence/theme-pack-store*.ts` |
+| Contrato de temas por página | `packages/visual-elements/src/themes/theme-pack.ts` |
+| Store de temas instalados | `packages/visual-elements/src/persistence/theme-pack-store*.ts` |
 | Emisores (build / runtime) | `src/layouts/BaseLayout.astro`, `functions/pages/[slug].js` |
 | Tools MCP | `packages/mcp-server/src/tools/{list-themes,apply-theme}.ts` |
 

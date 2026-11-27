@@ -15,6 +15,6 @@ This is the single sample post included in the clean `starter` profile. Edit or 
 
 ## Next steps
 
-- Inspect the single reference page at `/pages/starter-guide/` to see how `Atomic Elements` blocks compose in JSON.
+- Inspect the single reference page at `/pages/starter-guide/` to see how `Visual Elements` blocks compose in JSON.
 - Check `/explore/` to verify how your pages and posts are automatically indexed alongside `/rss.xml`, `/sitemap.xml`, and `/llms.txt`.
 - To preview the full fictional showcase separately, visit the external live demo or build locally with `PORTALESS_SITE_PROFILE=demo`.

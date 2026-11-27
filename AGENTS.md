@@ -135,7 +135,7 @@ npm run self-host:dev # Full runtime with SQLite (admin, login, /trust/:siteId)
 ```
 src/                          # Astro site (pages, content, layouts)
 packages/
-  atomic-elements/            # Visual editor (17 elements, theme packs)
+  visual-elements/            # Visual editor (17 elements, theme packs)
   dashboard/                  # Admin panel + Skin System + activity feed
   permissions/                # Permissions Center
   plugin-sandbox/             # Multi-provider sandboxing + capability bridge

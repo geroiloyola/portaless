@@ -32,7 +32,7 @@ vi.mock("@portaless/plugin-sandbox/capability-token-store-factory", () => ({
   createCapabilityTokenStore: vi.fn(async () => sharedTokenStore),
 }));
 
-vi.mock("@portaless/atomic-elements/store-factory", () => ({
+vi.mock("@portaless/visual-elements/store-factory", () => ({
   createPageStore: vi.fn(async () => ({
     load: vi.fn(async (slug: string) =>
       slug === "existing-page" ? { slug: "existing-page", title: "Pagina existente" } : null

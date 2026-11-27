@@ -5,8 +5,8 @@
 // undo/redo sin historial.
 
 import { describe, it, expect } from "vitest";
-import { EditorHistory } from "../../packages/atomic-elements/src/editor/history";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { EditorHistory } from "../../packages/visual-elements/src/editor/history";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 function layout(title: string): PageLayout {
   return { version: "0.1", slug: "p", title, root: [] };

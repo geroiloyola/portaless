@@ -11,8 +11,8 @@ import { join } from "node:path";
 
 const root = join(__dirname, "../..");
 const globalCss = readFileSync(join(root, "src/styles/global.css"), "utf8");
-const elementsCss = readFileSync(join(root, "packages/atomic-elements/src/styles/elements.css"), "utf8");
-const registry = readFileSync(join(root, "packages/atomic-elements/src/elements/registry.ts"), "utf8");
+const elementsCss = readFileSync(join(root, "packages/visual-elements/src/styles/elements.css"), "utf8");
+const registry = readFileSync(join(root, "packages/visual-elements/src/elements/registry.ts"), "utf8");
 
 describe("gutter fluido derivado del sistema de diseno", () => {
   it("--gutter es clamp(--space-3, 5vw, --space-6)", () => {

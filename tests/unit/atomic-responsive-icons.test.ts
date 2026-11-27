@@ -30,8 +30,8 @@ import {
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
-} from "../../packages/atomic-elements/src/elements/icons";
-import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
+} from "../../packages/visual-elements/src/elements/icons";
+import { elementRegistry } from "../../packages/visual-elements/src/elements/registry";
 import { renderPublicHeaderHtml } from "../../src/lib/public-shell";
 
 const root = join(__dirname, "../..");

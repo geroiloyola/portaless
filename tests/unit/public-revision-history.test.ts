@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import { projectPublicRevisionHistory } from "../../packages/atomic-elements/src/persistence/public-revision-history";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
+import { projectPublicRevisionHistory } from "../../packages/visual-elements/src/persistence/public-revision-history";
 import { onRequestGet } from "../../functions/revisions/[publicationId]/index.json.js";
 
 function databasePath() {

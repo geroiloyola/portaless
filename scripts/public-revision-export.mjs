@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "@portaless/atomic-elements/public-revision-history";
+import { projectPublicRevisionHistory, validatePortablePublicRevisionHistory } from "@portaless/visual-elements/public-revision-history";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 /** Generate history from approved store rows, never copy a pre-existing tree. */

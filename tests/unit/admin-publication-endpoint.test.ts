@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import { __resetPublicationRunStoreForTests } from "../../packages/deploy-engine/src/publication-store";
 import { isBuildRuntimeAvailable, onRequestGet, onRequestPost, publicationChildEnv } from "../../functions/admin/api/publication.js";
 

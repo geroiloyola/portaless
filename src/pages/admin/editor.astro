@@ -1,5 +1,5 @@
 ---
-// Editor visual de Atomic Elements, integrado al panel de administracion.
+// Editor visual de Visual Elements, integrado al panel de administracion.
 // Requiere sesion valida -- protegido por functions/admin/_middleware.js,
 // que corre para toda ruta bajo /admin/* excepto /admin/login.
 //
@@ -10,22 +10,22 @@
 // -- solo localStorage. Esta pagina reemplaza esa demo para uso en
 // produccion: hereda BaseLayout (mismo layout del dashboard), usa la
 // validacion de sesion nativa de Astro/Cloudflare Pages, y monta la clase
-// real AtomicElementsEditor (packages/atomic-elements/src/editor/editor-app.ts)
+// real AtomicElementsEditor (packages/visual-elements/src/editor/editor-app.ts)
 // con el elementRegistry completo de 12 elementos
-// (packages/atomic-elements/src/elements/registry.ts), no una copia.
+// (packages/visual-elements/src/elements/registry.ts), no una copia.
 //
 // El slug de la pagina a editar viene por query string (?slug=mi-pagina).
 // Sin slug, se asume "nueva-pagina" como borrador nuevo -- mismo valor por
 // defecto que ya usaba la demo de public/editor/index.html.
 //
 // v0.0.9.28: la pagina (Dashboard) inyecta fetchProductPreview al editor. El
-// paquete atomic-elements no conoce /admin ni sesiones; la llamada a
+// paquete visual-elements no conoce /admin ni sesiones; la llamada a
 // /admin/api/product-preview con la sesion del admin vive aqui.
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import "@portaless/atomic-elements/editor-styles.css";
+import "@portaless/visual-elements/editor-styles.css";
 // El canvas renderiza los elementos con el mismo registry: necesita el layout
 // de las grillas del core (ae-columns / ae-product-grid / ae-gallery).
-import "@portaless/atomic-elements/elements.css";
+import "@portaless/visual-elements/elements.css";
 ---
 <BaseLayout title="Editor Visual — Portaless Admin">
   <div class="pc-page-header">
@@ -111,13 +111,13 @@ import "@portaless/atomic-elements/elements.css";
 </style>
 
 <script>
-  import { mountAtomicElementsEditor } from "@portaless/atomic-elements/editor";
-  import type { ProductPreviewQuery } from "@portaless/atomic-elements/product-preview-loader";
-  import type { PageStore } from "@portaless/atomic-elements/page-store";
-  import type { PageLayout } from "@portaless/atomic-elements/types";
-  import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
-  import { resolveCatalog } from "@portaless/atomic-elements/element-pack";
-  import { elementRegistry, elementPalette } from "@portaless/atomic-elements/registry";
+  import { mountAtomicElementsEditor } from "@portaless/visual-elements/editor";
+  import type { ProductPreviewQuery } from "@portaless/visual-elements/product-preview-loader";
+  import type { PageStore } from "@portaless/visual-elements/page-store";
+  import type { PageLayout } from "@portaless/visual-elements/types";
+  import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
+  import { resolveCatalog } from "@portaless/visual-elements/element-pack";
+  import { elementRegistry, elementPalette } from "@portaless/visual-elements/registry";
   import { ROUTES } from "../../lib/routes";
 
   const loadingEl = document.getElementById("editor-loading")!;

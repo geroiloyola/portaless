@@ -100,7 +100,7 @@ describe("analyzeTree synthetic boundary graphs", () => {
         const mod = require("../../packages/auth/src/service");
       `,
       "src/lib/helper.ts": `
-        const lazy = import("../../packages/atomic-elements/src/render");
+        const lazy = import("../../packages/visual-elements/src/render");
       `,
     });
 

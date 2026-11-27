@@ -10,8 +10,8 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { renderPage, resolveInternalUrl } from "../../packages/atomic-elements/src/render";
-import type { PageLayout } from "../../packages/atomic-elements/src/types";
+import { renderPage, resolveInternalUrl } from "../../packages/visual-elements/src/render";
+import type { PageLayout } from "../../packages/visual-elements/src/types";
 
 const root = join(__dirname, "../..");
 const pagesDir = join(root, "node_modules/@portaless/templates/demo/pages");

@@ -29,7 +29,7 @@ import {
   ICON_SHOPPING_CART,
   ICON_STORE,
   ICON_VOLUME_2,
-} from "@portaless/atomic-elements/icons";
+} from "@portaless/visual-elements/icons";
 
 export type HeaderContext = "shop" | "video" | "map" | null;
 

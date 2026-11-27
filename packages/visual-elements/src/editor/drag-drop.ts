@@ -1,5 +1,5 @@
 // Utilidades minimas de HTML5 Drag & Drop, sin dependencias externas.
-// Atomic Elements deliberadamente no usa una libreria de DnD de terceros
+// Visual Elements deliberadamente no usa una libreria de DnD de terceros
 // (react-dnd, sortablejs, etc.) para mantener el bundle final pequeno --
 // coherente con el objetivo de ser mas liviano que Elementor.
 //

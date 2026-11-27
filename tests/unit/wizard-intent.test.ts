@@ -6,10 +6,10 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { classifyIntent, slugify, TemplateIntentToLayout, type TemplateId } from "../../packages/onboarding/src/intent-to-layout";
-import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
-import { validatePageLayout } from "../../packages/atomic-elements/src/persistence/page-schema";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
-import type { ElementNode } from "../../packages/atomic-elements/src/types";
+import { elementRegistry } from "../../packages/visual-elements/src/elements/registry";
+import { validatePageLayout } from "../../packages/visual-elements/src/persistence/page-schema";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
+import type { ElementNode } from "../../packages/visual-elements/src/types";
 import { onRequestPost } from "../../functions/admin/api/wizard/generate-page.js";
 
 const tmpPath = () => join(mkdtempSync(join(tmpdir(), "portaless-wizard-")), "pages.db");

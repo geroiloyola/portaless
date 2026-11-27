@@ -77,7 +77,7 @@ export interface PublicPageRevision extends Omit<PageRevisionMetadata, "approved
   evidence: PageRevisionEvidence[];
 }
 
-const STORAGE_PREFIX = "portaless.atomic-elements.page.";
+const STORAGE_PREFIX = "portaless.visual-elements.page.";
 
 export class LocalStoragePageStore implements PageStore {
   private catalog?: ResolvedCatalog;

@@ -63,8 +63,8 @@ async function main() {
   }
 
   const { createPageStore } = await loadCompatModule(
-    "@portaless/atomic-elements/store-factory",
-    ["packages", "atomic-elements", "src", "persistence", "store-factory.ts"],
+    "@portaless/visual-elements/store-factory",
+    ["packages", "visual-elements", "src", "persistence", "store-factory.ts"],
   );
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: out });
   await store.save({

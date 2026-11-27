@@ -26,7 +26,7 @@ A lightweight, open source, modular CMS node — built on Astro to compile to st
 This repository is the **sovereign reference CMS node** (`starter` profile by default):
 
 - **Clean starter site out of the box** (`site-profiles/starter/`): `npm run build` emits a minimal English static site (35 pages, zero demo/marketing pages) ready for GitHub Pages, Cloudflare Pages, or self-hosted Node/Docker.
-- **Native visual editor (Atomic Elements)** + modular dashboard with swappable skins (17 elements, 6 skins).
+- **Native visual editor (Visual Elements)** + modular dashboard with swappable skins (17 elements, 6 skins).
 - **Sandboxed plugins with atomic permissions** (`isolated-vm` + edge adapters): 7 of 12 plugin capabilities have a real execution path; five plugin capabilities still answer an explicit `501` by decision. Third-party plugins import [`@portaless/plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk) (MIT) only.
 - **Granular control over AI agents**: cryptographic bot identification (Web Bot Auth), pay-per-crawl policies, and a public traceability ledger via [`@verared/*`](https://github.com/verared/vera-trust-stack). You decide, from the panel, the terms for search engines, AI assistants and model training. The site publishes them in writing and enforces the AI-input rule on signed agent requests; search and training remain cooperative signals (not enforced per request).
 - **Native MCP server** (19 tools, stdio + HTTP per-invocation bearer tokens) and an optional server-side OpenAI-compatible provider subset ([connection guide](./docs/openai-compatible-provider.md)).

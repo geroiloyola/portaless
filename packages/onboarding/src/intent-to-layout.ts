@@ -1,7 +1,7 @@
 // v0.0.9.27 -- Item 2 del roadmap ("Cerebro del Onboarding"), opcion C.
 //
 // Traduce el prompt de intencion del Paso 1 del Wizard a un PageLayout real
-// de Atomic Elements. Implementacion DETERMINISTA (palabras clave -> plantilla):
+// de Visual Elements. Implementacion DETERMINISTA (palabras clave -> plantilla):
 // sin API key, sin costo, sin red, testeable. Detras de la interfaz
 // IntentToLayout para que un adaptador LLM (o el SDK externo Nuvid, ver
 // ROADMAP "Agente generador de sitios") se enchufe despues sin tocar el
@@ -15,8 +15,8 @@
 // .defaultProps con el mismo tipo (tests/unit/wizard-intent.test.ts lo
 // verifica, porque validatePageLayout NO valida props).
 
-import type { PageLayout, ElementNode, ElementType } from "@portaless/atomic-elements/types";
-import { SHOP_PATH } from "@portaless/atomic-elements/seo-urls";
+import type { PageLayout, ElementNode, ElementType } from "@portaless/visual-elements/types";
+import { SHOP_PATH } from "@portaless/visual-elements/seo-urls";
 
 export interface IntentInput {
   siteName: string;

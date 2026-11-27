@@ -2,7 +2,7 @@
 // color. Cubre: (1) DEFAULT_TOKENS = paleta oficial con accentText;
 // (2) TOKEN_TO_CSS_VAR incluye accentText; (3) base.json declara la misma
 // paleta oficial; (4) global.css aliasa --portaless-* a los tokens y
-// trae el dark mode oficial; (5) el renderHTML de atomic-elements usa
+// trae el dark mode oficial; (5) el renderHTML de visual-elements usa
 // var(--token, fallback) y ya no trae el hex de marca viejo; (6) los
 // skins derivados declaran accentText oscurecido (legible sobre fondo
 // claro).
@@ -16,7 +16,7 @@ import {
   TOKEN_TO_CSS_VAR,
   applyDesignTokens,
 } from "../../packages/dashboard/src/skin-engine/tokens";
-import { elementRegistry, elementPalette } from "../../packages/atomic-elements/src/elements/registry";
+import { elementRegistry, elementPalette } from "../../packages/visual-elements/src/elements/registry";
 import baseManifest from "../../packages/dashboard/src/skins/base.json";
 import blogManifest from "../../packages/dashboard/src/skins/blog.json";
 import tiendaManifest from "../../packages/dashboard/src/skins/tienda.json";
@@ -107,7 +107,7 @@ describe("global.css: aliases y dark mode", () => {
   });
 });
 
-describe("atomic-elements: renderHTML responde al skin", () => {
+describe("visual-elements: renderHTML responde al skin", () => {
   it("ningun renderer trae el hex de marca viejo", () => {
     for (const type of elementPalette) {
       const html = elementRegistry[type].renderHTML(

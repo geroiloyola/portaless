@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { elementRegistry } from "../../packages/atomic-elements/src/elements/registry";
+import { elementRegistry } from "../../packages/visual-elements/src/elements/registry";
 import { headerActionsHtml } from "../../src/lib/atomic-responsive-icons";
 
 const root = join(__dirname, "../..");

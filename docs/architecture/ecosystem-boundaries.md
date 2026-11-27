@@ -27,7 +27,7 @@ licencias, ni Obligations legales, ni garantias.
 | **Protocolos** | APW | La especificacion (texto, CC BY 4.0), la identidad `did:apw`, el historial encadenado, las firmas, Cloud Images | `docs/protocol-apw/`, `packages/apw-resolver/`, `packages/cloud-images/` |
 | | LTP | La capa de reputacion: SiteTrustScore de 4 fuentes, testigos, calibracion de pesos, ledger publico | `packages/trust-layer/`, `packages/apw-resolver/src/did-apw/witness.ts` |
 | | Portaless Index | Agregador de testigos, consenso ponderado, sync entre pares, exposicion `.well-known/` | `packages/apw-resolver/src/did-apw/witness-index.ts`, `functions/.well-known/` |
-| **Kernel** | Catalogo y render | Atomic Elements (17 tipos), element packs, theme packs, renderer con soporte de subpath | `packages/atomic-elements/` |
+| **Kernel** | Catalogo y render | Visual Elements (17 tipos), element packs, theme packs, renderer con soporte de subpath | `packages/visual-elements/` |
 | | Permisos | Centro de Permisos, capabilities,jezz de permisos | `packages/permissions/` |
 | | Sandbox | Aislamiento real (`isolated-vm` + adaptadores edge), manifiesto, registro, capability bridge | `packages/plugin-sandbox/` |
 | | Autenticacion | Login, MFA/TOTP, recuperacion, OAuth, roles | `packages/auth/`, `functions/admin/login*.js` |
@@ -35,7 +35,7 @@ licencias, ni Obligations legales, ni garantias.
 | | **MCP server** | La superficie que los agentes consume para operar un sitio: 19 tools, stdio y HTTP, tokens por agente | `packages/mcp-server/` |
 | **Modulos** | Posts | Coleccion `.md` canonica, RSS, orden por fecha | `src/content/posts/`, `src/lib/rss.ts` |
 | | Recents | Dashboard unificado de actividad reciente | `packages/dashboard/` |
-| | Videos | Hub audiovisual: el elemento `Video` ya existe (embed); el canal, el collector y el ranking, no | `packages/atomic-elements/src/elements/registry.ts:244` |
+| | Videos | Hub audiovisual: el elemento `Video` ya existe (embed); el canal, el collector y el ranking, no | `packages/visual-elements/src/elements/registry.ts:244` |
 | | Music | Consolidador de streaming; **hoy no existe codigo** — solo enlaces estaticos en los JSON de ejemplo | — |
 | | Shop | Comercio **de solo lectura**: catalogo Medusa/Mercur y tarjetas de afiliado. **Checkout y pagos no viven aqui** | `src/commerce/`, `packages/commerce-plugin/`, `src/pages/shop/` |
 | | Explore | Descubrimiento. **Hoy es local**: globa `src/content/pages/*.json` del propio repo. La capa federada es trabajo futuro | `src/pages/explore.astro:21` |
@@ -224,7 +224,7 @@ los nombres que el repo ya usa para el rol externo:
 
 Tres comentarios de codigo y dos documentos de arquitectura ya apuntan a
 "AppPlace/AppLibre, otro repo" como la costura del marketplace
-(`src/pages/explore.astro:11`, `packages/atomic-elements/src/themes/theme-pack.ts:38`,
+(`src/pages/explore.astro:11`, `packages/visual-elements/src/themes/theme-pack.ts:38`,
 `docs/design/design-guide.md:218`, `licensing-boundaries.md` secciones 3 y 4).
 Ese mapeo **detallado** AppPlace/AppLibre hacia productos Linstark concretos
 queda fuera del alcance de este documento; lo que se decide aca es que los dos

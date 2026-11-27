@@ -56,7 +56,7 @@ describe("home: 100% motor", () => {
   });
 
   it("el theme pack portaless-nocturno existe en los builtins", () => {
-    const themes = readFileSync(join(root, "packages/atomic-elements/src/themes/theme-pack.ts"), "utf8");
+    const themes = readFileSync(join(root, "packages/visual-elements/src/themes/theme-pack.ts"), "utf8");
     expect(themes).toContain('name: "portaless-nocturno"');
   });
 });

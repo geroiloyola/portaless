@@ -3,7 +3,7 @@
 // provistos -- no permite reemplazar `root` parcialmente (un ElementNode[]
 // completo reemplaza al anterior si se provee, ya que un merge profundo
 // de arbol de bloques requeriria una estrategia de diffing que no existe
-// hoy en PageStore ni en atomic-elements y no se debe improvisar aqui).
+// hoy en PageStore ni en visual-elements y no se debe improvisar aqui).
 //
 // El schema del arbol de bloques (elementNodeSchema) vive en
 // element-node-schema.ts y se deriva de elementRegistry -- no se hardcodea
@@ -11,8 +11,8 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PageStore } from "@portaless/atomic-elements/page-store";
-import type { ElementNode } from "@portaless/atomic-elements/types";
+import type { PageStore } from "@portaless/visual-elements/page-store";
+import type { ElementNode } from "@portaless/visual-elements/types";
 import type { PermissionStore } from "@portaless/permissions/store";
 import type { AuditLogStore } from "../audit/types";
 import type { UsageLedgerStore } from "@verared/trust-layer/ledger";
@@ -20,7 +20,7 @@ import type { AgentIdentityResolver, AgentInvocationContext } from "../permissio
 import { requireCapability } from "../permissions/require-capability";
 import { recordToolInvocation } from "../audit/record-tool-invocation";
 import { elementNodeSchema, toolCatalog, checkNodeTypes } from "./element-node-schema";
-import type { ResolvedCatalog } from "@portaless/atomic-elements/element-pack";
+import type { ResolvedCatalog } from "@portaless/visual-elements/element-pack";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 
 const TOOL_NAME = "update_page";

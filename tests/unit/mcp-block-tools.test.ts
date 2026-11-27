@@ -19,7 +19,7 @@ import { registerInsertBlockTool } from "../../packages/mcp-server/src/tools/ins
 import { registerUpdateBlockTool } from "../../packages/mcp-server/src/tools/update-block";
 import { registerDeleteBlockTool } from "../../packages/mcp-server/src/tools/delete-block";
 import type { AuditLogEntry, AuditLogStore } from "../../packages/mcp-server/src/audit/types";
-import type { PageLayout, ElementNode } from "../../packages/atomic-elements/src/types";
+import type { PageLayout, ElementNode } from "../../packages/visual-elements/src/types";
 
 type ToolHandler = (args: Record<string, unknown>, extra?: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
 

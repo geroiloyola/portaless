@@ -1,9 +1,9 @@
 // Preview privado de una pagina draft/private. Ruta admin (session middleware)
 // y permiso admin adicional. No delega a context.next(): un preview nunca cae
 // al HTML estatico publico, incluso si la DB falla o la fila no existe.
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
-import { validatePageLayout } from "@portaless/atomic-elements/page-schema";
-import { renderPage } from "@portaless/atomic-elements/render";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
+import { validatePageLayout } from "@portaless/visual-elements/page-schema";
+import { renderPage } from "@portaless/visual-elements/render";
 import { isPubliclyPublishable } from "@portaless/deploy-engine/draft-filter";
 import { renderShell } from "../../../pages/[slug].js";
 

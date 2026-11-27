@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applySchema } from "../../scripts/setup.mjs";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import {
   createCanonicalBackup,
   restoreCanonicalBackup,

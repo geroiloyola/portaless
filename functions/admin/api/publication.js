@@ -6,7 +6,7 @@
 // the existing publish script through an injectable runner; Cloudflare returns
 // an explicit 503 instead of pretending it can build.
 
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
 import { createPublicationRunStore } from "@portaless/deploy-engine/publication-store";
 import { createPublicationOrchestrator, PublicationError } from "@portaless/deploy-engine/publication-orchestrator";
 import { snapshotFromLayouts } from "@portaless/deploy-engine/publication-snapshot";

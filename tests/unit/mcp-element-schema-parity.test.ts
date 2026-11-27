@@ -9,9 +9,9 @@
 // ahora se deriva del registro, y estos tests impiden que las copias vuelvan.
 
 import { describe, it, expect } from "vitest";
-import { elementRegistry, elementPalette } from "../../packages/atomic-elements/src/elements/registry";
+import { elementRegistry, elementPalette } from "../../packages/visual-elements/src/elements/registry";
 import { ELEMENT_TYPE_LIST, elementNodeSchema } from "../../packages/mcp-server/src/tools/element-node-schema";
-import type { ElementType } from "../../packages/atomic-elements/src/types";
+import type { ElementType } from "../../packages/visual-elements/src/types";
 
 const registryTypes = Object.keys(elementRegistry);
 

@@ -16,7 +16,7 @@ const TEMPLATES = [
   "/explore/",
   "/pages/boutique/",
   "/pages/club-evento/",
-  "/pages/ejemplo-atomic-elements/",
+  "/pages/ejemplo-visual-elements/",
   "/pages/creator-demo/",
   "/pages/lanzamiento/",
   "/pages/link-in-bio/",
@@ -47,7 +47,7 @@ test.describe("movil 375x812", () => {
   test("las tarjetas de las grillas no quedan del ancho minimo roto (<140px)", async ({ page }) => {
     // Un `repeat(N,1fr)` inline en 375px dejaba cards de ~100px; la grilla
     // intrinseca garantiza >= --ae-min (9rem = 144px) por pista.
-    for (const path of ["/pages/boutique/", "/pages/portafolio/", "/pages/ejemplo-atomic-elements/"]) {
+    for (const path of ["/pages/boutique/", "/pages/portafolio/", "/pages/ejemplo-visual-elements/"]) {
       await page.goto(path);
       const widths = await page.evaluate(() =>
         Array.from(document.querySelectorAll(".ae-columns > *, .ae-product-grid > *, .ae-gallery > *"))
@@ -78,7 +78,7 @@ test.describe("movil 375x812", () => {
   });
 
   test("controles del header y el footer cumplen 44x44 (WCAG 2.5.5)", async ({ page }) => {
-    await page.goto("/pages/ejemplo-atomic-elements/");
+    await page.goto("/pages/ejemplo-visual-elements/");
     const controls = [
       "header.site-header a.nav-link[href='/explore/']",
       "header.site-header .header-icon-btn",

@@ -2,17 +2,17 @@
 
 ## Estado real
 
-**PARCIALMENTE IMPLEMENTADO.** Este documento describe un flujo de 4 piezas. Las piezas 1 (elementos de Atomic Elements) y la declaración `content_kinds` de la pieza 2 ya son código real, mergeado en la rama `atomic-elements-design`. El resto (la tool MCP `create_creator_page` y el archivo `PROJECT_SKILL.md` generado por un agente) sigue siendo especificación de diseño, en el mismo espíritu que `docs/architecture/mcp-agents.md`. **Corrección (oct. 2026)**: el texto original decía que esto dependía de "un servidor MCP que todavía es un stub" — falso desde entonces: `packages/mcp-server/` está implementado con 7 tools reales (ver `AGENTS.md`); el gap real restante es la identidad de agente por invocación (Opción B), no la base del servidor.
+**PARCIALMENTE IMPLEMENTADO.** Este documento describe un flujo de 4 piezas. Las piezas 1 (elementos de Visual Elements) y la declaración `content_kinds` de la pieza 2 ya son código real, mergeado en la rama `visual-elements-design`. El resto (la tool MCP `create_creator_page` y el archivo `PROJECT_SKILL.md` generado por un agente) sigue siendo especificación de diseño, en el mismo espíritu que `docs/architecture/mcp-agents.md`. **Corrección (oct. 2026)**: el texto original decía que esto dependía de "un servidor MCP que todavía es un stub" — falso desde entonces: `packages/mcp-server/` está implementado con 7 tools reales (ver `AGENTS.md`); el gap real restante es la identidad de agente por invocación (Opción B), no la base del servidor.
 
 ## Problema que resuelve
 
-Portaless puede convertirse en el destino natural de un caso de uso hoy dominado por plataformas cerradas de suscripción: un creador o influencer sin conocimiento técnico le pide a un agente de IA ("hazme una página con mis redes, mi tienda de afiliados y mi bio") y el agente construye el sitio completo usando Atomic Elements, sin que el creador toque código ni JSON.
+Portaless puede convertirse en el destino natural de un caso de uso hoy dominado por plataformas cerradas de suscripción: un creador o influencer sin conocimiento técnico le pide a un agente de IA ("hazme una página con mis redes, mi tienda de afiliados y mi bio") y el agente construye el sitio completo usando Visual Elements, sin que el creador toque código ni JSON.
 
-Esto ya es parcialmente viable hoy: `mcp-agents.md` especifica `create_page`/`update_page` sobre `createPageStore` (confirmado y funcional en `store-factory.ts`), y el editor visual de Atomic Elements ya tiene los elementos base (`Hero`, `Button`, `Columns`, `ProductGrid`) más los 4 elementos nuevos de tipo "link en bio" (ver siguiente sección). Lo que falta es el contexto persistente del *por qué* de cada decisión, y una forma de que otros agentes (no solo el creador) sepan qué tipo de contenido trae el sitio antes de rastrearlo.
+Esto ya es parcialmente viable hoy: `mcp-agents.md` especifica `create_page`/`update_page` sobre `createPageStore` (confirmado y funcional en `store-factory.ts`), y el editor visual de Visual Elements ya tiene los elementos base (`Hero`, `Button`, `Columns`, `ProductGrid`) más los 4 elementos nuevos de tipo "link en bio" (ver siguiente sección). Lo que falta es el contexto persistente del *por qué* de cada decisión, y una forma de que otros agentes (no solo el creador) sepan qué tipo de contenido trae el sitio antes de rastrearlo.
 
-## Pieza 1: elementos de Atomic Elements estilo "link en bio" — IMPLEMENTADO
+## Pieza 1: elementos de Visual Elements estilo "link en bio" — IMPLEMENTADO
 
-`packages/atomic-elements/src/elements/registry.ts` y `types.ts` ya incluyen 4 `ElementDefinition` nuevos, registrados en `elementRegistry` y `elementPalette` junto a los 8 elementos originales:
+`packages/visual-elements/src/elements/registry.ts` y `types.ts` ya incluyen 4 `ElementDefinition` nuevos, registrados en `elementRegistry` y `elementPalette` junto a los 8 elementos originales:
 
 - **`LinkList`**: lista de botones (`label`/`url`/`icon`/`enabled`), con estilo `solid`/`outline` configurable.
 - **`SocialIcons`**: fila de iconos de red social con alineación configurable.
@@ -23,7 +23,7 @@ Commits: `23e53e0` (types.ts), `8599b85` (registry.ts).
 
 ## Pieza 2: declaración de tipo de contenido — IMPLEMENTADO (campo), PENDIENTE (generación automática)
 
-`packages/atomic-elements/src/seo/json-ld.ts` ya define `ContentKind` (`"commerce"`, `"affiliate"`, `"editorial"`, `"research"`, `"social_links"`, `"community"`) y el campo opcional `contentKinds` en `SiteInfo`. `buildJsonLd()` ya lo incluye como `additionalProperty` (`PropertyValue`) de la `Organization` cuando está declarado, sin afectar sitios existentes que no lo definan. Commit: `3c82793`.
+`packages/visual-elements/src/seo/json-ld.ts` ya define `ContentKind` (`"commerce"`, `"affiliate"`, `"editorial"`, `"research"`, `"social_links"`, `"community"`) y el campo opcional `contentKinds` en `SiteInfo`. `buildJsonLd()` ya lo incluye como `additionalProperty` (`PropertyValue`) de la `Organization` cuando está declarado, sin afectar sitios existentes que no lo definan. Commit: `3c82793`.
 
 Lo que sigue pendiente es la parte agentic: que un agente declare este campo automáticamente al crear el sitio (ver Pieza 4, todavía diseño).
 

@@ -15,7 +15,7 @@
 // modificado. El arbol de entrada nunca se toca, asi que un error a mitad de
 // camino deja el layout original intacto.
 
-import type { ElementNode } from "@portaless/atomic-elements/types";
+import type { ElementNode } from "@portaless/visual-elements/types";
 
 export type NodeLocation = {
   container: ElementNode[];

@@ -8,8 +8,8 @@
 // alternate que el header convierte en el selector (misma pagina, otro idioma;
 // nunca un salto al home).
 import BaseLayout from "../layouts/BaseLayout.astro";
-import PageRenderer from "../../packages/atomic-elements/astro-integration/PageRenderer.astro";
-import JsonLd from "../../packages/atomic-elements/astro-integration/JsonLd.astro";
+import PageRenderer from "../../packages/visual-elements/astro-integration/PageRenderer.astro";
+import JsonLd from "../../packages/visual-elements/astro-integration/JsonLd.astro";
 import SeoHead from "./SeoHead.astro";
 import { getSiteUrl } from "../lib/seo";
 import { versionHref, type ContentPage, type PageVersion } from "../lib/content-pages";
@@ -17,9 +17,9 @@ import {
   BUILTIN_THEMES,
   resolveThemePack,
   themeStyleDecl,
-} from "@portaless/atomic-elements/themes";
+} from "@portaless/visual-elements/themes";
 import { deriveHeaderContext, contextActionsHtml } from "../lib/atomic-responsive-icons";
-import type { PublicRevisionHistory } from "@portaless/atomic-elements/public-revision-history";
+import type { PublicRevisionHistory } from "@portaless/visual-elements/public-revision-history";
 
 interface Props {
   page: ContentPage;

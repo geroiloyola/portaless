@@ -9,7 +9,7 @@
 - `astro.config.mjs` + `src/pages/` + `src/content/`: motor de contenido
   estático sobre Astro, con colecciones de Markdown (`src/content/posts/`)
   y páginas construidas visualmente (`src/content/pages/*.json` vía
-  Atomic Elements, `packages/atomic-elements/`).
+  Visual Elements, `packages/visual-elements/`).
 - `packages/dashboard/`: panel de administración modular (Skin System).
 - `packages/plugin-sandbox/`: contrato de sandboxing multi-proveedor,
   con adaptadores en estado de esqueleto (`TODO` de integración real).

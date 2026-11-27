@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from "vitest";
 import { findNodeLocation, insertNode, updateNodeProps, deleteNode } from "../../packages/mcp-server/src/tools/node-ops";
-import type { ElementNode } from "../../packages/atomic-elements/src/types";
+import type { ElementNode } from "../../packages/visual-elements/src/types";
 
 function tree(): ElementNode[] {
   return [

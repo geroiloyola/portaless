@@ -8,8 +8,8 @@ import {
   type CapabilityBackendEnv,
 } from "@portaless/plugin-sandbox/capability-backends";
 import type { CapabilityHostBridge } from "@portaless/plugin-sandbox/types";
-import { createPageStore } from "@portaless/atomic-elements/store-factory";
-import { isPubliclyPublishable } from "@portaless/atomic-elements/draft-filter";
+import { createPageStore } from "@portaless/visual-elements/store-factory";
+import { isPubliclyPublishable } from "@portaless/visual-elements/draft-filter";
 import { createSiteSettingsStore } from "@portaless/dashboard/site-settings";
 import { emitActivity } from "@portaless/dashboard/activity";
 

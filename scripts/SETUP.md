@@ -3,7 +3,7 @@
 Antes de esta version, levantar una instancia nueva de Portaless requeria
 4 pasos manuales dispersos: aplicar por separado los `schema.sql` de
 `@portaless/auth`, `@portaless/permissions`, `@portaless/trust-layer` y
-`@portaless/atomic-elements`, y despues crear a mano el primer usuario
+`@portaless/visual-elements`, y despues crear a mano el primer usuario
 admin invocando `ensureInitialAdmin()` directamente desde codigo.
 
 ## Comando unico (self-hosted / SQLite)

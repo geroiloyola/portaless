@@ -45,7 +45,7 @@ export interface Props {
    * Tema por pagina (theme pack) ya resuelto: nombre + la declaracion de
    * variables que themeStyleDecl() construye. Lo pasa
    * src/pages/paginas/[slug].astro; sin el, la pagina usa el skin del
-   * sitio como siempre. Ver packages/atomic-elements/src/themes/theme-pack.ts.
+   * sitio como siempre. Ver packages/visual-elements/src/themes/theme-pack.ts.
    */
   pageTheme?: { name: string; css: string };
   /**
@@ -68,7 +68,7 @@ import "../styles/fonts.css";
 import "../styles/global.css";
 // Layout de los elementos con grilla (intrinseco, sin media queries): una sola
 // hoja del core, compartida con el shell runtime y el editor.
-import "@portaless/atomic-elements/elements.css";
+import "@portaless/visual-elements/elements.css";
 import Header from "../components/Header.astro";
 import { SITE_LANG } from "../lib/site-lang";
 import { isLocale } from "../lib/i18n";

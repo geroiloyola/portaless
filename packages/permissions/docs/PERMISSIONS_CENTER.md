@@ -103,9 +103,9 @@ seed de `hello-plugin`/`commerce-plugin` en cada reinicio.
   `ROADMAP.md`.
 - **Actualización v0.0.9.3**: el bug de binding D1 inconsistente que se
   había encontrado y documentado aquí (`env.PORTALESS_DB` en
-  `atomic-elements/persistence/store-factory.ts` vs `env.DB` en esta
+  `visual-elements/persistence/store-factory.ts` vs `env.DB` en esta
   factory) ya se corrigió -- las 4 factories del repo (auth, permissions,
-  trust-layer, atomic-elements) usan ahora `env.DB` de forma consistente.
+  trust-layer, visual-elements) usan ahora `env.DB` de forma consistente.
   Ver `ROADMAP.md` para el detalle del fix.
 - **Actualización v0.0.9.3**: el Trust Layer / ledger de agentes (la otra
   mitad de la línea de estado del README) también quedó conectado --

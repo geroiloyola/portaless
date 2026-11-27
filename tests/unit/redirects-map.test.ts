@@ -42,8 +42,8 @@ async function boot() {
   const dist = join(root, "dist");
   mkdirSync(dist, { recursive: true });
   writeFileSync(join(dist, "404.html"), "<h1>NOT-FOUND</h1>");
-  mkdirSync(join(dist, "pages", "ejemplo-atomic-elements"), { recursive: true });
-  writeFileSync(join(dist, "pages", "ejemplo-atomic-elements", "index.html"), "<h1>NEW-OK</h1>");
+  mkdirSync(join(dist, "pages", "ejemplo-visual-elements"), { recursive: true });
+  writeFileSync(join(dist, "pages", "ejemplo-visual-elements", "index.html"), "<h1>NEW-OK</h1>");
 
   const sqlitePath = join(root, "data", "db.sqlite");
   mkdirSync(join(root, "data"), { recursive: true });
@@ -94,7 +94,7 @@ describe("redirects runtime self-host (una fila por cada regla del mapa)", () =>
   }
 
   it("las rutas nuevas responden 200 (o el contenido estatico que existe)", async () => {
-    const res = await fetch(`${base}/pages/ejemplo-atomic-elements/`);
+    const res = await fetch(`${base}/pages/ejemplo-visual-elements/`);
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("NEW-OK");
   });

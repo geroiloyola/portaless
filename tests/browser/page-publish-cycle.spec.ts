@@ -126,7 +126,7 @@ test("ciclo completo: editar -> publicar -> ver publico -> manager -> borrar (si
   expect(gone?.status()).toBe(404);
 
   // 6. La pagina estatica de src/content sigue intacta.
-  const staticPage = await page.goto("/pages/ejemplo-atomic-elements");
+  const staticPage = await page.goto("/pages/ejemplo-visual-elements");
   expect(staticPage?.status()).toBe(200);
   await expect(page.locator("article.ae-page")).toBeVisible();
 });

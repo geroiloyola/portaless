@@ -9,7 +9,7 @@ const { mockRegistry } = vi.hoisted(() => ({
   } as any,
 }));
 
-vi.mock("@portaless/atomic-elements/registry", () => ({ elementRegistry: mockRegistry }));
+vi.mock("@portaless/visual-elements/registry", () => ({ elementRegistry: mockRegistry }));
 
 import { onRequestGet } from "../../functions/admin/api/product-preview.js";
 

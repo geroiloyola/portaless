@@ -1,7 +1,7 @@
 // functions/admin/api/element-packs.js
 //
 // GET /admin/api/element-packs -- devuelve los element packs instalados (la
-// capa ABIERTA del catalogo de Atomic Elements, v0.0.9.11) para que el editor
+// capa ABIERTA del catalogo de Visual Elements, v0.0.9.11) para que el editor
 // visual pueda fusionarlos con el core embebido en su bundle y mostrarlos en
 // la paleta. Ver docs/architecture/element-catalog-plugins.md, seccion "El
 // editor".
@@ -20,7 +20,7 @@
 // y rutea por path, asi que este archivo sirve en Cloudflare Pages y en
 // self-host sin registro adicional.
 
-import { createElementPackStore } from "@portaless/atomic-elements/element-pack-store-factory";
+import { createElementPackStore } from "@portaless/visual-elements/element-pack-store-factory";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

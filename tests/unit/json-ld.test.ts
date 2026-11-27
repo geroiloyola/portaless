@@ -1,4 +1,4 @@
-// packages/atomic-elements/src/seo/json-ld.ts: 45 lineas a 0%. Generador
+// packages/visual-elements/src/seo/json-ld.ts: 45 lineas a 0%. Generador
 // del @graph JSON-LD (Organization + WebPage + ItemList de productos
 // Medusa). Es logica pura sin DOM: se puede probar directo. El unico
 // punto con I/O es resolveProductGridProducts(), que importa dinamicamente
@@ -6,9 +6,9 @@
 // el import es dinamico adentro de la funcion).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PageLayout, ElementNode } from "../../packages/atomic-elements/src/types";
-import { registerCommerceCatalogProvider } from "../../packages/atomic-elements/src/commerce-provider";
-import { buildJsonLd, buildProductJsonLd } from "../../packages/atomic-elements/src/seo/json-ld";
+import type { PageLayout, ElementNode } from "../../packages/visual-elements/src/types";
+import { registerCommerceCatalogProvider } from "../../packages/visual-elements/src/commerce-provider";
+import { buildJsonLd, buildProductJsonLd } from "../../packages/visual-elements/src/seo/json-ld";
 
 const medusa = {
   isCommerceEnabled: vi.fn(),

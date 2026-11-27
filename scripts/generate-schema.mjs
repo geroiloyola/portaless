@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Genera schema.sql (raiz) concatenando sus 33 fuentes reales en orden:
 //   5 schema.sql de paquete (auth, permissions, trust-layer ledger,
-//   atomic-elements, apw-resolver) + 28 addendums de schema-additions/*.sql.
+//   visual-elements, apw-resolver) + 28 addendums de schema-additions/*.sql.
 //
 //   node scripts/generate-schema.mjs   (o: npm run generate-schema)
 //
@@ -29,7 +29,7 @@ const SOURCES = [
   { label: "@portaless/auth -- usuarios y sesiones", path: "packages/auth/src/stores/schema.sql" },
   { label: "@portaless/permissions -- Centro de Permisos", path: "packages/permissions/src/stores/schema.sql" },
   { label: "@portaless/trust-layer -- ledger de uso por agentes", path: "packages/trust-storage-adapters/schema/trust-layer-ledger.sql" },
-  { label: "@portaless/atomic-elements -- paginas persistidas", path: "packages/atomic-elements/src/persistence/stores/schema.sql" },
+  { label: "@portaless/visual-elements -- paginas persistidas", path: "packages/visual-elements/src/persistence/stores/schema.sql" },
   { path: "schema-additions/password-reset.sql", selfBanner: true },
   { path: "schema-additions/password-change-events.sql", selfBanner: true },
   { path: "schema-additions/plugin-registry.sql", selfBanner: true },

@@ -79,21 +79,21 @@ test("en una pagina no localizada: sin switcher, con el aviso de idioma honesto 
 });
 
 test("una pagina con traduccion: el switcher lleva a la MISMA pagina en el otro idioma", async ({ page }) => {
-  // La primaria (espanol) vive en /pages/ejemplo-atomic-elements/ y su ingles
+  // La primaria (espanol) vive en /pages/ejemplo-visual-elements/ y su ingles
   // en /en/pages/... -- el idioma de autoria es la ruta principal, sin prefijo.
-  await page.goto("/pages/ejemplo-atomic-elements/");
+  await page.goto("/pages/ejemplo-visual-elements/");
 
   const pill = page.locator("header.site-header .header-right a.header-lang");
-  await expect(pill).toHaveAttribute("href", /\/en\/pages\/ejemplo-atomic-elements\/$/);
+  await expect(pill).toHaveAttribute("href", /\/en\/pages\/ejemplo-visual-elements\/$/);
   await expect(pill).toHaveAttribute("hreflang", "en");
   // Sin aviso: hay traduccion real.
   await expect(page.locator("header.site-header .header-lang-notice")).toHaveCount(0);
 
   // Y la version en ingles vuelve a la espanola.
-  await page.goto("/en/pages/ejemplo-atomic-elements/");
+  await page.goto("/en/pages/ejemplo-visual-elements/");
   await expect(page.locator("header.site-header .header-right a.header-lang")).toHaveAttribute(
     "href",
-    /\/pages\/ejemplo-atomic-elements\/$/
+    /\/pages\/ejemplo-visual-elements\/$/
   );
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
@@ -152,7 +152,7 @@ test("Atomic Icons Responsive: enlace de shop acompaña al contenido, no al head
 });
 
 test("Atomic Icons Responsive: enlace de mapa acompaña al contenido, no al header", async ({ page }) => {
-  await page.goto("/pages/ejemplo-atomic-elements/");
+  await page.goto("/pages/ejemplo-visual-elements/");
 
   const dir = page.locator("main a.page-context-action[href='#ae-map']");
   await expect(dir).toBeVisible();

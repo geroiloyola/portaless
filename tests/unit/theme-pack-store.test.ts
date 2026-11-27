@@ -1,4 +1,4 @@
-// packages/atomic-elements/src/persistence/theme-pack-store.ts + stores D1/
+// packages/visual-elements/src/persistence/theme-pack-store.ts + stores D1/
 // SQLite + factory: mismo contrato que element packs. Cubre round-trip en
 // los tres backends (D1 fake sobre better-sqlite3, SQLite en archivo
 // temporal, InMemory), rechazo de packs invalidos al guardar, filas
@@ -14,11 +14,11 @@ import {
   InMemoryThemePackStore,
   loadThemePacks,
   type ThemePackStore,
-} from "../../packages/atomic-elements/src/persistence/theme-pack-store";
-import { D1ThemePackStore } from "../../packages/atomic-elements/src/persistence/stores/d1-theme-pack-store";
-import { SqliteThemePackStore } from "../../packages/atomic-elements/src/persistence/stores/sqlite-theme-pack-store";
-import { createThemePackStore } from "../../packages/atomic-elements/src/persistence/theme-pack-store-factory";
-import type { ThemePack } from "../../packages/atomic-elements/src/themes/theme-pack";
+} from "../../packages/visual-elements/src/persistence/theme-pack-store";
+import { D1ThemePackStore } from "../../packages/visual-elements/src/persistence/stores/d1-theme-pack-store";
+import { SqliteThemePackStore } from "../../packages/visual-elements/src/persistence/stores/sqlite-theme-pack-store";
+import { createThemePackStore } from "../../packages/visual-elements/src/persistence/theme-pack-store-factory";
+import type { ThemePack } from "../../packages/visual-elements/src/themes/theme-pack";
 
 const tmp = mkdtempSync(join(tmpdir(), "portaless-theme-packs-"));
 

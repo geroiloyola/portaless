@@ -5,13 +5,13 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createPageStore } from "../../packages/atomic-elements/src/persistence/store-factory";
+import { createPageStore } from "../../packages/visual-elements/src/persistence/store-factory";
 import { InMemoryPermissionStore } from "../../packages/permissions/src/permission-store";
 import { InMemoryAuditLogStore } from "../../packages/mcp-server/src/audit/in-memory-audit-log-store";
 import { InMemoryUsageLedgerStore } from "@verared/trust-layer/ledger";
 import { createEnvAgentIdentityResolver } from "../../packages/mcp-server/src/permissions/agent-identity";
 import { registerSiteContextTools } from "../../packages/mcp-server/src/tools/site-context";
-import { BUILTIN_THEMES } from "../../packages/atomic-elements/src/themes/theme-pack";
+import { BUILTIN_THEMES } from "../../packages/visual-elements/src/themes/theme-pack";
 
 const agent = { key: "mcp-context-agent", displayName: "Context Agent" };
 const tempDirs: string[] = [];
