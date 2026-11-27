@@ -27,7 +27,7 @@ describe("gutter fluido derivado del sistema de diseno", () => {
   });
 
   it("FeatureGrid usa minmax(min(100%, 280px), 1fr) -- nunca desborda a 320px", () => {
-    expect(registry).toContain("repeat(auto-fit, minmax(min(100%, 280px), 1fr))");
+    expect(elementsCss).toContain("repeat(auto-fit, minmax(min(100%, 280px), 1fr))");
   });
 });
 

@@ -179,13 +179,17 @@ describe("variantes", () => {
     }
   });
 
-  it("Button: cada variante conserva contraste AA (solido=tinta, outline/ghost=accent-text)", () => {
+  it("Button: cada variante conserva contraste AA (solido=tinta, outline/ghost=accent-text) via CSS-first", () => {
     const solid = elementRegistry.Button.renderHTML({ ...elementRegistry.Button.defaultProps, variant: "solid" } as never);
     const outline = elementRegistry.Button.renderHTML({ ...elementRegistry.Button.defaultProps, variant: "outline" } as never);
     const ghost = elementRegistry.Button.renderHTML({ ...elementRegistry.Button.defaultProps, variant: "ghost" } as never);
-    expect(solid).toContain("color:#261C15");
-    expect(outline).toContain("color:var(--accent-text, #5A6B24)");
-    expect(ghost).toContain("color:var(--accent-text, #5A6B24)");
+    expect(solid).toContain('class="ae-btn ae-btn--solid ae-btn--md"');
+    expect(outline).toContain('class="ae-btn ae-btn--outline ae-btn--md"');
+    expect(ghost).toContain('class="ae-btn ae-btn--ghost ae-btn--md"');
+    const elementsCss = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
+    expect(elementsCss).toMatch(/\.ae-btn--solid\s*\{[^}]*color:\s*var\(--ve-btn-fg,\s*#261C15\)/);
+    expect(elementsCss).toMatch(/\.ae-btn--outline\s*\{[^}]*color:\s*var\(--ve-btn-outline-fg,\s*var\(--accent-text,\s*#5A6B24\)\)/);
+    expect(elementsCss).toMatch(/\.ae-btn--ghost\s*\{[^}]*color:\s*var\(--ve-btn-ghost-fg,\s*var\(--accent-text,\s*#5A6B24\)\)/);
   });
 
   it("back-compat: una pagina guardada con style primary/secondary sigue igual que con variant", () => {
@@ -351,8 +355,9 @@ describe("grillas responsivas por hoja, no inline", () => {
   });
 
   it("FeatureGrid usa min(100%, ...) en el minmax (no desborda en 320px)", () => {
-    const m = REGISTRY_SRC.match(/grid-template-columns:repeat\(auto-fit,\s*minmax\(([^,]+),/);
-    expect(m, "FeatureGrid con auto-fit+minmax").toBeTruthy();
+    const elementsCss = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
+    const m = elementsCss.match(/grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(([^;]+)\)\)/);
+    expect(m, "FeatureGrid con auto-fit+minmax en elements.css").toBeTruthy();
     expect(m![1]).toContain("min(100%"); // nunca fija un ancho mayor que el viewport
   });
 });
