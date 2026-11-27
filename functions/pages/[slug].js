@@ -231,12 +231,24 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
     ? '<meta name="robots" content="noindex, nofollow, noarchive" />'
     : canonical ? `<link rel="canonical" href="${esc(canonical)}" />` : "";
   const jsonLdScript = preview || !canonical ? "" : `<script type="application/ld+json">${jsonLd}</script>`;
+  const altLang = layout.alternateLang && typeof layout.alternateLang.code === "string" && typeof layout.alternateLang.href === "string"
+    ? {
+        hreflang: layout.alternateLang.code.toLowerCase(),
+        href: layout.alternateLang.href,
+        label: layout.alternateLang.code.toUpperCase(),
+        compact: true,
+      }
+    : undefined;
+  const altLangMeta = altLang
+    ? `\n<link rel="alternate" hreflang="${esc(altLang.hreflang)}" href="${esc(publicOrigin ? `${publicOrigin}${altLang.href}` : altLang.href)}" />`
+    : "";
   const headerHtml = renderPublicHeaderHtml({
     base: "/",
     locale: SITE_LANG,
     hasPosts: showPostsLink(),
     commerceEnabled: false,
     context: null,
+    languageAlternate: altLang,
   });
   const historyHtml = !preview && revisionHistory
     ? `<section class="public-revision-history" aria-labelledby="revision-history-title"><h2 id="revision-history-title">Historial público de revisiones</h2><p>Los cambios se comparan entre revisiones aprobadas. No implican que un cambio haya causado un resultado de reputación.</p><ol>${revisionHistory.revisions.map((revision) => `<li><h3>Revisión ${revision.revisionNo}: ${esc(revision.title)}</h3><p><time datetime="${esc(revision.publishedAt)}">${esc(revision.publishedAt)}</time></p><p><code>${esc(revision.contentHash)}</code></p>${revision.changedPaths.length ? `<p>Cambios verificables: ${esc(revision.changedPaths.join(", "))}</p>` : revision.parentRevisionId ? "<p>Sin cambios en el contenido respecto a la revisión pública anterior.</p>" : "<p>Primera revisión pública registrada.</p>"}${revision.reputation.status === "observed" ? `<ul>${revision.reputation.observations.map((observation) => `<li><time datetime="${esc(observation.observedAt)}">${esc(observation.observedAt)}</time> — ${esc(observation.source)}; reglas ${esc(observation.rulesVersion)}${observation.sampleSize !== null ? `; muestra ${observation.sampleSize}` : ""}${observation.weight !== null ? `; peso ${observation.weight}` : ""}<pre><code>${esc(JSON.stringify(observation.calculation, null, 2))}</code></pre></li>`).join("")}</ul>` : "<p>Reputación ligada a esta revisión: sin datos.</p>"}</li>`).join("")}</ol><a href="/revisions/${esc(revisionHistory.publicationId)}/index.json">Consultar y verificar el historial completo (JSON)</a></section>`
@@ -246,7 +258,7 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />${themeModesMeta}
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />${themeModesMeta}${altLangMeta}
 <title>${title}</title>
 ${description ? `<meta name="description" content="${description}" />` : ""}
 ${discoveryMeta}

@@ -40,7 +40,7 @@ export interface Props {
    * sigue la regla global de localePath (vive en /<locale>/paginas/<slug>/).
    * Si esta presente, gana sobre alternatePath.
    */
-  languageAlternate?: { hreflang: string; href: string };
+  languageAlternate?: { hreflang: string; href: string; label?: string; compact?: boolean };
   /**
    * Tema por pagina (theme pack) ya resuelto: nombre + la declaracion de
    * variables que themeStyleDecl() construye. Lo pasa

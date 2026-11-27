@@ -160,11 +160,34 @@ const exploreIntro = profile.isDemo ? c.intro : c.starterIntro;
 const pagesLabel = profile.isDemo ? c.chips.demoPages : c.chips.pages;
 const shopsLabel = profile.isDemo ? c.chips.demoShops : c.chips.shops;
 const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
+const scopeLabelText = locale === "es" ? "Ámbito" : "Scope";
+const allScopeLabel = locale === "es" ? "Todo" : "All";
+const scopeItems: Array<{ value: string; label: string }> = [
+  { value: "all", label: allScopeLabel },
+  ...(!profile.isDemo && homeLayout ? [{ value: "home", label: "Home" }] : []),
+  ...(profile.features.docs ? [{ value: "documentation", label: c.chips.documentation }] : []),
+  ...(demoPages.length > 0 ? [{ value: "pages", label: pagesLabel }] : []),
+  ...(demoShops.length > 0 ? [{ value: "shops", label: shopsLabel }] : []),
+  ...(demoProfiles.length > 0 ? [{ value: "profiles", label: profilesLabel }] : []),
+  ...(posts.length > 0 ? [{ value: "publications", label: c.chips.publications }] : []),
+];
 ---
 
 <BaseLayout title={c.title} description={exploreDescription} pageTheme={pageTheme} lang={locale} alternatePath={profile.features.esRoutes ? "/explore/" : undefined}>
   <h1>{c.heading}</h1>
   <p class="explore-intro">{exploreIntro}</p>
+
+  <div class="explore-scope">
+    <span class="explore-order-label">{scopeLabelText}</span>
+    <div class="explore-order-pills" role="radiogroup" aria-label={scopeLabelText}>
+      {scopeItems.map((s) => (
+        <label class="explore-order-pill">
+          <input type="radio" name="explore-scope" value={s.value} data-scope-label={s.label} checked={s.value === "all"} />
+          <span>{s.label}</span>
+        </label>
+      ))}
+    </div>
+  </div>
 
   <div class="explore-order">
     <span class="explore-order-label">{c.orderBy}</span>
@@ -180,20 +203,11 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   <p class="explore-order-status" id="explore-order-status" role="status"></p>
   <script type="application/json" id="explore-order-notes" set:html={notesJson} />
 
-  <nav class="explore-chips" aria-label="Categories">
-    {!profile.isDemo && <a href="#site-home" class="explore-chip">Home</a>}
-    {profile.features.docs && <a href="#documentation" class="explore-chip">{c.chips.documentation}</a>}
-    {demoPages.length > 0 && <a href={profile.isDemo ? "#demo-pages" : "#pages"} class="explore-chip">{pagesLabel}</a>}
-    {demoShops.length > 0 && <a href={profile.isDemo ? "#demo-shops" : "#shops"} class="explore-chip">{shopsLabel}</a>}
-    {demoProfiles.length > 0 && <a href={profile.isDemo ? "#demo-profiles" : "#profiles"} class="explore-chip">{profilesLabel}</a>}
-    {posts.length > 0 && <a href="#publications" class="explore-chip">{c.chips.publications}</a>}
-  </nav>
-
   {!profile.isDemo && (
-    <section id="site-home">
+    <section id="site-home" data-explore-section="home">
       <h2>Home</h2>
       <div class="explore-grid">
-        <a class="explore-card" href={base}>
+        <a class="explore-card" href={base} data-order={buildAsOf}>
           <h3>{homeLayout.title || "Home"}</h3>
           {homeLayout.description && <p>{homeLayout.description}</p>}
         </a>
@@ -202,11 +216,11 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   )}
 
   {profile.features.docs && (
-    <section id="documentation">
+    <section id="documentation" data-explore-section="documentation">
       <h2>{c.docsHeading}</h2>
       <div class="explore-grid">
-        {c.docs.map((doc) => (
-          <a class="explore-card" href={DOC_HREF[doc.title]}>
+        {c.docs.map((doc, idx) => (
+          <a class="explore-card" href={DOC_HREF[doc.title]} data-order={`doc-${String(idx).padStart(4, "0")}`}>
             <h3>{doc.title}</h3>
             <p>{doc.note}</p>
           </a>
@@ -216,11 +230,11 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   )}
 
   {demoPages.length > 0 && (
-    <section id={profile.isDemo ? "demo-pages" : "pages"}>
+    <section id={profile.isDemo ? "demo-pages" : "pages"} data-explore-section="pages">
       <h2>{pagesLabel}</h2>
       <div class="explore-grid">
-        {demoPages.map((page) => (
-          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
+        {demoPages.map((page, idx) => (
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`page-${String(idx).padStart(4, "0")}-${page.slug}`}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -230,11 +244,11 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   )}
 
   {demoShops.length > 0 && (
-    <section id={profile.isDemo ? "demo-shops" : "shops"}>
+    <section id={profile.isDemo ? "demo-shops" : "shops"} data-explore-section="shops">
       <h2>{shopsLabel}</h2>
       <div class="explore-grid">
-        {demoShops.map((page) => (
-          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
+        {demoShops.map((page, idx) => (
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`shop-${String(idx).padStart(4, "0")}`}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -244,11 +258,11 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   )}
 
   {demoProfiles.length > 0 && (
-    <section id={profile.isDemo ? "demo-profiles" : "profiles"}>
+    <section id={profile.isDemo ? "demo-profiles" : "profiles"} data-explore-section="profiles">
       <h2>{profilesLabel}</h2>
       <div class="explore-grid">
-        {demoProfiles.map((page) => (
-          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)}>
+        {demoProfiles.map((page, idx) => (
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`profile-${String(idx).padStart(4, "0")}`}>
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -258,7 +272,7 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   )}
 
   {posts.length > 0 && (
-    <section id="publications">
+    <section id="publications" data-explore-section="publications">
       <h2>{c.chips.publications}</h2>
       <div class="explore-grid">
         {posts.map((post) => (
@@ -315,14 +329,33 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   const NOTES: Record<string, string> = notesEl ? JSON.parse(notesEl.textContent || "{}") : {};
   const status = document.getElementById("explore-order-status");
 
+  let activeScope = "all";
+  let activeScopeLabel = "";
+  let activeCriterion = "new";
+
+  function applyScope(scope: string, label: string): void {
+    activeScope = scope;
+    activeScopeLabel = label;
+    document.querySelectorAll<HTMLElement>("section[data-explore-section]").forEach((sec) => {
+      const secName = sec.getAttribute("data-explore-section") || "";
+      sec.hidden = scope !== "all" && secName !== scope;
+    });
+    reorder(activeCriterion);
+  }
+
   function reorder(criterion: string): void {
+    activeCriterion = criterion;
     const desc = criterion === "new" || criterion === "recents";
     const asc = criterion === "old";
     const apply = desc || asc;
 
     document.querySelectorAll(".explore-grid").forEach((grid) => {
+      const parentSection = grid.closest("section");
+      if (parentSection && parentSection.hidden) return;
       const cards = Array.from(grid.children) as HTMLElement[];
-      cards.forEach((card, i) => card.setAttribute("data-idx", String(i)));
+      cards.forEach((card, i) => {
+        if (!card.hasAttribute("data-idx")) card.setAttribute("data-idx", String(i));
+      });
       cards.sort((a, b) => {
         const da = a.getAttribute("data-order");
         const db = b.getAttribute("data-order");
@@ -332,21 +365,33 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
       cards.forEach((card) => grid.appendChild(card));
     });
 
-    if (status) status.textContent = NOTES[criterion] ?? "";
+    if (status) {
+      const note = NOTES[criterion] ?? "";
+      status.textContent = activeScopeLabel && note ? `${activeScopeLabel} — ${note}` : note;
+    }
   }
 
-  document.querySelectorAll('input[name="explore-order"]').forEach((el) => {
-    el.addEventListener("change", () => reorder((el as HTMLInputElement).value));
+  const scopeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="explore-scope"]'));
+  const checkedScope = scopeInputs.find((el) => el.checked) ?? scopeInputs[0];
+  scopeInputs.forEach((el) => {
+    el.addEventListener("change", () => applyScope(el.value, el.getAttribute("data-scope-label") || el.value));
   });
-  reorder("new");
+
+  document.querySelectorAll<HTMLInputElement>('input[name="explore-order"]').forEach((el) => {
+    el.addEventListener("change", () => reorder(el.value));
+  });
+
+  if (checkedScope) {
+    applyScope(checkedScope.value, checkedScope.getAttribute("data-scope-label") || checkedScope.value);
+  } else {
+    reorder("new");
+  }
 </script>
 
 <style>
   .explore-intro { color: var(--muted, #6e6653); max-width: 70ch; }
-  .explore-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
-  .explore-chip { padding: 6px 14px; border: 1px solid var(--panel-border, #e4e6c3); border-radius: 999px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
-  .explore-chip:hover { border-color: var(--accent); }
   section { margin-top: 40px; }
+  section[hidden] { display: none; }
   .explore-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
   .explore-card { display: block; border: 1px solid var(--panel-border, #e4e6c3); border-radius: var(--radius-card, 16px); padding: 18px 20px; background: var(--panel-bg, #fff); text-decoration: none; color: inherit; }
   .explore-card:hover { border-color: var(--accent); }
@@ -357,14 +402,15 @@ const profilesLabel = profile.isDemo ? c.chips.demoProfiles : c.chips.profiles;
   .explore-about summary { cursor: pointer; font-weight: 600; }
   .explore-about p { max-width: 80ch; line-height: 1.6; }
 
-  .explore-order { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 4px; }
-  .explore-order-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #6e6653); font-weight: 700; }
+  .explore-scope,
+  .explore-order { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0 4px; }
+  .explore-order-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted, #6e6653); font-weight: 700; min-width: 64px; }
   .explore-order-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--panel-border, #e4e6c3); border-radius: 999px; background: var(--panel-bg, #fff); }
   .explore-order-pill { position: relative; cursor: pointer; }
   .explore-order-pill input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .explore-order-pill span { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--muted, #6e6653); text-transform: capitalize; transition: background 0.15s ease, color 0.15s ease; }
   .explore-order-pill span:hover { color: var(--text, #261c15); }
-  .explore-order-pill input:checked + span { background: var(--accent, #c5d86d); color: #261c15; }
+  .explore-order-pill input:checked + span { background: var(--accent, #c5d86d); color: var(--ve-btn-fg, #261c15); }
   .explore-order-pill input:focus-visible + span { outline: 2px solid var(--accent-text, #5a6b24); outline-offset: 2px; }
   .explore-order-status { font-size: 0.82rem; color: var(--muted, #6e6653); margin: 6px 0 0; max-width: 80ch; }
 </style>

@@ -49,3 +49,59 @@ document.addEventListener("click", function (e) {
     try { frame.contentWindow.postMessage(payload, "*"); } catch (err) { /* cross-origin duro: nada */ }
   }
 });
+
+// 3. Alternador Claro/Oscuro ([data-theme-toggle]): alterna data-theme en <html>,
+// persiste en localStorage("portaless-theme") y sincroniza de inmediato las
+// variables de ThemePack v2 (<meta name="portaless-theme-light|dark">).
+(function () {
+  var root = document.documentElement;
+  var mq = typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+
+  function isDarkActive() {
+    var attr = root.getAttribute("data-theme");
+    return attr === "dark" || (attr !== "light" && Boolean(mq && mq.matches));
+  }
+
+  function applyDualMeta(dark) {
+    var lightMeta = document.querySelector('meta[name="portaless-theme-light"]');
+    var darkMeta = document.querySelector('meta[name="portaless-theme-dark"]');
+    var lightCss = lightMeta ? lightMeta.getAttribute("content") : null;
+    var darkCss = darkMeta ? darkMeta.getAttribute("content") : null;
+    if (!lightCss && !darkCss) return;
+    var css = dark ? (darkCss || lightCss) : (lightCss || darkCss);
+    if (css) root.setAttribute("style", css);
+  }
+
+  function syncToggleButtons() {
+    var dark = isDarkActive();
+    var isEs = (root.getAttribute("lang") || "").toLowerCase().indexOf("es") === 0;
+    var label = dark
+      ? (isEs ? "Cambiar a modo claro" : "Switch to light mode")
+      : (isEs ? "Cambiar a modo oscuro" : "Switch to dark mode");
+    var btns = document.querySelectorAll("[data-theme-toggle]");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].setAttribute("aria-pressed", dark ? "true" : "false");
+      btns[i].setAttribute("aria-label", label);
+      btns[i].setAttribute("title", label);
+    }
+  }
+
+  syncToggleButtons();
+  if (mq && typeof mq.addEventListener === "function") {
+    mq.addEventListener("change", syncToggleButtons);
+  }
+
+  document.addEventListener("click", function (e) {
+    var target = e.target;
+    var btn = target && target.closest ? target.closest("[data-theme-toggle]") : null;
+    if (!btn) return;
+    e.preventDefault();
+    var next = isDarkActive() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("portaless-theme", next); } catch (err) { /* sin storage */ }
+    applyDualMeta(next === "dark");
+    syncToggleButtons();
+  });
+})();

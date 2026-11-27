@@ -43,17 +43,29 @@ const pageTheme = resolvedTheme
 const headerContext = deriveHeaderContext(layout.root);
 
 const canonicalUrl = `${siteUrl}${versionHref(version, base)}`;
+const baseNoSlash = base.replace(/\/$/, "");
+const explicitAlt = layout.alternateLang
+  ? {
+      hreflang: layout.alternateLang.code.toLowerCase(),
+      href: `${baseNoSlash}${layout.alternateLang.href}`,
+      label: layout.alternateLang.code.toUpperCase(),
+      compact: true,
+    }
+  : undefined;
 // hreflang de TODAS las versiones de esta misma pagina (incluida la actual).
-const alternates = page.versions.map((v) => ({
+const versionAlternates = page.versions.map((v) => ({
   hreflang: v.locale,
   href: `${siteUrl}${versionHref(v, base)}`,
 }));
+const alternates = explicitAlt && !versionAlternates.some((a) => a.hreflang === explicitAlt.hreflang)
+  ? [...versionAlternates, { hreflang: explicitAlt.hreflang, href: `${siteUrl}${explicitAlt.href}` }]
+  : versionAlternates;
 // La version en OTRO idioma, si existe: es el selector del header. Si no hay,
 // el header muestra el aviso (no un enlace a otro sitio).
 const other = page.versions.find((v) => v.locale !== version.locale);
-const languageAlternate = other
+const languageAlternate = explicitAlt ?? (other
   ? { hreflang: other.locale, href: versionHref(other, base) }
-  : undefined;
+  : undefined);
 
 const pageTitle = layout.title ?? layout.slug;
 const pageDescription = layout.description ?? "";

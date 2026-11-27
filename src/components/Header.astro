@@ -23,7 +23,7 @@ interface Props {
   // Alternate EXPLICITO (href base-relativo + locale): lo usan las paginas de
   // contenido, cuya traduccion vive en /<locale>/paginas/<slug>/. Gana sobre
   // alternatePath.
-  languageAlternate?: { hreflang: string; href: string };
+  languageAlternate?: { hreflang: string; href: string; label?: string; compact?: boolean };
 }
 const { context = null, locale = SITE_LANG, alternatePath, languageAlternate } = Astro.props;
 const base = import.meta.env.BASE_URL;

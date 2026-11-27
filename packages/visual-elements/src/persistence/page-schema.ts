@@ -86,6 +86,27 @@ export function validatePageLayout(
   if (layout.theme !== undefined && (typeof layout.theme !== "string" || !THEME_NAME_PATTERN.test(layout.theme))) {
     errors.push(`"theme" debe ser un nombre de tema (slug): recibido ${JSON.stringify(layout.theme)}.`);
   }
+  if (layout.alternateLang !== undefined) {
+    const alt = layout.alternateLang as unknown;
+    if (!alt || typeof alt !== "object" || Array.isArray(alt)) {
+      errors.push('"alternateLang" debe ser un objeto { code, href }.');
+    } else {
+      const { code, href } = alt as Record<string, unknown>;
+      const validCode = typeof code === "string" && (/^[a-zA-Z]{2,5}$/.test(code) || /^[a-zA-Z]{2}-[a-zA-Z]{2}$/.test(code));
+      if (!validCode) {
+        errors.push(`"alternateLang.code" debe ser un código de idioma de 2 a 5 caracteres (recibido: ${JSON.stringify(code)}).`);
+      }
+      const validHref =
+        typeof href === "string" &&
+        href.startsWith("/") &&
+        !href.startsWith("//") &&
+        !/javascript:/i.test(href) &&
+        !/[\s<>"']/.test(href);
+      if (!validHref) {
+        errors.push(`"alternateLang.href" debe ser una ruta relativa segura que empiece por "/" (recibido: ${JSON.stringify(href)}).`);
+      }
+    }
+  }
 
   layout.root?.forEach((node, i) => validateNode(node, `root[${i}]`, errors, hasType));
 

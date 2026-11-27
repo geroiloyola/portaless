@@ -67,13 +67,25 @@ const headerContext = deriveHeaderContext(prepared.root);
 const html = await renderPage(prepared, { base });
 
 const canonicalUrl = absolute(localePath(locale, canonPath));
-const alternates = [
+const baseNoSlash = base.replace(/\/$/, "");
+const explicitAlt = layout.alternateLang
+  ? {
+      hreflang: layout.alternateLang.code.toLowerCase(),
+      href: `${baseNoSlash}${layout.alternateLang.href}`,
+      label: layout.alternateLang.code.toUpperCase(),
+      compact: true,
+    }
+  : undefined;
+const baseAlternates = [
   ...hreflangAlternates(canonPath).map((a) => ({ hreflang: a.hreflang, href: absolute(a.path) })),
   { hreflang: "x-default", href: absolute(localePath(DEFAULT_LOCALE, canonPath)) },
 ];
+const alternates = explicitAlt && !baseAlternates.some((a) => a.hreflang === explicitAlt.hreflang)
+  ? [...baseAlternates, { hreflang: explicitAlt.hreflang, href: absolute(layout.alternateLang!.href) }]
+  : baseAlternates;
 ---
 
-<BaseLayout lang={locale} pageTheme={pageTheme} pageThemeModes={pageThemeModes} headerContext={headerContext} alternatePath={canonPath} alternates={alternates}>
+<BaseLayout lang={locale} pageTheme={pageTheme} pageThemeModes={pageThemeModes} headerContext={headerContext} alternatePath={canonPath} languageAlternate={explicitAlt} alternates={alternates}>
   <SeoHead slot="head" title={layout.title} description={layout.description ?? ""} canonicalUrl={canonicalUrl} />
   <JsonLd slot="head" layout={prepared} site={{ name: layout.title, url: siteUrl, base, inLanguage: locale }} />
   <article class="ae-page ae-home" set:html={html} />

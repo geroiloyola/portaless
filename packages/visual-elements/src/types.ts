@@ -55,6 +55,12 @@ export interface PageLayout {
    * themes/theme-pack.ts.
    */
   theme?: string;
+  /**
+   * Traduccion explicita de esta pagina (idioma contextual en el header).
+   * Si se declara, el header muestra el selector circular de idioma apuntando
+   * a `href` y emite <link rel="alternate" hreflang={code} href={href} />.
+   */
+  alternateLang?: { code: string; href: string };
   root: ElementNode[];
 }
 

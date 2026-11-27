@@ -2,6 +2,8 @@ import { homeLabel, postsLabel, exploreLabel } from "./site-lang";
 import { isMultilingual, localePath, otherLocales, t, type Locale } from "./i18n";
 import {
   headerActionsHtml,
+  headerContextActionHtml,
+  headerThemeToggleHtml,
   langNoticeHtml,
   langSwitcherHtml,
   NAV_ICONS,
@@ -16,7 +18,7 @@ export interface PublicHeaderOptions {
   commerceEnabled: boolean;
   context?: HeaderContext;
   alternatePath?: string;
-  languageAlternate?: { hreflang: string; href: string };
+  languageAlternate?: { hreflang: string; href: string; label?: string; compact?: boolean };
 }
 
 function escapeHtml(value: unknown): string {
@@ -37,11 +39,16 @@ export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
   const others = otherLocales(locale);
   const localized = Boolean(languageAlternate) || Boolean(alternatePath);
   const showSwitcher = isMultilingual() && localized && others.length > 0;
+  const renderSwitcher = Boolean(languageAlternate) || showSwitcher;
   const showNotice = isMultilingual() && !localized && others.length > 0;
   const other = others[0] ?? locale;
   const switcher = languageAlternate
     ? languageAlternate
     : { href: `${baseNoSlash}${localePath(other, alternatePath ?? "/")}`, hreflang: other };
+  const switcherText = languageAlternate?.label ?? t(locale, "home.otherLocaleName");
+  const switcherAria = languageAlternate?.label
+    ? `${locale === "es" ? "Cambiar idioma a" : "Switch language to"} ${languageAlternate.label}`
+    : t(locale, "home.otherLocaleAria");
   const nav = [
     `<a class="brand nav-home" href="${escapeHtml(base)}" aria-label="${escapeHtml(`${homeLabel(locale)} — Portaless`)}">Portaless</a>`,
     hasPosts
@@ -53,14 +60,17 @@ export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
       : "",
   ].join("");
   const actions = [
-    showSwitcher
+    headerContextActionHtml(options.context ?? null, base),
+    renderSwitcher
       ? langSwitcherHtml({
           href: switcher.href,
           hreflang: switcher.hreflang,
-          ariaLabel: t(locale, "home.otherLocaleAria"),
-          text: t(locale, "home.otherLocaleName"),
+          ariaLabel: switcherAria,
+          text: switcherText,
+          compact: languageAlternate?.compact,
         })
       : "",
+    headerThemeToggleHtml(locale),
     headerActionsHtml(null, base),
   ].join("");
 
