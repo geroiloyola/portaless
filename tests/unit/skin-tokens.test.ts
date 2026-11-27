@@ -122,14 +122,18 @@ describe("visual-elements: renderHTML responde al skin", () => {
 
   it("Button primario usa var(--accent, ...) de fondo y tinta #261C15 de texto", () => {
     const html = elementRegistry.Button.renderHTML({ label: "Ir", href: "#", style: "primary" } as never);
-    expect(html).toContain("background:var(--accent, #C5D86D)");
-    expect(html).toContain("color:#261C15");
+    expect(html).toContain('class="ae-btn ae-btn--solid ae-btn--md"');
+    const elementsCss = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
+    expect(elementsCss).toMatch(/\.ae-btn--solid\s*\{[^}]*background:\s*var\(--ve-btn-bg,\s*var\(--accent,\s*#C5D86D\)\)/);
+    expect(elementsCss).toMatch(/\.ae-btn--solid\s*\{[^}]*color:\s*var\(--ve-btn-fg,\s*#261C15\)/);
   });
 
   it("Button secundario usa --accent-text (contraste sobre fondo claro)", () => {
     const html = elementRegistry.Button.renderHTML({ label: "Ir", href: "#", style: "secondary" } as never);
-    expect(html).toContain("var(--accent-text, #5A6B24)");
-    expect(html).toContain("1px solid var(--accent, #C5D86D)");
+    expect(html).toContain('class="ae-btn ae-btn--outline ae-btn--md"');
+    const elementsCss = readFileSync("packages/visual-elements/src/styles/elements.css", "utf-8");
+    expect(elementsCss).toMatch(/\.ae-btn--outline\s*\{[^}]*color:\s*var\(--ve-btn-outline-fg,\s*var\(--accent-text,\s*#5A6B24\)\)/);
+    expect(elementsCss).toMatch(/\.ae-btn--outline\s*\{[^}]*border:\s*1px solid var\(--ve-btn-outline-border,\s*var\(--accent,\s*#C5D86D\)\)/);
   });
 
   it("LinkList solido replica el patron primary del Button", () => {
