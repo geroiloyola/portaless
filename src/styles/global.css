@@ -660,3 +660,21 @@ code, kbd, samp, pre { font-family: var(--font-mono); }
 [data-theme-pack] .ae-post-list {
   margin-block-start: var(--space-section, 0px);
 }
+
+/* Visual Elements CSS-first tokens (--ve-*): puente hacia los tokens del
+   ThemePack/skin (--bg, --panel-bg, --accent, --radius, --space-section,
+   --elevation) para sobreescrituras limpias por tema sin estilos inline. */
+:root {
+  --ve-card-bg: var(--panel-bg, #FFFFFF);
+  --ve-card-border: var(--panel-border, #E4E6C3);
+  --ve-card-radius: var(--radius-card, 16px);
+  --ve-card-padding: var(--space-5, 24px);
+  --ve-card-elevation: var(--elevation, none);
+  --ve-btn-bg: var(--accent, #C5D86D);
+  --ve-btn-fg: #261C15;
+  --ve-btn-radius: var(--radius-button, 8px);
+  --ve-btn-outline-fg: var(--accent-text, #5A6B24);
+  --ve-btn-outline-border: var(--accent, #C5D86D);
+  --ve-btn-ghost-fg: var(--accent-text, #5A6B24);
+  --ve-hero-radius: var(--radius, 22px);
+}

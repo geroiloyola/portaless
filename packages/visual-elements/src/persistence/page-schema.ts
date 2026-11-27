@@ -8,9 +8,12 @@
 // validacion -- ver docs/architecture/element-catalog-plugins.md.
 
 import type { PageLayout, ElementNode } from "../types";
-import { elementRegistry } from "../elements/registry";
+import { elementRegistry, COLUMNS_RATIOS, FEATURE_GRID_LAYOUTS } from "../elements/registry";
 import type { ResolvedCatalog } from "../elements/element-pack";
 import { THEME_NAME_PATTERN } from "../themes/theme-pack";
+
+const COLUMNS_RATIO_SET = new Set<string>(COLUMNS_RATIOS);
+const FEATURE_GRID_LAYOUT_SET = new Set<string>(FEATURE_GRID_LAYOUTS);
 
 export interface ValidationResult {
   valid: boolean;
@@ -29,6 +32,27 @@ function validateNode(
   }
   if (!node.id) {
     errors.push(`${path}: falta "id" en el nodo`);
+  }
+  const props = (node.props ?? {}) as Record<string, unknown>;
+  if (node.type === "Columns" && props.ratio !== undefined) {
+    if (typeof props.ratio !== "string" || !COLUMNS_RATIO_SET.has(props.ratio)) {
+      errors.push(`${path}: "ratio" invalido en Columns (${JSON.stringify(props.ratio)}); permitidos: ${COLUMNS_RATIOS.join(", ")}`);
+    }
+  }
+  if (node.type === "FeatureGrid") {
+    if (props.layout !== undefined && (typeof props.layout !== "string" || !FEATURE_GRID_LAYOUT_SET.has(props.layout))) {
+      errors.push(`${path}: "layout" invalido en FeatureGrid (${JSON.stringify(props.layout)}); permitidos: ${FEATURE_GRID_LAYOUTS.join(", ")}`);
+    }
+    if (Array.isArray(props.items)) {
+      props.items.forEach((item, idx) => {
+        if (item && typeof item === "object" && "span" in item && (item as Record<string, unknown>).span !== undefined) {
+          const sp = (item as Record<string, unknown>).span;
+          if (sp !== 1 && sp !== 2) {
+            errors.push(`${path}.props.items[${idx}]: "span" debe ser 1 o 2 (recibido: ${JSON.stringify(sp)})`);
+          }
+        }
+      });
+    }
   }
   node.children?.forEach((child, i) => validateNode(child, `${path}.children[${i}]`, errors, hasType));
 }

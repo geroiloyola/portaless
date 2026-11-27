@@ -42,7 +42,7 @@ describe("FeatureGrid", () => {
     expect(html).toContain("Vos sos dueno del estado.");
     expect(html).toContain("Identidad");
     expect(html).toContain("<svg"); // los iconos
-    expect(html).toContain("repeat(auto-fit, minmax(min(100%, 280px), 1fr))"); // responsive, sin desborde
+    expect(html).not.toMatch(/<(?:section|div|article|h2|h3|p)[^>]*\sstyle=/); // CSS-first: sin estilos inline rigidos en FeatureGrid
   });
 
   it("sin items muestra el estado vacio honesto (no una grilla rota)", () => {

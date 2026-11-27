@@ -56,6 +56,7 @@
    de los elementos. */
 @media (pointer: coarse) {
   .ae-hero-cta,
+  .ae-btn,
   .ae-link-list a,
   .ae-directions-btn,
   .ae-product-card a {
@@ -65,4 +66,234 @@
     align-items: center;
     justify-content: center;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Visual Elements CSS-first (PR 3):
+ * Columns ratios, FeatureGrid + Bento Grid, Hero y Button con tokens --ve-*
+ * y fallbacks directos a ThemePack (--bg, --panel-bg, --accent, --radius,
+ * --space-section, --elevation). Cero estilos inline rigidos.
+ * --------------------------------------------------------------------------- */
+
+.ae-columns--cols-2 { --cols: 2; --ae-min: 16rem; --ae-gap: var(--space-4, 16px); }
+.ae-columns--cols-3 { --cols: 3; --ae-min: 16rem; --ae-gap: var(--space-4, 16px); }
+.ae-columns--gap-lg { --ae-gap: var(--space-5, 24px); }
+
+@media (min-width: 720px) {
+  .ae-columns--ratio-2-1 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .ae-columns--ratio-1-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .ae-columns--ratio-3-2 { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  .ae-columns--ratio-2-3 { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+}
+
+@media (max-width: 719px) {
+  .ae-columns--ratio-2-1,
+  .ae-columns--ratio-1-2,
+  .ae-columns--ratio-3-2,
+  .ae-columns--ratio-2-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ae-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--ve-grid-gap, clamp(var(--space-3, 12px), 2.5vw, var(--space-5, 24px)));
+}
+
+.ae-feature-grid-title {
+  margin: 0 0 var(--space-5, 24px);
+  text-align: center;
+}
+
+.ae-feature-grid-empty {
+  border: 1px dashed var(--ve-card-border, var(--panel-border, #E4E6C3));
+  border-radius: var(--ve-card-radius, var(--radius-card, 16px));
+  padding: var(--ve-card-padding, var(--space-5, 24px));
+  text-align: center;
+  color: var(--muted, #6E6653);
+}
+
+.ae-feature-card {
+  border: 1px solid var(--ve-card-border, var(--panel-border, #E4E6C3));
+  border-radius: var(--ve-card-radius, var(--radius-card, 16px));
+  padding: var(--ve-card-padding, var(--space-5, 24px));
+  background: var(--ve-card-bg, var(--panel-bg, #FFFFFF));
+  box-shadow: var(--ve-card-elevation, var(--elevation, none));
+}
+
+.ae-feature-card-title {
+  margin: var(--space-3, 12px) 0 var(--space-2, 8px);
+  font-size: 1.05rem;
+  color: var(--text, #261C15);
+}
+
+.ae-feature-card-text {
+  margin: 0;
+  color: var(--muted, #6E6653);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 720px) {
+  .ae-feature-grid--bento {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ae-feature-grid--bento .ae-feature-card--span-2 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 719px) {
+  .ae-feature-grid--bento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ae-feature-grid--bento .ae-feature-card--span-2 {
+    grid-column: auto;
+  }
+}
+
+.ae-hero--sm { --ve-hero-title-size: var(--fs-h2, 1.5rem); }
+.ae-hero--md { --ve-hero-title-size: var(--fs-h1, 2rem); }
+.ae-hero--lg { --ve-hero-title-size: var(--fs-display, clamp(2rem, 5vw, 3.25rem)); }
+
+.ae-hero--centered {
+  background: var(--ve-hero-bg, #261C15);
+  padding: var(--ve-hero-padding, var(--space-8, 48px) var(--space-6, 32px));
+  border-radius: var(--ve-hero-radius, var(--radius, 22px));
+  color: var(--ve-hero-fg, #fff);
+  text-align: center;
+}
+
+.ae-hero--centered .ae-hero-title {
+  font-size: var(--ve-hero-title-size, var(--fs-h1, 2rem));
+  margin: 0 0 var(--space-2, 8px);
+}
+
+.ae-hero--centered .ae-hero-subtitle {
+  opacity: 0.85;
+  margin: 0;
+}
+
+.ae-hero--minimal {
+  padding: var(--ve-hero-padding, var(--space-8, 48px) var(--space-6, 32px));
+  text-align: left;
+}
+
+.ae-hero--minimal .ae-hero-title {
+  font-size: var(--ve-hero-title-size, var(--fs-h1, 2rem));
+  margin: 0 0 var(--space-3, 12px);
+  color: var(--text, #261C15);
+}
+
+.ae-hero--minimal .ae-hero-subtitle {
+  opacity: 0.85;
+  margin: 0;
+  font-size: var(--fs-body, 1rem);
+}
+
+.ae-hero--split {
+  background: var(--ve-hero-bg, #261C15);
+  padding: var(--ve-hero-padding, var(--space-6, 32px) var(--space-5, 24px));
+  border-radius: var(--ve-hero-radius, var(--radius, 22px));
+  color: var(--ve-hero-fg, #fff);
+  display: flex;
+  gap: var(--space-5, 24px);
+  align-items: center;
+  text-align: left;
+  flex-wrap: wrap;
+}
+
+.ae-hero--split .ae-hero-content,
+.ae-hero--split .ae-hero-media {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.ae-hero--split .ae-hero-title {
+  font-size: var(--ve-hero-title-size, var(--fs-h1, 2rem));
+  margin: 0 0 var(--space-3, 12px);
+}
+
+.ae-hero--split .ae-hero-subtitle {
+  opacity: 0.85;
+  margin: 0;
+  font-size: var(--fs-body, 1rem);
+}
+
+.ae-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--ve-card-radius, var(--radius-card, 16px));
+  display: block;
+}
+
+.ae-hero--spotlight {
+  text-align: center;
+  padding: var(--ve-hero-padding, var(--space-8, 48px) var(--space-5, 24px) var(--space-6, 32px));
+}
+
+.ae-hero--spotlight .ae-hero-title {
+  font-size: var(--ve-hero-title-size, var(--fs-h1, 2rem));
+  line-height: 1.05;
+  margin: 0 0 var(--space-4, 16px);
+}
+
+.ae-hero--spotlight .ae-hero-subtitle {
+  opacity: 0.85;
+  margin: 0 auto;
+  max-width: 640px;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.ae-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  box-sizing: border-box;
+  margin-top: var(--space-6, 32px);
+  padding: var(--space-3, 12px) var(--space-6, 32px);
+  border-radius: var(--ve-btn-radius, var(--radius-button, 8px));
+  background: var(--ve-btn-bg, var(--accent, #C5D86D));
+  color: var(--ve-btn-fg, #261C15);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ae-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  box-sizing: border-box;
+  border-radius: var(--ve-btn-radius, var(--radius-button, 8px));
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ae-btn--sm { padding: var(--space-2, 8px) var(--space-3, 12px); }
+.ae-btn--md { padding: var(--space-3, 12px) var(--space-5, 24px); }
+.ae-btn--lg { padding: var(--space-3, 12px) var(--space-6, 32px); }
+
+.ae-btn--solid {
+  background: var(--ve-btn-bg, var(--accent, #C5D86D));
+  color: var(--ve-btn-fg, #261C15);
+  border: none;
+}
+
+.ae-btn--outline {
+  background: transparent;
+  color: var(--ve-btn-outline-fg, var(--accent-text, #5A6B24));
+  border: 1px solid var(--ve-btn-outline-border, var(--accent, #C5D86D));
+}
+
+.ae-btn--ghost {
+  background: transparent;
+  color: var(--ve-btn-ghost-fg, var(--accent-text, #5A6B24));
+  border: none;
 }

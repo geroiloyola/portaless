@@ -197,31 +197,32 @@ const Hero: ElementDefinition<HeroProps> = {
   renderHTML: (p) => {
     const variant = variantOf(p.variant, HERO_VARIANTS, "centered");
     const size = variantOf(p.size, ELEMENT_SIZES, "md");
-    const titleSize = HERO_TITLE_SIZES[size];
+    const customBg = String(p.bgColor ?? "").trim();
+    const bgStyle = customBg ? ` style="--ve-hero-bg:${esc(customBg)};"` : "";
 
     // spotlight: full-bleed centrado, titular grande y CTA. Sin fondo inline --
     // el glow y el degradado del titulo los pone el tema del home
     // (global.css, [data-theme-pack="portaless-nocturno"]), no el elemento.
     if (variant === "spotlight") {
       const cta = p.ctaLabel && p.ctaHref
-        ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}" style="${TOUCH_TARGET}margin-top:${space(6)};padding:${BUTTON_SIZES.lg};border-radius:var(--radius-button, 8px);background:var(--accent, #C5D86D);color:#261C15;font-weight:700;text-decoration:none;">${esc(p.ctaLabel)}</a>`
+        ? `<a class="ae-hero-cta" href="${esc(p.ctaHref)}">${esc(p.ctaLabel)}</a>`
         : "";
-      return `<section class="ae-hero ae-hero--spotlight" style="text-align:center;padding:${space(8)} ${space(5)} ${space(6)};"><h1 class="ae-hero-spotlight-title" style="font-size:${titleSize};line-height:1.05;margin:0 0 ${space(4)};">${esc(p.title)}</h1><p style="opacity:.85;margin:0 auto;max-width:640px;font-size:1.15rem;line-height:1.6;">${esc(p.subtitle)}</p>${cta}</section>`;
+      return `<section class="ae-hero ae-hero--spotlight ae-hero--${size}"><h1 class="ae-hero-title ae-hero-spotlight-title">${esc(p.title)}</h1><p class="ae-hero-subtitle">${esc(p.subtitle)}</p>${cta}</section>`;
     }
 
     if (variant === "minimal") {
       // Sin fondo ni caja: la tipografia hace el trabajo.
-      return `<section style="padding:${space(8)} ${space(6)};text-align:left;"><h1 style="font-size:${titleSize};margin:0 0 ${space(3)};color:var(--text, #261C15);">${esc(p.title)}</h1><p style="opacity:.85;margin:0;font-size:var(--fs-body, 1rem);">${esc(p.subtitle)}</p></section>`;
+      return `<section class="ae-hero ae-hero--minimal ae-hero--${size}"><h1 class="ae-hero-title">${esc(p.title)}</h1><p class="ae-hero-subtitle">${esc(p.subtitle)}</p></section>`;
     }
 
     if (variant === "split" && String(p.imageUrl ?? "").trim()) {
-      const img = `<img src="${esc(p.imageUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:${radiusCard()};display:block;" loading="lazy" />`;
-      return `<section style="background:${esc(p.bgColor)};padding:${space(6)} ${space(5)};border-radius:${radiusPanel()};color:#fff;display:flex;gap:${space(5)};align-items:center;text-align:left;flex-wrap:wrap;"><div style="flex:1 1 260px;min-width:0;"><h1 style="font-size:${titleSize};margin:0 0 ${space(3)};">${esc(p.title)}</h1><p style="opacity:.85;margin:0;font-size:var(--fs-body, 1rem);">${esc(p.subtitle)}</p></div><div style="flex:1 1 260px;min-width:0;">${img}</div></section>`;
+      const img = `<img class="ae-hero-img" src="${esc(p.imageUrl)}" alt="" loading="lazy" />`;
+      return `<section class="ae-hero ae-hero--split ae-hero--${size}"${bgStyle}><div class="ae-hero-content"><h1 class="ae-hero-title">${esc(p.title)}</h1><p class="ae-hero-subtitle">${esc(p.subtitle)}</p></div><div class="ae-hero-media">${img}</div></section>`;
     }
 
     // centered, y tambien split sin imageUrl: cae al clasico en vez de
     // renderizar un hueco vacio.
-    return `<section style="background:${esc(p.bgColor)};padding:${space(8)} ${space(6)};border-radius:${radiusPanel()};color:#fff;text-align:center;"><h1 style="font-size:${titleSize};margin:0 0 ${space(2)};">${esc(p.title)}</h1><p style="opacity:.85;margin:0;">${esc(p.subtitle)}</p></section>`;
+    return `<section class="ae-hero ae-hero--centered ae-hero--${size}"${bgStyle}><h1 class="ae-hero-title">${esc(p.title)}</h1><p class="ae-hero-subtitle">${esc(p.subtitle)}</p></section>`;
   },
 };
 
@@ -345,37 +346,35 @@ const ButtonEl: ElementDefinition<ButtonProps> = {
     const legacy = p.style === "secondary" ? "outline" : p.style === "primary" ? "solid" : undefined;
     const variant = variantOf(p.variant ?? legacy, BUTTON_VARIANTS, "solid");
     const size = variantOf(p.size, ELEMENT_SIZES, "md");
-
-    // Cada variante conserva contraste AA: solido usa tinta sobre el acento
-    // claro; outline y ghost usan --accent-text, que es el acento legible
-    // sobre fondos claros (el lima puro no alcanza AA como texto).
-    let bg: string, color: string, border: string;
-    if (variant === "solid") {
-      bg = "var(--accent, #C5D86D)";
-      color = "#261C15";
-      border = "none";
-    } else if (variant === "outline") {
-      bg = "transparent";
-      color = "var(--accent-text, #5A6B24)";
-      border = "1px solid var(--accent, #C5D86D)";
-    } else {
-      bg = "transparent";
-      color = "var(--accent-text, #5A6B24)";
-      border = "none";
-    }
-    return `<a href="${esc(p.href)}" style="${TOUCH_TARGET}padding:${BUTTON_SIZES[size]};border-radius:var(--radius-button, 8px);background:${bg};color:${color};border:${border};font-weight:700;text-decoration:none;">${esc(p.label)}</a>`;
+    return `<a class="ae-btn ae-btn--${variant} ae-btn--${size}" href="${esc(p.href)}">${esc(p.label)}</a>`;
   },
 };
 
-interface ColumnsProps { count: 2 | 3; gap: number; }
+export type ColumnsRatio = "equal" | "2-1" | "1-2" | "3-2" | "2-3";
+export const COLUMNS_RATIOS = ["equal", "2-1", "1-2", "3-2", "2-3"] as const satisfies readonly ColumnsRatio[];
+
+interface ColumnsProps { count: 2 | 3; gap: number; ratio?: ColumnsRatio; }
 const Columns: ElementDefinition<ColumnsProps> = {
   type: "Columns", displayName: "Columnas", icon: ICON_COLUMNS_2,
-  defaultProps: { count: 2, gap: 16 },
+  defaultProps: { count: 2, gap: 16, ratio: "equal" },
   editableProps: [
     { key: "count", label: "Numero de columnas", kind: "select", options: ["2", "3"], optionLabels: { "2": "2 columnas", "3": "3 columnas" } },
+    { key: "ratio", label: "Proporcion", kind: "select", options: [...COLUMNS_RATIOS], optionLabels: {
+      equal: "Iguales",
+      "2-1": "2 : 1 (izquierda ancha)",
+      "1-2": "1 : 2 (derecha ancha)",
+      "3-2": "3 : 2",
+      "2-3": "2 : 3",
+    } },
     { key: "gap", label: "Espaciado", kind: "number" },
   ],
-  renderHTML: (p, children = "") => `<div class="ae-columns" style="--cols:${p.count};--ae-gap:${Number(p.gap) >= 24 ? space(5) : space(4)};--ae-min:16rem;">${children}</div>`,
+  renderHTML: (p, children = "") => {
+    const count = Number(p.count) === 3 ? 3 : 2;
+    const ratio = variantOf(p.ratio, COLUMNS_RATIOS, "equal");
+    const gapClass = Number(p.gap) >= 24 ? " ae-columns--gap-lg" : "";
+    const ratioClass = ratio !== "equal" ? ` ae-columns--ratio-${ratio}` : "";
+    return `<div class="ae-columns ae-columns--cols-${count}${ratioClass}${gapClass}">${children}</div>`;
+  },
 };
 
 interface ProductGridProps { source: "medusa" | "manual"; columns: number; limit: number; }
@@ -926,36 +925,78 @@ const IconEl: ElementDefinition<IconProps> = {
   renderHTML: (p) => iconSpan(p.name),
 };
 
-interface FeatureGridProps { title: string; items: string; }
+export type FeatureGridLayout = "grid" | "bento";
+export const FEATURE_GRID_LAYOUTS = ["grid", "bento"] as const satisfies readonly FeatureGridLayout[];
+
+export interface FeatureGridItemObject {
+  icon?: string;
+  title: string;
+  text?: string;
+  span?: 1 | 2;
+  featured?: boolean;
+}
+
+interface FeatureGridProps {
+  title: string;
+  layout?: FeatureGridLayout;
+  items: string | FeatureGridItemObject[];
+}
+
+function parseFeatureItems(raw: string | FeatureGridItemObject[] | undefined): Array<{ icon: string; title: string; text: string; span: 1 | 2 }> {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((item) => item && typeof item.title === "string" && item.title.trim().length > 0)
+      .map((item) => ({
+        icon: String(item.icon ?? "sparkles").trim(),
+        title: item.title.trim(),
+        text: String(item.text ?? "").trim(),
+        span: item.span === 2 || item.featured === true ? 2 : 1,
+      }));
+  }
+  return String(raw ?? "")
+    .split("\n")
+    .map((line) => line.split("::").map((s) => s.trim()))
+    .filter((parts) => (parts[1] ?? "").length > 0)
+    .map((parts) => {
+      const [icon, title, ...rest] = parts;
+      let span: 1 | 2 = 1;
+      const last = rest.length >= 2 ? rest[rest.length - 1].toLowerCase() : "";
+      if (last === "span=2" || last === "featured" || last === "destacada") {
+        span = 2;
+        rest.pop();
+      }
+      return { icon, title, text: rest.join("::").trim(), span };
+    });
+}
+
 const FeatureGrid: ElementDefinition<FeatureGridProps> = {
   type: "FeatureGrid", displayName: "Grilla de features", icon: ICON_LAYOUT_TEMPLATE,
   defaultProps: {
     title: "",
+    layout: "grid",
     items: "sparkles :: Titulo de la feature :: Una linea que explica que hace.\nshield :: Otra feature :: Otra linea de apoyo.",
   },
   editableProps: [
     { key: "title", label: "Titulo de la seccion (opcional)", kind: "text" },
-    { key: "items", label: "Items (uno por linea: icono :: titulo :: texto)", kind: "textarea" },
+    { key: "layout", label: "Distribucion", kind: "select", options: [...FEATURE_GRID_LAYOUTS], optionLabels: {
+      grid: "Grilla uniforme",
+      bento: "Bento Grid (tarjetas destacadas)",
+    } },
+    { key: "items", label: "Items (uno por linea: icono :: titulo :: texto [:: span=2])", kind: "textarea" },
   ],
   renderHTML: (p) => {
-    const parsed = String(p.items ?? "")
-      .split("\n")
-      .map((line) => line.split("::").map((s) => s.trim()))
-      .filter((parts) => (parts[1] ?? "").length > 0);
+    const layout = variantOf(p.layout, FEATURE_GRID_LAYOUTS, "grid");
+    const parsed = parseFeatureItems(p.items);
     const cards = parsed
-      .map(([icon, title, ...rest]) => {
-        const text = rest.join("::").trim();
-        return `<article class="ae-feature-card" style="border:1px solid var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};background:var(--panel-bg, #FFFFFF);">${iconSpan(icon)}<h3 style="margin:${space(3)} 0 ${space(2)};font-size:1.05rem;color:var(--text, #261C15);">${esc(title)}</h3><p style="margin:0;color:var(--muted, #6E6653);line-height:1.55;font-size:.95rem;">${esc(text)}</p></article>`;
+      .map(({ icon, title, text, span }) => {
+        const spanClass = span === 2 ? " ae-feature-card--span-2" : "";
+        return `<article class="ae-feature-card${spanClass}">${iconSpan(icon)}<h3 class="ae-feature-card-title">${esc(title)}</h3><p class="ae-feature-card-text">${esc(text)}</p></article>`;
       })
       .join("");
-    const heading = p.title ? `<h2 style="margin:0 0 ${space(5)};text-align:center;">${esc(p.title)}</h2>` : "";
-    const empty = `<div style="border:1px dashed var(--panel-border, #E4E6C3);border-radius:${radiusCard()};padding:${space(5)};text-align:center;color:var(--muted, #6E6653);">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
-    // auto-fit + minmax con `min(100%, 280px)`: la grilla es RESPONSIVE por si
-    // misma (envuelve en pantallas angostas) sin media queries ni JS, y el
-    // `min(100%, ...)` evita el desborde en pantallas muy chicas (320px / iPhone
-    // SE), donde un minmax de 280px fijo no cabe. El gap usa clamp() para que la
-    // densidad escale con el viewport sin pixeles magicos.
-    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:clamp(${space(3)}, 2.5vw, ${space(5)});">${cards || empty}</div></section>`;
+    const heading = p.title ? `<h2 class="ae-feature-grid-title">${esc(p.title)}</h2>` : "";
+    const empty = `<div class="ae-feature-grid-empty">Agrega items en el panel: uno por linea con el formato "icono :: titulo :: texto".</div>`;
+    const layoutClass = layout === "bento" ? " ae-feature-grid--bento" : "";
+    return `<section class="ae-feature-grid-wrap">${heading}<div class="ae-feature-grid${layoutClass}">${cards || empty}</div></section>`;
   },
 };
 
