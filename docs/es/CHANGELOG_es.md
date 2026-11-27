@@ -1,6 +1,6 @@
 # Changelog
 
-> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`CHANGELOG.md`](./CHANGELOG.md); a partir de la reestructuración documental de octubre 2026 el changelog se mantiene solo en inglés. Este archivo conserva la historia completa en español y ya no se actualiza.
+> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`CHANGELOG.md`](../../CHANGELOG.md); a partir de la reestructuración documental de octubre 2026 el changelog se mantiene solo en inglés. Este archivo conserva la historia completa en español y ya no se actualiza.
 
 Todas las versiones notables de Portaless se documentan en este archivo.
 Para el estado real y verificado de cada módulo, ver siempre `ROADMAP.md`

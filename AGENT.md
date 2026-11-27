@@ -2,7 +2,7 @@
 
 > **Routing vs. state.** [`AGENTS.md`](./AGENTS.md) is the entry point that routes an agent (the north-star user story, the "read this, not all of it" table, conventions). This file is the **state** map. On **what exists today**, `ROADMAP.md` wins, then this file; if `AGENTS.md` disagrees with either, the bug is in `AGENTS.md` (the same tie-break `VISION.md`/`ROADMAP.md` uses for direction vs. state).
 
-> Canonical, always-current version. The Spanish archive with the same content is [`AGENT_es.md`](./AGENT_es.md) (kept intact; English wins on any discrepancy).
+> Canonical, always-current version. The Spanish archive with the same content is [`AGENT_es.md`](./docs/es/AGENT_es.md) (kept intact; English wins on any discrepancy).
 
 This file exists so any AI agent (Claude, GPT, Cursor, whatever) has immediate project context without reading the whole commit history, the full whitepaper, or guessing each module's real state. Read it first, always.
 
@@ -44,8 +44,8 @@ only in continuity/archive notes; identifiers, signed bytes and author credit st
 
 ## Where every important document lives
 
-- [`ROADMAP.md`](./ROADMAP.md) — prioritized checklist of what is missing. **Read this before proposing a new feature.** (Spanish long-form archive: `ROADMAP_es.md`.)
-- [`CHANGELOG.md`](./CHANGELOG.md) — real history, version by version. (Spanish archive through the doc restructuring: `CHANGELOG_es.md`.)
+- [`ROADMAP.md`](./ROADMAP.md) — prioritized checklist of what is missing. **Read this before proposing a new feature.** (Spanish long-form archive: [`docs/es/ROADMAP_es.md`](./docs/es/ROADMAP_es.md).)
+- [`CHANGELOG.md`](./CHANGELOG.md) — real history, version by version. (Spanish archive through the doc restructuring: [`docs/es/CHANGELOG_es.md`](./docs/es/CHANGELOG_es.md).)
 - [`SECURITY.md`](./SECURITY.md) — known and active vulnerabilities (includes the real `isolated-vm` CVE, GHSA-864f-rcv7-6rh4).
 - [`docs/README.md`](./docs/README.md) — index of the whole documentation tree.
 - [`docs/api/`](./docs/api/) — integrator guide for Portaless HTTP APIs (public well-known endpoints, admin endpoints, verification recipes).

@@ -1,6 +1,6 @@
 # Portaless Security Policy
 
-> Canonical English version. The Spanish archive is [`SECURITY_es.md`](./SECURITY_es.md).
+> Canonical English version. The Spanish archive is [`SECURITY_es.md`](./docs/es/SECURITY_es.md).
 
 ## Reporting a vulnerability
 

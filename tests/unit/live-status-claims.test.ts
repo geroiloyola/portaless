@@ -65,7 +65,7 @@ describe("A6: los snapshots de cobertura vivos están fechados/corregidos", () =
   });
 
   it("ROADMAP_es.md ya no afirma que los mínimos vigentes son 45/44/46/40", () => {
-    const roadmapEs = read("ROADMAP_es.md");
+    const roadmapEs = read("docs/es/ROADMAP_es.md");
     expect(roadmapEs).toContain("68/67/66/65");
     expect(roadmapEs).not.toMatch(/minimos 45\/44\/46\/40/i);
     expect(roadmapEs).not.toMatch(/de 45\/44\/46\/40 hacia/i);

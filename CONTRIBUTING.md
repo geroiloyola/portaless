@@ -1,6 +1,6 @@
 # Contributing to Portaless
 
-> Canonical English version. The Spanish archive is [`CONTRIBUTING_es.md`](./CONTRIBUTING_es.md).
+> Canonical English version. The Spanish archive is [`CONTRIBUTING_es.md`](./docs/es/CONTRIBUTING_es.md).
 
 Thanks for your interest in contributing. Portaless is a young project (v0.0.x, MVP phase) — most modules are functional; check the real status table in [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) before assuming anything. Before contributing, read [`CHANGELOG.md`](./CHANGELOG.md) to understand what is really implemented and what is still design.
 
