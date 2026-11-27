@@ -59,8 +59,9 @@ export function renderPublicHeaderHtml(options: PublicHeaderOptions): string {
       ? `<a class="nav-link nav-link-commerce" href="${escapeHtml(`${base}tienda/`)}">${navIconHtml(NAV_ICONS.shop)}<span class="nav-txt">Tienda</span></a>`
       : "",
   ].join("");
+  const headerCtx = options.context === "shop" || options.context === "map" ? options.context : null;
   const actions = [
-    headerContextActionHtml(options.context ?? null, base),
+    headerContextActionHtml(headerCtx, base),
     renderSwitcher
       ? langSwitcherHtml({
           href: switcher.href,
