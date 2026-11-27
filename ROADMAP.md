@@ -24,9 +24,9 @@ Read this table first; every row links to the section that justifies it. A row i
 |---|---|---|
 | Product: edit → publish, 17-element catalog, 6 skins, onboarding, self-host (Node/Docker) | `[x]` shipped | [In production](#in-production) |
 | Identity and evidence: `did:apw`, JWS/JCS artifacts, signed attestations, external witnesses, `reader_conduct` | `[x]` shipped — spec v1.3 plus errata E-1…E-16 and SVRI v1.0 | [Trust Layer](#trust-layer-identity-and-protocol-apw) |
-| Executable conformance: machine-readable vectors, published runner, clean-room tarball check | `[x]` shipped — **110/110 cases over 11 vectors** (verified 2026-10-15) | [Phase 7](#phase-7--executable-conformance) |
-| Community reputation bound to a signed `did:apw` | `[x]` mechanism shipped; **the corpus is external** | [Phase 8](#phase-8--bind-identity-to-reputation) |
-| Federated query: normative ranking (V-16) + signed pages document (E-14) + hardened peer reader | `[~]` mechanism shipped; **no public endpoint, no real peers** | [Phase 9](#phase-9--federated-query) |
+| Executable conformance: machine-readable vectors, published runner, clean-room tarball check | `[x]` shipped — **110/110 cases over 11 vectors** (verified 2026-10-15) | [Vera Trust Spec roadmap](https://github.com/verared/vera-trust-spec/blob/main/ROADMAP.md) |
+| Community reputation bound to a signed `did:apw` | `[x]` mechanism shipped; **the corpus is external** | [Vera Trust Stack roadmap](https://github.com/verared/vera-trust-stack/blob/main/ROADMAP.md) |
+| Federated query: normative ranking (V-16) + signed pages document (E-14) + hardened peer reader | `[~]` mechanism shipped; **no public endpoint, no real peers** | [Vera Trust Spec roadmap](https://github.com/verared/vera-trust-spec/blob/main/ROADMAP.md) |
 | Product modules: real admin activity feed, no mock panels | `[~]` one module partially shipped | [Phase 10](#phase-10--product-modules) |
 | AI interoperability: MCP connection profile + OpenAI-compatible provider | `[~]` MCP local flow verified; provider subset contract-tested; **external ChatGPT/provider `not_run`** | [Editor, MCP, onboarding, CI, self-host](#editor-mcp-onboarding-ci-self-host) |
 | Release acceptance: docs reconciliation + clean-install/upgrade/privacy/publication evidence | `[~]` local C40–C41 evidence passes; **ChatGPT/API/Cloudum/real GitHub/independent review open** | [`release-acceptance.md`](./docs/testing/release-acceptance.md) |
@@ -251,13 +251,13 @@ The taxonomy (`NOW` / `ENABLE` / `GATED` / `OUT OF CORE`) is defined in [`docs/V
 
 | Direction | Class | Condition to move |
 |---|---|---|
-| Portable community reputation — a Veracier's history readable from its own chain, not only from the evaluated site's table | `GATED` | Phase 8's recorded scope limit: E-13 deliberately chose the evaluated site's table over the emitter's chain. Moving needs (1) the reader fetching and verifying the emitter's own APW chain, and (2) more than one real emitter for it to matter. |
+| Portable community reputation — a Veracier's history readable from its own chain, not only from the evaluated site's table | `GATED` | The recorded scope limit of the former Phase 8 (now in the Vera Trust Spec roadmap): E-13 deliberately chose the evaluated site's table over the emitter's chain. Moving needs (1) the reader fetching and verifying the emitter's own APW chain, and (2) more than one real emitter for it to matter. |
 | Cross-node reconciliation | `GATED` | An **observed** conflict class between independently operated nodes — stale state, duplicate subject, ownership ambiguity — reproduced in a test first. No engine before the conflict exists. |
 | Dispute / arbitration layer | `GATED` | Real disputes between independent operators that published evidence cannot settle. Today there is one operator and no disputes. |
 | Zero-knowledge verification | `GATED` | A specific verification need where revealing the input is itself the harm, and where signatures plus public projections do not already answer it. |
 | Universal canonical-state schema | `OUT OF CORE` | Deferred by design, not designed up front. The sequence, if it is ever needed: inventory the resources the node already owns → stable identifiers and explicit state transitions → versioned external representations → reconciliation only where divergence is demonstrated. |
 | POSSE generalization (any channel per operator, delivery outcomes, retries) — today `posse-syndicator-plugin` **formats** payloads for two targets (Bluesky, Mastodon) with the hosts fixed in its manifest, and no verified real delivery | `ENABLE` | When one channel has a verified end-to-end delivery with real credentials **and** a second real channel exists. A syndication framework that advertises platforms with no verified adapter is exactly what `VISION.md` refuses. |
-| Global ranking across the network | `GATED` | Phase 9's exit criterion: two independently operated nodes producing the same ordering from the same signed attestations. |
+| Global ranking across the network | `GATED` | The exit criterion of the former Phase 9 (now in the Vera Trust Spec roadmap): two independently operated nodes producing the same ordering from the same signed attestations. |
 | Automated media-origin detection | `GATED` | A detection method that holds beyond a declaration. Today `declaredOrigin` **is** a declaration and is documented as one in `docs/architecture/cloud-images.md`. |
 | Marketplace economy (themes, plugins, sites) | `OUT OF CORE` | AppPlace/AppLibre, separate projects. This repository ships the contract — store, tools, parity tests — not the marketplace. |
 | Reach, stream and engagement metrics from providers that do not expose them | `OUT OF CORE` | Come from the channel, with its own API and its own credentials, or they are not claimed at all. |
@@ -348,19 +348,7 @@ The taxonomy (`NOW` / `ENABLE` / `GATED` / `OUT OF CORE`) is defined in [`docs/V
 
 ### Phase 4 — A second real implementer of APW
 
-**Status**: items 1–2 shipped in this repository (starter kit + `@portaless/apw-resolver` prepared for independent publication; the `npm publish` itself is an operator step requiring npm credentials). Items 3–4 require people outside this repository — kindred projects to approach and authors to receive proposals from; they cannot be advanced by code in this repo alone. Item 5 (did:web Path A) stays blocked on its subject-mapping erratum, which is not yet published.
-
-**Goal**: APW stops being a protocol with a single implementation — the minimal condition to aspire to the reference level.
-
-**Why the hardest and most important phase**: no amount of additional code in this repo solves this. It is solved by getting someone external, without close coordination with the author, to read only `APW-SPEC-v1.3.md` and `APW-VECTORS-v1.3.md` and build an independent implementation that verifies against the same vectors.
-
-1. **[shipped]** A minimal starter kit for external implementers: [`docs/protocol-apw/STARTER-KIT.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/STARTER-KIT.md) — language-agnostic, pseudocode for every step (fingerprint, TXT, did.json, chain, JWS/JCS, scoring), acceptance criteria = vectors V-01/03/05/06/08/09, no Portaless code required.
-2. **[shipped in-repo]** Publish the simplest possible use case (resolving `did:apw` and verifying a manifest) as a standalone library: `packages/apw-resolver`'s `.` export is now a zero-workspace-dependency verifier surface (only `canonicalize` + Web APIs), with its own build (`dist/standalone.js` + types), README documenting "does not require the rest of Portaless", and package metadata ready for independent publication. The publish itself (`npm publish`) is an operator step with npm credentials.
-3. **[requires external people]** Actively seek 1–2 kindred projects or communities (independent media, thematic wiki networks — the exact use cases spec v1.0 already identified in its section 11) and propose they implement APW on their own stack, with direct support from the author. **Current limit**: this requires approaching and coordinating with people outside this repository; the starter kit and package above are the artifacts that make the proposal possible, not a substitute for making it.
-4. **[requires external channel]** Document publicly the change-proposal process for the spec (already present in v1.3's License and governance section: errata → version → proposals) with a real, visible channel to receive them. **Current limit**: this repository's public GitHub issues are the visible channel that exists today; growing it into an active external input flow requires people participating from outside.
-5. **Optional did:web-compatible publication (Path A, recommended)**: keep the `_apw.<domain>` DNS TXT record as the root of the trust chain — a stronger root than an HTTPS file because it requires DNS control, not just hosting — and additionally publish an optional `/.well-known/did.json` in **did:web** format whose `service` entry points at the already DNS-anchored log. Any existing did:web resolver reads the identity unchanged; a client that does not know APW ignores the service it does not understand; a client that does know APW follows the service and fetches the trust chain. **One erratum is required before this ships**: define the subject mapping — attestations and history reference `did:apw:<domain>` subjects, so the erratum must state that `did:web:<domain>` publishing the same key and declaring the `did:apw:<domain>` log via `service` is recognized as the same subject for verification. Without that rule, "compatible" is half-true.
-
-**Exit criterion**: at least one domain that is not the author's publishes a valid `_apw.*` record, verifiable with `resolveApwManifest()`, built with implementation code the author did not write.
+**Moved.** Getting an independent implementation of APW is a standard-adoption goal, not a Portaless product feature. The starter kit, the exit criterion and the open work live in the [Vera Trust Spec roadmap](https://github.com/verared/vera-trust-spec/blob/main/ROADMAP.md) (independent implementation and stable publication). Portaless remains the first consumer, not the owner, of that goal.
 
 ### Phase 5 — Index as a real aggregator, public Beta
 
@@ -400,88 +388,9 @@ The taxonomy (`NOW` / `ENABLE` / `GATED` / `OUT OF CORE`) is defined in [`docs/V
 
 ---
 
-## After the official Beta — phases 7 to 11: from a product to a standard
+## After the official Beta — product phases 10 and 11
 
-> **None of this gates the Beta.** Phases 0–6 ask *can one person run this?*; phases 7–11 ask a different question: *what would have to be true for Protocol APW to be a standard the rest of the web builds on, rather than one implementation with a spec attached?* Phase 11 says so in its own text — it **blocks nothing in phases 7–10** — and the exit criteria of 8, 9 and 10 depend on operators who do not exist yet. Splitting these two questions here is deliberate: conflating them is what makes a roadmap promise a network it cannot deliver alone.
-
-### How these five connect
-
-**Status (2026-10-15): every phase here has something shipped, and none of them is closed.** Phase 7 shipped (conformance: **110/110 cases over 11 vectors**, verified 2026-10-15, plus the clean-room tarball check); Phase 8 shipped its mechanism, with the corpus still external; Phase 9 shipped the ranking (V-16) and the federation mechanism (E-14) with **no public endpoint and no real peers**; Phase 10 shipped the honesty cleanup and the activity feed, with the modules still open; Phase 11 shipped item 1 (MIT SDK 0.1.0) and the mechanism of item 2 (installer **behind a flag, off by default**), and item 3 remains deliberately unshipped. The pattern across all five is the same and is worth naming once: **the code is not what is missing — the operators are.** The repository boundary that governs these phases is [`docs/architecture/ecosystem-boundaries.md`](./docs/architecture/ecosystem-boundaries.md): the protocols, the kernel and the content modules stay here under AGPL; Cloudum, LinsWork, Tenantless and Ecomless are separate repositories.
-
-**Why these five, and why in this order.** They are ordered by dependency, not by appeal. The chain is real and circular at one point, so it has to be broken at the cheapest link:
-
-```
-installable package + executable conformance suite
-        ↓
-a second implementer can build against the spec without reading this code
-        ↓
-that implementer emits reader_conduct attestations  →  a corpus exists
-        ↓
-R-05 becomes computable  →  evaluator weights become real
-        ↓
-the Sybil defenses in spec §6.7 have something to defend against
-        ↓
-a Veracier's reputation means something, and its history is worth publishing
-```
-
-Phase 7 breaks that circle because it is the cheapest link in it. Phases 8 and 9 are the substance of the trust web. Phase 10 is adoption. Phase 11 is the commercial seam and **blocks nothing in phases 7–10** — if it slips, APW is still a standard; if phases 7–9 slip, it is not.
-
-**What none of these phases needs**: another architecture document. The boundaries, the licensing argument and the enabling-pieces inventory are already written down. What is missing is code and third parties.
-
-#### Phase 7 — Executable conformance
-
-**Status: shipped (2026-10-15).** The spec's claim is now checked by CI instead of asserted.
-
-**Goal**: §5.6 of the spec claims another implementation can verify compatibility "without depending on Portaless's code". Today that claim is unfalsifiable: `APW-VECTORS-v1.3.md` is 22 KB of markdown and **no workflow runs it**.
-
-1. **[shipped]** Extract the published vectors into machine-readable fixtures, keeping the markdown as the human-readable form. **Deviation from the original wording**: the fixtures live in `docs/protocol-apw/vectors/v1.3/` (CC BY 4.0), **not inside the npm package**. Shipping them in the code distribution would undercut the very claim they exist to support — that they are independent of the code. The published runner takes a path to them instead.
-2. **[shipped]** A CI job that runs the reference implementation against every fixture: `tests/unit/apw-conformance-vectors.test.ts`, 7 tests. It shipped with **78/78 cases passing** across the eight vectors that existed then (V-01, V-02, V-03, V-04, V-05, V-08, V-09, V-12); Phase 8 added V-14/V-15 and Phase 9a added V-16, so the same suite runs **110/110 cases over 11 vectors** today (measured 2026-10-15). The runner imports **only** from the package's public entry point, so a missing export fails CI. **What this exposed and fixed**: `buildApwManifest` and the whole scoring surface (`issuerWeight`, `judgeFromDeviation`, `toValue`, `bayesianScore`, `calibrateJudges`, `scoreSubject`, `scoreOf`, …) were not exported at all, so the spec's *minimal interoperability vectors* V-08 and V-09 were not implementable from the published package.
-3. **[shipped]** A CI job that packs the real tarball, installs it into an empty project and imports it: `.github/workflows/apw-package-conformance.yml`, exercising both `.` (39 exports) and `./full` (13 exports), then running the published `bin` against the vectors.
-4. **[shipped]** A published runner: `bin: apw-conformance`, so a third party runs `npx @portaless/apw-resolver <path-to-vectors>` against its own implementation.
-
-**Exit criterion**: a party with no access to this repository can run the suite and obtain a pass/fail against its own implementation, for the published spec version. **Met**, verified in a clean room (rsync without `node_modules` → `npm ci` → build → pack → install → run the bin).
-
-**Honest limits, recorded rather than hidden.**
-- **V-06 is not executable yet**, so the minimal interoperability set is *not fully* satisfied: it is the only required vector absent from the fixture set, and the test asserts exactly that (`expect(missing).toEqual(["V-06"])`) so the gap cannot regress into silence. Its 12-step validation order lives in `packages/trust-layer/src/site-trust/attestation.ts` (`verifyAttestation`), not in `apw-resolver`.
-- **V-07, V-10, V-11 and V-13 are not yet machine-readable**, and say so in `vectors/v1.3/manifest.json` under `notYetMachineReadable`, each with its reason. V-07 and V-13 are byte-level mutation matrices with a deterministic `jti` preimage; V-10 needs per-subject attestation fixtures; V-11 needs a database and a non-pure decision function.
-- **A spec-level precision was found and documented**: the vector document prints `w(6.7) = 0.9025` as "exact", but in IEEE-754 doubles `((6.7-1)/6)^2` is `0.9025000000000001`, one ULP above it. Every numeric comparison in the fixtures and the runner uses a tolerance, and `v-08-scoring-primitives.json` states the rule under `comparisonRule` — otherwise a correct implementation would fail a strict equality check against a correct one.
-
-#### Phase 8 — Bind identity to reputation
-
-**Status: shipped (2026-10-15), with one recorded limit.** The trust graph now has verifiable authors, but the *corpus* it needs is still a fact about the world, not code.
-
-**Goal**: make the trust graph mean something by giving every evaluation a verifiable author.
-
-The data model is already in place and was verified to exist: `site_trust_community_votes` (`schema.sql:319`) stores a `score` constrained to 1–5, a free-text `comment`, `voted_at`, and one row per category and voter. The scoring maths is real too — `bayesianScore` with `NEUTRAL = 4.0` and `PRIOR_WEIGHT = 3`, on top of witness calibration and weighted consensus. What is missing is the one thing that makes it a graph rather than a form.
-
-1. Replace `voter_id` (`anon-${crypto.randomUUID()}` in `localStorage`, `src/pages/trust/index.astro:63`) with a vote signed by the voter's `did:apw`, so an emitter is attributable and its `jti` is unique per issuer.
-2. Implement spec §6.7 with real data: evaluator weighting (0.25 for a new domain, gained only by agreeing with existing consensus), distinct emitters only, `min_weight` per predicate, minimum history age (W-07), and self-attestations never counting toward the emitter's own R-05.
-3. A public page per Veracier carrying its emission history.
-4. **Errata, not a version change** (decided 2026-10-15): APW v1.3 stands. Scores, counts and weight sums stay always public (already normative, §6.6); **the comment text stays governed** (§A.6), so it is visible to the emitter and to readers who meet the site's policy, not to everyone. The errata states this explicitly and names the Veracier page as a described surface. Making review text universally public would change what being reviewed means for every future subject and would alter the Sybil calculus — that is a v1.4 decision, deliberately not taken here.
-
-**Exit criterion**: `R-05` is computable from a corpus of at least two independent emitters, and no vote can be emitted without a signature. **Met for the second half; the first half is not a code deliverable.** A vote cannot be emitted without a signature: `POST /trust/:siteId/community-attestation` verifies a JWS against the emitter's resolved `did:apw` identity (§5.1) and the old `/vote` route now answers `410`. But "at least two independent emitters" is a fact about operators, and today there is exactly one (`SECURITY.md`: the Beta is invite-only for want of a second maintainer). A test fixture with three keys proves the mechanism, not that three operators exist.
-
-**What shipped, and what did not.**
-1. **[shipped]** `voter_id` is gone. A community evaluation is a JWS signed by a `did:apw` (ERRATA E-13), with `jti` unique per issuer (`iss, jti` primary key). Storage is a new append-only table `community_attestations` — re-emitting adds a row, and the scoring takes the latest per `(iss, subject, category)`, so a history exists and cannot be quietly overwritten. `site_trust_community_votes` is left untouched as the visitor-opinion table: it stays visible and **no longer scores**, because it has no verifiable identity.
-2. **[shipped]** §6.7 has real definitions (E-13): a **distinct emitter** is a distinct `did:apw`; the community predicate's **`min_weight` is 2.0 applied per (subject, category)**; **minimum emitter history age is a 7-day threshold**, fail-closed when the history cannot be resolved. Calibration, distinct-emitter counting and self-exclusion already existed and are now exercised against signed rows. Vectors **V-14** and **V-15** make the predicate executable from the published package (conformance reached 97/97 over 10 vectors at this point).
-3. **[shipped, with a scope limit]** `/trust/veracier/<domain>` publishes counts, averages and the last emission per category for that emitter — a JSON surface with an HTML shell. **Limit**: it shows what *this site* recorded from that emitter, not the emitter's global history, which lives in its own APW chain (§5.4) and is not fetched here. This is a direct consequence of choosing the evaluated site's table over the emitter's chain (see the decision recorded in E-13).
-4. **[shipped]** The errata is written (E-13), APW v1.3 stands, and comment text stays governed (A.6): the Veracier page publishes aggregates, never the text. The rule that makes this work is stated in the spec's Status line, beside the §5.3 `src` enum, and in §6.7.
-
-**Consequences worth stating plainly, because they are the real shape of this phase.**
-- **`min_weight` 2.0 is strict.** §6.7 asks for a minimum weight sum, and A.4.2 gives a cold-start emitter 0.25, so a category needs **eight** cold-start domains — or fewer well-calibrated ones — to clear it. Two emitters that agree calibrate each other to J = 7 and reach exactly 2.0; two that disagree do not clear it at all. This was found while writing the tests, not in review. It is the intended trade: fewer, harder votes over many cheap ones, and the honest cost is that a young network scores almost nothing.
-- **The real Sybil cost is the 7-day history floor plus the price of domains, not the weight.** `calibrateJudges` awards high weight to a set of emitters that agree with each other even when all are new, so a cabal is a "consensus". §6.7 already says no defense is perfect and that the cost of building old, calibrated domains is the defense; this phase does not change that, it just makes the floor explicit.
-
-#### Phase 9 — Federated query
-
-**Goal**: the network becomes usable without becoming a directory anyone controls.
-
-**Status (2026-10-15): 9a (ranking) and 9b (federation mechanism) shipped; the public endpoint and the exit criterion are open.** The ordering and the document are code-complete and fixture-checked; no node publishes `apw-pages.jws` yet because that needs operators, not code — so `Explore` still reads only its own content and says so in the UI.
-
-1. **[mechanism shipped; endpoint deliberately not opened]** `Explore` reads other nodes over APW. The mechanism lives in `packages/apw-resolver/src/federation/`: the signed pages document `/.well-known/apw-pages.jws` (`typ apw-pages+jws`, ERRATA **E-14**), the hardened fetch (`redirect: "manual"` + per-hop validation, streaming byte cap, private-range blocking), sanitized remote render (scheme check, item cap, no `set:html`) and a peer aggregator with **mandatory cache + single-flight + concurrency cap + stale-while-error**. It is verified by `tests/unit/apw-federation.test.ts` against fixtures, **without opening a public endpoint**. What is not shipped: the public `/explore.json.js` and a real peer list — an unauthenticated endpoint that fans out to N peers only has value once peers exist, and its whole contract is testable without it. `Explore` keeps the honest degraded state from 9a.
-2. **[shipped]** Normative definitions for every exposed filter (`Top`, `Recents`, `Confidence`, `Old`, `New`, `History`) in spec §7.1, executable as vector **V-16**: `Top` is the prior-weighted Bayesian score over a declared window, `Confidence` is the witness consensus over the declared `seq`, the order is a total order with a full tie-break tuple, and an empty subject is never filled with the neutral prior. `EmissionPeriod` still covers `month | week | day`; spec §7.1 states that a year range aggregates the weekly buckets (no `year` period).
-3. **[shipped]** A third party can recompute the ordering from the same signed attestations — the point of §7.1 + V-16 (the definition is in the spec, not only in the AGPL code, so a closed product can implement it).
-
-**Exit criterion**: two independently operated nodes, neither operated by the author, can each produce the same ordering for the same signed attestations. **Open**: two independently operated nodes is a fact about operators. The ordering (V-16) and the document (E-14) are recomputable and testable from fixtures, but real operators do not exist yet.
+> **None of this gates the Beta.** The former Phases 7–9 (executable conformance, binding identity to reputation, federated query) describe the standard and its reference implementation, not this product. They are owned by the [Vera Trust Spec roadmap](https://github.com/verared/vera-trust-spec/blob/main/ROADMAP.md) (normative baseline, vectors, federation) and the [Vera Trust Stack roadmap](https://github.com/verared/vera-trust-stack/blob/main/ROADMAP.md) (`@verared/*` packages, conformance runs). Portaless consumes them as exact-pinned `@verared/*@0.1.0` packages (see [`SPEC-PIN.json`](./SPEC-PIN.json)). What remains here are the product phases below.
 
 #### Phase 10 — Product modules
 
@@ -489,7 +398,7 @@ The data model is already in place and was verified to exist: `site_trust_commun
 
 **Status (2026-10-15): the honesty cleanup shipped; the modules did not.**
 
-1. **Posts** with ordering beyond `pubDate` — and only once Phase 9 has defined what a ranking means. **[not started]**
+1. **Posts** with ordering beyond `pubDate` — and only once the federated-query phase of the Vera Trust Spec roadmap has defined what a ranking means. **[not started]**
 2. **Recents** — *partially shipped*. The standing honesty problem is closed: the mock panels were **seven**, not four, and all seven were **dead code**. `renderSkin()`/`organismRegistry` were called from nowhere, the real dashboard is hand-written HTML (`src/pages/admin/index.astro`), and `skins/*.json` only ever supplied tokens via `resolveActiveSkin`. They were deleted together with the `layout`/organism machinery; a skin is now a token preset with `extends` inheritance. In their place a real **admin-only** feed ships: append-only `activity_events` (D1 → SQLite → InMemory), a single writer `emitActivity()` (**no triggers, no backfill** — the table starts empty and never diverges from its sources), `GET /admin/api/recents` and `/admin/recents`. It records what exists (pages saved/deleted, community attestations, permission changes, witness statements, password changes/resets), **not** posts (markdown published at build time — no runtime writer to emit from), orders/revenue/human traffic — those have no data source. The *unified* feed across every module is still open.
 3. **Videos** and **Music**: moved to [Vision and scope](#vision-and-scope-decisions-what-portaless-will-not-do). This roadmap does not promise them without the condition each one needs.
 
@@ -512,7 +421,7 @@ The data model is already in place and was verified to exist: `site_trust_commun
 
 ## From a standard to adoption — phases 12 to 15
 
-> Phases 7–11 built the standard. These four phases are about the other half of the same problem: a standard nobody can use is a specification, not a network. They are ordered by what a person outside the project experiences first — the sentence, then the surface, then the ecosystem, then the network — and none of them changes the protocol's normative rules. They carry the class from [`docs/VISION.md`](./docs/VISION.md): `NOW` (a defect), `ENABLE` (a barrier for the next participant), `GATED` (needs evidence that does not exist yet).
+> The former Phases 7–9 built the standard (now tracked in the verared roadmaps). These four phases are about the other half of the same problem: a standard nobody can use is a specification, not a network. They are ordered by what a person outside the project experiences first — the sentence, then the surface, then the ecosystem, then the network — and none of them changes the protocol's normative rules. They carry the class from [`docs/VISION.md`](./docs/VISION.md): `NOW` (a defect), `ENABLE` (a barrier for the next participant), `GATED` (needs evidence that does not exist yet).
 
 - **Phase 12 — The sentence a stranger understands** (`ENABLE`): the agent-access policy becomes a store with an explicit precedence (`store > asset > default`) and a page at `/admin/agents` that states, in plain Spanish, who may read the site on what terms; the feature is stated in one sentence in the README, `beta.astro` and the home.
   - `[x]` **§12.1 + §12.2 — the policy is operable from the panel.** Shipped (2026-10-16): the single-row store `agent_access_policy` (`schema-additions/agent-access-policy.sql`, regenerated into `schema.sql`), `agent-access-store.ts` (D1/SQLite/InMemory), and `resolveContentPolicy()` with the documented precedence `store > asset > default` — each layer falls through when absent or invalid, so a half-written policy is never applied. `/admin/agents` states the terms in plain Spanish **before** offering the controls, including the part a label hides: `charge` without a verified payment provider answers `402` and the agent cannot read. `GET /admin/api/agents` returns the effective policy **with its source** (`store`/`asset`/`default`), author and date; `PUT` persists (server-side `canWrite`, server-fixed `site`, no `charge` without a positive price); `DELETE` restores. No step-up, unlike `PUT /admin/permissions`, and the reason is written in the endpoint: this edits the owner's own content policy, is reversible and grants no capability. The enforcement path has no cache on purpose — a `block` saved from the panel applies on the next request. 24 tests in `tests/unit/agent-access-policy.test.ts`. Docs: `docs/api/admin.md`, `docs/api/well-known.md`, `packages/trust-layer/docs/TRUST_LAYER_SETUP.md`.
@@ -543,7 +452,7 @@ The data model is already in place and was verified to exist: `site_trust_commun
 
 ## Beta readiness checklist
 
-One list, so progress does not depend on re-reading the phases. **Every unchecked box here is a pre-Beta item** (phases 0–6); the work of phases 7–11 can advance, and has advanced, without closing them — see [After the official Beta](#after-the-official-beta--phases-7-to-11-from-a-product-to-a-standard).
+One list, so progress does not depend on re-reading the phases. **Every unchecked box here is a pre-Beta item** (phases 0–6); the work after phase 6 can advance, and has advanced, without closing them — see [After the official Beta](#after-the-official-beta--phases-7-to-11-from-a-product-to-a-standard).
 
 - [x] One token system governs dashboard and public site alike
 - [x] Official palette (`#C5D86D` / `#261C15` with `#F7F7F2`, `#E4E6C3`, `#F05D23` gradients) applied by default, editable per skin
@@ -558,9 +467,9 @@ One list, so progress does not depend on re-reading the phases. **Every unchecke
 - [ ] At least one person other than the author with real capacity to review or merge code
 - [ ] At least one external domain (not the author's) publishes valid APW identity
 - [ ] Portaless Index aggregates witnesses of more than one operator, with calibrated weights — *(code ready: calibration + inter-node sync shipped; the box needs the external reality — more than one real operator — not more code)*
-- [x] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(Phase 7, extended by Phases 8 and 9a; **110/110 cases over 11 vectors** measured 2026-10-15, minimal set except V-06, whose validation lives in `trust-layer` rather than in the published package)*
-- [x] Every community vote is signed by a verifiable `did:apw` — *(Phase 8: `POST /trust/:siteId/community-attestation` verifies a JWS against the emitter's resolved identity; the anonymous route answers 410)*
-- [ ] `R-05` is computable from more than one **real** independent emitter — *(Phase 8 shipped the mechanism with `min_weight`, distinct-emitter counting and a 7-day history floor; the corpus needs operators, and the Beta is invite-only for want of a second maintainer, so today it is one)*
+- [x] The published APW test vectors run as an executable conformance suite in CI, and a third party can run them against its own implementation — *(former Phase 7, extended by former Phases 8 and 9a; **110/110 cases over 11 vectors** measured 2026-10-15, minimal set except V-06, whose validation lives in `trust-layer` rather than in the published package)*
+- [x] Every community vote is signed by a verifiable `did:apw` — *(former Phase 8: `POST /trust/:siteId/community-attestation` verifies a JWS against the emitter's resolved identity; the anonymous route answers 410)*
+- [ ] `R-05` is computable from more than one **real** independent emitter — *(former Phase 8 shipped the mechanism with `min_weight`, distinct-emitter counting and a 7-day history floor; the corpus needs operators, and the Beta is invite-only for want of a second maintainer, so today it is one)*
 - [ ] The onboarding wizard was tested with real non-technical people — *(requires recruiting people and recording sessions; the 10-minute guide `docs/first-steps.md` is the starting artifact)*
 - [ ] "First steps" documentation exists for someone who does not read TypeScript — *(`docs/first-steps.md` shipped; keep it honest and updated as the product changes)*
 
