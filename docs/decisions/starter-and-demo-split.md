@@ -2,7 +2,7 @@
 
 Estado: **propuesta de diseño, sin implementación**. Base inspeccionada: `2eb7acb`
 (#114 fusionado). Autorización escrita: PR-B1 solamente. PR-B2, PR-C y PR-D–G
-no se inician con este documento. Decisiones aplicables: [D1–D11](owner-decisions-2026-10-31.md).
+no se inician con este documento. Decisiones aplicables: [D1–D11](../archive/owner-decisions-2026-10-31.md).
 LTP = Local Trust Protocol; LTP Stack = APW + LTP + SVRI + HSVR.
 G4/G5 siguen PENDING_AUTHORIZATION; `packages/ltp-engine` permanece inactivo.
 
@@ -199,7 +199,7 @@ reales/anclas existentes o campos opcionales sin enlace; URLs del usuario se val
 `tests/unit/demo-pages-links.test.ts:9-10,28-63` solo inspecciona JSON de páginas,
 no salida del wizard. Mantenerlo y sumar cobertura, nunca relajar sus prohibiciones.
 
-Usar el [patrón E2](../testing/demo-fictional-links-pattern.md) como punto de partida:
+Usar el [patrón E2](../archive/testing/demo-fictional-links-pattern.md) como punto de partida:
 CTAs internas y ausencia de cuentas sociales reales. **Corrección al análisis previo:**
 `demo-pages-links` no consulta DNS; que acepte una URL no demuestra que resuelva.
 `example.org/portaless-demo/...` pasa la validación sintáctica, pero sus paths no se

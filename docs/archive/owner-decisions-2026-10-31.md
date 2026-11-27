@@ -181,7 +181,7 @@ Registro de decisiones tomadas por el dueño. Este documento no implementa nada:
 
 **Casos de uso que se conservan en el perfil demo:** creador/influencer, músico y merch, evento/club, boutique, portafolio, lanzamiento, servicios y link-in-bio.
 
-**Criterio de ficticio:** nombres inventados; sin enlaces sociales reales; sin etiquetas de afiliado; sin fotos de personas reales; imágenes con licencia verificada; etiqueta visible “Demo content, fictional”. El patrón de enlaces propuesto está en [`docs/testing/demo-fictional-links-pattern.md`](../testing/demo-fictional-links-pattern.md).
+**Criterio de ficticio:** nombres inventados; sin enlaces sociales reales; sin etiquetas de afiliado; sin fotos de personas reales; imágenes con licencia verificada; etiqueta visible “Demo content, fictional”. El patrón de enlaces propuesto está en [`docs/testing/demo-fictional-links-pattern.md`](./testing/demo-fictional-links-pattern.md).
 
 **Opciones consideradas:** (a) mantener contenido real; (b) retirar los casos de uso; (c) conservarlos con datos ficticios. Se eligió (c).
 
@@ -211,7 +211,7 @@ Registro de decisiones tomadas por el dueño. Este documento no implementa nada:
 | Conservar como opciones | No rompe el wizard | Hay que alinear copy/idioma | Sí |
 | Convertirlas en starter | Menos decisiones | El starter deja de ser mínimo | No |
 
-**Consecuencias:** el starter no depende de las plantillas; el wizard puede seguir generando opciones. El hallazgo de idioma/copy está en [`docs/testing/admin-panel-language.md`](../testing/admin-panel-language.md).
+**Consecuencias:** el starter no depende de las plantillas; el wizard puede seguir generando opciones. El hallazgo de idioma/copy está en [`docs/testing/admin-panel-language.md`](./testing/admin-panel-language.md).
 
 **Requisito para PR-B1 (E6):** las plantillas del wizard deben ser locale-aware y no generar enlaces a la raíz de plataformas. Hoy `packages/onboarding/src/intent-to-layout.ts:86-129` genera copy español y `https://instagram.com/` / `https://tiktok.com/@` como placeholders.
 
