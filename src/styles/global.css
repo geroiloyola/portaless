@@ -234,20 +234,26 @@ header.site-header {
 header.site-header .site-header-row {
   display: flex;
   align-items: center;
-  max-width: 860px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 1rem var(--gutter);
-  gap: 1rem;
+  gap: clamp(0.6rem, 1.5vw, 1rem);
   min-width: 0;
 }
 
 header.site-header nav.site-nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: clamp(0.75rem, 1.8vw, 1.35rem);
   flex: 1 1 auto;
   min-width: 0;
   flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+header.site-header nav.site-nav::-webkit-scrollbar {
+  display: none;
 }
 
 header.site-header .brand {
@@ -260,6 +266,11 @@ header.site-header .brand {
   color: var(--text);
 }
 
+header.site-header .nav-link {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
 /* Atomic Icons Responsive: el rincon derecho del header. Share siempre
    (icono iOS); el icono principal lo decide deriveHeaderContext segun el
    contenido de la pagina (carrito en tiendas, volumen en videos). La
@@ -268,7 +279,7 @@ header.site-header .brand {
 header.site-header .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   margin-left: auto;
 }
 
@@ -277,23 +288,45 @@ header.site-header .header-actions {
 header.site-header .header-right {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.45rem;
   margin-left: auto;
+  flex: 0 0 auto;
 }
 
-/* Selector de idioma: pill accionable (icono de idiomas + nombre del otro
-   idioma). Se lee como un control, no como otra entrada del menu. */
+/* Selector de idioma: pill/circulo accionable de 44px de alto (icono de
+   idiomas + texto o codigo corto ES/EN en modo circulo). */
 header.site-header .header-lang {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  padding: 0.32rem 0.7rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.75rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   color: var(--text);
   font-size: 0.85rem;
+  font-weight: 600;
   line-height: 1;
   text-decoration: none;
+  flex: 0 0 auto;
+}
+
+header.site-header .header-lang.header-lang--circle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+header.site-header .header-lang.header-lang--circle .header-lang-icon {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 
 header.site-header .header-lang:hover {
@@ -322,7 +355,7 @@ header.site-header .header-lang-notice {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.4rem;
-  max-width: 860px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 0 var(--gutter) 0.7rem;
   font-size: 0.8rem;
@@ -346,8 +379,8 @@ header.site-header .nav-ico {
 }
 
 /* MOVIL: un solo renglón con inventario MVP: marca, publicaciones (si existen),
-   explorar, idioma (si hay versión alternativa) y compartir. TrustScore queda
-   en el footer; acciones contextuales junto al contenido de página. */
+   explorar, idioma (si hay versión alternativa), tema y compartir. TrustScore
+   queda en el footer; acciones contextuales junto al contenido de página. */
 @media (max-width: 640px) {
   header.site-header .site-header-row {
     flex-direction: row;
@@ -369,18 +402,25 @@ header.site-header .nav-ico {
     font-size: clamp(0.7rem, 3.5vw, 0.88rem);
   }
 
-  /* Objetivo tactil 44x44 (WCAG 2.5.5): en movil el menu es icon-only, asi que
-     cada entrada es un control tactil y cumple el minimo. flex:0 0 auto impide
-     que el flex lo encoja. */
+  /* Objetivo tactil 44x44 (WCAG 2.5.5): en movil los links con icono son
+     circulos icon-only; los links sin .nav-ico conservan texto legible. */
   header.site-header .nav-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 0.5rem;
     border-radius: 999px;
     color: var(--text);
+    font-size: 0.85rem;
+  }
+
+  header.site-header .nav-link:has(.nav-ico) {
+    width: 44px;
+    height: 44px;
+    padding: 0;
   }
 
   header.site-header .nav-link:hover {
@@ -396,7 +436,7 @@ header.site-header .nav-ico {
     height: 19px;
   }
 
-  header.site-header .nav-link .nav-txt {
+  header.site-header .nav-link:has(.nav-ico) .nav-txt {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -408,8 +448,9 @@ header.site-header .nav-ico {
     border: 0;
   }
 
-  /* Optional commerce stays available from the footer on narrow screens. */
-  header.site-header .nav-link-commerce { display: none; }
+  /* Optional commerce and desktop contextual header icons stay below content on mobile. */
+  header.site-header .nav-link-commerce,
+  header.site-header .header-context-action { display: none; }
 
   header.site-header .header-right {
     gap: 2px;
@@ -426,7 +467,7 @@ header.site-header .nav-ico {
     justify-content: center;
   }
 
-  header.site-header .header-lang .header-lang-text {
+  header.site-header .header-lang:not(.header-lang--circle) .header-lang-text {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -438,6 +479,12 @@ header.site-header .nav-ico {
     border: 0;
   }
 
+}
+
+@media (max-width: 380px) {
+  header.site-header .site-header-row {
+    padding: 0.5rem 0.5rem;
+  }
 }
 
 header.site-header .header-icon-btn {
@@ -453,6 +500,7 @@ header.site-header .header-icon-btn {
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  text-decoration: none;
 }
 
 header.site-header .header-icon-btn:hover {
@@ -465,9 +513,21 @@ header.site-header .header-icon-btn svg {
   height: 18px;
 }
 
+/* Alternador Claro/Oscuro: visibilidad de sol/luna controlada por CSS puro. */
+header.site-header .header-theme-toggle .icon-sun { display: none; }
+header.site-header .header-theme-toggle .icon-moon { display: block; }
+
+:root[data-theme="dark"] header.site-header .header-theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] header.site-header .header-theme-toggle .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header.site-header .header-theme-toggle .icon-sun { display: block; }
+  :root:not([data-theme="light"]) header.site-header .header-theme-toggle .icon-moon { display: none; }
+}
+
 /* Estado silenciado del control de volumen: el SVG no cambia, lo marca
    aria-pressed (conmuta el listener delegado). */
-header.site-header .header-icon-btn[aria-pressed="true"] {
+header.site-header .header-icon-btn[aria-pressed="true"]:not(.header-theme-toggle) {
   opacity: 0.55;
 }
 

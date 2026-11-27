@@ -93,6 +93,37 @@ export function headerShareHtml(): string {
   return `<button type="button" class="header-icon-btn" data-portaless-share aria-label="Compartir este enlace" title="Compartir este enlace">${ICON_SHARE_IOS}</button>`;
 }
 
+/**
+ * Accion contextual circular (44x44) en el header para escritorio cuando el
+ * contenido de la pagina lo dispara (ProductGrid/StoreBlock -> Cart,
+ * Map -> Navigate, Video -> Volume). En movil <=640px se oculta por CSS y
+ * prevalece contextActionsHtml() junto al contenido para cuidar el ancho 320px.
+ */
+export function headerContextActionHtml(context: HeaderContext, base = "/"): string {
+  if (context === "shop") {
+    return `<a class="header-icon-btn header-context-action" href="${escapeHtml(base)}${ROUTES.SHOP.replace(/^\//, "")}/" aria-label="Ir a la tienda" title="Ir a la tienda">${ICON_SHOPPING_CART}</a>`;
+  }
+  if (context === "map") {
+    return `<a class="header-icon-btn header-context-action" href="#ae-map" aria-label="Cómo llegar" title="Cómo llegar">${ICON_DIRECTIONS}</a>`;
+  }
+  if (context === "video") {
+    return `<button type="button" class="header-icon-btn header-context-action" data-portaless-volume aria-pressed="false" aria-label="Silenciar video" title="Silenciar video">${ICON_VOLUME_2}</button>`;
+  }
+  return "";
+}
+
+/**
+ * Boton circular 44x44 de alternancia Claro/Oscuro (CSP estricto: el clic
+ * se atiende en public/portaless-shell.js y el icono activo lo decide CSS).
+ */
+export function headerThemeToggleHtml(locale: string = "es"): string {
+  const label = locale === "es" ? "Cambiar modo claro/oscuro" : "Toggle light/dark mode";
+  return `<button type="button" class="header-icon-btn header-theme-toggle" data-theme-toggle aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-pressed="false">`
+    + `<svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`
+    + `<svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
+    + `</button>`;
+}
+
 /** Header-action compatibility helper; context controls are not placed here. */
 export function headerActionsHtml(_context: HeaderContext, _base = "/"): string {
   return `<div class="header-actions">${headerShareHtml()}</div>`;
@@ -108,11 +139,13 @@ export function langSwitcherHtml(input: {
   hreflang: string;
   ariaLabel: string;
   text: string;
+  compact?: boolean;
 }): string {
   const href = escapeHtml(input.href);
   const hreflang = escapeHtml(input.hreflang);
   const ariaLabel = escapeHtml(input.ariaLabel);
-  return `<a class="header-lang" href="${href}" hreflang="${hreflang}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${escapeHtml(input.text)}</span></a>`;
+  const cls = input.compact ? "header-lang header-lang--circle" : "header-lang";
+  return `<a class="${cls}" href="${href}" hreflang="${hreflang}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="header-lang-icon" aria-hidden="true">${ICON_LANGUAGES}</span><span class="header-lang-text">${escapeHtml(input.text)}</span></a>`;
 }
 
 // Aviso de idioma (patron Airbnb: "Some info is shown in its original
