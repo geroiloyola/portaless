@@ -143,8 +143,9 @@ describe("list_themes", () => {
     const h = await harness();
     const res = await h.list({}, h.extra);
     const parsed = JSON.parse(res.content[0].text);
-    expect(parsed.themes).toHaveLength(2);
+    expect(parsed.themes).toHaveLength(BUILTIN_THEMES.length);
     expect(parsed.themes[0]).toMatchObject({ name: "2pac-dark", source: "builtin" });
+    expect(parsed.themes.map((t: any) => t.name)).toContain("portaless-editorial");
     expect(parsed.themes[0].vars["--bg"]).toBe("#14100C");
     expect(parsed.themes[0].vars["--radius"]).toBeUndefined(); // no declarado: hereda
     expect(parsed.themes[1]).toMatchObject({ name: "portaless-nocturno", source: "builtin" });
