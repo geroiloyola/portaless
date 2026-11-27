@@ -173,3 +173,15 @@ describe("ExplorePage.astro scope selector, custom flairs and URL state", () => 
     expect(exploreSrc).toContain("window.history.replaceState");
   });
 });
+
+describe("Portaless design skill contract (.agents/skills/portaless-design/SKILL.md)", () => {
+  it("exists with valid YAML frontmatter and is linked from AGENTS.md", () => {
+    const skillSrc = readFileSync(join(root, ".agents/skills/portaless-design/SKILL.md"), "utf8");
+    expect(skillSrc).toMatch(/^---\r?\n[\s\S]*?name:\s*portaless-design\r?\n[\s\S]*?description:\s*.+\r?\n---/);
+    expect(skillSrc).toContain("npm run verify:design");
+
+    const agentsSrc = readFileSync(join(root, "AGENTS.md"), "utf8");
+    expect(agentsSrc).toContain(".agents/skills/portaless-design/SKILL.md");
+    expect(agentsSrc).toContain("npm run verify:design");
+  });
+});

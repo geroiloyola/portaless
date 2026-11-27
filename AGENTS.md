@@ -53,6 +53,10 @@ Read in this order — **do not read them all**:
 | To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
 | To know which LTP work is actually authorized (G1–G5) | `docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md` |
 
+## Design contract for AI agents
+
+Any task involving themes, skins, page layouts, or applying an external design `SKILL.md` on a Portaless site **must** read and follow [`.agents/skills/portaless-design/SKILL.md`](./.agents/skills/portaless-design/SKILL.md) first, and pass `npm run verify:design` before committing.
+
 ## Real state
 
 The per-module status table lives in one place only. Do not copy it here:

@@ -38,6 +38,7 @@
     "test:release": "node scripts/verify-release.mjs",
     "verify:runtime": "node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-profile.mjs",
     "verify:claims": "node scripts/verify-claims.mjs",
+    "verify:design": "vitest run tests/unit/theme-pack.test.ts tests/unit/visual-elements-css-first-and-bento.test.ts tests/unit/header-actions-and-explore-scope.test.ts tests/unit/static-sweep.test.ts tests/unit/security-headers.test.ts",
     "check:boundaries": "node scripts/check-architecture-boundaries.mjs --strict",
     "check:boundaries:report": "node scripts/check-architecture-boundaries.mjs --report"
   },
