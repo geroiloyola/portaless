@@ -61,6 +61,10 @@ export interface PageLayout {
    * a `href` y emite <link rel="alternate" hreflang={code} href={href} />.
    */
   alternateLang?: { code: string; href: string };
+  /**
+   * Flairs / temas libres de esta página para filtrado en /explore/.
+   */
+  flairs?: string[];
   root: ElementNode[];
 }
 

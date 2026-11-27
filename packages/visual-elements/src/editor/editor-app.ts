@@ -450,10 +450,48 @@ export class AtomicElementsEditor {
 
     const selectedNode = this.selectedId ? this.findNode(this.selectedId) : null;
     const propertyPanel = renderPropertyPanel(selectedNode, (props) => this.updateSelectedProps(props), this.catalog);
+    propertyPanel.prepend(this.renderPageMetaSection());
 
     this.root.appendChild(palette);
     this.root.appendChild(canvasWrap);
     this.root.appendChild(propertyPanel);
+  }
+
+  private renderPageMetaSection(): HTMLElement {
+    const box = document.createElement("div");
+    box.className = "ae-page-meta";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Página";
+    box.appendChild(heading);
+
+    const label = document.createElement("label");
+    label.className = "ae-field";
+
+    const span = document.createElement("span");
+    span.textContent = "Flairs / Temas (separados por comas)";
+    label.appendChild(span);
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.setAttribute("data-page-flairs-input", "true");
+    input.placeholder = "Web, Portaless, Guías";
+    input.value = Array.isArray(this.page.flairs) ? this.page.flairs.join(", ") : "";
+    input.addEventListener("change", () => {
+      const parsed = input.value
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && s.length <= 32 && !/[<>\u0000-\u001F\u007F]/.test(s))
+        .slice(0, 10);
+      this.commit((draft) => {
+        if (parsed.length > 0) draft.flairs = parsed;
+        else delete draft.flairs;
+      });
+    });
+
+    label.appendChild(input);
+    box.appendChild(label);
+    return box;
   }
 }
 

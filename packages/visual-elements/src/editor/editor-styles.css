@@ -156,3 +156,9 @@
 /* Selector de ancho de la vista previa (barra del editor). */
 .editor-canvas-width { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted, #6E6653); }
 .editor-canvas-width select { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--panel-border, #E4E6C3); background: var(--panel-bg, #FFF); color: var(--text, #261C15); }
+
+.ae-page-meta {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
