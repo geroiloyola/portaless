@@ -2,7 +2,7 @@
 
 > **What this document is.** A map of where things actually live, so nobody loses time looking for code in the location the *original* structure proposal predicted. Two sections: **where things are today** (the useful one) and **proposed vs. real** (the history of why the first five diverged).
 >
-> For the **state** of each module — what is implemented versus what is a skeleton — this document is not the source: [`AGENT.md`](../../AGENT.md) and [`ROADMAP.md`](../../ROADMAP.md) are. This file answers *where*, not *how much*.
+> For the **state** of each module — what is implemented versus what is a skeleton — this document is not the source: [`AGENTS.md`](../../AGENTS.md) and [`ROADMAP.md`](../../ROADMAP.md) are. This file answers *where*, not *how much*.
 
 ---
 
@@ -18,14 +18,14 @@
 | `scripts/` | Setup (`schema.sql` + first admin in one command), schema generation, manifest validation, Docker entrypoint, screenshot capture, sandbox-adapter verification. |
 | `infra/` | Deployable infrastructure that is not the app: e.g. the Cloudflare dispatcher Worker under `infra/cloudflare/dispatcher/`. |
 | `schema.sql`, `schema-additions/` | The master schema (generated from 13 real sources: 5 package schemas + `schema-additions/*.sql`) and the per-feature additions that feed it. Regenerate with `scripts/generate-schema.mjs`. |
-| `plugins-registry/`, `examples/` | Plugin registry data and reference configurations (blog, landing page, store). |
+| `plugins-registry/`, `site-profiles/starter/` | Plugin registry data and the clean starter site profile (fictional demos live in `geroiloyola/portaless-templates`). |
 | `docs/` | Vision, whitepaper, architecture, Protocol APW spec/errata/vectors, API guides, deployment and self-hosting guides, roadmap archive, screenshots. See §3. |
 | `tests/` | `tests/unit/`, `tests/browser/` (Playwright), `tests/e2e/`. |
 | `wrangler.toml`, `docker-compose.yml`, `Dockerfile`, `railway.json`, `render.yaml` | Deployment surfaces, each for a supported target. |
 
 ### `packages/` — the workspace packages
 
-Sixteen packages, each with its own `package.json`. The number of source files is this document's only quantity, and it is a size hint, not a status: **status lives in `AGENT.md`/`ROADMAP.md`.**
+Sixteen packages, each with its own `package.json`. The number of source files is this document's only quantity, and it is a size hint, not a status: **status lives in `AGENTS.md`/`ROADMAP.md`.**
 
 | Package | What it owns | Files |
 |---|---|---|
@@ -82,5 +82,5 @@ The documentation is layered on purpose, so each file answers one question:
 | [`docs/protocol-apw/`](../protocol-apw/) | **The interoperable contract**: `APW-SPEC-v1.3.md`, `ERRATA.md` (E-1…E-15), the human-readable vectors and the machine-readable fixtures under `vectors/v1.3/`. |
 | [`ROADMAP.md`](../../ROADMAP.md) | **State and next work**: what exists today, what is missing, what depends on third parties. |
 | [`README.md`](../../README.md) | **The product today**: what Portaless is and how to install and use it. |
-| [`AGENT.md`](../../AGENT.md) | The short version for contributors and AI agents, including the real state map per module. |
+| [`AGENTS.md`](../../AGENTS.md) | The short version for contributors and AI agents, including the real state map per module. |
 | [`docs/archive/ROADMAP-ARCHIVE.md`](../archive/ROADMAP-ARCHIVE.md) | History: the PR-by-PR log, deliberately kept out of the live documents. |

@@ -1,5 +1,5 @@
 // Seam de identidad por invocacion del mcp-server (Opcion B -- ver
-// AGENT.md y docs/architecture/mcp-agents.md). Hasta ahora el servidor
+// AGENTS.md y docs/architecture/mcp-agents.md). Hasta ahora el servidor
 // resolvia UNA identidad fija desde variables de entorno al arrancar
 // (Opcion A) y todo el proceso actuaba como ese unico agente, sin
 // verificacion real: cualquier cliente conectado via stdio heredaba los
@@ -58,7 +58,7 @@ export function createEnvAgentIdentityResolver(env: NodeJS.ProcessEnv = process.
   if (!key) {
     throw new Error(
       "MCP_AGENT_KEY no esta definida. El servidor MCP de Portaless requiere una identidad de " +
-        "agente (Opcion A sobre stdio, ver AGENT.md) -- defini MCP_AGENT_KEY (ej. 'ed25519:...' o " +
+        "agente (Opcion A sobre stdio, ver AGENTS.md) -- defini MCP_AGENT_KEY (ej. 'ed25519:...' o " +
         "cualquier id estable) y opcionalmente MCP_AGENT_DISPLAY_NAME, o bien corre con " +
         "PORTALESS_MCP_TRANSPORT=http (Opcion B, identidad por invocacion via bearer token)."
     );

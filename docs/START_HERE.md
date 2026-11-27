@@ -156,7 +156,7 @@ preventive notice and cannot run static builds (`503 build_runtime_unavailable`)
 - Release evidence and the remaining external gates are in
   [`testing/release-acceptance.md`](./testing/release-acceptance.md).
 - The full, per-module truth is [`../ROADMAP.md`](../ROADMAP.md) and
-  [`../AGENT.md`](../AGENT.md) — this page is the friendly summary, not the
+  [`../AGENTS.md`](../AGENTS.md) — this page is the friendly summary, not the
   source of truth.
 
 ## Where to go next

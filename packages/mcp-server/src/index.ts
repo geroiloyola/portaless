@@ -7,7 +7,7 @@
 //   MCP_AGENT_KEY / MCP_AGENT_DISPLAY_NAME, resuelta una vez por
 //   proceso -- el SDK de MCP no expone authInfo ni sesion por llamada
 //   sobre StdioServerTransport, asi que esto NO es identidad por
-//   invocacion (limitacion honesta, ver AGENT.md).
+//   invocacion (limitacion honesta, ver AGENTS.md).
 //
 // - http (PORTALESS_MCP_TRANSPORT=http): servidor self-host stateless
 //   en /mcp (ver http.ts). Identidad de agente Opcion B: cada peticion

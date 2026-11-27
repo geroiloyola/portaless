@@ -1,6 +1,6 @@
 // Endpoint de administracion de tokens de agentes MCP (identidad por
 // invocacion del servidor MCP via transporte HTTP, Opcion B -- ver
-// AGENT.md y docs/architecture/mcp-agents.md). Mismo patron de seguridad
+// AGENTS.md y docs/architecture/mcp-agents.md). Mismo patron de seguridad
 // que functions/admin/api/authorized-agents.js: sesion valida
 // (context.data.user, expuesta por functions/admin/_middleware.js) y
 // canWrite(role) del lado del SERVIDOR para POST/PATCH -- un viewer que

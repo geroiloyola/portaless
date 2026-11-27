@@ -65,8 +65,7 @@ cualquier edicion manual se perderia en la siguiente regeneracion.
 Agregar un script `"setup": "node scripts/setup.mjs"` a la seccion
 `scripts` de `package.json` (raiz) para poder correr `npm run setup` en
 vez de la ruta completa -- no se edito `package.json` en este PR porque su
-contenido completo no se pudo leer por el bug del conector de GitHub (ver
-`.airchive/project_memory/lessons_learned.md`), y el usuario confirmo
+contenido completo no se pudo leer por el bug del conector de GitHub (historial del proyecto), y el usuario confirmo
 explicitamente no pasar su contenido en esta sesion, asi que se documenta
 como tarea manual en vez de arriesgar sobrescribir scripts o dependencias
 existentes sin verlos primero.

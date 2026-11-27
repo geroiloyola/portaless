@@ -24,7 +24,6 @@ const TOOL_COUNT = registered.length + contextToolCount + proposalToolCount;
 // Docs que un agente o un usuario nuevo leen primero. Si uno publica
 // "N (real) tools", N tiene que ser el conteo real.
 const DOCS = [
-  "AGENT.md",
   "AGENTS.md",
   "README.md",
   "ROADMAP.md",

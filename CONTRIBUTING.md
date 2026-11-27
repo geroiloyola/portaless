@@ -2,7 +2,7 @@
 
 > Canonical English version. The Spanish archive is [`CONTRIBUTING_es.md`](./docs/es/CONTRIBUTING_es.md).
 
-Thanks for your interest in contributing. Portaless is a young project (v0.0.x, MVP phase) — most modules are functional; check the real status table in [`AGENT.md`](./AGENT.md) and [`ROADMAP.md`](./ROADMAP.md) before assuming anything. Before contributing, read [`CHANGELOG.md`](./CHANGELOG.md) to understand what is really implemented and what is still design.
+Thanks for your interest in contributing. Portaless is a young project (v0.0.x, MVP phase) — most modules are functional; check the real status table in [`AGENTS.md`](./AGENTS.md) and [`ROADMAP.md`](./ROADMAP.md) before assuming anything. Before contributing, read [`CHANGELOG.md`](./CHANGELOG.md) to understand what is really implemented and what is still design.
 
 ## How to contribute
 
@@ -18,7 +18,7 @@ Thanks for your interest in contributing. Portaless is a young project (v0.0.x, 
 - **Be a reviewer** — the two highest-damage surfaces (how a person proves who they are, and how third-party code is contained) need a second pair of eyes; [`docs/security-review-guide.md`](./docs/security-review-guide.md) maps where they live and how to break them, and needs no commit rights. A second maintainer with real merge authority is the project's biggest structural gap ([`SECURITY.md`](./SECURITY.md)).
 - Completing real integration of the edge sandboxing adapters (`packages/plugin-sandbox/src/adapters/deno-deploy.ts` and `cloudflare-workers-for-platforms.ts`) against real test accounts — today they are only verified with mocked `fetch`. The self-hosted `isolated-vm` adapter has run real code since v0.0.6.
 - Testing `npm run setup` locally against a real SQLite file before trusting the install flow documented in `scripts/SETUP.md`.
-- MCP server per-invocation agent identity (today it is per-process — see the known limitation in `AGENT.md`).
+- MCP server per-invocation agent identity (today it is per-process — see the known limitation in `AGENTS.md`).
 - AT Protocol identity (`packages/identity-atproto/` is still an empty stub — the only such package left).
 - Documentation: English is now canonical; `*_es.md` archives stay frozen. If you touch a module, update the English docs first.
 
@@ -35,7 +35,45 @@ git log --format='%ae' -- packages/plugin-sandbox/src/types.ts | sort -u
 
 **One-way rule.** Only code whose copyright holder is the author crosses from the core (AGPL) to the SDK (MIT). The reverse direction — MIT-licensed SDK code reused inside the AGPL core — is fine: MIT is compatible with AGPL. Copying AGPL code into the MIT SDK is **not** allowed without the permission of every holder, which is what the check above establishes, file by file. The SDK re-declares its own types and catalog as its own document; equivalence with the core is guaranteed by a test on the AGPL side (`tests/unit/plugin-sdk-parity.test.ts`), not by a runtime import.
 
-**DCO.** Contributions are accepted under the [Developer Certificate of Origin](./DCO): sign off every commit with `git commit -s` (`Signed-off-by: Name <email>`). The DCO certifies each contribution; it does **not**, by itself, authorize moving existing AGPL code to the MIT SDK — the ownership note above is what does that.
+**DCO.** Contributions are accepted under the **Developer Certificate of Origin 1.1** (full text below): sign off every commit with `git commit -s` (`Signed-off-by: Name <email>`). The DCO certifies each contribution; it does **not**, by itself, authorize moving existing AGPL code to the MIT SDK — the ownership note above is what does that.
+
+### Developer Certificate of Origin 1.1
+
+```text
+Developer Certificate of Origin
+Version 1.1
+
+Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
+
+Everyone is permitted to copy and distribute verbatim copies of this
+license document, but changing it is not allowed.
+
+Developer's Certificate of Origin 1.1
+
+By making a contribution to this project, I certify that:
+
+(a) The contribution was created in whole or in part by me and I
+    have the right to submit it under the open source license
+    indicated in the file; or
+
+(b) The contribution is based upon previous work that, to the best
+    of my knowledge, is covered under an appropriate open source
+    license and I have the right under that license to submit that
+    work with modifications, whether created in whole or in part
+    by me, under the same open source license (unless I am
+    permitted to submit under a different license), as indicated
+    in the file; or
+
+(c) The contribution was provided directly to me by some other
+    person who certified (a), (b) or (c) and I have not modified
+    it.
+
+(d) I understand and agree that this project and the contribution
+    are public and that a record of the contribution (including all
+    personal information I submit with it, including my sign-off) is
+    maintained indefinitely and may be redistributed consistent with
+    this project or the open source license(s) involved.
+```
 
 ## Code of conduct
 

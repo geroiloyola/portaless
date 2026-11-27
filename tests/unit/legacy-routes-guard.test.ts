@@ -60,7 +60,6 @@ const REL = [
   "public",
   "README.md",
   "ROADMAP.md",
-  "AGENT.md",
   "AGENTS.md",
   "CHANGELOG.md",
 ];

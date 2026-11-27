@@ -1,9 +1,8 @@
 # AGENTS.md — Context for AI coding agents (opencode, Claude Code, Cursor)
 
-> This file is the **entry point for any AI agent that wants to edit this repo**.
-> The companion `AGENT.md` is the project-internal context map (module status,
-> conventions, history). Read this file first; read `AGENT.md` when you need
-> module-level detail.
+> This file is the **single entry point for any AI agent working on this repo**.
+> Stack: Astro + TypeScript (no React/Vue), npm workspaces (`packages/*`).
+> For live module status, always check [`ROADMAP.md`](./ROADMAP.md).
 
 ## What Portaless is (one paragraph)
 
@@ -40,7 +39,7 @@ Read in this order — **do not read them all**:
 | When you need | Read |
 |---|---|
 | To understand what the product is and where it's going | `docs/VISION.md` |
-| To know what's real today (per module) | `ROADMAP.md` (short) or `AGENT.md` (long) |
+| To know what's real today (per module) | `ROADMAP.md` |
 | To install locally (Docker + browser, ~10 minutes) | `docs/first-steps.md` (Spanish) |
 | To deploy to GitHub Pages | `docs/DEPLOY_GITHUB_PAGES.md` |
 | To deploy to Cloudflare Pages (needed for Trust Layer) | `docs/DEPLOY_CLOUDFLARE_PAGES.md` |
@@ -54,16 +53,11 @@ Read in this order — **do not read them all**:
 | To review accepted architecture decisions and their open risks | `docs/decisions/README.md` |
 | To know which LTP work is actually authorized (G1–G5) | `docs/protocol-apw/LTP-GATES-AND-AUTHORIZATIONS.md` |
 
-**If you are an AI agent editing code**: read `AGENT.md` after this file. It
-contains the real-state table, the golden rule, and the security risks you
-must know.
-
 ## Real state
 
 The per-module status table lives in one place only. Do not copy it here:
 
 - [`ROADMAP.md`](./ROADMAP.md) — what is shipped, partial or open today (read before proposing).
-- [`AGENT.md`](./AGENT.md) — module-level real state, conventions and history.
 - [`docs/README.md`](./docs/README.md) — documentation index and which repository owns what.
 
 Headline facts an agent must not contradict: the MCP server exposes 19 tools (stdio + HTTP); the Plugin SDK is consumed from `@portaless/plugin-sdk`; 5 plugin capabilities still return explicit `501` by design; the plugin HTTP installer is off by default.
@@ -74,8 +68,6 @@ Headline facts an agent must not contradict: the MCP server exposes 19 tools (st
    third-party).
 2. `docs/VISION.md` — what the project refuses to become (so you don't propose
    something it explicitly rejects).
-3. `AGENT.md` — the module's real state (don't assume a folder is functional
-   just because it exists).
 
 ## Code conventions (the non-negotiables)
 
@@ -84,10 +76,13 @@ Headline facts an agent must not contradict: the MCP server exposes 19 tools (st
    `functions/_middleware.js`.
 2. **No plugin gets more capabilities than granted.** The rule lives in
    `packages/plugin-sandbox/src/runtime/sandbox-runtime.ts`: use what the
-   Permissions Center *granted*, never what the manifest *requested*.
+   Permissions Center *granted*, never what the manifest *requested* (full
+   catalog: `packages/plugin-sandbox/src/capabilities/capability-registry.ts`).
+   The MCP server enforces the same rule via `requireCapability()` in
+   `packages/mcp-server/src/permissions/require-capability.ts`.
 3. **Never declare something "implemented" if there's an integration `TODO`
    pending.** This project documents limitations honestly.
-4. **The only surface a third-party plugin imports is `packages/plugin-sdk`**
+4. **The only surface a third-party plugin imports is `@portaless/plugin-sdk`**
    (MIT). No plugin may import core internals directly.
 5. **All changes go through a Pull Request.** Never commit directly to `main`,
    even with merge permission. The project owner approves manually.

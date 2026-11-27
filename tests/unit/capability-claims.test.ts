@@ -12,7 +12,6 @@ function capabilityBackends() {
 
 const docs = [
   "README.md",
-  "AGENT.md",
   "AGENTS.md",
   "ROADMAP.md",
   "docs/plugin-author-guide.md",
