@@ -12,11 +12,18 @@ import { rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-async function loadCompatModule(publicSpecifier, legacySegments) {
+async function loadCompatModule(publicSpecifier, ...fallbackSegmentLists) {
   try {
     return await import(publicSpecifier);
-  } catch {
-    return await import(pathToFileURL(resolve(process.cwd(), ...legacySegments)).href);
+  } catch (lastErr) {
+    for (const segments of fallbackSegmentLists) {
+      try {
+        return await import(pathToFileURL(resolve(process.cwd(), ...segments)).href);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr;
   }
 }
 
@@ -65,6 +72,7 @@ async function main() {
   const { createPageStore } = await loadCompatModule(
     "@portaless/visual-elements/store-factory",
     ["packages", "visual-elements", "src", "persistence", "store-factory.ts"],
+    ["packages", "atomic-elements", "src", "persistence", "store-factory.ts"],
   );
   const store = await createPageStore({ PORTALESS_SQLITE_PATH: out });
   await store.save({
