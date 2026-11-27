@@ -45,7 +45,7 @@ próxima versión), `Spacer`.
 - El reordenamiento por drag & drop solo soporta niveles simples; anidar
   elementos dentro de `Columns` desde la interfaz visual todavía no está
   implementado (sí es posible haciéndolo a mano en el JSON, ver el ejemplo
-  en `src/content/pages/ejemplo-visual-elements.json`).
+  en `src/content/pages/ejemplo-atomic-elements.json`).
 - No hay deshacer/rehacer (`undo`/`redo`) todavía.
 - El `ProductGrid` es un placeholder visual — la conexión real con el
   catálogo de Medusa/Mercur del módulo de comercio queda pendiente para

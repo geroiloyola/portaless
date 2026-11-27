@@ -27,8 +27,8 @@ identifican archivos completos, no verifican que sus afirmaciones sean ciertas.
 | `src/content/home.json:1` | B | Home de marketing EN → demo; nueva home mínima A |
 | `src/content/home.es.json:1` | B | Proyección ES → demo exclusivamente |
 | `src/content/posts/bienvenida.md:1-21` | B | Conservar en demo; crear post A en inglés, sin reutilizar su copy español |
-| `src/content/pages/ejemplo-visual-elements.json:1` | B | Catálogo de elementos demo |
-| `src/content/pages/ejemplo-visual-elements.en.json:1` | B | Traducción del catálogo demo; mantener relación con su primaria |
+| `src/content/pages/ejemplo-atomic-elements.json:1` | B | Catálogo de elementos demo |
+| `src/content/pages/ejemplo-atomic-elements.en.json:1` | B | Traducción del catálogo demo; mantener relación con su primaria |
 | `src/content/pages/jerry-bantz.json:1` | D → B ficticio | Exportar original al repo del dueño; sustituir por creador ficticio, sin canales reales |
 | `src/content/pages/musica-merch.json:1` | B + D | Mantener músico/merch; sustituir canales personales y medios |
 | `src/content/pages/link-in-bio.json:1` | B + D | Mantener caso de uso; sustituir canales reales |
