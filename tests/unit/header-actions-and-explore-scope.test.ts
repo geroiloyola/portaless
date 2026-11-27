@@ -112,18 +112,64 @@ describe("Header contextual actions, circular language button and theme toggle",
   });
 });
 
-describe("ExplorePage.astro scope selector above Order by", () => {
+describe("PageLayout.flairs validation and Visual Editor support", () => {
+  const baseLayout = {
+    version: "0.1" as const,
+    slug: "guides",
+    title: "Guides",
+    root: [{ id: "h1", type: "Heading" as const, props: { text: "Guides", level: "h1" } }],
+  };
+
+  it("accepts valid flairs and omits flairs cleanly for backward compatibility", () => {
+    expect(validatePageLayout({ ...baseLayout, flairs: ["Web", "Portaless", "Guías"] }).valid).toBe(true);
+    expect(validatePageLayout({ ...baseLayout, flairs: undefined }).valid).toBe(true);
+  });
+
+  it("rejects >10 flairs, empty/too-long flairs, non-array, and dangerous characters", () => {
+    expect(validatePageLayout({ ...baseLayout, flairs: "Web" as unknown as string[] }).valid).toBe(false);
+    expect(validatePageLayout({ ...baseLayout, flairs: Array.from({ length: 11 }, (_, i) => `f${i}`) }).valid).toBe(false);
+    expect(validatePageLayout({ ...baseLayout, flairs: [""] }).valid).toBe(false);
+    expect(validatePageLayout({ ...baseLayout, flairs: ["x".repeat(33)] }).valid).toBe(false);
+    expect(validatePageLayout({ ...baseLayout, flairs: ["<script>"] }).valid).toBe(false);
+    expect(validatePageLayout({ ...baseLayout, flairs: ["bad\nflair"] }).valid).toBe(false);
+  });
+
+  it("exposes editable Flairs / Temas input in Visual Editor (editor-app.ts)", () => {
+    const editorSrc = readFileSync(join(root, "packages/visual-elements/src/editor/editor-app.ts"), "utf8");
+    expect(editorSrc).toContain("data-page-flairs-input");
+    expect(editorSrc).toContain("Flairs / Temas");
+    expect(editorSrc).toContain("draft.flairs");
+  });
+});
+
+describe("ExplorePage.astro scope selector, custom flairs and URL state", () => {
   const exploreSrc = readFileSync(join(root, "src/components/ExplorePage.astro"), "utf8");
 
-  it("renders explore-scope radiogroup before explore-order (Order by)", () => {
+  it("renders 3 mandatory scopes (all, pages, publications) before explore-order (Order by)", () => {
     const scopeIdx = exploreSrc.indexOf('name="explore-scope"');
     const orderIdx = exploreSrc.indexOf('name="explore-order"');
     expect(scopeIdx).toBeGreaterThan(-1);
     expect(orderIdx).toBeGreaterThan(scopeIdx);
+    expect(exploreSrc).toContain('{ value: "all", label: allScopeLabel }');
+    expect(exploreSrc).toContain('{ value: "pages", label: pagesLabel }');
+    expect(exploreSrc).toContain('{ value: "publications", label: c.chips.publications }');
     expect(exploreSrc).toContain('data-explore-section="home"');
     expect(exploreSrc).toContain('data-explore-section="pages"');
     expect(exploreSrc).toContain('data-explore-section="publications"');
     expect(exploreSrc).toContain("data-order={buildAsOf}");
     expect(exploreSrc).not.toMatch(/\son[a-z]+\s*=/i);
+  });
+
+  it("collects dynamic flairs, emits data-flairs + flair:<slug> pills, and syncs ?flair=/?scope=/?order= URL state", () => {
+    expect(exploreSrc).toContain("normalizeFlairSlug");
+    expect(exploreSrc).toContain("value={`flair:${f.slug}`}");
+    expect(exploreSrc).toContain("data-flairs={");
+    expect(exploreSrc).toContain("explore-scope-divider");
+    expect(exploreSrc).toContain("explore-flair-badge");
+    expect(exploreSrc).toContain("URLSearchParams(window.location.search)");
+    expect(exploreSrc).toContain('urlParams.get("flair")');
+    expect(exploreSrc).toContain('urlParams.get("scope")');
+    expect(exploreSrc).toContain('urlParams.get("order")');
+    expect(exploreSrc).toContain("window.history.replaceState");
   });
 });

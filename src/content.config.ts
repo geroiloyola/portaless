@@ -13,6 +13,9 @@ const posts = defineCollection({
     pubDate: z.date(),
     draft: z.boolean().default(false),
     private: z.boolean().default(false),
+    flairs: z.array(z.string()).optional(),
+    flair: z.string().optional(),
+    tags: z.array(z.string()).optional(),
   }),
 });
 

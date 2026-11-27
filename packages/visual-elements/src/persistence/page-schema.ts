@@ -107,6 +107,28 @@ export function validatePageLayout(
       }
     }
   }
+  if (layout.flairs !== undefined) {
+    if (!Array.isArray(layout.flairs)) {
+      errors.push('"flairs" debe ser un arreglo de strings.');
+    } else {
+      if (layout.flairs.length > 10) {
+        errors.push(`"flairs" permite como máximo 10 etiquetas (recibidas: ${layout.flairs.length}).`);
+      }
+      layout.flairs.forEach((raw, idx) => {
+        if (typeof raw !== "string") {
+          errors.push(`"flairs[${idx}]" debe ser un string.`);
+          return;
+        }
+        const trimmed = raw.trim();
+        if (trimmed.length < 1 || trimmed.length > 32) {
+          errors.push(`"flairs[${idx}]" debe tener entre 1 y 32 caracteres.`);
+        }
+        if (/[<>\u0000-\u001F\u007F]/.test(trimmed)) {
+          errors.push(`"flairs[${idx}]" contiene caracteres no permitidos.`);
+        }
+      });
+    }
+  }
 
   layout.root?.forEach((node, i) => validateNode(node, `root[${i}]`, errors, hasType));
 
