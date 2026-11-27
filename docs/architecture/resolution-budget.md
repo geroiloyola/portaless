@@ -201,7 +201,7 @@ a flag/indicator is not evidence that these rules or origin isolation exist.
 
 ## Sustained full-table admission measurement
 
-Reproduce with `node --import tsx scripts/measure-resolution-admission.mjs`.
+Numbers above were recorded during the PR2 admission benchmark (helper script retired after PR2).
 Node v24.12.0 on this local macOS host; synthetic resolved fetcher, no network.
 Fill each table, warm with 2,000 more churn admissions, then time 6,000 new
 client/origin pairs while the table stays full. Milliseconds per admission:
