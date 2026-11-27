@@ -46,6 +46,8 @@
 // Contrato
 // ---------------------------------------------------------------------------
 
+export type ThemeVars = Record<string, string>;
+
 export interface ThemePack {
   /** Nombre-slug unico en el catalogo: "2pac-dark". */
   name: string;
@@ -55,14 +57,18 @@ export interface ThemePack {
   /** Otro pack del catalogo cuyas vars hereda (fusion: padre abajo). */
   extends?: string;
   /** Variables CSS permitidas -> valor seguro. Solo esto se emite. */
-  vars: Record<string, string>;
+  vars: ThemeVars;
+  /** Opcional: overrides de paleta/tokens para modo claro (fusionados sobre vars). */
+  lightVars?: Partial<ThemeVars>;
+  /** Opcional: overrides de paleta/tokens para modo oscuro (fusionados sobre vars). */
+  darkVars?: Partial<ThemeVars>;
 }
 
 /** Formato de nombre de pack (y de "extends"): slug simple y predecible. */
 export const THEME_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /**
- * Allowlist de variables -- en PARIDAD EXACTA con Object.values(TOKEN_TO_CSS_VAR)
+ * Allowlist base de variables -- en PARIDAD EXACTA con Object.values(TOKEN_TO_CSS_VAR)
  * de packages/dashboard/src/skin-engine/tokens.ts (fijado por test). Cada
  * entrada es ya el nombre CSS, por eso un pack no necesita mapear nada:
  * la misma lista es la que se emite y la que se valida.
@@ -86,16 +92,154 @@ export const THEME_VARS: readonly string[] = [
   "--danger-fg",
 ];
 
+/**
+ * Tokens editoriales opcionales (ThemePack v2): tipografia, ritmo de
+ * secciones y elevacion. Se validan con mascaras estrictas anti-inyeccion CSS.
+ */
+export const OPTIONAL_THEME_VARS: readonly string[] = [
+  "--font-display",
+  "--font-sans",
+  "--space-section",
+  "--elevation",
+];
+
+/** Union determinista de THEME_VARS + OPTIONAL_THEME_VARS. */
+export const ALL_THEME_VARS: readonly string[] = [
+  ...THEME_VARS,
+  ...OPTIONAL_THEME_VARS,
+];
+
 const THEME_VAR_SET = new Set(THEME_VARS);
+const OPTIONAL_THEME_VAR_SET = new Set(OPTIONAL_THEME_VARS);
 
 /**
- * Mascara de valor, identica a la de dashboard (SAFE_TOKEN_VALUE).
- * Paridad de comportamiento fijada por test con isSafeTokenValue.
+ * Mascara de valor para las 16 variables base, identica a la de dashboard
+ * (SAFE_TOKEN_VALUE). Paridad de comportamiento fijada por test con isSafeTokenValue.
  */
 const SAFE_THEME_VALUE = /^[\w#(),.%\s/-]{1,40}$/;
 
 export function isSafeThemeValue(value: unknown): value is string {
   return typeof value === "string" && SAFE_THEME_VALUE.test(value);
+}
+
+/** Patron de rechazo explicito anti-inyeccion CSS para tokens editoriales. */
+const FORBIDDEN_CSS_INJECTION = /[;{}<>\\]|url\s*\(|expression\s*\(|@import|javascript:|\/\*|\*\//i;
+const SAFE_FONT_VALUE = /^[a-zA-Z0-9\s,'"-]{1,120}$/;
+const SAFE_SPACE_VALUE = /^(?:0|[0-9]{1,3}(?:\.[0-9]{1,2})?(?:px|rem|em|vh|vw))$/;
+const SAFE_ELEVATION_VALUE = /^(?:none|(?:(?:inset\s+)?(?:-?[0-9]{1,3}(?:\.[0-9]{1,2})?(?:px|rem)?\s+){2,4}(?:rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|#[0-9a-fA-F]{3,8})(?:\s*,\s*)?)+)$/;
+
+/**
+ * Valida un valor para cualquiera de los 4 OPTIONAL_THEME_VARS.
+ * Rechaza url(), expression(), ;, {, }, <, >, @import y comentarios CSS.
+ */
+export function isSafeEditorialThemeValue(key: string, value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > 120) return false;
+  if (FORBIDDEN_CSS_INJECTION.test(trimmed)) return false;
+  if (key === "--font-display" || key === "--font-sans") return SAFE_FONT_VALUE.test(trimmed);
+  if (key === "--space-section") return SAFE_SPACE_VALUE.test(trimmed);
+  if (key === "--elevation") return SAFE_ELEVATION_VALUE.test(trimmed);
+  return false;
+}
+
+// --- WCAG 2.1 contrast helper (pure, no IO) -------------------------------
+
+const HEX6 = /^#([0-9a-fA-F]{6})$/;
+const HEX3 = /^#([0-9a-fA-F]{3})$/;
+
+function parseHexRgb(hex: string | undefined): [number, number, number] | null {
+  if (!hex) return null;
+  const trimmed = hex.trim();
+  let m = HEX6.exec(trimmed);
+  if (m) {
+    const n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  m = HEX3.exec(trimmed);
+  if (m) {
+    const [r, g, b] = m[1].split("").map((c) => parseInt(c + c, 16));
+    return [r, g, b];
+  }
+  return null;
+}
+
+function relativeLuminance([r, g, b]: [number, number, number]): number {
+  const lin = [r, g, b].map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+export function wcagContrastRatio(fgHex: string, bgHex: string): number | null {
+  const fg = parseHexRgb(fgHex);
+  const bg = parseHexRgb(bgHex);
+  if (!fg || !bg) return null;
+  const l1 = relativeLuminance(fg);
+  const l2 = relativeLuminance(bg);
+  const hi = Math.max(l1, l2);
+  const lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const WCAG_AA_PAIRS: ReadonlyArray<readonly [string, string, string]> = [
+  ["--text", "--bg", "texto sobre fondo"],
+  ["--text", "--panel-bg", "texto sobre panel"],
+  ["--accent-text", "--bg", "accent-text sobre fondo"],
+  ["--accent-text", "--panel-bg", "accent-text sobre panel"],
+  ["--muted", "--bg", "muted sobre fondo"],
+  ["--success-fg", "--success-bg", "chip success"],
+  ["--warning-fg", "--warning-bg", "chip warning"],
+  ["--danger-fg", "--danger-bg", "chip danger"],
+];
+
+function validateVarMap(
+  rawMap: unknown,
+  fieldLabel: string,
+  errors: string[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (rawMap === null || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    errors.push(`"${fieldLabel}" debe ser un objeto de variables CSS permitidas.`);
+    return out;
+  }
+  for (const [key, value] of Object.entries(rawMap as Record<string, unknown>)) {
+    if (THEME_VAR_SET.has(key)) {
+      if (!isSafeThemeValue(value)) {
+        errors.push(`Valor inseguro o demasiado largo para "${fieldLabel}.${key}".`);
+        continue;
+      }
+      out[key] = value;
+    } else if (OPTIONAL_THEME_VAR_SET.has(key)) {
+      if (!isSafeEditorialThemeValue(key, value)) {
+        errors.push(`Valor editorial inseguro o invalido para "${fieldLabel}.${key}".`);
+        continue;
+      }
+      out[key] = (value as string).trim();
+    } else {
+      errors.push(`"${key}" no es una variable permitida (allowlist THEME_VARS / OPTIONAL_THEME_VARS).`);
+    }
+  }
+  return out;
+}
+
+function validateModeContrast(
+  effectiveVars: Record<string, string>,
+  modeLabel: "lightVars" | "darkVars",
+  errors: string[],
+): void {
+  for (const [fgKey, bgKey, label] of WCAG_AA_PAIRS) {
+    const fg = effectiveVars[fgKey];
+    const bg = effectiveVars[bgKey];
+    if (!fg || !bg) continue;
+    const ratio = wcagContrastRatio(fg, bg);
+    if (ratio !== null && ratio < 4.5) {
+      errors.push(
+        `Contraste WCAG AA insuficiente en ${modeLabel} (${label}: ${fg} sobre ${bg} = ${ratio.toFixed(2)}:1, minimo 4.5:1).`,
+      );
+    }
+  }
 }
 
 export interface ThemeValidationResult {
@@ -131,21 +275,26 @@ export function validateThemePack(input: unknown): ThemeValidationResult {
     errors.push(`"extends" debe nombrar un tema (slug): recibido ${JSON.stringify(raw.extends)}.`);
   }
 
-  const vars: Record<string, string> = {};
-  if (raw.vars === undefined || raw.vars === null || typeof raw.vars !== "object" || Array.isArray(raw.vars)) {
+  let vars: Record<string, string> = {};
+  if (raw.vars === undefined) {
     errors.push('"vars" debe ser un objeto de variables CSS permitidas.');
   } else {
-    for (const [key, value] of Object.entries(raw.vars as Record<string, unknown>)) {
-      if (!THEME_VAR_SET.has(key)) {
-        errors.push(`"${key}" no es una variable permitida (allowlist THEME_VARS).`);
-        continue;
-      }
-      if (!isSafeThemeValue(value)) {
-        errors.push(`Valor inseguro o demasiado largo para "${key}".`);
-        continue;
-      }
-      vars[key] = value;
-    }
+    vars = validateVarMap(raw.vars, "vars", errors);
+  }
+
+  let lightVars: Record<string, string> | undefined;
+  if (raw.lightVars !== undefined) {
+    lightVars = validateVarMap(raw.lightVars, "lightVars", errors);
+  }
+
+  let darkVars: Record<string, string> | undefined;
+  if (raw.darkVars !== undefined) {
+    darkVars = validateVarMap(raw.darkVars, "darkVars", errors);
+  }
+
+  if (errors.length === 0) {
+    if (lightVars) validateModeContrast({ ...vars, ...lightVars }, "lightVars", errors);
+    if (darkVars) validateModeContrast({ ...vars, ...darkVars }, "darkVars", errors);
   }
 
   if (errors.length > 0) return { valid: false, errors };
@@ -157,6 +306,8 @@ export function validateThemePack(input: unknown): ThemeValidationResult {
   };
   if (typeof raw.description === "string") pack.description = raw.description;
   if (typeof raw.extends === "string") pack.extends = raw.extends;
+  if (lightVars && Object.keys(lightVars).length > 0) pack.lightVars = lightVars;
+  if (darkVars && Object.keys(darkVars).length > 0) pack.darkVars = darkVars;
   return { valid: true, errors: [], pack };
 }
 
@@ -168,7 +319,11 @@ export interface ResolvedTheme {
   /** El nombre pedido (la hoja de la cadena). */
   name: string;
   /** Vars fusionadas: la raiz primero, el pack pedido encima. */
-  vars: Record<string, string>;
+  vars: ThemeVars;
+  /** Overrides de modo claro fusionados a lo largo de extends (si existen). */
+  lightVars?: ThemeVars;
+  /** Overrides de modo oscuro fusionados a lo largo de extends (si existen). */
+  darkVars?: ThemeVars;
 }
 
 /**
@@ -190,24 +345,87 @@ export function resolveThemePack(themes: readonly ThemePack[], name: string): Re
     cursor = pack.extends;
   }
   chain.reverse();
-  const vars: Record<string, string> = {};
-  for (const pack of chain) Object.assign(vars, pack.vars);
-  return { name, vars };
+  const vars: ThemeVars = {};
+  const lightVars: ThemeVars = {};
+  const darkVars: ThemeVars = {};
+  for (const pack of chain) {
+    Object.assign(vars, pack.vars);
+    if (pack.lightVars) {
+      for (const [k, v] of Object.entries(pack.lightVars)) {
+        if (v !== undefined) lightVars[k] = v;
+      }
+    }
+    if (pack.darkVars) {
+      for (const [k, v] of Object.entries(pack.darkVars)) {
+        if (v !== undefined) darkVars[k] = v;
+      }
+    }
+  }
+  const resolved: ResolvedTheme = { name, vars };
+  if (Object.keys(lightVars).length > 0) resolved.lightVars = lightVars;
+  if (Object.keys(darkVars).length > 0) resolved.darkVars = darkVars;
+  return resolved;
+}
+
+function serializeVars(vars: Record<string, string | undefined>): string {
+  const parts: string[] = [];
+  for (const cssVar of ALL_THEME_VARS) {
+    const value = vars[cssVar];
+    if (value !== undefined) parts.push(`${cssVar}:${value}`);
+  }
+  return parts.join(";");
 }
 
 /**
- * Declaracion CSS del tema en orden estable (THEME_VARS). El emisor la
- * pega como atributo style en <html> (ver la nota de cascada arriba).
+ * Declaracion CSS del tema en orden estable (THEME_VARS + OPTIONAL_THEME_VARS).
+ * El emisor la pega como atributo style en <html> para temas de modo unico.
  * Los valores ya pasaron la mascara de validateThemePack: incrustarlos
  * sin escapar es seguro. Devuelve "" si el pack no declara nada.
  */
 export function themeStyleDecl(theme: ResolvedTheme): string {
-  const parts: string[] = [];
-  for (const cssVar of THEME_VARS) {
-    const value = theme.vars[cssVar];
-    if (value !== undefined) parts.push(`${cssVar}:${value}`);
+  return serializeVars(theme.vars);
+}
+
+/**
+ * Declaracion CSS efectiva para un modo especifico ("light" | "dark")
+ * fusionando vars base + lightVars/darkVars. Util para atributos
+ * data-theme-light / data-theme-dark sin <style> inline ni JS inline.
+ */
+export function themeStyleDeclForMode(theme: ResolvedTheme, mode: "light" | "dark"): string {
+  const overrides = mode === "dark" ? theme.darkVars : theme.lightVars;
+  return serializeVars({ ...theme.vars, ...(overrides ?? {}) });
+}
+
+/** Devuelve true si el tema resuelto declara variantes claro/oscuro. */
+export function hasDualMode(theme: ResolvedTheme): boolean {
+  return Boolean(
+    (theme.lightVars && Object.keys(theme.lightVars).length > 0) ||
+    (theme.darkVars && Object.keys(theme.darkVars).length > 0),
+  );
+}
+
+/**
+ * Genera una hoja CSS scoped a :root[data-theme-pack="<name>"] para temas
+ * duales (lightVars / darkVars). Especificidad (0,3,0) en [data-theme="light"]
+ * y [data-theme="dark"] garantiza que el toggle del visitante funcione siempre
+ * sin usar !important ni <script> inline (CSP estricto A-07 intacto).
+ * Devuelve "" si el tema no es dual (en cuyo caso se usa themeStyleDecl).
+ */
+export function themeStyleSheet(theme: ResolvedTheme): string {
+  if (!hasDualMode(theme) || !THEME_NAME_PATTERN.test(theme.name)) return "";
+  const sel = `:root[data-theme-pack="${theme.name}"]`;
+  const lightEffective = { ...theme.vars, ...(theme.lightVars ?? {}) };
+  const darkEffective = { ...theme.vars, ...(theme.darkVars ?? {}) };
+  const lightDecl = serializeVars(lightEffective);
+  const darkDecl = serializeVars(darkEffective);
+  const rules: string[] = [];
+  if (lightDecl) rules.push(`${sel}{${lightDecl}}`);
+  if (darkDecl) {
+    rules.push(`@media (prefers-color-scheme:dark){${sel}:not([data-theme="light"]){${darkDecl}}}`);
+    rules.push(`${sel}[data-theme="dark"]{${darkDecl}}`);
   }
-  return parts.join(";");
+  if (lightDecl) rules.push(`${sel}[data-theme="light"]{${lightDecl}}`);
+  return rules.join("\n");
 }
 
 /**
@@ -228,14 +446,6 @@ export function availableThemes(installed: readonly ThemePack[] = []): ThemePack
  * Temas que estan en el repo: funcionan en build estatico sin base de
  * datos y en cualquier arranque. Los instalados (theme_packs) se suman
  * encima vía availableThemes().
- *
- * "2pac-dark": tema de ejemplo oscuro estilo linktr.ee/2Pac pedido para
- * el perfil demo. Los valores NO son una paleta nueva: son la paleta
- * oficial OSCURA (dashboard tokens.ts DEFAULT_DARK_TOKENS) con las
- * superficies desplazadas a tinta mas profunda y el acento cambiado de
- * lima al naranja oficial -- por eso los pares de texto pasan AA por
- * construccion (tests/unit/theme-pack.test.ts lo verifica por math WCAG,
- * igual que el resto del repo). El lima queda como acent-2.
  */
 export const BUILTIN_THEMES: readonly ThemePack[] = [
   {
@@ -280,6 +490,52 @@ export const BUILTIN_THEMES: readonly ThemePack[] = [
       "--warning-fg": "#E0B060",
       "--danger-bg": "#2E1714",
       "--danger-fg": "#E8968C",
+    },
+  },
+  {
+    name: "portaless-editorial",
+    displayName: "Portaless Editorial (Claro / Oscuro)",
+    description:
+      "Tema editorial dual-mode con tokens tipograficos, ritmo de secciones y elevacion. Respeta el alternador Claro/Oscuro del visitante y cumple WCAG AA en ambos modos.",
+    vars: {
+      "--radius": "12px",
+      "--font-display": "'Fraunces Variable', Georgia, serif",
+      "--font-sans": "'Inter Variable', system-ui, sans-serif",
+      "--space-section": "2.5rem",
+    },
+    lightVars: {
+      "--bg": "#FAF9F5",
+      "--panel-bg": "#FFFFFF",
+      "--panel-border": "#D6D3CD",
+      "--text": "#1C1917",
+      "--muted": "#57534E",
+      "--accent": "#0369A1",
+      "--accent-text": "#0369A1",
+      "--accent-2": "#B45309",
+      "--elevation": "0 8px 24px -16px rgba(15, 23, 42, 0.14)",
+      "--success-bg": "#ECFDF5",
+      "--success-fg": "#065F46",
+      "--warning-bg": "#FFFBEB",
+      "--warning-fg": "#92400E",
+      "--danger-bg": "#FEF2F2",
+      "--danger-fg": "#991B1B",
+    },
+    darkVars: {
+      "--bg": "#0B0F17",
+      "--panel-bg": "#131A26",
+      "--panel-border": "#263247",
+      "--text": "#F3F6FC",
+      "--muted": "#A8B5CC",
+      "--accent": "#38BDF8",
+      "--accent-text": "#7DD3FC",
+      "--accent-2": "#F59E0B",
+      "--elevation": "0 8px 24px -16px rgba(0, 0, 0, 0.65)",
+      "--success-bg": "#112822",
+      "--success-fg": "#6EE7B7",
+      "--warning-bg": "#2C2010",
+      "--warning-fg": "#FCD34D",
+      "--danger-bg": "#2E151B",
+      "--danger-fg": "#FDA4AF",
     },
   },
 ];

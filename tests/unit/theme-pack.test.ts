@@ -11,11 +11,14 @@
 import { describe, it, expect } from "vitest";
 import {
   THEME_VARS,
+  OPTIONAL_THEME_VARS,
   THEME_NAME_PATTERN,
   isSafeThemeValue,
   validateThemePack,
   resolveThemePack,
   themeStyleDecl,
+  hasDualMode,
+  themeStyleSheet,
   availableThemes,
   BUILTIN_THEMES,
   type ThemePack,
@@ -204,12 +207,12 @@ describe("availableThemes", () => {
     const intruso: ThemePack = { name: "2pac-dark", displayName: "Falso", vars: { "--bg": "#FFF" } };
     const otro: ThemePack = { name: "otro-tema", displayName: "Otro", vars: { "--bg": "#000" } };
     const catalog = availableThemes([intruso, otro]);
-    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno", "otro-tema"]);
+    expect(catalog.map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno", "portaless-editorial", "otro-tema"]);
     expect(catalog[0].displayName).toBe("2Pac Dark");
   });
 
   it("sin instalados devuelve exactamente los builtins", () => {
-    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno"]);
+    expect(availableThemes().map((t) => t.name)).toEqual(["2pac-dark", "portaless-nocturno", "portaless-editorial"]);
   });
 });
 
@@ -292,5 +295,100 @@ describe("portaless-nocturno: pares AA verificados por math WCAG", () => {
   it("solo declara variables de la allowlist (nada fuera de THEME_VARS)", () => {
     expect(Object.keys(V).every((k) => THEME_VARS.includes(k))).toBe(true);
     expect(validateThemePack(HOME).valid).toBe(true);
+  });
+});
+
+// --- ThemePack v2: tokens editoriales opcionales + dual-mode light/dark ---
+
+describe("ThemePack v2: OPTIONAL_THEME_VARS y anti-inyeccion CSS", () => {
+  it("expone exactamente los 4 tokens editoriales opcionales", () => {
+    expect(OPTIONAL_THEME_VARS).toEqual(["--font-display", "--font-sans", "--space-section", "--elevation"]);
+  });
+
+  it("acepta los 4 tokens editoriales opcionales validos y los emite en themeStyleDecl", () => {
+    const res = validateThemePack({
+      name: "editorial-custom",
+      displayName: "Editorial Custom",
+      vars: {
+        "--bg": "#FAF9F5",
+        "--text": "#1C1917",
+        "--font-display": "'Fraunces Variable', Georgia, serif",
+        "--font-sans": "'Inter Variable', system-ui, sans-serif",
+        "--space-section": "2.5rem",
+        "--elevation": "0 8px 24px -16px rgba(15, 23, 42, 0.14)",
+      },
+    });
+    expect(res.valid).toBe(true);
+    const decl = themeStyleDecl({ name: res.pack!.name, vars: res.pack!.vars });
+    expect(decl).toContain("--font-display:'Fraunces Variable', Georgia, serif");
+    expect(decl).toContain("--font-sans:'Inter Variable', system-ui, sans-serif");
+    expect(decl).toContain("--space-section:2.5rem");
+    expect(decl).toContain("--elevation:0 8px 24px -16px rgba(15, 23, 42, 0.14)");
+  });
+
+  it("rechaza intentos de inyeccion CSS (url, expression, ;, {, }, <, >)", () => {
+    const payloads: Array<[string, string]> = [
+      ["--font-display", "Georgia; background: url(https://evil.test/x)"],
+      ["--font-sans", "Inter} body{display:none"],
+      ["--space-section", "expression(alert(1))"],
+      ["--elevation", "url(javascript:alert(1))"],
+      ["--elevation", "0 2px 4px #000; </style><script>alert(1)</script>"],
+    ];
+    for (const [key, val] of payloads) {
+      const res = validateThemePack({
+        name: "bad-editorial",
+        displayName: "Bad Editorial",
+        vars: { [key]: val },
+      });
+      expect(res.valid, `${key} = ${val}`).toBe(false);
+    }
+  });
+});
+
+describe("ThemePack v2: lightVars / darkVars, WCAG AA y themeStyleSheet", () => {
+  it("rechaza un pack dual-mode si lightVars o darkVars rompe contraste WCAG AA (<4.5:1)", () => {
+    const badLight = validateThemePack({
+      name: "bad-light",
+      displayName: "Bad Light",
+      vars: { "--radius": "12px" },
+      lightVars: { "--bg": "#FFFFFF", "--text": "#CCCCCC" },
+      darkVars: { "--bg": "#0B0F17", "--text": "#F3F6FC" },
+    });
+    expect(badLight.valid).toBe(false);
+    expect(badLight.errors.join(" ")).toContain("lightVars");
+
+    const badDark = validateThemePack({
+      name: "bad-dark",
+      displayName: "Bad Dark",
+      vars: { "--radius": "12px" },
+      lightVars: { "--bg": "#FFFFFF", "--text": "#111111" },
+      darkVars: { "--bg": "#111111", "--text": "#333333" },
+    });
+    expect(badDark.valid).toBe(false);
+    expect(badDark.errors.join(" ")).toContain("darkVars");
+  });
+
+  it("portaless-editorial valida, pasa WCAG AA en claro y oscuro y emite hoja compatible con data-theme", () => {
+    const editorial = BUILTIN_THEMES.find((t) => t.name === "portaless-editorial")!;
+    expect(editorial).toBeDefined();
+    expect(validateThemePack(editorial).valid).toBe(true);
+    const resolved = resolveThemePack(BUILTIN_THEMES, "portaless-editorial")!;
+    expect(hasDualMode(resolved)).toBe(true);
+
+    const sheet = themeStyleSheet(resolved);
+    expect(sheet).toContain(':root[data-theme-pack="portaless-editorial"]{');
+    expect(sheet).toContain('@media (prefers-color-scheme:dark){:root[data-theme-pack="portaless-editorial"]:not([data-theme="light"]){');
+    expect(sheet).toContain(':root[data-theme-pack="portaless-editorial"][data-theme="dark"]{');
+    expect(sheet).toContain(':root[data-theme-pack="portaless-editorial"][data-theme="light"]{');
+    expect(sheet).toContain("--bg:#FAF9F5");
+    expect(sheet).toContain("--bg:#0B0F17");
+    expect(sheet).toContain("--font-display:'Fraunces Variable', Georgia, serif");
+  });
+
+  it("retrocompatibilidad: packs de solo vars tienen hasDualMode=false y themeStyleSheet vacio", () => {
+    const legacy = resolveThemePack(BUILTIN_THEMES, "2pac-dark")!;
+    expect(hasDualMode(legacy)).toBe(false);
+    expect(themeStyleSheet(legacy)).toBe("");
+    expect(themeStyleDecl(legacy)).toContain("--bg:#14100C");
   });
 });

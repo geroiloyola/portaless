@@ -50,6 +50,11 @@
   --shadow-md: 0 4px 12px rgba(38, 28, 21, 0.08), 0 2px 4px rgba(38, 28, 21, 0.05);
   --transition-fast: 150ms ease;
 
+  /* ThemePack v2 — tokens editoriales opcionales con fallbacks neutros para
+     no alterar ningun tema existente que no los declare. */
+  --space-section: 0px;
+  --elevation: none;
+
   /* Step 5 — radio por ROL, no un unico valor para todo:
      botones 8px (rectangulares, nunca pill), inputs 6px; --radius (22px)
      sigue siendo el radio de tarjetas/paneles. */
@@ -639,4 +644,19 @@ code, kbd, samp, pre { font-family: var(--font-mono); }
    botones son inline-block; text-align los centra). */
 [data-theme-pack="portaless-nocturno"] .ae-columns .ae-column-slot {
   text-align: center;
+}
+
+/* ThemePack v2 — conexion de los 4 tokens editoriales opcionales.
+   --font-display y --font-sans ya se consumen en :root/body/h1-h3; aqui
+   conectamos --elevation (default: none) y --space-section (default: 0px)
+   para que cualquier tema que los declare los herede sin alterar los
+   temas existentes. */
+[data-theme-pack] .ae-feature-card,
+[data-theme-pack] .ae-post-card {
+  box-shadow: var(--elevation, none);
+}
+
+[data-theme-pack] .ae-heading,
+[data-theme-pack] .ae-post-list {
+  margin-block-start: var(--space-section, 0px);
 }

@@ -39,8 +39,10 @@ import {
 } from "../../src/lib/atomic-responsive-icons.ts";
 import {
   BUILTIN_THEMES,
+  hasDualMode,
   resolveThemePack,
   themeStyleDecl,
+  themeStyleDeclForMode,
 } from "@portaless/visual-elements/themes";
 
 // M-11: Cloudflare Pages must be able to load this Function without a
@@ -209,8 +211,14 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
   // orden en que este shell cargue global.css (el @media oscuro tiene
   // misma especificidad y vendria despues).
   const pageTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
-  const themeCss = pageTheme ? themeStyleDecl(pageTheme) : "";
+  const dual = pageTheme ? hasDualMode(pageTheme) : false;
+  const lightCss = pageTheme && dual ? themeStyleDeclForMode(pageTheme, "light") : "";
+  const darkCss = pageTheme && dual ? themeStyleDeclForMode(pageTheme, "dark") : "";
+  const themeCss = pageTheme ? (dual ? lightCss : themeStyleDecl(pageTheme)) : "";
   const themeAttr = pageTheme ? ` data-theme-pack="${esc(pageTheme.name)}"` : "";
+  const themeModesMeta = dual
+    ? `${lightCss ? `\n<meta name="portaless-theme-light" content="${esc(lightCss)}" />` : ""}${darkCss ? `\n<meta name="portaless-theme-dark" content="${esc(darkCss)}" />` : ""}`
+    : "";
   const themeStyleAttr = themeCss ? ` style="${esc(themeCss)}"` : "";
   const jsonLd = esc(JSON.stringify({
     "@context": "https://schema.org",
@@ -238,7 +246,7 @@ export function renderShell(layout, bodyHtml, request, { preview = false, revisi
 <html lang="${SITE_LANG}"${themeAttr}${themeStyleAttr}>
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />${themeModesMeta}
 <title>${title}</title>
 ${description ? `<meta name="description" content="${description}" />` : ""}
 ${discoveryMeta}

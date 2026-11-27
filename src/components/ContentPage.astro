@@ -15,8 +15,10 @@ import { getSiteUrl } from "../lib/seo";
 import { versionHref, type ContentPage, type PageVersion } from "../lib/content-pages";
 import {
   BUILTIN_THEMES,
+  hasDualMode,
   resolveThemePack,
   themeStyleDecl,
+  themeStyleDeclForMode,
 } from "@portaless/visual-elements/themes";
 import { deriveHeaderContext, contextActionsHtml } from "../lib/atomic-responsive-icons";
 import type { PublicRevisionHistory } from "@portaless/visual-elements/public-revision-history";
@@ -32,7 +34,12 @@ const base = import.meta.env.BASE_URL;
 const siteUrl = getSiteUrl(Astro.site);
 
 const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
-const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
+const pageThemeModes = resolvedTheme && hasDualMode(resolvedTheme)
+  ? { lightCss: themeStyleDeclForMode(resolvedTheme, "light"), darkCss: themeStyleDeclForMode(resolvedTheme, "dark") }
+  : undefined;
+const pageTheme = resolvedTheme
+  ? { name: resolvedTheme.name, css: pageThemeModes ? pageThemeModes.lightCss : themeStyleDecl(resolvedTheme) }
+  : undefined;
 const headerContext = deriveHeaderContext(layout.root);
 
 const canonicalUrl = `${siteUrl}${versionHref(version, base)}`;
@@ -59,6 +66,7 @@ const revisionHistory = layout.publicationId
 
 <BaseLayout
   pageTheme={pageTheme}
+  pageThemeModes={pageThemeModes}
   headerContext={headerContext}
   lang={version.locale}
   alternates={alternates}

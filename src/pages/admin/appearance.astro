@@ -14,6 +14,7 @@
 // + data-theme en <html>), no una fila del sitio: cada quien ve su
 // tema; el skin define la paleta de ambos.
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { BUILTIN_THEMES, hasDualMode } from "@portaless/visual-elements/themes";
 ---
 <BaseLayout title="Apariencia — Portaless Admin">
   <div class="ap-page-header">
@@ -79,6 +80,29 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         </select>
       </label>
     </form>
+
+    <section class="ap-form" aria-labelledby="ap-themepacks-title">
+      <h2 id="ap-themepacks-title" class="ap-form-title">Temas por página (Visual Elements)</h2>
+      <p class="ap-hint">
+        Cada página puede elegir un <code>ThemePack</code> propio desde el
+        <a href="/admin/editor">Editor Visual</a> o vía MCP (<code>apply_theme</code>).
+        Los temas marcados como <strong>Claro + Oscuro</strong> respetan el alternador del visitante.
+      </p>
+      <ul class="ap-themepack-list">
+        {BUILTIN_THEMES.map((pack) => {
+          const dual = hasDualMode(pack);
+          return (
+            <li class="ap-themepack-item" data-theme-pack-item={pack.name}>
+              <div>
+                <strong>{pack.displayName}</strong> <code>{pack.name}</code>
+                <span class="ap-themepack-badge">{dual ? "Claro + Oscuro" : "Modo único"}</span>
+              </div>
+              {pack.description && <p class="ap-hint">{pack.description}</p>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   </div>
 
   <style>
@@ -87,6 +111,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     .ap-page-subtitle { margin: 0; color: var(--portaless-muted); font-size: 0.9rem; }
     .ap-loading, .ap-load-error { color: var(--portaless-muted); font-size: 0.9rem; }
     .ap-load-error { color: var(--danger-fg, #B3372C); }
+    .ap-themepack-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+    .ap-themepack-item { padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--bg); }
+    .ap-themepack-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; border: 1px solid var(--panel-border); color: var(--accent-text); }
     .ap-form {
       max-width: 640px; margin-bottom: 24px; padding: 20px 24px;
       border: 1px solid var(--portaless-border); border-radius: 12px;

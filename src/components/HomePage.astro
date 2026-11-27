@@ -11,8 +11,10 @@ import { getCollection } from "astro:content";
 import { renderPage } from "@portaless/visual-elements/render";
 import {
   BUILTIN_THEMES,
+  hasDualMode,
   resolveThemePack,
   themeStyleDecl,
+  themeStyleDeclForMode,
 } from "@portaless/visual-elements/themes";
 import { deriveHeaderContext } from "../lib/atomic-responsive-icons";
 import { getSiteUrl } from "../lib/seo";
@@ -54,7 +56,12 @@ const postItems = posts.map((post) => ({
 const prepared = prepareHome(layout, postItems, commerceEnabled);
 
 const resolvedTheme = layout.theme ? resolveThemePack(BUILTIN_THEMES, layout.theme) : null;
-const pageTheme = resolvedTheme ? { name: resolvedTheme.name, css: themeStyleDecl(resolvedTheme) } : undefined;
+const pageThemeModes = resolvedTheme && hasDualMode(resolvedTheme)
+  ? { lightCss: themeStyleDeclForMode(resolvedTheme, "light"), darkCss: themeStyleDeclForMode(resolvedTheme, "dark") }
+  : undefined;
+const pageTheme = resolvedTheme
+  ? { name: resolvedTheme.name, css: pageThemeModes ? pageThemeModes.lightCss : themeStyleDecl(resolvedTheme) }
+  : undefined;
 const headerContext = deriveHeaderContext(prepared.root);
 
 const html = await renderPage(prepared, { base });
@@ -66,7 +73,7 @@ const alternates = [
 ];
 ---
 
-<BaseLayout lang={locale} pageTheme={pageTheme} headerContext={headerContext} alternatePath={canonPath} alternates={alternates}>
+<BaseLayout lang={locale} pageTheme={pageTheme} pageThemeModes={pageThemeModes} headerContext={headerContext} alternatePath={canonPath} alternates={alternates}>
   <SeoHead slot="head" title={layout.title} description={layout.description ?? ""} canonicalUrl={canonicalUrl} />
   <JsonLd slot="head" layout={prepared} site={{ name: layout.title, url: siteUrl, base, inLanguage: locale }} />
   <article class="ae-page ae-home" set:html={html} />

@@ -49,13 +49,20 @@ export interface Props {
    */
   pageTheme?: { name: string; css: string };
   /**
+   * Variantes Claro/Oscuro de un ThemePack dual-mode. Se emiten como
+   * data-theme-light / data-theme-dark en <html> para que el script externo
+   * portaless-theme-init.js aplique la variante activa sin bloquear el toggle
+   * del visitante ni introducir scripts inline.
+   */
+  pageThemeModes?: { lightCss: string; darkCss: string };
+  /**
    * Atomic Icons Responsive: contexto del rincon del header (carrito en
    * tiendas, volumen en videos, null = solo Share). Lo deriva
    * deriveHeaderContext() desde el arbol de elementos de la pagina.
    */
   headerContext?: import("../lib/atomic-responsive-icons").HeaderContext;
 }
-const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath, languageAlternate, pageTheme, headerContext = null } = Astro.props;
+const { title = "Portaless", description = "Sitio construido con Portaless", markdownUrl, lang = SITE_LANG, alternates = [], alternatePath, languageAlternate, pageTheme, pageThemeModes, headerContext = null } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const llmsTxtUrl = `${base}/llms.txt`;
 // Phase 6: el feed de los posts publicados se anuncia desde TODAS las
@@ -82,11 +89,15 @@ import Footer from "../components/Footer.astro";
      que cualquier selector perderia el empate por orden en sistemas en
      modo oscuro. Un atributo style inline gana a cualquier regla de
      hoja, siempre, sin !important. Solo lleva las variables del pack;
-     el resto sigue viniendo del skin del sitio. -->
+     el resto sigue viniendo del skin del sitio. En packs dual-mode
+     (lightVars/darkVars), portaless-theme-init.js sincroniza el style
+     desde data-theme-light / data-theme-dark segun data-theme o el SO. -->
 <html lang={lang} data-theme-pack={pageTheme?.name} style={pageTheme?.css || undefined}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {pageThemeModes?.lightCss && <meta name="portaless-theme-light" content={pageThemeModes.lightCss} />}
+    {pageThemeModes?.darkCss && <meta name="portaless-theme-dark" content={pageThemeModes.darkCss} />}
     <link rel="describedby" type="text/plain" href={llmsTxtUrl} />
     <link rel="alternate" type="application/rss+xml" title="Feed RSS" href={rssUrl} />
     {alternates.map((alt) => (
