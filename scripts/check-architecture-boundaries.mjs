@@ -68,7 +68,7 @@ export const PACKAGE_LAYERS = Object.freeze({
   scripts: { layer: "L5", org: "geroiloyola" },
 });
 
-// Explicit acyclic intra-layer edges permitted by ARCHITECTURE.md §3.
+// Explicit acyclic intra-layer edges permitted by docs/architecture/ARCHITECTURE.md §3.
 export const INTRA_LAYER_ALLOWLIST = new Set([
   "cloud-images->trust-layer",
   "identity-atproto->trust-layer",

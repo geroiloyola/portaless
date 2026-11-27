@@ -26,7 +26,8 @@ Historical planning lives in [`archive/`](./archive/README.md); Spanish archives
 | [`../README.md`](../README.md) | English | Project overview, features, install |
 | [`glossary.md`](./glossary.md) | English | Shared vocabulary: APW, LTP, SVRI, HSVR, T1–T5, Veracier, Cloudum and the evidence-first terms |
 | [`../ROADMAP.md`](../ROADMAP.md) | English (concise) | Source of truth for current status. Spanish long-form archive: [`es/ROADMAP_es.md`](es/ROADMAP_es.md) |
-| [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](es/AGENT_es.md) |
+| [`../AGENTS.md`](../AGENTS.md) | English | Entry point & conventions for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](es/AGENT_es.md) |
+| [`architecture/ARCHITECTURE.md`](./architecture/ARCHITECTURE.md) | English | Two-org layer graph (`verared` vs `geroiloyola`) and package boundaries |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): [`es/CHANGELOG_es.md`](es/CHANGELOG_es.md) |
 | [`testing/release-acceptance.md`](./testing/release-acceptance.md) | English | C40–C41 release evidence: clean install, builds, upgrade/restore, privacy negative test, publication, mobile and resources; external gates still open |
 | [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: [`es/`](./es/)) |
@@ -73,7 +74,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 
 ## Architecture — [`architecture/`](./architecture/)
 
-Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status table — some predate the module implementations.
+Mostly Spanish (design-era documents); verify claims against `ROADMAP.md` — some predate the module implementations.
 
 - [`architecture/canonical-node-and-public-projections.md`](./architecture/canonical-node-and-public-projections.md) (English) — target contract for the private canonical node, approved public projections, local/Cloudum handover, and public revision evidence. Explicitly distinguishes target behavior from current implementation.
 - [`architecture/public-revision-history.md`](./architecture/public-revision-history.md) (English) — implemented PageStore revision IDs, approved history/export/import and the unsigned/APW no-data limits.
@@ -99,4 +100,4 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 - [`i18n-design.md`](./i18n-design.md) — native internationalization: the model, the classification, and the minimal i18next-compatible MVP (locale routes, resources, `hreflang`).
 - [`whitepaper/portaless-whitepaper.md`](./whitepaper/portaless-whitepaper.md) (ES) — original product vision (much of it design, not built code).
 - Package-level docs: see each `packages/*/docs/` and `packages/*/README.md` (mixed ES/EN; `packages/apw-resolver/README.md` is English).
-- Examples: [`../examples/`](../examples/) · Infra: [`../infra/`](../infra/) · Setup script: [`../scripts/SETUP.md`](../scripts/SETUP.md) (ES).
+- Infra (incl. [`update-upstream.yml`](../infra/github-pages/update-upstream.yml)): [`../infra/`](../infra/) · Setup script: [`../scripts/SETUP.md`](../scripts/SETUP.md) (ES).

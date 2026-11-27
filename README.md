@@ -11,7 +11,7 @@ A lightweight, open source, modular CMS node — built on Astro to compile to st
 [![Astro](https://img.shields.io/badge/built%20with-Astro-6E6653?style=flat&labelColor=261C15)](https://astro.build)
 [![Protocol APW](https://img.shields.io/badge/protocol-APW%20v1.3-5A6B24?style=flat&labelColor=261C15)](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md)
 
-[Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless-templates/) · [Architecture](./ARCHITECTURE.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
+[Vision](./docs/VISION.md) · [Roadmap](./ROADMAP.md) · [Live demo](https://geroiloyola.github.io/portaless-templates/) · [Architecture](./docs/architecture/ARCHITECTURE.md) · [API guide](./docs/api/README.md) · [Docs index](./docs/README.md) · [Security](./SECURITY.md) · [Licensing](./docs/architecture/licensing-boundaries.md) · [Contributing](./CONTRIBUTING.md)
 
 > **New here?** Start with [`docs/START_HERE.md`](./docs/START_HERE.md) — the three-free-accounts path (GitHub + an AI with MCP + Cloudflare). For the official live showcase and fictional templates, visit [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) ([live demo](https://geroiloyola.github.io/portaless-templates/)).
 
@@ -21,7 +21,7 @@ A lightweight, open source, modular CMS node — built on Astro to compile to st
 
 ## What is Portaless?
 
-**Vera Trust Stack** is APW + Local Trust Protocol + SVRI + HSVR. **Local Trust Protocol** means each node applies its own policy to verified evidence. See the [glossary](./docs/glossary.md) and [`ARCHITECTURE.md`](./ARCHITECTURE.md) for layer boundaries.
+**Vera Trust Stack** is APW + Local Trust Protocol + SVRI + HSVR. **Local Trust Protocol** means each node applies its own policy to verified evidence. See the [glossary](./docs/glossary.md) and [`docs/architecture/ARCHITECTURE.md`](./docs/architecture/ARCHITECTURE.md) for layer boundaries.
 
 This repository is the **sovereign reference CMS node** (`starter` profile by default):
 
@@ -112,9 +112,9 @@ PORTALESS_SITE_PROFILE=demo npx playwright test            # 75 browser regressi
 
 ## Documentation & Governance
 
-- **Current module state & open work:** [`ROADMAP.md`](./ROADMAP.md) · [`AGENT.md`](./AGENT.md) · [`CHANGELOG.md`](./CHANGELOG.md)
+- **Current module state & open work:** [`ROADMAP.md`](./ROADMAP.md) · [`AGENTS.md`](./AGENTS.md) · [`CHANGELOG.md`](./CHANGELOG.md)
 - **Product direction:** [`docs/VISION.md`](./docs/VISION.md)
-- **Architecture & boundaries:** [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md)
+- **Architecture & boundaries:** [`docs/architecture/ARCHITECTURE.md`](./docs/architecture/ARCHITECTURE.md) · [`docs/architecture/licensing-boundaries.md`](./docs/architecture/licensing-boundaries.md)
 - **Plugin authoring:** [`docs/plugin-author-guide.md`](./docs/plugin-author-guide.md) · [`@portaless/plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk)
 - **Security & disclosure:** [`SECURITY.md`](./SECURITY.md)
 

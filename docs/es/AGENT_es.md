@@ -1,6 +1,6 @@
 # AGENT.md — Contexto para agentes de IA trabajando en Portaless
 
-> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`AGENT.md`](../../AGENT.md). Este archivo se conserva íntegro por contexto; la tabla de estado de abajo ya fue corregida donde decía cosas falsas, pero ante discrepancias manda la versión en inglés.
+> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`AGENT.md`](../../AGENTS.md). Este archivo se conserva íntegro por contexto; la tabla de estado de abajo ya fue corregida donde decía cosas falsas, pero ante discrepancias manda la versión en inglés.
 
 Este archivo existe para que cualquier agente de IA (Claude, GPT, Cursor,
 o el que sea) tenga contexto inmediato del proyecto sin necesitar leer

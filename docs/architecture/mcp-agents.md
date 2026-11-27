@@ -2,7 +2,7 @@
 
 > **Documento de diseño histórico.** Narra la construcción inicial del MCP
 > server (los 6 commits originales). El **estado actual** vive en
-> [`AGENT.md`](../../AGENT.md) y en el código: `packages/mcp-server/src/server.ts`
+> [`AGENTS.md`](../../AGENTS.md) y en el código: `packages/mcp-server/src/server.ts`
 > es la fuente de verdad del número de tools, y hoy son **19**, no 12 — la tabla
 > de abajo se conserva como historia y se amplía con C27–C30. El conteo está
 > fijado por `tests/unit/mcp-tool-count.test.ts`, que falla si un doc publica

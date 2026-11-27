@@ -84,7 +84,7 @@ gratis, y puedes migrarlo a otro proveedor cambiando solo los registros DNS.
 
 GitHub Pages sirve solo el sitio estático: **no hay base que migrar**, así que
 actualizar es traer los cambios del upstream. En un fork, copiá
-[`examples/update-upstream.yml`](../examples/update-upstream.yml) a
+[`infra/github-pages/update-upstream.yml`](../infra/github-pages/update-upstream.yml) a
 `.github/workflows/` de tu repo: un botón manual (**Actions → Update upstream →
 Run workflow**) abre un PR *"Update to vX"* desde el tag publicado más reciente
 del upstream. Revisás el PR, corre el CI como filtro, y mergeás.

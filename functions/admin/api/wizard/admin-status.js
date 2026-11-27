@@ -11,7 +11,7 @@
 //   - POST /api/setup/complete, SOLO en el runtime Node self-hosted y
 //     protegido por un setup code de un solo uso (hash SHA-256, 60 minutos,
 //     5 intentos, bloqueado si ya existe algun usuario). En Cloudflare Pages
-//     ese endpoint responde 404. Ver .airchive/project_memory/adr-002-first-run-trust-root.md.
+//     ese endpoint responde 404. Ver docs/decisions/0005-first-run-trust-root.md.
 // Un endpoint de registro SIN esas protecciones seguiria siendo una puerta de
 // escalada de privilegios.
 //

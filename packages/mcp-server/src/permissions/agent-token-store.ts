@@ -1,5 +1,5 @@
 // Store de tokens de agentes MCP (identidad por invocacion, Opcion B --
-// ver AGENT.md y docs/architecture/mcp-agents.md). Cada agente remoto
+// ver AGENTS.md y docs/architecture/mcp-agents.md). Cada agente remoto
 // que se conecte al servidor MCP via transporte HTTP porta un bearer
 // token (`pless_mcp_...`) emitido por el operador; el servidor guarda
 // SOLO su hash sha256 (mismo patron que authorized-escrow-providers y

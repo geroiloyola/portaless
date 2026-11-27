@@ -110,7 +110,7 @@ licencia que elija, abierta o cerrada, siempre que:
 - `packages/plugin-sdk` ya existe como codigo (MIT, v0.1.0): re-declara sus
   propios tipos y catalogo y no importa el core, de modo que consumirlo no
   incorpora AGPL. La paridad con el core la fija un test del lado AGPL
-  (`tests/unit/plugin-sdk-parity.test.ts`); ver `AGENT.md` para el estado real
+  (`tests/unit/plugin-sdk-parity.test.ts`); ver `AGENTS.md` para el estado real
   vigente y `CONTRIBUTING.md` para la nota de titularidad y el DCO.
 
 ## 7. La especificacion del Vera Trust Stack no esta bajo AGPL
@@ -156,7 +156,7 @@ referencia neutral destinados a la fundacion `github.com/verared/vera-trust-stac
   Apache-2.0; los paquetes del nodo `geroiloyola` permanecen en
   `AGPL-3.0-or-later`, `packages/plugin-sdk` en `MIT` y `docs/protocol-apw/` en
   `CC-BY-4.0`. Los nombres de workspace `@portaless/*` se conservan hasta la
-  extraccion fisica de **Tanda 2** (ver [`ARCHITECTURE.md`](../../ARCHITECTURE.md)).
+  extraccion fisica de **Tanda 2** (ver [`ARCHITECTURE.md`](./ARCHITECTURE.md)).
 
 ## 8. Preguntas frecuentes para desarrolladores de plugins
 

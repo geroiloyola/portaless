@@ -6,7 +6,7 @@ import { checkTree, violations, fileClass, HASH_PINNED_SPEC_FILES } from '../../
 test('live docs, READMEs and site text enforce W1.7 naming rules outside explicit continuity/history/hash-pinned files', () => {
   const root = fileURLToPath(new URL('../../', import.meta.url));
   expect(checkTree(root)).toEqual([]);
-  for (const path of ['README.md', 'AGENT.md', 'docs/glossary.md', 'src/pages/example.astro', 'packages/example/README.md']) {
+  for (const path of ['README.md', 'AGENTS.md', 'docs/glossary.md', 'src/pages/example.astro', 'packages/example/README.md']) {
     expect(violations(path, 'Local Trust Protocol (LTP)')).toEqual([]);
     expect(violations(path, 'Vera Trust Stack and Verared')).toEqual([]);
     expect(violations(path, 'Loyal Trust Protocol (LTP)')).not.toEqual([]);

@@ -1,6 +1,6 @@
 // server/first-run.mjs -- Primer arranque seguro para Portaless self-hosted (Node).
 //
-// Ver .airchive/project_memory/adr-002-first-run-trust-root.md y
+// Ver docs/decisions/0005-first-run-trust-root.md y
 // adr-003-generated-volume-secrets.md.
 //
 // Este modulo SOLO se usa desde el runtime Node (scripts/start-docker.mjs).

@@ -9,7 +9,8 @@
 | [`VISION.md`](../VISION.md) | English | **Direction** — what Portaless must become and what it refuses to become. Carries no status, versions, dates or file paths, on purpose: it does not go stale. `ROADMAP.md` wins on state; this file wins on direction |
 | [`../README.md`](../../README.md) | English | Project overview, features, install |
 | [`../ROADMAP.md`](../../ROADMAP.md) | English (concise) | Source of truth for current status and next work. Spanish long-form archive: [`es/ROADMAP_es.md`](../es/ROADMAP_es.md) |
-| [`../AGENT.md`](../../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](../es/AGENT_es.md) |
+| [`../AGENTS.md`](../../AGENTS.md) | English | Entry point & conventions for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](../es/AGENT_es.md) |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | English | Two-org layer graph (`verared` vs `geroiloyola`) and package boundaries |
 | [`../CHANGELOG.md`](../../CHANGELOG.md) | English | Version history. Spanish archive (frozen): [`es/CHANGELOG_es.md`](../es/CHANGELOG_es.md) |
 | [`../SECURITY.md`](../../SECURITY.md) · [`../CONTRIBUTING.md`](../../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 
@@ -41,7 +42,7 @@ For third parties connecting to APW / Portaless / Index HTTP APIs.
 
 ## Architecture — [`architecture/`](../architecture/)
 
-Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status table — some predate the module implementations.
+Mostly Spanish (design-era documents); verify claims against `ROADMAP.md` — some predate the module implementations.
 
 - `REPO_STRUCTURE_MAP.md` (ES) — why the real repo structure differs from the original proposal (stub claims corrected).
 - [`canonical-node-and-public-projections.md`](./canonical-node-and-public-projections.md) (EN) — target contract for local/Cloudum private canonical nodes, allowlisted public Git projections, revision history and restore/handover.
@@ -59,4 +60,4 @@ Mostly Spanish (design-era documents); verify claims against `AGENT.md`'s status
 
 - [`whitepaper/portaless-whitepaper.md`](../whitepaper/portaless-whitepaper.md) (ES) — original product vision (much of it design, not built code).
 - Package-level docs: see each `packages/*/docs/` and `packages/*/README.md` (mixed ES/EN; `packages/apw-resolver/README.md` is English).
-- Examples: [`../examples/`](../../examples/) · Infra: [`../infra/`](../../infra/) · Setup script: [`../scripts/SETUP.md`](../../scripts/SETUP.md) (ES).
+- Infra (incl. [`update-upstream.yml`](../../infra/github-pages/update-upstream.yml)): [`../infra/`](../../infra/) · Setup script: [`../scripts/SETUP.md`](../../scripts/SETUP.md) (ES).
