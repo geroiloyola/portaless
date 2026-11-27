@@ -373,7 +373,7 @@ public static reads. Local data, local verification, optional modules switched
 off and static hosting remain usable without a relay. Any runtime migration or
 activation of this behavior must be explicit, tested and documented; the current
 existence of a Node directory binding does not imply coverage of every resolver.
-See the [A/B/C proposal](../architecture/resolution-chain-proposal.md) for the
+See the [A/B/C proposal](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/architecture/resolution-chain-proposal.md) for the
 approved design decisions and outstanding delivery gates. No Edge route may
 advertise these profiles until the protocol drafts, independent vectors and
 actual adapters have passed review; existing `typ: apw-index` messages retain
@@ -394,7 +394,7 @@ remaining policy choices for later enforcement phases are not invented by this a
 | D4 | Bounded incremental histories with quarantined progress distinct from trusted checkpoints; no authorization from a partial prefix. |
 | D5 | Separate public operational/limit/pending/identity/crypto outcomes; preserve uncached redirect 401 without Retry-After and no misconduct from infrastructure failures. |
 | D6 | Short inherited expiry without sliding TTL, stale-on-error or summed local cache windows; declare upstream revocation/replay limitations. |
-| D7 | The [single resource table](../architecture/resolution-chain-proposal.md#approved-resource-limits) is the restrictive implementation baseline. Values remain estimates until measured; new values are not yet deployed. Any later change requires a recorded owner decision. |
+| D7 | The [single resource table](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/architecture/resolution-chain-proposal.md#approved-resource-limits) is the restrictive implementation baseline. Values remain estimates until measured; new values are not yet deployed. Any later change requires a recorded owner decision. |
 | D8 | A → B → C before PR3, including the public AT bridge; shared engine and budget, distinct endpoint authorization/projections. |
 | D9 | Edge-first ingress and approximate per-instance quotas; no claim of a distributed/global quota or real independent reputation emitters. |
 

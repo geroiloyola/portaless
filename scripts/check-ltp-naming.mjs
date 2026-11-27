@@ -30,8 +30,7 @@ export const HASH_PINNED_SPEC_FILES = new Set([
 export function fileClass(path) {
   if (HASH_PINNED_SPEC_FILES.has(path)) return 'hash-pinned';
   if (/_es\.md$/.test(path)
-    || /^docs\/(?:roadmap|whitepaper|decisions)\//.test(path)
-    || path === 'docs/architecture/ltp-next-phase-options.md'
+    || /^docs\/(?:archive|roadmap|whitepaper|decisions)\//.test(path)
     || /^docs\/protocol-apw\/(?:APW-SPEC-v1\.[02]|apw-spec)\.md$/.test(path)) return 'history';
   if (/^docs\/protocol-apw\/(?:vectors|schemas)\/.+\.(?:json|jws|bin|wire)$/.test(path)) return 'protected-bytes';
   return 'live';

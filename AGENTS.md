@@ -186,4 +186,4 @@ expected.
 
 - `CHANGELOG.md` — what shipped, version by version.
 - `ROADMAP.md` — what's missing today, prioritized. **Read before proposing.**
-- `docs/roadmap/ROADMAP-ARCHIVE.md` — immutable history (PRs #1–#75).
+- `docs/archive/ROADMAP-ARCHIVE.md` — immutable history (PRs #1–#75).

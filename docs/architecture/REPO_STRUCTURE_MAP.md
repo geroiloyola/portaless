@@ -83,4 +83,4 @@ The documentation is layered on purpose, so each file answers one question:
 | [`ROADMAP.md`](../../ROADMAP.md) | **State and next work**: what exists today, what is missing, what depends on third parties. |
 | [`README.md`](../../README.md) | **The product today**: what Portaless is and how to install and use it. |
 | [`AGENT.md`](../../AGENT.md) | The short version for contributors and AI agents, including the real state map per module. |
-| [`docs/roadmap/ROADMAP-ARCHIVE.md`](../roadmap/ROADMAP-ARCHIVE.md) | History: the PR-by-PR log, deliberately kept out of the live documents. |
+| [`docs/archive/ROADMAP-ARCHIVE.md`](../archive/ROADMAP-ARCHIVE.md) | History: the PR-by-PR log, deliberately kept out of the live documents. |
