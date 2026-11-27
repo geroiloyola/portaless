@@ -58,33 +58,15 @@ Read in this order — **do not read them all**:
 contains the real-state table, the golden rule, and the security risks you
 must know.
 
-## Real state (brief — see `AGENT.md` for the full table)
+## Real state
 
-| Area | Status |
-|---|---|
-| Content engine (Astro + Markdown) | ✅ Functional |
-| Visual editor (17 Atomic Elements) | ✅ Functional |
-| Dashboard + Skin System | ✅ Functional |
-| Authentication (login, 2FA, OAuth) | ✅ Functional |
-| Permissions Center | ✅ Functional |
-| MCP server (19 tools, stdio + HTTP transport) | ✅ Functional (HTTP has per-invocation agent identity; stdio is per-process — documented gap). Public connection profile at `/.well-known/portaless-mcp.json` |
-| OpenAI-compatible provider profile | ✅ Local contract suite; external endpoints unverified until run against a real key/endpoint. Connection guide: `docs/openai-compatible-provider.md` |
-| Publication orchestration + canonical backup | ✅ Approved-snapshot idempotency, retry/publish/unpublish state, checksummed SQLite backup and CLI restore |
-| Private-node profiles | ✅ Minimal/private Compose, optional Tailscale docs, 2 GiB/20 GiB reference budget measured |
-| Release acceptance (C40–C41) | 🟡 Local clean-install/build/upgrade/privacy/publication/mobile evidence passes; ChatGPT, external provider, Cloudum, real GitHub and independent review remain open |
-| Trust Layer (Web Bot Auth, Ed25519 + ML-DSA) | ✅ Functional |
-| SiteTrustScore + SVRI v1.0 | ✅ Functional; public qualitative level, admin-only numeric detail/HSVR |
-| Protocol APW resolver (v1.3, 110/110 APW vectors + SVRI vectors) | ✅ Functional |
-| LTP identity acquisition + verifier (bounded G2/G3) | 🟡 Configured HTTPS DoH/TXT/Index acquisition, shared budget and offline identity verification pass AB-STATIC-01…07 in memory; SSRF/DNS-rebinding/redirect/plaintext defenses and TLS rejection are tested; the connector is Node-only (Cloudflare Workers not covered) and runtime integration/B3 are proposals. External live acceptance, G5, S4/S6 and deployment activation remain open |
-| LTP reputation engine (G4) | 🟡 Deterministic static decision-case engine matches all 117 audited REP-01…REP-11 vectors, rejects duplicate dimensions, and differentially checks all 13 `svri-math` projections against `apw-resolver` within the documented rounding normalization; it consumes explicit verifier facts, not raw evidence; runtime activation, signed profile, real emitters, S4 and G5 remain open |
-| Plugin SDK (MIT, v0.1.0) | ✅ Shipped |
-| Plugin sandboxing (4 adapters, 7/12 execution paths real) | ✅ Core wired; 5 capabilities still return explicit `501` by design |
-| Plugin installer (HTTP) | 🟡 Behind a flag, off by default (external sandbox review pending) |
-| Commerce (Medusa/Mercur) | ✅ Catalog read-only; no own checkout |
-| Cloud Images (APW-signed PNG sidecars) | 🟡 Cryptographic base done; R2 storage + moderation pending |
-| Federation (signed pages doc + hardened peer reader) | 🟡 Mechanism done; no public endpoint (no peers yet) |
-| Content pages localization | ✅ Bilingual (`/pages/<slug>/` + `/<locale>/pages/<slug>/`) |
-| System pages bilingual | ✅ `/beta`, `/shop`, `/projections` (English canónica + `/es/...` Spanish); `/setup` carries its own bilingualtion) pending |
+The per-module status table lives in one place only. Do not copy it here:
+
+- [`ROADMAP.md`](./ROADMAP.md) — what is shipped, partial or open today (read before proposing).
+- [`AGENT.md`](./AGENT.md) — module-level real state, conventions and history.
+- [`docs/README.md`](./docs/README.md) — documentation index and which repository owns what.
+
+Headline facts an agent must not contradict: the MCP server exposes 19 tools (stdio + HTTP); the Plugin SDK is consumed from `@portaless/plugin-sdk`; 5 plugin capabilities still return explicit `501` by design; the plugin HTTP installer is off by default.
 
 ## What to read before proposing a new feature
 

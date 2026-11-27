@@ -1,6 +1,6 @@
 # Contribuir a Portaless
 
-> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`CONTRIBUTING.md`](./CONTRIBUTING.md). La frase de abajo sobre "esqueletos funcionales" quedó desactualizada: la mayoría de los módulos están funcionales (ver la tabla de estado en `AGENT.md`).
+> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`CONTRIBUTING.md`](../../CONTRIBUTING.md). La frase de abajo sobre "esqueletos funcionales" quedó desactualizada: la mayoría de los módulos están funcionales (ver la tabla de estado en `AGENT.md`).
 
 Gracias por tu interés en contribuir. Portaless es un proyecto joven
 (v0.0.x, en fase de MVP) — la mayoría de los módulos son esqueletos

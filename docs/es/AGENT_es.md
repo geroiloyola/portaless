@@ -1,6 +1,6 @@
 # AGENT.md — Contexto para agentes de IA trabajando en Portaless
 
-> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`AGENT.md`](./AGENT.md). Este archivo se conserva íntegro por contexto; la tabla de estado de abajo ya fue corregida donde decía cosas falsas, pero ante discrepancias manda la versión en inglés.
+> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`AGENT.md`](../../AGENT.md). Este archivo se conserva íntegro por contexto; la tabla de estado de abajo ya fue corregida donde decía cosas falsas, pero ante discrepancias manda la versión en inglés.
 
 Este archivo existe para que cualquier agente de IA (Claude, GPT, Cursor,
 o el que sea) tenga contexto inmediato del proyecto sin necesitar leer
@@ -57,7 +57,7 @@ sobre un módulo, verifica su estado real en la tabla de abajo.
 - `docs/architecture/licensing-boundaries.md` — frontera exacta entre el core AGPL-3.0, el Plugin SDK en MIT, y los proyectos/plugins de terceros.
 - `docs/architecture/mcp-agents.md` — diseño original del servidor MCP para agentes de IA. Las 6 tools ya estan conectadas a `server.ts` (ver tabla de arriba) -- el gap real que queda es la identidad de agente real por invocacion (Opcion B), no conectar las tools (ya resuelto).
 - `docs/whitepaper/portaless-whitepaper.md` — visión de producto completa (nota: mucho de este documento es diseño, no código construido — cruzar siempre con la tabla de estado real arriba).
-- `docs/protocol-apw/` — especificación normativa vigente del Protocol APW ([`APW-SPEC-v1.3.md`](./docs/protocol-apw/APW-SPEC-v1.3.md), implementada end-to-end); `apw-spec.md` en esa carpeta es un resumen conceptual histórico, no el estado del código.
+- `docs/protocol-apw/` — especificación normativa vigente del Protocol APW ([`APW-SPEC-v1.3.md`](https://github.com/verared/vera-trust-spec/blob/v0.1.0-draft.1/spec/APW-SPEC-v1.3.md), implementada end-to-end); `apw-spec.md` en esa carpeta es un resumen conceptual histórico, no el estado del código.
 - `CONTRIBUTING.md` — cómo proponer cambios.
 
 ## Convenciones de código que este proyecto sigue estrictamente

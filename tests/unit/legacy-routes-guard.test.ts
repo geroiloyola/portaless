@@ -3,7 +3,7 @@
 // ninguna otra cosa vuelve a escribirlas a mano.
 //
 // EXCEPCIONES EXPLICITAS (lista viva, se contrae por fase):
-//   - CHANGELOG*.md, ROADMAP_es.md, AGENT_es.md, docs/roadmap/ROADMAP-ARCHIVE.md:
+//   - CHANGELOG*.md, docs/es/ROADMAP_es.md, docs/es/AGENT_es.md, docs/roadmap/ROADMAP-ARCHIVE.md:
 //     historial/documentacion de archivo (narran el antes).
 //   - src/pages/** legacy durante la Fase 2 y los tests (se actualizan en ese
 //     mismo commit): la allowlist los nomina uno a uno; cuando el renombre
@@ -23,7 +23,7 @@ const MD = /\.(md|mdx)$/;
 const ALLOWED = [
   // historial e historico documentado
   "CHANGELOG.md",
-  "CHANGELOG_es.md",
+  "docs/es/CHANGELOG_es.md",
   "docs/archive/ROADMAP-ARCHIVE.md",
   // PR1 route contract names legacy aliases to document their access-class inheritance
   "docs/decisions/0003-public-and-governed-resource-contract.md",

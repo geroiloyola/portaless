@@ -1,6 +1,6 @@
 # Política de seguridad de Portaless
 
-> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`SECURITY.md`](./SECURITY.md).
+> **ARCHIVO HISTÓRICO (español).** La versión canónica y vigente está en inglés en [`SECURITY.md`](../../SECURITY.md).
 
 ## Reportar una vulnerabilidad
 

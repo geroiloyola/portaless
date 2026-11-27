@@ -8,9 +8,9 @@
 |---|---|---|
 | [`VISION.md`](../VISION.md) | English | **Direction** — what Portaless must become and what it refuses to become. Carries no status, versions, dates or file paths, on purpose: it does not go stale. `ROADMAP.md` wins on state; this file wins on direction |
 | [`../README.md`](../../README.md) | English | Project overview, features, install |
-| [`../ROADMAP.md`](../../ROADMAP.md) | English (concise) | Source of truth for current status and next work. Spanish long-form archive: `ROADMAP_es.md` |
-| [`../AGENT.md`](../../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
-| [`../CHANGELOG.md`](../../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
+| [`../ROADMAP.md`](../../ROADMAP.md) | English (concise) | Source of truth for current status and next work. Spanish long-form archive: [`es/ROADMAP_es.md`](../es/ROADMAP_es.md) |
+| [`../AGENT.md`](../../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](../es/AGENT_es.md) |
+| [`../CHANGELOG.md`](../../CHANGELOG.md) | English | Version history. Spanish archive (frozen): [`es/CHANGELOG_es.md`](../es/CHANGELOG_es.md) |
 | [`../SECURITY.md`](../../SECURITY.md) · [`../CONTRIBUTING.md`](../../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
 
 ## Vera Trust Stack — APW, Witness Index, SVRI/HSVR — [`protocol-apw/`](../protocol-apw/)

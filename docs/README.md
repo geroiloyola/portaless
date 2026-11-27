@@ -2,7 +2,21 @@
 
 > These documents are also published as a site at **`/docs/`** (grouped as Getting started, Guides, Reference and Concepts). The site is a **projection** of the Markdown in `docs/` — the files below are the single source, and only a curated subset is published (`src/lib/docs-nav.mjs`); the rest stays on GitHub.
 
-> As of October 2026, **canonical documentation is English**. Spanish originals are preserved intact as `*_es.md` archives (nothing was deleted); where an archive and the English file disagree, the English file wins. Some deeper design/history documents remain Spanish-only (marked below) — translations are welcome as contributions.
+> As of October 2026, **canonical documentation is English**. Spanish originals are preserved intact as archives under [`docs/es/`](./es/) (nothing was deleted); where an archive and the English file disagree, the English file wins. Some deeper design/history documents remain Spanish-only (marked below) — translations are welcome as contributions.
+
+## What lives where — the five repositories
+
+Each document and each piece of code has one owner. Anything else is a short pointer.
+
+| Repository | License | Owns | Does **not** own |
+|---|---|---|---|
+| [`geroiloyola/portaless`](https://github.com/geroiloyola/portaless) (this repo) | AGPL-3.0-or-later | The CMS node: Astro site, admin, visual editor, MCP server, self-host/deploy, Permissions Center, host integration of the stack (`functions/`, `server/`, `schema.sql`), `site-profiles/`, and these docs (`docs/architecture/` host design, `docs/testing/`, `docs/decisions/`) | The normative spec, the neutral `@verared/*` libraries, the plugin contract, the demo templates |
+| [`verared/vera-trust-spec`](https://github.com/verared/vera-trust-spec) | CC BY 4.0 | Normative specification (APW, Local Trust Protocol, SVRI/HSVR), test vectors, gates, the A/B/C resolution-chain proposal, standard-level roadmap and vision | Any implementation or host code |
+| [`verared/vera-trust-stack`](https://github.com/verared/vera-trust-stack) | Apache-2.0 | Neutral TypeScript reference implementation published as `@verared/*@0.1.0`, conformance tests, runtime parity, package roadmap | Host UI, persistence, admin |
+| [`geroiloyola/portaless-plugin-sdk`](https://github.com/geroiloyola/portaless-plugin-sdk) | MIT | `@portaless/plugin-sdk`: the only surface a third-party plugin imports | Sandbox runtime (stays here) |
+| [`geroiloyola/portaless-templates`](https://github.com/geroiloyola/portaless-templates) | CC0-1.0 | `@portaless/templates`: the fictional demo and visual gallery | Real site content |
+
+Historical planning lives in [`archive/`](./archive/README.md); Spanish archives of the root documents live in [`es/`](./es/). Status is tracked only in [`../ROADMAP.md`](../ROADMAP.md).
 
 ## Start here
 
@@ -11,11 +25,11 @@
 | [`START_HERE.md`](./START_HERE.md) | English | **The shortest path**: three free accounts (GitHub + an AI with MCP + Cloudflare) from zero to a verifiable site you edit with an agent |
 | [`../README.md`](../README.md) | English | Project overview, features, install |
 | [`glossary.md`](./glossary.md) | English | Shared vocabulary: APW, LTP, SVRI, HSVR, T1–T5, Veracier, Cloudum and the evidence-first terms |
-| [`../ROADMAP.md`](../ROADMAP.md) | English (concise) | Source of truth for current status. Spanish long-form archive: `ROADMAP_es.md` |
-| [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: `AGENT_es.md` |
-| [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): `CHANGELOG_es.md` |
+| [`../ROADMAP.md`](../ROADMAP.md) | English (concise) | Source of truth for current status. Spanish long-form archive: [`es/ROADMAP_es.md`](es/ROADMAP_es.md) |
+| [`../AGENT.md`](../AGENT.md) | English | Context + real-state table for AI agents working on this repo. Spanish archive: [`es/AGENT_es.md`](es/AGENT_es.md) |
+| [`../CHANGELOG.md`](../CHANGELOG.md) | English | Version history. Spanish archive (frozen): [`es/CHANGELOG_es.md`](es/CHANGELOG_es.md) |
 | [`testing/release-acceptance.md`](./testing/release-acceptance.md) | English | C40–C41 release evidence: clean install, builds, upgrade/restore, privacy negative test, publication, mobile and resources; external gates still open |
-| [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: `*_es.md`) |
+| [`../SECURITY.md`](../SECURITY.md) · [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | English | Security policy · contribution guide (Spanish archives: [`es/`](./es/)) |
 | [`mvp/acceptance-contract.md`](./mvp/acceptance-contract.md) | English | Accepted target contract for private data, local/Cloudum canonical node, public projections, ChatGPT/OpenAI compatibility, resource budget and 320px navigation |
 | [`testing/INTEROPERABILITY.md`](./testing/INTEROPERABILITY.md) | English | C31–C33: MCP connection profile, OpenAI-compatible provider subset, and the local/external acceptance evidence matrix |
 | [`testing/p1-p2-adoption-protocol.md`](./testing/p1-p2-adoption-protocol.md) | English | Exact independent-operator test: install Portaless without Cloudum, publish APW identity, run an independent Index node, and record discovery/verification evidence |
