@@ -34,6 +34,11 @@ const COPY = {
       confidence: "Witness consensus over the declared seq needs a node with functions/; showing the local order instead.",
       history: "Order by amount of evidence per subject needs attestations from a node with functions/; showing the local order instead.",
     },
+    nodeStatus: {
+      top: "Ordered by verified node signals (net attested score over the active window).",
+      confidence: "Ordered by Wilson lower-bound confidence from verified node signals.",
+      history: "Ordered by longitudinal stability and witness recurrence from verified node signals.",
+    },
     chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", pages: "Pages", shops: "Shops", profiles: "Profiles", publications: "Publications" },
     starterDescription: "Browse the pages and posts published by this Portaless site.",
     starterIntro: "Everything this site publishes, grouped automatically by content type.",
@@ -75,6 +80,11 @@ const COPY = {
       top: "El puntaje bayesiano ponderado sobre la ventana declarada necesita atestaciones firmadas de un nodo con functions/; se muestra el orden local.",
       confidence: "El consenso de testigos sobre el seq declarado necesita un nodo con functions/; se muestra el orden local.",
       history: "El orden por cantidad de evidencia por sujeto necesita atestaciones de un nodo con functions/; se muestra el orden local.",
+    },
+    nodeStatus: {
+      top: "Ordenado por señales verificadas del nodo (puntaje neto en la ventana activa).",
+      confidence: "Ordenado por límite inferior de Wilson sobre señales verificadas del nodo.",
+      history: "Ordenado por estabilidad longitudinal y recurrencia de testigos del nodo.",
     },
     chips: { documentation: "Documentation", demoPages: "Demo Pages", demoShops: "Demo Shops", demoProfiles: "Demo Profiles", pages: "Páginas", shops: "Tiendas", profiles: "Perfiles", publications: "Publications" },
     starterDescription: "Explorá las páginas y publicaciones de este sitio Portaless.",
@@ -142,6 +152,12 @@ const demoProfiles = pages.filter((p) => kindOf(p) === "profile");
 // La fuente sigue siendo el Markdown de docs/ (el sitio es su proyeccion), asi
 // que estos destacados apuntan a la ruta interna. "Architecture" no tiene un
 // doc exacto publicado; se apunta al doc de arquitectura del ecosistema.
+const DOC_KEY: Record<string, string> = {
+  "Install in 10 minutes": "/docs/first-steps/",
+  "Self-hosting": "/docs/self-hosting/",
+  "Protocol APW": "/docs/protocol-apw/",
+  Architecture: "/docs/ecosystem-boundaries/",
+};
 const DOC_HREF: Record<string, string> = {
   "Install in 10 minutes": `${base}docs/first-steps/`,
   "Self-hosting": `${base}docs/self-hosting/`,
@@ -149,12 +165,13 @@ const DOC_HREF: Record<string, string> = {
   Architecture: `${base}docs/ecosystem-boundaries/`,
 };
 
+const exploreEndpoint = `${base}explore.json`;
 const trustHref = `${base}trust/`;
 const repoHref = "https://github.com/geroiloyola/portaless";
 const buildAsOf = new Date().toISOString();
 const windowDays = 30;
 const RANKING_FILTERS = ["top", "confidence", "recents", "new", "old", "history"] as const;
-const notesJson = JSON.stringify(c.status);
+const notesJson = JSON.stringify({ local: c.status, node: c.nodeStatus });
 const exploreDescription = profile.isDemo ? c.description : c.starterDescription;
 const exploreIntro = profile.isDemo ? c.intro : c.starterIntro;
 const pagesLabel = profile.isDemo ? c.chips.demoPages : c.chips.pages;
@@ -247,7 +264,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
     </div>
   </div>
 
-  <div class="explore-order">
+  <div class="explore-order" data-explore-endpoint={exploreEndpoint}>
     <span class="explore-order-label">{c.orderBy}</span>
     <div class="explore-order-pills" role="radiogroup" aria-label={c.orderBy}>
       {RANKING_FILTERS.map((f) => (
@@ -265,7 +282,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
     <section id="site-home" data-explore-section="home">
       <h2>Home</h2>
       <div class="explore-grid">
-        <a class="explore-card" href={base} data-order={buildAsOf} data-flairs={homeFlairs.map((f) => f.slug).join(",")}>
+        <a class="explore-card" href={base} data-explore-key="/" data-order={buildAsOf} data-flairs={homeFlairs.map((f) => f.slug).join(",")}>
           <h3>{homeLayout.title || "Home"}</h3>
           {homeLayout.description && <p>{homeLayout.description}</p>}
           {homeFlairs.length > 0 && (
@@ -283,7 +300,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
       <h2>{c.docsHeading}</h2>
       <div class="explore-grid">
         {c.docs.map((doc, idx) => (
-          <a class="explore-card" href={DOC_HREF[doc.title]} data-order={`doc-${String(idx).padStart(4, "0")}`} data-flairs="">
+          <a class="explore-card" href={DOC_HREF[doc.title]} data-explore-key={DOC_KEY[doc.title]} data-order={`doc-${String(idx).padStart(4, "0")}`} data-flairs="">
             <h3>{doc.title}</h3>
             <p>{doc.note}</p>
           </a>
@@ -299,7 +316,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
         {demoPages.map((page, idx) => {
           const cardFlairs = pageFlairsMap.get(page.slug) ?? [];
           return (
-            <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`page-${String(idx).padStart(4, "0")}-${page.slug}`} data-flairs={cardFlairs.map((f) => f.slug).join(",")}>
+            <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-explore-key={contentPageHref(page.slug, undefined, "/")} data-order={`page-${String(idx).padStart(4, "0")}-${page.slug}`} data-flairs={cardFlairs.map((f) => f.slug).join(",")}>
               <h3>{page.title || page.slug}</h3>
               {page.description && <p>{page.description}</p>}
               {cardFlairs.length > 0 && (
@@ -319,7 +336,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
       <h2>{shopsLabel}</h2>
       <div class="explore-grid">
         {demoShops.map((page, idx) => (
-          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`shop-${String(idx).padStart(4, "0")}`} data-flairs="">
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-explore-key={contentPageHref(page.slug, undefined, "/")} data-order={`shop-${String(idx).padStart(4, "0")}`} data-flairs="">
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -333,7 +350,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
       <h2>{profilesLabel}</h2>
       <div class="explore-grid">
         {demoProfiles.map((page, idx) => (
-          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-order={`profile-${String(idx).padStart(4, "0")}`} data-flairs="">
+          <a class="explore-card" href={contentPageHref(page.slug, undefined, base)} data-explore-key={contentPageHref(page.slug, undefined, "/")} data-order={`profile-${String(idx).padStart(4, "0")}`} data-flairs="">
             <h3>{page.title || page.slug}</h3>
             {page.description && <p>{page.description}</p>}
           </a>
@@ -349,7 +366,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
         {posts.map((post) => {
           const cardFlairs = postFlairsMap.get(post.id) ?? [];
           return (
-            <a class="explore-card" href={`${base}blog/${post.id}/`} data-order={post.data.pubDate.toISOString()} data-flairs={cardFlairs.map((f) => f.slug).join(",")}>
+            <a class="explore-card" href={`${base}blog/${post.id}/`} data-explore-key={`/blog/${post.id}/`} data-order={post.data.pubDate.toISOString()} data-flairs={cardFlairs.map((f) => f.slug).join(",")}>
               <h3>{post.data.title}</h3>
               <p class="explore-card-meta">{post.data.pubDate.toLocaleDateString(c.dateLocale)}</p>
               {post.data.description && <p>{post.data.description}</p>}
@@ -369,7 +386,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
     <section id="how">
       <h2>{c.howHeading}</h2>
       <div class="explore-grid">
-        <a class="explore-card" href={`${base}projections/`}>
+        <a class="explore-card" href={`${base}projections/`} data-explore-key="/projections/">
           <h3>{c.howTitle}</h3>
           <p>{c.howNote}</p>
         </a>
@@ -380,7 +397,7 @@ const scopeItems: Array<{ value: string; label: string }> = [
   <section id="network">
     <h2>{c.networkHeading}</h2>
     <div class="explore-grid">
-      <a class="explore-card" href={trustHref}>
+      <a class="explore-card" href={trustHref} data-explore-key="/trust/">
         <h3>{c.trustTitle}</h3>
         <p>{c.trustNote}</p>
       </a>
@@ -404,13 +421,49 @@ const scopeItems: Array<{ value: string; label: string }> = [
 </BaseLayout>
 
 <script>
+  interface NodeScoreEntry {
+    top: number;
+    confidence: number;
+    history: number;
+    signals: number;
+  }
+
+  interface ExploreNotesPayload {
+    local?: Record<string, string>;
+    node?: Record<string, string>;
+  }
+
   const notesEl = document.getElementById("explore-order-notes");
-  const NOTES: Record<string, string> = notesEl ? JSON.parse(notesEl.textContent || "{}") : {};
+  const parsedNotes: ExploreNotesPayload = notesEl ? JSON.parse(notesEl.textContent || "{}") : {};
+  const LOCAL_NOTES: Record<string, string> = parsedNotes.local ?? {};
+  const NODE_NOTES: Record<string, string> = parsedNotes.node ?? {};
   const status = document.getElementById("explore-order-status");
+  const aboutEl = document.querySelector<HTMLElement>(".explore-about");
 
   let activeScope = "all";
   let activeScopeLabel = "";
   let activeCriterion = "new";
+  let hasNodeSignals = false;
+
+  function normalizeExploreKey(raw: string | null): string | null {
+    if (!raw) return null;
+    let value = raw.trim();
+    if (!value) return null;
+    if (/^https?:\/\//i.test(value)) {
+      try {
+        value = new URL(value).pathname;
+      } catch {
+        return null;
+      }
+    }
+    if (value.startsWith("/") || value.includes("/")) {
+      const withLeading = value.startsWith("/") ? value : `/${value}`;
+      const collapsed = withLeading.replace(/\/{2,}/g, "/");
+      if (collapsed === "/") return "/";
+      return collapsed.endsWith("/") ? collapsed : `${collapsed}/`;
+    }
+    return value.toLowerCase();
+  }
 
   function syncUrl(pushHistory: boolean): void {
     if (!pushHistory || typeof window.history?.replaceState !== "function") return;
@@ -466,7 +519,9 @@ const scopeItems: Array<{ value: string; label: string }> = [
     activeCriterion = criterion;
     const desc = criterion === "new" || criterion === "recents";
     const asc = criterion === "old";
-    const apply = desc || asc;
+    const applyDate = desc || asc;
+    const isNodeMetric = criterion === "top" || criterion === "confidence" || criterion === "history";
+    const applyNode = hasNodeSignals && isNodeMetric;
 
     document.querySelectorAll(".explore-grid").forEach((grid) => {
       const parentSection = grid.closest("section");
@@ -476,20 +531,67 @@ const scopeItems: Array<{ value: string; label: string }> = [
         if (!card.hasAttribute("data-idx")) card.setAttribute("data-idx", String(i));
       });
       cards.sort((a, b) => {
+        if (applyNode) {
+          const sa = Number(a.getAttribute(`data-score-${criterion}`) || 0);
+          const sb = Number(b.getAttribute(`data-score-${criterion}`) || 0);
+          if (sb !== sa) return sb - sa;
+          const sigA = Number(a.getAttribute("data-score-signals") || 0);
+          const sigB = Number(b.getAttribute("data-score-signals") || 0);
+          if (sigB !== sigA) return sigB - sigA;
+          const da = a.getAttribute("data-order");
+          const db = b.getAttribute("data-order");
+          if (da && db && db !== da) return db.localeCompare(da);
+          return Number(a.getAttribute("data-idx")) - Number(b.getAttribute("data-idx"));
+        }
         const da = a.getAttribute("data-order");
         const db = b.getAttribute("data-order");
-        if (apply && da && db) return desc ? db.localeCompare(da) : da.localeCompare(db);
+        if (applyDate && da && db) return desc ? db.localeCompare(da) : da.localeCompare(db);
         return Number(a.getAttribute("data-idx")) - Number(b.getAttribute("data-idx"));
       });
       cards.forEach((card) => grid.appendChild(card));
     });
 
     if (status) {
-      const note = NOTES[criterion] ?? "";
+      const note = (hasNodeSignals && NODE_NOTES[criterion]) || LOCAL_NOTES[criterion] || "";
       status.textContent = activeScopeLabel && note ? `${activeScopeLabel} — ${note}` : note;
     }
 
     syncUrl(pushHistory);
+  }
+
+  function hydrateNodeScores(payload: unknown): void {
+    if (!payload || typeof payload !== "object") return;
+    const data = payload as { source?: string; hasSignals?: boolean; items?: Record<string, NodeScoreEntry> };
+    if (data.source !== "node" || data.hasSignals !== true || !data.items || typeof data.items !== "object") {
+      return;
+    }
+
+    const scoreMap = new Map<string, NodeScoreEntry>();
+    for (const [rawKey, entry] of Object.entries(data.items)) {
+      const key = normalizeExploreKey(rawKey);
+      if (key && entry && typeof entry === "object") {
+        scoreMap.set(key, entry);
+      }
+    }
+    if (scoreMap.size === 0) return;
+
+    hasNodeSignals = true;
+    document.querySelectorAll<HTMLElement>(".explore-card").forEach((card) => {
+      const key = normalizeExploreKey(card.getAttribute("data-explore-key") || card.getAttribute("href"));
+      if (!key) return;
+      const scores = scoreMap.get(key);
+      if (!scores) return;
+      card.setAttribute("data-score-top", String(scores.top ?? 0));
+      card.setAttribute("data-score-confidence", String(scores.confidence ?? 0));
+      card.setAttribute("data-score-history", String(scores.history ?? 0));
+      card.setAttribute("data-score-signals", String(scores.signals ?? 0));
+    });
+
+    if (aboutEl) {
+      aboutEl.setAttribute("data-explore-source", "node");
+    }
+
+    reorder(activeCriterion, false);
   }
 
   const scopeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="explore-scope"]'));
@@ -524,6 +626,18 @@ const scopeItems: Array<{ value: string; label: string }> = [
     applyScope(initialScope.value, initialScope.getAttribute("data-scope-label") || initialScope.value, false);
   } else {
     reorder(activeCriterion, false);
+  }
+
+  const endpoint = document.querySelector<HTMLElement>("[data-explore-endpoint]")?.getAttribute("data-explore-endpoint");
+  if (endpoint && typeof fetch === "function") {
+    fetch(endpoint, { headers: { Accept: "application/json" } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) hydrateNodeScores(data);
+      })
+      .catch(() => {
+        // Silent progressive fallback to local ordering on static hosts or offline.
+      });
   }
 </script>
 
