@@ -122,10 +122,11 @@ describe("POST /admin/api/cloud-images", () => {
     expect((await vacia.json()).error).toBe("invalid_image");
 
     const grande = await images.onRequestPost(ctx({ user: admin, body: { imageBase64: encodeBase64(new Uint8Array(MAX_IMAGE_BYTES + 1)), declaredOrigin: "ai" } }));
-    expect(grande.status).toBe(400);
+    expect(grande.status).toBe(413);
     expect((await grande.json()).error).toBe("image_too_large");
 
     const texto = await images.onRequestPost(ctx({ user: admin, body: { imageBase64: encodeBase64(new TextEncoder().encode("hola")), declaredOrigin: "ai" } }));
+    expect(texto.status).toBe(415);
     expect((await texto.json()).error).toBe("unsupported_content_type");
   });
 

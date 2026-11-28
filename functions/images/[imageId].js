@@ -9,12 +9,16 @@
 // Publico igual que /trust/:siteId. 404 si el imageId no existe.
 
 import { createCloudImageStore } from "@portaless/trust-storage-adapters";
+import { isAllowedImageContentType } from "../_shared/image-sniff.js";
+import { withSecurityHeaders } from "../_shared/security-headers.js";
 
 function json(body, status) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
-  });
+  return withSecurityHeaders(
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+    })
+  );
 }
 
 export async function onRequestGet(context) {
@@ -27,18 +31,23 @@ export async function onRequestGet(context) {
   const entry = await store.get(imageId);
   if (!entry) return json({ error: "image_not_found" }, 404);
 
+  const contentType = isAllowedImageContentType(entry.record.contentType)
+    ? entry.record.contentType
+    : "application/octet-stream";
+
   const etag = `"${entry.record.contentHash}"`;
   const headers = {
-    "content-type": entry.record.contentType,
+    "content-type": contentType,
+    "x-content-type-options": "nosniff",
     etag,
     "cache-control": "public, max-age=31536000, immutable",
     "access-control-allow-origin": "*",
   };
 
   if (request.headers.get("if-none-match") === etag) {
-    return new Response(null, { status: 304, headers });
+    return withSecurityHeaders(new Response(null, { status: 304, headers }));
   }
 
   headers["content-length"] = String(entry.bytes.length);
-  return new Response(entry.bytes, { status: 200, headers });
+  return withSecurityHeaders(new Response(entry.bytes, { status: 200, headers }));
 }

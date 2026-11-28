@@ -37,14 +37,15 @@ import {
   MAX_IMAGE_BYTES,
 } from "@verared/cloud-images";
 import { signCloudImage } from "@verared/cloud-images";
-import { embedPng, isPng } from "@verared/cloud-images";
+import { embedPng } from "@verared/cloud-images";
 import { createRateLimitStore } from "@portaless/auth/store-factory";
 import { allowActionRequest } from "@portaless/auth/rate-limit";
 import { clientIpFromHeaders } from "@portaless/auth/password-reset-rate-limit";
 import { readBodyLimited, RequestBodyTooLargeError } from "../../_shared/read-body-limited.js";
+import { detectImageContentType } from "../../_shared/image-sniff.js";
+import { withSecurityHeaders } from "../../_shared/security-headers.js";
 
 const SITE_ID = IMAGE_SITE_ID;
-const CONTENT_TYPE = "image/png";
 const MAX_UPLOAD_REQUEST_BYTES = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 32 * 1024;
 const UPLOAD_RATE_WINDOW_MS = 60 * 60 * 1000;
 
@@ -65,7 +66,9 @@ function canWrite(role) {
 }
 
 function json(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  return withSecurityHeaders(
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } })
+  );
 }
 
 function newImageId() {
@@ -112,12 +115,19 @@ export async function onRequestPost(context) {
     return json({ error: "invalid_image", message: "imageBase64 debe ser base64 valido de una imagen." }, 400);
   }
   if (bytes.length > MAX_IMAGE_BYTES) {
-    return json({ error: "image_too_large", message: `La imagen supera el teto de ${MAX_IMAGE_BYTES} bytes (4 MiB).` }, 400);
+    return json({ error: "image_too_large", message: `La imagen supera el límite de ${MAX_IMAGE_BYTES} bytes (4 MiB).` }, 413);
   }
-  if (!isPng(bytes)) {
+  const detectedContentType = detectImageContentType(bytes);
+  if (!detectedContentType) {
     return json(
-      { error: "unsupported_content_type", message: "v1 acepta solo image/png: el sidecar se embebe en un chunk pAPW del propio PNG." },
-      400
+      { error: "unsupported_content_type", message: "Solo se aceptan imágenes PNG, JPEG o WebP válidas (verificadas por magic bytes)." },
+      415
+    );
+  }
+  if (typeof body?.contentType === "string" && body.contentType.trim() && body.contentType.trim().toLowerCase() !== detectedContentType) {
+    return json(
+      { error: "unsupported_content_type", message: "El tipo declarado no coincide con la cabecera binaria real de la imagen." },
+      415
     );
   }
 
@@ -146,7 +156,7 @@ export async function onRequestPost(context) {
   const payload = buildCloudImagePayload({
     imageId: newImageId(),
     contentHash,
-    contentType: CONTENT_TYPE,
+    contentType: detectedContentType,
     byteLength: bytes.length,
     declaredOrigin: body.declaredOrigin,
     siteId: SITE_ID,
@@ -157,9 +167,13 @@ export async function onRequestPost(context) {
   const jws = await signCloudImage(payload, { keyId: key.keyId, privateKeyJwk: key.privateKeyJwk });
   const sidecar = { payload, jws };
 
+  // PNG embeds the signed sidecar in a pAPW chunk; JPEG and WebP keep raw binary
+  // untouched while the signed sidecar is stored and served via /trust/images/:imageId.
+  const storedBytes = detectedContentType === "image/png" ? embedPng(bytes, JSON.stringify(sidecar)) : bytes;
+
   const record = await store.put({
     sidecar,
-    bytes: embedPng(bytes, JSON.stringify(sidecar)),
+    bytes: storedBytes,
     keyId: key.keyId,
     createdBy: user.username ?? user.email ?? null,
   });
