@@ -5,7 +5,11 @@ import { coreCatalog } from "../elements/element-pack";
 import { renderContributedTemplate } from "../render";
 import { iconLabel, iconOnly, ICON_FOLDER, ICON_UNDO_2, ICON_REDO_2 } from "../elements/icons";
 import { makeDraggable, makeDropZone } from "./drag-drop";
-import { renderPropertyPanel } from "./property-panel";
+import {
+  renderPropertyPanel,
+  type ImageUploader,
+  type ImageUploadStatus,
+} from "./property-panel";
 import type { PageStore } from "../persistence/page-store";
 import { EditorHistory } from "./history";
 import { resolveContainer as resolveContainerInTree, moveNodeInTree } from "./tree-ops";
@@ -46,6 +50,8 @@ export interface EditorAppOptions {
    * bundle. Sin el, el editor usa el core cerrado (comportamiento previo).
    */
   elementCatalog?: ResolvedCatalog;
+  uploadImage?: ImageUploader;
+  basePath?: string;
 }
 
 /** Vista normalizada de una entrada del catalogo, core o pack, para el editor. */
@@ -66,6 +72,7 @@ export class AtomicElementsEditor {
   private productPreview: ProductPreviewLoader | null = null;
   private catalog: ResolvedCatalog;
   private persistedRevisionId: string | null;
+  private imageUploadStatus: ImageUploadStatus | null = null;
 
   constructor(private options: EditorAppOptions) {
     this.history = new EditorHistory(options.initialPage);
@@ -449,7 +456,19 @@ export class AtomicElementsEditor {
     canvasWrap.appendChild(canvas);
 
     const selectedNode = this.selectedId ? this.findNode(this.selectedId) : null;
-    const propertyPanel = renderPropertyPanel(selectedNode, (props) => this.updateSelectedProps(props), this.catalog);
+    const propertyPanel = renderPropertyPanel(
+      selectedNode,
+      (props) => this.updateSelectedProps(props),
+      this.catalog,
+      {
+        uploadImage: this.options.uploadImage,
+        basePath: this.options.basePath,
+        imageUploadStatus: this.imageUploadStatus,
+        onImageUploadStatus: (status) => {
+          this.imageUploadStatus = status;
+        },
+      }
+    );
     propertyPanel.prepend(this.renderPageMetaSection());
 
     this.root.appendChild(palette);

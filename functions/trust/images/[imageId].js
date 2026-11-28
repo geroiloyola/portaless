@@ -46,12 +46,15 @@ export async function onRequestGet(context) {
 
   const { record, bytes } = entry;
 
-  const embeddedJson = isPng(bytes) ? extractPng(bytes) : null;
-  const embedded = embeddedJson === null
-    ? { status: "missing" }
-    : embeddedJson === JSON.stringify(record.sidecar)
-      ? { status: "match" }
-      : { status: "mismatch" };
+  const png = isPng(bytes);
+  const embeddedJson = png ? extractPng(bytes) : null;
+  const embedded = !png
+    ? { status: "not_applicable", reason: "sidecar_external_for_non_png" }
+    : embeddedJson === null
+      ? { status: "missing" }
+      : embeddedJson === JSON.stringify(record.sidecar)
+        ? { status: "match" }
+        : { status: "mismatch" };
 
   const identityStore = await createSiteIdentityStore(env);
   const keys = (await identityStore.listKeys(SITE_ID)).map((key) => ({
@@ -63,12 +66,13 @@ export async function onRequestGet(context) {
 
   let contentHash = { status: "not_checked" };
   try {
-    contentHash = { status: (await sha256Hash(stripPng(bytes))) === record.contentHash ? "match" : "mismatch" };
+    const hashTarget = png ? stripPng(bytes) : bytes;
+    contentHash = { status: (await sha256Hash(hashTarget)) === record.contentHash ? "match" : "mismatch" };
   } catch {
     contentHash = { status: "not_checked" };
   }
 
-  const valid = signature.ok && embedded.status === "match" && contentHash.status === "match";
+  const valid = signature.ok && contentHash.status === "match" && (!png || embedded.status === "match");
 
   return json(
     {
